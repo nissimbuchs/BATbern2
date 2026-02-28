@@ -1,0 +1,12 @@
+{
+  "email": {
+    "required": "Sähköpostiosoite on pakollinen",
+    "invalid": "Anna kelvollinen sähköpostiosoite",
+    "tooLong": "Sähköpostiosoite on liian pitkä (enintään 255 merkkiä)"
+  },
+  "password": {
+    "required": "Salasana on pakollinen",
+    "tooShort": "Salasanan on oltava vähintään 8 merkkiä pitkä",
+    "tooLong": "Salasana on liian pitkä (enintään 128 merkkiä)"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "userSync": {
+    "title": "Sincronizzazione utenti",
+    "status": {
+      "checking": "Verifica in corso...",
+      "error": "Errore",
+      "inSync": "Sincronizzato",
+      "outOfSync": "Non sincronizzato"
+    },
+    "counts": "Cognito: {{cognito}} | Database: {{database}}",
+    "button": {
+      "sync": "Sincronizza da Cognito",
+      "syncing": "Sincronizzazione..."
+    },
+    "warning": "{{missing}} utente/i mancante/i nel database, {{orphaned}} utente/i orfano/i",
+    "reconciliation": {
+      "success": "Sincronizzazione completata! {{created}} utente/i creato/i, {{deactivated}} utente/i disattivato/i",
+      "error": "Sincronizzazione fallita: {{message}}"
+    },
+    "report": {
+      "title": "Rapporto di sincronizzazione",
+      "created": "Utenti creati",
+      "deactivated": "Utenti disattivati",
+      "duration": "Durata",
+      "errors": "Errori"
+    }
+  }
+}

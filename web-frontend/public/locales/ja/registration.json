@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "登録をキャンセル中...",
+      "message": "キャンセルを処理中です。しばらくお待ちください。"
+    },
+    "success": {
+      "title": "登録がキャンセルされました",
+      "subtitle": "登録は正常にキャンセルされました",
+      "whatHappened": "何が起きましたか？",
+      "permanentDeletion": "完全削除",
+      "permanentDeletionText": "ご登録はシステムから完全に削除されました。",
+      "noFurtherAction": "追加の対応は不要です",
+      "noFurtherActionText": "このイベントに関する連絡は今後一切届きません。",
+      "registerAgain": "再度登録する",
+      "registerAgainText": "ご意向が変わった場合は、イベント開始前であればいつでも再登録できます。",
+      "backToHome": "ホームに戻る",
+      "registerForAnother": "別のイベントに登録する"
+    },
+    "error": {
+      "title": "キャンセルに失敗しました",
+      "subtitle": "登録をキャンセルできませんでした",
+      "whatCanYouDo": "どうすればよいですか？",
+      "checkLink": "メールに記載された正しいリンクをクリックしたかご確認ください",
+      "expired": "キャンセルリンクは48時間後に失効します",
+      "alreadyCancelled": "登録はすでにキャンセルされている可能性があります",
+      "useLatestEmail": "最新のメールを使用していることをご確認ください",
+      "contactSupport": "問題が解決しない場合はサポートにお問い合わせください",
+      "errors": {
+        "expired": "キャンセルリンクの有効期限が切れています（有効期間：48時間）。",
+        "invalid": "無効なキャンセルリンクです。メールで正しいリンクをご確認ください。",
+        "notFound": "登録が見つからないか、すでにキャンセルされています。",
+        "default": "登録のキャンセルに失敗しました。再度お試しいただくか、サポートにお問い合わせください。"
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "登録を確認中...",
+      "message": "確認を処理中です。しばらくお待ちください。"
+    },
+    "success": {
+      "title": "登録が確定しました！",
+      "subtitle": "イベントの準備が整いました",
+      "whatsNext": "次のステップ",
+      "checkIn": "イベントでのチェックイン",
+      "checkInText": "チェックインのため、イベント受付にて身分証明書をご提示ください。確定済みの登録情報はシステムに保存されています。",
+      "eventDetails": "イベント詳細",
+      "eventDetailsText": "イベントの最新情報やリマインダーがメールで届きます。",
+      "backToHome": "ホームに戻る",
+      "createAccount": "アカウントを作成して登録を管理する"
+    },
+    "alreadyConfirmed": {
+      "title": "確認済み",
+      "subtitle": "この登録はすでに確認されています",
+      "message": "登録は以前に確認されています。追加の対応は不要です。",
+      "backToHome": "ホームに戻る"
+    },
+    "error": {
+      "title": "確認に失敗しました",
+      "subtitle": "登録を確認できませんでした",
+      "whatCanYouDo": "どうすればよいですか？",
+      "checkLink": "メールに記載された正しいリンクをクリックしたかご確認ください",
+      "expired": "確認リンクは48時間後に失効します。再登録が必要な場合があります",
+      "useLatestEmail": "最新の確認メールを使用していることをご確認ください",
+      "contactSupport": "問題が解決しない場合はサポートにお問い合わせください",
+      "backToHome": "ホームに戻る",
+      "registerAgain": "再度登録する",
+      "errors": {
+        "expired": "確認リンクの有効期限が切れています。再度登録してください。",
+        "invalid": "無効な確認リンクです。メールで正しいリンクをご確認ください。",
+        "default": "登録の確認に失敗しました。再度お試しいただくか、サポートにお問い合わせください。"
+      }
+    }
+  }
+}

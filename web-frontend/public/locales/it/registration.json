@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Annullamento della registrazione in corso...",
+      "message": "Attendere mentre elaboriamo l'annullamento."
+    },
+    "success": {
+      "title": "Registrazione annullata",
+      "subtitle": "La tua registrazione è stata annullata con successo",
+      "whatHappened": "Cosa è successo?",
+      "permanentDeletion": "Eliminazione permanente",
+      "permanentDeletionText": "La tua registrazione è stata rimossa definitivamente dal nostro sistema.",
+      "noFurtherAction": "Nessuna ulteriore azione",
+      "noFurtherActionText": "Non riceverai ulteriori comunicazioni riguardanti questo evento.",
+      "registerAgain": "Registrati di nuovo",
+      "registerAgainText": "Se cambi idea, puoi registrarti di nuovo in qualsiasi momento prima dell'evento.",
+      "backToHome": "Torna alla home",
+      "registerForAnother": "Registrati a un altro evento"
+    },
+    "error": {
+      "title": "Annullamento non riuscito",
+      "subtitle": "Impossibile annullare la registrazione",
+      "whatCanYouDo": "Cosa puoi fare?",
+      "checkLink": "Verifica di aver cliccato sul link corretto nella tua email",
+      "expired": "I link di annullamento scadono dopo 48 ore",
+      "alreadyCancelled": "La registrazione potrebbe essere già stata annullata",
+      "useLatestEmail": "Assicurati di utilizzare l'email più recente",
+      "contactSupport": "Contatta il supporto se il problema persiste",
+      "errors": {
+        "expired": "Il link di annullamento è scaduto (valido per 48 ore).",
+        "invalid": "Link di annullamento non valido. Controlla la tua email per il link corretto.",
+        "notFound": "Registrazione non trovata o già annullata.",
+        "default": "Impossibile annullare la registrazione. Riprova o contatta il supporto."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Conferma della registrazione in corso...",
+      "message": "Attendere mentre elaboriamo la conferma."
+    },
+    "success": {
+      "title": "Registrazione confermata!",
+      "subtitle": "Sei pronto per l'evento",
+      "whatsNext": "Cosa succede ora?",
+      "checkIn": "Check-in all'evento",
+      "checkInText": "Presenta il tuo documento d'identità al banco dell'evento per il check-in. La tua registrazione confermata sarà nel nostro sistema.",
+      "eventDetails": "Dettagli dell'evento",
+      "eventDetailsText": "Riceverai aggiornamenti e promemoria sull'evento via email.",
+      "backToHome": "Torna alla home",
+      "createAccount": "Crea un account per gestire le registrazioni"
+    },
+    "alreadyConfirmed": {
+      "title": "Già confermata",
+      "subtitle": "Questa registrazione è già stata confermata",
+      "message": "La tua registrazione è stata confermata in precedenza. Non è necessaria nessuna ulteriore azione.",
+      "backToHome": "Torna alla home"
+    },
+    "error": {
+      "title": "Conferma non riuscita",
+      "subtitle": "Impossibile confermare la registrazione",
+      "whatCanYouDo": "Cosa puoi fare?",
+      "checkLink": "Verifica di aver cliccato sul link corretto nella tua email",
+      "expired": "I link di conferma scadono dopo 48 ore - potrebbe essere necessario registrarsi di nuovo",
+      "useLatestEmail": "Assicurati di utilizzare l'ultima email di conferma",
+      "contactSupport": "Contatta il supporto se il problema persiste",
+      "backToHome": "Torna alla home",
+      "registerAgain": "Registrati di nuovo",
+      "errors": {
+        "expired": "Il link di conferma è scaduto. Effettua nuovamente la registrazione.",
+        "invalid": "Link di conferma non valido. Controlla la tua email per il link corretto.",
+        "default": "Impossibile confermare la registrazione. Riprova o contatta il supporto."
+      }
+    }
+  }
+}

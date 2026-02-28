@@ -1,0 +1,469 @@
+{
+  "navigation": {
+    "partners": "Partners",
+    "speakerOutreach": "Sprekersbenadering",
+    "topicManagement": "Onderwerpbeheer"
+  },
+  "dashboard": {
+    "criticalTasks": "Kritieke taken",
+    "noCriticalTasks": "Geen kritieke taken",
+    "greatJob": "Goed gedaan!",
+    "taskCount": "{{count}} taak",
+    "taskCount_plural": "{{count}} taken",
+    "dueDate": "Vervaldatum",
+    "assignedTo": "Toegewezen aan {{name}}",
+    "confirmAction": "Actie bevestigen",
+    "areYouSure": "Weet je zeker dat je deze actie wilt uitvoeren?"
+  },
+  "topicBacklog": {
+    "pageTitle": "Onderwerpbeheer",
+    "pageDescription": "Beheer backlog-onderwerpen, selecteer onderwerpen voor evenementen en analyseer gebruikspatronen",
+    "title": "Backlog-onderwerpen beheer",
+    "subtitle": "Selecteer onderwerpen uit de backlog met intelligente suggesties en detectie van veroudering",
+    "selectPrompt": "Selecteer een onderwerp om details te bekijken",
+    "noTopics": "Geen onderwerpen gevonden die overeenkomen met je filters",
+    "lastUsed": "Laatst gebruikt",
+    "usageCount": "{{count}} keer gebruikt",
+    "createNew": "Nieuw onderwerp aanmaken",
+    "breadcrumbs": {
+      "home": "Home",
+      "events": "Evenementen",
+      "topicSelection": "Onderwerpkeuze",
+      "manageTopics": "Onderwerpen beheren"
+    },
+    "error": {
+      "loadFailed": "Laden van onderwerpen mislukt"
+    },
+    "createModal": {
+      "title": "Nieuw onderwerp aanmaken",
+      "fields": {
+        "title": "Titel",
+        "description": "Beschrijving",
+        "category": "Categorie",
+        "categoryHint": "bijv. technisch, zakelijk, ontwerp"
+      },
+      "errors": {
+        "titleRequired": "Titel is verplicht",
+        "titleTooLong": "De titel mag maximaal 255 tekens bevatten",
+        "descriptionRequired": "Beschrijving is verplicht",
+        "categoryRequired": "Categorie is verplicht",
+        "createFailed": "Aanmaken van onderwerp mislukt. Probeer het opnieuw."
+      },
+      "create": "Onderwerp aanmaken",
+      "creating": "Aanmaken..."
+    },
+    "editModal": {
+      "title": "Onderwerp bewerken",
+      "fields": {
+        "title": "Titel",
+        "description": "Beschrijving",
+        "category": "Categorie"
+      },
+      "errors": {
+        "titleRequired": "Titel is verplicht",
+        "titleTooLong": "De titel mag maximaal 255 tekens bevatten",
+        "categoryRequired": "Categorie is verplicht",
+        "updateFailed": "Bijwerken van onderwerp mislukt. Probeer het opnieuw."
+      },
+      "save": "Wijzigingen opslaan",
+      "saving": "Opslaan..."
+    },
+    "filters": {
+      "title": "Filters",
+      "category": "Categorie",
+      "status": "Status",
+      "sort": "Sorteren op",
+      "all": "Alle categorieën",
+      "allStatuses": "Alle statussen",
+      "categories": {
+        "technical": "Technisch",
+        "management": "Management",
+        "softSkills": "Zachte vaardigheden",
+        "industryTrends": "Sectortendensen",
+        "toolsPlatforms": "Tools en platformen"
+      },
+      "statuses": {
+        "available": "Beschikbaar (groen)",
+        "caution": "Voorzichtig gebruiken (geel)",
+        "unavailable": "Te recent (rood)"
+      },
+      "sortOptions": {
+        "safestFirst": "Veiligste eerst (veroudering ↓)",
+        "recentFirst": "Meest recent eerst (veroudering ↑)",
+        "titleAZ": "Titel (A-Z)",
+        "mostUsed": "Meest gebruikt"
+      }
+    },
+    "details": {
+      "metrics": "Statistieken",
+      "lastUsed": "Laatst gebruikt",
+      "usageCount": "Aantal keer gebruikt",
+      "editButton": "Onderwerp bewerken",
+      "deleteButton": "Onderwerp verwijderen",
+      "selectButton": "Selecteren voor evenement",
+      "selecting": "Selecteren...",
+      "overrideButton": "Waarschuwing negeren",
+      "statusGreen": "Veilig hergebruik - meer dan 20 maanden geleden voor het laatst gebruikt",
+      "statusYellow": "Voorzichtig gebruiken - 12-20 maanden geleden voor het laatst gebruikt",
+      "statusRed": "Te recent - binnen de laatste 12 maanden voor het laatst gebruikt, hoog risico op duplicatie",
+      "similarityWarning": "{{count}} vergelijkbare onderwerpen gedetecteerd (> 70% gelijkenis)"
+    },
+    "viewMode": {
+      "label": "Weergavemodus",
+      "heatMap": "Warmtekaart",
+      "list": "Lijst",
+      "board": "Bord",
+      "boardComingSoon": "Bordweergave binnenkort beschikbaar..."
+    },
+    "heatMap": {
+      "title": "Warmtekaart voor onderwerpgebruik",
+      "subtitle": "Donkerdere kleuren duiden op meer gebruik. Klik op een onderwerp om details te bekijken.",
+      "description": "Gebruiksfrequentie van onderwerpen over de afgelopen 24 maanden (gegroepeerd per kwartaal)",
+      "quarter": "Kwartaal",
+      "spring": "Lente",
+      "summer": "Zomer",
+      "autumn": "Herfst",
+      "usageCount": "Aantal keer gebruikt",
+      "totalAttendance": "Totaal aanwezigen",
+      "avgEngagement": "Gemiddelde betrokkenheid",
+      "events": "Evenementen",
+      "noData": "Geen gebruiksgeschiedenis beschikbaar voor dit onderwerp.",
+      "noTopics": "Geen onderwerpen beschikbaar om weer te geven.",
+      "tooltip": "Klik op een kwartaal om details te zien over evenementen die dit onderwerp hebben gebruikt",
+      "hint": "Beweeg de muis over gegevenspunten voor meer informatie",
+      "stale": "Verouderd - niet recent gebruikt",
+      "trending": "Trending - recent gebruikt",
+      "legend": {
+        "noUsage": "Geen gebruik",
+        "low": "Weinig gebruik",
+        "medium": "Gemiddeld gebruik",
+        "high": "Veel gebruik",
+        "stale": "Verouderd",
+        "trending": "Trending"
+      },
+      "navigation": {
+        "previous": "Vorige jaren",
+        "next": "Volgende jaren",
+        "atCurrent": "Huidig jaar"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Vergelijkbare onderwerpen gedetecteerd",
+        "message": "De volgende onderwerpen hebben een hoge gelijkenis (> 70%) met je selectie. Weet je zeker dat je wilt doorgaan?",
+        "similarity": "Gelijkenis",
+        "justification": "Motivering (optioneel)",
+        "cancel": "Annuleren",
+        "confirm": "Toch selecteren"
+      },
+      "override": {
+        "title": "Verouderingswaarschuwing negeren",
+        "message": "Dit onderwerp is recent gebruikt (verouderingsscore: {{score}}%). Geef een motivering om het opnieuw te gebruiken.",
+        "justification": "Motivering",
+        "helper": "Leg uit waarom dit onderwerp opnieuw gebruikt moet worden ondanks de recente gebruiksdatum",
+        "cancel": "Annuleren",
+        "confirm": "Negeren en selecteren"
+      },
+      "delete": {
+        "title": "Onderwerp verwijderen",
+        "message": "Weet je zeker dat je \"{{title}}\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+        "cannotDelete": "Dit onderwerp kan niet worden verwijderd omdat het is gebruikt in {{count}} evenement(en).",
+        "cancel": "Annuleren",
+        "confirm": "Onderwerp verwijderen",
+        "deleting": "Verwijderen...",
+        "success": "Onderwerp succesvol verwijderd",
+        "error": "Verwijderen van onderwerp mislukt. Probeer het opnieuw."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Brainstorm over sprekers",
+    "subtitle": "Voeg potentiële sprekers toe aan de pool van het evenement en wijs ze toe aan organisatoren voor benadering",
+    "form": {
+      "speakerName": "Naam spreker",
+      "company": "Bedrijf",
+      "expertise": "Expertise",
+      "assignOrganizer": "Toewijzen aan organisator (optioneel)",
+      "unassigned": "Niet toegewezen",
+      "notes": "Notities (optioneel)",
+      "addButton": "Aan pool toevoegen",
+      "adding": "Toevoegen...",
+      "error": "Toevoegen van spreker mislukt"
+    },
+    "pool": {
+      "title": "Sprekers pool",
+      "empty": "Nog geen sprekers in de pool. Voeg er hierboven wat toe!",
+      "expertise": "Expertise",
+      "assigned": "Toegewezen aan",
+      "notes": "Notities",
+      "error": "Laden van sprekers pool mislukt"
+    },
+    "actions": {
+      "skipForNow": "Nu overslaan",
+      "continue": "Doorgaan naar benadering"
+    }
+  },
+  "speakerOutreach": {
+    "title": "Sprekersbenadering",
+    "subtitle": "Volg je benaderingsactiviteiten voor sprekers en coördineer met andere organisatoren",
+    "breadcrumbs": {
+      "home": "Home",
+      "speakerOutreach": "Sprekersbenadering"
+    },
+    "emptyPool": {
+      "message": "Je moet sprekers aan de pool toevoegen voordat je begint met benaderen.",
+      "hint": "Ga terug naar de planningsfase van het evenement om potentiële sprekers toe te voegen.",
+      "addSpeakers": "Sprekers aan pool toevoegen"
+    },
+    "showBrainstorm": "Sprekers toevoegen",
+    "hideBrainstorm": "Sprekers toevoegen verbergen",
+    "speakerName": "Spreker",
+    "contactMethod": "Contactmethode",
+    "contactDate": "Contactdatum",
+    "notes": "Notities",
+    "markContacted": "Markeren als gecontacteerd",
+    "filterByOrganizer": "Filteren op organisator",
+    "contactHistory": "Contactgeschiedenis",
+    "daysSinceAssignment": "Dagen sinds toewijzing",
+    "overdue": "Achterstallig",
+    "lastContact": "Laatste contact",
+    "outreachDetails": "Benaderingsdetails",
+    "noContactHistory": "Geen contactgeschiedenis",
+    "contactedBy": "Gecontacteerd door",
+    "markContactedModal": {
+      "title": "Spreker markeren als gecontacteerd",
+      "method": {
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "inPerson": "Persoonlijk"
+      },
+      "notesPlaceholder": "Notities over het gesprek...",
+      "error": {
+        "methodRequired": "Contactmethode is verplicht",
+        "dateRequired": "Contactdatum is verplicht",
+        "failed": "Vastleggen van benadering mislukt",
+        "loadHistory": "Laden van contactgeschiedenis mislukt"
+      }
+    },
+    "bulkAction": {
+      "title": "Meerdere als gecontacteerd markeren",
+      "confirm": "{{count}} sprekers als gecontacteerd markeren?"
+    }
+  },
+  "speakerStatus": {
+    "title": "Sprekerstatus",
+    "statusSummary": "Statusoverzicht",
+    "lanes": "Statusbanen",
+    "IDENTIFIED": "Geïdentificeerd",
+    "INVITED": "Uitgenodigd",
+    "CONTACTED": "Gecontacteerd",
+    "READY": "Gereed",
+    "ACCEPTED": "Geaccepteerd",
+    "CONTENT_SUBMITTED": "Inhoud ingediend",
+    "QUALITY_REVIEWED": "Kwaliteit beoordeeld",
+    "CONFIRMED": "Bevestigd",
+    "DECLINED": "Geweigerd",
+    "changeStatus": "Status wijzigen",
+    "changeReason": "Reden voor statuswijziging (optioneel)",
+    "confirmChange": "Status wijzigen",
+    "cancelChange": "Annuleren",
+    "statusChanged": "Status succesvol gewijzigd",
+    "invalidTransition": "Ongeldige statusovergang van {{from}} naar {{to}}",
+    "historyTitle": "Statusgeschiedenis",
+    "changedBy": "Gewijzigd door",
+    "noHistory": "Geen statusgeschiedenis beschikbaar",
+    "acceptanceRate": "Acceptatiegraad: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} sprekers geaccepteerd",
+    "thresholdMet": "Minimale drempel bereikt ✓",
+    "thresholdNotMet": "Minimale drempel niet bereikt ({{count}} / {{required}})",
+    "overflowDetected": "Overflow gedetecteerd ({{count}} > {{max}})",
+    "dragToChange": "Sleep sprekers om status te wijzigen",
+    "confirmChangeMessage": "Status van {{speaker}} wijzigen van {{from}} naar {{to}}?",
+    "reasonHelperText": "Optioneel (max {{max}} tekens)",
+    "reasonPlaceholder": "bijv. Spreker bevestigd via e-mail",
+    "reasonTooLong": "De reden is te lang ({{current}}/{{max}} tekens)"
+  },
+  "speakerContent": {
+    "submitContent": "Sprekerinhoud indienen",
+    "presentationDetails": "Presentatiedetails",
+    "speakerInformation": "Sprekerinformatie",
+    "submitting": "Indienen...",
+    "editSpeakerProfile": "Sprekersprofiel bewerken",
+    "createNewSpeaker": "Nieuwe spreker aanmaken",
+    "form": {
+      "username": "Spreker zoeken",
+      "usernameHelp": "Voer de gebruikersnaam van de spreker in",
+      "presentationTitle": "Presentatietitel",
+      "presentationAbstract": "Presentatiesamenvatting",
+      "charactersRemaining": "tekens resterend"
+    },
+    "errors": {
+      "usernameRequired": "Spreker is verplicht",
+      "titleRequired": "Presentatietitel is verplicht",
+      "abstractRequired": "Presentatiesamenvatting is verplicht",
+      "abstractTooLong": "De samenvatting mag maximaal {{max}} tekens bevatten",
+      "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw."
+    }
+  },
+  "qualityReview": {
+    "title": "Kwaliteitsbeoordeling",
+    "speaker": "Spreker",
+    "presentationTitle": "Presentatietitel",
+    "abstract": "Samenvatting",
+    "qualityCriteria": "Kwaliteitscriteria",
+    "characters": "tekens",
+    "detected": "Gedetecteerd",
+    "notDetected": "Niet gedetecteerd",
+    "passed": "Geslaagd",
+    "promotionDetected": "Reclame gedetecteerd",
+    "approve": "Goedkeuren",
+    "reject": "Afwijzen",
+    "approving": "Goedkeuren...",
+    "submitting": "Indienen...",
+    "confirmReject": "Afwijzing bevestigen",
+    "rejectInstructions": "Geef feedback over waarom de inhoud wordt afgewezen.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Leg uit wat er verbeterd moet worden...",
+    "noContent": "Geen inhoud beschikbaar",
+    "criteria": {
+      "abstractLength": "Lengte van de samenvatting",
+      "lessonsLearned": "Bevat \"Lessen geleerd\"",
+      "noPromotion": "Geen productreclame"
+    },
+    "errors": {
+      "feedbackRequired": "Feedback is verplicht",
+      "unknown": "Er is een onbekende fout opgetreden"
+    }
+  },
+  "speakers": {
+    "invite": "Uitnodigen",
+    "sendInvite": "Uitnodiging versturen",
+    "sendInvitation": "Uitnodiging versturen",
+    "confirmInvite": "Uitnodiging naar deze spreker sturen?",
+    "noEmailTooltip": "Voeg e-mail toe om uit te nodigen",
+    "inviting": "Verzenden...",
+    "sending": "Verzenden...",
+    "inviteSent": "Uitnodiging verzonden",
+    "invitationSent": "Uitnodiging verzonden naar {{email}}",
+    "inviteFailed": "Verzenden mislukt",
+    "invitationFailed": "Verzenden van uitnodiging mislukt",
+    "email": "E-mailadres",
+    "emailRequired": "E-mail is verplicht om een uitnodiging te versturen",
+    "invalidEmail": "Voer een geldig e-mailadres in",
+    "saveEmail": "E-mail opslaan",
+    "emailSaved": "E-mail opgeslagen",
+    "tentative": "Voorlopig",
+    "responseDetails": "Reactiedetails",
+    "acceptedAt": "Geaccepteerd op",
+    "preferredTimeSlot": "Gewenst tijdslot",
+    "travelRequirements": "Reisbehoeften",
+    "technicalRequirements": "Technische vereisten",
+    "initialTitle": "Presentatietitel",
+    "comments": "Opmerkingen",
+    "declineDetails": "Details afwijzing",
+    "declinedAt": "Geweigerd op",
+    "declineReason": "Reden",
+    "tentativeDetails": "Voorlopige details",
+    "tentativeReason": "Reden",
+    "sendReminder": "Herinnering sturen",
+    "sendingReminder": "Verzenden...",
+    "reminderSent": "Herinnering verzonden naar {{email}}",
+    "reminderFailed": "Verzenden van herinnering mislukt"
+  },
+  "tasks": {
+    "taskBoard": "Takenbord",
+    "filter": "Filteren",
+    "myTasks": "Mijn taken",
+    "allTasks": "Alle taken",
+    "sortBy": "Sorteren op",
+    "dueDate": "Vervaldatum",
+    "createdDate": "Aanmaakdatum",
+    "addCustomTask": "Aangepaste taak toevoegen",
+    "errorLoadingTasks": "Laden van taken mislukt",
+    "pending": "In behandeling",
+    "pendingDescription": "Wachten op triggerstatus",
+    "toDo": "Te doen",
+    "todoDescription": "Klaar om aan te werken",
+    "inProgress": "In uitvoering",
+    "inProgressDescription": "Momenteel in behandeling",
+    "completed": "Voltooid",
+    "completedDescription": "Afgeronde taken",
+    "completeTask": "Taak voltooien",
+    "completionNotes": "Afrondingsnotities (optioneel)",
+    "markComplete": "Markeren als voltooid",
+    "due": "Vervaldatum",
+    "assignedTo": "Toegewezen aan",
+    "completedOn": "Voltooid op",
+    "completedBy": "Voltooid door",
+    "noTasks": "Geen taken"
+  },
+  "analytics": {
+    "title": "Analyse",
+    "timeRange": {
+      "all": "Alle tijd",
+      "5y": "Laatste 5 jaar",
+      "2y": "Laatste 2 jaar"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "attendance": "Aanwezigheid",
+      "topics": "Onderwerpen",
+      "companies": "Bedrijven"
+    },
+    "kpi": {
+      "totalEvents": "Totaal evenementen",
+      "totalAttendees": "Totaal deelnemers",
+      "companiesRepresented": "Bedrijven",
+      "totalSessions": "Totaal sessies",
+      "totalSpeakers": "Totaal sprekers"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Evenementengeschiedenis",
+      "attendeesPerEvent": "Deelnemers per evenement",
+      "returningVsNew": "Terugkerende vs. nieuwe deelnemers",
+      "eventsPerCategory": "Evenementen per categorie",
+      "topicPopularity": "Onderwerpspopulariteit",
+      "attendanceOverTime": "Aanwezigheid per bedrijf in de loop van de tijd",
+      "sessionsPerCompany": "Sessies per bedrijf",
+      "attendeeDistribution": "Deelnemersverdeling per bedrijf"
+    },
+    "labels": {
+      "returning": "Terugkerend",
+      "new": "Nieuw",
+      "showDataTable": "Gegevenstabel weergeven",
+      "hideDataTable": "Gegevenstabel verbergen",
+      "noData": "Geen gegevens beschikbaar voor deze periode",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Alle"
+      },
+      "labelToggle": {
+        "title": "Titel",
+        "category": "Categorie",
+        "both": "Beide"
+      },
+      "filterByEvent": "Filteren op evenement",
+      "allEvents": "Alle evenementen",
+      "sessions": "sessies",
+      "speakers": "sprekers",
+      "yourCompany": "Jouw bedrijf"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Typ een onderwerp en druk op Enter...",
+    "fitAll": "Alles weergeven",
+    "snapToActive": "Centreren op actief",
+    "backButton": "← Terug naar onderwerplijst",
+    "unsavedWarning": "Niet-opgeslagen sessie — alle wijzigingen gaan verloren. Teruggaan?",
+    "accept": {
+      "title": "Onderwerp selecteren: {{topic}}",
+      "partnerAlignment": "{{count}} van 9 partners akkoord",
+      "lastCovered": "Laatste behandeling: BATbern #{{num}} ({{count}} evenementen geleden)",
+      "overrideReason": "Waarom dit onderwerp opnieuw bekijken? (optioneel)",
+      "confirm": "Dit onderwerp selecteren",
+      "cancel": "Verder verkennen",
+      "saveError": "Opslaan van onderwerpselectie mislukt. Probeer het opnieuw."
+    }
+  }
+}

@@ -328,7 +328,10 @@
     "overrideValidation": "Workflow-Validierung überschreiben (erlaubt beliebige Zustandsübergänge)",
     "overrideReason": "Begründung (Optional)",
     "overrideReasonPlaceholder": "Warum überschreiben Sie die Workflow-Validierung?",
-    "overrideReasonHelp": "Dies wird zu Revisionszwecken protokolliert"
+    "overrideReasonHelp": "Dies wird zu Revisionszwecken protokolliert",
+    "errors": {
+      "failedToLoadEventTypes": "Fehler beim Laden der Veranstaltungstypen"
+    }
   },
   "eventTypes": {
     "FULL_DAY": "Ganztägig",
@@ -376,7 +379,14 @@
     "capacityPositive": "Kapazität muss eine positive Zahl sein",
     "venueRequired": "Veranstaltungsort ist erforderlich",
     "venueNameRequired": "Name des Veranstaltungsorts ist erforderlich",
-    "venueAddressRequired": "Adresse des Veranstaltungsorts ist erforderlich"
+    "venueAddressRequired": "Adresse des Veranstaltungsorts ist erforderlich",
+    "minSlotsRequired": "Minimale Slot-Anzahl ist erforderlich",
+    "maxSlotsRequired": "Maximale Slot-Anzahl ist erforderlich",
+    "slotDurationRequired": "Slot-Dauer ist erforderlich",
+    "slotDurationMinimum": "Slot-Dauer muss mindestens 15 Minuten betragen",
+    "minSlotsLessThanMax": "Minimale Slot-Anzahl muss kleiner oder gleich der maximalen Slot-Anzahl sein",
+    "defaultCapacityRequired": "Standardkapazität ist erforderlich",
+    "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein"
   },
   "errors": {
     "loadFailed": "Fehler beim Laden der Veranstaltungen",
@@ -863,6 +873,7 @@
       "userRequired": "Bitte wählen Sie einen Benutzer aus",
       "addError": "Referent konnte nicht hinzugefügt werden",
       "removeError": "Referent konnte nicht entfernt werden",
+      "setPrimaryError": "Hauptreferent konnte nicht festgelegt werden",
       "roles": {
         "PRIMARY_SPEAKER": "Hauptreferent",
         "CO_SPEAKER": "Co-Referent",

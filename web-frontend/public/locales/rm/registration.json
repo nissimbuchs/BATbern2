@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Annullaziun da vossa inscripziun...",
+      "message": "Sper plaschair spetgai entant che nus tractain vossa annullaziun."
+    },
+    "success": {
+      "title": "Inscripziun annullada",
+      "subtitle": "Vossa inscripziun è vegnida annullada cun success",
+      "whatHappened": "Tge è capità?",
+      "permanentDeletion": "Stritgament permanent",
+      "permanentDeletionText": "Vossa inscripziun è vegnida stritgada permanentamain da noss sistem.",
+      "noFurtherAction": "Nagina ulteriura acziun",
+      "noFurtherActionText": "Vus na retschavrais naginas ulteriuras communicaziuns davart quest eveniment.",
+      "registerAgain": "Inscriver anc ina giada",
+      "registerAgainText": "Sche vus cambiads l'opiniun, pudais vus vus inscriver anc ina giada en tut mument avant l'eveniment.",
+      "backToHome": "Turnar a la pagina principala",
+      "registerForAnother": "Inscriver per in auter eveniment"
+    },
+    "error": {
+      "title": "Annullaziun betg reussida",
+      "subtitle": "Impussibel dad annullar vossa inscripziun",
+      "whatCanYouDo": "Tge pudais vus far?",
+      "checkLink": "Controllescha sche vus avais clicà sin il link correct da vossa email",
+      "expired": "Links d'annullaziun expireschan suenter 48 uras",
+      "alreadyCancelled": "L'inscripziun vegn eventualmain gia ad esser annullada",
+      "useLatestEmail": "Assegurais vus dad utilisar l'ultima email",
+      "contactSupport": "Contactescha il support sche il problem persista",
+      "errors": {
+        "expired": "Il link d'annullaziun è expireschaus (valid per 48 uras).",
+        "invalid": "Link d'annullaziun nunvalid. Sper plaschair controllescha vossa email per il link correct.",
+        "notFound": "Inscripziun betg chattada u gia annullada.",
+        "default": "Betg reussì dad annullar l'inscripziun. Sper plaschair empruvai anc ina giada u contactescha il support."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirmaziun da vossa inscripziun...",
+      "message": "Sper plaschair spetgai entant che nus tractain vossa confirmaziun."
+    },
+    "success": {
+      "title": "Inscripziun confirmada!",
+      "subtitle": "Vus essas pronts per l'eveniment",
+      "whatsNext": "Tge suonda?",
+      "checkIn": "Check-in tar l'eveniment",
+      "checkInText": "Presentescha voss document d'identitad al maletg da l'eveniment per il check-in. Nus avain vossa inscripziun confirmada en noss sistem.",
+      "eventDetails": "Detagls da l'eveniment",
+      "eventDetailsText": "Vus retschavrais actualisaziuns ed admoniments davart l'eveniment via email.",
+      "backToHome": "Turnar a la pagina principala",
+      "createAccount": "Crear in conto per administrar las inscripziuns"
+    },
+    "alreadyConfirmed": {
+      "title": "Gia confirmada",
+      "subtitle": "Questa inscripziun è gia vegnida confirmada",
+      "message": "Vossa inscripziun è vegnida confirmada anteriurmain. Nagina ulteriura acziun è necessaria.",
+      "backToHome": "Turnar a la pagina principala"
+    },
+    "error": {
+      "title": "Confirmaziun betg reussida",
+      "subtitle": "Impussibel da confermar vossa inscripziun",
+      "whatCanYouDo": "Tge pudais vus far?",
+      "checkLink": "Controllescha sche vus avais clicà sin il link correct da vossa email",
+      "expired": "Links da confirmaziun expireschan suenter 48 uras - forsa dovais vus vus inscriver anc ina giada",
+      "useLatestEmail": "Assegurais vus dad utilisar l'ultima email da confirmaziun",
+      "contactSupport": "Contactescha il support sche il problem persista",
+      "backToHome": "Turnar a la pagina principala",
+      "registerAgain": "Inscriver anc ina giada",
+      "errors": {
+        "expired": "Il link da confirmaziun è expireschaus. Sper plaschair inscrivai vus anc ina giada.",
+        "invalid": "Link da confirmaziun nunvalid. Sper plaschair controllescha vossa email per il link correct.",
+        "default": "Betg reussì da confermar l'inscripziun. Sper plaschair empruvai anc ina giada u contactescha il support."
+      }
+    }
+  }
+}

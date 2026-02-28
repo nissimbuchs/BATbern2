@@ -1,0 +1,294 @@
+{
+  "title": "Gebruikersbeheer",
+  "addUser": "Gebruiker toevoegen",
+  "back": "Terug",
+  "search": {
+    "placeholder": "Zoeken op naam of e-mail...",
+    "noResults": "Geen gebruikers gevonden",
+    "clearFilters": "Filters wissen"
+  },
+  "viewMode": {
+    "toggle": "Weergavemodus wisselen",
+    "grid": "Rasterweergave",
+    "list": "Lijstweergave"
+  },
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Alle filters wissen",
+    "role": {
+      "label": "Rol",
+      "all": "Alle rollen",
+      "organizer": "Organisator",
+      "speaker": "Spreker",
+      "partner": "Partner",
+      "attendee": "Deelnemer"
+    },
+    "company": {
+      "label": "Bedrijf",
+      "all": "Alle bedrijven",
+      "placeholder": "Selecteer bedrijf..."
+    },
+    "status": {
+      "label": "Status",
+      "active": "Actief",
+      "inactive": "Inactief",
+      "all": "Alle"
+    }
+  },
+  "table": {
+    "viewUser": "Gebruiker {{name}} bekijken",
+    "headers": {
+      "name": "Naam",
+      "email": "E-mail",
+      "company": "Bedrijf",
+      "roles": "Rollen",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "showing": "{{count}} gebruikers weergegeven",
+    "showingRange": "{{from}}-{{to}} van {{total}} gebruikers",
+    "perPage": "per pagina",
+    "empty": "Geen gebruikers gevonden",
+    "emptySearch": "Geen gebruikers komen overeen met uw zoekopdracht. Probeer de filters te wissen.",
+    "sortBy": "Sorteren op",
+    "ascending": "Oplopend",
+    "descending": "Aflopend"
+  },
+  "actions": {
+    "view": "Bekijken",
+    "editRoles": "Rollen bewerken",
+    "delete": "Verwijderen",
+    "retry": "Opnieuw proberen",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "edit": "Bewerken",
+    "confirm": "Bevestigen"
+  },
+  "roles": {
+    "organizer": "Organisator",
+    "speaker": "Spreker",
+    "partner": "Partner",
+    "attendee": "Deelnemer",
+    "multiple": "{{count}} rollen"
+  },
+  "status": {
+    "active": "Actief",
+    "inactive": "Inactief"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Gebruikersdetails",
+      "profile": "Profiel",
+      "contactInfo": "Contactgegevens",
+      "rolesAssigned": "Toegewezen rollen",
+      "companyAffiliation": "Bedrijfsaffiliatie",
+      "activityHistory": "Activiteitsgeschiedenis",
+      "accountCreated": "Account aangemaakt",
+      "createdAt": "Aangemaakt op",
+      "updatedAt": "Laatst bijgewerkt",
+      "lastLogin": "Laatste aanmelding",
+      "noCompany": "Geen bedrijf toegewezen",
+      "noActivity": "Geen activiteit beschikbaar"
+    },
+    "createUser": {
+      "title": "Nieuwe gebruiker aanmaken",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "email": "E-mail",
+      "company": "Bedrijf (optioneel)",
+      "roles": "Rollen",
+      "selectRoles": "Selecteer minimaal één rol",
+      "creating": "Aanmaken..."
+    },
+    "editRoles": {
+      "title": "Rollen bewerken",
+      "subtitle": "Rollen beheren voor {{name}}",
+      "user": "Gebruiker",
+      "selectRoles": "Rollen selecteren",
+      "minimumOrganizers": "Er moeten minimaal {{count}} organisatoren in het systeem zijn",
+      "cannotRemove": "Deze rol kan niet worden verwijderd",
+      "updating": "Bijwerken...",
+      "saving": "Opslaan..."
+    },
+    "deleteConfirm": {
+      "title": "Gebruiker verwijderen",
+      "message": "Weet u zeker dat u deze gebruiker wilt verwijderen?",
+      "userName": "Gebruiker: {{name}}",
+      "gdprWarning": "AVG-kennisgeving: Deze actie verwijdert alle gebruikersgegevens permanent en kan niet ongedaan worden gemaakt.",
+      "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd.",
+      "cannotDelete": "Deze gebruiker kan niet worden verwijderd",
+      "lastOrganizerWarning": "U kunt de laatste organisator niet verwijderen. Er moeten minimaal {{count}} organisatoren in het systeem zijn.",
+      "deleting": "Verwijderen..."
+    }
+  },
+  "pagination": {
+    "previous": "Vorige",
+    "next": "Volgende",
+    "page": "Pagina {{page}} van {{total}}",
+    "itemsPerPage": "Items per pagina",
+    "goToPage": "Ga naar pagina"
+  },
+  "loading": {
+    "users": "Gebruikers laden...",
+    "search": "Zoeken...",
+    "delete": "Verwijderen...",
+    "save": "Opslaan...",
+    "updating": "Bijwerken..."
+  },
+  "error": {
+    "required": "Dit veld is verplicht",
+    "email": {
+      "invalid": "Ongeldig e-mailadres",
+      "exists": "E-mailadres bestaat al",
+      "required": "E-mail is verplicht"
+    },
+    "name": {
+      "tooShort": "Naam moet minimaal {{min}} tekens bevatten",
+      "tooLong": "Naam mag niet meer dan {{max}} tekens bevatten"
+    },
+    "roles": {
+      "required": "Minimaal één rol is vereist",
+      "minOrganizers": "Er moeten minimaal {{count}} organisatoren in het systeem zijn"
+    },
+    "minOneRole": "Er moet minimaal één rol worden geselecteerd",
+    "loadFailed": "Laden van gebruikers mislukt",
+    "createFailed": "Aanmaken van gebruiker mislukt",
+    "updateFailed": "Bijwerken van gebruiker mislukt",
+    "deleteFailed": "Verwijderen van gebruiker mislukt",
+    "deleteLastOrganizer": "Kan de laatste organisator niet verwijderen",
+    "networkError": "Netwerkfout. Controleer uw verbinding.",
+    "unauthorized": "U bent niet gemachtigd om deze actie uit te voeren",
+    "notFound": "Gebruiker niet gevonden"
+  },
+  "success": {
+    "userCreated": "Gebruiker succesvol aangemaakt",
+    "userUpdated": "Gebruiker succesvol bijgewerkt",
+    "userDeleted": "Gebruiker succesvol verwijderd",
+    "rolesUpdated": "Rollen succesvol bijgewerkt"
+  },
+  "emptyState": {
+    "title": "Geen gebruikers",
+    "description": "Er zijn nog geen gebruikers toegevoegd.",
+    "action": "Eerste gebruiker toevoegen"
+  },
+  "accessibility": {
+    "filterPanel": "Filterpaneel",
+    "userTable": "Gebruikerstabel",
+    "sortAscending": "Oplopend sorteren",
+    "sortDescending": "Aflopend sorteren",
+    "openMenu": "Menu openen",
+    "closeModal": "Modaalvenster sluiten",
+    "rowCount": "{{count}} gebruikers in tabel"
+  },
+  "offline": {
+    "indicator": "Offline",
+    "message": "U bent offline. Sommige functies zijn mogelijk niet beschikbaar.",
+    "viewingCache": "Gecachede gegevens bekijken"
+  },
+  "batchImport": {
+    "button": "Sprekers importeren",
+    "title": "Sprekers bulkimport",
+    "dropzone": "Zet speakers.json hier neer of klik om te bladeren",
+    "dropzoneActive": "Zet het bestand hier neer...",
+    "dropzoneHint": "Upload speakers.json vanuit apps/BATspa-old/src/api/",
+    "preview": "{{count}} sprekers te importeren",
+    "progress": "Spreker {{current}} van {{total}} importeren...",
+    "complete": "Import voltooid: {{success}} aangemaakt, {{updated}} bijgewerkt, {{failed}} mislukt, {{skipped}} overgeslagen",
+    "noSpeakers": "Geen sprekers gevonden in het bestand",
+    "checkingExisting": "Bestaande gebruikers controleren...",
+    "summary": "{{total}} sprekers: {{new}} nieuw, {{update}} bij te werken, {{skip}} ongewijzigd",
+    "cancelButton": "Annuleren",
+    "importButton": "{{new}} aanmaken / {{update}} bijwerken",
+    "allSkipped": "Geen wijzigingen te importeren",
+    "columns": {
+      "name": "Naam",
+      "email": "E-mail",
+      "company": "Bedrijf",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "Nieuw",
+      "importing": "Importeren...",
+      "success": "Aangemaakt",
+      "updated": "Bijgewerkt",
+      "error": "Fout",
+      "skipped": "Overgeslagen",
+      "noChanges": "Geen wijzigingen",
+      "willUpdate": "Wordt bijgewerkt: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Ongeldig bestand. Upload een JSON-bestand.",
+      "parseError": "Bestand kon niet worden geparseerd: {{error}}"
+    },
+    "hasPortrait": "Heeft portretafbeelding",
+    "noPortrait": "Geen portretafbeelding"
+  },
+  "participantImport": {
+    "button": "Deelnemers importeren",
+    "title": "Deelnemers importeren vanuit CSV",
+    "dropzone": "Sleep CSV-bestand hier naartoe",
+    "dropzoneActive": "Laat CSV-bestand hier vallen",
+    "dropzoneHint": "of klik om bestand te selecteren",
+    "fileLoaded": "Bestand geladen: {{name}} ({{size}} KB)",
+    "preview": "Voorbeeld: {{count}} deelnemers klaar om te importeren",
+    "previewLimitation": "Let op: Voorbeeld toont bestaande gebruikers alleen op basis van gebruikersnaam. Tijdens het importeren kunnen gebruikers ook worden gekoppeld op naam (voor- + achternaam) als dat ondubbelzinnig is. Sommige deelnemers die als 'Nieuw' worden weergegeven, kunnen overeenkomen met bestaande gebruikers op naam.",
+    "importButton": "{{count}} deelnemers importeren",
+    "startImport": "Import starten",
+    "progress": "Importeren: {{current}} / {{total}}",
+    "summary": "Importoverzicht",
+    "columns": {
+      "name": "Naam",
+      "email": "E-mail",
+      "events": "Evenementen",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "In behandeling",
+      "importing": "Importeren",
+      "success": "Geslaagd",
+      "error": "Mislukt",
+      "skipped": "Overgeslagen"
+    },
+    "stats": {
+      "total": "Totaal: {{count}}",
+      "success": "Geslaagd: {{count}}",
+      "failed": "Mislukt: {{count}}",
+      "pending": "In behandeling: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthetisch",
+      "eventsCount": "{{count}} evenementen"
+    },
+    "noParticipants": "Deze gebruiker heeft nog niet deelgenomen aan evenementen.",
+    "loadingEvents": "Evenementen laden...",
+    "errorLoadingEvents": "Laden van evenementdeelnames mislukt"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Overzicht",
+      "eventsParticipated": "Bijgewoonde evenementen"
+    },
+    "overviewText": "Overzicht van gebruikersprofiel. Hier kan aanvullende informatie worden toegevoegd.",
+    "eventsTable": {
+      "eventCode": "Evenementcode",
+      "title": "Titel",
+      "date": "Datum",
+      "status": "Status",
+      "loading": "Evenementen laden...",
+      "loadError": "Laden van evenementdeelnamegeschiedenis mislukt",
+      "noEvents": "Deze gebruiker heeft nog niet deelgenomen aan evenementen",
+      "untitledEvent": "Naamloos evenement",
+      "dateTBD": "Nader te bepalen",
+      "ariaLabel": "Tabel van evenementen waaraan de gebruiker heeft deelgenomen",
+      "statusValues": {
+        "REGISTERED": "Geregistreerd",
+        "CONFIRMED": "Bevestigd",
+        "ATTENDED": "Bijgewoond",
+        "CANCELLED": "Geannuleerd",
+        "WAITLISTED": "Op wachtlijst"
+      }
+    },
+    "bio": "Biografie"
+  }
+}

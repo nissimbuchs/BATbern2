@@ -4,13 +4,26 @@ import { Select, MenuItem, Box, SelectChangeEvent } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
 import { updateUserPreferences } from '../../../services/api/userApi';
 import { useAuth } from '../../../hooks/useAuth';
+import type { UpdatePreferencesRequest } from '../../../types/user';
 
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
 
+  const languages = [
+    { code: 'de', label: 'DE — Deutsch' },
+    { code: 'en', label: 'EN — English' },
+    { code: 'fr', label: 'FR — Français' },
+    { code: 'it', label: 'IT — Italiano' },
+    { code: 'rm', label: 'RM — Rumantsch' },
+    { code: 'es', label: 'ES — Español' },
+    { code: 'fi', label: 'FI — Suomi' },
+    { code: 'nl', label: 'NL — Nederlands' },
+    { code: 'ja', label: 'JA — 日本語' },
+  ];
+
   const handleLanguageChange = async (event: SelectChangeEvent<string>) => {
-    const newLang = event.target.value as 'de' | 'en';
+    const newLang = event.target.value;
     await i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
@@ -18,7 +31,7 @@ const LanguageSwitcher: React.FC = () => {
     // Persist to API only if authenticated (backend is ready, Story 2.6)
     if (isAuthenticated) {
       try {
-        await updateUserPreferences({ language: newLang });
+        await updateUserPreferences({ language: newLang as UpdatePreferencesRequest['language'] });
         console.log('[LanguageSwitcher] Language preference saved to backend');
       } catch (error) {
         console.error('[LanguageSwitcher] Failed to persist language preference:', error);
@@ -36,11 +49,14 @@ const LanguageSwitcher: React.FC = () => {
         value={i18n.language}
         onChange={handleLanguageChange}
         size="small"
-        sx={{ minWidth: 100 }}
+        sx={{ minWidth: 160 }}
         inputProps={{ 'aria-label': 'Language selector' }}
       >
-        <MenuItem value="de">DE</MenuItem>
-        <MenuItem value="en">EN</MenuItem>
+        {languages.map(({ code, label }) => (
+          <MenuItem key={code} value={code}>
+            {label}
+          </MenuItem>
+        ))}
       </Select>
     </Box>
   );

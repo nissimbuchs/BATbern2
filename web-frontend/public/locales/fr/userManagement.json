@@ -1,0 +1,294 @@
+{
+  "title": "Gestion des utilisateurs",
+  "addUser": "Ajouter un utilisateur",
+  "back": "Retour",
+  "search": {
+    "placeholder": "Rechercher par nom ou e-mail...",
+    "noResults": "Aucun utilisateur trouvé",
+    "clearFilters": "Effacer les filtres"
+  },
+  "viewMode": {
+    "toggle": "Basculer le mode d'affichage",
+    "grid": "Vue en grille",
+    "list": "Vue en liste"
+  },
+  "filters": {
+    "title": "Filtres",
+    "clearAll": "Effacer tous les filtres",
+    "role": {
+      "label": "Rôle",
+      "all": "Tous les rôles",
+      "organizer": "Organisateur",
+      "speaker": "Intervenant",
+      "partner": "Partenaire",
+      "attendee": "Participant"
+    },
+    "company": {
+      "label": "Entreprise",
+      "all": "Toutes les entreprises",
+      "placeholder": "Sélectionner une entreprise..."
+    },
+    "status": {
+      "label": "Statut",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "all": "Tous"
+    }
+  },
+  "table": {
+    "viewUser": "Voir l'utilisateur {{name}}",
+    "headers": {
+      "name": "Nom",
+      "email": "E-mail",
+      "company": "Entreprise",
+      "roles": "Rôles",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "showing": "Affichage de {{count}} utilisateurs",
+    "showingRange": "{{from}}-{{to}} sur {{total}} utilisateurs",
+    "perPage": "par page",
+    "empty": "Aucun utilisateur trouvé",
+    "emptySearch": "Aucun utilisateur ne correspond à votre recherche. Essayez d'effacer les filtres.",
+    "sortBy": "Trier par",
+    "ascending": "Croissant",
+    "descending": "Décroissant"
+  },
+  "actions": {
+    "view": "Voir",
+    "editRoles": "Modifier les rôles",
+    "delete": "Supprimer",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "edit": "Modifier",
+    "confirm": "Confirmer"
+  },
+  "roles": {
+    "organizer": "Organisateur",
+    "speaker": "Intervenant",
+    "partner": "Partenaire",
+    "attendee": "Participant",
+    "multiple": "{{count}} rôles"
+  },
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Détails de l'utilisateur",
+      "profile": "Profil",
+      "contactInfo": "Coordonnées",
+      "rolesAssigned": "Rôles attribués",
+      "companyAffiliation": "Affiliation à l'entreprise",
+      "activityHistory": "Historique d'activité",
+      "accountCreated": "Compte créé",
+      "createdAt": "Créé le",
+      "updatedAt": "Dernière mise à jour",
+      "lastLogin": "Dernière connexion",
+      "noCompany": "Aucune entreprise attribuée",
+      "noActivity": "Aucune activité disponible"
+    },
+    "createUser": {
+      "title": "Créer un nouvel utilisateur",
+      "firstName": "Prénom",
+      "lastName": "Nom de famille",
+      "email": "E-mail",
+      "company": "Entreprise (optionnel)",
+      "roles": "Rôles",
+      "selectRoles": "Sélectionnez au moins un rôle",
+      "creating": "Création en cours..."
+    },
+    "editRoles": {
+      "title": "Modifier les rôles",
+      "subtitle": "Gérer les rôles pour {{name}}",
+      "user": "Utilisateur",
+      "selectRoles": "Sélectionner les rôles",
+      "minimumOrganizers": "Il doit y avoir au moins {{count}} organisateurs dans le système",
+      "cannotRemove": "Ce rôle ne peut pas être supprimé",
+      "updating": "Mise à jour...",
+      "saving": "Enregistrement..."
+    },
+    "deleteConfirm": {
+      "title": "Supprimer l'utilisateur",
+      "message": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+      "userName": "Utilisateur : {{name}}",
+      "gdprWarning": "Avis RGPD : Cette action supprimera définitivement toutes les données de l'utilisateur et ne peut pas être annulée.",
+      "cascadeWarning": "Toutes les données associées seront également supprimées.",
+      "cannotDelete": "Cet utilisateur ne peut pas être supprimé",
+      "lastOrganizerWarning": "Vous ne pouvez pas supprimer le dernier organisateur. Il doit y avoir au moins {{count}} organisateurs dans le système.",
+      "deleting": "Suppression..."
+    }
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page {{page}} sur {{total}}",
+    "itemsPerPage": "Éléments par page",
+    "goToPage": "Aller à la page"
+  },
+  "loading": {
+    "users": "Chargement des utilisateurs...",
+    "search": "Recherche en cours...",
+    "delete": "Suppression en cours...",
+    "save": "Enregistrement en cours...",
+    "updating": "Mise à jour en cours..."
+  },
+  "error": {
+    "required": "Ce champ est obligatoire",
+    "email": {
+      "invalid": "Adresse e-mail invalide",
+      "exists": "L'adresse e-mail existe déjà",
+      "required": "L'e-mail est obligatoire"
+    },
+    "name": {
+      "tooShort": "Le nom doit comporter au moins {{min}} caractères",
+      "tooLong": "Le nom ne doit pas dépasser {{max}} caractères"
+    },
+    "roles": {
+      "required": "Au moins un rôle est requis",
+      "minOrganizers": "Il doit y avoir au moins {{count}} organisateurs dans le système"
+    },
+    "minOneRole": "Au moins un rôle doit être sélectionné",
+    "loadFailed": "Échec du chargement des utilisateurs",
+    "createFailed": "Échec de la création de l'utilisateur",
+    "updateFailed": "Échec de la mise à jour de l'utilisateur",
+    "deleteFailed": "Échec de la suppression de l'utilisateur",
+    "deleteLastOrganizer": "Impossible de supprimer le dernier organisateur",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action",
+    "notFound": "Utilisateur introuvable"
+  },
+  "success": {
+    "userCreated": "Utilisateur créé avec succès",
+    "userUpdated": "Utilisateur mis à jour avec succès",
+    "userDeleted": "Utilisateur supprimé avec succès",
+    "rolesUpdated": "Rôles mis à jour avec succès"
+  },
+  "emptyState": {
+    "title": "Aucun utilisateur",
+    "description": "Aucun utilisateur n'a encore été ajouté.",
+    "action": "Ajouter le premier utilisateur"
+  },
+  "accessibility": {
+    "filterPanel": "Panneau de filtres",
+    "userTable": "Tableau des utilisateurs",
+    "sortAscending": "Trier par ordre croissant",
+    "sortDescending": "Trier par ordre décroissant",
+    "openMenu": "Ouvrir le menu",
+    "closeModal": "Fermer la fenêtre modale",
+    "rowCount": "{{count}} utilisateurs dans le tableau"
+  },
+  "offline": {
+    "indicator": "Hors ligne",
+    "message": "Vous êtes hors ligne. Certaines fonctionnalités peuvent ne pas être disponibles.",
+    "viewingCache": "Affichage des données en cache"
+  },
+  "batchImport": {
+    "button": "Importer des intervenants",
+    "title": "Importation groupée d'intervenants",
+    "dropzone": "Déposez speakers.json ici ou cliquez pour parcourir",
+    "dropzoneActive": "Déposez le fichier ici...",
+    "dropzoneHint": "Téléchargez speakers.json depuis apps/BATspa-old/src/api/",
+    "preview": "{{count}} intervenants à importer",
+    "progress": "Importation de l'intervenant {{current}} sur {{total}}...",
+    "complete": "Importation terminée : {{success}} créés, {{updated}} mis à jour, {{failed}} échoués, {{skipped}} ignorés",
+    "noSpeakers": "Aucun intervenant trouvé dans le fichier",
+    "checkingExisting": "Vérification des utilisateurs existants...",
+    "summary": "{{total}} intervenants : {{new}} nouveaux, {{update}} à mettre à jour, {{skip}} inchangés",
+    "cancelButton": "Annuler",
+    "importButton": "Créer {{new}} / Mettre à jour {{update}}",
+    "allSkipped": "Aucun changement à importer",
+    "columns": {
+      "name": "Nom",
+      "email": "E-mail",
+      "company": "Entreprise",
+      "status": "Statut"
+    },
+    "status": {
+      "pending": "Nouveau",
+      "importing": "Importation...",
+      "success": "Créé",
+      "updated": "Mis à jour",
+      "error": "Erreur",
+      "skipped": "Ignoré",
+      "noChanges": "Aucun changement",
+      "willUpdate": "Sera mis à jour : {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Fichier invalide. Veuillez télécharger un fichier JSON.",
+      "parseError": "Échec de l'analyse du fichier : {{error}}"
+    },
+    "hasPortrait": "Possède une image de portrait",
+    "noPortrait": "Aucune image de portrait"
+  },
+  "participantImport": {
+    "button": "Importer des participants",
+    "title": "Importer des participants depuis un CSV",
+    "dropzone": "Glissez-déposez le fichier CSV ici",
+    "dropzoneActive": "Déposez le fichier CSV ici",
+    "dropzoneHint": "ou cliquez pour sélectionner un fichier",
+    "fileLoaded": "Fichier chargé : {{name}} ({{size}} Ko)",
+    "preview": "Aperçu : {{count}} participants prêts à importer",
+    "previewLimitation": "Remarque : L'aperçu affiche les utilisateurs existants par correspondance de nom d'utilisateur uniquement. Lors de l'importation, les utilisateurs peuvent également être mis en correspondance par nom (prénom + nom) si c'est non ambigu. Certains participants affichés comme « Nouveau » peuvent correspondre à des utilisateurs existants par nom.",
+    "importButton": "Importer {{count}} participants",
+    "startImport": "Démarrer l'importation",
+    "progress": "Importation : {{current}} / {{total}}",
+    "summary": "Résumé de l'importation",
+    "columns": {
+      "name": "Nom",
+      "email": "E-mail",
+      "events": "Événements",
+      "status": "Statut"
+    },
+    "status": {
+      "pending": "En attente",
+      "importing": "Importation",
+      "success": "Succès",
+      "error": "Échec",
+      "skipped": "Ignoré"
+    },
+    "stats": {
+      "total": "Total : {{count}}",
+      "success": "Succès : {{count}}",
+      "failed": "Échec : {{count}}",
+      "pending": "En attente : {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthétique",
+      "eventsCount": "{{count}} événements"
+    },
+    "noParticipants": "Cet utilisateur n'a encore participé à aucun événement.",
+    "loadingEvents": "Chargement des événements...",
+    "errorLoadingEvents": "Échec du chargement des participations aux événements"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Aperçu",
+      "eventsParticipated": "Événements auxquels il a participé"
+    },
+    "overviewText": "Aperçu du profil utilisateur. Des informations supplémentaires peuvent être ajoutées ici.",
+    "eventsTable": {
+      "eventCode": "Code de l'événement",
+      "title": "Titre",
+      "date": "Date",
+      "status": "Statut",
+      "loading": "Chargement des événements...",
+      "loadError": "Échec du chargement de l'historique de participation aux événements",
+      "noEvents": "Cet utilisateur n'a encore participé à aucun événement",
+      "untitledEvent": "Événement sans titre",
+      "dateTBD": "À déterminer",
+      "ariaLabel": "Tableau des événements auxquels l'utilisateur a participé",
+      "statusValues": {
+        "REGISTERED": "Inscrit",
+        "CONFIRMED": "Confirmé",
+        "ATTENDED": "Présent",
+        "CANCELLED": "Annulé",
+        "WAITLISTED": "Sur liste d'attente"
+      }
+    },
+    "bio": "Biographie"
+  }
+}

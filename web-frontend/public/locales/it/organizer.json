@@ -1,0 +1,469 @@
+{
+  "navigation": {
+    "partners": "Partner",
+    "speakerOutreach": "Contatto relatori",
+    "topicManagement": "Gestione argomenti"
+  },
+  "dashboard": {
+    "criticalTasks": "Attività critiche",
+    "noCriticalTasks": "Nessuna attività critica",
+    "greatJob": "Ottimo lavoro!",
+    "taskCount": "{{count}} attività",
+    "taskCount_plural": "{{count}} attività",
+    "dueDate": "Scadenza",
+    "assignedTo": "Assegnato a {{name}}",
+    "confirmAction": "Conferma azione",
+    "areYouSure": "Sei sicuro di voler eseguire questa azione?"
+  },
+  "topicBacklog": {
+    "pageTitle": "Gestione argomenti",
+    "pageDescription": "Gestisci gli argomenti in backlog, seleziona argomenti per gli eventi e analizza i modelli di utilizzo",
+    "title": "Gestione backlog argomenti",
+    "subtitle": "Seleziona argomenti dal backlog con suggerimenti intelligenti e rilevamento obsolescenza",
+    "selectPrompt": "Seleziona un argomento per visualizzare i dettagli",
+    "noTopics": "Nessun argomento trovato corrispondente ai filtri",
+    "lastUsed": "Ultimo utilizzo",
+    "usageCount": "Utilizzato {{count}} volte",
+    "createNew": "Crea nuovo argomento",
+    "breadcrumbs": {
+      "home": "Home",
+      "events": "Eventi",
+      "topicSelection": "Selezione argomento",
+      "manageTopics": "Gestisci argomenti"
+    },
+    "error": {
+      "loadFailed": "Caricamento argomenti non riuscito"
+    },
+    "createModal": {
+      "title": "Crea nuovo argomento",
+      "fields": {
+        "title": "Titolo",
+        "description": "Descrizione",
+        "category": "Categoria",
+        "categoryHint": "es. tecnico, business, design"
+      },
+      "errors": {
+        "titleRequired": "Il titolo è obbligatorio",
+        "titleTooLong": "Il titolo deve contenere al massimo 255 caratteri",
+        "descriptionRequired": "La descrizione è obbligatoria",
+        "categoryRequired": "La categoria è obbligatoria",
+        "createFailed": "Creazione argomento non riuscita. Riprova."
+      },
+      "create": "Crea argomento",
+      "creating": "Creazione in corso..."
+    },
+    "editModal": {
+      "title": "Modifica argomento",
+      "fields": {
+        "title": "Titolo",
+        "description": "Descrizione",
+        "category": "Categoria"
+      },
+      "errors": {
+        "titleRequired": "Il titolo è obbligatorio",
+        "titleTooLong": "Il titolo deve contenere al massimo 255 caratteri",
+        "categoryRequired": "La categoria è obbligatoria",
+        "updateFailed": "Aggiornamento argomento non riuscito. Riprova."
+      },
+      "save": "Salva modifiche",
+      "saving": "Salvataggio..."
+    },
+    "filters": {
+      "title": "Filtri",
+      "category": "Categoria",
+      "status": "Stato",
+      "sort": "Ordina per",
+      "all": "Tutte le categorie",
+      "allStatuses": "Tutti gli stati",
+      "categories": {
+        "technical": "Tecnico",
+        "management": "Management",
+        "softSkills": "Competenze trasversali",
+        "industryTrends": "Tendenze del settore",
+        "toolsPlatforms": "Strumenti e piattaforme"
+      },
+      "statuses": {
+        "available": "Disponibile (verde)",
+        "caution": "Usare con cautela (giallo)",
+        "unavailable": "Troppo recente (rosso)"
+      },
+      "sortOptions": {
+        "safestFirst": "Più sicuro prima (obsolescenza ↓)",
+        "recentFirst": "Più recente prima (obsolescenza ↑)",
+        "titleAZ": "Titolo (A-Z)",
+        "mostUsed": "Più utilizzato"
+      }
+    },
+    "details": {
+      "metrics": "Metriche",
+      "lastUsed": "Ultimo utilizzo",
+      "usageCount": "Numero di utilizzi",
+      "editButton": "Modifica argomento",
+      "deleteButton": "Elimina argomento",
+      "selectButton": "Seleziona per l'evento",
+      "selecting": "Selezione in corso...",
+      "overrideButton": "Ignora avviso",
+      "statusGreen": "Sicuro da riutilizzare - ultimo utilizzo oltre 20 mesi fa",
+      "statusYellow": "Usare con cautela - ultimo utilizzo 12-20 mesi fa",
+      "statusRed": "Troppo recente - ultimo utilizzo negli ultimi 12 mesi, alto rischio di duplicazione",
+      "similarityWarning": "{{count}} argomenti simili rilevati (somiglianza > 70%)"
+    },
+    "viewMode": {
+      "label": "Modalità di visualizzazione",
+      "heatMap": "Mappa di calore",
+      "list": "Elenco",
+      "board": "Bacheca",
+      "boardComingSoon": "Vista bacheca disponibile a breve..."
+    },
+    "heatMap": {
+      "title": "Mappa di calore utilizzo argomenti",
+      "subtitle": "Colori più scuri indicano un utilizzo maggiore. Clicca su un argomento per visualizzare i dettagli.",
+      "description": "Frequenza di utilizzo degli argomenti negli ultimi 24 mesi (raggruppati per trimestre)",
+      "quarter": "Trimestre",
+      "spring": "Primavera",
+      "summer": "Estate",
+      "autumn": "Autunno",
+      "usageCount": "Numero di utilizzi",
+      "totalAttendance": "Presenze totali",
+      "avgEngagement": "Coinvolgimento medio",
+      "events": "Eventi",
+      "noData": "Nessuna cronologia di utilizzo disponibile per questo argomento.",
+      "noTopics": "Nessun argomento disponibile da visualizzare.",
+      "tooltip": "Clicca su un trimestre per vedere i dettagli degli eventi che hanno utilizzato questo argomento",
+      "hint": "Passa il cursore sui punti dati per ulteriori informazioni",
+      "stale": "Obsoleto - non utilizzato di recente",
+      "trending": "In tendenza - utilizzato di recente",
+      "legend": {
+        "noUsage": "Nessun utilizzo",
+        "low": "Utilizzo basso",
+        "medium": "Utilizzo medio",
+        "high": "Utilizzo alto",
+        "stale": "Obsoleto",
+        "trending": "In tendenza"
+      },
+      "navigation": {
+        "previous": "Anni precedenti",
+        "next": "Anni successivi",
+        "atCurrent": "All'anno corrente"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Argomenti simili rilevati",
+        "message": "I seguenti argomenti presentano un'elevata somiglianza (> 70%) con la tua selezione. Sei sicuro di voler procedere?",
+        "similarity": "Somiglianza",
+        "justification": "Giustificazione (opzionale)",
+        "cancel": "Annulla",
+        "confirm": "Seleziona comunque"
+      },
+      "override": {
+        "title": "Ignora avviso obsolescenza",
+        "message": "Questo argomento è stato utilizzato di recente (punteggio obsolescenza: {{score}}%). Fornisci una giustificazione per utilizzarlo di nuovo.",
+        "justification": "Giustificazione",
+        "helper": "Spiega perché questo argomento dovrebbe essere riutilizzato nonostante sia recente",
+        "cancel": "Annulla",
+        "confirm": "Ignora e seleziona"
+      },
+      "delete": {
+        "title": "Elimina argomento",
+        "message": "Sei sicuro di voler eliminare \"{{title}}\"? Questa azione non può essere annullata.",
+        "cannotDelete": "Impossibile eliminare questo argomento perché è stato utilizzato in {{count}} evento/i.",
+        "cancel": "Annulla",
+        "confirm": "Elimina argomento",
+        "deleting": "Eliminazione in corso...",
+        "success": "Argomento eliminato con successo",
+        "error": "Eliminazione argomento non riuscita. Riprova."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Brainstorming relatori",
+    "subtitle": "Aggiungi potenziali relatori al pool dell'evento e assegnali agli organizzatori per il contatto",
+    "form": {
+      "speakerName": "Nome del relatore",
+      "company": "Azienda",
+      "expertise": "Competenza",
+      "assignOrganizer": "Assegna a un organizzatore (opzionale)",
+      "unassigned": "Non assegnato",
+      "notes": "Note (opzionale)",
+      "addButton": "Aggiungi al pool",
+      "adding": "Aggiunta in corso...",
+      "error": "Aggiunta relatore non riuscita"
+    },
+    "pool": {
+      "title": "Pool relatori",
+      "empty": "Nessun relatore nel pool. Aggiungine qualcuno qui sopra!",
+      "expertise": "Competenza",
+      "assigned": "Assegnato a",
+      "notes": "Note",
+      "error": "Caricamento pool relatori non riuscito"
+    },
+    "actions": {
+      "skipForNow": "Salta per ora",
+      "continue": "Continua al contatto"
+    }
+  },
+  "speakerOutreach": {
+    "title": "Contatto relatori",
+    "subtitle": "Tieni traccia delle attività di contatto con i relatori e coordina con gli altri organizzatori",
+    "breadcrumbs": {
+      "home": "Home",
+      "speakerOutreach": "Contatto relatori"
+    },
+    "emptyPool": {
+      "message": "Devi aggiungere relatori al pool prima di iniziare il contatto.",
+      "hint": "Torna alla fase di pianificazione dell'evento per aggiungere relatori potenziali.",
+      "addSpeakers": "Aggiungi relatori al pool"
+    },
+    "showBrainstorm": "Aggiungi relatori",
+    "hideBrainstorm": "Nascondi aggiunta relatori",
+    "speakerName": "Relatore",
+    "contactMethod": "Metodo di contatto",
+    "contactDate": "Data di contatto",
+    "notes": "Note",
+    "markContacted": "Segna come contattato",
+    "filterByOrganizer": "Filtra per organizzatore",
+    "contactHistory": "Cronologia contatti",
+    "daysSinceAssignment": "Giorni dall'assegnazione",
+    "overdue": "In ritardo",
+    "lastContact": "Ultimo contatto",
+    "outreachDetails": "Dettagli contatto",
+    "noContactHistory": "Nessuna cronologia contatti",
+    "contactedBy": "Contattato da",
+    "markContactedModal": {
+      "title": "Segna relatore come contattato",
+      "method": {
+        "email": "E-mail",
+        "phone": "Telefono",
+        "inPerson": "Di persona"
+      },
+      "notesPlaceholder": "Note sulla conversazione...",
+      "error": {
+        "methodRequired": "Il metodo di contatto è obbligatorio",
+        "dateRequired": "La data di contatto è obbligatoria",
+        "failed": "Registrazione contatto non riuscita",
+        "loadHistory": "Caricamento cronologia contatti non riuscito"
+      }
+    },
+    "bulkAction": {
+      "title": "Segna più relatori come contattati",
+      "confirm": "Segnare {{count}} relatori come contattati?"
+    }
+  },
+  "speakerStatus": {
+    "title": "Stato relatori",
+    "statusSummary": "Riepilogo stati",
+    "lanes": "Corsie di stato",
+    "IDENTIFIED": "Identificato",
+    "INVITED": "Invitato",
+    "CONTACTED": "Contattato",
+    "READY": "Pronto",
+    "ACCEPTED": "Accettato",
+    "CONTENT_SUBMITTED": "Contenuto inviato",
+    "QUALITY_REVIEWED": "Qualità verificata",
+    "CONFIRMED": "Confermato",
+    "DECLINED": "Rifiutato",
+    "changeStatus": "Cambia stato",
+    "changeReason": "Motivo del cambio di stato (opzionale)",
+    "confirmChange": "Cambia stato",
+    "cancelChange": "Annulla",
+    "statusChanged": "Stato modificato con successo",
+    "invalidTransition": "Transizione di stato non valida da {{from}} a {{to}}",
+    "historyTitle": "Cronologia stati",
+    "changedBy": "Modificato da",
+    "noHistory": "Nessuna cronologia stati disponibile",
+    "acceptanceRate": "Tasso di accettazione: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} relatori accettati",
+    "thresholdMet": "Soglia minima raggiunta ✓",
+    "thresholdNotMet": "Soglia minima non raggiunta ({{count}} / {{required}})",
+    "overflowDetected": "Overflow rilevato ({{count}} > {{max}})",
+    "dragToChange": "Trascina i relatori per cambiare lo stato",
+    "confirmChangeMessage": "Cambiare lo stato di {{speaker}} da {{from}} a {{to}}?",
+    "reasonHelperText": "Opzionale (max {{max}} caratteri)",
+    "reasonPlaceholder": "es. Relatore confermato via e-mail",
+    "reasonTooLong": "Il motivo è troppo lungo ({{current}}/{{max}} caratteri)"
+  },
+  "speakerContent": {
+    "submitContent": "Invia contenuto relatore",
+    "presentationDetails": "Dettagli presentazione",
+    "speakerInformation": "Informazioni relatore",
+    "submitting": "Invio in corso...",
+    "editSpeakerProfile": "Modifica profilo relatore",
+    "createNewSpeaker": "Crea nuovo relatore",
+    "form": {
+      "username": "Cerca relatore",
+      "usernameHelp": "Inserisci il nome utente del relatore",
+      "presentationTitle": "Titolo presentazione",
+      "presentationAbstract": "Abstract presentazione",
+      "charactersRemaining": "caratteri rimanenti"
+    },
+    "errors": {
+      "usernameRequired": "Il relatore è obbligatorio",
+      "titleRequired": "Il titolo della presentazione è obbligatorio",
+      "abstractRequired": "L'abstract della presentazione è obbligatorio",
+      "abstractTooLong": "L'abstract deve contenere al massimo {{max}} caratteri",
+      "submitFailed": "Invio contenuto non riuscito. Riprova."
+    }
+  },
+  "qualityReview": {
+    "title": "Revisione qualità",
+    "speaker": "Relatore",
+    "presentationTitle": "Titolo presentazione",
+    "abstract": "Abstract",
+    "qualityCriteria": "Criteri di qualità",
+    "characters": "caratteri",
+    "detected": "Rilevato",
+    "notDetected": "Non rilevato",
+    "passed": "Superato",
+    "promotionDetected": "Promozione rilevata",
+    "approve": "Approva",
+    "reject": "Rifiuta",
+    "approving": "Approvazione in corso...",
+    "submitting": "Invio in corso...",
+    "confirmReject": "Conferma rifiuto",
+    "rejectInstructions": "Fornisci un feedback sul motivo del rifiuto del contenuto.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Spiega cosa deve essere migliorato...",
+    "noContent": "Nessun contenuto disponibile",
+    "criteria": {
+      "abstractLength": "Lunghezza abstract",
+      "lessonsLearned": "Contiene \"Lezioni apprese\"",
+      "noPromotion": "Nessuna promozione di prodotto"
+    },
+    "errors": {
+      "feedbackRequired": "Il feedback è obbligatorio",
+      "unknown": "Si è verificato un errore sconosciuto"
+    }
+  },
+  "speakers": {
+    "invite": "Invita",
+    "sendInvite": "Invia invito",
+    "sendInvitation": "Invia invito",
+    "confirmInvite": "Inviare un invito a questo relatore?",
+    "noEmailTooltip": "Aggiungi e-mail per invitare",
+    "inviting": "Invio in corso...",
+    "sending": "Invio in corso...",
+    "inviteSent": "Invito inviato",
+    "invitationSent": "Invito inviato a {{email}}",
+    "inviteFailed": "Invio non riuscito",
+    "invitationFailed": "Invio invito non riuscito",
+    "email": "Indirizzo e-mail",
+    "emailRequired": "L'e-mail è obbligatoria per inviare l'invito",
+    "invalidEmail": "Inserisci un indirizzo e-mail valido",
+    "saveEmail": "Salva e-mail",
+    "emailSaved": "E-mail salvata",
+    "tentative": "Provvisorio",
+    "responseDetails": "Dettagli risposta",
+    "acceptedAt": "Accettato il",
+    "preferredTimeSlot": "Fascia oraria preferita",
+    "travelRequirements": "Requisiti di viaggio",
+    "technicalRequirements": "Requisiti tecnici",
+    "initialTitle": "Titolo presentazione",
+    "comments": "Commenti",
+    "declineDetails": "Dettagli rifiuto",
+    "declinedAt": "Rifiutato il",
+    "declineReason": "Motivo",
+    "tentativeDetails": "Dettagli provvisori",
+    "tentativeReason": "Motivo",
+    "sendReminder": "Invia promemoria",
+    "sendingReminder": "Invio in corso...",
+    "reminderSent": "Promemoria inviato a {{email}}",
+    "reminderFailed": "Invio promemoria non riuscito"
+  },
+  "tasks": {
+    "taskBoard": "Bacheca attività",
+    "filter": "Filtra",
+    "myTasks": "Le mie attività",
+    "allTasks": "Tutte le attività",
+    "sortBy": "Ordina per",
+    "dueDate": "Scadenza",
+    "createdDate": "Data di creazione",
+    "addCustomTask": "Aggiungi attività personalizzata",
+    "errorLoadingTasks": "Caricamento attività non riuscito",
+    "pending": "In attesa",
+    "pendingDescription": "In attesa dello stato trigger",
+    "toDo": "Da fare",
+    "todoDescription": "Pronto per iniziare",
+    "inProgress": "In corso",
+    "inProgressDescription": "Attualmente in lavorazione",
+    "completed": "Completato",
+    "completedDescription": "Attività completate",
+    "completeTask": "Completa attività",
+    "completionNotes": "Note di completamento (opzionale)",
+    "markComplete": "Segna come completato",
+    "due": "Scadenza",
+    "assignedTo": "Assegnato a",
+    "completedOn": "Completato il",
+    "completedBy": "Completato da",
+    "noTasks": "Nessuna attività"
+  },
+  "analytics": {
+    "title": "Analisi",
+    "timeRange": {
+      "all": "Tutto il periodo",
+      "5y": "Ultimi 5 anni",
+      "2y": "Ultimi 2 anni"
+    },
+    "tabs": {
+      "overview": "Panoramica",
+      "attendance": "Presenze",
+      "topics": "Argomenti",
+      "companies": "Aziende"
+    },
+    "kpi": {
+      "totalEvents": "Totale eventi",
+      "totalAttendees": "Totale partecipanti",
+      "companiesRepresented": "Aziende",
+      "totalSessions": "Totale sessioni",
+      "totalSpeakers": "Totale relatori"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Cronologia eventi",
+      "attendeesPerEvent": "Partecipanti per evento",
+      "returningVsNew": "Partecipanti abituali vs nuovi",
+      "eventsPerCategory": "Eventi per categoria",
+      "topicPopularity": "Popolarità argomenti",
+      "attendanceOverTime": "Presenze per azienda nel tempo",
+      "sessionsPerCompany": "Sessioni per azienda",
+      "attendeeDistribution": "Distribuzione partecipanti per azienda"
+    },
+    "labels": {
+      "returning": "Abituali",
+      "new": "Nuovi",
+      "showDataTable": "Mostra tabella dati",
+      "hideDataTable": "Nascondi tabella dati",
+      "noData": "Nessun dato disponibile per questo periodo",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Tutti"
+      },
+      "labelToggle": {
+        "title": "Titolo",
+        "category": "Categoria",
+        "both": "Entrambi"
+      },
+      "filterByEvent": "Filtra per evento",
+      "allEvents": "Tutti gli eventi",
+      "sessions": "sessioni",
+      "speakers": "relatori",
+      "yourCompany": "La tua azienda"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Digita un argomento e premi Invio...",
+    "fitAll": "Adatta tutto",
+    "snapToActive": "Centra sull'attivo",
+    "backButton": "← Torna all'elenco argomenti",
+    "unsavedWarning": "Sessione non salvata — tutte le modifiche andranno perse. Tornare indietro?",
+    "accept": {
+      "title": "Seleziona argomento: {{topic}}",
+      "partnerAlignment": "{{count}} di 9 partner allineati",
+      "lastCovered": "Ultima trattazione: BATbern #{{num}} ({{count}} eventi fa)",
+      "overrideReason": "Perché rivisitare questo argomento? (opzionale)",
+      "confirm": "Seleziona questo argomento",
+      "cancel": "Continua a esplorare",
+      "saveError": "Salvataggio selezione argomento non riuscito. Riprova."
+    }
+  }
+}

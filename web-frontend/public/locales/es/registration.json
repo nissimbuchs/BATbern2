@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Cancelando su inscripción...",
+      "message": "Por favor, espere mientras procesamos su cancelación."
+    },
+    "success": {
+      "title": "Inscripción cancelada",
+      "subtitle": "Su inscripción ha sido cancelada exitosamente",
+      "whatHappened": "¿Qué ocurrió?",
+      "permanentDeletion": "Eliminación permanente",
+      "permanentDeletionText": "Su inscripción ha sido eliminada permanentemente de nuestro sistema.",
+      "noFurtherAction": "Sin acciones adicionales",
+      "noFurtherActionText": "No recibirá más comunicaciones sobre este evento.",
+      "registerAgain": "Registrarse de nuevo",
+      "registerAgainText": "Si cambia de opinión, puede registrarse de nuevo en cualquier momento antes del evento.",
+      "backToHome": "Volver al inicio",
+      "registerForAnother": "Registrarse en otro evento"
+    },
+    "error": {
+      "title": "Error al cancelar",
+      "subtitle": "No se pudo cancelar su inscripción",
+      "whatCanYouDo": "¿Qué puede hacer?",
+      "checkLink": "Verifique que haya hecho clic en el enlace correcto de su correo electrónico",
+      "expired": "Los enlaces de cancelación expiran después de 48 horas",
+      "alreadyCancelled": "Es posible que la inscripción ya haya sido cancelada",
+      "useLatestEmail": "Asegúrese de estar usando el correo electrónico más reciente",
+      "contactSupport": "Contacte al soporte si el problema persiste",
+      "errors": {
+        "expired": "El enlace de cancelación ha expirado (válido durante 48 horas).",
+        "invalid": "Enlace de cancelación no válido. Revise su correo electrónico para obtener el enlace correcto.",
+        "notFound": "Inscripción no encontrada o ya cancelada.",
+        "default": "No se pudo cancelar la inscripción. Inténtelo de nuevo o contacte al soporte."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirmando su inscripción...",
+      "message": "Por favor, espere mientras procesamos su confirmación."
+    },
+    "success": {
+      "title": "¡Inscripción confirmada!",
+      "subtitle": "Está listo para el evento",
+      "whatsNext": "¿Qué sigue?",
+      "checkIn": "Registro en el evento",
+      "checkInText": "Presente su identificación en el mostrador del evento para el registro. Tendremos su inscripción confirmada en el sistema.",
+      "eventDetails": "Detalles del evento",
+      "eventDetailsText": "Recibirá actualizaciones y recordatorios del evento por correo electrónico.",
+      "backToHome": "Volver al inicio",
+      "createAccount": "Crear una cuenta para gestionar inscripciones"
+    },
+    "alreadyConfirmed": {
+      "title": "Ya confirmado",
+      "subtitle": "Esta inscripción ya ha sido confirmada",
+      "message": "Su inscripción fue confirmada anteriormente. No se necesita ninguna acción adicional.",
+      "backToHome": "Volver al inicio"
+    },
+    "error": {
+      "title": "Error al confirmar",
+      "subtitle": "No se pudo confirmar su inscripción",
+      "whatCanYouDo": "¿Qué puede hacer?",
+      "checkLink": "Verifique que haya hecho clic en el enlace correcto de su correo electrónico",
+      "expired": "Los enlaces de confirmación expiran después de 48 horas - es posible que deba registrarse de nuevo",
+      "useLatestEmail": "Asegúrese de estar usando el correo electrónico de confirmación más reciente",
+      "contactSupport": "Contacte al soporte si el problema persiste",
+      "backToHome": "Volver al inicio",
+      "registerAgain": "Registrarse de nuevo",
+      "errors": {
+        "expired": "El enlace de confirmación ha expirado. Por favor, regístrese de nuevo.",
+        "invalid": "Enlace de confirmación no válido. Revise su correo electrónico para obtener el enlace correcto.",
+        "default": "No se pudo confirmar la inscripción. Inténtelo de nuevo o contacte al soporte."
+      }
+    }
+  }
+}

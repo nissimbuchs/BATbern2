@@ -1,0 +1,1038 @@
+{
+  "navigation": {
+    "dashboard": "イベント",
+    "createEvent": "イベントを作成",
+    "eventTimeline": "タイムライン",
+    "events": "イベント",
+    "topicManagement": "トピック管理",
+    "blobSelector": "ブロブセレクター"
+  },
+  "eventPage": {
+    "tabs": {
+      "overview": "概要",
+      "speakers": "スピーカー",
+      "venue": "会場",
+      "team": "チーム",
+      "participants": "参加者",
+      "publishing": "公開",
+      "newsletter": "ニュースレター",
+      "settings": "設定"
+    },
+    "tabsAriaLabel": "イベントページのナビゲーション",
+    "overview": {
+      "step": "ステップ",
+      "eventDetails": "イベント詳細",
+      "keyMetrics": "主要指標",
+      "registered": "登録済み",
+      "filled": "充足",
+      "speakers": "スピーカー",
+      "confirmed": "確認済み",
+      "materials": "資料",
+      "pending": "保留中",
+      "complete": "完了",
+      "sessionsComplete": "セッション完了",
+      "budget": "予算",
+      "selectedTopic": "選択中のトピック",
+      "noTopicSelected": "トピックが未選択です",
+      "changeTopic": "トピックを変更",
+      "quickActions": "クイックアクション",
+      "selectTopic": "トピックを選択",
+      "sendNotification": "通知を送信",
+      "previewPublic": "公開ページをプレビュー",
+      "viewTimeline": "タイムラインを表示"
+    },
+    "participantsTab": {
+      "title": "イベント参加者"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "名前",
+        "email": "メール",
+        "company": "会社",
+        "status": "ステータス",
+        "registrationDate": "登録日",
+        "actions": "アクション"
+      },
+      "empty": "まだ参加者が登録されていません",
+      "actions": {
+        "cancel": "登録をキャンセル",
+        "delete": "登録を削除"
+      },
+      "deleteDialog": {
+        "title": "登録を削除",
+        "message": "{{name}}の登録を完全に削除してもよろしいですか？この操作は元に戻せません。",
+        "cancel": "キャンセル",
+        "confirm": "削除"
+      }
+    },
+    "participantFilters": {
+      "search": {
+        "label": "参加者を検索",
+        "placeholder": "名前またはメールで検索..."
+      },
+      "status": {
+        "label": "登録ステータス",
+        "all": "すべてのステータス",
+        "confirmed": "確認済み",
+        "registered": "登録済み",
+        "attended": "出席",
+        "cancelled": "キャンセル済み",
+        "waitlisted": "キャンセル待ち"
+      },
+      "clearAll": "フィルターをクリア"
+    },
+    "participantList": {
+      "loading": "参加者を読み込み中...",
+      "error": {
+        "loadFailed": "参加者の読み込みに失敗しました。もう一度お試しください。"
+      },
+      "actions": {
+        "retry": "再試行"
+      }
+    },
+    "settings": {
+      "moderator": "イベントモデレーター",
+      "moderatorDesc": "このイベントのモデレーションを担当するオーガナイザー。",
+      "moderatorLabel": "モデレーター",
+      "moderatorUpdated": "モデレーターが正常に更新されました",
+      "moderatorUpdateError": "モデレーターの更新に失敗しました。"
+    },
+    "speakers": {
+      "progress": "進捗",
+      "confirmed": "確認済み",
+      "thresholdMet": "閾値達成",
+      "needMore": "さらにスピーカーが必要",
+      "acceptanceRate": "承諾率",
+      "viewMode": "表示モード",
+      "kanban": "カンバン",
+      "sessions": "セッション",
+      "addSpeakers": "スピーカーを追加",
+      "addToPool": "プールにスピーカーを追加",
+      "kanbanView": "カンバンビュー",
+      "sessionsView": "セッションビュー"
+    },
+    "newsletter": {
+      "title": "ニュースレター",
+      "subscriberCount": "{{count}}人のアクティブな購読者",
+      "sendHistory": "送信履歴",
+      "noHistory": "このイベントでまだニュースレターが送信されていません。",
+      "composeTitle": "作成と送信",
+      "locale": "言語",
+      "preview": "プレビュー",
+      "sendNewsletter": "ニュースレターを送信",
+      "sendReminder": "リマインダーを送信",
+      "confirmSendTitle": "送信を確認",
+      "confirmSendBody": "イベント「{{eventTitle}}」の{{count}}人の購読者に{{type}}を送信しますか？",
+      "sendSuccess": "ニュースレターを{{count}}人の受信者に送信しました。",
+      "sendError": "送信に失敗しました。もう一度お試しください。",
+      "historyDate": "日付",
+      "historyType": "タイプ",
+      "historyRecipients": "受信者",
+      "typeNewsletter": "ニュースレター",
+      "typeReminder": "リマインダー",
+      "previewTitle": "メールプレビュー"
+    }
+  },
+  "dashboard": {
+    "title": "イベント管理",
+    "activeEvents": "アクティブなイベント",
+    "criticalTasks": "重要タスク",
+    "teamActivity": "チームの活動",
+    "quickActions": "クイックアクション",
+    "noEvents": "イベントが見つかりません",
+    "noEventsFound": "イベントが見つかりません",
+    "tryAdjustingFilters": "フィルターを調整してみてください",
+    "loadingEvents": "イベントを読み込み中...",
+    "eventCount": "{{count}}件のイベント",
+    "eventCount_plural": "{{count}}件のイベント",
+    "eventWord": "イベント",
+    "eventWord_plural": "イベント",
+    "eventType": {
+      "FULL_DAY": "終日",
+      "AFTERNOON": "午後",
+      "EVENING": "夜間"
+    },
+    "workflowProgress": "ワークフローの進捗",
+    "actions": {
+      "viewDetails": "詳細を表示",
+      "edit": "編集",
+      "newEvent": "新規イベント",
+      "topics": "トピック選択",
+      "eventTypes": "イベントタイプ",
+      "eventTypesHelp": "イベントタイプテンプレートを設定（管理者）",
+      "manageTopics": "トピックを管理",
+      "analytics": "分析",
+      "speakers": "スピーカー"
+    },
+    "noCriticalTasks": "重要なタスクはありません",
+    "greatJob": "素晴らしい！",
+    "taskCount": "{{count}}件のタスク",
+    "taskCount_plural": "{{count}}件のタスク",
+    "dueDate": "期限",
+    "assignedTo": "{{name}}に割り当て済み",
+    "confirmAction": "アクションを確認",
+    "areYouSure": "このアクションを実行してもよろしいですか？",
+    "activityCount": "{{count}}件のアクティビティ",
+    "activityCount_plural": "{{count}}件のアクティビティ",
+    "today": "今日",
+    "lastUpdated": "最終更新",
+    "viewAll": "すべて表示",
+    "noRecentActivity": "最近の活動はありません",
+    "activityAction": {
+      "speaker_assigned": "スピーカーを割り当て",
+      "speaker_invited": "スピーカーを招待",
+      "materials_uploaded": "資料をアップロード",
+      "workflow_advanced": "ワークフローが進捗",
+      "event_created": "イベントを作成",
+      "event_updated": "イベントを更新",
+      "task_completed": "タスクを完了",
+      "notification_sent": "通知を送信",
+      "event_published": "イベントを公開"
+    },
+    "searchEvents": "イベントを検索...",
+    "filter": {
+      "status": "ステータスでフィルター",
+      "workflowState": "ワークフロー状態でフィルター",
+      "year": "年でフィルター",
+      "allYears": "すべての年",
+      "showArchived": "アーカイブ済みイベントを表示",
+      "activeFilters": "{{count}}個のフィルターが有効",
+      "activeFilters_plural": "{{count}}個のフィルターが有効",
+      "clearAll": "すべてクリア"
+    },
+    "errors": {
+      "failedToLoadEvents": "イベントの読み込みに失敗しました"
+    }
+  },
+  "tabs": {
+    "info": "情報",
+    "tasks": "タスク"
+  },
+  "tasks": {
+    "criticalTasks": "重要タスク",
+    "noCriticalTasks": "重要なタスクはありません",
+    "greatJob": "素晴らしい！",
+    "errorLoadingTasks": "タスクの読み込みに失敗しました",
+    "viewAllTasks": "すべてのタスクを表示",
+    "eventTasksDescription": "イベントがワークフロー状態を進むにつれて自動的に作成・有効化されるタスクを設定します。",
+    "defaultTemplates": "デフォルトタスクテンプレート",
+    "defaultTemplatesDescription": "これらは標準的なイベント計画タスクです。すべて事前選択されており、イベントを保存すると作成されます。",
+    "taskExists": "タスクは既に存在します",
+    "assignTo": "担当者",
+    "triggerState": "トリガー",
+    "dueDate": "期限",
+    "immediate": "即時",
+    "days": "日",
+    "customTemplates": "カスタムタスクテンプレート",
+    "customTemplatesDescription": "これらのテンプレートはチームが作成しました。このイベントに含めたいものを選択してください。",
+    "customTasks": "カスタムタスク",
+    "addCustomTask": "カスタムタスクを追加",
+    "noCustomTasks": "カスタムタスクはありません。「カスタムタスクを追加」をクリックして作成してください。",
+    "trigger": "トリガー",
+    "assignedTo": "担当者",
+    "unassigned": "未割り当て",
+    "editTask": "タスクを編集",
+    "deleteTask": "タスクを削除",
+    "taskName": "タスク名",
+    "taskNamePlaceholder": "例：会場確認メールを送信",
+    "selectEvent": "イベント（任意）",
+    "selectEventHelp": "タスクを作成するイベントを選択するか、テンプレートとして保存してください",
+    "noEvent": "イベントなし（テンプレートとして保存）",
+    "triggerStateHelp": "このタスクを有効化するイベント状態",
+    "workflowStates": {
+      "topic_selection": "トピック選択",
+      "speaker_brainstorming": "スピーカーブレインストーミング",
+      "speaker_outreach": "スピーカー招致",
+      "agenda_published": "アジェンダ公開済み",
+      "agenda_finalized": "アジェンダ確定済み",
+      "event_live": "イベント開催中",
+      "post_event_wrap_up": "イベント後まとめ",
+      "archived": "アーカイブ済み"
+    },
+    "dueDateType": "期限タイプ",
+    "dueDateTypes": {
+      "immediate": "即時（今すぐ）",
+      "relative_to_event": "イベント日からの相対日数",
+      "absolute": "絶対日付"
+    },
+    "offsetDays": "オフセット日数",
+    "offsetDaysHelp": "負の値 = イベント前、正の値 = イベント後",
+    "absoluteDueDate": "期限日",
+    "assignedOrganizer": "担当オーガナイザー",
+    "notes": "メモ（任意）",
+    "notesPlaceholder": "指示やコンテキストを追加...",
+    "saveAsTemplate": "再利用可能なテンプレートとして保存",
+    "createTemplate": "テンプレートを作成",
+    "createTask": "タスクを作成",
+    "errors": {
+      "loadTemplatesFailed": "タスクテンプレートの読み込みに失敗しました",
+      "taskNameRequired": "タスク名は必須です",
+      "triggerStateRequired": "トリガー状態は必須です",
+      "offsetDaysRequired": "オフセット日数は必須です",
+      "eventRequired": "イベントを選択するかテンプレートとして保存してください",
+      "updateTaskFailed": "タスクの更新に失敗しました",
+      "createTaskFailed": "タスクの作成に失敗しました"
+    }
+  },
+  "form": {
+    "createEvent": "新規イベントを作成",
+    "editEvent": "イベントを編集",
+    "eventNumber": "イベント番号",
+    "eventInformation": "イベント情報",
+    "title": "タイトル",
+    "description": "説明",
+    "eventDate": "イベント日",
+    "eventType": "イベントタイプ",
+    "capacity": "定員",
+    "registrationDeadline": "登録締め切り",
+    "venue": "会場名",
+    "venueAddress": "会場住所",
+    "theme": "テーマ",
+    "status": "ステータス",
+    "save": "保存",
+    "saveAndCreate": "保存して作成",
+    "saveCreate": "保存して作成",
+    "saveDraft": "下書きとして保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "close": "閉じる",
+    "noVenue": "会場が未選択",
+    "eventTypes": {
+      "fullDay": "終日イベント",
+      "afternoon": "午後のイベント",
+      "evening": "夜間イベント"
+    },
+    "eventTypeConfig": {
+      "title": "イベントタイプ設定",
+      "description": "各イベントタイプのスロット要件とスケジュールテンプレートを設定します",
+      "minSlots": "最小スロット数",
+      "maxSlots": "最大スロット数",
+      "slotDuration": "スロット時間（分）",
+      "theoreticalSlotsAM": "午前の理論的スロット数",
+      "breakSlots": "休憩スロット",
+      "lunchSlots": "昼食スロット",
+      "defaultCapacity": "デフォルト定員",
+      "structuralDurations": "構造的時間（分）",
+      "moderationStartDuration": "司会開始時間（分）",
+      "moderationEndDuration": "司会終了時間（分）",
+      "breakDuration": "休憩時間（分）",
+      "lunchDuration": "昼食時間（分）",
+      "saveFailed": "設定の保存に失敗しました",
+      "accessDenied": "アクセス拒否",
+      "organizerOnly": "このページにアクセスできるのはオーガナイザーのみです"
+    },
+    "themeImage": "イベントテーマ画像",
+    "themeImageHelp": "このイベントのテーマ画像をアップロードしてください（PNG、JPEG、またはSVG、最大5MB）。推奨サイズ：1920x400px。",
+    "themeImageAlt": "イベントのテーマ画像",
+    "removeThemeImage": "テーマ画像を削除",
+    "overrideValidation": "ワークフロー検証を無効化（任意の状態遷移を許可）",
+    "overrideReason": "無効化の理由（任意）",
+    "overrideReasonPlaceholder": "ワークフロー検証を無効化する理由は何ですか？",
+    "overrideReasonHelp": "これは監査目的のために記録されます",
+    "errors": {
+      "failedToLoadEventTypes": "イベントタイプの読み込みに失敗しました"
+    }
+  },
+  "eventTypes": {
+    "FULL_DAY": "終日",
+    "AFTERNOON": "午後",
+    "EVENING": "夜間"
+  },
+  "slotPreview": {
+    "title": "{{type}}プレビュー",
+    "slots": "スロット",
+    "duration": "時間",
+    "capacity": "定員",
+    "timing": "一般的なスケジュール",
+    "exampleTimeline": "スケジュール例"
+  },
+  "filters": {
+    "status": "ステータス",
+    "year": "年",
+    "eventType": "イベントタイプ",
+    "search": "検索",
+    "searchPlaceholder": "イベントを検索...",
+    "allStatuses": "すべてのステータス",
+    "allYears": "すべての年",
+    "allTypes": "すべてのタイプ",
+    "clear": "フィルターをクリア"
+  },
+  "sorting": {
+    "sort": "並び替え",
+    "date": "日付",
+    "status": "ステータス",
+    "workflowProgress": "ワークフローの進捗",
+    "title": "タイトル",
+    "ascending": "昇順",
+    "descending": "降順"
+  },
+  "validation": {
+    "eventNumberRequired": "イベント番号は必須です",
+    "eventNumberPositive": "イベント番号は正の数でなければなりません",
+    "titleRequired": "タイトルは必須です",
+    "titleMinLength": "タイトルは最低10文字必要です",
+    "descriptionRequired": "説明は必須です",
+    "eventDateRequired": "イベント日は必須です",
+    "eventDateFuture": "イベント日は少なくとも30日後でなければなりません",
+    "registrationDeadline": "登録締め切りはイベント日以前でなければなりません",
+    "capacityRequired": "定員は必須です",
+    "capacityPositive": "定員は正の数でなければなりません",
+    "venueRequired": "会場は必須です",
+    "venueNameRequired": "会場名は必須です",
+    "venueAddressRequired": "会場住所は必須です",
+    "minSlotsRequired": "最小スロット数は必須です",
+    "maxSlotsRequired": "最大スロット数は必須です",
+    "slotDurationRequired": "スロット時間は必須です",
+    "slotDurationMinimum": "スロット時間は最低15分でなければなりません",
+    "minSlotsLessThanMax": "最小スロット数は最大スロット数以下でなければなりません",
+    "defaultCapacityRequired": "デフォルト定員は必須です",
+    "defaultCapacityPositive": "デフォルト定員は正の数でなければなりません"
+  },
+  "errors": {
+    "loadFailed": "イベントの読み込みに失敗しました",
+    "saveFailed": "イベントの保存に失敗しました",
+    "deleteFailed": "イベントの削除に失敗しました",
+    "notFound": "イベントが見つかりません",
+    "unauthorized": "このイベントへのアクセス権がありません",
+    "validationError": "入力が無効です。データを確認してください。",
+    "serviceError": "予期しないエラーが発生しました。もう一度お試しください。",
+    "networkError": "ネットワークエラー。接続を確認してください。",
+    "correlationId": "相関ID",
+    "retry": "再試行",
+    "imageUploadFailed": "テーマ画像のアップロードに失敗しました",
+    "imageTooBig": "画像ファイルが大きすぎます（最大5MB）",
+    "imageInvalidType": "無効な画像タイプ（PNG、JPEG、またはSVGを使用してください）",
+    "MULTIPLE_FILES": "一度に1つのファイルのみアップロードしてください",
+    "FILE_TOO_LARGE": "ファイルサイズが5MBの制限を超えています",
+    "INVALID_FILE_TYPE": "無効なファイルタイプ。PNG、JPEG、またはSVG画像のみアップロードしてください"
+  },
+  "confirmations": {
+    "deleteTitle": "イベントを削除しますか？",
+    "deleteMessage": "このイベントを削除してもよろしいですか？",
+    "deleteImpact": "{{registrations}}件の登録、{{speakers}}人のスピーカー、{{materials}}件の資料",
+    "cannotDelete": "イベントを削除できません - 代わりにイベントをキャンセルしてください",
+    "unsavedChanges": "未保存の変更",
+    "unsavedChangesMessage": "未保存の変更があります。本当に続行しますか？",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "discard": "破棄",
+    "keepEditing": "編集を続ける"
+  },
+  "workflow": {
+    "progress": "進捗",
+    "step": "ステップ {{current}} / {{total}}",
+    "stepIndicator": "ステップ {{current}}/{{total}}",
+    "stepName": "ステップ {{number}}: {{name}}",
+    "viewDetails": "ワークフロー詳細を表示",
+    "warning": "警告",
+    "blocker": "ブロッカー",
+    "blockers": "{{count}}件のブロッカー",
+    "blockers_plural": "{{count}}件のブロッカー",
+    "completed": "完了",
+    "inProgress": "進行中",
+    "pending": "保留中",
+    "blocked": "ブロック済み",
+    "progressBarLabel": "クリックしてワークフロー詳細を表示。{{percentage}}%完了",
+    "actions": {
+      "selectTopic": "トピックを選択"
+    },
+    "states": {
+      "created": "作成済み",
+      "topic_selection": "トピック選択",
+      "speaker_identification": "スピーカー特定",
+      "slot_assignment": "スロット割り当て",
+      "agenda_published": "アジェンダ公開済み",
+      "agenda_finalized": "アジェンダ確定済み",
+      "event_live": "イベント開催中",
+      "event_completed": "イベント完了",
+      "archived": "アーカイブ済み"
+    }
+  },
+  "topicSelection": {
+    "success": "トピックが正常に選択されました"
+  },
+  "autoSave": {
+    "saving": "保存中...",
+    "saved": "{{time}}に最後に保存",
+    "failed": "自動保存に失敗しました",
+    "conflict": "同時編集が検出されました。再読み込みしてもう一度お試しください。",
+    "enabled": "自動保存が有効"
+  },
+  "venue": {
+    "sectionTitle": "会場とロジスティクス",
+    "title": "会場とロジスティクス",
+    "nameLabel": "会場名",
+    "addressLabel": "会場住所",
+    "capacityLabel": "会場定員",
+    "errors": {
+      "nameRequired": "会場名は必須です",
+      "addressRequired": "会場住所は必須です",
+      "capacityPositive": "定員は正の数でなければなりません",
+      "capacityMax": "定員は5000を超えることができません",
+      "updateFailed": "会場の更新に失敗しました"
+    }
+  },
+  "topics": {
+    "title": "割り当て済みトピック",
+    "sectionTitle": "割り当て済みトピック ({{count}})",
+    "sectionLabel": "割り当て済みトピック ({{count}})",
+    "addTopic": "バックログからトピックを追加",
+    "addFromBacklog": "バックログからトピックを追加",
+    "removeTopic": "トピックを削除",
+    "viewTopic": "トピックを表示",
+    "view": "表示",
+    "remove": "削除",
+    "viewButton": "{{title}}を表示",
+    "removeButton": "{{title}}を削除",
+    "lastUsed": "{{event}} ({{year}})",
+    "lastUsedLabel": "最終使用",
+    "neverUsed": "未使用",
+    "partnerVotes": "パートナー投票",
+    "noTopics": "割り当てられたトピックなし",
+    "noTopic": "トピックが未選択",
+    "emptyState": "まだトピックが割り当てられていません",
+    "loadError": "トピックの読み込みに失敗しました",
+    "change": "トピックを変更",
+    "removeConfirmTitle": "トピックを削除しますか？",
+    "removeConfirmMessage": "このトピックをイベントから削除してもよろしいですか？"
+  },
+  "speakers": {
+    "title": "スピーカーとセッション",
+    "sectionTitle": "スピーカーとセッション ({{count}})",
+    "speakersAndSessions": "スピーカーとセッション",
+    "slotTime": "時間",
+    "slotLabel": "スロット {{number}}",
+    "speakerName": "スピーカー",
+    "company": "会社",
+    "sessionTitle": "セッションタイトル",
+    "notAssigned": "未割り当て",
+    "materials": "資料",
+    "materialsComplete": "完了",
+    "materialsPending": "保留中",
+    "materialsMissing": "不足",
+    "viewDetails": "詳細を表示",
+    "editSlot": "スロットを編集",
+    "manageMaterials": "資料を管理",
+    "viewFullAgenda": "完全なアジェンダを表示",
+    "manageSpeakerAssignments": "スピーカー割り当てを管理",
+    "manageSlotAssignments": "スロット割り当てを管理",
+    "autoAssignSpeakers": "スピーカーを自動割り当て",
+    "autoAssignConfirmTitle": "スピーカーを自動割り当て",
+    "autoAssignConfirmMessage": "これにより、専門知識と空き状況に基づいてスピーカーが最適な時間スロットに自動的に割り当てられます。既存の割り当ては上書きされます。続行しますか？",
+    "noSpeakers": "スピーカーが割り当てられていません",
+    "noSessionsScheduled": "スケジュールされたセッションはありません。スピーカーを追加するには「スピーカー割り当てを管理」を使用してください。",
+    "loadError": "セッションの読み込みに失敗しました。もう一度お試しください。",
+    "deleteSession": "削除",
+    "deleteSessionTitle": "セッションを削除しますか？",
+    "deleteSessionMessage": "セッション「{{title}}」を削除してもよろしいですか？この操作は元に戻せません。"
+  },
+  "team": {
+    "title": "チームの割り当て",
+    "leadOrganizer": "リードオーガナイザー",
+    "coOrganizers": "コオーガナイザー",
+    "moderator": "モデレーター",
+    "contentReviewer": "コンテンツレビュアー",
+    "manageTeam": "チームを管理",
+    "assignRole": "役割を割り当て"
+  },
+  "publishing": {
+    "title": "公開",
+    "strategy": "戦略",
+    "progressive": "プログレッシブ",
+    "immediate": "即時",
+    "currentPhase": "現在のフェーズ",
+    "timeline": {
+      "phasesPublished": "{{total}}フェーズ中{{completed}}フェーズ公開済み ({{percent}}%)",
+      "topic": "トピック",
+      "speakers": "スピーカー",
+      "agenda": "アジェンダ",
+      "updates": "更新",
+      "now": "今",
+      "publishedOn": "{{date}}に公開",
+      "scheduled": "予定: {{date}}",
+      "autoPublishIn": "{{days}}日後に自動公開",
+      "autoPublishScheduled": "自動公開が予定されています",
+      "days": "{{count}}日"
+    },
+    "qualityChecks": "品質チェック",
+    "configure": "公開を設定",
+    "republish": "再公開",
+    "previewPublicPage": "公開ページをプレビュー",
+    "tab": {
+      "title": "公開コントロール（Story 5.7）",
+      "notice": "公開コンポーネントが統合されました。バックエンドAPI統合が進行中です。一部の機能は一時的なモックデータを使用しています。"
+    },
+    "controls": {
+      "publish": "公開",
+      "publishing": "公開中...",
+      "publishPhase": "{{phase}}を公開",
+      "published": "{{phase}}が公開されました",
+      "publishPhases": "フェーズを公開",
+      "alreadyPublished": "既に公開済み",
+      "publishTopicFirst": "最初にトピックを公開してください",
+      "publishSpeakersFirst": "最初にスピーカーを公開してください",
+      "schedulePublish": "公開をスケジュール",
+      "previewNewsletter": "ニュースレターをプレビュー",
+      "mode": "モード",
+      "modeDraft": "下書き",
+      "modeProgressive": "プログレッシブ",
+      "modeComplete": "完全",
+      "notifySubscribers": "購読者に通知",
+      "validationErrors": "検証エラー：",
+      "phase": {
+        "topic": "トピック",
+        "speakers": "スピーカー",
+        "agenda": "アジェンダ"
+      },
+      "scheduleDialog": {
+        "title": "公開をスケジュール",
+        "dateLabel": "スケジュール日時",
+        "cancel": "キャンセル",
+        "confirm": "スケジュールを確認"
+      },
+      "newsletterDialog": {
+        "title": "ニュースレタープレビュー",
+        "subject": "件名: {{eventCode}}の新しい{{phase}}が公開されました",
+        "contentPreview": "{{phase}}フェーズのニュースレターコンテンツのプレビュー...",
+        "close": "閉じる",
+        "sendTest": "テストメールを送信"
+      },
+      "accessibility": {
+        "publishingPhase": "{{phase}}を公開中",
+        "publishingMode": "公開モード",
+        "notifySubscribers": "公開時に購読者に通知"
+      }
+    },
+    "validation": {
+      "readyToPublish": "公開準備完了",
+      "notReadyToPublish": "公開準備未完了",
+      "eventTopic": "イベントトピック",
+      "speakerLineup": "スピーカーラインナップ",
+      "sessionTimings": "セッションタイミング",
+      "complete": "完了",
+      "incomplete": "未完了 ({{assigned}}/{{total}}セッション割り当て済み)",
+      "ready": "準備完了 ({{assigned}}/{{total}}セッション割り当て済み)",
+      "notRequired": "不要",
+      "assignTimings": "タイミングを割り当て",
+      "expandUnassigned": "未割り当てセッションを展開",
+      "collapseUnassigned": "未割り当てセッションを折りたたむ",
+      "accessibility": {
+        "readyToPublish": "公開準備完了",
+        "notReadyToPublish": "公開準備未完了",
+        "eventTopic": "イベントトピックの検証",
+        "speakerLineup": "スピーカーラインナップの検証",
+        "sessionTimings": "セッションタイミングの検証"
+      }
+    },
+    "preview": {
+      "desktop": "デスクトップ",
+      "mobile": "モバイル",
+      "print": "印刷",
+      "refresh": "更新",
+      "refreshing": "プレビューを更新中...",
+      "retry": "再試行",
+      "loadFailed": "プレビューの読み込みに失敗しました。もう一度お試しください。",
+      "previewMode": "プレビューモード: {{mode}} | フェーズ: {{phase}}",
+      "deviceDimensions": "デバイス: {{device}} ({{width}} x {{height}})",
+      "switchedTo": "{{device}}プレビューに切り替えました",
+      "accessibility": {
+        "devicePreviewMode": "デバイスプレビューモード",
+        "desktopPreview": "デスクトッププレビュー",
+        "mobilePreview": "モバイルプレビュー",
+        "printPreview": "印刷プレビュー",
+        "refreshPreview": "プレビューを更新",
+        "eventContentPreview": "イベントコンテンツのプレビュー"
+      }
+    },
+    "versionControl": {
+      "title": "バージョン履歴",
+      "version": "バージョン",
+      "published": "公開済み",
+      "phase": "フェーズ",
+      "publisher": "公開者",
+      "status": "ステータス",
+      "actions": "アクション",
+      "rollback": "ロールバック",
+      "current": "現在",
+      "cdnCleared": "CDNクリア済み",
+      "cdnPending": "CDN保留中",
+      "cdnFailed": "CDN失敗",
+      "cdnUnknown": "不明",
+      "cdnInvalidationId": "CDN無効化ID: {{id}}",
+      "noVersions": "バージョン履歴がありません",
+      "rollbackDialog": {
+        "title": "ロールバックを確認",
+        "message": "このバージョンにロールバックしてもよろしいですか？",
+        "versionLabel": "バージョン：",
+        "phaseLabel": "フェーズ：",
+        "publishedLabel": "公開済み：",
+        "publisherLabel": "公開者：",
+        "warning": "このアクションはCloudFront CDNキャッシュを無効化し、完了するまで数分かかる場合があります。",
+        "cancel": "キャンセル",
+        "confirm": "ロールバックを確認",
+        "confirming": "ロールバック中..."
+      }
+    }
+  },
+  "notifications": {
+    "title": "通知とリマインダー",
+    "activeAutomations": "アクティブな自動化",
+    "notificationRules": "通知ルール",
+    "manageNotifications": "通知を管理",
+    "sendManualNotification": "手動通知を送信",
+    "ruleName": "ルール名",
+    "trigger": "トリガー",
+    "recipients": "受信者",
+    "active": "アクティブ",
+    "inactive": "非アクティブ"
+  },
+  "criticalTasks": {
+    "title": "重要タスク",
+    "priority": "優先度",
+    "warning": "警告",
+    "critical": "重要",
+    "dueDate": "期限",
+    "assignedTo": "担当者",
+    "actions": "アクション",
+    "contact": "連絡",
+    "extendDeadline": "期限を延長",
+    "confirm": "確認",
+    "assignToTeam": "チームに割り当て",
+    "markComplete": "完了としてマーク",
+    "noTasks": "重要なタスクはありません"
+  },
+  "teamActivity": {
+    "title": "チームの活動",
+    "recentActivity": "最近の活動",
+    "filterByUser": "ユーザーでフィルター",
+    "filterByEvent": "イベントでフィルター",
+    "filterByAction": "アクションでフィルター",
+    "reload": "再読み込み",
+    "noActivity": "利用可能な活動はありません",
+    "activityTypes": {
+      "event_created": "イベント作成",
+      "event_updated": "イベント更新",
+      "speaker_assigned": "スピーカー割り当て",
+      "speaker_invited": "スピーカー招待",
+      "materials_uploaded": "資料アップロード",
+      "workflow_advanced": "ワークフロー進捗",
+      "task_completed": "タスク完了",
+      "notification_sent": "通知送信",
+      "event_published": "イベント公開"
+    }
+  },
+  "pagination": {
+    "previous": "前へ",
+    "next": "次へ",
+    "page": "{{total}}ページ中{{current}}ページ",
+    "itemsPerPage": "1ページあたりのアイテム数",
+    "showing": "{{total}}件中{{from}}-{{to}}件を表示"
+  },
+  "actions": {
+    "newEvent": "新規イベント",
+    "viewAnalytics": "分析を表示",
+    "manageSpeakers": "スピーカーを管理",
+    "viewTimeline": "タイムラインを表示",
+    "exportData": "データをエクスポート",
+    "refresh": "更新",
+    "back": "戻る",
+    "deleteEvent": "イベントを削除"
+  },
+  "messages": {
+    "draftSaved": "下書きを保存しました",
+    "eventCreated": "イベントを作成しました",
+    "eventUpdated": "イベントを更新しました",
+    "eventDeleted": "イベントを削除しました",
+    "loading": "読み込み中...",
+    "noResults": "結果が見つかりません",
+    "tryAgain": "もう一度お試しください"
+  },
+  "accessibility": {
+    "skipToContent": "コンテンツへスキップ",
+    "openMenu": "メニューを開く",
+    "closeMenu": "メニューを閉じる",
+    "loading": "読み込み中",
+    "error": "エラー",
+    "success": "成功"
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "save": "保存",
+    "saveChanges": "変更を保存",
+    "saveAndContinue": "保存して続行",
+    "settings": "設定",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功"
+  },
+  "metrics": {
+    "speakers": "スピーカー",
+    "confirmed": "確認済み",
+    "topics": "トピック",
+    "assigned": "割り当て済み",
+    "materials": "資料",
+    "pending": "保留中",
+    "registrations": "登録",
+    "budget": "予算",
+    "keyMetrics": "主要指標"
+  },
+  "public": {
+    "comingSoon": "近日公開...",
+    "preview": {
+      "title": "プレビューモード",
+      "phase": "フェーズ",
+      "mode": "モード",
+      "description": "未公開の変更を閲覧中 - 公開されるとこのようにイベントが表示されます"
+    },
+    "logistics": {
+      "title": "イベント詳細",
+      "date": "日付",
+      "time": "時間",
+      "location": "場所",
+      "capacity": "定員"
+    },
+    "errors": {
+      "loadFailed": "イベントの読み込みに失敗しました",
+      "noEvent": "現在利用可能なイベントがありません",
+      "checkBackLater": "今後のイベントについては後ほど確認してください。"
+    },
+    "speakers": {
+      "title": "スピーカー",
+      "speakerTBA": "スピーカー未定"
+    },
+    "sessions": {
+      "title": "セッション",
+      "gridView": "グリッドビュー",
+      "listView": "リストビュー",
+      "noSessions": "選択したトピックのセッションが見つかりません",
+      "clearFilters": "フィルターをクリア",
+      "speaker": "スピーカー",
+      "seats": "{{count}}席",
+      "timeTBD": "時間未定"
+    },
+    "program": {
+      "title": "イベントプログラム",
+      "speaker": "スピーカー",
+      "materials": "資料",
+      "downloadError": "資料のダウンロードに失敗しました。もう一度お試しください。"
+    },
+    "venue": {
+      "title": "会場",
+      "mapNotAvailable": "地図は利用できません",
+      "getDirections": "道順を取得"
+    },
+    "social": {
+      "title": "このイベントをシェア",
+      "description": "ネットワークにこのイベントを広めましょう",
+      "shareLinkedIn": "LinkedInでシェア",
+      "shareTwitter": "Xでシェア",
+      "shareEmail": "メールでシェア",
+      "shareText": "{{title}}で私と一緒に！"
+    },
+    "upcomingEvents": {
+      "title": "その他の今後のイベント"
+    },
+    "sessionTypes": {
+      "keynote": "基調講演",
+      "presentation": "プレゼンテーション",
+      "workshop": "ワークショップ",
+      "panel_discussion": "パネルディスカッション",
+      "networking": "ネットワーキング",
+      "break": "休憩",
+      "lunch": "昼食"
+    }
+  },
+  "sessionEdit": {
+    "title": "セッションを編集",
+    "titleLabel": "セッションタイトル",
+    "abstractLabel": "セッション概要",
+    "charactersRemaining": "残り{{count}}文字",
+    "durationLabel": "時間（分）",
+    "tabs": {
+      "details": "詳細",
+      "materials": "資料",
+      "speakers": "スピーカー"
+    },
+    "speakers": {
+      "title": "セッションスピーカー",
+      "noSpeakers": "まだスピーカーが割り当てられていません",
+      "addSpeaker": "スピーカーを追加",
+      "searchUser": "ユーザーを検索",
+      "createNewUser": "+ 新規ユーザーを作成",
+      "roleLabel": "スピーカーの役割",
+      "setPrimary": "プライマリに設定",
+      "remove": "削除",
+      "confirmed": "確認済み",
+      "userRequired": "ユーザーを選択してください",
+      "addError": "スピーカーの追加に失敗しました",
+      "removeError": "スピーカーの削除に失敗しました",
+      "setPrimaryError": "プライマリスピーカーの設定に失敗しました",
+      "roles": {
+        "PRIMARY_SPEAKER": "メインスピーカー",
+        "CO_SPEAKER": "共同スピーカー",
+        "MODERATOR": "モデレーター",
+        "PANELIST": "パネリスト"
+      }
+    },
+    "materials": {
+      "uploadTitle": "セッション資料をアップロード",
+      "uploadDescription": "プレゼンテーション、ドキュメント、または動画をアップロードしてください（ファイルあたり最大100MB、最大10ファイル）",
+      "existingTitle": "既存の資料",
+      "downloadError": "資料のダウンロードに失敗しました"
+    },
+    "errors": {
+      "titleRequired": "タイトルは必須です",
+      "abstractTooLong": "概要は{{max}}文字以下でなければなりません",
+      "invalidDuration": "時間は1分から480分の間でなければなりません",
+      "saveFailed": "セッションの保存に失敗しました"
+    }
+  },
+  "slotAssignment": {
+    "title": "スロット割り当て",
+    "pageTitle": "スピーカーを時間スロットに割り当て",
+    "pageDescription": "確認済みスピーカーを利用可能な時間スロットにドラッグしてイベントスケジュールを作成します",
+    "backToEvent": "イベントに戻る",
+    "returnToEventOverview": "イベント概要に戻る",
+    "helpBanner": {
+      "title": "使い方：",
+      "description": "左パネルからスピーカーカードを右の時間スロットにドラッグします。システムはプリファレンスのマッチをハイライトし、コンフリクトを警告します。すべてのスピーカーが割り当てられると、スケジュールが自動的に保存されます。"
+    },
+    "timeline": {
+      "title": "セッションタイムライン",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}%マッチ",
+      "headerTime": "時間"
+    },
+    "structuralSessions": {
+      "moderation": "司会",
+      "break": "休憩",
+      "lunch": "昼食"
+    },
+    "speakerPool": {
+      "title": "スピーカープール",
+      "assigned": "{{total}}人中{{count}}人割り当て済み ({{percent}}%)",
+      "remaining": "残り{{count}}人",
+      "filters": {
+        "all": "すべて",
+        "assigned": "割り当て済み",
+        "unassigned": "未割り当て"
+      },
+      "emptyState": {
+        "title": "すべてのセッションが割り当てられました！",
+        "message": "素晴らしい！すべてのスピーカーが時間スロットに割り当てられました。"
+      },
+      "viewPreferences": "プリファレンス"
+    },
+    "quickActions": {
+      "title": "クイックアクション",
+      "total": "合計{{count}}セッション",
+      "assigned": "{{count}}件割り当て済み",
+      "pending": "{{count}}件保留中",
+      "allAssigned": "すべてのタイミングが割り当てられました！",
+      "goToPublishing": "公開タブへ",
+      "sessionsAssignedAnnouncement": "{{count}}件のセッションが正常に割り当てられました"
+    },
+    "actions": {
+      "autoAssign": "自動割り当て",
+      "clearAll": "すべてクリア",
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "generateStructure": "スケジュール構造を生成"
+    },
+    "modals": {
+      "generateStructure": {
+        "title": "スケジュール構造を生成",
+        "message": "イベントタイプ設定に基づいて司会ブロック、休憩、昼食を作成します。",
+        "alreadyExist": "司会、休憩、昼食ブロックは既に存在します。上書きしますか？",
+        "overwrite": "上書き"
+      },
+      "autoAssign": {
+        "title": "セッションを自動割り当て",
+        "message": "自動割り当てのアルゴリズムを選択してください：",
+        "algorithms": {
+          "preferenceFirst": "プリファレンス優先",
+          "timeBalance": "時間バランス"
+        }
+      },
+      "clearAll": {
+        "title": "すべての割り当てをクリア",
+        "message": "すべてのタイミング割り当てをクリアしてもよろしいですか？"
+      }
+    },
+    "conflicts": {
+      "title": "タイミングコンフリクトを検出",
+      "types": {
+        "room_overlap": "部屋の重複",
+        "speaker_double_booked": "スピーカーのダブルブッキング",
+        "speaker_unavailable": "スピーカーが利用不可"
+      },
+      "severity": {
+        "error": "エラー",
+        "warning": "警告"
+      },
+      "timeRange": "コンフリクトの時間範囲",
+      "start": "開始",
+      "end": "終了",
+      "conflictingSession": "コンフリクトするセッション",
+      "resolutionOptions": "解決オプション",
+      "resolutionMessage": "このコンフリクトを解決するために別の時間スロットまたは部屋を選択してください。",
+      "chooseDifferentSlot": "別のスロットを選択"
+    },
+    "preferences": {
+      "title": "スピーカーのプリファレンス",
+      "close": "閉じる",
+      "timePreferences": "時間のプリファレンス",
+      "preferredTime": "希望する時間帯",
+      "unavailableTimes": "利用不可な時間",
+      "avRequirements": "A/V要件",
+      "setupNotes": "部屋の設定メモ",
+      "slotMatchScore": "スロットマッチスコア",
+      "matchPercent": "{{percent}}%マッチ",
+      "times": {
+        "morning": "午前",
+        "afternoon": "午後",
+        "evening": "夜",
+        "any": "いつでも"
+      },
+      "equipment": {
+        "microphone": "マイク",
+        "projector": "プロジェクター",
+        "recording": "録音",
+        "whiteboard": "ホワイトボード"
+      }
+    },
+    "loading": "読み込み中...",
+    "dragInstructions": "スピーカーを時間スロットにドラッグして割り当ててください"
+  },
+  "newsletter": {
+    "widget": {
+      "title": "BATbernで最新情報をキャッチ",
+      "placeholder": "your@email.com",
+      "button": "登録する",
+      "success": "ありがとうございます！登録が完了しました。",
+      "alreadySubscribed": "既に登録済みです。",
+      "error": "問題が発生しました。もう一度お試しください。",
+      "emailInvalid": "有効なメールアドレスを入力してください。"
+    },
+    "unsubscribe": {
+      "title": "BATbernニュースレターの登録解除",
+      "loading": "読み込み中…",
+      "confirmMessage": "{{email}}のBATbernニュースレター登録を解除しようとしています。",
+      "confirmButton": "登録解除を確認",
+      "success": "正常に登録解除されました。",
+      "resubscribeLink": "再登録する",
+      "invalidToken": "この登録解除リンクは無効であるか、既に使用されています。"
+    },
+    "account": {
+      "label": "BATbernニュースレターに登録",
+      "description": "イベントのお知らせと更新を受け取る"
+    }
+  }
+}

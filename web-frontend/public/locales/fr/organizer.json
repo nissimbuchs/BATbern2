@@ -1,0 +1,469 @@
+{
+  "navigation": {
+    "partners": "Partenaires",
+    "speakerOutreach": "Démarchage des intervenants",
+    "topicManagement": "Gestion des sujets"
+  },
+  "dashboard": {
+    "criticalTasks": "Tâches critiques",
+    "noCriticalTasks": "Aucune tâche critique",
+    "greatJob": "Excellent travail !",
+    "taskCount": "{{count}} tâche",
+    "taskCount_plural": "{{count}} tâches",
+    "dueDate": "Date d'échéance",
+    "assignedTo": "Assigné à {{name}}",
+    "confirmAction": "Confirmer l'action",
+    "areYouSure": "Êtes-vous sûr de vouloir effectuer cette action ?"
+  },
+  "topicBacklog": {
+    "pageTitle": "Gestion des sujets",
+    "pageDescription": "Gérez les sujets en attente, sélectionnez des sujets pour les événements et analysez les tendances d'utilisation",
+    "title": "Gestionnaire de sujets en attente",
+    "subtitle": "Sélectionnez des sujets dans le backlog avec des suggestions intelligentes et la détection d'obsolescence",
+    "selectPrompt": "Sélectionnez un sujet pour afficher les détails",
+    "noTopics": "Aucun sujet ne correspond à vos filtres",
+    "lastUsed": "Dernière utilisation",
+    "usageCount": "Utilisé {{count}} fois",
+    "createNew": "Créer un nouveau sujet",
+    "breadcrumbs": {
+      "home": "Accueil",
+      "events": "Événements",
+      "topicSelection": "Sélection de sujet",
+      "manageTopics": "Gérer les sujets"
+    },
+    "error": {
+      "loadFailed": "Échec du chargement des sujets"
+    },
+    "createModal": {
+      "title": "Créer un nouveau sujet",
+      "fields": {
+        "title": "Titre",
+        "description": "Description",
+        "category": "Catégorie",
+        "categoryHint": "ex. technique, affaires, design"
+      },
+      "errors": {
+        "titleRequired": "Le titre est requis",
+        "titleTooLong": "Le titre doit comporter 255 caractères ou moins",
+        "descriptionRequired": "La description est requise",
+        "categoryRequired": "La catégorie est requise",
+        "createFailed": "Échec de la création du sujet. Veuillez réessayer."
+      },
+      "create": "Créer le sujet",
+      "creating": "Création en cours..."
+    },
+    "editModal": {
+      "title": "Modifier le sujet",
+      "fields": {
+        "title": "Titre",
+        "description": "Description",
+        "category": "Catégorie"
+      },
+      "errors": {
+        "titleRequired": "Le titre est requis",
+        "titleTooLong": "Le titre doit comporter 255 caractères ou moins",
+        "categoryRequired": "La catégorie est requise",
+        "updateFailed": "Échec de la mise à jour du sujet. Veuillez réessayer."
+      },
+      "save": "Enregistrer les modifications",
+      "saving": "Enregistrement..."
+    },
+    "filters": {
+      "title": "Filtres",
+      "category": "Catégorie",
+      "status": "Statut",
+      "sort": "Trier par",
+      "all": "Toutes les catégories",
+      "allStatuses": "Tous les statuts",
+      "categories": {
+        "technical": "Technique",
+        "management": "Management",
+        "softSkills": "Compétences relationnelles",
+        "industryTrends": "Tendances du secteur",
+        "toolsPlatforms": "Outils et plateformes"
+      },
+      "statuses": {
+        "available": "Disponible (vert)",
+        "caution": "À utiliser avec prudence (jaune)",
+        "unavailable": "Trop récent (rouge)"
+      },
+      "sortOptions": {
+        "safestFirst": "Plus sûr en premier (obsolescence ↓)",
+        "recentFirst": "Plus récent en premier (obsolescence ↑)",
+        "titleAZ": "Titre (A-Z)",
+        "mostUsed": "Plus utilisé"
+      }
+    },
+    "details": {
+      "metrics": "Métriques",
+      "lastUsed": "Dernière utilisation",
+      "usageCount": "Nombre d'utilisations",
+      "editButton": "Modifier le sujet",
+      "deleteButton": "Supprimer le sujet",
+      "selectButton": "Sélectionner pour l'événement",
+      "selecting": "Sélection en cours...",
+      "overrideButton": "Ignorer l'avertissement",
+      "statusGreen": "Réutilisation sécurisée - dernière utilisation il y a plus de 20 mois",
+      "statusYellow": "À utiliser avec prudence - dernière utilisation il y a 12 à 20 mois",
+      "statusRed": "Trop récent - dernière utilisation dans les 12 derniers mois, risque élevé de duplication",
+      "similarityWarning": "{{count}} sujets similaires détectés (similarité > 70 %)"
+    },
+    "viewMode": {
+      "label": "Mode d'affichage",
+      "heatMap": "Carte thermique",
+      "list": "Liste",
+      "board": "Tableau",
+      "boardComingSoon": "Vue tableau bientôt disponible..."
+    },
+    "heatMap": {
+      "title": "Carte thermique d'utilisation des sujets",
+      "subtitle": "Les couleurs plus foncées indiquent une utilisation plus fréquente. Cliquez sur un sujet pour afficher les détails.",
+      "description": "Fréquence d'utilisation des sujets au cours des 24 derniers mois (regroupés par trimestre)",
+      "quarter": "Trimestre",
+      "spring": "Printemps",
+      "summer": "Été",
+      "autumn": "Automne",
+      "usageCount": "Nombre d'utilisations",
+      "totalAttendance": "Participation totale",
+      "avgEngagement": "Engagement moyen",
+      "events": "Événements",
+      "noData": "Aucun historique d'utilisation disponible pour ce sujet.",
+      "noTopics": "Aucun sujet disponible à afficher.",
+      "tooltip": "Cliquez sur un trimestre pour voir les détails des événements qui ont utilisé ce sujet",
+      "hint": "Survolez les points de données pour plus d'informations",
+      "stale": "Obsolète - non utilisé récemment",
+      "trending": "Tendance - utilisé récemment",
+      "legend": {
+        "noUsage": "Aucune utilisation",
+        "low": "Faible utilisation",
+        "medium": "Utilisation moyenne",
+        "high": "Utilisation élevée",
+        "stale": "Obsolète",
+        "trending": "Tendance"
+      },
+      "navigation": {
+        "previous": "Années précédentes",
+        "next": "Années suivantes",
+        "atCurrent": "À l'année actuelle"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Sujets similaires détectés",
+        "message": "Les sujets suivants présentent une forte similarité (> 70 %) avec votre sélection. Êtes-vous sûr de vouloir continuer ?",
+        "similarity": "Similarité",
+        "justification": "Justification (facultatif)",
+        "cancel": "Annuler",
+        "confirm": "Sélectionner quand même"
+      },
+      "override": {
+        "title": "Ignorer l'avertissement d'obsolescence",
+        "message": "Ce sujet a été utilisé récemment (score d'obsolescence : {{score}} %). Veuillez fournir une justification pour l'utiliser à nouveau.",
+        "justification": "Justification",
+        "helper": "Expliquez pourquoi ce sujet devrait être réutilisé malgré sa récence",
+        "cancel": "Annuler",
+        "confirm": "Ignorer et sélectionner"
+      },
+      "delete": {
+        "title": "Supprimer le sujet",
+        "message": "Êtes-vous sûr de vouloir supprimer \"{{title}}\" ? Cette action est irréversible.",
+        "cannotDelete": "Impossible de supprimer ce sujet car il a été utilisé dans {{count}} événement(s).",
+        "cancel": "Annuler",
+        "confirm": "Supprimer le sujet",
+        "deleting": "Suppression en cours...",
+        "success": "Sujet supprimé avec succès",
+        "error": "Échec de la suppression du sujet. Veuillez réessayer."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Brainstorming des intervenants",
+    "subtitle": "Ajoutez des intervenants potentiels au pool de l'événement et assignez-les aux organisateurs pour le démarchage",
+    "form": {
+      "speakerName": "Nom de l'intervenant",
+      "company": "Entreprise",
+      "expertise": "Domaine d'expertise",
+      "assignOrganizer": "Assigner à un organisateur (facultatif)",
+      "unassigned": "Non assigné",
+      "notes": "Notes (facultatif)",
+      "addButton": "Ajouter au pool",
+      "adding": "Ajout en cours...",
+      "error": "Échec de l'ajout de l'intervenant"
+    },
+    "pool": {
+      "title": "Pool d'intervenants",
+      "empty": "Aucun intervenant dans le pool. Ajoutez-en ci-dessus !",
+      "expertise": "Domaine d'expertise",
+      "assigned": "Assigné à",
+      "notes": "Notes",
+      "error": "Échec du chargement du pool d'intervenants"
+    },
+    "actions": {
+      "skipForNow": "Ignorer pour l'instant",
+      "continue": "Continuer vers le démarchage"
+    }
+  },
+  "speakerOutreach": {
+    "title": "Démarchage des intervenants",
+    "subtitle": "Suivez vos activités de démarchage des intervenants et coordonnez-vous avec les autres organisateurs",
+    "breadcrumbs": {
+      "home": "Accueil",
+      "speakerOutreach": "Démarchage des intervenants"
+    },
+    "emptyPool": {
+      "message": "Vous devez ajouter des intervenants au pool avant de commencer le démarchage.",
+      "hint": "Retournez à l'étape de planification de l'événement pour ajouter des intervenants potentiels.",
+      "addSpeakers": "Ajouter des intervenants au pool"
+    },
+    "showBrainstorm": "Ajouter des intervenants",
+    "hideBrainstorm": "Masquer l'ajout d'intervenants",
+    "speakerName": "Intervenant",
+    "contactMethod": "Méthode de contact",
+    "contactDate": "Date de contact",
+    "notes": "Notes",
+    "markContacted": "Marquer comme contacté",
+    "filterByOrganizer": "Filtrer par organisateur",
+    "contactHistory": "Historique des contacts",
+    "daysSinceAssignment": "Jours depuis l'assignation",
+    "overdue": "En retard",
+    "lastContact": "Dernier contact",
+    "outreachDetails": "Détails du démarchage",
+    "noContactHistory": "Aucun historique de contact",
+    "contactedBy": "Contacté par",
+    "markContactedModal": {
+      "title": "Marquer l'intervenant comme contacté",
+      "method": {
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "inPerson": "En personne"
+      },
+      "notesPlaceholder": "Notes sur la conversation...",
+      "error": {
+        "methodRequired": "La méthode de contact est requise",
+        "dateRequired": "La date de contact est requise",
+        "failed": "Échec de l'enregistrement du démarchage",
+        "loadHistory": "Échec du chargement de l'historique des contacts"
+      }
+    },
+    "bulkAction": {
+      "title": "Marquer plusieurs comme contactés",
+      "confirm": "Marquer {{count}} intervenants comme contactés ?"
+    }
+  },
+  "speakerStatus": {
+    "title": "Statut des intervenants",
+    "statusSummary": "Résumé des statuts",
+    "lanes": "Voies de statut",
+    "IDENTIFIED": "Identifié",
+    "INVITED": "Invité",
+    "CONTACTED": "Contacté",
+    "READY": "Prêt",
+    "ACCEPTED": "Accepté",
+    "CONTENT_SUBMITTED": "Contenu soumis",
+    "QUALITY_REVIEWED": "Qualité vérifiée",
+    "CONFIRMED": "Confirmé",
+    "DECLINED": "Refusé",
+    "changeStatus": "Changer le statut",
+    "changeReason": "Raison du changement de statut (facultatif)",
+    "confirmChange": "Changer le statut",
+    "cancelChange": "Annuler",
+    "statusChanged": "Statut modifié avec succès",
+    "invalidTransition": "Transition de statut invalide de {{from}} à {{to}}",
+    "historyTitle": "Historique des statuts",
+    "changedBy": "Modifié par",
+    "noHistory": "Aucun historique de statut disponible",
+    "acceptanceRate": "Taux d'acceptation : {{rate}} %",
+    "progress": "{{accepted}} / {{required}} intervenants acceptés",
+    "thresholdMet": "Seuil minimum atteint ✓",
+    "thresholdNotMet": "Seuil minimum non atteint ({{count}} / {{required}})",
+    "overflowDetected": "Débordement détecté ({{count}} > {{max}})",
+    "dragToChange": "Faites glisser les intervenants pour changer leur statut",
+    "confirmChangeMessage": "Changer le statut de {{speaker}} de {{from}} à {{to}} ?",
+    "reasonHelperText": "Facultatif (max {{max}} caractères)",
+    "reasonPlaceholder": "ex. Intervenant confirmé par e-mail",
+    "reasonTooLong": "La raison est trop longue ({{current}}/{{max}} caractères)"
+  },
+  "speakerContent": {
+    "submitContent": "Soumettre le contenu de l'intervenant",
+    "presentationDetails": "Détails de la présentation",
+    "speakerInformation": "Informations sur l'intervenant",
+    "submitting": "Soumission en cours...",
+    "editSpeakerProfile": "Modifier le profil de l'intervenant",
+    "createNewSpeaker": "Créer un nouvel intervenant",
+    "form": {
+      "username": "Rechercher un intervenant",
+      "usernameHelp": "Entrez le nom d'utilisateur de l'intervenant",
+      "presentationTitle": "Titre de la présentation",
+      "presentationAbstract": "Résumé de la présentation",
+      "charactersRemaining": "caractères restants"
+    },
+    "errors": {
+      "usernameRequired": "L'intervenant est requis",
+      "titleRequired": "Le titre de la présentation est requis",
+      "abstractRequired": "Le résumé de la présentation est requis",
+      "abstractTooLong": "Le résumé doit comporter {{max}} caractères ou moins",
+      "submitFailed": "Échec de la soumission du contenu. Veuillez réessayer."
+    }
+  },
+  "qualityReview": {
+    "title": "Revue qualité",
+    "speaker": "Intervenant",
+    "presentationTitle": "Titre de la présentation",
+    "abstract": "Résumé",
+    "qualityCriteria": "Critères de qualité",
+    "characters": "caractères",
+    "detected": "Détecté",
+    "notDetected": "Non détecté",
+    "passed": "Validé",
+    "promotionDetected": "Promotion détectée",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "approving": "Approbation en cours...",
+    "submitting": "Soumission en cours...",
+    "confirmReject": "Confirmer le rejet",
+    "rejectInstructions": "Veuillez fournir un retour sur les raisons du rejet du contenu.",
+    "feedbackLabel": "Retour",
+    "feedbackPlaceholder": "Expliquez ce qui doit être amélioré...",
+    "noContent": "Aucun contenu disponible",
+    "criteria": {
+      "abstractLength": "Longueur du résumé",
+      "lessonsLearned": "Contient « Leçons apprises »",
+      "noPromotion": "Pas de promotion de produit"
+    },
+    "errors": {
+      "feedbackRequired": "Le retour est requis",
+      "unknown": "Une erreur inconnue s'est produite"
+    }
+  },
+  "speakers": {
+    "invite": "Inviter",
+    "sendInvite": "Envoyer l'invitation",
+    "sendInvitation": "Envoyer l'invitation",
+    "confirmInvite": "Envoyer une invitation à cet intervenant ?",
+    "noEmailTooltip": "Ajoutez un e-mail pour inviter",
+    "inviting": "Envoi en cours...",
+    "sending": "Envoi en cours...",
+    "inviteSent": "Invitation envoyée",
+    "invitationSent": "Invitation envoyée à {{email}}",
+    "inviteFailed": "Échec de l'envoi",
+    "invitationFailed": "Échec de l'envoi de l'invitation",
+    "email": "Adresse e-mail",
+    "emailRequired": "L'e-mail est requis pour envoyer une invitation",
+    "invalidEmail": "Veuillez entrer une adresse e-mail valide",
+    "saveEmail": "Enregistrer l'e-mail",
+    "emailSaved": "E-mail enregistré",
+    "tentative": "Provisoire",
+    "responseDetails": "Détails de la réponse",
+    "acceptedAt": "Accepté le",
+    "preferredTimeSlot": "Créneau horaire préféré",
+    "travelRequirements": "Exigences de déplacement",
+    "technicalRequirements": "Exigences techniques",
+    "initialTitle": "Titre de la présentation",
+    "comments": "Commentaires",
+    "declineDetails": "Détails du refus",
+    "declinedAt": "Refusé le",
+    "declineReason": "Raison",
+    "tentativeDetails": "Détails provisoires",
+    "tentativeReason": "Raison",
+    "sendReminder": "Envoyer un rappel",
+    "sendingReminder": "Envoi en cours...",
+    "reminderSent": "Rappel envoyé à {{email}}",
+    "reminderFailed": "Échec de l'envoi du rappel"
+  },
+  "tasks": {
+    "taskBoard": "Tableau des tâches",
+    "filter": "Filtrer",
+    "myTasks": "Mes tâches",
+    "allTasks": "Toutes les tâches",
+    "sortBy": "Trier par",
+    "dueDate": "Date d'échéance",
+    "createdDate": "Date de création",
+    "addCustomTask": "Ajouter une tâche personnalisée",
+    "errorLoadingTasks": "Échec du chargement des tâches",
+    "pending": "En attente",
+    "pendingDescription": "En attente de l'état déclencheur",
+    "toDo": "À faire",
+    "todoDescription": "Prêt à travailler",
+    "inProgress": "En cours",
+    "inProgressDescription": "En cours de traitement",
+    "completed": "Terminé",
+    "completedDescription": "Tâches terminées",
+    "completeTask": "Terminer la tâche",
+    "completionNotes": "Notes de complétion (facultatif)",
+    "markComplete": "Marquer comme terminé",
+    "due": "Échéance",
+    "assignedTo": "Assigné à",
+    "completedOn": "Terminé le",
+    "completedBy": "Terminé par",
+    "noTasks": "Aucune tâche"
+  },
+  "analytics": {
+    "title": "Analytique",
+    "timeRange": {
+      "all": "Toute la période",
+      "5y": "5 dernières années",
+      "2y": "2 dernières années"
+    },
+    "tabs": {
+      "overview": "Aperçu",
+      "attendance": "Participation",
+      "topics": "Sujets",
+      "companies": "Entreprises"
+    },
+    "kpi": {
+      "totalEvents": "Total des événements",
+      "totalAttendees": "Total des participants",
+      "companiesRepresented": "Entreprises",
+      "totalSessions": "Total des sessions",
+      "totalSpeakers": "Total des intervenants"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Historique des événements",
+      "attendeesPerEvent": "Participants par événement",
+      "returningVsNew": "Participants récurrents vs nouveaux",
+      "eventsPerCategory": "Événements par catégorie",
+      "topicPopularity": "Popularité des sujets",
+      "attendanceOverTime": "Participation par entreprise dans le temps",
+      "sessionsPerCompany": "Sessions par entreprise",
+      "attendeeDistribution": "Répartition des participants par entreprise"
+    },
+    "labels": {
+      "returning": "Récurrents",
+      "new": "Nouveaux",
+      "showDataTable": "Afficher le tableau de données",
+      "hideDataTable": "Masquer le tableau de données",
+      "noData": "Aucune donnée disponible pour cette période",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Tous"
+      },
+      "labelToggle": {
+        "title": "Titre",
+        "category": "Catégorie",
+        "both": "Les deux"
+      },
+      "filterByEvent": "Filtrer par événement",
+      "allEvents": "Tous les événements",
+      "sessions": "sessions",
+      "speakers": "intervenants",
+      "yourCompany": "Votre entreprise"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Tapez un sujet et appuyez sur Entrée...",
+    "fitAll": "Tout afficher",
+    "snapToActive": "Centrer sur l'actif",
+    "backButton": "← Retour à la liste des sujets",
+    "unsavedWarning": "Session non enregistrée — toutes les modifications seront perdues. Retourner ?",
+    "accept": {
+      "title": "Sélectionner le sujet : {{topic}}",
+      "partnerAlignment": "{{count}} des 9 partenaires alignés",
+      "lastCovered": "Dernière présentation : BATbern #{{num}} (il y a {{count}} événements)",
+      "overrideReason": "Pourquoi revisiter ce sujet ? (facultatif)",
+      "confirm": "Sélectionner ce sujet",
+      "cancel": "Continuer à explorer",
+      "saveError": "Échec de l'enregistrement de la sélection du sujet. Veuillez réessayer."
+    }
+  }
+}

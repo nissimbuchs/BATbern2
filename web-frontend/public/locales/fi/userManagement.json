@@ -1,0 +1,294 @@
+{
+  "title": "Käyttäjähallinta",
+  "addUser": "Lisää käyttäjä",
+  "back": "Takaisin",
+  "search": {
+    "placeholder": "Hae nimellä tai sähköpostilla...",
+    "noResults": "Käyttäjiä ei löydy",
+    "clearFilters": "Tyhjennä suodattimet"
+  },
+  "viewMode": {
+    "toggle": "Vaihda näkymätilaa",
+    "grid": "Ruudukkonäkymä",
+    "list": "Listanäkymä"
+  },
+  "filters": {
+    "title": "Suodattimet",
+    "clearAll": "Tyhjennä kaikki suodattimet",
+    "role": {
+      "label": "Rooli",
+      "all": "Kaikki roolit",
+      "organizer": "Järjestäjä",
+      "speaker": "Puhuja",
+      "partner": "Kumppani",
+      "attendee": "Osallistuja"
+    },
+    "company": {
+      "label": "Yritys",
+      "all": "Kaikki yritykset",
+      "placeholder": "Valitse yritys..."
+    },
+    "status": {
+      "label": "Tila",
+      "active": "Aktiivinen",
+      "inactive": "Ei aktiivinen",
+      "all": "Kaikki"
+    }
+  },
+  "table": {
+    "viewUser": "Näytä käyttäjä {{name}}",
+    "headers": {
+      "name": "Nimi",
+      "email": "Sähköposti",
+      "company": "Yritys",
+      "roles": "Roolit",
+      "status": "Tila",
+      "actions": "Toiminnot"
+    },
+    "showing": "Näytetään {{count}} käyttäjää",
+    "showingRange": "{{from}}-{{to}} / {{total}} käyttäjää",
+    "perPage": "per sivu",
+    "empty": "Käyttäjiä ei löydy",
+    "emptySearch": "Yksikään käyttäjä ei vastaa hakuasi. Kokeile tyhjentää suodattimet.",
+    "sortBy": "Lajittele",
+    "ascending": "Nouseva",
+    "descending": "Laskeva"
+  },
+  "actions": {
+    "view": "Näytä",
+    "editRoles": "Muokkaa rooleja",
+    "delete": "Poista",
+    "retry": "Yritä uudelleen",
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "close": "Sulje",
+    "edit": "Muokkaa",
+    "confirm": "Vahvista"
+  },
+  "roles": {
+    "organizer": "Järjestäjä",
+    "speaker": "Puhuja",
+    "partner": "Kumppani",
+    "attendee": "Osallistuja",
+    "multiple": "{{count}} roolia"
+  },
+  "status": {
+    "active": "Aktiivinen",
+    "inactive": "Ei aktiivinen"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Käyttäjän tiedot",
+      "profile": "Profiili",
+      "contactInfo": "Yhteystiedot",
+      "rolesAssigned": "Määritetyt roolit",
+      "companyAffiliation": "Yritysliityntä",
+      "activityHistory": "Toimintahistoria",
+      "accountCreated": "Tili luotu",
+      "createdAt": "Luotu",
+      "updatedAt": "Viimeksi päivitetty",
+      "lastLogin": "Viimeisin kirjautuminen",
+      "noCompany": "Ei yritystä määritetty",
+      "noActivity": "Ei toimintaa saatavilla"
+    },
+    "createUser": {
+      "title": "Luo uusi käyttäjä",
+      "firstName": "Etunimi",
+      "lastName": "Sukunimi",
+      "email": "Sähköposti",
+      "company": "Yritys (valinnainen)",
+      "roles": "Roolit",
+      "selectRoles": "Valitse vähintään yksi rooli",
+      "creating": "Luodaan..."
+    },
+    "editRoles": {
+      "title": "Muokkaa rooleja",
+      "subtitle": "Hallitse rooleja käyttäjälle {{name}}",
+      "user": "Käyttäjä",
+      "selectRoles": "Valitse roolit",
+      "minimumOrganizers": "Järjestelmässä on oltava vähintään {{count}} järjestäjää",
+      "cannotRemove": "Tätä roolia ei voi poistaa",
+      "updating": "Päivitetään...",
+      "saving": "Tallennetaan..."
+    },
+    "deleteConfirm": {
+      "title": "Poista käyttäjä",
+      "message": "Haluatko varmasti poistaa tämän käyttäjän?",
+      "userName": "Käyttäjä: {{name}}",
+      "gdprWarning": "GDPR-huomio: Tämä toiminto poistaa pysyvästi kaikki käyttäjätiedot, eikä sitä voi kumota.",
+      "cascadeWarning": "Kaikki liittyvät tiedot poistetaan myös.",
+      "cannotDelete": "Tätä käyttäjää ei voi poistaa",
+      "lastOrganizerWarning": "Et voi poistaa viimeistä järjestäjää. Järjestelmässä on oltava vähintään {{count}} järjestäjää.",
+      "deleting": "Poistetaan..."
+    }
+  },
+  "pagination": {
+    "previous": "Edellinen",
+    "next": "Seuraava",
+    "page": "Sivu {{page}} / {{total}}",
+    "itemsPerPage": "Kohteita per sivu",
+    "goToPage": "Siirry sivulle"
+  },
+  "loading": {
+    "users": "Ladataan käyttäjiä...",
+    "search": "Haetaan...",
+    "delete": "Poistetaan...",
+    "save": "Tallennetaan...",
+    "updating": "Päivitetään..."
+  },
+  "error": {
+    "required": "Tämä kenttä on pakollinen",
+    "email": {
+      "invalid": "Virheellinen sähköpostiosoite",
+      "exists": "Sähköpostiosoite on jo olemassa",
+      "required": "Sähköposti on pakollinen"
+    },
+    "name": {
+      "tooShort": "Nimen on oltava vähintään {{min}} merkkiä",
+      "tooLong": "Nimi ei saa ylittää {{max}} merkkiä"
+    },
+    "roles": {
+      "required": "Vähintään yksi rooli vaaditaan",
+      "minOrganizers": "Järjestelmässä on oltava vähintään {{count}} järjestäjää"
+    },
+    "minOneRole": "Vähintään yksi rooli on valittava",
+    "loadFailed": "Käyttäjien lataaminen epäonnistui",
+    "createFailed": "Käyttäjän luominen epäonnistui",
+    "updateFailed": "Käyttäjän päivittäminen epäonnistui",
+    "deleteFailed": "Käyttäjän poistaminen epäonnistui",
+    "deleteLastOrganizer": "Viimeistä järjestäjää ei voi poistaa",
+    "networkError": "Verkkovirhe. Tarkista yhteyteesi.",
+    "unauthorized": "Sinulla ei ole oikeutta suorittaa tätä toimintoa",
+    "notFound": "Käyttäjää ei löydy"
+  },
+  "success": {
+    "userCreated": "Käyttäjä luotu onnistuneesti",
+    "userUpdated": "Käyttäjä päivitetty onnistuneesti",
+    "userDeleted": "Käyttäjä poistettu onnistuneesti",
+    "rolesUpdated": "Roolit päivitetty onnistuneesti"
+  },
+  "emptyState": {
+    "title": "Ei käyttäjiä",
+    "description": "Käyttäjiä ei ole vielä lisätty.",
+    "action": "Lisää ensimmäinen käyttäjä"
+  },
+  "accessibility": {
+    "filterPanel": "Suodatinpaneeli",
+    "userTable": "Käyttäjätaulukko",
+    "sortAscending": "Lajittele nousevasti",
+    "sortDescending": "Lajittele laskevasti",
+    "openMenu": "Avaa valikko",
+    "closeModal": "Sulje modaali-ikkuna",
+    "rowCount": "{{count}} käyttäjää taulukossa"
+  },
+  "offline": {
+    "indicator": "Offline",
+    "message": "Olet offline-tilassa. Jotkut ominaisuudet eivät välttämättä ole käytettävissä.",
+    "viewingCache": "Tarkastellaan välimuistissa olevia tietoja"
+  },
+  "batchImport": {
+    "button": "Tuo puhujia",
+    "title": "Puhujien erätuonti",
+    "dropzone": "Pudota speakers.json tähän tai napsauta selataksesi",
+    "dropzoneActive": "Pudota tiedosto tähän...",
+    "dropzoneHint": "Lataa speakers.json poluista apps/BATspa-old/src/api/",
+    "preview": "{{count}} puhujaa tuotavaksi",
+    "progress": "Tuodaan puhuja {{current}} / {{total}}...",
+    "complete": "Tuonti valmis: {{success}} luotu, {{updated}} päivitetty, {{failed}} epäonnistunut, {{skipped}} ohitettu",
+    "noSpeakers": "Tiedostosta ei löydy puhujia",
+    "checkingExisting": "Tarkistetaan olemassa olevia käyttäjiä...",
+    "summary": "{{total}} puhujaa: {{new}} uutta, {{update}} päivitettävää, {{skip}} muuttumatonta",
+    "cancelButton": "Peruuta",
+    "importButton": "Luo {{new}} / Päivitä {{update}}",
+    "allSkipped": "Ei muutoksia tuotavaksi",
+    "columns": {
+      "name": "Nimi",
+      "email": "Sähköposti",
+      "company": "Yritys",
+      "status": "Tila"
+    },
+    "status": {
+      "pending": "Uusi",
+      "importing": "Tuodaan...",
+      "success": "Luotu",
+      "updated": "Päivitetty",
+      "error": "Virhe",
+      "skipped": "Ohitettu",
+      "noChanges": "Ei muutoksia",
+      "willUpdate": "Päivitetään: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Virheellinen tiedosto. Lataa JSON-tiedosto.",
+      "parseError": "Tiedoston jäsennys epäonnistui: {{error}}"
+    },
+    "hasPortrait": "Muotokuva on olemassa",
+    "noPortrait": "Ei muotokuvaa"
+  },
+  "participantImport": {
+    "button": "Tuo osallistujia",
+    "title": "Tuo osallistujia CSV-tiedostosta",
+    "dropzone": "Vedä ja pudota CSV-tiedosto tähän",
+    "dropzoneActive": "Pudota CSV-tiedosto tähän",
+    "dropzoneHint": "tai napsauta valitaksesi tiedoston",
+    "fileLoaded": "Tiedosto ladattu: {{name}} ({{size}} kt)",
+    "preview": "Esikatselu: {{count}} osallistujaa valmiina tuotavaksi",
+    "previewLimitation": "Huomio: Esikatselu näyttää olemassa olevat käyttäjät vain käyttäjänimen perusteella. Tuonnin aikana käyttäjät voidaan myös yhdistää nimen perusteella (etu- + sukunimi), jos se ei ole moniselitteinen. Jotkut 'Uusi'-merkityt osallistujat saattavat vastata olemassa olevia käyttäjiä nimen perusteella.",
+    "importButton": "Tuo {{count}} osallistujaa",
+    "startImport": "Aloita tuonti",
+    "progress": "Tuodaan: {{current}} / {{total}}",
+    "summary": "Tuonnin yhteenveto",
+    "columns": {
+      "name": "Nimi",
+      "email": "Sähköposti",
+      "events": "Tapahtumat",
+      "status": "Tila"
+    },
+    "status": {
+      "pending": "Odottaa",
+      "importing": "Tuodaan",
+      "success": "Onnistui",
+      "error": "Epäonnistui",
+      "skipped": "Ohitettu"
+    },
+    "stats": {
+      "total": "Yhteensä: {{count}}",
+      "success": "Onnistuneet: {{count}}",
+      "failed": "Epäonnistuneet: {{count}}",
+      "pending": "Odottavat: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synteettinen",
+      "eventsCount": "{{count}} tapahtumaa"
+    },
+    "noParticipants": "Tämä käyttäjä ei ole vielä osallistunut mihinkään tapahtumaan.",
+    "loadingEvents": "Ladataan tapahtumia...",
+    "errorLoadingEvents": "Tapahtumaosallistumisten lataaminen epäonnistui"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Yleiskatsaus",
+      "eventsParticipated": "Osallistutut tapahtumat"
+    },
+    "overviewText": "Käyttäjäprofiilin yleiskatsaus. Lisätietoja voidaan lisätä tähän.",
+    "eventsTable": {
+      "eventCode": "Tapahtumakoodi",
+      "title": "Otsikko",
+      "date": "Päivämäärä",
+      "status": "Tila",
+      "loading": "Ladataan tapahtumia...",
+      "loadError": "Tapahtumaosallistumishistorian lataaminen epäonnistui",
+      "noEvents": "Tämä käyttäjä ei ole vielä osallistunut mihinkään tapahtumaan",
+      "untitledEvent": "Nimetön tapahtuma",
+      "dateTBD": "Vahvistetaan myöhemmin",
+      "ariaLabel": "Taulukko tapahtumista, joihin käyttäjä on osallistunut",
+      "statusValues": {
+        "REGISTERED": "Rekisteröity",
+        "CONFIRMED": "Vahvistettu",
+        "ATTENDED": "Osallistunut",
+        "CANCELLED": "Peruutettu",
+        "WAITLISTED": "Jonossa"
+      }
+    },
+    "bio": "Esittely"
+  }
+}

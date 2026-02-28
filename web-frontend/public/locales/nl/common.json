@@ -1,0 +1,597 @@
+{
+  "app": {
+    "title": "BATbern Evenementenbeheerplatform",
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "events": "Evenementen",
+    "speakers": "Sprekers",
+    "partners": "Partners",
+    "companies": "Bedrijven",
+    "users": "Gebruikers",
+    "myCompany": "Mijn bedrijf",
+    "myAccount": "Mijn account",
+    "analytics": "Analyse",
+    "content": "Inhoud zoeken",
+    "profile": "Profiel",
+    "logout": "Uitloggen",
+    "myEvents": "Mijn evenementen",
+    "presentationMode": "Presentatiemodus",
+    "myContent": "Mijn inhoud",
+    "myRegistrations": "Mijn registraties",
+    "about": "Over",
+    "pastEvents": "Afgelopen evenementen",
+    "publicSite": "Openbare website",
+    "partnerTopics": "Partneronderwerpen",
+    "partnerMeetings": "Partnervergaderingen",
+    "topics": "Onderwerpssuggesties",
+    "openMenu": "Menu openen",
+    "closeMenu": "Menu sluiten"
+  },
+  "public": {
+    "login": "Inloggen",
+    "joinUp": "Aanmelden",
+    "register": "Registreren",
+    "goToPortal": "Naar portaal",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "U bent al geregistreerd voor dit evenement."
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "Welkom bij BATbern!",
+      "titleWithName": "Welkom, {{name}}!",
+      "subtitle": "Uw account is klaar. Blader door onze aankomende evenementen en archieven.",
+      "dashboardSoon": "Uw persoonlijk dashboard is onderweg — we laten u weten wanneer het live is.",
+      "browseEvents": "Evenementen bekijken",
+      "viewArchive": "Archief bekijken",
+      "canDoTitle": "Wat u nu kunt doen",
+      "canDo1": "Bladeren door aankomende BATbern-evenementen en u inschrijven",
+      "canDo2": "Vroegere lezingen en materialen van sprekers bekijken in het archief",
+      "canDo3": "Uw account en meldingsvoorkeuren beheren"
+    }
+  },
+  "footer": {
+    "tagline": "Technologische uitwisseling tussen IT-experts",
+    "quickLinks": "Snelle links",
+    "currentEvent": "Huidig evenement",
+    "legal": "Juridisch",
+    "privacyPolicy": "Privacybeleid",
+    "support": "Ondersteuning",
+    "copyright": "© {{year}} Berner Architekten Treffen. Alle rechten voorbehouden."
+  },
+  "actions": {
+    "save": "Opslaan",
+    "saving": "Opslaan...",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "create": "Aanmaken",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "reset": "Herstellen",
+    "submit": "Indienen",
+    "close": "Sluiten",
+    "sending": "Verzenden...",
+    "loading": "Laden..."
+  },
+  "language": {
+    "select": "Taal selecteren",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語"
+  },
+  "status": {
+    "wait": "Wacht {{seconds}} seconden",
+    "didntReceive": "Heeft u de e-mail niet ontvangen?"
+  },
+  "menu": {
+    "profile": "Profiel",
+    "profileSettings": "Profielinstellingen",
+    "settings": "Instellingen",
+    "administration": "Beheer",
+    "help": "Help",
+    "logout": "Uitloggen",
+    "signOut": "Afmelden"
+  },
+  "role": {
+    "organizer": "Evenementenorganisator",
+    "speaker": "Spreker",
+    "partner": "Partner",
+    "attendee": "Deelnemer"
+  },
+  "company": {
+    "title": "Bedrijfsbeheer",
+    "createCompany": "Bedrijf aanmaken",
+    "editCompany": "Bedrijf bewerken",
+    "viewDetails": "Details bekijken voor {{name}}",
+    "noCompaniesFound": "Geen bedrijven gevonden",
+    "adjustFilters": "Probeer uw zoekopdracht of filters aan te passen",
+    "backToList": "Terug",
+    "viewMode": {
+      "grid": "Rasterweergave",
+      "list": "Lijstweergave",
+      "toggleCurrent": "Weergavemodus wisselen. Huidig: {{mode}}"
+    },
+    "fields": {
+      "name": "Bedrijfsnaam",
+      "displayName": "Weergavenaam (indien anders dan juridische naam)",
+      "swissUID": "Zwitsers UID (CHE-XXX.XXX.XXX)",
+      "website": "Website",
+      "industry": "Branche",
+      "sector": "Sector (optioneel)",
+      "city": "Stad",
+      "canton": "Kanton",
+      "country": "Land",
+      "description": "Beschrijving",
+      "legalName": "Korte naam: {{name}}",
+      "logo": "Bedrijfslogo"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com",
+      "canton": "BE, ZH, GE, enz."
+    },
+    "industries": {
+      "selectIndustry": "Branche selecteren",
+      "technology": "Technologie",
+      "cloudComputing": "Cloud computing",
+      "devOps": "DevOps",
+      "financialServices": "Financiële diensten",
+      "healthcare": "Gezondheidszorg",
+      "manufacturing": "Productie",
+      "consulting": "Consultancy",
+      "education": "Onderwijs",
+      "other": "Overig"
+    },
+    "sectors": {
+      "selectSector": "Sector selecteren",
+      "public": "Publiek",
+      "private": "Privaat",
+      "nonprofit": "Non-profit",
+      "government": "Overheid"
+    },
+    "badges": {
+      "partner": "Partner",
+      "verified": "Geverifieerd"
+    },
+    "stats": {
+      "userCount": "{{count}} gebruiker",
+      "userCount_one": "{{count}} gebruiker",
+      "userCount_other": "{{count}} gebruikers"
+    },
+    "filters": {
+      "partnerOnly": "Alleen partnerbedrijven",
+      "verifiedOnly": "Alleen geverifieerde bedrijven",
+      "industry": "Branche",
+      "allIndustries": "Alle branches",
+      "clearAll": "Alle filters wissen",
+      "filters": "Filters"
+    },
+    "form": {
+      "createTitle": "Nieuw bedrijf aanmaken",
+      "editTitle": "Bedrijf bewerken",
+      "required": "Verplicht",
+      "saveDraft": "Concept opslaan",
+      "saveCreate": "Opslaan en aanmaken",
+      "saveChanges": "Wijzigingen opslaan",
+      "unsavedChanges": "U heeft niet-opgeslagen wijzigingen. Weet u zeker dat u wilt sluiten?",
+      "characterCount": "{{count}}/{{max}} tekens",
+      "helpText": {
+        "swissUID": "Optioneel - voor automatische verificatie"
+      },
+      "errors": {
+        "nameRequired": "Bedrijfsnaam is verplicht",
+        "nameMinLength": "Naam moet minimaal {{min}} tekens bevatten",
+        "nameMaxLength": "Naam mag maximaal {{max}} tekens bevatten",
+        "displayNameMaxLength": "Weergavenaam mag maximaal {{max}} tekens bevatten",
+        "invalidSwissUID": "Ongeldig Zwitsers UID-formaat (CHE-XXX.XXX.XXX)",
+        "invalidWebsite": "Ongeldige website-URL",
+        "industryRequired": "Branche is verplicht",
+        "cityRequired": "Stad is verplicht",
+        "cantonRequired": "Kanton is verplicht",
+        "countryRequired": "Land is verplicht",
+        "descriptionMaxLength": "Beschrijving mag maximaal {{max}} tekens bevatten",
+        "noPermission": "U heeft geen toestemming om dit bedrijf te bewerken. Sprekers kunnen alleen hun eigen bedrijf bewerken."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Overzicht",
+        "users": "Gebruikers",
+        "statistics": "Statistieken",
+        "activity": "Activiteit"
+      },
+      "overviewText": "In dit overzichtsgedeelte kunnen aanvullende bedrijfsgegevens, recente updates of hoogtepunten worden weergegeven.",
+      "noData": "Geen bedrijfsgegevens beschikbaar"
+    },
+    "errors": {
+      "loadFailed": "Laden van bedrijf mislukt",
+      "saveFailed": "Er is een fout opgetreden bij het opslaan van het bedrijf",
+      "deleteFailed": "Verwijderen van bedrijf mislukt",
+      "retry": "Opnieuw proberen"
+    },
+    "search": {
+      "placeholder": "Bedrijven zoeken..."
+    },
+    "batchImport": {
+      "button": "Batch importeren",
+      "title": "Bedrijven importeren uit JSON",
+      "dropzone": "Sleep JSON-bestand hierheen of klik om te uploaden",
+      "dropzoneActive": "Laat het JSON-bestand hier vallen",
+      "invalidJson": "Ongeldig JSON-bestand. Controleer het formaat.",
+      "noCompanies": "Geen bedrijven gevonden in het JSON-bestand.",
+      "preview": "Voorbeeld ({{count}} bedrijven)",
+      "importButton": "Alles importeren",
+      "cancelButton": "Annuleren",
+      "status": {
+        "pending": "In behandeling",
+        "importing": "Importeren...",
+        "success": "Geïmporteerd",
+        "updated": "Bijgewerkt",
+        "willUpdate": "Wordt bijgewerkt",
+        "error": "Fout",
+        "skipped": "Overgeslagen (bestaat)"
+      },
+      "progress": "Importeren {{current}} van {{total}}...",
+      "complete": "Import voltooid: {{success}} aangemaakt, {{updated}} bijgewerkt, {{failed}} mislukt, {{skipped}} overgeslagen",
+      "checkingExisting": "Bestaande bedrijven controleren...",
+      "existingFound": "{{count}} van {{total}} bedrijven bestaan al en worden bijgewerkt.",
+      "allSkipped": "Alles overgeslagen",
+      "importButtonWithCount": "{{count}} bedrijven importeren",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Weergavenaam",
+        "name": "API-naam",
+        "industry": "Branche",
+        "website": "Website",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
+        "parseError": "Parseren van JSON-bestand mislukt: {{error}}",
+        "importFailed": "Importeren van {{name}} mislukt: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Bedrijf verwijderen",
+      "message": "Weet u zeker dat u dit bedrijf wilt verwijderen?",
+      "dataWarning": "Deze actie verwijdert het bedrijf definitief en kan niet ongedaan worden gemaakt.",
+      "cascadeWarning": "Alle gekoppelde gegevens (gebruikers, partnerschappen, sprekers, evenementen) kunnen worden beïnvloed.",
+      "deleting": "Verwijderen...",
+      "success": "Bedrijf succesvol verwijderd"
+    },
+    "pagination": {
+      "itemsPerPage": "Items per pagina"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "button": "Historische evenementen importeren",
+      "title": "Evenementen importeren uit topics.json",
+      "dropzone": "Sleep het bestand topics.json hierheen of klik om te uploaden",
+      "dropzoneActive": "Laat het JSON-bestand hier vallen",
+      "dropzoneHint": "Upload het vooraf verwerkte bestand topics.json (met de velden parsedDate, description en moderator)",
+      "invalidJson": "Ongeldig JSON-bestand. Controleer het formaat.",
+      "noEvents": "Geen evenementen gevonden in het JSON-bestand.",
+      "preview": "Voorbeeld ({{count}} evenementen)",
+      "importButton": "Alles importeren",
+      "cancelButton": "Annuleren",
+      "status": {
+        "pending": "In behandeling",
+        "importing": "Importeren...",
+        "success": "Geïmporteerd",
+        "error": "Fout",
+        "skipped": "Overgeslagen (bestaat)"
+      },
+      "progress": "Importeren {{current}} van {{total}}...",
+      "complete": "Import voltooid: {{success}} geslaagd, {{failed}} mislukt, {{skipped}} overgeslagen",
+      "allSkipped": "Alles overgeslagen",
+      "importButtonWithCount": "{{count}} evenementen importeren",
+      "columns": {
+        "eventNumber": "#",
+        "title": "Titel",
+        "date": "Datum",
+        "organizer": "Organisator",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
+        "parseError": "Parseren van JSON-bestand mislukt: {{error}}",
+        "importFailed": "Importeren van evenement {{number}} mislukt: {{error}}"
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Sleep een bestand hierheen of klik om te selecteren",
+    "dragDropMultiple": "Sleep bestanden hierheen of klik om te selecteren",
+    "dragActive": "Laat het bestand hier vallen",
+    "acceptedFormats": "Geaccepteerde formaten: PNG, JPEG, SVG (max. {{maxSize}} MB)",
+    "acceptedFormatsMultiple": "Geaccepteerde formaten: Meerdere bestandstypen (max. {{maxSize}} MB per bestand)",
+    "uploading": "Uploaden... {{progress}}%",
+    "removeFile": "Bestand verwijderen",
+    "altText": "Voorbeeld van geüpload bestand",
+    "errors": {
+      "multipleFiles": "Er kan slechts één bestand tegelijk worden geüpload"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "Registratie ingediend!",
+      "subtitle": "Controleer uw e-mail om uw registratie te bevestigen",
+      "emailSent": "Bevestigingsmail verzonden",
+      "emailSentTo": "We hebben een bevestigingsmail gestuurd naar",
+      "clickLink": "Klik op de bevestigingslink in de e-mail om uw registratie te voltooien. De link is geldig voor",
+      "validFor": "48 uur",
+      "valid": "",
+      "didntReceive": "Heeft u de e-mail niet ontvangen?",
+      "checkSpam": "Controleer uw spam/ongewenste e-mailmap",
+      "checkEmail": "Zorg ervoor dat u het juiste e-mailadres heeft ingevoerd",
+      "waitMinutes": "Wacht een paar minuten en controleer opnieuw",
+      "close": "Sluiten"
+    },
+    "alreadyRegistered": {
+      "title": "U bent geregistreerd!",
+      "pending": "Registratie in behandeling voor",
+      "checkEmail": "Controleer uw e-mail om te bevestigen"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "button": "Sessies importeren",
+      "title": "Batch importeren van sessies",
+      "dropzone": "Sleep sessions.json hierheen of klik om te uploaden",
+      "dropzoneActive": "Laat sessions.json hier vallen",
+      "dropzoneHint": "Alleen sessions.json wordt geaccepteerd",
+      "preview": "{{count}} sessies te importeren",
+      "progress": "{{current}} van {{total}} geïmporteerd",
+      "complete": "Import voltooid: {{success}} geslaagd, {{skipped}} overgeslagen, {{failed}} mislukt",
+      "noSessions": "Geen sessies gevonden in bestand",
+      "importButtonWithCount": "{{count}} sessies importeren",
+      "cancelButton": "Annuleren",
+      "columns": {
+        "event": "Evenement",
+        "title": "Titel",
+        "speakers": "Sprekers",
+        "status": "Status"
+      },
+      "status": {
+        "pending": "In behandeling",
+        "importing": "Importeren...",
+        "success": "Geslaagd",
+        "skipped": "Overgeslagen",
+        "error": "Fout"
+      },
+      "errors": {
+        "invalidFile": "Ongeldig bestand. Alleen sessions.json is toegestaan.",
+        "parseError": "Parsefout: {{error}}"
+      }
+    }
+  },
+  "organizer": {
+    "select": "Organisator selecteren",
+    "all": "Alle organisatoren",
+    "unassigned": "Niet toegewezen"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "Uw dashboard laden...",
+      "invalidLink": "Ongeldige link",
+      "invalidLinkMessage": "Deze pagina vereist een geldige dashboardlink. Gebruik de link uit uw uitnodigingsmail.",
+      "linkExpired": "Link is verlopen",
+      "linkExpiredMessage": "Uw link is verlopen. Neem contact op met de evenementenorganisator voor een nieuwe link.",
+      "error": "Er is iets misgegaan",
+      "errorMessage": "We konden uw dashboard niet laden. Probeer het later opnieuw.",
+      "welcome": "Welkom, {{name}}",
+      "profileComplete": "Profiel {{percent}}% compleet",
+      "upcomingEvents": "Aankomende evenementen",
+      "pastEvents": "Afgelopen evenementen",
+      "noUpcomingEvents": "U heeft geen aankomende spreekverplichtingen",
+      "noPastEvents": "Nog geen afgelopen spreekverplichtingen",
+      "session": "Sessie",
+      "titleStatus": "Titel",
+      "abstractStatus": "Samenvatting",
+      "materialStatus": "Materiaal",
+      "revisionRequested": "Revisie gevraagd",
+      "responseBy": "Reageer vóór",
+      "contentBy": "Inhoud vóór",
+      "organizer": "Organisator",
+      "contact": "Contact",
+      "respond": "Reageren",
+      "updateProfile": "Profiel bijwerken",
+      "submitContent": "Inhoud indienen",
+      "speakerStatus": "Sprekerstatus",
+      "contentStatus": "Inhoudsstatus",
+      "materialProgress": "Voortgang materiaalindiening",
+      "deadlines": "Deadlines",
+      "urgent": "Dringend",
+      "soon": "Binnenkort",
+      "onTime": "Op tijd",
+      "actions": "Acties",
+      "pastEvent": "Afgelopen evenement",
+      "materialAvailable": "Materiaal beschikbaar",
+      "noMaterials": "Geen materialen"
+    },
+    "content": {
+      "title": "Uw inhoud indienen",
+      "loading": "Inhoud laden...",
+      "invalidLink": "Ongeldige link",
+      "invalidLinkMessage": "Deze pagina vereist een geldige inhoudslink. Gebruik de link uit uw uitnodigingsmail.",
+      "linkExpired": "Link is verlopen",
+      "linkExpiredMessage": "Deze link is verlopen. Neem contact op met de organisator voor een nieuwe link.",
+      "sessionNotAssigned": "Sessie niet toegewezen",
+      "sessionNotAssignedMessage": "Uw sessie is nog niet toegewezen. Neem contact op met de organisator om uw sessie toe te wijzen voordat u inhoud indient.",
+      "event": "Evenement",
+      "presentationTitle": "Presentatietitel",
+      "abstract": "Samenvatting",
+      "titleRequired": "Titel is verplicht",
+      "abstractRequired": "Samenvatting is verplicht",
+      "characterCount": "{{current}} / {{max}}",
+      "presentationFile": "Presentatiebestand",
+      "optional": "optioneel",
+      "saving": "Opslaan...",
+      "lastSaved": "Laatst opgeslagen: {{time}}",
+      "unsavedChanges": "Niet-opgeslagen wijzigingen",
+      "submitting": "Indienen...",
+      "submitContent": "Inhoud indienen",
+      "submittedSuccessfully": "Inhoud succesvol ingediend!",
+      "submittedMessage": "Uw inhoud voor \"{{sessionTitle}}\" is ingediend ter beoordeling.",
+      "version": "Versie",
+      "status": "Status",
+      "nextStepsInfo": "De organisator beoordeelt uw indiening en neemt contact met u op als er wijzigingen nodig zijn.",
+      "revisionRequested": "Revisie gevraagd",
+      "reviewedBy": "Beoordeeld door",
+      "on": "op"
+    },
+    "upload": {
+      "dragDropTitle": "Presentatie uploaden",
+      "dragDropMessage": "Sleep uw bestand hierheen of klik om te bladeren",
+      "supportedFormats": "Ondersteunde formaten: PPTX, PDF, KEY (max. 50 MB)",
+      "uploading": "Uploaden...",
+      "uploadProgress": "{{percent}}% geüpload",
+      "uploadComplete": "Upload voltooid",
+      "removeFile": "Bestand verwijderen",
+      "currentFile": "Huidig bestand",
+      "download": "Downloaden",
+      "replace": "Vervangen",
+      "errors": {
+        "fileTooLarge": "Bestand is te groot. Maximale grootte is 50 MB.",
+        "invalidType": "Ongeldig bestandstype. Alleen PPTX-, PDF- en KEY-bestanden zijn toegestaan.",
+        "uploadFailed": "Upload mislukt. Probeer het opnieuw."
+      }
+    }
+  },
+  "archive": {
+    "title": "Afgelopen evenementen",
+    "description": "Blader door meer dan 20 jaar BATbern-evenementen met presentaties en sprekers",
+    "viewToggle": {
+      "grid": "Raster",
+      "list": "Lijst"
+    },
+    "loading": "Evenementen laden...",
+    "loadingMore": "Meer evenementen laden...",
+    "loadingTopics": "Onderwerpen laden...",
+    "noTopicsAvailable": "Geen onderwerpen beschikbaar",
+    "noResults": "Geen evenementen gevonden",
+    "errors": {
+      "loadFailed": "Laden van evenementen mislukt"
+    },
+    "card": {
+      "sessions": "Presentaties",
+      "viewDetails": "Details bekijken",
+      "andMore": "en {{count}} meer"
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Evenementen zoeken...",
+      "topics": "Onderwerpen",
+      "clearAll": "Alles wissen",
+      "activeCount": "{{count}} actief filter",
+      "activeCount_one": "{{count}} actief filter",
+      "activeCount_other": "{{count}} actieve filters"
+    },
+    "sort": {
+      "label": "Sorteren op",
+      "newest": "Nieuwste eerst",
+      "oldest": "Oudste eerst"
+    },
+    "detail": {
+      "backToArchive": "← Terug naar archief"
+    }
+  },
+  "notifications": {
+    "title": "Meldingen",
+    "markAllAsRead": "Alles als gelezen markeren",
+    "markAsRead": "Als gelezen markeren",
+    "delete": "Verwijderen",
+    "reload": "Herladen",
+    "viewAll": "Alles bekijken",
+    "hideRead": "Gelezen verbergen",
+    "empty": "Geen meldingen",
+    "noNotifications": "Nog geen meldingen",
+    "lastUpdated": "Laatst bijgewerkt",
+    "deleteConfirmation": {
+      "title": "Melding verwijderen",
+      "message": "Weet u zeker dat u deze melding wilt verwijderen?"
+    }
+  },
+  "emailTemplates": {
+    "title": "E-mailsjablonen",
+    "layoutTemplates": "Lay-outsjablonen",
+    "layoutTemplatesInfo": "Definieert de BATbern-look & feel voor alle e-mails. Wijzigingen hier beïnvloeden alle sjablonen die deze lay-out gebruiken.",
+    "contentTemplates": "E-mailinhoud",
+    "categories": {
+      "SPEAKER": "Sprekers",
+      "REGISTRATION": "Registratie",
+      "TASK_REMINDER": "Taakherinneringen",
+      "NEWSLETTER": "Nieuwsbrief"
+    },
+    "layoutKey": "Lay-out",
+    "standalone": "Geen (zelfstandig)",
+    "systemTemplate": "Systeemsjabloon",
+    "subject": "Onderwerp",
+    "htmlBody": "HTML-inhoud",
+    "variables": "Beschikbare variabelen",
+    "preview": "Voorbeeld",
+    "editTitle": "Sjabloon bewerken",
+    "createTitle": "Nieuw sjabloon",
+    "newTemplate": "+ Nieuw sjabloon",
+    "noLayouts": "Geen lay-outsjablonen gevonden.",
+    "noTemplates": "Geen sjablonen gevonden voor dit filter.",
+    "missingContentPlaceholder": "Tijdelijke aanduiding {{content}} ontbreekt — e-mailtekst is leeg",
+    "cannotDeleteSystem": "Systeemsjablonen kunnen niet worden verwijderd.",
+    "cannotDeleteLayout": "Lay-outsjablonen kunnen niet worden verwijderd.",
+    "deleteFailed": "Verwijderen van sjabloon mislukt.",
+    "saveFailed": "Opslaan van sjabloon mislukt. Probeer het opnieuw.",
+    "validation": {
+      "htmlBodyRequired": "HTML-tekst is verplicht.",
+      "subjectRequired": "Onderwerp is verplicht voor inhoudssjablonen.",
+      "templateKeyRequired": "Sjabloonsleutel is verplicht.",
+      "allFieldsRequired": "Sjabloonsleutel, onderwerp en HTML-tekst zijn verplicht."
+    }
+  },
+  "presentation": {
+    "errorTitle": "Evenement kon niet worden geladen",
+    "errorMessage": "Controleer uw netwerkverbinding en probeer het opnieuw.",
+    "retryButton": "Opnieuw proberen"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Evenementtypes",
+      "importData": "Gegevens importeren",
+      "taskTemplates": "Taaksjablonen",
+      "emailTemplates": "E-mailsjablonen",
+      "presentationSettings": "Presentatie"
+    },
+    "accessDenied": "Toegang geweigerd",
+    "organizerOnly": "Deze pagina is alleen voor organisatoren.",
+    "presentationSettings": {
+      "title": "Presentatie-instellingen",
+      "subtitle": "Deze waarden verschijnen op de moderatorpresentatiepagina (/present/:eventCode).",
+      "aboutText": "Over-tekst",
+      "partnerCount": "Aantal partners",
+      "save": "Opslaan",
+      "saved": "Instellingen opgeslagen.",
+      "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
+    },
+    "taskTemplates": {
+      "defaultSection": "Standaardsjablonen",
+      "customSection": "Aangepaste sjablonen",
+      "addTemplate": "+ Sjabloon toevoegen",
+      "noDefaults": "Geen standaardsjablonen.",
+      "noCustom": "Nog geen aangepaste sjablonen.",
+      "confirmDelete": "Sjabloon verwijderen?",
+      "deleteFailed": "Verwijderen van sjabloon mislukt. Probeer het opnieuw."
+    }
+  }
+}

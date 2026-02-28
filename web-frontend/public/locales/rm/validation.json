@@ -1,0 +1,12 @@
+{
+  "email": {
+    "required": "L'adressa dad e-mail è obligatorica",
+    "invalid": "Endatrai per plaschair ina adressa dad e-mail valida",
+    "tooLong": "L'adressa dad e-mail è memia lunga (max. 255 caracters)"
+  },
+  "password": {
+    "required": "La pled-clav è obligatorica",
+    "tooShort": "La pled-clav sto avair almain 8 caracters",
+    "tooLong": "La pled-clav è memia lunga (max. 128 caracters)"
+  }
+}

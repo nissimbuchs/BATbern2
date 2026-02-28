@@ -1,0 +1,28 @@
+{
+  "userSync": {
+    "title": "Sincronisaziun dals utilisaders",
+    "status": {
+      "checking": "Controlla...",
+      "error": "Errur",
+      "inSync": "Sincronisà",
+      "outOfSync": "Betg sincronisà"
+    },
+    "counts": "Cognito: {{cognito}} | Banca da datas: {{database}}",
+    "button": {
+      "sync": "Sincronisescha da Cognito",
+      "syncing": "Sincronisaziun..."
+    },
+    "warning": "{{missing}} utilisader(s) mancant(s) en la banca da datas, {{orphaned}} utilisader(s) orfan(s)",
+    "reconciliation": {
+      "success": "Sincronisaziun cumplettada! {{created}} utilisader(s) creà(s), {{deactivated}} utilisader(s) desactivà(s)",
+      "error": "Sincronisaziun na ha betg reussì: {{message}}"
+    },
+    "report": {
+      "title": "Rapport da sincronisaziun",
+      "created": "Utilisaders creads",
+      "deactivated": "Utilisaders desactivads",
+      "duration": "Durada",
+      "errors": "Errurs"
+    }
+  }
+}

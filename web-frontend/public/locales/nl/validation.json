@@ -1,0 +1,12 @@
+{
+  "email": {
+    "required": "E-mailadres is verplicht",
+    "invalid": "Voer een geldig e-mailadres in",
+    "tooLong": "E-mailadres is te lang (max. 255 tekens)"
+  },
+  "password": {
+    "required": "Wachtwoord is verplicht",
+    "tooShort": "Wachtwoord moet minimaal 8 tekens lang zijn",
+    "tooLong": "Wachtwoord is te lang (max. 128 tekens)"
+  }
+}

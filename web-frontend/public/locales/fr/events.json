@@ -1,0 +1,1038 @@
+{
+  "navigation": {
+    "dashboard": "Événements",
+    "createEvent": "Créer un événement",
+    "eventTimeline": "Chronologie",
+    "events": "Événements",
+    "topicManagement": "Gestion des sujets",
+    "blobSelector": "Sélecteur de blob"
+  },
+  "eventPage": {
+    "tabs": {
+      "overview": "Aperçu",
+      "speakers": "Intervenants",
+      "venue": "Lieu",
+      "team": "Équipe",
+      "participants": "Participants",
+      "publishing": "Publication",
+      "newsletter": "Newsletter",
+      "settings": "Paramètres"
+    },
+    "tabsAriaLabel": "Navigation de la page événement",
+    "overview": {
+      "step": "Étape",
+      "eventDetails": "Détails de l'événement",
+      "keyMetrics": "Indicateurs clés",
+      "registered": "inscrits",
+      "filled": "remplis",
+      "speakers": "Intervenants",
+      "confirmed": "confirmés",
+      "materials": "Documents",
+      "pending": "en attente",
+      "complete": "complet",
+      "sessionsComplete": "sessions terminées",
+      "budget": "Budget",
+      "selectedTopic": "Sujet sélectionné",
+      "noTopicSelected": "Aucun sujet sélectionné pour l'instant",
+      "changeTopic": "Changer de sujet",
+      "quickActions": "Actions rapides",
+      "selectTopic": "Sélectionner un sujet",
+      "sendNotification": "Envoyer une notification",
+      "previewPublic": "Aperçu de la page publique",
+      "viewTimeline": "Voir la chronologie"
+    },
+    "participantsTab": {
+      "title": "Participants à l'événement"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Nom",
+        "email": "E-mail",
+        "company": "Entreprise",
+        "status": "Statut",
+        "registrationDate": "Date d'inscription",
+        "actions": "Actions"
+      },
+      "empty": "Aucun participant inscrit pour l'instant",
+      "actions": {
+        "cancel": "Annuler l'inscription",
+        "delete": "Supprimer l'inscription"
+      },
+      "deleteDialog": {
+        "title": "Supprimer l'inscription",
+        "message": "Êtes-vous sûr de vouloir supprimer définitivement l'inscription de {{name}} ? Cette action est irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer"
+      }
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Rechercher des participants",
+        "placeholder": "Rechercher par nom ou e-mail..."
+      },
+      "status": {
+        "label": "Statut d'inscription",
+        "all": "Tous les statuts",
+        "confirmed": "Confirmé",
+        "registered": "Inscrit",
+        "attended": "Présent",
+        "cancelled": "Annulé",
+        "waitlisted": "Liste d'attente"
+      },
+      "clearAll": "Effacer les filtres"
+    },
+    "participantList": {
+      "loading": "Chargement des participants...",
+      "error": {
+        "loadFailed": "Échec du chargement des participants. Veuillez réessayer."
+      },
+      "actions": {
+        "retry": "Réessayer"
+      }
+    },
+    "settings": {
+      "moderator": "Modérateur de l'événement",
+      "moderatorDesc": "L'organisateur responsable de la modération de cet événement.",
+      "moderatorLabel": "Modérateur",
+      "moderatorUpdated": "Modérateur mis à jour avec succès",
+      "moderatorUpdateError": "Échec de la mise à jour du modérateur."
+    },
+    "speakers": {
+      "progress": "Progression",
+      "confirmed": "confirmés",
+      "thresholdMet": "Seuil atteint",
+      "needMore": "Plus d'intervenants nécessaires",
+      "acceptanceRate": "taux d'acceptation",
+      "viewMode": "Mode d'affichage",
+      "kanban": "Kanban",
+      "sessions": "Sessions",
+      "addSpeakers": "Ajouter des intervenants",
+      "addToPool": "Ajouter des intervenants au pool",
+      "kanbanView": "Vue Kanban",
+      "sessionsView": "Vue sessions"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} abonnés actifs",
+      "sendHistory": "Historique d'envoi",
+      "noHistory": "Aucune newsletter envoyée pour cet événement.",
+      "composeTitle": "Rédiger et envoyer",
+      "locale": "Langue",
+      "preview": "Aperçu",
+      "sendNewsletter": "Envoyer la newsletter",
+      "sendReminder": "Envoyer un rappel",
+      "confirmSendTitle": "Confirmer l'envoi",
+      "confirmSendBody": "Envoyer {{type}} à {{count}} abonnés pour l'événement «{{eventTitle}}» ?",
+      "sendSuccess": "Newsletter envoyée à {{count}} destinataires.",
+      "sendError": "Échec de l'envoi. Veuillez réessayer.",
+      "historyDate": "Date",
+      "historyType": "Type",
+      "historyRecipients": "Destinataires",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Rappel",
+      "previewTitle": "Aperçu de l'e-mail"
+    }
+  },
+  "dashboard": {
+    "title": "Gestion des événements",
+    "activeEvents": "Événements actifs",
+    "criticalTasks": "Tâches critiques",
+    "teamActivity": "Activité de l'équipe",
+    "quickActions": "Actions rapides",
+    "noEvents": "Aucun événement trouvé",
+    "noEventsFound": "Aucun événement trouvé",
+    "tryAdjustingFilters": "Essayez d'ajuster vos filtres",
+    "loadingEvents": "Chargement des événements...",
+    "eventCount": "{{count}} événement",
+    "eventCount_plural": "{{count}} événements",
+    "eventWord": "événement",
+    "eventWord_plural": "événements",
+    "eventType": {
+      "FULL_DAY": "Journée complète",
+      "AFTERNOON": "Après-midi",
+      "EVENING": "Soirée"
+    },
+    "workflowProgress": "Avancement du workflow",
+    "actions": {
+      "viewDetails": "Voir les détails",
+      "edit": "Modifier",
+      "newEvent": "Nouvel événement",
+      "topics": "Sélection de sujets",
+      "eventTypes": "Types d'événements",
+      "eventTypesHelp": "Configurer les modèles de types d'événements (Admin)",
+      "manageTopics": "Gérer les sujets",
+      "analytics": "Analytique",
+      "speakers": "Intervenants"
+    },
+    "noCriticalTasks": "Aucune tâche critique",
+    "greatJob": "Excellent travail !",
+    "taskCount": "{{count}} tâche",
+    "taskCount_plural": "{{count}} tâches",
+    "dueDate": "Date d'échéance",
+    "assignedTo": "Assigné à {{name}}",
+    "confirmAction": "Confirmer l'action",
+    "areYouSure": "Êtes-vous sûr de vouloir effectuer cette action ?",
+    "activityCount": "{{count}} activité",
+    "activityCount_plural": "{{count}} activités",
+    "today": "Aujourd'hui",
+    "lastUpdated": "Dernière mise à jour",
+    "viewAll": "Tout afficher",
+    "noRecentActivity": "Aucune activité récente",
+    "activityAction": {
+      "speaker_assigned": "intervenant assigné",
+      "speaker_invited": "intervenant invité",
+      "materials_uploaded": "documents téléversés",
+      "workflow_advanced": "workflow avancé",
+      "event_created": "événement créé",
+      "event_updated": "événement mis à jour",
+      "task_completed": "tâche terminée",
+      "notification_sent": "notification envoyée",
+      "event_published": "événement publié"
+    },
+    "searchEvents": "Rechercher des événements...",
+    "filter": {
+      "status": "Filtrer par statut",
+      "workflowState": "Filtrer par état du workflow",
+      "year": "Filtrer par année",
+      "allYears": "Toutes les années",
+      "showArchived": "Afficher les événements archivés",
+      "activeFilters": "{{count}} filtre actif",
+      "activeFilters_plural": "{{count}} filtres actifs",
+      "clearAll": "Tout effacer"
+    },
+    "errors": {
+      "failedToLoadEvents": "Échec du chargement des événements"
+    }
+  },
+  "tabs": {
+    "info": "Infos",
+    "tasks": "Tâches"
+  },
+  "tasks": {
+    "criticalTasks": "Tâches critiques",
+    "noCriticalTasks": "Aucune tâche critique",
+    "greatJob": "Excellent travail !",
+    "errorLoadingTasks": "Échec du chargement des tâches",
+    "viewAllTasks": "Voir toutes les tâches",
+    "eventTasksDescription": "Configurez les tâches qui seront automatiquement créées et activées au fur et à mesure de la progression de l'événement dans les états du workflow.",
+    "defaultTemplates": "Modèles de tâches par défaut",
+    "defaultTemplatesDescription": "Ce sont les tâches standard de planification d'événements. Toutes sont présélectionnées et seront créées lors de la sauvegarde de l'événement.",
+    "taskExists": "La tâche existe",
+    "assignTo": "Assigner à",
+    "triggerState": "Déclencheur",
+    "dueDate": "Échéance",
+    "immediate": "Immédiat",
+    "days": "jours",
+    "customTemplates": "Modèles de tâches personnalisés",
+    "customTemplatesDescription": "Ces modèles ont été créés par votre équipe. Sélectionnez ceux que vous souhaitez inclure pour cet événement.",
+    "customTasks": "Tâches personnalisées",
+    "addCustomTask": "Ajouter une tâche personnalisée",
+    "noCustomTasks": "Aucune tâche personnalisée. Cliquez sur \"Ajouter une tâche personnalisée\" pour en créer une.",
+    "trigger": "Déclencheur",
+    "assignedTo": "Assigné à",
+    "unassigned": "Non assigné",
+    "editTask": "Modifier la tâche",
+    "deleteTask": "Supprimer la tâche",
+    "taskName": "Nom de la tâche",
+    "taskNamePlaceholder": "ex. : Envoyer un e-mail de confirmation du lieu",
+    "selectEvent": "Événement (facultatif)",
+    "selectEventHelp": "Sélectionnez un événement pour créer une tâche, ou enregistrez comme modèle",
+    "noEvent": "Aucun événement (enregistrer comme modèle)",
+    "triggerStateHelp": "L'état de l'événement qui active cette tâche",
+    "workflowStates": {
+      "topic_selection": "Sélection du sujet",
+      "speaker_brainstorming": "Brainstorming des intervenants",
+      "speaker_outreach": "Démarchage des intervenants",
+      "agenda_published": "Agenda publié",
+      "agenda_finalized": "Agenda finalisé",
+      "event_live": "Événement en direct",
+      "post_event_wrap_up": "Bilan post-événement",
+      "archived": "Archivé"
+    },
+    "dueDateType": "Type d'échéance",
+    "dueDateTypes": {
+      "immediate": "Immédiat (maintenant)",
+      "relative_to_event": "Relatif à la date de l'événement",
+      "absolute": "Date absolue"
+    },
+    "offsetDays": "Jours de décalage",
+    "offsetDaysHelp": "Négatif = avant l'événement, Positif = après l'événement",
+    "absoluteDueDate": "Date d'échéance",
+    "assignedOrganizer": "Organisateur assigné",
+    "notes": "Notes (facultatif)",
+    "notesPlaceholder": "Ajoutez des instructions ou du contexte...",
+    "saveAsTemplate": "Enregistrer comme modèle réutilisable",
+    "createTemplate": "Créer un modèle",
+    "createTask": "Créer une tâche",
+    "errors": {
+      "loadTemplatesFailed": "Échec du chargement des modèles de tâches",
+      "taskNameRequired": "Le nom de la tâche est requis",
+      "triggerStateRequired": "L'état de déclenchement est requis",
+      "offsetDaysRequired": "Les jours de décalage sont requis",
+      "eventRequired": "Veuillez sélectionner un événement ou enregistrer comme modèle",
+      "updateTaskFailed": "Échec de la mise à jour de la tâche",
+      "createTaskFailed": "Échec de la création de la tâche"
+    }
+  },
+  "form": {
+    "createEvent": "Créer un nouvel événement",
+    "editEvent": "Modifier l'événement",
+    "eventNumber": "Numéro d'événement",
+    "eventInformation": "Informations sur l'événement",
+    "title": "Titre",
+    "description": "Description",
+    "eventDate": "Date de l'événement",
+    "eventType": "Type d'événement",
+    "capacity": "Capacité",
+    "registrationDeadline": "Date limite d'inscription",
+    "venue": "Nom du lieu",
+    "venueAddress": "Adresse du lieu",
+    "theme": "Thème",
+    "status": "Statut",
+    "save": "Enregistrer",
+    "saveAndCreate": "Enregistrer et créer",
+    "saveCreate": "Enregistrer et créer",
+    "saveDraft": "Enregistrer comme brouillon",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "noVenue": "Aucun lieu sélectionné",
+    "eventTypes": {
+      "fullDay": "Événement journée complète",
+      "afternoon": "Événement après-midi",
+      "evening": "Événement soirée"
+    },
+    "eventTypeConfig": {
+      "title": "Configuration du type d'événement",
+      "description": "Configurez les exigences en créneaux et les modèles de calendrier pour chaque type d'événement",
+      "minSlots": "Créneaux minimum",
+      "maxSlots": "Créneaux maximum",
+      "slotDuration": "Durée des créneaux (minutes)",
+      "theoreticalSlotsAM": "Créneaux théoriques en matinée",
+      "breakSlots": "Créneaux de pause",
+      "lunchSlots": "Créneaux de déjeuner",
+      "defaultCapacity": "Capacité par défaut",
+      "structuralDurations": "Durées structurelles (minutes)",
+      "moderationStartDuration": "Début de modération (min)",
+      "moderationEndDuration": "Fin de modération (min)",
+      "breakDuration": "Durée de pause (min)",
+      "lunchDuration": "Durée du déjeuner (min)",
+      "saveFailed": "Échec de la sauvegarde de la configuration",
+      "accessDenied": "Accès refusé",
+      "organizerOnly": "Seuls les organisateurs peuvent accéder à cette page"
+    },
+    "themeImage": "Image du thème de l'événement",
+    "themeImageHelp": "Téléversez une image de thème pour cet événement (PNG, JPEG ou SVG, max 5 Mo). Taille recommandée : 1920x400px.",
+    "themeImageAlt": "Image de thème pour l'événement",
+    "removeThemeImage": "Supprimer l'image de thème",
+    "overrideValidation": "Ignorer la validation du workflow (autorise toute transition d'état)",
+    "overrideReason": "Raison du contournement (facultatif)",
+    "overrideReasonPlaceholder": "Pourquoi contournez-vous la validation du workflow ?",
+    "overrideReasonHelp": "Ceci sera enregistré à des fins d'audit",
+    "errors": {
+      "failedToLoadEventTypes": "Échec du chargement des types d'événements"
+    }
+  },
+  "eventTypes": {
+    "FULL_DAY": "Journée complète",
+    "AFTERNOON": "Après-midi",
+    "EVENING": "Soirée"
+  },
+  "slotPreview": {
+    "title": "Aperçu {{type}}",
+    "slots": "Créneaux",
+    "duration": "Durée",
+    "capacity": "Capacité",
+    "timing": "Calendrier typique",
+    "exampleTimeline": "Exemple de chronologie"
+  },
+  "filters": {
+    "status": "Statut",
+    "year": "Année",
+    "eventType": "Type d'événement",
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher des événements...",
+    "allStatuses": "Tous les statuts",
+    "allYears": "Toutes les années",
+    "allTypes": "Tous les types",
+    "clear": "Effacer les filtres"
+  },
+  "sorting": {
+    "sort": "Trier",
+    "date": "Date",
+    "status": "Statut",
+    "workflowProgress": "Avancement du workflow",
+    "title": "Titre",
+    "ascending": "Croissant",
+    "descending": "Décroissant"
+  },
+  "validation": {
+    "eventNumberRequired": "Le numéro d'événement est requis",
+    "eventNumberPositive": "Le numéro d'événement doit être un nombre positif",
+    "titleRequired": "Le titre est requis",
+    "titleMinLength": "Le titre doit comporter au moins 10 caractères",
+    "descriptionRequired": "La description est requise",
+    "eventDateRequired": "La date de l'événement est requise",
+    "eventDateFuture": "La date de l'événement doit être au moins 30 jours dans le futur",
+    "registrationDeadline": "La date limite d'inscription doit être antérieure ou égale à la date de l'événement",
+    "capacityRequired": "La capacité est requise",
+    "capacityPositive": "La capacité doit être un nombre positif",
+    "venueRequired": "Le lieu est requis",
+    "venueNameRequired": "Le nom du lieu est requis",
+    "venueAddressRequired": "L'adresse du lieu est requise",
+    "minSlotsRequired": "Le nombre minimum de créneaux est requis",
+    "maxSlotsRequired": "Le nombre maximum de créneaux est requis",
+    "slotDurationRequired": "La durée des créneaux est requise",
+    "slotDurationMinimum": "La durée des créneaux doit être d'au moins 15 minutes",
+    "minSlotsLessThanMax": "Le nombre minimum de créneaux doit être inférieur ou égal au maximum",
+    "defaultCapacityRequired": "La capacité par défaut est requise",
+    "defaultCapacityPositive": "La capacité par défaut doit être un nombre positif"
+  },
+  "errors": {
+    "loadFailed": "Échec du chargement des événements",
+    "saveFailed": "Échec de la sauvegarde de l'événement",
+    "deleteFailed": "Échec de la suppression de l'événement",
+    "notFound": "Événement introuvable",
+    "unauthorized": "Vous n'avez pas la permission d'accéder à cet événement",
+    "validationError": "Entrée invalide. Veuillez vérifier vos données.",
+    "serviceError": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "correlationId": "ID de corrélation",
+    "retry": "Réessayer",
+    "imageUploadFailed": "Échec du téléversement de l'image de thème",
+    "imageTooBig": "Le fichier image est trop volumineux (max 5 Mo)",
+    "imageInvalidType": "Type d'image invalide (utilisez PNG, JPEG ou SVG)",
+    "MULTIPLE_FILES": "Veuillez téléverser un seul fichier à la fois",
+    "FILE_TOO_LARGE": "La taille du fichier dépasse la limite de 5 Mo",
+    "INVALID_FILE_TYPE": "Type de fichier invalide. Veuillez téléverser uniquement des images PNG, JPEG ou SVG"
+  },
+  "confirmations": {
+    "deleteTitle": "Supprimer l'événement ?",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet événement ?",
+    "deleteImpact": "{{registrations}} inscriptions, {{speakers}} intervenants, {{materials}} documents",
+    "cannotDelete": "Impossible de supprimer l'événement - veuillez plutôt annuler l'événement",
+    "unsavedChanges": "Modifications non enregistrées",
+    "unsavedChangesMessage": "Vous avez des modifications non enregistrées. Voulez-vous vraiment continuer ?",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "discard": "Ignorer",
+    "keepEditing": "Continuer la modification"
+  },
+  "workflow": {
+    "progress": "Progression",
+    "step": "Étape {{current}} sur {{total}}",
+    "stepIndicator": "Étape {{current}}/{{total}}",
+    "stepName": "Étape {{number}} : {{name}}",
+    "viewDetails": "Voir les détails du workflow",
+    "warning": "Avertissement",
+    "blocker": "Blocage",
+    "blockers": "{{count}} blocage",
+    "blockers_plural": "{{count}} blocages",
+    "completed": "Terminé",
+    "inProgress": "En cours",
+    "pending": "En attente",
+    "blocked": "Bloqué",
+    "progressBarLabel": "Cliquez pour voir les détails du workflow. {{percentage}}% terminé",
+    "actions": {
+      "selectTopic": "Sélectionner un sujet"
+    },
+    "states": {
+      "created": "Créé",
+      "topic_selection": "Sélection du sujet",
+      "speaker_identification": "Identification des intervenants",
+      "slot_assignment": "Attribution des créneaux",
+      "agenda_published": "Agenda publié",
+      "agenda_finalized": "Agenda finalisé",
+      "event_live": "Événement en direct",
+      "event_completed": "Événement terminé",
+      "archived": "Archivé"
+    }
+  },
+  "topicSelection": {
+    "success": "Sujet sélectionné avec succès"
+  },
+  "autoSave": {
+    "saving": "Enregistrement...",
+    "saved": "Dernière sauvegarde à {{time}}",
+    "failed": "Échec de la sauvegarde automatique",
+    "conflict": "Modification simultanée détectée. Veuillez recharger et réessayer.",
+    "enabled": "Sauvegarde automatique activée"
+  },
+  "venue": {
+    "sectionTitle": "Lieu et logistique",
+    "title": "Lieu et logistique",
+    "nameLabel": "Nom du lieu",
+    "addressLabel": "Adresse du lieu",
+    "capacityLabel": "Capacité du lieu",
+    "errors": {
+      "nameRequired": "Le nom du lieu est requis",
+      "addressRequired": "L'adresse du lieu est requise",
+      "capacityPositive": "La capacité doit être un nombre positif",
+      "capacityMax": "La capacité ne peut pas dépasser 5000",
+      "updateFailed": "Échec de la mise à jour du lieu"
+    }
+  },
+  "topics": {
+    "title": "Sujets assignés",
+    "sectionTitle": "SUJETS ASSIGNÉS ({{count}})",
+    "sectionLabel": "Sujets assignés ({{count}})",
+    "addTopic": "Ajouter un sujet depuis le backlog",
+    "addFromBacklog": "Ajouter un sujet depuis le backlog",
+    "removeTopic": "Supprimer le sujet",
+    "viewTopic": "Voir le sujet",
+    "view": "Voir",
+    "remove": "Supprimer",
+    "viewButton": "Voir {{title}}",
+    "removeButton": "Supprimer {{title}}",
+    "lastUsed": "{{event}} ({{year}})",
+    "lastUsedLabel": "Dernière utilisation",
+    "neverUsed": "Jamais",
+    "partnerVotes": "Votes des partenaires",
+    "noTopics": "Aucun sujet assigné",
+    "noTopic": "Aucun sujet sélectionné",
+    "emptyState": "Aucun sujet assigné pour l'instant",
+    "loadError": "Échec du chargement des sujets",
+    "change": "Changer de sujet",
+    "removeConfirmTitle": "Supprimer le sujet ?",
+    "removeConfirmMessage": "Êtes-vous sûr de vouloir supprimer ce sujet de l'événement ?"
+  },
+  "speakers": {
+    "title": "Intervenants et sessions",
+    "sectionTitle": "Intervenants et sessions ({{count}})",
+    "speakersAndSessions": "Intervenants et sessions",
+    "slotTime": "Heure",
+    "slotLabel": "Créneau {{number}}",
+    "speakerName": "Intervenant",
+    "company": "Entreprise",
+    "sessionTitle": "Titre de la session",
+    "notAssigned": "Non assigné",
+    "materials": "Documents",
+    "materialsComplete": "Complet",
+    "materialsPending": "En attente",
+    "materialsMissing": "Manquant",
+    "viewDetails": "Voir les détails",
+    "editSlot": "Modifier le créneau",
+    "manageMaterials": "Gérer les documents",
+    "viewFullAgenda": "Voir l'agenda complet",
+    "manageSpeakerAssignments": "Gérer les attributions des intervenants",
+    "manageSlotAssignments": "Gérer les attributions des créneaux",
+    "autoAssignSpeakers": "Attribution automatique des intervenants",
+    "autoAssignConfirmTitle": "Attribution automatique des intervenants",
+    "autoAssignConfirmMessage": "Cela attribuera automatiquement les intervenants aux créneaux horaires optimaux en fonction de leur expertise et disponibilité. Les attributions existantes seront écrasées. Continuer ?",
+    "noSpeakers": "Aucun intervenant assigné",
+    "noSessionsScheduled": "Aucune session planifiée pour l'instant. Utilisez 'Gérer les attributions des intervenants' pour ajouter des intervenants.",
+    "loadError": "Échec du chargement des sessions. Veuillez réessayer.",
+    "deleteSession": "Supprimer",
+    "deleteSessionTitle": "Supprimer la session ?",
+    "deleteSessionMessage": "Êtes-vous sûr de vouloir supprimer la session '{{title}}' ? Cette action est irréversible."
+  },
+  "team": {
+    "title": "Attributions de l'équipe",
+    "leadOrganizer": "Organisateur principal",
+    "coOrganizers": "Co-organisateurs",
+    "moderator": "Modérateur",
+    "contentReviewer": "Relecteur de contenu",
+    "manageTeam": "Gérer l'équipe",
+    "assignRole": "Attribuer un rôle"
+  },
+  "publishing": {
+    "title": "Publication",
+    "strategy": "Stratégie",
+    "progressive": "Progressive",
+    "immediate": "Immédiate",
+    "currentPhase": "Phase actuelle",
+    "timeline": {
+      "phasesPublished": "{{completed}} sur {{total}} phases publiées ({{percent}}%)",
+      "topic": "Sujet",
+      "speakers": "Intervenants",
+      "agenda": "Agenda",
+      "updates": "Mises à jour",
+      "now": "Maintenant",
+      "publishedOn": "Publié le {{date}}",
+      "scheduled": "Planifié : {{date}}",
+      "autoPublishIn": "Publication automatique dans {{days}} jours",
+      "autoPublishScheduled": "Publication automatique planifiée",
+      "days": "{{count}} jours"
+    },
+    "qualityChecks": "Contrôles qualité",
+    "configure": "Configurer la publication",
+    "republish": "Republier",
+    "previewPublicPage": "Aperçu de la page publique",
+    "tab": {
+      "title": "Contrôles de publication (Story 5.7)",
+      "notice": "Les composants de publication sont maintenant intégrés. L'intégration de l'API backend est en cours. Certaines fonctionnalités utilisent des données fictives temporaires."
+    },
+    "controls": {
+      "publish": "Publier",
+      "publishing": "Publication...",
+      "publishPhase": "Publier {{phase}}",
+      "published": "{{phase}} publié",
+      "publishPhases": "Publier les phases",
+      "alreadyPublished": "Déjà publié",
+      "publishTopicFirst": "Veuillez d'abord publier le sujet",
+      "publishSpeakersFirst": "Veuillez d'abord publier les intervenants",
+      "schedulePublish": "Planifier la publication",
+      "previewNewsletter": "Aperçu de la newsletter",
+      "mode": "Mode",
+      "modeDraft": "Brouillon",
+      "modeProgressive": "Progressif",
+      "modeComplete": "Complet",
+      "notifySubscribers": "Notifier les abonnés",
+      "validationErrors": "Erreurs de validation :",
+      "phase": {
+        "topic": "Sujet",
+        "speakers": "Intervenants",
+        "agenda": "Agenda"
+      },
+      "scheduleDialog": {
+        "title": "Planifier la publication",
+        "dateLabel": "Date et heure de planification",
+        "cancel": "Annuler",
+        "confirm": "Confirmer la planification"
+      },
+      "newsletterDialog": {
+        "title": "Aperçu de la newsletter",
+        "subject": "Objet : Nouveau {{phase}} publié pour {{eventCode}}",
+        "contentPreview": "Aperçu du contenu de la newsletter pour la phase {{phase}}...",
+        "close": "Fermer",
+        "sendTest": "Envoyer un e-mail de test"
+      },
+      "accessibility": {
+        "publishingPhase": "Publication de {{phase}}",
+        "publishingMode": "Mode de publication",
+        "notifySubscribers": "Notifier les abonnés lors de la publication"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Prêt à publier",
+      "notReadyToPublish": "Pas prêt à publier",
+      "eventTopic": "Sujet de l'événement",
+      "speakerLineup": "Liste des intervenants",
+      "sessionTimings": "Horaires des sessions",
+      "complete": "Complet",
+      "incomplete": "Incomplet ({{assigned}}/{{total}} sessions assignées)",
+      "ready": "Prêt ({{assigned}}/{{total}} sessions assignées)",
+      "notRequired": "Non requis",
+      "assignTimings": "Assigner les horaires",
+      "expandUnassigned": "Développer les sessions non assignées",
+      "collapseUnassigned": "Réduire les sessions non assignées",
+      "accessibility": {
+        "readyToPublish": "Prêt à publier",
+        "notReadyToPublish": "Pas prêt à publier",
+        "eventTopic": "Validation du sujet de l'événement",
+        "speakerLineup": "Validation de la liste des intervenants",
+        "sessionTimings": "Validation des horaires des sessions"
+      }
+    },
+    "preview": {
+      "desktop": "Bureau",
+      "mobile": "Mobile",
+      "print": "Impression",
+      "refresh": "Actualiser",
+      "refreshing": "Actualisation de l'aperçu...",
+      "retry": "Réessayer",
+      "loadFailed": "Échec du chargement de l'aperçu. Veuillez réessayer.",
+      "previewMode": "Mode aperçu : {{mode}} | Phase : {{phase}}",
+      "deviceDimensions": "Appareil : {{device}} ({{width}} x {{height}})",
+      "switchedTo": "Basculé vers l'aperçu {{device}}",
+      "accessibility": {
+        "devicePreviewMode": "mode d'aperçu de l'appareil",
+        "desktopPreview": "Aperçu bureau",
+        "mobilePreview": "Aperçu mobile",
+        "printPreview": "Aperçu impression",
+        "refreshPreview": "Actualiser l'aperçu",
+        "eventContentPreview": "Aperçu du contenu de l'événement"
+      }
+    },
+    "versionControl": {
+      "title": "Historique des versions",
+      "version": "Version",
+      "published": "Publié",
+      "phase": "Phase",
+      "publisher": "Éditeur",
+      "status": "Statut",
+      "actions": "Actions",
+      "rollback": "Revenir en arrière",
+      "current": "Actuel",
+      "cdnCleared": "CDN effacé",
+      "cdnPending": "CDN en attente",
+      "cdnFailed": "CDN échoué",
+      "cdnUnknown": "Inconnu",
+      "cdnInvalidationId": "ID d'invalidation CDN : {{id}}",
+      "noVersions": "Aucun historique de version disponible",
+      "rollbackDialog": {
+        "title": "Confirmer le retour en arrière",
+        "message": "Êtes-vous sûr de vouloir revenir à cette version ?",
+        "versionLabel": "Version :",
+        "phaseLabel": "Phase :",
+        "publishedLabel": "Publié :",
+        "publisherLabel": "Éditeur :",
+        "warning": "Cette action invalidera le cache CDN CloudFront et peut prendre quelques minutes.",
+        "cancel": "Annuler",
+        "confirm": "Confirmer le retour en arrière",
+        "confirming": "Retour en arrière..."
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications et rappels",
+    "activeAutomations": "Automatisations actives",
+    "notificationRules": "Règles de notification",
+    "manageNotifications": "Gérer les notifications",
+    "sendManualNotification": "Envoyer une notification manuelle",
+    "ruleName": "Nom de la règle",
+    "trigger": "Déclencheur",
+    "recipients": "Destinataires",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "criticalTasks": {
+    "title": "Tâches critiques",
+    "priority": "Priorité",
+    "warning": "Avertissement",
+    "critical": "Critique",
+    "dueDate": "Date d'échéance",
+    "assignedTo": "Assigné à",
+    "actions": "Actions",
+    "contact": "Contacter",
+    "extendDeadline": "Prolonger l'échéance",
+    "confirm": "Confirmer",
+    "assignToTeam": "Assigner à l'équipe",
+    "markComplete": "Marquer comme terminé",
+    "noTasks": "Aucune tâche critique"
+  },
+  "teamActivity": {
+    "title": "Activité de l'équipe",
+    "recentActivity": "Activité récente",
+    "filterByUser": "Filtrer par utilisateur",
+    "filterByEvent": "Filtrer par événement",
+    "filterByAction": "Filtrer par action",
+    "reload": "Recharger",
+    "noActivity": "Aucune activité disponible",
+    "activityTypes": {
+      "event_created": "Événement créé",
+      "event_updated": "Événement mis à jour",
+      "speaker_assigned": "Intervenant assigné",
+      "speaker_invited": "Intervenant invité",
+      "materials_uploaded": "Documents téléversés",
+      "workflow_advanced": "Workflow avancé",
+      "task_completed": "Tâche terminée",
+      "notification_sent": "Notification envoyée",
+      "event_published": "Événement publié"
+    }
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page {{current}} sur {{total}}",
+    "itemsPerPage": "Éléments par page",
+    "showing": "Affichage de {{from}}-{{to}} sur {{total}} éléments"
+  },
+  "actions": {
+    "newEvent": "Nouvel événement",
+    "viewAnalytics": "Voir les analyses",
+    "manageSpeakers": "Gérer les intervenants",
+    "viewTimeline": "Voir la chronologie",
+    "exportData": "Exporter les données",
+    "refresh": "Actualiser",
+    "back": "Retour",
+    "deleteEvent": "Supprimer l'événement"
+  },
+  "messages": {
+    "draftSaved": "Brouillon enregistré",
+    "eventCreated": "Événement créé",
+    "eventUpdated": "Événement mis à jour",
+    "eventDeleted": "Événement supprimé",
+    "loading": "Chargement...",
+    "noResults": "Aucun résultat trouvé",
+    "tryAgain": "Réessayer"
+  },
+  "accessibility": {
+    "skipToContent": "Aller au contenu",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "loading": "Chargement",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "saveChanges": "Enregistrer les modifications",
+    "saveAndContinue": "Enregistrer et continuer",
+    "settings": "Paramètres",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "metrics": {
+    "speakers": "Intervenants",
+    "confirmed": "confirmés",
+    "topics": "Sujets",
+    "assigned": "assignés",
+    "materials": "Documents",
+    "pending": "en attente",
+    "registrations": "Inscriptions",
+    "budget": "Budget",
+    "keyMetrics": "Indicateurs clés"
+  },
+  "public": {
+    "comingSoon": "Bientôt disponible...",
+    "preview": {
+      "title": "Mode aperçu",
+      "phase": "Phase",
+      "mode": "Mode",
+      "description": "Affichage des modifications non publiées - c'est ainsi que l'événement apparaîtra une fois publié"
+    },
+    "logistics": {
+      "title": "Détails de l'événement",
+      "date": "Date",
+      "time": "Heure",
+      "location": "Lieu",
+      "capacity": "Capacité"
+    },
+    "errors": {
+      "loadFailed": "Échec du chargement de l'événement",
+      "noEvent": "Aucun événement actuel disponible",
+      "checkBackLater": "Veuillez revenir plus tard pour les prochains événements."
+    },
+    "speakers": {
+      "title": "Intervenants",
+      "speakerTBA": "Intervenant à confirmer"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "gridView": "Vue grille",
+      "listView": "Vue liste",
+      "noSessions": "Aucune session trouvée pour les sujets sélectionnés",
+      "clearFilters": "Effacer les filtres",
+      "speaker": "Intervenant",
+      "seats": "{{count}} places",
+      "timeTBD": "Heure à confirmer"
+    },
+    "program": {
+      "title": "Programme de l'événement",
+      "speaker": "Intervenant",
+      "materials": "Documents",
+      "downloadError": "Échec du téléchargement du document. Veuillez réessayer."
+    },
+    "venue": {
+      "title": "Lieu",
+      "mapNotAvailable": "Carte non disponible",
+      "getDirections": "Obtenir l'itinéraire"
+    },
+    "social": {
+      "title": "Partager cet événement",
+      "description": "Faites connaître cet événement à votre réseau",
+      "shareLinkedIn": "Partager sur LinkedIn",
+      "shareTwitter": "Partager sur X",
+      "shareEmail": "Partager par e-mail",
+      "shareText": "Rejoignez-moi à {{title}} !"
+    },
+    "upcomingEvents": {
+      "title": "Autres événements à venir"
+    },
+    "sessionTypes": {
+      "keynote": "conférence principale",
+      "presentation": "présentation",
+      "workshop": "atelier",
+      "panel_discussion": "table ronde",
+      "networking": "réseautage",
+      "break": "pause",
+      "lunch": "déjeuner"
+    }
+  },
+  "sessionEdit": {
+    "title": "Modifier la session",
+    "titleLabel": "Titre de la session",
+    "abstractLabel": "Résumé de la session",
+    "charactersRemaining": "{{count}} caractères restants",
+    "durationLabel": "Durée (minutes)",
+    "tabs": {
+      "details": "Détails",
+      "materials": "Documents",
+      "speakers": "Intervenants"
+    },
+    "speakers": {
+      "title": "Intervenants de la session",
+      "noSpeakers": "Aucun intervenant assigné pour l'instant",
+      "addSpeaker": "Ajouter un intervenant",
+      "searchUser": "Rechercher un utilisateur",
+      "createNewUser": "+ Créer un nouvel utilisateur",
+      "roleLabel": "Rôle de l'intervenant",
+      "setPrimary": "Définir comme principal",
+      "remove": "Supprimer",
+      "confirmed": "Confirmé",
+      "userRequired": "Veuillez sélectionner un utilisateur",
+      "addError": "Échec de l'ajout de l'intervenant",
+      "removeError": "Échec de la suppression de l'intervenant",
+      "setPrimaryError": "Échec de la définition de l'intervenant principal",
+      "roles": {
+        "PRIMARY_SPEAKER": "Intervenant principal",
+        "CO_SPEAKER": "Co-intervenant",
+        "MODERATOR": "Modérateur",
+        "PANELIST": "Panéliste"
+      }
+    },
+    "materials": {
+      "uploadTitle": "Téléverser des documents de session",
+      "uploadDescription": "Téléversez des présentations, documents ou vidéos (max 100 Mo par fichier, jusqu'à 10 fichiers)",
+      "existingTitle": "Documents existants",
+      "downloadError": "Échec du téléchargement du document"
+    },
+    "errors": {
+      "titleRequired": "Le titre est requis",
+      "abstractTooLong": "Le résumé doit comporter {{max}} caractères ou moins",
+      "invalidDuration": "La durée doit être comprise entre 1 et 480 minutes",
+      "saveFailed": "Échec de la sauvegarde de la session"
+    }
+  },
+  "slotAssignment": {
+    "title": "Attribution des créneaux",
+    "pageTitle": "Attribuer des intervenants aux créneaux horaires",
+    "pageDescription": "Faites glisser les intervenants confirmés vers les créneaux horaires disponibles pour créer le programme de l'événement",
+    "backToEvent": "Retour à l'événement",
+    "returnToEventOverview": "Retour à l'aperçu de l'événement",
+    "helpBanner": {
+      "title": "Comment ça fonctionne :",
+      "description": "Faites glisser les cartes d'intervenants depuis le panneau gauche vers les créneaux horaires à droite. Le système mettra en évidence les correspondances de préférences et vous avertira des conflits. Une fois tous les intervenants assignés, le programme sera automatiquement enregistré."
+    },
+    "timeline": {
+      "title": "Chronologie des sessions",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}% de correspondance",
+      "headerTime": "Heure"
+    },
+    "structuralSessions": {
+      "moderation": "Modération",
+      "break": "Pause",
+      "lunch": "Déjeuner"
+    },
+    "speakerPool": {
+      "title": "Pool d'intervenants",
+      "assigned": "{{count}} sur {{total}} assignés ({{percent}}%)",
+      "remaining": "{{count}} restants",
+      "filters": {
+        "all": "Tous",
+        "assigned": "Assignés",
+        "unassigned": "Non assignés"
+      },
+      "emptyState": {
+        "title": "Toutes les sessions sont assignées !",
+        "message": "Excellent travail ! Tous les intervenants ont été assignés à des créneaux horaires."
+      },
+      "viewPreferences": "Préférences"
+    },
+    "quickActions": {
+      "title": "Actions rapides",
+      "total": "{{count}} sessions au total",
+      "assigned": "{{count}} assignées",
+      "pending": "{{count}} en attente",
+      "allAssigned": "Tous les horaires sont assignés !",
+      "goToPublishing": "Aller à l'onglet Publication",
+      "sessionsAssignedAnnouncement": "{{count}} sessions assignées avec succès"
+    },
+    "actions": {
+      "autoAssign": "Attribution automatique",
+      "clearAll": "Tout effacer",
+      "cancel": "Annuler",
+      "confirm": "Confirmer",
+      "generateStructure": "Générer la structure du programme"
+    },
+    "modals": {
+      "generateStructure": {
+        "title": "Générer la structure du programme",
+        "message": "Crée des blocs de modération, des pauses et des déjeuners basés sur la configuration du type d'événement.",
+        "alreadyExist": "Les blocs de modération, pause et déjeuner existent déjà. Voulez-vous les écraser ?",
+        "overwrite": "Écraser"
+      },
+      "autoAssign": {
+        "title": "Attribution automatique des sessions",
+        "message": "Sélectionnez l'algorithme pour l'attribution automatique :",
+        "algorithms": {
+          "preferenceFirst": "Préférence d'abord",
+          "timeBalance": "Équilibre du temps"
+        }
+      },
+      "clearAll": {
+        "title": "Effacer toutes les attributions",
+        "message": "Êtes-vous sûr de vouloir effacer toutes les attributions d'horaires ?"
+      }
+    },
+    "conflicts": {
+      "title": "Conflit d'horaire détecté",
+      "types": {
+        "room_overlap": "Chevauchement de salle",
+        "speaker_double_booked": "Intervenant doublement réservé",
+        "speaker_unavailable": "Intervenant indisponible"
+      },
+      "severity": {
+        "error": "ERREUR",
+        "warning": "AVERTISSEMENT"
+      },
+      "timeRange": "Plage horaire du conflit",
+      "start": "Début",
+      "end": "Fin",
+      "conflictingSession": "Session en conflit",
+      "resolutionOptions": "Options de résolution",
+      "resolutionMessage": "Choisissez un autre créneau horaire ou une autre salle pour résoudre ce conflit.",
+      "chooseDifferentSlot": "Choisir un autre créneau"
+    },
+    "preferences": {
+      "title": "Préférences des intervenants",
+      "close": "Fermer",
+      "timePreferences": "Préférences horaires",
+      "preferredTime": "Moment de la journée préféré",
+      "unavailableTimes": "Heures indisponibles",
+      "avRequirements": "Besoins audiovisuels",
+      "setupNotes": "Notes de configuration de la salle",
+      "slotMatchScore": "Score de correspondance du créneau",
+      "matchPercent": "{{percent}}% de correspondance",
+      "times": {
+        "morning": "Matin",
+        "afternoon": "Après-midi",
+        "evening": "Soirée",
+        "any": "N'importe quand"
+      },
+      "equipment": {
+        "microphone": "Microphone",
+        "projector": "Projecteur",
+        "recording": "Enregistrement",
+        "whiteboard": "Tableau blanc"
+      }
+    },
+    "loading": "Chargement...",
+    "dragInstructions": "Faites glisser les intervenants vers les créneaux horaires pour les assigner"
+  },
+  "newsletter": {
+    "widget": {
+      "title": "Restez informé avec BATbern",
+      "placeholder": "votre@email.com",
+      "button": "S'abonner",
+      "success": "Merci ! Vous êtes maintenant abonné.",
+      "alreadySubscribed": "Vous êtes déjà abonné.",
+      "error": "Une erreur s'est produite. Veuillez réessayer.",
+      "emailInvalid": "Veuillez saisir une adresse e-mail valide."
+    },
+    "unsubscribe": {
+      "title": "Se désabonner de la newsletter BATbern",
+      "loading": "Chargement…",
+      "confirmMessage": "Vous êtes sur le point de désabonner {{email}} des newsletters BATbern.",
+      "confirmButton": "Confirmer le désabonnement",
+      "success": "Vous avez été désabonné avec succès.",
+      "resubscribeLink": "S'abonner à nouveau",
+      "invalidToken": "Ce lien de désabonnement est invalide ou a déjà été utilisé."
+    },
+    "account": {
+      "label": "S'abonner à la newsletter BATbern",
+      "description": "Recevez les annonces d'événements et les mises à jour"
+    }
+  }
+}

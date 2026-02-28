@@ -1,0 +1,28 @@
+{
+  "userSync": {
+    "title": "Sincronización de usuarios",
+    "status": {
+      "checking": "Comprobando...",
+      "error": "Error",
+      "inSync": "Sincronizado",
+      "outOfSync": "No sincronizado"
+    },
+    "counts": "Cognito: {{cognito}} | Base de datos: {{database}}",
+    "button": {
+      "sync": "Sincronizar desde Cognito",
+      "syncing": "Sincronizando..."
+    },
+    "warning": "{{missing}} usuario(s) faltante(s) en la base de datos, {{orphaned}} usuario(s) huérfano(s)",
+    "reconciliation": {
+      "success": "Sincronización completada. {{created}} usuario(s) creado(s), {{deactivated}} usuario(s) desactivado(s)",
+      "error": "Error en la sincronización: {{message}}"
+    },
+    "report": {
+      "title": "Informe de sincronización",
+      "created": "Usuarios creados",
+      "deactivated": "Usuarios desactivados",
+      "duration": "Duración",
+      "errors": "Errores"
+    }
+  }
+}

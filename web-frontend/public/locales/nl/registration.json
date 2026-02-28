@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Uw registratie wordt geannuleerd...",
+      "message": "Een moment geduld terwijl we uw annulering verwerken."
+    },
+    "success": {
+      "title": "Registratie geannuleerd",
+      "subtitle": "Uw registratie is succesvol geannuleerd",
+      "whatHappened": "Wat is er gebeurd?",
+      "permanentDeletion": "Permanente verwijdering",
+      "permanentDeletionText": "Uw registratie is permanent verwijderd uit ons systeem.",
+      "noFurtherAction": "Geen verdere actie",
+      "noFurtherActionText": "U ontvangt geen verdere communicatie over dit evenement.",
+      "registerAgain": "Opnieuw registreren",
+      "registerAgainText": "Als u van gedachten verandert, kunt u zich op elk moment vóór het evenement opnieuw registreren.",
+      "backToHome": "Terug naar home",
+      "registerForAnother": "Registreren voor een ander evenement"
+    },
+    "error": {
+      "title": "Annulering mislukt",
+      "subtitle": "Uw registratie kon niet worden geannuleerd",
+      "whatCanYouDo": "Wat kunt u doen?",
+      "checkLink": "Controleer of u op de juiste link in uw e-mail heeft geklikt",
+      "expired": "Annuleringslinks verlopen na 48 uur",
+      "alreadyCancelled": "De registratie is mogelijk al geannuleerd",
+      "useLatestEmail": "Zorg ervoor dat u de meest recente e-mail gebruikt",
+      "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
+      "errors": {
+        "expired": "De annuleringslink is verlopen (geldig gedurende 48 uur).",
+        "invalid": "Ongeldige annuleringslink. Controleer uw e-mail voor de juiste link.",
+        "notFound": "Registratie niet gevonden of al geannuleerd.",
+        "default": "Het annuleren van de registratie is mislukt. Probeer het opnieuw of neem contact op met de ondersteuning."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Uw registratie wordt bevestigd...",
+      "message": "Een moment geduld terwijl we uw bevestiging verwerken."
+    },
+    "success": {
+      "title": "Registratie bevestigd!",
+      "subtitle": "U bent helemaal klaar voor het evenement",
+      "whatsNext": "Wat nu?",
+      "checkIn": "Inchecken bij het evenement",
+      "checkInText": "Toon uw identiteitsbewijs bij de balie van het evenement voor inchecken. Uw bevestigde registratie staat in ons systeem.",
+      "eventDetails": "Evenementdetails",
+      "eventDetailsText": "U ontvangt evenementupdates en herinneringen via e-mail.",
+      "backToHome": "Terug naar home",
+      "createAccount": "Account aanmaken om registraties te beheren"
+    },
+    "alreadyConfirmed": {
+      "title": "Al bevestigd",
+      "subtitle": "Deze registratie is al bevestigd",
+      "message": "Uw registratie is eerder bevestigd. Er is geen verdere actie nodig.",
+      "backToHome": "Terug naar home"
+    },
+    "error": {
+      "title": "Bevestiging mislukt",
+      "subtitle": "Uw registratie kon niet worden bevestigd",
+      "whatCanYouDo": "Wat kunt u doen?",
+      "checkLink": "Controleer of u op de juiste link in uw e-mail heeft geklikt",
+      "expired": "Bevestigingslinks verlopen na 48 uur - u moet zich mogelijk opnieuw registreren",
+      "useLatestEmail": "Zorg ervoor dat u de meest recente bevestigings-e-mail gebruikt",
+      "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
+      "backToHome": "Terug naar home",
+      "registerAgain": "Opnieuw registreren",
+      "errors": {
+        "expired": "De bevestigingslink is verlopen. Registreer u opnieuw.",
+        "invalid": "Ongeldige bevestigingslink. Controleer uw e-mail voor de juiste link.",
+        "default": "Het bevestigen van de registratie is mislukt. Probeer het opnieuw of neem contact op met de ondersteuning."
+      }
+    }
+  }
+}

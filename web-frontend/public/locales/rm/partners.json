@@ -1,0 +1,340 @@
+{
+  "title": "Directori da partenaris",
+  "addPartner": "Agiuntar partenari",
+  "searchPlaceholder": "Tschertgar tenor num da partenari...",
+  "searchAriaLabel": "Tschertgar partenaris",
+  "clearSearch": "Stizzar tschertgada",
+  "filters": {
+    "tier": "Nivel da partnerada",
+    "tierAll": "Tuts nivels",
+    "status": "Status",
+    "statusAll": "Tuts",
+    "statusActive": "Activ",
+    "statusInactive": "Inactiv",
+    "reset": "Reinizialisar filtras"
+  },
+  "tiers": {
+    "strategic": "Strategic",
+    "platinum": "Platin",
+    "gold": "Aur",
+    "silver": "Argient",
+    "bronze": "Bronze"
+  },
+  "viewMode": {
+    "label": "Modus da visualisaziun",
+    "grid": "Vista en graschiglia",
+    "list": "Vista en glista"
+  },
+  "sort": {
+    "label": "Zavrar tenor",
+    "engagement": "Scor d'engaschi",
+    "name": "Num da l'interpresa",
+    "tier": "Nivel da partnerada",
+    "lastEvent": "Ultima occurrenza"
+  },
+  "statistics": {
+    "totalPartners": "Totals partenaris",
+    "activePartners": "Partenaris activi",
+    "engagedPartners": "Partenaris engaschads",
+    "engagedComingSoon": "Preschent bainpreschent - Epic 8",
+    "tierDistribution": "Distribuziun da nivels"
+  },
+  "card": {
+    "industry": "Industria",
+    "contact": "Contact principal",
+    "lastEvent": "Ultima occurrenza",
+    "topicVotes": "Votaziuns da temas",
+    "nextMeeting": "Proxim inscunter",
+    "meetingPending": "En spetga",
+    "engagement": "Engaschi",
+    "engagementComingSoon": "Preschent bainpreschent (Epic 8)",
+    "viewDetails": "Vesair detagls",
+    "sendEmail": "Trametter e-mail",
+    "scheduleMeeting": "Planischar inscunter",
+    "analytics": "Analiticas",
+    "comingSoon": "Preschent bainpreschent - Epic 8"
+  },
+  "pagination": {
+    "page": "Pagina {{current}} da {{total}}",
+    "partners": "{{count}} partenari",
+    "partners_plural": "{{count}} partenaris",
+    "firstPage": "Prima pagina",
+    "previousPage": "Pagina precedenta",
+    "nextPage": "Proxima pagina",
+    "lastPage": "Ultima pagina",
+    "ariaLabel": "Paginaziun da la glista da partenaris"
+  },
+  "empty": {
+    "noPartners": "Nagins partenaris chattads",
+    "tryAdjustingFilters": "Emprova da modifitgar la tschertgada u las filtras"
+  },
+  "loading": "Chargiar partenaris...",
+  "error": {
+    "failedToLoad": "Impussibel da chargiare partenaris",
+    "tryAgain": "Emprova puspè pli tard"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partenari chattà",
+    "searchResults_plural": "{{count}} partenaris chattads",
+    "filterUpdate": "Filtras actualisadas",
+    "loading": "Chargiar partenaris"
+  },
+  "modal": {
+    "createTitle": "Crear partnerada",
+    "editTitle": "Modifitgar partnerada",
+    "fields": {
+      "company": "Interpresa",
+      "companyPlaceholder": "Tschertgar interpresa...",
+      "partnershipTier": "Nivel da partnerada",
+      "startDate": "Data d'entschatta",
+      "endDate": "Data da fin",
+      "endDateOptional": "Data da fin (facultativ)"
+    },
+    "tiers": {
+      "STRATEGIC": "Strategic",
+      "PLATINUM": "Platin",
+      "GOLD": "Aur",
+      "SILVER": "Argient",
+      "BRONZE": "Bronze"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Nivel da partnerada pli aut cun access cumplain e sustegn dedicà",
+      "PLATINUM": "Partnerada premium cun avantatgs augmentads",
+      "GOLD": "Partnerada da valur auta cun avantatgs principals",
+      "SILVER": "Partnerada standard cun avantatgs essenzials",
+      "BRONZE": "Partnerada d'entrada cun avantatgs basics"
+    },
+    "benefits": {
+      "title": "Avantatgs dal nivel",
+      "logoPlacement": "Plaschair dal logo sin il website",
+      "newsletterMentions": "Menziuns en la newsletter",
+      "priorityAccess": "Access prioritari ad occurrenzas",
+      "quarterlyMeetings": "Inscunters strategics trimestrals",
+      "roiAnalytics": "Dashboard d'analitica dal ROI",
+      "dedicatedManager": "Manaschi da conto dedicà",
+      "eventAccess": "Access ad occurrenzas"
+    },
+    "actions": {
+      "save": "Memorisar",
+      "cancel": "Interrumper",
+      "saving": "Memorisar...",
+      "delete": "Stizzar"
+    },
+    "messages": {
+      "unsavedChanges": "Hai midadas betg memorizadas. Es ti segir da voler serrar?",
+      "createSuccess": "Partnerada creada cun success",
+      "updateSuccess": "Partnerada actualisada cun success",
+      "createError": "Impussibel da crear la partnerada. ID da correlaziun: {{correlationId}}",
+      "updateError": "Impussibel d'actualisar la partnerada. ID da correlaziun: {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Tschertgar interpresas...",
+      "noResults": "Naginas interpresas chattadas",
+      "error": "Errur en la tschertgada d'interpresas",
+      "minChars": "Tippa almain 2 characters per tschertgar"
+    }
+  },
+  "validation": {
+    "companyRequired": "L'interpresa è necessaria",
+    "tierRequired": "Il nivel da partnerada è necessari",
+    "startDateRequired": "La data d'entschatta è necessaria",
+    "startDateFuture": "La data d'entschatta na po betg esser en il futur",
+    "endDateBeforeStart": "La data da fin sto esser suenter la data d'entschatta"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Exportar datas",
+      "scheduleMeeting": "Planischar inscunter",
+      "sendEmail": "Trametter e-mail",
+      "comingSoon": "Preschent en Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partenari dapi",
+      "eventsAttended": "Occurrenzas participadas",
+      "activeVotes": "Votaziuns activas",
+      "votesSubtitle": "(temas)",
+      "meetings": "Inscunters",
+      "meetingsSubtitle": "(staschunals)",
+      "noEventsYet": "Naginas occurrenzas anc",
+      "lastEvent": "ultima: {{event}}"
+    },
+    "activityTab": {
+      "title": "Activitad",
+      "filterLabel": "Filtrar tenor tip d'activitad",
+      "noActivity": "Nagina activitad da visualisar"
+    },
+    "meetingsTab": {
+      "title": "Inscunters",
+      "addMeeting": "Planischar inscunter"
+    },
+    "notesTab": {
+      "title": "Notas",
+      "addNote": "Agiuntar nota",
+      "editNote": "Modifitgar nota",
+      "deleteNoteConfirmTitle": "Stizzar nota",
+      "deleteNoteConfirmMessage": "Es ti segir da voler stizzar \"{{title}}\"?",
+      "titleLabel": "Titel",
+      "contentLabel": "Cuntegn",
+      "htmlSupported": "La furmatizaziun HTML è sustegnida",
+      "noNotes": "Naginas notas anc"
+    },
+    "settingsTab": {
+      "title": "Parametras",
+      "activePartnership": "Partnerada activa",
+      "exportData": "Exportar datas dal partenari",
+      "deletePartner": "Stizzar datas dal partenari"
+    },
+    "tabs": {
+      "overview": "Survista",
+      "contacts": "Contacts",
+      "meetings": "Inscunters",
+      "analytics": "Analiticas",
+      "notes": "Notas",
+      "topics": "Temas",
+      "settings": "Parametras"
+    },
+    "overviewTab": {
+      "title": "Detagls da la partnerada",
+      "tier": "Nivel da partnerada",
+      "startDate": "Data d'entschatta da la partnerada",
+      "benefits": "Avantatgs",
+      "changeTier": "Midar nivel",
+      "tierBenefits": {
+        "logoPlacement": "Plaschair dal logo sin il website",
+        "newsletterMentions": "Menziuns en la newsletter",
+        "priorityAccess": "Access prioritari ad occurrenzas",
+        "quarterlyMeetings": "Inscunters strategics trimestrals",
+        "roiAnalytics": "Dashboard d'analitica dal ROI",
+        "accountManager": "Manaschi da conto dedicà",
+        "eventAccess": "Access ad occurrenzas"
+      }
+    }
+  },
+  "meetings": {
+    "title": "Inscunters da partenaris",
+    "create": "Crear inscunter",
+    "edit": "Modifitgar inscunter",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Notas dal inscunter",
+      "location": "Lieu",
+      "eventCode": "Codiez d'occurrenza BATbern",
+      "eventCodeHint": "p.ex. BATbern57",
+      "date": "Data",
+      "startTime": "Ora d'entschatta",
+      "endTime": "Ora da fin",
+      "type": {
+        "spring": "Inscunter da primavaira",
+        "autumn": "Inscunter d'atun"
+      }
+    },
+    "sendInvite": "Trametter invitaziun da chalender",
+    "inviteSent": "Invitaziun tramessa",
+    "inviteNotSent": "Invitaziun betg tramessa",
+    "inviteSentOn": "Invitaziun tramessa ils {{date}}",
+    "noMeetings": "Nagins inscunters da partenaris chattads",
+    "confirmSendInvite": "Trametter invitaziun da chalender a tuts contacts dal partenari?",
+    "inviteQueued": "Trametter invitaziun da chalender...",
+    "columns": {
+      "event": "Occurrenza",
+      "type": "Tip",
+      "date": "Data",
+      "location": "Lieu",
+      "inviteStatus": "Invitaziun",
+      "actions": "Acziuns"
+    },
+    "loading": "Chargiar inscunters...",
+    "error": "Impussibel da chargiare inscunters",
+    "createSuccess": "Inscunter creà cun success",
+    "updateSuccess": "Inscunter actualisà cun success",
+    "inviteSuccess": "L'invitaziun dal chalender vegn tramessa"
+  },
+  "comingSoon": {
+    "epic8": "Preschent bainpreschent - Epic 8",
+    "story283": "Preschent bainpreschent - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "Mia interpresa",
+      "analytics": "Analiticas",
+      "topics": "Temas"
+    },
+    "noCompanyLinked": "Tes conto n'è betg collià cun ina interpresa",
+    "noCompanyLinked.detail": "Contacta tes organisatur",
+    "analytics": {
+      "comingSoon": "Analiticas bainpreschent disponiblas",
+      "title": "Dashboard da participaziun",
+      "table": {
+        "event": "Occurrenza",
+        "date": "Data",
+        "yourAttendees": "Tes participants",
+        "totalAttendees": "Total participants",
+        "percentage": "Percentual (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Custs per participant",
+        "attendanceRate": "Quota media da participaziun",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Ultims 5 onns",
+        "allHistory": "Tut la istorgia"
+      },
+      "export": {
+        "button": "Exportar Excel",
+        "loading": "Exportar..."
+      },
+      "noData": "Naginas datas da participaziun chattadas per il periodi tschernì",
+      "loading": "Chargiar datas...",
+      "error": "Impussibel da chargiare datas da participaziun"
+    },
+    "topics": {
+      "comingSoon": "Votaziun sin temas bainpreschent disponibla",
+      "title": "Propostas da temas",
+      "suggest": "Proponer in tema",
+      "vote": "Votar",
+      "unvote": "Revocar votaziun",
+      "edit": "Modifitgar",
+      "delete": "Stizzar",
+      "col": {
+        "topic": "Tema",
+        "company": "Interpresa",
+        "date": "Data",
+        "actions": "Acziuns"
+      },
+      "status": {
+        "proposed": "Proposta",
+        "selected": "Tschernì",
+        "declined": "Refusà"
+      },
+      "plannedFor": "Planisà per",
+      "empty": "Naginas propostas da temas anc",
+      "form": {
+        "title": "Titel",
+        "description": "Descripziun",
+        "submit": "Trametter",
+        "titleRequired": "Il titel è necessari (almain 5 characters)",
+        "descriptionHint": "Facultativ, max 500 characters",
+        "dialogTitle": "Proponer in nov tema",
+        "editDialogTitle": "Modifitgar tema",
+        "update": "Actualisar"
+      },
+      "organizer": {
+        "title": "Propostas da temas da partenaris",
+        "col": {
+          "title": "Titel",
+          "company": "Interpresa",
+          "votes": "Votaziuns",
+          "date": "Data",
+          "actions": "Acziuns"
+        },
+        "status": "Status",
+        "plannedEvent": "Occurrenza planisada",
+        "save": "Memorisar",
+        "saving": "Memorisar..."
+      },
+      "loading": "Chargiar temas...",
+      "error": "Impussibel da chargiare temas"
+    }
+  }
+}

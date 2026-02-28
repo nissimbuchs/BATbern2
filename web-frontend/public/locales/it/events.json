@@ -1,0 +1,1038 @@
+{
+  "navigation": {
+    "dashboard": "Eventi",
+    "createEvent": "Crea evento",
+    "eventTimeline": "Cronologia",
+    "events": "Eventi",
+    "topicManagement": "Gestione argomenti",
+    "blobSelector": "Selettore blob"
+  },
+  "eventPage": {
+    "tabs": {
+      "overview": "Panoramica",
+      "speakers": "Relatori",
+      "venue": "Sede",
+      "team": "Team",
+      "participants": "Partecipanti",
+      "publishing": "Pubblicazione",
+      "newsletter": "Newsletter",
+      "settings": "Impostazioni"
+    },
+    "tabsAriaLabel": "Navigazione pagina evento",
+    "overview": {
+      "step": "Passo",
+      "eventDetails": "Dettagli evento",
+      "keyMetrics": "Metriche chiave",
+      "registered": "iscritti",
+      "filled": "riempiti",
+      "speakers": "Relatori",
+      "confirmed": "confermati",
+      "materials": "Materiali",
+      "pending": "in attesa",
+      "complete": "completo",
+      "sessionsComplete": "sessioni completate",
+      "budget": "Budget",
+      "selectedTopic": "Argomento selezionato",
+      "noTopicSelected": "Nessun argomento selezionato",
+      "changeTopic": "Cambia argomento",
+      "quickActions": "Azioni rapide",
+      "selectTopic": "Seleziona argomento",
+      "sendNotification": "Invia notifica",
+      "previewPublic": "Anteprima pagina pubblica",
+      "viewTimeline": "Visualizza cronologia"
+    },
+    "participantsTab": {
+      "title": "Partecipanti all'evento"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Nome",
+        "email": "E-mail",
+        "company": "Azienda",
+        "status": "Stato",
+        "registrationDate": "Data di iscrizione",
+        "actions": "Azioni"
+      },
+      "empty": "Nessun partecipante iscritto",
+      "actions": {
+        "cancel": "Annulla iscrizione",
+        "delete": "Elimina iscrizione"
+      },
+      "deleteDialog": {
+        "title": "Elimina iscrizione",
+        "message": "Sei sicuro di voler eliminare definitivamente l'iscrizione di {{name}}? Questa azione non può essere annullata.",
+        "cancel": "Annulla",
+        "confirm": "Elimina"
+      }
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Cerca partecipanti",
+        "placeholder": "Cerca per nome o e-mail..."
+      },
+      "status": {
+        "label": "Stato iscrizione",
+        "all": "Tutti gli stati",
+        "confirmed": "Confermato",
+        "registered": "Iscritto",
+        "attended": "Presente",
+        "cancelled": "Annullato",
+        "waitlisted": "Lista d'attesa"
+      },
+      "clearAll": "Cancella filtri"
+    },
+    "participantList": {
+      "loading": "Caricamento partecipanti...",
+      "error": {
+        "loadFailed": "Caricamento partecipanti fallito. Riprova."
+      },
+      "actions": {
+        "retry": "Riprova"
+      }
+    },
+    "settings": {
+      "moderator": "Moderatore dell'evento",
+      "moderatorDesc": "L'organizzatore responsabile della moderazione di questo evento.",
+      "moderatorLabel": "Moderatore",
+      "moderatorUpdated": "Moderatore aggiornato con successo",
+      "moderatorUpdateError": "Aggiornamento moderatore fallito."
+    },
+    "speakers": {
+      "progress": "Avanzamento",
+      "confirmed": "confermati",
+      "thresholdMet": "Soglia raggiunta",
+      "needMore": "Servono più relatori",
+      "acceptanceRate": "tasso di accettazione",
+      "viewMode": "Modalità visualizzazione",
+      "kanban": "Kanban",
+      "sessions": "Sessioni",
+      "addSpeakers": "Aggiungi relatori",
+      "addToPool": "Aggiungi relatori al pool",
+      "kanbanView": "Vista Kanban",
+      "sessionsView": "Vista sessioni"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} iscritti attivi",
+      "sendHistory": "Cronologia invii",
+      "noHistory": "Nessuna newsletter inviata per questo evento.",
+      "composeTitle": "Redigi e invia",
+      "locale": "Lingua",
+      "preview": "Anteprima",
+      "sendNewsletter": "Invia newsletter",
+      "sendReminder": "Invia promemoria",
+      "confirmSendTitle": "Conferma invio",
+      "confirmSendBody": "Inviare {{type}} a {{count}} iscritti per l'evento «{{eventTitle}}»?",
+      "sendSuccess": "Newsletter inviata a {{count}} destinatari.",
+      "sendError": "Invio fallito. Riprova.",
+      "historyDate": "Data",
+      "historyType": "Tipo",
+      "historyRecipients": "Destinatari",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Promemoria",
+      "previewTitle": "Anteprima e-mail"
+    }
+  },
+  "dashboard": {
+    "title": "Gestione eventi",
+    "activeEvents": "Eventi attivi",
+    "criticalTasks": "Attività critiche",
+    "teamActivity": "Attività del team",
+    "quickActions": "Azioni rapide",
+    "noEvents": "Nessun evento trovato",
+    "noEventsFound": "Nessun evento trovato",
+    "tryAdjustingFilters": "Prova a modificare i filtri",
+    "loadingEvents": "Caricamento eventi...",
+    "eventCount": "{{count}} evento",
+    "eventCount_plural": "{{count}} eventi",
+    "eventWord": "evento",
+    "eventWord_plural": "eventi",
+    "eventType": {
+      "FULL_DAY": "Giornata intera",
+      "AFTERNOON": "Pomeriggio",
+      "EVENING": "Sera"
+    },
+    "workflowProgress": "Avanzamento workflow",
+    "actions": {
+      "viewDetails": "Visualizza dettagli",
+      "edit": "Modifica",
+      "newEvent": "Nuovo evento",
+      "topics": "Selezione argomenti",
+      "eventTypes": "Tipi di evento",
+      "eventTypesHelp": "Configura modelli di tipo evento (Admin)",
+      "manageTopics": "Gestisci argomenti",
+      "analytics": "Analisi",
+      "speakers": "Relatori"
+    },
+    "noCriticalTasks": "Nessuna attività critica",
+    "greatJob": "Ottimo lavoro!",
+    "taskCount": "{{count}} attività",
+    "taskCount_plural": "{{count}} attività",
+    "dueDate": "Data di scadenza",
+    "assignedTo": "Assegnato a {{name}}",
+    "confirmAction": "Conferma azione",
+    "areYouSure": "Sei sicuro di voler eseguire questa azione?",
+    "activityCount": "{{count}} attività",
+    "activityCount_plural": "{{count}} attività",
+    "today": "Oggi",
+    "lastUpdated": "Ultimo aggiornamento",
+    "viewAll": "Visualizza tutto",
+    "noRecentActivity": "Nessuna attività recente",
+    "activityAction": {
+      "speaker_assigned": "relatore assegnato",
+      "speaker_invited": "relatore invitato",
+      "materials_uploaded": "materiali caricati",
+      "workflow_advanced": "workflow avanzato",
+      "event_created": "evento creato",
+      "event_updated": "evento aggiornato",
+      "task_completed": "attività completata",
+      "notification_sent": "notifica inviata",
+      "event_published": "evento pubblicato"
+    },
+    "searchEvents": "Cerca eventi...",
+    "filter": {
+      "status": "Filtra per stato",
+      "workflowState": "Filtra per stato workflow",
+      "year": "Filtra per anno",
+      "allYears": "Tutti gli anni",
+      "showArchived": "Mostra eventi archiviati",
+      "activeFilters": "{{count}} filtro attivo",
+      "activeFilters_plural": "{{count}} filtri attivi",
+      "clearAll": "Cancella tutto"
+    },
+    "errors": {
+      "failedToLoadEvents": "Caricamento eventi fallito"
+    }
+  },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Attività"
+  },
+  "tasks": {
+    "criticalTasks": "Attività critiche",
+    "noCriticalTasks": "Nessuna attività critica",
+    "greatJob": "Ottimo lavoro!",
+    "errorLoadingTasks": "Caricamento attività fallito",
+    "viewAllTasks": "Visualizza tutte le attività",
+    "eventTasksDescription": "Configura le attività che verranno create e attivate automaticamente man mano che l'evento avanza negli stati del workflow.",
+    "defaultTemplates": "Modelli di attività predefiniti",
+    "defaultTemplatesDescription": "Queste sono le attività standard di pianificazione eventi. Tutte sono preselezionate e verranno create quando salvi l'evento.",
+    "taskExists": "L'attività esiste",
+    "assignTo": "Assegna a",
+    "triggerState": "Trigger",
+    "dueDate": "Scadenza",
+    "immediate": "Immediato",
+    "days": "giorni",
+    "customTemplates": "Modelli di attività personalizzati",
+    "customTemplatesDescription": "Questi modelli sono stati creati dal tuo team. Seleziona quelli che vuoi includere per questo evento.",
+    "customTasks": "Attività personalizzate",
+    "addCustomTask": "Aggiungi attività personalizzata",
+    "noCustomTasks": "Nessuna attività personalizzata. Clicca su \"Aggiungi attività personalizzata\" per crearne una.",
+    "trigger": "Trigger",
+    "assignedTo": "Assegnato a",
+    "unassigned": "Non assegnato",
+    "editTask": "Modifica attività",
+    "deleteTask": "Elimina attività",
+    "taskName": "Nome attività",
+    "taskNamePlaceholder": "es., Invia e-mail di conferma sede",
+    "selectEvent": "Evento (facoltativo)",
+    "selectEventHelp": "Seleziona un evento per creare un'attività, o salva come modello",
+    "noEvent": "Nessun evento (salva come modello)",
+    "triggerStateHelp": "Lo stato dell'evento che attiva questa attività",
+    "workflowStates": {
+      "topic_selection": "Selezione argomento",
+      "speaker_brainstorming": "Brainstorming relatori",
+      "speaker_outreach": "Contatto relatori",
+      "agenda_published": "Agenda pubblicata",
+      "agenda_finalized": "Agenda finalizzata",
+      "event_live": "Evento in diretta",
+      "post_event_wrap_up": "Riepilogo post-evento",
+      "archived": "Archiviato"
+    },
+    "dueDateType": "Tipo di scadenza",
+    "dueDateTypes": {
+      "immediate": "Immediato (ora)",
+      "relative_to_event": "Relativo alla data dell'evento",
+      "absolute": "Data assoluta"
+    },
+    "offsetDays": "Giorni di offset",
+    "offsetDaysHelp": "Negativo = prima dell'evento, Positivo = dopo l'evento",
+    "absoluteDueDate": "Data di scadenza",
+    "assignedOrganizer": "Organizzatore assegnato",
+    "notes": "Note (facoltativo)",
+    "notesPlaceholder": "Aggiungi istruzioni o contesto...",
+    "saveAsTemplate": "Salva come modello riutilizzabile",
+    "createTemplate": "Crea modello",
+    "createTask": "Crea attività",
+    "errors": {
+      "loadTemplatesFailed": "Caricamento modelli attività fallito",
+      "taskNameRequired": "Il nome dell'attività è obbligatorio",
+      "triggerStateRequired": "Lo stato trigger è obbligatorio",
+      "offsetDaysRequired": "I giorni di offset sono obbligatori",
+      "eventRequired": "Seleziona un evento o salva come modello",
+      "updateTaskFailed": "Aggiornamento attività fallito",
+      "createTaskFailed": "Creazione attività fallita"
+    }
+  },
+  "form": {
+    "createEvent": "Crea nuovo evento",
+    "editEvent": "Modifica evento",
+    "eventNumber": "Numero evento",
+    "eventInformation": "Informazioni sull'evento",
+    "title": "Titolo",
+    "description": "Descrizione",
+    "eventDate": "Data evento",
+    "eventType": "Tipo evento",
+    "capacity": "Capienza",
+    "registrationDeadline": "Scadenza iscrizioni",
+    "venue": "Nome sede",
+    "venueAddress": "Indirizzo sede",
+    "theme": "Tema",
+    "status": "Stato",
+    "save": "Salva",
+    "saveAndCreate": "Salva e crea",
+    "saveCreate": "Salva e crea",
+    "saveDraft": "Salva come bozza",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "close": "Chiudi",
+    "noVenue": "Nessuna sede selezionata",
+    "eventTypes": {
+      "fullDay": "Evento giornata intera",
+      "afternoon": "Evento pomeridiano",
+      "evening": "Evento serale"
+    },
+    "eventTypeConfig": {
+      "title": "Configurazione tipo evento",
+      "description": "Configura i requisiti degli slot e i modelli di tempistica per ogni tipo di evento",
+      "minSlots": "Slot minimi",
+      "maxSlots": "Slot massimi",
+      "slotDuration": "Durata slot (minuti)",
+      "theoreticalSlotsAM": "Slot teorici al mattino",
+      "breakSlots": "Slot pausa",
+      "lunchSlots": "Slot pranzo",
+      "defaultCapacity": "Capienza predefinita",
+      "structuralDurations": "Durate strutturali (minuti)",
+      "moderationStartDuration": "Inizio moderazione (min)",
+      "moderationEndDuration": "Fine moderazione (min)",
+      "breakDuration": "Durata pausa (min)",
+      "lunchDuration": "Durata pranzo (min)",
+      "saveFailed": "Salvataggio configurazione fallito",
+      "accessDenied": "Accesso negato",
+      "organizerOnly": "Solo gli organizzatori possono accedere a questa pagina"
+    },
+    "themeImage": "Immagine tema evento",
+    "themeImageHelp": "Carica un'immagine tema per questo evento (PNG, JPEG o SVG, max 5MB). Dimensione consigliata: 1920x400px.",
+    "themeImageAlt": "Immagine tema per l'evento",
+    "removeThemeImage": "Rimuovi immagine tema",
+    "overrideValidation": "Ignora validazione workflow (consente qualsiasi transizione di stato)",
+    "overrideReason": "Motivo dell'override (facoltativo)",
+    "overrideReasonPlaceholder": "Perché stai ignorando la validazione del workflow?",
+    "overrideReasonHelp": "Questo verrà registrato a fini di audit",
+    "errors": {
+      "failedToLoadEventTypes": "Caricamento tipi evento fallito"
+    }
+  },
+  "eventTypes": {
+    "FULL_DAY": "Giornata intera",
+    "AFTERNOON": "Pomeriggio",
+    "EVENING": "Sera"
+  },
+  "slotPreview": {
+    "title": "Anteprima {{type}}",
+    "slots": "Slot",
+    "duration": "Durata",
+    "capacity": "Capienza",
+    "timing": "Tempistica tipica",
+    "exampleTimeline": "Cronologia di esempio"
+  },
+  "filters": {
+    "status": "Stato",
+    "year": "Anno",
+    "eventType": "Tipo evento",
+    "search": "Cerca",
+    "searchPlaceholder": "Cerca eventi...",
+    "allStatuses": "Tutti gli stati",
+    "allYears": "Tutti gli anni",
+    "allTypes": "Tutti i tipi",
+    "clear": "Cancella filtri"
+  },
+  "sorting": {
+    "sort": "Ordina",
+    "date": "Data",
+    "status": "Stato",
+    "workflowProgress": "Avanzamento workflow",
+    "title": "Titolo",
+    "ascending": "Crescente",
+    "descending": "Decrescente"
+  },
+  "validation": {
+    "eventNumberRequired": "Il numero evento è obbligatorio",
+    "eventNumberPositive": "Il numero evento deve essere un numero positivo",
+    "titleRequired": "Il titolo è obbligatorio",
+    "titleMinLength": "Il titolo deve contenere almeno 10 caratteri",
+    "descriptionRequired": "La descrizione è obbligatoria",
+    "eventDateRequired": "La data dell'evento è obbligatoria",
+    "eventDateFuture": "La data dell'evento deve essere di almeno 30 giorni nel futuro",
+    "registrationDeadline": "La scadenza delle iscrizioni deve essere uguale o precedente alla data dell'evento",
+    "capacityRequired": "La capienza è obbligatoria",
+    "capacityPositive": "La capienza deve essere un numero positivo",
+    "venueRequired": "La sede è obbligatoria",
+    "venueNameRequired": "Il nome della sede è obbligatorio",
+    "venueAddressRequired": "L'indirizzo della sede è obbligatorio",
+    "minSlotsRequired": "Il numero minimo di slot è obbligatorio",
+    "maxSlotsRequired": "Il numero massimo di slot è obbligatorio",
+    "slotDurationRequired": "La durata degli slot è obbligatoria",
+    "slotDurationMinimum": "La durata degli slot deve essere di almeno 15 minuti",
+    "minSlotsLessThanMax": "Il numero minimo di slot deve essere inferiore o uguale al massimo",
+    "defaultCapacityRequired": "La capienza predefinita è obbligatoria",
+    "defaultCapacityPositive": "La capienza predefinita deve essere un numero positivo"
+  },
+  "errors": {
+    "loadFailed": "Caricamento eventi fallito",
+    "saveFailed": "Salvataggio evento fallito",
+    "deleteFailed": "Eliminazione evento fallita",
+    "notFound": "Evento non trovato",
+    "unauthorized": "Non hai il permesso di accedere a questo evento",
+    "validationError": "Input non valido. Controlla i tuoi dati.",
+    "serviceError": "Si è verificato un errore imprevisto. Riprova.",
+    "networkError": "Errore di rete. Controlla la tua connessione.",
+    "correlationId": "ID correlazione",
+    "retry": "Riprova",
+    "imageUploadFailed": "Caricamento immagine tema fallito",
+    "imageTooBig": "Il file immagine è troppo grande (max 5MB)",
+    "imageInvalidType": "Tipo di immagine non valido (usa PNG, JPEG o SVG)",
+    "MULTIPLE_FILES": "Carica un solo file alla volta",
+    "FILE_TOO_LARGE": "La dimensione del file supera il limite di 5MB",
+    "INVALID_FILE_TYPE": "Tipo di file non valido. Carica solo immagini PNG, JPEG o SVG"
+  },
+  "confirmations": {
+    "deleteTitle": "Eliminare l'evento?",
+    "deleteMessage": "Sei sicuro di voler eliminare questo evento?",
+    "deleteImpact": "{{registrations}} iscrizioni, {{speakers}} relatori, {{materials}} materiali",
+    "cannotDelete": "Impossibile eliminare l'evento - annulla l'evento invece",
+    "unsavedChanges": "Modifiche non salvate",
+    "unsavedChangesMessage": "Hai modifiche non salvate. Vuoi davvero continuare?",
+    "confirm": "Conferma",
+    "cancel": "Annulla",
+    "discard": "Scarta",
+    "keepEditing": "Continua a modificare"
+  },
+  "workflow": {
+    "progress": "Avanzamento",
+    "step": "Passo {{current}} di {{total}}",
+    "stepIndicator": "Passo {{current}}/{{total}}",
+    "stepName": "Passo {{number}}: {{name}}",
+    "viewDetails": "Visualizza dettagli workflow",
+    "warning": "Avviso",
+    "blocker": "Blocco",
+    "blockers": "{{count}} blocco",
+    "blockers_plural": "{{count}} blocchi",
+    "completed": "Completato",
+    "inProgress": "In corso",
+    "pending": "In attesa",
+    "blocked": "Bloccato",
+    "progressBarLabel": "Clicca per visualizzare i dettagli del workflow. {{percentage}}% completato",
+    "actions": {
+      "selectTopic": "Seleziona argomento"
+    },
+    "states": {
+      "created": "Creato",
+      "topic_selection": "Selezione argomento",
+      "speaker_identification": "Identificazione relatori",
+      "slot_assignment": "Assegnazione slot",
+      "agenda_published": "Agenda pubblicata",
+      "agenda_finalized": "Agenda finalizzata",
+      "event_live": "Evento in diretta",
+      "event_completed": "Evento completato",
+      "archived": "Archiviato"
+    }
+  },
+  "topicSelection": {
+    "success": "Argomento selezionato con successo"
+  },
+  "autoSave": {
+    "saving": "Salvataggio...",
+    "saved": "Ultimo salvataggio alle {{time}}",
+    "failed": "Salvataggio automatico fallito",
+    "conflict": "Modifica simultanea rilevata. Ricarica e riprova.",
+    "enabled": "Salvataggio automatico attivato"
+  },
+  "venue": {
+    "sectionTitle": "Sede e logistica",
+    "title": "Sede e logistica",
+    "nameLabel": "Nome sede",
+    "addressLabel": "Indirizzo sede",
+    "capacityLabel": "Capienza sede",
+    "errors": {
+      "nameRequired": "Il nome della sede è obbligatorio",
+      "addressRequired": "L'indirizzo della sede è obbligatorio",
+      "capacityPositive": "La capienza deve essere un numero positivo",
+      "capacityMax": "La capienza non può superare 5000",
+      "updateFailed": "Aggiornamento sede fallito"
+    }
+  },
+  "topics": {
+    "title": "Argomenti assegnati",
+    "sectionTitle": "ARGOMENTI ASSEGNATI ({{count}})",
+    "sectionLabel": "Argomenti assegnati ({{count}})",
+    "addTopic": "Aggiungi argomento dal backlog",
+    "addFromBacklog": "Aggiungi argomento dal backlog",
+    "removeTopic": "Rimuovi argomento",
+    "viewTopic": "Visualizza argomento",
+    "view": "Visualizza",
+    "remove": "Rimuovi",
+    "viewButton": "Visualizza {{title}}",
+    "removeButton": "Rimuovi {{title}}",
+    "lastUsed": "{{event}} ({{year}})",
+    "lastUsedLabel": "Ultimo utilizzo",
+    "neverUsed": "Mai",
+    "partnerVotes": "Voti partner",
+    "noTopics": "Nessun argomento assegnato",
+    "noTopic": "Nessun argomento selezionato",
+    "emptyState": "Nessun argomento assegnato",
+    "loadError": "Caricamento argomenti fallito",
+    "change": "Cambia argomento",
+    "removeConfirmTitle": "Rimuovere l'argomento?",
+    "removeConfirmMessage": "Sei sicuro di voler rimuovere questo argomento dall'evento?"
+  },
+  "speakers": {
+    "title": "Relatori e sessioni",
+    "sectionTitle": "Relatori e sessioni ({{count}})",
+    "speakersAndSessions": "Relatori e sessioni",
+    "slotTime": "Ora",
+    "slotLabel": "Slot {{number}}",
+    "speakerName": "Relatore",
+    "company": "Azienda",
+    "sessionTitle": "Titolo sessione",
+    "notAssigned": "Non assegnato",
+    "materials": "Materiali",
+    "materialsComplete": "Completo",
+    "materialsPending": "In attesa",
+    "materialsMissing": "Mancante",
+    "viewDetails": "Visualizza dettagli",
+    "editSlot": "Modifica slot",
+    "manageMaterials": "Gestisci materiali",
+    "viewFullAgenda": "Visualizza agenda completa",
+    "manageSpeakerAssignments": "Gestisci assegnazioni relatori",
+    "manageSlotAssignments": "Gestisci assegnazioni slot",
+    "autoAssignSpeakers": "Assegnazione automatica relatori",
+    "autoAssignConfirmTitle": "Assegnazione automatica relatori",
+    "autoAssignConfirmMessage": "Questo assegnerà automaticamente i relatori agli slot temporali ottimali in base all'esperienza e alla disponibilità. Le assegnazioni esistenti verranno sovrascritte. Continuare?",
+    "noSpeakers": "Nessun relatore assegnato",
+    "noSessionsScheduled": "Nessuna sessione pianificata. Usa 'Gestisci assegnazioni relatori' per aggiungere relatori.",
+    "loadError": "Caricamento sessioni fallito. Riprova.",
+    "deleteSession": "Elimina",
+    "deleteSessionTitle": "Eliminare la sessione?",
+    "deleteSessionMessage": "Sei sicuro di voler eliminare la sessione '{{title}}'? Questa azione non può essere annullata."
+  },
+  "team": {
+    "title": "Assegnazioni team",
+    "leadOrganizer": "Organizzatore principale",
+    "coOrganizers": "Co-organizzatori",
+    "moderator": "Moderatore",
+    "contentReviewer": "Revisore contenuti",
+    "manageTeam": "Gestisci team",
+    "assignRole": "Assegna ruolo"
+  },
+  "publishing": {
+    "title": "Pubblicazione",
+    "strategy": "Strategia",
+    "progressive": "Progressiva",
+    "immediate": "Immediata",
+    "currentPhase": "Fase attuale",
+    "timeline": {
+      "phasesPublished": "{{completed}} di {{total}} fasi pubblicate ({{percent}}%)",
+      "topic": "Argomento",
+      "speakers": "Relatori",
+      "agenda": "Agenda",
+      "updates": "Aggiornamenti",
+      "now": "Ora",
+      "publishedOn": "Pubblicato il {{date}}",
+      "scheduled": "Pianificato: {{date}}",
+      "autoPublishIn": "Pubblicazione automatica tra {{days}} giorni",
+      "autoPublishScheduled": "Pubblicazione automatica pianificata",
+      "days": "{{count}} giorni"
+    },
+    "qualityChecks": "Controlli qualità",
+    "configure": "Configura pubblicazione",
+    "republish": "Ripubblica",
+    "previewPublicPage": "Anteprima pagina pubblica",
+    "tab": {
+      "title": "Controlli pubblicazione (Story 5.7)",
+      "notice": "I componenti di pubblicazione sono ora integrati. L'integrazione API backend è in corso. Alcune funzionalità usano dati mock temporanei."
+    },
+    "controls": {
+      "publish": "Pubblica",
+      "publishing": "Pubblicazione...",
+      "publishPhase": "Pubblica {{phase}}",
+      "published": "{{phase}} pubblicato",
+      "publishPhases": "Pubblica fasi",
+      "alreadyPublished": "Già pubblicato",
+      "publishTopicFirst": "Pubblica prima l'argomento",
+      "publishSpeakersFirst": "Pubblica prima i relatori",
+      "schedulePublish": "Pianifica pubblicazione",
+      "previewNewsletter": "Anteprima newsletter",
+      "mode": "Modalità",
+      "modeDraft": "Bozza",
+      "modeProgressive": "Progressiva",
+      "modeComplete": "Completa",
+      "notifySubscribers": "Notifica iscritti",
+      "validationErrors": "Errori di validazione:",
+      "phase": {
+        "topic": "Argomento",
+        "speakers": "Relatori",
+        "agenda": "Agenda"
+      },
+      "scheduleDialog": {
+        "title": "Pianifica pubblicazione",
+        "dateLabel": "Data e ora pianificazione",
+        "cancel": "Annulla",
+        "confirm": "Conferma pianificazione"
+      },
+      "newsletterDialog": {
+        "title": "Anteprima newsletter",
+        "subject": "Oggetto: Nuovo {{phase}} pubblicato per {{eventCode}}",
+        "contentPreview": "Anteprima contenuto newsletter per la fase {{phase}}...",
+        "close": "Chiudi",
+        "sendTest": "Invia e-mail di test"
+      },
+      "accessibility": {
+        "publishingPhase": "Pubblicazione {{phase}}",
+        "publishingMode": "Modalità pubblicazione",
+        "notifySubscribers": "Notifica iscritti alla pubblicazione"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Pronto per la pubblicazione",
+      "notReadyToPublish": "Non pronto per la pubblicazione",
+      "eventTopic": "Argomento evento",
+      "speakerLineup": "Elenco relatori",
+      "sessionTimings": "Orari sessioni",
+      "complete": "Completo",
+      "incomplete": "Incompleto ({{assigned}}/{{total}} sessioni assegnate)",
+      "ready": "Pronto ({{assigned}}/{{total}} sessioni assegnate)",
+      "notRequired": "Non richiesto",
+      "assignTimings": "Assegna orari",
+      "expandUnassigned": "Espandi sessioni non assegnate",
+      "collapseUnassigned": "Comprimi sessioni non assegnate",
+      "accessibility": {
+        "readyToPublish": "Pronto per la pubblicazione",
+        "notReadyToPublish": "Non pronto per la pubblicazione",
+        "eventTopic": "Validazione argomento evento",
+        "speakerLineup": "Validazione elenco relatori",
+        "sessionTimings": "Validazione orari sessioni"
+      }
+    },
+    "preview": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "print": "Stampa",
+      "refresh": "Aggiorna",
+      "refreshing": "Aggiornamento anteprima...",
+      "retry": "Riprova",
+      "loadFailed": "Caricamento anteprima fallito. Riprova.",
+      "previewMode": "Modalità anteprima: {{mode}} | Fase: {{phase}}",
+      "deviceDimensions": "Dispositivo: {{device}} ({{width}} x {{height}})",
+      "switchedTo": "Passato all'anteprima {{device}}",
+      "accessibility": {
+        "devicePreviewMode": "modalità anteprima dispositivo",
+        "desktopPreview": "Anteprima desktop",
+        "mobilePreview": "Anteprima mobile",
+        "printPreview": "Anteprima stampa",
+        "refreshPreview": "Aggiorna anteprima",
+        "eventContentPreview": "Anteprima contenuto evento"
+      }
+    },
+    "versionControl": {
+      "title": "Cronologia versioni",
+      "version": "Versione",
+      "published": "Pubblicato",
+      "phase": "Fase",
+      "publisher": "Editore",
+      "status": "Stato",
+      "actions": "Azioni",
+      "rollback": "Ripristina",
+      "current": "Corrente",
+      "cdnCleared": "CDN cancellato",
+      "cdnPending": "CDN in attesa",
+      "cdnFailed": "CDN fallito",
+      "cdnUnknown": "Sconosciuto",
+      "cdnInvalidationId": "ID invalidazione CDN: {{id}}",
+      "noVersions": "Nessuna cronologia versioni disponibile",
+      "rollbackDialog": {
+        "title": "Conferma ripristino",
+        "message": "Sei sicuro di voler ripristinare questa versione?",
+        "versionLabel": "Versione:",
+        "phaseLabel": "Fase:",
+        "publishedLabel": "Pubblicato:",
+        "publisherLabel": "Editore:",
+        "warning": "Questa azione invaliderà la cache CDN CloudFront e potrebbe richiedere alcuni minuti.",
+        "cancel": "Annulla",
+        "confirm": "Conferma ripristino",
+        "confirming": "Ripristino in corso..."
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifiche e promemoria",
+    "activeAutomations": "Automazioni attive",
+    "notificationRules": "Regole di notifica",
+    "manageNotifications": "Gestisci notifiche",
+    "sendManualNotification": "Invia notifica manuale",
+    "ruleName": "Nome regola",
+    "trigger": "Trigger",
+    "recipients": "Destinatari",
+    "active": "Attivo",
+    "inactive": "Inattivo"
+  },
+  "criticalTasks": {
+    "title": "Attività critiche",
+    "priority": "Priorità",
+    "warning": "Avviso",
+    "critical": "Critico",
+    "dueDate": "Data di scadenza",
+    "assignedTo": "Assegnato a",
+    "actions": "Azioni",
+    "contact": "Contatta",
+    "extendDeadline": "Proroga scadenza",
+    "confirm": "Conferma",
+    "assignToTeam": "Assegna al team",
+    "markComplete": "Segna come completato",
+    "noTasks": "Nessuna attività critica"
+  },
+  "teamActivity": {
+    "title": "Attività del team",
+    "recentActivity": "Attività recente",
+    "filterByUser": "Filtra per utente",
+    "filterByEvent": "Filtra per evento",
+    "filterByAction": "Filtra per azione",
+    "reload": "Ricarica",
+    "noActivity": "Nessuna attività disponibile",
+    "activityTypes": {
+      "event_created": "Evento creato",
+      "event_updated": "Evento aggiornato",
+      "speaker_assigned": "Relatore assegnato",
+      "speaker_invited": "Relatore invitato",
+      "materials_uploaded": "Materiali caricati",
+      "workflow_advanced": "Workflow avanzato",
+      "task_completed": "Attività completata",
+      "notification_sent": "Notifica inviata",
+      "event_published": "Evento pubblicato"
+    }
+  },
+  "pagination": {
+    "previous": "Precedente",
+    "next": "Successivo",
+    "page": "Pagina {{current}} di {{total}}",
+    "itemsPerPage": "Elementi per pagina",
+    "showing": "Visualizzazione {{from}}-{{to}} di {{total}} elementi"
+  },
+  "actions": {
+    "newEvent": "Nuovo evento",
+    "viewAnalytics": "Visualizza analisi",
+    "manageSpeakers": "Gestisci relatori",
+    "viewTimeline": "Visualizza cronologia",
+    "exportData": "Esporta dati",
+    "refresh": "Aggiorna",
+    "back": "Indietro",
+    "deleteEvent": "Elimina evento"
+  },
+  "messages": {
+    "draftSaved": "Bozza salvata",
+    "eventCreated": "Evento creato",
+    "eventUpdated": "Evento aggiornato",
+    "eventDeleted": "Evento eliminato",
+    "loading": "Caricamento...",
+    "noResults": "Nessun risultato trovato",
+    "tryAgain": "Riprova"
+  },
+  "accessibility": {
+    "skipToContent": "Vai al contenuto",
+    "openMenu": "Apri menu",
+    "closeMenu": "Chiudi menu",
+    "loading": "Caricamento",
+    "error": "Errore",
+    "success": "Successo"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "save": "Salva",
+    "saveChanges": "Salva modifiche",
+    "saveAndContinue": "Salva e continua",
+    "settings": "Impostazioni",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "close": "Chiudi",
+    "back": "Indietro",
+    "next": "Successivo",
+    "previous": "Precedente",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo"
+  },
+  "metrics": {
+    "speakers": "Relatori",
+    "confirmed": "confermati",
+    "topics": "Argomenti",
+    "assigned": "assegnati",
+    "materials": "Materiali",
+    "pending": "in attesa",
+    "registrations": "Iscrizioni",
+    "budget": "Budget",
+    "keyMetrics": "Metriche chiave"
+  },
+  "public": {
+    "comingSoon": "Prossimamente...",
+    "preview": {
+      "title": "Modalità anteprima",
+      "phase": "Fase",
+      "mode": "Modalità",
+      "description": "Visualizzazione modifiche non pubblicate - così apparirà l'evento quando pubblicato"
+    },
+    "logistics": {
+      "title": "Dettagli evento",
+      "date": "Data",
+      "time": "Ora",
+      "location": "Luogo",
+      "capacity": "Capienza"
+    },
+    "errors": {
+      "loadFailed": "Caricamento evento fallito",
+      "noEvent": "Nessun evento attuale disponibile",
+      "checkBackLater": "Controlla più tardi per i prossimi eventi."
+    },
+    "speakers": {
+      "title": "Relatori",
+      "speakerTBA": "Relatore da confermare"
+    },
+    "sessions": {
+      "title": "Sessioni",
+      "gridView": "Vista griglia",
+      "listView": "Vista lista",
+      "noSessions": "Nessuna sessione trovata per gli argomenti selezionati",
+      "clearFilters": "Cancella filtri",
+      "speaker": "Relatore",
+      "seats": "{{count}} posti",
+      "timeTBD": "Ora da definire"
+    },
+    "program": {
+      "title": "Programma evento",
+      "speaker": "Relatore",
+      "materials": "Materiali",
+      "downloadError": "Download materiale fallito. Riprova."
+    },
+    "venue": {
+      "title": "Sede",
+      "mapNotAvailable": "Mappa non disponibile",
+      "getDirections": "Ottieni indicazioni"
+    },
+    "social": {
+      "title": "Condividi questo evento",
+      "description": "Diffondi la notizia di questo evento nella tua rete",
+      "shareLinkedIn": "Condividi su LinkedIn",
+      "shareTwitter": "Condividi su X",
+      "shareEmail": "Condividi via e-mail",
+      "shareText": "Unisciti a me a {{title}}!"
+    },
+    "upcomingEvents": {
+      "title": "Altri eventi in programma"
+    },
+    "sessionTypes": {
+      "keynote": "keynote",
+      "presentation": "presentazione",
+      "workshop": "workshop",
+      "panel_discussion": "tavola rotonda",
+      "networking": "networking",
+      "break": "pausa",
+      "lunch": "pranzo"
+    }
+  },
+  "sessionEdit": {
+    "title": "Modifica sessione",
+    "titleLabel": "Titolo sessione",
+    "abstractLabel": "Abstract sessione",
+    "charactersRemaining": "{{count}} caratteri rimanenti",
+    "durationLabel": "Durata (minuti)",
+    "tabs": {
+      "details": "Dettagli",
+      "materials": "Materiali",
+      "speakers": "Relatori"
+    },
+    "speakers": {
+      "title": "Relatori della sessione",
+      "noSpeakers": "Nessun relatore assegnato",
+      "addSpeaker": "Aggiungi relatore",
+      "searchUser": "Cerca utente",
+      "createNewUser": "+ Crea nuovo utente",
+      "roleLabel": "Ruolo relatore",
+      "setPrimary": "Imposta come principale",
+      "remove": "Rimuovi",
+      "confirmed": "Confermato",
+      "userRequired": "Seleziona un utente",
+      "addError": "Aggiunta relatore fallita",
+      "removeError": "Rimozione relatore fallita",
+      "setPrimaryError": "Impostazione relatore principale fallita",
+      "roles": {
+        "PRIMARY_SPEAKER": "Relatore principale",
+        "CO_SPEAKER": "Co-relatore",
+        "MODERATOR": "Moderatore",
+        "PANELIST": "Panelista"
+      }
+    },
+    "materials": {
+      "uploadTitle": "Carica materiali sessione",
+      "uploadDescription": "Carica presentazioni, documenti o video (max 100MB per file, fino a 10 file)",
+      "existingTitle": "Materiali esistenti",
+      "downloadError": "Download materiale fallito"
+    },
+    "errors": {
+      "titleRequired": "Il titolo è obbligatorio",
+      "abstractTooLong": "L'abstract deve contenere {{max}} caratteri o meno",
+      "invalidDuration": "La durata deve essere compresa tra 1 e 480 minuti",
+      "saveFailed": "Salvataggio sessione fallito"
+    }
+  },
+  "slotAssignment": {
+    "title": "Assegnazione slot",
+    "pageTitle": "Assegna relatori agli slot temporali",
+    "pageDescription": "Trascina i relatori confermati negli slot temporali disponibili per creare il programma dell'evento",
+    "backToEvent": "Torna all'evento",
+    "returnToEventOverview": "Torna alla panoramica evento",
+    "helpBanner": {
+      "title": "Come funziona:",
+      "description": "Trascina le schede dei relatori dal pannello sinistro agli slot temporali a destra. Il sistema evidenzierà le corrispondenze delle preferenze e avviserà dei conflitti. Una volta assegnati tutti i relatori, il programma verrà salvato automaticamente."
+    },
+    "timeline": {
+      "title": "Cronologia sessioni",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}% corrispondenza",
+      "headerTime": "Ora"
+    },
+    "structuralSessions": {
+      "moderation": "Moderazione",
+      "break": "Pausa",
+      "lunch": "Pranzo"
+    },
+    "speakerPool": {
+      "title": "Pool relatori",
+      "assigned": "{{count}} di {{total}} assegnati ({{percent}}%)",
+      "remaining": "{{count}} rimanenti",
+      "filters": {
+        "all": "Tutti",
+        "assigned": "Assegnati",
+        "unassigned": "Non assegnati"
+      },
+      "emptyState": {
+        "title": "Tutte le sessioni assegnate!",
+        "message": "Ottimo lavoro! Tutti i relatori sono stati assegnati agli slot temporali."
+      },
+      "viewPreferences": "Preferenze"
+    },
+    "quickActions": {
+      "title": "Azioni rapide",
+      "total": "{{count}} sessioni totali",
+      "assigned": "{{count}} assegnate",
+      "pending": "{{count}} in attesa",
+      "allAssigned": "Tutti gli orari assegnati!",
+      "goToPublishing": "Vai alla scheda Pubblicazione",
+      "sessionsAssignedAnnouncement": "{{count}} sessioni assegnate con successo"
+    },
+    "actions": {
+      "autoAssign": "Assegnazione automatica",
+      "clearAll": "Cancella tutto",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "generateStructure": "Genera struttura programma"
+    },
+    "modals": {
+      "generateStructure": {
+        "title": "Genera struttura programma",
+        "message": "Crea blocchi di moderazione, pause e pranzo in base alla configurazione del tipo evento.",
+        "alreadyExist": "I blocchi di moderazione, pausa e pranzo esistono già. Vuoi sovrascriverli?",
+        "overwrite": "Sovrascrivi"
+      },
+      "autoAssign": {
+        "title": "Assegnazione automatica sessioni",
+        "message": "Seleziona l'algoritmo per l'assegnazione automatica:",
+        "algorithms": {
+          "preferenceFirst": "Preferenza prima",
+          "timeBalance": "Bilanciamento tempo"
+        }
+      },
+      "clearAll": {
+        "title": "Cancella tutte le assegnazioni",
+        "message": "Sei sicuro di voler cancellare tutte le assegnazioni degli orari?"
+      }
+    },
+    "conflicts": {
+      "title": "Conflitto di orario rilevato",
+      "types": {
+        "room_overlap": "Sovrapposizione sala",
+        "speaker_double_booked": "Relatore prenotato doppio",
+        "speaker_unavailable": "Relatore non disponibile"
+      },
+      "severity": {
+        "error": "ERRORE",
+        "warning": "AVVISO"
+      },
+      "timeRange": "Intervallo di conflitto",
+      "start": "Inizio",
+      "end": "Fine",
+      "conflictingSession": "Sessione in conflitto",
+      "resolutionOptions": "Opzioni di risoluzione",
+      "resolutionMessage": "Scegli uno slot temporale o una sala diversa per risolvere questo conflitto.",
+      "chooseDifferentSlot": "Scegli uno slot diverso"
+    },
+    "preferences": {
+      "title": "Preferenze relatori",
+      "close": "Chiudi",
+      "timePreferences": "Preferenze orarie",
+      "preferredTime": "Momento preferito della giornata",
+      "unavailableTimes": "Orari non disponibili",
+      "avRequirements": "Requisiti A/V",
+      "setupNotes": "Note configurazione sala",
+      "slotMatchScore": "Punteggio corrispondenza slot",
+      "matchPercent": "{{percent}}% corrispondenza",
+      "times": {
+        "morning": "Mattina",
+        "afternoon": "Pomeriggio",
+        "evening": "Sera",
+        "any": "Qualsiasi"
+      },
+      "equipment": {
+        "microphone": "Microfono",
+        "projector": "Proiettore",
+        "recording": "Registrazione",
+        "whiteboard": "Lavagna"
+      }
+    },
+    "loading": "Caricamento...",
+    "dragInstructions": "Trascina i relatori negli slot temporali per assegnarli"
+  },
+  "newsletter": {
+    "widget": {
+      "title": "Rimani aggiornato con BATbern",
+      "placeholder": "tua@email.com",
+      "button": "Iscriviti",
+      "success": "Grazie! Sei ora iscritto.",
+      "alreadySubscribed": "Sei già iscritto.",
+      "error": "Qualcosa è andato storto. Riprova.",
+      "emailInvalid": "Inserisci un indirizzo e-mail valido."
+    },
+    "unsubscribe": {
+      "title": "Annulla iscrizione alla newsletter BATbern",
+      "loading": "Caricamento…",
+      "confirmMessage": "Stai per annullare l'iscrizione di {{email}} alle newsletter BATbern.",
+      "confirmButton": "Conferma annullamento iscrizione",
+      "success": "Iscrizione annullata con successo.",
+      "resubscribeLink": "Iscriviti di nuovo",
+      "invalidToken": "Questo link di annullamento iscrizione non è valido o è già stato utilizzato."
+    },
+    "account": {
+      "label": "Iscriviti alla newsletter BATbern",
+      "description": "Ricevi annunci eventi e aggiornamenti"
+    }
+  }
+}

@@ -1,0 +1,469 @@
+{
+  "navigation": {
+    "partners": "パートナー",
+    "speakerOutreach": "登壇者への働きかけ",
+    "topicManagement": "トピック管理"
+  },
+  "dashboard": {
+    "criticalTasks": "重要タスク",
+    "noCriticalTasks": "重要タスクなし",
+    "greatJob": "すばらしい仕事です！",
+    "taskCount": "{{count}}件のタスク",
+    "taskCount_plural": "{{count}}件のタスク",
+    "dueDate": "期日",
+    "assignedTo": "{{name}}に割り当て済み",
+    "confirmAction": "アクションの確認",
+    "areYouSure": "本当にこの操作を実行しますか？"
+  },
+  "topicBacklog": {
+    "pageTitle": "トピック管理",
+    "pageDescription": "バックログトピックを管理し、イベント用のトピックを選択して使用パターンを分析します",
+    "title": "トピックバックログ管理",
+    "subtitle": "インテリジェントな提案と陳腐化検出を使用してバックログからトピックを選択します",
+    "selectPrompt": "トピックを選択して詳細を表示",
+    "noTopics": "フィルターに一致するトピックが見つかりません",
+    "lastUsed": "最終使用日",
+    "usageCount": "{{count}}回使用",
+    "createNew": "新しいトピックを作成",
+    "breadcrumbs": {
+      "home": "ホーム",
+      "events": "イベント",
+      "topicSelection": "トピック選択",
+      "manageTopics": "トピック管理"
+    },
+    "error": {
+      "loadFailed": "トピックの読み込みに失敗しました"
+    },
+    "createModal": {
+      "title": "新しいトピックを作成",
+      "fields": {
+        "title": "タイトル",
+        "description": "説明",
+        "category": "カテゴリー",
+        "categoryHint": "例：技術、ビジネス、デザイン"
+      },
+      "errors": {
+        "titleRequired": "タイトルは必須です",
+        "titleTooLong": "タイトルは255文字以内にしてください",
+        "descriptionRequired": "説明は必須です",
+        "categoryRequired": "カテゴリーは必須です",
+        "createFailed": "トピックの作成に失敗しました。もう一度お試しください。"
+      },
+      "create": "トピックを作成",
+      "creating": "作成中..."
+    },
+    "editModal": {
+      "title": "トピックを編集",
+      "fields": {
+        "title": "タイトル",
+        "description": "説明",
+        "category": "カテゴリー"
+      },
+      "errors": {
+        "titleRequired": "タイトルは必須です",
+        "titleTooLong": "タイトルは255文字以内にしてください",
+        "categoryRequired": "カテゴリーは必須です",
+        "updateFailed": "トピックの更新に失敗しました。もう一度お試しください。"
+      },
+      "save": "変更を保存",
+      "saving": "保存中..."
+    },
+    "filters": {
+      "title": "フィルター",
+      "category": "カテゴリー",
+      "status": "ステータス",
+      "sort": "並び替え",
+      "all": "すべてのカテゴリー",
+      "allStatuses": "すべてのステータス",
+      "categories": {
+        "technical": "技術",
+        "management": "マネジメント",
+        "softSkills": "ソフトスキル",
+        "industryTrends": "業界トレンド",
+        "toolsPlatforms": "ツールとプラットフォーム"
+      },
+      "statuses": {
+        "available": "利用可能（緑）",
+        "caution": "注意して使用（黄）",
+        "unavailable": "使用が早すぎる（赤）"
+      },
+      "sortOptions": {
+        "safestFirst": "最も安全なものから（陳腐化 ↓）",
+        "recentFirst": "最新のものから（陳腐化 ↑）",
+        "titleAZ": "タイトル（A-Z）",
+        "mostUsed": "最も使用されたもの"
+      }
+    },
+    "details": {
+      "metrics": "指標",
+      "lastUsed": "最終使用日",
+      "usageCount": "使用回数",
+      "editButton": "トピックを編集",
+      "deleteButton": "トピックを削除",
+      "selectButton": "イベントに選択",
+      "selecting": "選択中...",
+      "overrideButton": "警告を無視",
+      "statusGreen": "再利用可能 - 最後の使用から20ヶ月以上経過",
+      "statusYellow": "注意が必要 - 最後の使用から12〜20ヶ月経過",
+      "statusRed": "使用が早すぎる - 最後の使用から12ヶ月以内、重複リスクが高い",
+      "similarityWarning": "{{count}}件の類似トピックが検出されました（類似度70%超）"
+    },
+    "viewMode": {
+      "label": "表示モード",
+      "heatMap": "ヒートマップ",
+      "list": "リスト",
+      "board": "ボード",
+      "boardComingSoon": "ボードビューは近日公開予定..."
+    },
+    "heatMap": {
+      "title": "トピック使用状況ヒートマップ",
+      "subtitle": "色が濃いほど使用頻度が高いことを示します。トピックをクリックして詳細を表示。",
+      "description": "過去24ヶ月のトピック使用頻度（四半期ごとにグループ化）",
+      "quarter": "四半期",
+      "spring": "春",
+      "summer": "夏",
+      "autumn": "秋",
+      "usageCount": "使用回数",
+      "totalAttendance": "総参加者数",
+      "avgEngagement": "平均エンゲージメント",
+      "events": "イベント",
+      "noData": "このトピックの使用履歴はありません。",
+      "noTopics": "表示できるトピックがありません。",
+      "tooltip": "四半期をクリックして、このトピックを使用したイベントの詳細を確認",
+      "hint": "データポイントにカーソルを合わせると詳細情報が表示されます",
+      "stale": "陳腐化 - 最近使用されていない",
+      "trending": "トレンド中 - 最近使用された",
+      "legend": {
+        "noUsage": "使用なし",
+        "low": "使用頻度低",
+        "medium": "使用頻度中",
+        "high": "使用頻度高",
+        "stale": "陳腐化",
+        "trending": "トレンド中"
+      },
+      "navigation": {
+        "previous": "前の年",
+        "next": "次の年",
+        "atCurrent": "現在の年"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "類似トピックが検出されました",
+        "message": "以下のトピックはあなたの選択と高い類似性（70%超）を持っています。本当に続行しますか？",
+        "similarity": "類似度",
+        "justification": "理由（任意）",
+        "cancel": "キャンセル",
+        "confirm": "それでも選択する"
+      },
+      "override": {
+        "title": "陳腐化警告を無視",
+        "message": "このトピックは最近使用されました（陳腐化スコア：{{score}}%）。再度使用する理由を入力してください。",
+        "justification": "理由",
+        "helper": "このトピックを最近使用したにもかかわらず再利用すべき理由を説明してください",
+        "cancel": "キャンセル",
+        "confirm": "無視して選択"
+      },
+      "delete": {
+        "title": "トピックを削除",
+        "message": "「{{title}}」を削除してもよろしいですか？この操作は元に戻せません。",
+        "cannotDelete": "このトピックは{{count}}件のイベントで使用されているため、削除できません。",
+        "cancel": "キャンセル",
+        "confirm": "トピックを削除",
+        "deleting": "削除中...",
+        "success": "トピックを正常に削除しました",
+        "error": "トピックの削除に失敗しました。もう一度お試しください。"
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "登壇者のブレインストーミング",
+    "subtitle": "潜在的な登壇者をイベントのプールに追加し、アウトリーチのために主催者に割り当てます",
+    "form": {
+      "speakerName": "登壇者名",
+      "company": "会社",
+      "expertise": "専門分野",
+      "assignOrganizer": "主催者に割り当て（任意）",
+      "unassigned": "未割り当て",
+      "notes": "メモ（任意）",
+      "addButton": "プールに追加",
+      "adding": "追加中...",
+      "error": "登壇者の追加に失敗しました"
+    },
+    "pool": {
+      "title": "登壇者プール",
+      "empty": "プールにまだ登壇者がいません。上から追加してください！",
+      "expertise": "専門分野",
+      "assigned": "担当者",
+      "notes": "メモ",
+      "error": "登壇者プールの読み込みに失敗しました"
+    },
+    "actions": {
+      "skipForNow": "今はスキップ",
+      "continue": "アウトリーチへ進む"
+    }
+  },
+  "speakerOutreach": {
+    "title": "登壇者への働きかけ",
+    "subtitle": "登壇者へのアウトリーチ活動を追跡し、他の主催者と調整します",
+    "breadcrumbs": {
+      "home": "ホーム",
+      "speakerOutreach": "登壇者への働きかけ"
+    },
+    "emptyPool": {
+      "message": "アウトリーチを開始する前に、プールに登壇者を追加する必要があります。",
+      "hint": "イベント計画段階に戻って潜在的な登壇者を追加してください。",
+      "addSpeakers": "プールに登壇者を追加"
+    },
+    "showBrainstorm": "登壇者を追加",
+    "hideBrainstorm": "登壇者追加を非表示",
+    "speakerName": "登壇者",
+    "contactMethod": "連絡方法",
+    "contactDate": "連絡日",
+    "notes": "メモ",
+    "markContacted": "連絡済みとしてマーク",
+    "filterByOrganizer": "主催者でフィルター",
+    "contactHistory": "連絡履歴",
+    "daysSinceAssignment": "割り当てからの日数",
+    "overdue": "期限超過",
+    "lastContact": "最終連絡",
+    "outreachDetails": "アウトリーチの詳細",
+    "noContactHistory": "連絡履歴なし",
+    "contactedBy": "連絡者",
+    "markContactedModal": {
+      "title": "登壇者を連絡済みとしてマーク",
+      "method": {
+        "email": "メール",
+        "phone": "電話",
+        "inPerson": "対面"
+      },
+      "notesPlaceholder": "会話についてのメモ...",
+      "error": {
+        "methodRequired": "連絡方法は必須です",
+        "dateRequired": "連絡日は必須です",
+        "failed": "アウトリーチの記録に失敗しました",
+        "loadHistory": "連絡履歴の読み込みに失敗しました"
+      }
+    },
+    "bulkAction": {
+      "title": "複数を連絡済みとしてマーク",
+      "confirm": "{{count}}人の登壇者を連絡済みとしてマークしますか？"
+    }
+  },
+  "speakerStatus": {
+    "title": "登壇者ステータス",
+    "statusSummary": "ステータスの概要",
+    "lanes": "ステータスレーン",
+    "IDENTIFIED": "特定済み",
+    "INVITED": "招待済み",
+    "CONTACTED": "連絡済み",
+    "READY": "準備完了",
+    "ACCEPTED": "承諾済み",
+    "CONTENT_SUBMITTED": "コンテンツ提出済み",
+    "QUALITY_REVIEWED": "品質確認済み",
+    "CONFIRMED": "確定済み",
+    "DECLINED": "辞退",
+    "changeStatus": "ステータスを変更",
+    "changeReason": "ステータス変更の理由（任意）",
+    "confirmChange": "ステータスを変更",
+    "cancelChange": "キャンセル",
+    "statusChanged": "ステータスが正常に変更されました",
+    "invalidTransition": "{{from}}から{{to}}への無効なステータス遷移",
+    "historyTitle": "ステータス履歴",
+    "changedBy": "変更者",
+    "noHistory": "ステータス履歴はありません",
+    "acceptanceRate": "承諾率：{{rate}}%",
+    "progress": "{{accepted}} / {{required}}人の登壇者が承諾",
+    "thresholdMet": "最低条件を達成 ✓",
+    "thresholdNotMet": "最低条件未達成（{{count}} / {{required}}）",
+    "overflowDetected": "オーバーフロー検出（{{count}} > {{max}}）",
+    "dragToChange": "登壇者をドラッグしてステータスを変更",
+    "confirmChangeMessage": "{{speaker}}のステータスを{{from}}から{{to}}に変更しますか？",
+    "reasonHelperText": "任意（最大{{max}}文字）",
+    "reasonPlaceholder": "例：メールで登壇者が確認",
+    "reasonTooLong": "理由が長すぎます（{{current}}/{{max}}文字）"
+  },
+  "speakerContent": {
+    "submitContent": "登壇者コンテンツを提出",
+    "presentationDetails": "プレゼンテーションの詳細",
+    "speakerInformation": "登壇者情報",
+    "submitting": "提出中...",
+    "editSpeakerProfile": "登壇者プロフィールを編集",
+    "createNewSpeaker": "新しい登壇者を作成",
+    "form": {
+      "username": "登壇者を検索",
+      "usernameHelp": "登壇者のユーザー名を入力してください",
+      "presentationTitle": "プレゼンテーションタイトル",
+      "presentationAbstract": "プレゼンテーション概要",
+      "charactersRemaining": "文字残り"
+    },
+    "errors": {
+      "usernameRequired": "登壇者は必須です",
+      "titleRequired": "プレゼンテーションタイトルは必須です",
+      "abstractRequired": "プレゼンテーション概要は必須です",
+      "abstractTooLong": "概要は{{max}}文字以内にしてください",
+      "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。"
+    }
+  },
+  "qualityReview": {
+    "title": "品質レビュー",
+    "speaker": "登壇者",
+    "presentationTitle": "プレゼンテーションタイトル",
+    "abstract": "概要",
+    "qualityCriteria": "品質基準",
+    "characters": "文字",
+    "detected": "検出済み",
+    "notDetected": "未検出",
+    "passed": "合格",
+    "promotionDetected": "宣伝が検出されました",
+    "approve": "承認",
+    "reject": "却下",
+    "approving": "承認中...",
+    "submitting": "提出中...",
+    "confirmReject": "却下を確認",
+    "rejectInstructions": "コンテンツを却下する理由についてフィードバックを入力してください。",
+    "feedbackLabel": "フィードバック",
+    "feedbackPlaceholder": "改善が必要な点を説明してください...",
+    "noContent": "コンテンツがありません",
+    "criteria": {
+      "abstractLength": "概要の長さ",
+      "lessonsLearned": "「教訓」を含む",
+      "noPromotion": "製品宣伝なし"
+    },
+    "errors": {
+      "feedbackRequired": "フィードバックは必須です",
+      "unknown": "不明なエラーが発生しました"
+    }
+  },
+  "speakers": {
+    "invite": "招待",
+    "sendInvite": "招待を送信",
+    "sendInvitation": "招待状を送信",
+    "confirmInvite": "この登壇者に招待状を送りますか？",
+    "noEmailTooltip": "招待するにはメールアドレスを追加してください",
+    "inviting": "送信中...",
+    "sending": "送信中...",
+    "inviteSent": "招待状を送信しました",
+    "invitationSent": "{{email}}に招待状を送信しました",
+    "inviteFailed": "送信に失敗しました",
+    "invitationFailed": "招待状の送信に失敗しました",
+    "email": "メールアドレス",
+    "emailRequired": "招待状を送るにはメールアドレスが必要です",
+    "invalidEmail": "有効なメールアドレスを入力してください",
+    "saveEmail": "メールアドレスを保存",
+    "emailSaved": "メールアドレスを保存しました",
+    "tentative": "仮確定",
+    "responseDetails": "返信の詳細",
+    "acceptedAt": "承諾日",
+    "preferredTimeSlot": "希望の時間帯",
+    "travelRequirements": "交通・宿泊要件",
+    "technicalRequirements": "技術要件",
+    "initialTitle": "プレゼンテーションタイトル",
+    "comments": "コメント",
+    "declineDetails": "辞退の詳細",
+    "declinedAt": "辞退日",
+    "declineReason": "理由",
+    "tentativeDetails": "仮確定の詳細",
+    "tentativeReason": "理由",
+    "sendReminder": "リマインダーを送信",
+    "sendingReminder": "送信中...",
+    "reminderSent": "{{email}}にリマインダーを送信しました",
+    "reminderFailed": "リマインダーの送信に失敗しました"
+  },
+  "tasks": {
+    "taskBoard": "タスクボード",
+    "filter": "フィルター",
+    "myTasks": "自分のタスク",
+    "allTasks": "すべてのタスク",
+    "sortBy": "並び替え",
+    "dueDate": "期日",
+    "createdDate": "作成日",
+    "addCustomTask": "カスタムタスクを追加",
+    "errorLoadingTasks": "タスクの読み込みに失敗しました",
+    "pending": "保留中",
+    "pendingDescription": "トリガー状態を待機中",
+    "toDo": "やること",
+    "todoDescription": "作業可能な状態",
+    "inProgress": "進行中",
+    "inProgressDescription": "現在作業中",
+    "completed": "完了",
+    "completedDescription": "完了したタスク",
+    "completeTask": "タスクを完了",
+    "completionNotes": "完了メモ（任意）",
+    "markComplete": "完了としてマーク",
+    "due": "期日",
+    "assignedTo": "担当者",
+    "completedOn": "完了日",
+    "completedBy": "完了者",
+    "noTasks": "タスクなし"
+  },
+  "analytics": {
+    "title": "分析",
+    "timeRange": {
+      "all": "全期間",
+      "5y": "過去5年",
+      "2y": "過去2年"
+    },
+    "tabs": {
+      "overview": "概要",
+      "attendance": "参加状況",
+      "topics": "トピック",
+      "companies": "企業"
+    },
+    "kpi": {
+      "totalEvents": "イベント総数",
+      "totalAttendees": "参加者総数",
+      "companiesRepresented": "企業数",
+      "totalSessions": "セッション総数",
+      "totalSpeakers": "登壇者総数"
+    },
+    "charts": {
+      "eventCadenceTimeline": "イベント履歴",
+      "attendeesPerEvent": "イベントごとの参加者数",
+      "returningVsNew": "リピーター vs 新規参加者",
+      "eventsPerCategory": "カテゴリー別イベント数",
+      "topicPopularity": "トピックの人気度",
+      "attendanceOverTime": "企業別参加状況の推移",
+      "sessionsPerCompany": "企業別セッション数",
+      "attendeeDistribution": "企業別参加者分布"
+    },
+    "labels": {
+      "returning": "リピーター",
+      "new": "新規",
+      "showDataTable": "データテーブルを表示",
+      "hideDataTable": "データテーブルを非表示",
+      "noData": "この期間のデータはありません",
+      "topN": {
+        "top5": "上位5件",
+        "top10": "上位10件",
+        "all": "すべて"
+      },
+      "labelToggle": {
+        "title": "タイトル",
+        "category": "カテゴリー",
+        "both": "両方"
+      },
+      "filterByEvent": "イベントでフィルター",
+      "allEvents": "すべてのイベント",
+      "sessions": "セッション",
+      "speakers": "登壇者",
+      "yourCompany": "あなたの会社"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "トピックを入力してEnterを押してください...",
+    "fitAll": "全体を表示",
+    "snapToActive": "アクティブに中央揃え",
+    "backButton": "← トピックリストに戻る",
+    "unsavedWarning": "未保存のセッションです — すべての変更が失われます。戻りますか？",
+    "accept": {
+      "title": "トピックを選択：{{topic}}",
+      "partnerAlignment": "9社中{{count}}社のパートナーが同意",
+      "lastCovered": "最後の取り上げ：BATbern #{{num}}（{{count}}イベント前）",
+      "overrideReason": "このトピックを再訪する理由は？（任意）",
+      "confirm": "このトピックを選択",
+      "cancel": "探索を続ける",
+      "saveError": "トピック選択の保存に失敗しました。もう一度お試しください。"
+    }
+  }
+}

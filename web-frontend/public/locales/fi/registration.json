@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Peruutetaan ilmoittautumistasi...",
+      "message": "Odota, kun käsittelemme peruutustasi."
+    },
+    "success": {
+      "title": "Ilmoittautuminen peruutettu",
+      "subtitle": "Ilmoittautumisesi on peruutettu onnistuneesti",
+      "whatHappened": "Mitä tapahtui?",
+      "permanentDeletion": "Pysyvä poisto",
+      "permanentDeletionText": "Ilmoittautumisesi on poistettu pysyvästi järjestelmästämme.",
+      "noFurtherAction": "Ei lisätoimia",
+      "noFurtherActionText": "Et saa enää viestejä tästä tapahtumasta.",
+      "registerAgain": "Ilmoittaudu uudelleen",
+      "registerAgainText": "Jos muutat mieltäsi, voit ilmoittautua uudelleen milloin tahansa ennen tapahtumaa.",
+      "backToHome": "Takaisin etusivulle",
+      "registerForAnother": "Ilmoittaudu toiseen tapahtumaan"
+    },
+    "error": {
+      "title": "Peruutus epäonnistui",
+      "subtitle": "Ilmoittautumistasi ei voitu peruuttaa",
+      "whatCanYouDo": "Mitä voit tehdä?",
+      "checkLink": "Tarkista, että napsautit oikeaa linkkiä sähköpostistasi",
+      "expired": "Peruutuslinkit vanhenevat 48 tunnin kuluttua",
+      "alreadyCancelled": "Ilmoittautuminen on ehkä jo peruutettu",
+      "useLatestEmail": "Varmista, että käytät uusinta sähköpostia",
+      "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
+      "errors": {
+        "expired": "Peruutuslinkki on vanhentunut (voimassa 48 tuntia).",
+        "invalid": "Virheellinen peruutuslinkki. Tarkista sähköpostistasi oikea linkki.",
+        "notFound": "Ilmoittautumista ei löydy tai se on jo peruutettu.",
+        "default": "Ilmoittautumisen peruuttaminen epäonnistui. Yritä uudelleen tai ota yhteyttä tukeen."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Vahvistetaan ilmoittautumistasi...",
+      "message": "Odota, kun käsittelemme vahvistustasi."
+    },
+    "success": {
+      "title": "Ilmoittautuminen vahvistettu!",
+      "subtitle": "Olet valmis tapahtumaan",
+      "whatsNext": "Mitä seuraavaksi?",
+      "checkIn": "Kirjautuminen tapahtumaan",
+      "checkInText": "Esitä henkilöllisyystodistuksesi tapahtuman vastaanotossa kirjautumista varten. Vahvistettu ilmoittautumisesi on tallessa järjestelmässämme.",
+      "eventDetails": "Tapahtuman tiedot",
+      "eventDetailsText": "Saat tapahtumapäivityksiä ja muistutuksia sähköpostitse.",
+      "backToHome": "Takaisin etusivulle",
+      "createAccount": "Luo tili ilmoittautumisten hallintaan"
+    },
+    "alreadyConfirmed": {
+      "title": "Jo vahvistettu",
+      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu",
+      "message": "Ilmoittautumisesi vahvistettiin aiemmin. Mitään lisätoimia ei tarvita.",
+      "backToHome": "Takaisin etusivulle"
+    },
+    "error": {
+      "title": "Vahvistus epäonnistui",
+      "subtitle": "Ilmoittautumistasi ei voitu vahvistaa",
+      "whatCanYouDo": "Mitä voit tehdä?",
+      "checkLink": "Tarkista, että napsautit oikeaa linkkiä sähköpostistasi",
+      "expired": "Vahvistuslinkit vanhenevat 48 tunnin kuluttua - sinun täytyy ehkä ilmoittautua uudelleen",
+      "useLatestEmail": "Varmista, että käytät uusinta vahvistussähköpostia",
+      "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
+      "backToHome": "Takaisin etusivulle",
+      "registerAgain": "Ilmoittaudu uudelleen",
+      "errors": {
+        "expired": "Vahvistuslinkki on vanhentunut. Ilmoittaudu uudelleen.",
+        "invalid": "Virheellinen vahvistuslinkki. Tarkista sähköpostistasi oikea linkki.",
+        "default": "Ilmoittautumisen vahvistaminen epäonnistui. Yritä uudelleen tai ota yhteyttä tukeen."
+      }
+    }
+  }
+}

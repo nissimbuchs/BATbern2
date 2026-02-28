@@ -1,0 +1,12 @@
+{
+  "email": {
+    "required": "L'indirizzo e-mail è obbligatorio",
+    "invalid": "Inserisci un indirizzo e-mail valido",
+    "tooLong": "L'indirizzo e-mail è troppo lungo (max. 255 caratteri)"
+  },
+  "password": {
+    "required": "La password è obbligatoria",
+    "tooShort": "La password deve contenere almeno 8 caratteri",
+    "tooLong": "La password è troppo lunga (max. 128 caratteri)"
+  }
+}

@@ -82,7 +82,14 @@
   "language": {
     "select": "Select Language",
     "de": "Deutsch",
-    "en": "English"
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語"
   },
   "status": {
     "wait": "Wait {{seconds}} seconds",

@@ -1,0 +1,340 @@
+{
+  "title": "Partnerdirectory",
+  "addPartner": "Partner toevoegen",
+  "searchPlaceholder": "Zoeken op partnernaam...",
+  "searchAriaLabel": "Partners zoeken",
+  "clearSearch": "Zoekopdracht wissen",
+  "filters": {
+    "tier": "Partnerschapsniveau",
+    "tierAll": "Alle niveaus",
+    "status": "Status",
+    "statusAll": "Alle",
+    "statusActive": "Actief",
+    "statusInactive": "Inactief",
+    "reset": "Filters resetten"
+  },
+  "tiers": {
+    "strategic": "Strategisch",
+    "platinum": "Platina",
+    "gold": "Goud",
+    "silver": "Zilver",
+    "bronze": "Brons"
+  },
+  "viewMode": {
+    "label": "Weergavemodus",
+    "grid": "Rasterweergave",
+    "list": "Lijstweergave"
+  },
+  "sort": {
+    "label": "Sorteren op",
+    "engagement": "Betrokkenheidsscore",
+    "name": "Bedrijfsnaam",
+    "tier": "Partnerschapsniveau",
+    "lastEvent": "Laatste evenement"
+  },
+  "statistics": {
+    "totalPartners": "Totaal partners",
+    "activePartners": "Actieve partners",
+    "engagedPartners": "Betrokken partners",
+    "engagedComingSoon": "Binnenkort beschikbaar - Epic 8",
+    "tierDistribution": "Niveauverdeling"
+  },
+  "card": {
+    "industry": "Industrie",
+    "contact": "Primaire contactpersoon",
+    "lastEvent": "Laatste evenement",
+    "topicVotes": "Stemmen op onderwerpen",
+    "nextMeeting": "Volgende vergadering",
+    "meetingPending": "In behandeling",
+    "engagement": "Betrokkenheid",
+    "engagementComingSoon": "Binnenkort beschikbaar (Epic 8)",
+    "viewDetails": "Details bekijken",
+    "sendEmail": "E-mail versturen",
+    "scheduleMeeting": "Vergadering plannen",
+    "analytics": "Analyses",
+    "comingSoon": "Binnenkort beschikbaar - Epic 8"
+  },
+  "pagination": {
+    "page": "Pagina {{current}} van {{total}}",
+    "partners": "{{count}} partner",
+    "partners_plural": "{{count}} partners",
+    "firstPage": "Eerste pagina",
+    "previousPage": "Vorige pagina",
+    "nextPage": "Volgende pagina",
+    "lastPage": "Laatste pagina",
+    "ariaLabel": "Paginering van partnerlijst"
+  },
+  "empty": {
+    "noPartners": "Geen partners gevonden",
+    "tryAdjustingFilters": "Probeer uw zoekopdracht of filters aan te passen"
+  },
+  "loading": "Partners laden...",
+  "error": {
+    "failedToLoad": "Laden van partners mislukt",
+    "tryAgain": "Probeer het later opnieuw"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partner gevonden",
+    "searchResults_plural": "{{count}} partners gevonden",
+    "filterUpdate": "Filters bijgewerkt",
+    "loading": "Partners laden"
+  },
+  "modal": {
+    "createTitle": "Partnerschap aanmaken",
+    "editTitle": "Partnerschap bewerken",
+    "fields": {
+      "company": "Bedrijf",
+      "companyPlaceholder": "Zoek naar bedrijf...",
+      "partnershipTier": "Partnerschapsniveau",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "endDateOptional": "Einddatum (optioneel)"
+    },
+    "tiers": {
+      "STRATEGIC": "Strategisch",
+      "PLATINUM": "Platina",
+      "GOLD": "Goud",
+      "SILVER": "Zilver",
+      "BRONZE": "Brons"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Hoogste partnerschapsniveau met volledige toegang en toegewijde ondersteuning",
+      "PLATINUM": "Premium partnerschap met verbeterde voordelen",
+      "GOLD": "Hoogwaardig partnerschap met grote voordelen",
+      "SILVER": "Standaard partnerschap met essentiële voordelen",
+      "BRONZE": "Instapniveau partnerschap met basisvoordelen"
+    },
+    "benefits": {
+      "title": "Niveauvoordelen",
+      "logoPlacement": "Logoplacement op de website",
+      "newsletterMentions": "Vermeldingen in nieuwsbrief",
+      "priorityAccess": "Prioriteitstoegang tot evenementen",
+      "quarterlyMeetings": "Kwartaalstrategische vergaderingen",
+      "roiAnalytics": "ROI-analysedashboard",
+      "dedicatedManager": "Toegewijde accountmanager",
+      "eventAccess": "Toegang tot evenementen"
+    },
+    "actions": {
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "saving": "Opslaan...",
+      "delete": "Verwijderen"
+    },
+    "messages": {
+      "unsavedChanges": "U heeft niet-opgeslagen wijzigingen. Weet u zeker dat u wilt sluiten?",
+      "createSuccess": "Partnerschap succesvol aangemaakt",
+      "updateSuccess": "Partnerschap succesvol bijgewerkt",
+      "createError": "Aanmaken van partnerschap mislukt. Correlatie-ID: {{correlationId}}",
+      "updateError": "Bijwerken van partnerschap mislukt. Correlatie-ID: {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Bedrijven zoeken...",
+      "noResults": "Geen bedrijven gevonden",
+      "error": "Fout bij het zoeken naar bedrijven",
+      "minChars": "Typ minimaal 2 tekens om te zoeken"
+    }
+  },
+  "validation": {
+    "companyRequired": "Bedrijf is verplicht",
+    "tierRequired": "Partnerschapsniveau is verplicht",
+    "startDateRequired": "Startdatum is verplicht",
+    "startDateFuture": "Startdatum kan niet in de toekomst liggen",
+    "endDateBeforeStart": "Einddatum moet na de startdatum liggen"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Gegevens exporteren",
+      "scheduleMeeting": "Vergadering plannen",
+      "sendEmail": "E-mail versturen",
+      "comingSoon": "Beschikbaar in Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partner sinds",
+      "eventsAttended": "Bijgewoonde evenementen",
+      "activeVotes": "Actieve stemmen",
+      "votesSubtitle": "(onderwerpen)",
+      "meetings": "Vergaderingen",
+      "meetingsSubtitle": "(seizoensgebonden)",
+      "noEventsYet": "Nog geen evenementen",
+      "lastEvent": "laatste: {{event}}"
+    },
+    "activityTab": {
+      "title": "Activiteit",
+      "filterLabel": "Filteren op activiteitstype",
+      "noActivity": "Geen activiteit om weer te geven"
+    },
+    "meetingsTab": {
+      "title": "Vergaderingen",
+      "addMeeting": "Vergadering plannen"
+    },
+    "notesTab": {
+      "title": "Notities",
+      "addNote": "Notitie toevoegen",
+      "editNote": "Notitie bewerken",
+      "deleteNoteConfirmTitle": "Notitie verwijderen",
+      "deleteNoteConfirmMessage": "Weet u zeker dat u \"{{title}}\" wilt verwijderen?",
+      "titleLabel": "Titel",
+      "contentLabel": "Inhoud",
+      "htmlSupported": "HTML-opmaak wordt ondersteund",
+      "noNotes": "Nog geen notities"
+    },
+    "settingsTab": {
+      "title": "Instellingen",
+      "activePartnership": "Actief partnerschap",
+      "exportData": "Partnergegevens exporteren",
+      "deletePartner": "Partnergegevens verwijderen"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "contacts": "Contacten",
+      "meetings": "Vergaderingen",
+      "analytics": "Analyses",
+      "notes": "Notities",
+      "topics": "Onderwerpen",
+      "settings": "Instellingen"
+    },
+    "overviewTab": {
+      "title": "Partnerschapsdetails",
+      "tier": "Partnerschapsniveau",
+      "startDate": "Startdatum partnerschap",
+      "benefits": "Voordelen",
+      "changeTier": "Niveau wijzigen",
+      "tierBenefits": {
+        "logoPlacement": "Logoplacement op de website",
+        "newsletterMentions": "Vermeldingen in nieuwsbrief",
+        "priorityAccess": "Prioriteitstoegang tot evenementen",
+        "quarterlyMeetings": "Kwartaalstrategische vergaderingen",
+        "roiAnalytics": "ROI-analysedashboard",
+        "accountManager": "Toegewijde accountmanager",
+        "eventAccess": "Toegang tot evenementen"
+      }
+    }
+  },
+  "meetings": {
+    "title": "Partnervergaderingen",
+    "create": "Vergadering aanmaken",
+    "edit": "Vergadering bewerken",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Vergadernotities",
+      "location": "Locatie",
+      "eventCode": "BATbern-evenementcode",
+      "eventCodeHint": "bijv. BATbern57",
+      "date": "Datum",
+      "startTime": "Begintijd",
+      "endTime": "Eindtijd",
+      "type": {
+        "spring": "Voorjaarsvergadering",
+        "autumn": "Herfstvergadering"
+      }
+    },
+    "sendInvite": "Kalenderuitnodiging versturen",
+    "inviteSent": "Uitnodiging verzonden",
+    "inviteNotSent": "Uitnodiging niet verzonden",
+    "inviteSentOn": "Uitnodiging verzonden op {{date}}",
+    "noMeetings": "Geen partnervergaderingen gevonden",
+    "confirmSendInvite": "Kalenderuitnodiging sturen naar alle partnercontacten?",
+    "inviteQueued": "Kalenderuitnodiging wordt verstuurd...",
+    "columns": {
+      "event": "Evenement",
+      "type": "Type",
+      "date": "Datum",
+      "location": "Locatie",
+      "inviteStatus": "Uitnodiging",
+      "actions": "Acties"
+    },
+    "loading": "Vergaderingen laden...",
+    "error": "Vergaderingen konden niet worden geladen",
+    "createSuccess": "Vergadering succesvol aangemaakt",
+    "updateSuccess": "Vergadering succesvol bijgewerkt",
+    "inviteSuccess": "Kalenderuitnodiging wordt verstuurd"
+  },
+  "comingSoon": {
+    "epic8": "Binnenkort beschikbaar - Epic 8",
+    "story283": "Binnenkort beschikbaar - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "Mijn bedrijf",
+      "analytics": "Analyses",
+      "topics": "Onderwerpen"
+    },
+    "noCompanyLinked": "Uw account is niet gekoppeld aan een bedrijf",
+    "noCompanyLinked.detail": "Neem contact op met uw organisator",
+    "analytics": {
+      "comingSoon": "Analyses binnenkort beschikbaar",
+      "title": "Aanwezigheidsdashboard",
+      "table": {
+        "event": "Evenement",
+        "date": "Datum",
+        "yourAttendees": "Uw deelnemers",
+        "totalAttendees": "Totaal deelnemers",
+        "percentage": "Percentage (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Kosten per deelnemer",
+        "attendanceRate": "Gem. aanwezigheidspercentage",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Laatste 5 jaar",
+        "allHistory": "Volledige geschiedenis"
+      },
+      "export": {
+        "button": "Excel exporteren",
+        "loading": "Exporteren..."
+      },
+      "noData": "Geen aanwezigheidsgegevens gevonden voor de geselecteerde periode",
+      "loading": "Gegevens laden...",
+      "error": "Laden van aanwezigheidsgegevens mislukt"
+    },
+    "topics": {
+      "comingSoon": "Onderwerpsstemming binnenkort beschikbaar",
+      "title": "Onderwerpssuggesties",
+      "suggest": "Onderwerp suggereren",
+      "vote": "Stemmen",
+      "unvote": "Stem verwijderen",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "col": {
+        "topic": "Onderwerp",
+        "company": "Bedrijf",
+        "date": "Datum",
+        "actions": "Acties"
+      },
+      "status": {
+        "proposed": "Voorgesteld",
+        "selected": "Geselecteerd",
+        "declined": "Afgewezen"
+      },
+      "plannedFor": "Gepland voor",
+      "empty": "Nog geen onderwerpssuggesties",
+      "form": {
+        "title": "Titel",
+        "description": "Beschrijving",
+        "submit": "Indienen",
+        "titleRequired": "Titel is verplicht (minimaal 5 tekens)",
+        "descriptionHint": "Optioneel, maximaal 500 tekens",
+        "dialogTitle": "Nieuw onderwerp suggereren",
+        "editDialogTitle": "Onderwerp bewerken",
+        "update": "Bijwerken"
+      },
+      "organizer": {
+        "title": "Onderwerpssuggesties van partners",
+        "col": {
+          "title": "Titel",
+          "company": "Bedrijf",
+          "votes": "Stemmen",
+          "date": "Datum",
+          "actions": "Acties"
+        },
+        "status": "Status",
+        "plannedEvent": "Gepland evenement",
+        "save": "Opslaan",
+        "saving": "Opslaan..."
+      },
+      "loading": "Onderwerpen laden...",
+      "error": "Laden van onderwerpen mislukt"
+    }
+  }
+}

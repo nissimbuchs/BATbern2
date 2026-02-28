@@ -1,0 +1,340 @@
+{
+  "title": "Répertoire des partenaires",
+  "addPartner": "Ajouter un partenaire",
+  "searchPlaceholder": "Rechercher par nom de partenaire...",
+  "searchAriaLabel": "Rechercher des partenaires",
+  "clearSearch": "Effacer la recherche",
+  "filters": {
+    "tier": "Niveau de partenariat",
+    "tierAll": "Tous les niveaux",
+    "status": "Statut",
+    "statusAll": "Tous",
+    "statusActive": "Actif",
+    "statusInactive": "Inactif",
+    "reset": "Réinitialiser les filtres"
+  },
+  "tiers": {
+    "strategic": "Stratégique",
+    "platinum": "Platine",
+    "gold": "Or",
+    "silver": "Argent",
+    "bronze": "Bronze"
+  },
+  "viewMode": {
+    "label": "Mode d'affichage",
+    "grid": "Vue en grille",
+    "list": "Vue en liste"
+  },
+  "sort": {
+    "label": "Trier par",
+    "engagement": "Score d'engagement",
+    "name": "Nom de l'entreprise",
+    "tier": "Niveau de partenariat",
+    "lastEvent": "Dernier événement"
+  },
+  "statistics": {
+    "totalPartners": "Total des partenaires",
+    "activePartners": "Partenaires actifs",
+    "engagedPartners": "Partenaires engagés",
+    "engagedComingSoon": "Bientôt disponible - Epic 8",
+    "tierDistribution": "Répartition par niveau"
+  },
+  "card": {
+    "industry": "Secteur",
+    "contact": "Contact principal",
+    "lastEvent": "Dernier événement",
+    "topicVotes": "Votes sur les sujets",
+    "nextMeeting": "Prochaine réunion",
+    "meetingPending": "En attente",
+    "engagement": "Engagement",
+    "engagementComingSoon": "Bientôt disponible (Epic 8)",
+    "viewDetails": "Voir les détails",
+    "sendEmail": "Envoyer un e-mail",
+    "scheduleMeeting": "Planifier une réunion",
+    "analytics": "Analyses",
+    "comingSoon": "Bientôt disponible - Epic 8"
+  },
+  "pagination": {
+    "page": "Page {{current}} sur {{total}}",
+    "partners": "{{count}} partenaire",
+    "partners_plural": "{{count}} partenaires",
+    "firstPage": "Première page",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "lastPage": "Dernière page",
+    "ariaLabel": "Pagination de la liste des partenaires"
+  },
+  "empty": {
+    "noPartners": "Aucun partenaire trouvé",
+    "tryAdjustingFilters": "Essayez de modifier votre recherche ou vos filtres"
+  },
+  "loading": "Chargement des partenaires...",
+  "error": {
+    "failedToLoad": "Impossible de charger les partenaires",
+    "tryAgain": "Veuillez réessayer plus tard"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partenaire trouvé",
+    "searchResults_plural": "{{count}} partenaires trouvés",
+    "filterUpdate": "Filtres mis à jour",
+    "loading": "Chargement des partenaires"
+  },
+  "modal": {
+    "createTitle": "Créer un partenariat",
+    "editTitle": "Modifier le partenariat",
+    "fields": {
+      "company": "Entreprise",
+      "companyPlaceholder": "Rechercher une entreprise...",
+      "partnershipTier": "Niveau de partenariat",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "endDateOptional": "Date de fin (facultatif)"
+    },
+    "tiers": {
+      "STRATEGIC": "Stratégique",
+      "PLATINUM": "Platine",
+      "GOLD": "Or",
+      "SILVER": "Argent",
+      "BRONZE": "Bronze"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Niveau de partenariat le plus élevé avec accès complet et support dédié",
+      "PLATINUM": "Partenariat premium avec des avantages renforcés",
+      "GOLD": "Partenariat à haute valeur avec des avantages majeurs",
+      "SILVER": "Partenariat standard avec des avantages essentiels",
+      "BRONZE": "Partenariat d'entrée de gamme avec des avantages de base"
+    },
+    "benefits": {
+      "title": "Avantages du niveau",
+      "logoPlacement": "Placement du logo sur le site web",
+      "newsletterMentions": "Mentions dans la newsletter",
+      "priorityAccess": "Accès prioritaire aux événements",
+      "quarterlyMeetings": "Réunions stratégiques trimestrielles",
+      "roiAnalytics": "Tableau de bord d'analyse du ROI",
+      "dedicatedManager": "Chargé de compte dédié",
+      "eventAccess": "Accès aux événements"
+    },
+    "actions": {
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saving": "Enregistrement...",
+      "delete": "Supprimer"
+    },
+    "messages": {
+      "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir fermer ?",
+      "createSuccess": "Partenariat créé avec succès",
+      "updateSuccess": "Partenariat mis à jour avec succès",
+      "createError": "Échec de la création du partenariat. ID de corrélation : {{correlationId}}",
+      "updateError": "Échec de la mise à jour du partenariat. ID de corrélation : {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Recherche d'entreprises...",
+      "noResults": "Aucune entreprise trouvée",
+      "error": "Erreur lors de la recherche d'entreprises",
+      "minChars": "Saisissez au moins 2 caractères pour rechercher"
+    }
+  },
+  "validation": {
+    "companyRequired": "L'entreprise est requise",
+    "tierRequired": "Le niveau de partenariat est requis",
+    "startDateRequired": "La date de début est requise",
+    "startDateFuture": "La date de début ne peut pas être dans le futur",
+    "endDateBeforeStart": "La date de fin doit être postérieure à la date de début"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Exporter les données",
+      "scheduleMeeting": "Planifier une réunion",
+      "sendEmail": "Envoyer un e-mail",
+      "comingSoon": "Disponible dans l'Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partenaire depuis",
+      "eventsAttended": "Événements auxquels participé",
+      "activeVotes": "Votes actifs",
+      "votesSubtitle": "(sujets)",
+      "meetings": "Réunions",
+      "meetingsSubtitle": "(saisonnières)",
+      "noEventsYet": "Aucun événement pour l'instant",
+      "lastEvent": "dernier : {{event}}"
+    },
+    "activityTab": {
+      "title": "Activité",
+      "filterLabel": "Filtrer par type d'activité",
+      "noActivity": "Aucune activité à afficher"
+    },
+    "meetingsTab": {
+      "title": "Réunions",
+      "addMeeting": "Planifier une réunion"
+    },
+    "notesTab": {
+      "title": "Notes",
+      "addNote": "Ajouter une note",
+      "editNote": "Modifier la note",
+      "deleteNoteConfirmTitle": "Supprimer la note",
+      "deleteNoteConfirmMessage": "Êtes-vous sûr de vouloir supprimer « {{title}} » ?",
+      "titleLabel": "Titre",
+      "contentLabel": "Contenu",
+      "htmlSupported": "La mise en forme HTML est prise en charge",
+      "noNotes": "Aucune note pour l'instant"
+    },
+    "settingsTab": {
+      "title": "Paramètres",
+      "activePartnership": "Partenariat actif",
+      "exportData": "Exporter les données du partenaire",
+      "deletePartner": "Supprimer les données du partenaire"
+    },
+    "tabs": {
+      "overview": "Aperçu",
+      "contacts": "Contacts",
+      "meetings": "Réunions",
+      "analytics": "Analyses",
+      "notes": "Notes",
+      "topics": "Sujets",
+      "settings": "Paramètres"
+    },
+    "overviewTab": {
+      "title": "Détails du partenariat",
+      "tier": "Niveau de partenariat",
+      "startDate": "Date de début du partenariat",
+      "benefits": "Avantages",
+      "changeTier": "Changer de niveau",
+      "tierBenefits": {
+        "logoPlacement": "Placement du logo sur le site web",
+        "newsletterMentions": "Mentions dans la newsletter",
+        "priorityAccess": "Accès prioritaire aux événements",
+        "quarterlyMeetings": "Réunions stratégiques trimestrielles",
+        "roiAnalytics": "Tableau de bord d'analyse du ROI",
+        "accountManager": "Chargé de compte dédié",
+        "eventAccess": "Accès aux événements"
+      }
+    }
+  },
+  "meetings": {
+    "title": "Réunions des partenaires",
+    "create": "Créer une réunion",
+    "edit": "Modifier la réunion",
+    "fields": {
+      "agenda": "Ordre du jour",
+      "notes": "Notes de réunion",
+      "location": "Lieu",
+      "eventCode": "Code d'événement BATbern",
+      "eventCodeHint": "ex. BATbern57",
+      "date": "Date",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "type": {
+        "spring": "Réunion de printemps",
+        "autumn": "Réunion d'automne"
+      }
+    },
+    "sendInvite": "Envoyer une invitation de calendrier",
+    "inviteSent": "Invitation envoyée",
+    "inviteNotSent": "Invitation non envoyée",
+    "inviteSentOn": "Invitation envoyée le {{date}}",
+    "noMeetings": "Aucune réunion de partenaire trouvée",
+    "confirmSendInvite": "Envoyer une invitation de calendrier à tous les contacts partenaires ?",
+    "inviteQueued": "Envoi de l'invitation de calendrier...",
+    "columns": {
+      "event": "Événement",
+      "type": "Type",
+      "date": "Date",
+      "location": "Lieu",
+      "inviteStatus": "Invitation",
+      "actions": "Actions"
+    },
+    "loading": "Chargement des réunions...",
+    "error": "Impossible de charger les réunions",
+    "createSuccess": "Réunion créée avec succès",
+    "updateSuccess": "Réunion mise à jour avec succès",
+    "inviteSuccess": "L'invitation de calendrier est en cours d'envoi"
+  },
+  "comingSoon": {
+    "epic8": "Bientôt disponible - Epic 8",
+    "story283": "Bientôt disponible - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "Mon entreprise",
+      "analytics": "Analyses",
+      "topics": "Sujets"
+    },
+    "noCompanyLinked": "Votre compte n'est pas lié à une entreprise",
+    "noCompanyLinked.detail": "Veuillez contacter votre organisateur",
+    "analytics": {
+      "comingSoon": "Analyses bientôt disponibles",
+      "title": "Tableau de bord de présence",
+      "table": {
+        "event": "Événement",
+        "date": "Date",
+        "yourAttendees": "Vos participants",
+        "totalAttendees": "Total des participants",
+        "percentage": "Pourcentage (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Coût par participant",
+        "attendanceRate": "Taux de présence moyen",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "5 dernières années",
+        "allHistory": "Tout l'historique"
+      },
+      "export": {
+        "button": "Exporter Excel",
+        "loading": "Exportation..."
+      },
+      "noData": "Aucune donnée de présence trouvée pour la période sélectionnée",
+      "loading": "Chargement des données...",
+      "error": "Échec du chargement des données de présence"
+    },
+    "topics": {
+      "comingSoon": "Vote sur les sujets bientôt disponible",
+      "title": "Suggestions de sujets",
+      "suggest": "Suggérer un sujet",
+      "vote": "Voter",
+      "unvote": "Retirer le vote",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "col": {
+        "topic": "Sujet",
+        "company": "Entreprise",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "status": {
+        "proposed": "Proposé",
+        "selected": "Sélectionné",
+        "declined": "Refusé"
+      },
+      "plannedFor": "Prévu pour",
+      "empty": "Aucune suggestion de sujet pour l'instant",
+      "form": {
+        "title": "Titre",
+        "description": "Description",
+        "submit": "Soumettre",
+        "titleRequired": "Le titre est requis (au moins 5 caractères)",
+        "descriptionHint": "Facultatif, 500 caractères maximum",
+        "dialogTitle": "Suggérer un nouveau sujet",
+        "editDialogTitle": "Modifier le sujet",
+        "update": "Mettre à jour"
+      },
+      "organizer": {
+        "title": "Suggestions de sujets des partenaires",
+        "col": {
+          "title": "Titre",
+          "company": "Entreprise",
+          "votes": "Votes",
+          "date": "Date",
+          "actions": "Actions"
+        },
+        "status": "Statut",
+        "plannedEvent": "Événement prévu",
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+      },
+      "loading": "Chargement des sujets...",
+      "error": "Échec du chargement des sujets"
+    }
+  }
+}
