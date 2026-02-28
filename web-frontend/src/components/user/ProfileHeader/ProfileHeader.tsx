@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Avatar, Typography, Chip, IconButton, Stack, Badge, Tooltip } from '@mui/material';
 import {
   PhotoCamera as PhotoCameraIcon,
@@ -28,6 +29,8 @@ const roleIcons: Record<string, string> = {
 };
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPhotoRemove }) => {
+  const { t } = useTranslation('userManagement');
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -65,9 +68,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
                   onChange={handleFileSelect}
                 />
                 <label htmlFor="profile-photo-upload">
-                  <Tooltip title="Upload Photo">
+                  <Tooltip title={t('profileHeader.uploadTooltip')}>
                     <IconButton
-                      aria-label="Upload profile photo"
+                      aria-label={t('modal.editUser.uploadPhotoAria')}
                       component="span"
                       size="small"
                       sx={{
@@ -95,9 +98,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
           </Badge>
 
           {user.profilePictureUrl && (
-            <Tooltip title="Remove Photo">
+            <Tooltip title={t('profileHeader.removeTooltip')}>
               <IconButton
-                aria-label="Remove profile photo"
+                aria-label={t('modal.editUser.removePhotoAria')}
                 size="small"
                 onClick={onPhotoRemove}
                 sx={{
@@ -139,7 +142,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
             {user.emailVerified && (
               <Chip
                 icon={<CheckCircleIcon />}
-                label="Verified"
+                label={t('profileHeader.verified')}
                 size="small"
                 color="success"
                 variant="outlined"
@@ -180,7 +183,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
 
           {/* Member Since */}
           <Typography variant="caption" color="text.secondary" data-testid="member-since">
-            Member since {formatMemberSince(user.memberSince)}
+            {t('profileHeader.memberSince', { date: formatMemberSince(user.memberSince) })}
           </Typography>
         </Box>
       </Stack>

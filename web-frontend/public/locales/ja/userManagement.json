@@ -94,6 +94,10 @@
       "cascadeWarning": "関連するすべてのデータも削除されます。",
       "cannotDelete": "このユーザーは削除できません",
       "lastOrganizerWarning": "最後のオーガナイザーを削除することはできません。システムには少なくとも {{count}} 人のオーガナイザーが必要です。"
+    },
+    "editUser": {
+      "uploadPhotoAria": "[MISSING] Upload profile photo",
+      "removePhotoAria": "[MISSING] Remove profile photo"
     }
   },
   "pagination": {
@@ -219,11 +223,25 @@
     },
     "badges": {
       "synthetic": "合成データ",
-      "eventsCount": "{{count}} 件のイベント"
+      "eventsCount": "{{count}} 件のイベント",
+      "existing": "[MISSING] Existing",
+      "new": "[MISSING] New"
     },
     "noParticipants": "このユーザーはまだどのイベントにも参加していません。",
     "loadingEvents": "イベントを読み込み中...",
-    "errorLoadingEvents": "イベント参加履歴の読み込みに失敗しました"
+    "errorLoadingEvents": "イベント参加履歴の読み込みに失敗しました",
+    "aria": {
+      "statusLabel": "[MISSING] Import status: {{label}}",
+      "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
+      "fileInput": "[MISSING] File input for CSV upload",
+      "previewTable": "[MISSING] Participant import preview table",
+      "participantTable": "[MISSING] Participants with import status",
+      "importProgress": "[MISSING] Import progress",
+      "closeModal": "[MISSING] Close import modal",
+      "startImport": "[MISSING] Start importing participants from CSV file"
+    },
+    "parseError": "[MISSING] Failed to parse CSV",
+    "importFailed": "[MISSING] Import failed"
   },
   "userDetail": {
     "tabs": {
@@ -251,5 +269,79 @@
       }
     },
     "bio": "自己紹介"
+  },
+  "settings": {
+    "tabs": {
+      "account": "[MISSING] Account",
+      "notifications": "[MISSING] Notifications",
+      "privacy": "[MISSING] Privacy"
+    },
+    "account": {
+      "title": "[MISSING] Account Settings",
+      "emailStatus": "[MISSING] Email address cannot be changed",
+      "changePassword": "[MISSING] Change Password",
+      "theme": "[MISSING] Theme",
+      "themeLight": "[MISSING] Light",
+      "themeDark": "[MISSING] Dark",
+      "themeAuto": "[MISSING] Auto (follow system)",
+      "timezone": "[MISSING] Timezone",
+      "save": "[MISSING] Save Account Settings"
+    },
+    "notifications": {
+      "title": "[MISSING] Notification Preferences",
+      "epic7Notice": "[MISSING] Advanced notification settings coming in a future update.",
+      "channels": "[MISSING] Notification Channels",
+      "channelEmail": "[MISSING] Email Notifications",
+      "channelInApp": "[MISSING] In-App Notifications",
+      "channelPush": "[MISSING] Push Notifications",
+      "frequency": "[MISSING] Notification Frequency",
+      "frequencyImmediate": "[MISSING] Immediate",
+      "frequencyDaily": "[MISSING] Daily Digest",
+      "frequencyWeekly": "[MISSING] Weekly Digest",
+      "save": "[MISSING] Save Notification Settings"
+    },
+    "newsletter": {
+      "title": "[MISSING] Newsletter",
+      "subscribe": "[MISSING] Subscribe to newsletter",
+      "description": "[MISSING] Receive monthly updates about BATbern events"
+    },
+    "privacy": {
+      "title": "[MISSING] Privacy Settings",
+      "visibility": "[MISSING] Profile Visibility",
+      "visibilityPublic": "[MISSING] Public",
+      "visibilityMembersOnly": "[MISSING] Members Only",
+      "visibilityPrivate": "[MISSING] Private",
+      "infoDisplay": "[MISSING] Information Display",
+      "showEmail": "[MISSING] Show email address",
+      "showCompany": "[MISSING] Show company affiliation",
+      "showActivity": "[MISSING] Show activity history",
+      "communication": "[MISSING] Communication",
+      "allowMessaging": "[MISSING] Allow direct messages from other users",
+      "viewPolicy": "[MISSING] View Privacy Policy",
+      "save": "[MISSING] Save Privacy Settings"
+    }
+  },
+  "profile": {
+    "personalInfo": "[MISSING] Personal Information",
+    "editProfile": "[MISSING] Edit Profile",
+    "firstName": "[MISSING] First Name",
+    "lastName": "[MISSING] Last Name",
+    "bio": "[MISSING] Bio",
+    "bioValidation": "[MISSING] Bio must be {{max}} characters or less",
+    "saveChanges": "[MISSING] Save Changes",
+    "removePhotoConfirm": "[MISSING] Are you sure you want to remove your profile photo?",
+    "labelName": "[MISSING] Name:",
+    "labelEmail": "[MISSING] Email:",
+    "labelCompany": "[MISSING] Company:",
+    "labelBio": "[MISSING] Bio:",
+    "recentActivity": "[MISSING] Recent Activity",
+    "noActivity": "[MISSING] No recent activity",
+    "viewAll": "[MISSING] View All →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "[MISSING] Upload Photo",
+    "removeTooltip": "[MISSING] Remove Photo",
+    "verified": "[MISSING] Verified",
+    "memberSince": "[MISSING] Member since {{date}}"
   }
 }

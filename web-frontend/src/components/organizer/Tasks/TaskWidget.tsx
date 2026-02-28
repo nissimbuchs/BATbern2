@@ -126,7 +126,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   }
 
   return (
-    <Box aria-label="Critical tasks widget">
+    <Box aria-label={t('tasks.criticalTasksWidget', 'Critical tasks widget')}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">{t('tasks.criticalTasks', 'Critical Tasks')}</Typography>
         <Chip

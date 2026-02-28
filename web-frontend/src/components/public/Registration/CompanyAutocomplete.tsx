@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   disabled = false,
   placeholder = 'TechCorp AG',
 }) => {
+  const { t } = useTranslation(['registration', 'common']);
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -152,19 +154,19 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
               {isLoading && (
                 <div className="py-6 text-center text-sm text-zinc-500 flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading...
+                  {t('common:actions.loading')}
                 </div>
               )}
 
               {!isLoading && shouldSearch && companies.length === 0 && (
                 <CommandEmpty className="text-zinc-500 py-6 text-center text-sm">
                   {isError ? (
-                    'Error loading companies'
+                    t('companySearch.error')
                   ) : (
                     <div className="space-y-1">
-                      <div>No existing company found</div>
+                      <div>{t('companySearch.noResults')}</div>
                       <div className="text-xs text-zinc-600">
-                        You can continue with "{inputValue}" - we'll create it for you
+                        {t('companySearch.createNew', { value: inputValue })}
                       </div>
                     </div>
                   )}
@@ -173,7 +175,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
 
               {!isLoading && !shouldSearch && inputValue.length > 0 && (
                 <div className="py-6 text-center text-sm text-zinc-500">
-                  Type at least 2 characters to search
+                  {t('companySearch.minChars')}
                 </div>
               )}
 
@@ -232,7 +234,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
 
       {/* Helper text */}
       {!error && inputValue.length > 0 && inputValue.length < 2 && (
-        <p className="text-xs text-zinc-500 mt-1">Type at least 2 characters to search</p>
+        <p className="text-xs text-zinc-500 mt-1">{t('companySearch.minChars')}</p>
       )}
     </div>
   );

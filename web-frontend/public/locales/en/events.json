@@ -266,7 +266,8 @@
       "eventRequired": "Please select an event or save as template",
       "updateTaskFailed": "Failed to update task",
       "createTaskFailed": "Failed to create task"
-    }
+    },
+    "criticalTasksWidget": "Critical tasks widget"
   },
   "form": {
     "createEvent": "Create New Event",
@@ -348,7 +349,10 @@
     "allStatuses": "All Statuses",
     "allYears": "All Years",
     "allTypes": "All Types",
-    "clear": "Clear Filters"
+    "clear": "Clear Filters",
+    "searchAriaLabel": "Search events",
+    "clearSearchAriaLabel": "Clear search",
+    "clearAllAriaLabel": "Clear all filters"
   },
   "sorting": {
     "sort": "Sort",
@@ -742,7 +746,9 @@
     "closeMenu": "Close menu",
     "loading": "Loading",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "noEventsFound": "No events found",
+    "eventList": "Event list"
   },
   "common": {
     "cancel": "Cancel",
@@ -772,6 +778,8 @@
   },
   "public": {
     "comingSoon": "Coming soon...",
+    "loadingEventDetails": "Loading event details",
+    "registerFor": "Register for",
     "preview": {
       "title": "Preview Mode",
       "phase": "Phase",

@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Page {{current}} of {{total}}",
-    "partners": "{{count}} partner",
-    "partners_plural": "{{count}} partners",
     "firstPage": "First page",
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "lastPage": "Last page",
-    "ariaLabel": "Partner list pagination"
+    "ariaLabel": "Partner list pagination",
+    "partners_one": "{{count}} partner",
+    "partners_other": "{{count}} partners"
   },
   "empty": {
     "noPartners": "No partners found",
@@ -67,7 +67,8 @@
   "loading": "Loading partners...",
   "error": {
     "failedToLoad": "Failed to load partners",
-    "tryAgain": "Please try again later"
+    "tryAgain": "Please try again later",
+    "correlationId": "Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partner found",
@@ -166,20 +167,25 @@
       "titleLabel": "Title",
       "contentLabel": "Content",
       "htmlSupported": "HTML formatting is supported",
-      "noNotes": "No notes yet"
+      "noNotes": "No notes yet",
+      "failedToLoadNotes": "Failed to load notes",
+      "deleteNote": "Delete note"
     },
     "settingsTab": {
       "title": "Settings",
       "activePartnership": "Active Partnership",
       "exportData": "Export Partner Data",
-      "deletePartner": "Delete Partner Data"
+      "deletePartner": "Delete Partner Data",
+      "accessDenied": "Access Denied",
+      "accessDeniedMessage": "This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Overview",
       "contacts": "Contacts",
       "meetings": "Meetings",
       "analytics": "Analytics",
-      "settings": "Settings"
+      "settings": "Settings",
+      "partnerDetailTabs": "Partner detail tabs"
     },
     "overviewTab": {
       "title": "Partnership Details",
@@ -196,6 +202,16 @@
         "accountManager": "Dedicated account manager",
         "eventAccess": "Event access"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "Failed to load contacts.",
+      "noContactsAssigned": "No partner users are assigned to this company yet.",
+      "notFound": "Partner Not Found",
+      "notFoundMessage": "The partner \"{{name}}\" could not be found.",
+      "loading": "Error Loading Partner",
+      "loadingMessage": "An error occurred while loading the partner details. Please try again later.",
+      "noData": "No Data",
+      "noDataMessage": "No partner data available."
     }
   },
   "meetings": {

@@ -266,7 +266,8 @@
       "eventRequired": "Seleziona un evento o salva come modello",
       "updateTaskFailed": "Aggiornamento attività fallito",
       "createTaskFailed": "Creazione attività fallita"
-    }
+    },
+    "criticalTasksWidget": "[MISSING] Critical tasks widget"
   },
   "form": {
     "createEvent": "Crea nuovo evento",
@@ -348,7 +349,10 @@
     "allStatuses": "Tutti gli stati",
     "allYears": "Tutti gli anni",
     "allTypes": "Tutti i tipi",
-    "clear": "Cancella filtri"
+    "clear": "Cancella filtri",
+    "searchAriaLabel": "[MISSING] Search events",
+    "clearSearchAriaLabel": "[MISSING] Clear search",
+    "clearAllAriaLabel": "[MISSING] Clear all filters"
   },
   "sorting": {
     "sort": "Ordina",
@@ -742,7 +746,9 @@
     "closeMenu": "Chiudi menu",
     "loading": "Caricamento",
     "error": "Errore",
-    "success": "Successo"
+    "success": "Successo",
+    "noEventsFound": "[MISSING] No events found",
+    "eventList": "[MISSING] Event list"
   },
   "common": {
     "cancel": "Annulla",
@@ -771,6 +777,8 @@
     "keyMetrics": "Metriche chiave"
   },
   "public": {
+    "loadingEventDetails": "[MISSING] Loading event details",
+    "registerFor": "[MISSING] Register for",
     "comingSoon": "Prossimamente...",
     "preview": {
       "title": "Modalità anteprima",

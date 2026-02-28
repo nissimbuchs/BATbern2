@@ -14,6 +14,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService } from '@/services/speakerPortalService';
@@ -43,6 +44,7 @@ const ProfilePhotoUpload = ({
   onPhotoUploaded,
   onError,
 }: ProfilePhotoUploadProps) => {
+  const { t } = useTranslation();
   // State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -78,7 +80,7 @@ const ProfilePhotoUpload = ({
     (file: File): boolean => {
       // Validate file type (AC7.3)
       if (!ALLOWED_TYPES.includes(file.type)) {
-        const errorMsg = 'Invalid file type. Accepted formats: JPEG, PNG, WebP';
+        const errorMsg = t('speakerPortal.photo.invalidFileType');
         setError(errorMsg);
         onError({ type: 'INVALID_FILE_TYPE', message: errorMsg });
         return false;
@@ -86,7 +88,7 @@ const ProfilePhotoUpload = ({
 
       // Validate file size (AC7.4)
       if (file.size > MAX_FILE_SIZE) {
-        const errorMsg = 'File size must be less than 5MB';
+        const errorMsg = t('speakerPortal.photo.fileTooLarge');
         setError(errorMsg);
         onError({ type: 'FILE_TOO_LARGE', message: errorMsg });
         return false;
@@ -250,7 +252,7 @@ const ProfilePhotoUpload = ({
           onClick={handleChangePhoto}
           className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
         >
-          Change photo
+          {t('speakerPortal.photo.changePhoto')}
         </button>
       </div>
     );
@@ -297,7 +299,7 @@ const ProfilePhotoUpload = ({
             accept={ALLOWED_TYPES.join(',')}
             onChange={handleFileChange}
             className="hidden"
-            aria-label="Upload profile photo"
+            aria-label={t('speakerPortal.photo.uploadAria')}
           />
           {isUploading ? <BATbernLoader size={64} /> : <Upload className="h-8 w-8 text-zinc-400" />}
         </div>
@@ -307,7 +309,7 @@ const ProfilePhotoUpload = ({
       {isUploading && (
         <div className="w-full max-w-xs" role="status" aria-live="polite">
           <div className="flex justify-between text-sm text-zinc-400 mb-1">
-            <span>Uploading...</span>
+            <span>{t('speakerPortal.photo.uploading')}</span>
             <span>{uploadProgress}%</span>
           </div>
           <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
@@ -327,11 +329,11 @@ const ProfilePhotoUpload = ({
       {!isUploading && !previewUrl && (
         <div className="text-center">
           <p className="text-sm text-zinc-400">
-            Drag and drop a photo here
+            {t('speakerPortal.photo.dragDropHere')}
             <br />
-            or click to browse
+            {t('speakerPortal.photo.orClickBrowse')}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">JPEG, PNG, WebP (max 5MB)</p>
+          <p className="text-xs text-zinc-500 mt-1">{t('speakerPortal.photo.supportedFormats')}</p>
         </div>
       )}
 
@@ -352,10 +354,10 @@ const ProfilePhotoUpload = ({
           type="button"
           onClick={handleCancel}
           className="flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
-          aria-label="Cancel"
+          aria-label={t('speakerPortal.photo.cancel')}
         >
           <X className="h-4 w-4" />
-          Cancel
+          {t('speakerPortal.photo.cancel')}
         </button>
       )}
     </div>

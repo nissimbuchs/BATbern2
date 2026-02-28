@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Seite {{current}} von {{total}}",
-    "partners": "{{count}} Partner",
-    "partners_plural": "{{count}} Partner",
     "firstPage": "Erste Seite",
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
     "lastPage": "Letzte Seite",
-    "ariaLabel": "Seitennavigation Partner-Liste"
+    "ariaLabel": "Seitennavigation Partner-Liste",
+    "partners_one": "{{count}} Partner",
+    "partners_other": "{{count}} Partner"
   },
   "empty": {
     "noPartners": "Keine Partner gefunden",
@@ -67,7 +67,8 @@
   "loading": "Partner werden geladen...",
   "error": {
     "failedToLoad": "Partner konnten nicht geladen werden",
-    "tryAgain": "Bitte versuchen Sie es später erneut"
+    "tryAgain": "Bitte versuchen Sie es später erneut",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} Partner gefunden",
@@ -167,20 +168,25 @@
       "titleLabel": "Titel",
       "contentLabel": "Inhalt",
       "htmlSupported": "HTML-Formatierung wird unterstützt",
-      "noNotes": "Noch keine Notizen"
+      "noNotes": "Noch keine Notizen",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Einstellungen",
       "activePartnership": "Aktive Partnerschaft",
       "exportData": "Partnerdaten exportieren",
-      "deletePartner": "Partnerdaten löschen"
+      "deletePartner": "Partnerdaten löschen",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Übersicht",
       "contacts": "Kontakte",
       "meetings": "Meetings",
       "analytics": "Analysen",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Partnerschaftsdetails",
@@ -197,6 +203,16 @@
         "accountManager": "Persönlicher Account-Manager",
         "eventAccess": "Eventzugang"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

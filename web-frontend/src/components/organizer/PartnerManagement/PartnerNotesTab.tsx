@@ -131,7 +131,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
   if (error) {
     return (
       <Alert severity="error">
-        <Typography variant="h6">Failed to load notes</Typography>
+        <Typography variant="h6">{t('detail.notesTab.failedToLoadNotes')}</Typography>
         <Typography variant="body2">{(error as Error).message}</Typography>
       </Alert>
     );
@@ -227,13 +227,17 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
                 </Typography>
                 {!isPartner && (
                   <Stack direction="row" spacing={1}>
-                    <IconButton size="small" onClick={() => handleEditNote(note)} aria-label="Edit">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditNote(note)}
+                      aria-label={t('detail.notesTab.editNote')}
+                    >
                       <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteNote(note.id, note.title)}
-                      aria-label="Delete"
+                      aria-label={t('detail.notesTab.deleteNote')}
                       color="error"
                     >
                       <Delete fontSize="small" />

@@ -266,7 +266,8 @@
       "eventRequired": "Veuillez sélectionner un événement ou enregistrer comme modèle",
       "updateTaskFailed": "Échec de la mise à jour de la tâche",
       "createTaskFailed": "Échec de la création de la tâche"
-    }
+    },
+    "criticalTasksWidget": "[MISSING] Critical tasks widget"
   },
   "form": {
     "createEvent": "Créer un nouvel événement",
@@ -348,7 +349,10 @@
     "allStatuses": "Tous les statuts",
     "allYears": "Toutes les années",
     "allTypes": "Tous les types",
-    "clear": "Effacer les filtres"
+    "clear": "Effacer les filtres",
+    "searchAriaLabel": "[MISSING] Search events",
+    "clearSearchAriaLabel": "[MISSING] Clear search",
+    "clearAllAriaLabel": "[MISSING] Clear all filters"
   },
   "sorting": {
     "sort": "Trier",
@@ -742,7 +746,9 @@
     "closeMenu": "Fermer le menu",
     "loading": "Chargement",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "noEventsFound": "[MISSING] No events found",
+    "eventList": "[MISSING] Event list"
   },
   "common": {
     "cancel": "Annuler",
@@ -771,6 +777,8 @@
     "keyMetrics": "Indicateurs clés"
   },
   "public": {
+    "loadingEventDetails": "[MISSING] Loading event details",
+    "registerFor": "[MISSING] Register for",
     "comingSoon": "Bientôt disponible...",
     "preview": {
       "title": "Mode aperçu",

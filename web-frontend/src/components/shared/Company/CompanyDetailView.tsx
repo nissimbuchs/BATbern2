@@ -587,8 +587,16 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
               id="company-tab-0"
               aria-controls="company-tabpanel-0"
             />
-            <Tab label="Speakers" id="company-tab-1" aria-controls="company-tabpanel-1" />
-            <Tab label="Sessions" id="company-tab-2" aria-controls="company-tabpanel-2" />
+            <Tab
+              label={t('navigation.speakers')}
+              id="company-tab-1"
+              aria-controls="company-tabpanel-1"
+            />
+            <Tab
+              label={t('labels.sessions')}
+              id="company-tab-2"
+              aria-controls="company-tabpanel-2"
+            />
           </Tabs>
         </Box>
       )}

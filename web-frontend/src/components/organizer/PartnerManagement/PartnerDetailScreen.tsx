@@ -52,6 +52,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   companyName,
   isMobile,
 }) => {
+  const { t: tPartners } = useTranslation('partners');
   const navigate = useNavigate();
   const location = useLocation();
   const [page, setPage] = useState(1);
@@ -63,7 +64,8 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   });
 
   if (isLoading) return <Skeleton variant="rectangular" height={300} />;
-  if (isError) return <Alert severity="error">Failed to load contacts.</Alert>;
+  if (isError)
+    return <Alert severity="error">{tPartners('detail.errors.failedToLoadContacts')}</Alert>;
 
   const users = data?.data ?? [];
   const paginationData = data?.pagination;
@@ -71,7 +73,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   if (users.length === 0) {
     return (
       <Alert severity="info" sx={{ mt: 2 }}>
-        No partner users are assigned to this company yet.
+        {tPartners('detail.errors.noContactsAssigned')}
       </Alert>
     );
   }
@@ -206,8 +208,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">
-          <AlertTitle>Partner Not Found</AlertTitle>
-          The partner &quot;{resolvedCompanyName}&quot; could not be found.
+          <AlertTitle>{tPartners('detail.errors.notFound')}</AlertTitle>
+          {tPartners('detail.errors.notFoundMessage', { name: resolvedCompanyName })}
         </Alert>
       </Container>
     );
@@ -218,8 +220,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">
-          <AlertTitle>Error Loading Partner</AlertTitle>
-          An error occurred while loading the partner details. Please try again later.
+          <AlertTitle>{tPartners('detail.errors.loading')}</AlertTitle>
+          {tPartners('detail.errors.loadingMessage')}
         </Alert>
       </Container>
     );
@@ -230,8 +232,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="warning">
-          <AlertTitle>No Data</AlertTitle>
-          No partner data available.
+          <AlertTitle>{tPartners('detail.errors.noData')}</AlertTitle>
+          {tPartners('detail.errors.noDataMessage')}
         </Alert>
       </Container>
     );

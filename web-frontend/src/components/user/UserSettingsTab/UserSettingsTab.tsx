@@ -55,7 +55,7 @@ function TabPanel(props: TabPanelProps) {
 function NewsletterSection() {
   const { data: status, isLoading } = useMySubscription();
   const patchMutation = usePatchMySubscription();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('userManagement');
 
   function handleToggle(checked: boolean) {
     const language = i18n.language?.startsWith('de') ? 'de' : 'en';
@@ -69,7 +69,7 @@ function NewsletterSection() {
   return (
     <Box>
       <Typography variant="subtitle1" gutterBottom>
-        Newsletter
+        {t('settings.newsletter.title')}
       </Typography>
       <FormControlLabel
         control={
@@ -82,9 +82,9 @@ function NewsletterSection() {
         }
         label={
           <Box>
-            <Typography variant="body2">Subscribe to BATbern newsletter</Typography>
+            <Typography variant="body2">{t('settings.newsletter.subscribe')}</Typography>
             <Typography variant="caption" color="text.secondary">
-              Receive event announcements and updates
+              {t('settings.newsletter.description')}
             </Typography>
           </Box>
         }
@@ -94,6 +94,7 @@ function NewsletterSection() {
 }
 
 const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, settings }) => {
+  const { t } = useTranslation('userManagement');
   const [activeSubTab, setActiveSubTab] = useState(0);
   const [preferencesForm, setPreferencesForm] = useState(
     preferences || {
@@ -135,35 +136,35 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
   return (
     <Box data-testid="user-settings-tab">
       <Tabs value={activeSubTab} onChange={(_, v) => setActiveSubTab(v)}>
-        <Tab label="Account" data-testid="account-subtab" />
-        <Tab label="Notifications" data-testid="notifications-subtab" />
-        <Tab label="Privacy" data-testid="privacy-subtab" />
+        <Tab label={t('settings.tabs.account')} data-testid="account-subtab" />
+        <Tab label={t('settings.tabs.notifications')} data-testid="notifications-subtab" />
+        <Tab label={t('settings.tabs.privacy')} data-testid="privacy-subtab" />
       </Tabs>
 
       {/* Account Settings */}
       <TabPanel value={activeSubTab} index={0}>
         <Paper sx={{ p: 3 }} data-testid="account-settings-panel">
           <Typography variant="h6" gutterBottom>
-            Account Settings
+            {t('settings.account.title')}
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           <TextField
             fullWidth
-            label="Email"
+            label={t('common:labels.email')}
             value={email || ''}
             InputProps={{ readOnly: true }}
-            helperText={<span data-testid="email-status">Verified (managed by Cognito)</span>}
+            helperText={<span data-testid="email-status">{t('settings.account.emailStatus')}</span>}
             margin="normal"
             data-testid="email-field"
           />
 
           <Button variant="outlined" sx={{ mt: 2 }} data-testid="change-password-button">
-            Change Password
+            {t('settings.account.changePassword')}
           </Button>
 
           <Typography variant="subtitle1" sx={{ mt: 3, mb: 2 }}>
-            Theme
+            {t('settings.account.theme')}
           </Typography>
           <RadioGroup
             value={preferencesForm.theme}
@@ -177,23 +178,23 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             <FormControlLabel
               value="LIGHT"
               control={<Radio data-testid="theme-light" />}
-              label="Light"
+              label={t('settings.account.themeLight')}
             />
             <FormControlLabel
               value="DARK"
               control={<Radio data-testid="theme-dark" />}
-              label="Dark"
+              label={t('settings.account.themeDark')}
             />
             <FormControlLabel
               value="AUTO"
               control={<Radio data-testid="theme-auto" />}
-              label="Auto"
+              label={t('settings.account.themeAuto')}
             />
           </RadioGroup>
 
           <TextField
             fullWidth
-            label="Timezone"
+            label={t('settings.account.timezone')}
             value={preferencesForm.timezone}
             onChange={(e) => setPreferencesForm({ ...preferencesForm, timezone: e.target.value })}
             margin="normal"
@@ -206,7 +207,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             sx={{ mt: 2 }}
             data-testid="save-account-settings-button"
           >
-            Save Account Settings
+            {t('settings.account.save')}
           </Button>
         </Paper>
       </TabPanel>
@@ -215,16 +216,16 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
       <TabPanel value={activeSubTab} index={1}>
         <Paper sx={{ p: 3 }} data-testid="notification-settings-panel">
           <Typography variant="h6" gutterBottom>
-            Notification Settings
+            {t('settings.notifications.title')}
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           <Alert severity="info" sx={{ mb: 2 }} data-testid="advanced-features-info">
-            Advanced notification settings (quiet hours, granular controls) available in Epic 7
+            {t('settings.notifications.epic7Notice')}
           </Alert>
 
           <Typography variant="subtitle1" gutterBottom>
-            Notification Channels
+            {t('settings.notifications.channels')}
           </Typography>
           <FormGroup>
             <FormControlLabel
@@ -243,7 +244,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="channel-email"
                 />
               }
-              label="Email"
+              label={t('settings.notifications.channelEmail')}
             />
             <FormControlLabel
               control={
@@ -261,7 +262,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="channel-in-app"
                 />
               }
-              label="In-app"
+              label={t('settings.notifications.channelInApp')}
             />
             <FormControlLabel
               control={
@@ -279,12 +280,12 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="channel-push"
                 />
               }
-              label="Push notifications"
+              label={t('settings.notifications.channelPush')}
             />
           </FormGroup>
 
           <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>
-            Frequency
+            {t('settings.notifications.frequency')}
           </Typography>
           <RadioGroup
             value={preferencesForm.notificationFrequency}
@@ -298,17 +299,17 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             <FormControlLabel
               value="IMMEDIATE"
               control={<Radio data-testid="frequency-immediate" />}
-              label="Immediate"
+              label={t('settings.notifications.frequencyImmediate')}
             />
             <FormControlLabel
               value="DAILY_DIGEST"
               control={<Radio data-testid="frequency-daily" />}
-              label="Daily digest"
+              label={t('settings.notifications.frequencyDaily')}
             />
             <FormControlLabel
               value="WEEKLY_DIGEST"
               control={<Radio data-testid="frequency-weekly" />}
-              label="Weekly digest"
+              label={t('settings.notifications.frequencyWeekly')}
             />
           </RadioGroup>
 
@@ -318,7 +319,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             sx={{ mt: 2 }}
             data-testid="save-notification-settings-button"
           >
-            Save Notification Settings
+            {t('settings.notifications.save')}
           </Button>
 
           <Divider sx={{ my: 3 }} />
@@ -332,12 +333,12 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
       <TabPanel value={activeSubTab} index={2}>
         <Paper sx={{ p: 3 }} data-testid="privacy-settings-panel">
           <Typography variant="h6" gutterBottom>
-            Privacy Settings
+            {t('settings.privacy.title')}
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           <Typography variant="subtitle1" gutterBottom>
-            Profile Visibility
+            {t('settings.privacy.visibility')}
           </Typography>
           <RadioGroup
             value={settingsForm.profileVisibility}
@@ -351,22 +352,22 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             <FormControlLabel
               value="PUBLIC"
               control={<Radio data-testid="visibility-public" />}
-              label="Public"
+              label={t('settings.privacy.visibilityPublic')}
             />
             <FormControlLabel
               value="MEMBERS_ONLY"
               control={<Radio data-testid="visibility-members-only" />}
-              label="Members only"
+              label={t('settings.privacy.visibilityMembersOnly')}
             />
             <FormControlLabel
               value="PRIVATE"
               control={<Radio data-testid="visibility-private" />}
-              label="Private"
+              label={t('settings.privacy.visibilityPrivate')}
             />
           </RadioGroup>
 
           <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>
-            Information Display
+            {t('settings.privacy.infoDisplay')}
           </Typography>
           <FormGroup>
             <FormControlLabel
@@ -379,7 +380,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="show-email-toggle"
                 />
               }
-              label="Show email"
+              label={t('settings.privacy.showEmail')}
             />
             <FormControlLabel
               control={
@@ -391,7 +392,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="show-company-toggle"
                 />
               }
-              label="Show company"
+              label={t('settings.privacy.showCompany')}
             />
             <FormControlLabel
               control={
@@ -403,12 +404,12 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="show-activity-toggle"
                 />
               }
-              label="Show activity history"
+              label={t('settings.privacy.showActivity')}
             />
           </FormGroup>
 
           <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>
-            Communication
+            {t('settings.privacy.communication')}
           </Typography>
           <FormGroup>
             <FormControlLabel
@@ -421,7 +422,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
                   data-testid="allow-messaging-toggle"
                 />
               }
-              label="Allow messaging from other users"
+              label={t('settings.privacy.allowMessaging')}
             />
           </FormGroup>
 
@@ -431,7 +432,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             sx={{ mt: 2, display: 'block' }}
             data-testid="privacy-policy-link"
           >
-            View Privacy Policy
+            {t('settings.privacy.viewPolicy')}
           </Link>
 
           <Button
@@ -440,7 +441,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             sx={{ mt: 2 }}
             data-testid="save-privacy-settings-button"
           >
-            Save Privacy Settings
+            {t('settings.privacy.save')}
           </Button>
         </Paper>
       </TabPanel>

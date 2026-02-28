@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Button, Divider, Paper, TextField, Typography } from '@mui/material';
 import ProfileHeader from '../ProfileHeader/ProfileHeader';
 import { CompanyAutocomplete } from '@/components/organizer/PartnerManagement/CompanyAutocomplete';
@@ -24,6 +25,7 @@ interface UserProfileTabProps {
 }
 
 const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
+  const { t } = useTranslation(['userManagement', 'common']);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<{
     firstName: string;
@@ -76,7 +78,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
   };
 
   const handlePhotoRemove = async () => {
-    if (window.confirm('Are you sure you want to remove your profile picture?')) {
+    if (window.confirm(t('profile.removePhotoConfirm'))) {
       try {
         await removePhotoMutation.mutateAsync();
       } catch (error) {
@@ -134,14 +136,14 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Personal Information</Typography>
+          <Typography variant="h6">{t('profile.personalInfo')}</Typography>
           {!isEditing && (
             <Button
               variant="outlined"
               onClick={() => setIsEditing(true)}
               data-testid="edit-profile-button"
             >
-              Edit Profile
+              {t('profile.editProfile')}
             </Button>
           )}
         </Box>
@@ -152,7 +154,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
           <Box component="form" noValidate autoComplete="off">
             <TextField
               fullWidth
-              label="First Name"
+              label={t('profile.firstName')}
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
               margin="normal"
@@ -160,7 +162,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
             />
             <TextField
               fullWidth
-              label="Last Name"
+              label={t('profile.lastName')}
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               margin="normal"
@@ -170,12 +172,12 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
               <CompanyAutocomplete
                 value={formData.company}
                 onChange={handleCompanyChange}
-                label="Company"
+                label={t('common:labels.company')}
               />
             </Box>
             <TextField
               fullWidth
-              label="Bio"
+              label={t('profile.bio')}
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               margin="normal"
@@ -192,34 +194,34 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
             />
             {bioCharCount > bioMaxLength && (
               <Typography color="error" variant="caption" data-testid="bio-validation-error">
-                Bio must be {bioMaxLength} characters or less
+                {t('profile.bioValidation', { max: bioMaxLength })}
               </Typography>
             )}
             <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
               <Button variant="contained" onClick={handleSave} data-testid="save-profile-button">
-                Save Changes
+                {t('profile.saveChanges')}
               </Button>
               <Button variant="outlined" onClick={handleCancel} data-testid="cancel-edit-button">
-                Cancel
+                {t('common:actions.cancel')}
               </Button>
             </Box>
           </Box>
         ) : (
           <Box>
             <Typography variant="body1">
-              <strong>Name:</strong> {user.firstName} {user.lastName}
+              <strong>{t('profile.labelName')}</strong> {user.firstName} {user.lastName}
             </Typography>
             <Typography variant="body1" sx={{ mt: 1 }}>
-              <strong>Email:</strong> {user.email}
+              <strong>{t('profile.labelEmail')}</strong> {user.email}
             </Typography>
             {user.company && (
               <Typography variant="body1" sx={{ mt: 1 }}>
-                <strong>Company:</strong> {user.company.name}
+                <strong>{t('profile.labelCompany')}</strong> {user.company.name}
               </Typography>
             )}
             {user.bio && (
               <Typography variant="body1" sx={{ mt: 1 }}>
-                <strong>Bio:</strong> {user.bio}
+                <strong>{t('profile.labelBio')}</strong> {user.bio}
               </Typography>
             )}
           </Box>
@@ -236,7 +238,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
       {/* Activity Timeline */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Recent Activity
+          {t('profile.recentActivity')}
         </Typography>
         <Divider sx={{ mb: 2 }} />
         {activity.length > 0 ? (
@@ -250,12 +252,12 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
           ))
         ) : (
           <Typography variant="body2" color="text.secondary">
-            No recent activity
+            {t('profile.noActivity')}
           </Typography>
         )}
         {activity.length > 5 && (
           <Button size="small" data-testid="view-all-activities-link">
-            View All →
+            {t('profile.viewAll')}
           </Button>
         )}
       </Paper>

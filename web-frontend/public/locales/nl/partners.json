@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Pagina {{current}} van {{total}}",
-    "partners": "{{count}} partner",
-    "partners_plural": "{{count}} partners",
     "firstPage": "Eerste pagina",
     "previousPage": "Vorige pagina",
     "nextPage": "Volgende pagina",
     "lastPage": "Laatste pagina",
-    "ariaLabel": "Paginering van partnerlijst"
+    "ariaLabel": "Paginering van partnerlijst",
+    "partners_one": "{{count}} partner",
+    "partners_other": "{{count}} partners"
   },
   "empty": {
     "noPartners": "Geen partners gevonden",
@@ -67,7 +67,8 @@
   "loading": "Partners laden...",
   "error": {
     "failedToLoad": "Laden van partners mislukt",
-    "tryAgain": "Probeer het later opnieuw"
+    "tryAgain": "Probeer het later opnieuw",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partner gevonden",
@@ -167,20 +168,25 @@
       "titleLabel": "Titel",
       "contentLabel": "Inhoud",
       "htmlSupported": "HTML-opmaak wordt ondersteund",
-      "noNotes": "Nog geen notities"
+      "noNotes": "Nog geen notities",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Instellingen",
       "activePartnership": "Actief partnerschap",
       "exportData": "Partnergegevens exporteren",
-      "deletePartner": "Partnergegevens verwijderen"
+      "deletePartner": "Partnergegevens verwijderen",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Overzicht",
       "contacts": "Contacten",
       "meetings": "Vergaderingen",
       "analytics": "Analyses",
-      "settings": "Instellingen"
+      "settings": "Instellingen",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Partnerschapsdetails",
@@ -197,6 +203,16 @@
         "accountManager": "Toegewijde accountmanager",
         "eventAccess": "Toegang tot evenementen"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

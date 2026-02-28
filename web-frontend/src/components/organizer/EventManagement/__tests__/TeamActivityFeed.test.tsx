@@ -62,6 +62,7 @@ vi.mock('react-i18next', () => ({
         'notifications.markAsRead': 'Mark as read',
         'notifications.delete': 'Delete',
         'notifications.reload': 'Reload',
+        'notifications.notificationFeed': 'Notification feed',
       };
 
       // Handle pluralization for activityCount

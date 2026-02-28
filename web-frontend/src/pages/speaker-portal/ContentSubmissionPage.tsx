@@ -16,6 +16,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { speakerPortalService, ContentSubmitResponse } from '@/services/speakerPortalService';
 import PresentationUpload from '@/components/speaker-portal/PresentationUpload';
@@ -38,6 +39,7 @@ interface FormErrors {
 }
 
 export default function ContentSubmissionPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const queryClient = useQueryClient();
@@ -185,11 +187,11 @@ export default function ContentSubmissionPage() {
     const errors: FormErrors = {};
 
     if (!formState.title.trim()) {
-      errors.title = 'Title is required';
+      errors.title = t('speakerPortal.content.titleRequired');
     }
 
     if (!formState.contentAbstract.trim()) {
-      errors.contentAbstract = 'Abstract is required';
+      errors.contentAbstract = t('speakerPortal.content.abstractRequired');
     }
 
     setFormErrors(errors);
@@ -214,11 +216,10 @@ export default function ContentSubmissionPage() {
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
             <div className="text-red-400 text-6xl mb-4">!</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Invalid Link</h1>
-            <p className="text-gray-400">
-              This page requires a valid content link. Please use the link from your invitation
-              email.
-            </p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {t('speakerPortal.content.invalidLink')}
+            </h1>
+            <p className="text-gray-400">{t('speakerPortal.content.invalidLinkMessage')}</p>
           </div>
         </div>
       </PublicLayout>
@@ -231,7 +232,7 @@ export default function ContentSubmissionPage() {
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center">
             <BATbernLoader size={96} />
-            <p className="text-gray-400">Loading content...</p>
+            <p className="text-gray-400">{t('speakerPortal.content.loadingContent')}</p>
           </div>
         </div>
       </PublicLayout>
@@ -249,13 +250,17 @@ export default function ContentSubmissionPage() {
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
             <div className="text-red-400 text-6xl mb-4">!</div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              {isExpired ? 'Link Has Expired' : isNotFound ? 'Invalid Link' : 'Error'}
+              {isExpired
+                ? t('speakerPortal.content.linkHasExpired')
+                : isNotFound
+                  ? t('speakerPortal.content.invalidLink')
+                  : t('speakerPortal.invitationResponse.genericError')}
             </h1>
             <p className="text-gray-400">
               {isExpired
-                ? 'This link has expired. Please contact the organizer for a new link.'
+                ? t('speakerPortal.content.linkExpiredMessage')
                 : isNotFound
-                  ? 'This link is not valid. Please check your email for the correct link.'
+                  ? t('speakerPortal.content.invalidLinkNotValidMessage')
                   : (error as Error).message}
             </p>
           </div>
@@ -271,14 +276,14 @@ export default function ContentSubmissionPage() {
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
             <div className="text-yellow-400 text-6xl mb-4">!</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Cannot Submit Content</h1>
-            <p className="text-gray-400">
-              You cannot submit content at this time. Please accept the invitation first or contact
-              the organizer for assistance.
-            </p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {t('speakerPortal.content.cannotSubmit')}
+            </h1>
+            <p className="text-gray-400">{t('speakerPortal.content.cannotSubmitMessage')}</p>
             <div className="mt-6 p-4 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-400">
-                Event: <span className="text-white">{contentInfo?.eventTitle}</span>
+                {t('common:labels.event')}:{' '}
+                <span className="text-white">{contentInfo?.eventTitle}</span>
               </p>
             </div>
           </div>
@@ -294,26 +299,30 @@ export default function ContentSubmissionPage() {
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
             <div className="text-green-400 text-6xl mb-4">✓</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Content Submitted Successfully!</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {t('speakerPortal.content.submittedSuccessfully')}
+            </h1>
             <p className="text-gray-400 mb-4">
-              Your content for "{submitResult.sessionTitle}" has been submitted for review.
+              {t('speakerPortal.content.submittedMessage', {
+                sessionTitle: submitResult.sessionTitle,
+              })}
             </p>
             <div className="bg-gray-700 rounded-lg p-4 text-left">
               <p className="text-sm text-gray-400">
-                Version: <span className="text-white">{submitResult.version}</span>
+                {t('speakerPortal.content.version')}:{' '}
+                <span className="text-white">{submitResult.version}</span>
               </p>
               <p className="text-sm text-gray-400">
-                Status: <span className="text-green-400">{submitResult.status}</span>
+                {t('speakerPortal.content.status')}:{' '}
+                <span className="text-green-400">{submitResult.status}</span>
               </p>
             </div>
-            <p className="text-sm text-gray-500 mt-4">
-              The organizer will review your submission and contact you if any changes are needed.
-            </p>
+            <p className="text-sm text-gray-500 mt-4">{t('speakerPortal.content.nextStepsInfo')}</p>
             <Link
               to={`/speaker-portal/dashboard?token=${token}`}
               className="inline-block mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             >
-              Go to Speaker Dashboard
+              {t('speakerPortal.content.goToDashboard')}
             </Link>
           </div>
         </div>
@@ -329,7 +338,9 @@ export default function ContentSubmissionPage() {
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Submit Your Content</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">
+                  {t('speakerPortal.content.submitYourContent')}
+                </h1>
                 <p className="text-gray-400">
                   {contentInfo.eventTitle} - {contentInfo.sessionTitle}
                 </p>
@@ -340,7 +351,7 @@ export default function ContentSubmissionPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  {t('speakerPortal.content.dashboard')}
                 </Link>
                 {/* AC10: Edit Profile Navigation */}
                 <Link
@@ -348,7 +359,7 @@ export default function ContentSubmissionPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm"
                 >
                   <User className="h-4 w-4" />
-                  Edit Profile
+                  {t('speakerPortal.content.editProfile')}
                 </Link>
               </div>
             </div>
@@ -357,13 +368,19 @@ export default function ContentSubmissionPage() {
           {/* AC8: Revision Feedback */}
           {contentInfo.needsRevision && contentInfo.reviewerFeedback && (
             <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg">
-              <h2 className="text-lg font-semibold text-yellow-400 mb-2">Revision Requested</h2>
+              <h2 className="text-lg font-semibold text-yellow-400 mb-2">
+                {t('speakerPortal.content.revisionRequested')}
+              </h2>
               <p className="text-gray-300 mb-2">{contentInfo.reviewerFeedback}</p>
               {contentInfo.reviewedBy && (
                 <p className="text-sm text-gray-500">
-                  Reviewed by: {contentInfo.reviewedBy}
+                  {t('speakerPortal.content.reviewedBy')}: {contentInfo.reviewedBy}
                   {contentInfo.reviewedAt && (
-                    <> on {new Date(contentInfo.reviewedAt).toLocaleDateString()}</>
+                    <>
+                      {' '}
+                      {t('speakerPortal.content.on')}{' '}
+                      {new Date(contentInfo.reviewedAt).toLocaleDateString()}
+                    </>
                   )}
                 </p>
               )}
@@ -375,7 +392,8 @@ export default function ContentSubmissionPage() {
             {/* Title Input (AC2) */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-2">
-                Presentation Title <span className="text-red-400">*</span>
+                {t('speakerPortal.content.presentationTitle')}{' '}
+                <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -387,7 +405,7 @@ export default function ContentSubmissionPage() {
                 className={`w-full bg-gray-700 border ${
                   formErrors.title ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Enter your presentation title"
+                placeholder={t('speakerPortal.content.titlePlaceholder')}
                 aria-describedby="title-count"
               />
               <div className="flex justify-between mt-1">
@@ -405,7 +423,7 @@ export default function ContentSubmissionPage() {
             {/* Abstract Input (AC3) */}
             <div>
               <label htmlFor="abstract" className="block text-sm font-medium text-gray-300 mb-2">
-                Abstract <span className="text-red-400">*</span>
+                {t('speakerPortal.content.abstract')} <span className="text-red-400">*</span>
               </label>
               <textarea
                 id="abstract"
@@ -417,7 +435,7 @@ export default function ContentSubmissionPage() {
                 className={`w-full bg-gray-700 border ${
                   formErrors.contentAbstract ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
-                placeholder="Describe what your presentation will cover..."
+                placeholder={t('speakerPortal.content.abstractPlaceholder')}
                 aria-describedby="abstract-count"
               />
               <div className="flex justify-between mt-1">
@@ -435,7 +453,7 @@ export default function ContentSubmissionPage() {
             {/* Presentation Upload (AC7) - Optional */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Presentation File <span className="text-gray-500">(optional)</span>
+                {t('speakerPortal.content.presentationFile')}
               </label>
               {contentInfo.hasSessionAssigned ? (
                 <PresentationUpload
@@ -453,9 +471,7 @@ export default function ContentSubmissionPage() {
                 />
               ) : (
                 <div className="p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg text-sm">
-                  <p className="text-yellow-400">
-                    Submit your title and abstract first to enable file uploads.
-                  </p>
+                  <p className="text-yellow-400">{t('speakerPortal.content.enableFileUploads')}</p>
                 </div>
               )}
               {materialError && (
@@ -469,11 +485,15 @@ export default function ContentSubmissionPage() {
             <div className="flex items-center justify-between text-sm">
               <div className="text-gray-500">
                 {isSaving ? (
-                  <span className="text-blue-400">Saving...</span>
+                  <span className="text-blue-400">{t('speakerPortal.content.saving')}</span>
                 ) : lastSavedAt ? (
-                  <span>Last saved: {new Date(lastSavedAt).toLocaleTimeString()}</span>
+                  <span>
+                    {t('speakerPortal.content.lastSaved', {
+                      time: new Date(lastSavedAt).toLocaleTimeString(),
+                    })}
+                  </span>
                 ) : isDirty ? (
-                  <span>Unsaved changes</span>
+                  <span>{t('speakerPortal.content.unsavedChanges')}</span>
                 ) : null}
               </div>
             </div>
@@ -485,7 +505,9 @@ export default function ContentSubmissionPage() {
                 disabled={submitMutation.isPending}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitMutation.isPending ? 'Submitting...' : 'Submit Content'}
+                {submitMutation.isPending
+                  ? t('speakerPortal.content.submitting')
+                  : t('speakerPortal.content.submitContent')}
               </button>
             </div>
 

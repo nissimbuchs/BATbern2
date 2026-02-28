@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Página {{current}} de {{total}}",
-    "partners": "{{count}} socio",
-    "partners_plural": "{{count}} socios",
     "firstPage": "Primera página",
     "previousPage": "Página anterior",
     "nextPage": "Página siguiente",
     "lastPage": "Última página",
-    "ariaLabel": "Paginación de la lista de socios"
+    "ariaLabel": "Paginación de la lista de socios",
+    "partners_one": "{{count}} socio",
+    "partners_other": "{{count}} socios"
   },
   "empty": {
     "noPartners": "No se encontraron socios",
@@ -67,7 +67,8 @@
   "loading": "Cargando socios...",
   "error": {
     "failedToLoad": "Error al cargar los socios",
-    "tryAgain": "Por favor, inténtelo de nuevo más tarde"
+    "tryAgain": "Por favor, inténtelo de nuevo más tarde",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} socio encontrado",
@@ -167,20 +168,25 @@
       "titleLabel": "Título",
       "contentLabel": "Contenido",
       "htmlSupported": "El formato HTML es compatible",
-      "noNotes": "Aún no hay notas"
+      "noNotes": "Aún no hay notas",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Configuración",
       "activePartnership": "Asociación activa",
       "exportData": "Exportar datos del socio",
-      "deletePartner": "Eliminar datos del socio"
+      "deletePartner": "Eliminar datos del socio",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Resumen",
       "contacts": "Contactos",
       "meetings": "Reuniones",
       "analytics": "Análisis",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Detalles de la asociación",
@@ -197,6 +203,16 @@
         "accountManager": "Gestor de cuenta dedicado",
         "eventAccess": "Acceso a eventos"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

@@ -50,8 +50,8 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" icon={<BlockIcon />}>
-          <Typography variant="h6">Access Denied</Typography>
-          <Typography variant="body2">This section is only accessible to organizers.</Typography>
+          <Typography variant="h6">{t('detail.settingsTab.accessDenied')}</Typography>
+          <Typography variant="body2">{t('detail.settingsTab.accessDeniedMessage')}</Typography>
         </Alert>
       </Box>
     );
@@ -85,7 +85,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
                 onChange={(e) => onUpdateStatus?.(e.target.checked)}
               />
             }
-            label="Active"
+            label={t('common:filters.status.active')}
           />
         </Box>
 

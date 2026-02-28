@@ -42,7 +42,7 @@ const RegistrationPage = () => {
           <div
             className="flex justify-center py-24"
             role="status"
-            aria-label="Loading event details"
+            aria-label={t('public.loadingEventDetails')}
           >
             <BATbernLoader size={96} />
           </div>

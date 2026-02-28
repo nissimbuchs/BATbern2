@@ -67,9 +67,9 @@ describe('SpeakerMagicLoginPage Component', () => {
     test('should_showError_when_noJwtParam', () => {
       renderPage(); // No JWT
 
-      expect(screen.getByText('Link ungültig')).toBeInTheDocument();
+      expect(screen.getByText('Link Invalid')).toBeInTheDocument();
       expect(
-        screen.getByText('Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator.')
+        screen.getByText('This link is no longer valid. Please contact the organizer.')
       ).toBeInTheDocument();
     });
 
@@ -88,7 +88,7 @@ describe('SpeakerMagicLoginPage Component', () => {
       renderPage('invalid.jwt.token');
 
       await waitFor(() => {
-        expect(screen.getByText('Link ungültig')).toBeInTheDocument();
+        expect(screen.getByText('Link Invalid')).toBeInTheDocument();
       });
       expect(
         screen.getByText('Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator.')

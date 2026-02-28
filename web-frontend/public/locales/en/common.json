@@ -105,7 +105,9 @@
     "gridView": "Grid view",
     "listView": "List view",
     "sessions": "Sessions",
-    "topics": "Topics"
+    "topics": "Topics",
+    "firstName": "First Name",
+    "lastName": "Last Name"
   },
   "filters": {
     "status": {
@@ -333,7 +335,19 @@
       "importButtonWithCount": "Import {{count}} Events",
       "columns": {
         "eventNumber": "#",
-        "organizer": "Organizer"
+        "organizer": "Organizer",
+        "category": "Category"
+      },
+      "fieldSelection": {
+        "legend": "Field Selection (Import = create if new, update if exists | Ignore = skip field)",
+        "import": "Import",
+        "ignore": "Ignore",
+        "fieldTitle": "Title:",
+        "fieldDescription": "Description:",
+        "fieldTopic": "Topic/Category:",
+        "fieldDate": "Date:",
+        "fieldVenue": "Venue:",
+        "fieldOrganizer": "Organizer:"
       },
       "errors": {
         "invalidFile": "Invalid file type. Please upload a JSON file.",
@@ -480,7 +494,19 @@
       "nextStepsInfo": "The organizer will review your submission and contact you if any changes are needed.",
       "revisionRequested": "Revision Requested",
       "reviewedBy": "Reviewed by",
-      "on": "on"
+      "on": "on",
+      "loadingContent": "Loading content...",
+      "linkHasExpired": "Link Has Expired",
+      "invalidLinkNotValidMessage": "This link is not valid. Please check your email for the correct link.",
+      "cannotSubmit": "Cannot Submit Content",
+      "cannotSubmitMessage": "You cannot submit content at this time. Please accept the invitation first or contact the organizer for assistance.",
+      "goToDashboard": "Go to Speaker Dashboard",
+      "submitYourContent": "Submit Your Content",
+      "dashboard": "Dashboard",
+      "editProfile": "Edit Profile",
+      "titlePlaceholder": "Enter your presentation title",
+      "abstractPlaceholder": "Describe what your presentation will cover...",
+      "enableFileUploads": "Submit your title and abstract first to enable file uploads."
     },
     "upload": {
       "dragDropTitle": "Upload Presentation",
@@ -497,7 +523,117 @@
         "fileTooLarge": "File is too large. Maximum size is 50MB.",
         "invalidType": "Invalid file type. Only PPTX, PDF, and KEY files are allowed.",
         "uploadFailed": "Upload failed. Please try again."
-      }
+      },
+      "presentationFile": "Presentation file",
+      "changeFile": "Change file",
+      "dragDropPresentation": "Drag and drop your presentation here",
+      "orClickBrowse": "or click to browse",
+      "invalidFileType": "Invalid file type. Accepted formats: PPTX, PDF, KEY",
+      "fileTooLarge": "File size must be less than 50MB",
+      "acceptedFormats": "Accepted formats: PPTX, PDF, KEY (max 50MB)",
+      "uploadAria": "Upload presentation file"
+    },
+    "invitationResponse": {
+      "invalidLink": "Invalid Link",
+      "invalidLinkMessage": "This page requires a valid invitation link from your email.",
+      "linkNotValid": "This invitation link is not valid.",
+      "loading": "Loading Invitation...",
+      "loadingMessage": "Please wait while we verify your link.",
+      "loadingAria": "Loading invitation",
+      "backToHome": "Back to Home",
+      "linkExpired": "Link Expired",
+      "linkExpiredMessage": "This invitation link has expired. Please contact the event organizers.",
+      "linkAlreadyUsed": "Link Already Used",
+      "linkAlreadyUsedMessage": "This invitation link has already been used.",
+      "genericError": "Error",
+      "genericErrorMessage": "An error occurred while validating your invitation.",
+      "unexpectedErrorMessage": "An unexpected error occurred.",
+      "needHelp": "Need Help?",
+      "contactOrganizersAt": "Contact the event organizers at",
+      "checkEmail": "Check your email for a more recent invitation link",
+      "requestNew": "Request a new invitation from the organizers",
+      "alreadyResponded": "Already Responded",
+      "alreadyRespondedOn": "You have already responded to this invitation on {{date}}.",
+      "yourResponseWas": "Your response:",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "tentative": "Tentative",
+      "manageProfileText": "You can manage your speaker profile and content submissions from your speaker dashboard.",
+      "reconsiderText": "If you'd like to reconsider, please contact the event organizers directly.",
+      "invitedToSpeak": "You're Invited to Speak at",
+      "respondBy": "Respond by",
+      "dear": "Dear",
+      "invitationBody": "We would be honored to have you as a speaker at this event. Please let us know if you can join us by selecting one of the options below.",
+      "yourResponse": "Your Response",
+      "accept": "Accept",
+      "decline": "Decline",
+      "messageToOrganizers": "Message to Organizers (optional)",
+      "commentsPlaceholder": "Any questions or comments for the organizers...",
+      "reasonForDeclining": "Reason for declining",
+      "declinePlaceholder": "Please let us know why you can't participate...",
+      "reasonRequired": "A reason is required to decline",
+      "submitting": "Submitting...",
+      "submit": "Submit Response",
+      "failedToSubmit": "Failed to submit response",
+      "submitted": "Response Submitted!",
+      "thankYouResponse": "Thank you, {{name}}, for your response.",
+      "whatsNext": "What's Next?",
+      "contentDeadline": "Content submission deadline:",
+      "completeProfile": "Complete Your Profile"
+    },
+    "profile": {
+      "invalidLink": "Invalid Link",
+      "invalidLinkMessage": "This page requires a valid profile link from your email.",
+      "backToHome": "Back to Home",
+      "loadingAria": "Loading profile",
+      "loading": "Loading Profile...",
+      "loadingMessage": "Please wait while we load your profile.",
+      "linkExpired": "Link Expired",
+      "linkExpiredMessage": "This profile link has expired. Please contact the event organizers.",
+      "invalidLinkNotValid": "This profile link is not valid.",
+      "genericError": "Error",
+      "genericErrorMessage": "An error occurred while loading your profile.",
+      "unexpectedError": "An unexpected error occurred.",
+      "pageTitle": "Your Speaker Profile",
+      "pageSubtitle": "Update your information for event materials",
+      "profileCompleteness": "Profile Completeness",
+      "completeProfileHint": "Complete your profile for better visibility",
+      "missing": "Missing:",
+      "basicInfo": "Basic Information",
+      "emailReadOnly": "Email (read-only)",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "bioExceeds": "Bio must not exceed 500 characters",
+      "maxExpertiseAreas": "Maximum 10 expertise areas allowed",
+      "maxSpeakingTopics": "Maximum 10 speaking topics allowed",
+      "socialLinks": "Social Links",
+      "linkedInUrl": "LinkedIn URL",
+      "invalidLinkedIn": "Must be a valid LinkedIn URL",
+      "contentSubmissionSection": "Content Submission",
+      "assignedTo": "You're assigned to:",
+      "contentSubmitDescription": "Submit your presentation title, abstract, and materials for review.",
+      "submitContent": "Submit Your Content",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "savedSuccessfully": "Profile updated successfully!",
+      "saveFailed": "Failed to save profile"
+    },
+    "photo": {
+      "invalidFileType": "Invalid file type. Accepted formats: JPEG, PNG, WebP",
+      "fileTooLarge": "File size must be less than 5MB",
+      "changePhoto": "Change photo",
+      "dragDropHere": "Drag and drop a photo here",
+      "orClickBrowse": "or click to browse",
+      "supportedFormats": "JPEG, PNG, WebP (max 5MB)",
+      "uploading": "Uploading...",
+      "cancel": "Cancel",
+      "uploadAria": "Upload profile photo"
+    },
+    "magicLogin": {
+      "processing": "Processing login...",
+      "redirecting": "Redirecting to dashboard...",
+      "invalidLinkTitle": "Link Invalid",
+      "defaultError": "This link is no longer valid. Please contact the organizer."
     }
   },
   "archive": {
@@ -551,6 +687,11 @@
     "deleteConfirmation": {
       "title": "Delete Notification",
       "message": "Are you sure you want to delete this notification?"
+    },
+    "notificationFeed": "Notification feed",
+    "priority": {
+      "urgent": "URGENT",
+      "high": "HIGH"
     }
   },
   "emailTemplates": {
@@ -592,6 +733,30 @@
     "errorTitle": "Event could not be loaded",
     "errorMessage": "Please check your network connection and try again.",
     "retryButton": "Retry"
+  },
+  "companySearch": {
+    "noOptions": "No companies found",
+    "searchAriaLabel": "Search companies",
+    "clearSearchAriaLabel": "Clear search"
+  },
+  "countdown": {
+    "nextEvent": "Next Event",
+    "today": "Today!",
+    "tomorrow": "Tomorrow!",
+    "daysUntil": "{{count}} days until event"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try Again",
+    "unexpectedError": "We're sorry for the inconvenience. An unexpected error occurred.",
+    "devDetails": "Error details (dev only):",
+    "refreshPage": "Refresh Page",
+    "goHome": "Go to Home"
+  },
+  "bootstrap": {
+    "loading": "Loading BATbern...",
+    "configFailed": "Configuration Load Failed",
+    "reloadPage": "Reload Page"
   },
   "admin": {
     "tabs": {

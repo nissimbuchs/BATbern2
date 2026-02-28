@@ -34,6 +34,130 @@
       }
     }
   },
+  "confirmationPage": {
+    "loading": "Loading confirmation...",
+    "notFound": {
+      "title": "Registration not found",
+      "message": "Please check your confirmation code and try again."
+    },
+    "copyCode": "Copy confirmation code",
+    "qrCodeAlt": "Registration QR Code",
+    "qrCodeTitle": "Your Check-In QR Code",
+    "detailsTitle": "Registration Details",
+    "shareLabel": "Share with your network:",
+    "registerAnother": "Register Another Person",
+    "viewEventDetails": "View Event Details"
+  },
+  "successPage": {
+    "pendingTitle": "Registration Pending",
+    "pendingMessage": "If you submitted a registration, please check your email for the confirmation link.",
+    "pendingLinkValidity": "The confirmation link is valid for 48 hours.",
+    "title": "Registration Submitted!",
+    "subtitle": "Check your email to confirm your registration",
+    "emailSentTitle": "Confirmation Email Sent",
+    "noEmailTitle": "Didn't receive the email?",
+    "noEmailCheck1": "Check your spam/junk folder",
+    "noEmailCheck2": "Make sure you entered the correct email address",
+    "noEmailCheck3": "Wait a few minutes and check again",
+    "createAccountTitle": "Create an Account to Manage Your Registrations",
+    "createAccountText": "After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Your Details",
+      "step2Progress": "2. Confirm Registration",
+      "step1Title": "Step 1: Your Details",
+      "step2Title": "Step 2: Confirm Registration"
+    },
+    "buttons": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "back": "← Back",
+      "next": "Next →",
+      "complete": "Complete Registration",
+      "submitting": "Submitting..."
+    },
+    "errors": {
+      "fillRequired": "Please fill in all required fields correctly.",
+      "acceptTerms": "You must accept the terms and conditions to register.",
+      "failed": "Registration failed. Please try again."
+    },
+    "cancelConfirm": "Are you sure you want to cancel registration?"
+  },
+  "personalDetails": {
+    "title": "Personal Information",
+    "subtitle": "Please provide your details to register for the event.",
+    "fields": {
+      "firstName": "First Name *",
+      "lastName": "Last Name *",
+      "emailAddress": "Email Address *",
+      "emailHelper": "We'll send your ticket and event updates here",
+      "company": "Company *",
+      "role": "Role *"
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "invalidEmail": "Invalid email address",
+      "companyRequired": "Company is required",
+      "roleRequired": "Role is required"
+    },
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "email": "john.smith@company.ch",
+      "company": "Search for your company...",
+      "role": "Senior Developer"
+    }
+  },
+  "confirmStep": {
+    "title": "Review & Confirm",
+    "subtitle": "Please review your information and complete your registration.",
+    "personalInfo": "Personal Information",
+    "commPref": {
+      "title": "Communication Preferences",
+      "reminders": "Send me event reminders (1 week and 1 day before)",
+      "newsletter": "Subscribe to BATbern newsletter (monthly updates)"
+    },
+    "specialRequests": {
+      "label": "Special Requests",
+      "optional": "(Optional)",
+      "placeholder": "Dietary requirements, accessibility needs, etc.",
+      "helper": "Let us know if you have any dietary requirements or accessibility needs."
+    },
+    "terms": {
+      "prefix": "I agree to the",
+      "termsLink": "terms and conditions",
+      "separator": "and",
+      "privacyLink": "privacy policy",
+      "required": "*",
+      "error": "You must accept the terms and conditions to complete registration."
+    },
+    "account": {
+      "title": "Want to manage all your registrations in one place?",
+      "message": "After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
+    }
+  },
+  "success": {
+    "title": "Registration Submitted!",
+    "subtitle": "Check your email to confirm your registration",
+    "emailSent": "Confirmation Email Sent",
+    "emailSentTo": "We've sent a confirmation email to",
+    "clickLink": "Click the link in the email to confirm your registration.",
+    "validFor": "This link is valid for",
+    "valid": "24 hours",
+    "didntReceive": "Didn't receive the email?",
+    "checkSpam": "Check your spam folder",
+    "checkEmail": "Verify the email address is correct",
+    "waitMinutes": "Wait a few minutes and try again",
+    "close": "Close"
+  },
+  "companySearch": {
+    "error": "Error loading companies",
+    "noResults": "No existing company found",
+    "createNew": "You can continue with \"{{value}}\" as a new company",
+    "minChars": "Type at least 2 characters to search"
+  },
   "confirmation": {
     "loading": {
       "title": "Confirming Your Registration...",

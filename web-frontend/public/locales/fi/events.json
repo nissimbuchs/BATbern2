@@ -266,7 +266,8 @@
       "eventRequired": "Valitse tapahtuma tai tallenna mallina",
       "updateTaskFailed": "Tehtävän päivittäminen epäonnistui",
       "createTaskFailed": "Tehtävän luominen epäonnistui"
-    }
+    },
+    "criticalTasksWidget": "[MISSING] Critical tasks widget"
   },
   "form": {
     "createEvent": "Luo uusi tapahtuma",
@@ -348,7 +349,10 @@
     "allStatuses": "Kaikki tilat",
     "allYears": "Kaikki vuodet",
     "allTypes": "Kaikki tyypit",
-    "clear": "Tyhjennä suodattimet"
+    "clear": "Tyhjennä suodattimet",
+    "searchAriaLabel": "[MISSING] Search events",
+    "clearSearchAriaLabel": "[MISSING] Clear search",
+    "clearAllAriaLabel": "[MISSING] Clear all filters"
   },
   "sorting": {
     "sort": "Järjestä",
@@ -742,7 +746,9 @@
     "closeMenu": "Sulje valikko",
     "loading": "Ladataan",
     "error": "Virhe",
-    "success": "Onnistui"
+    "success": "Onnistui",
+    "noEventsFound": "[MISSING] No events found",
+    "eventList": "[MISSING] Event list"
   },
   "common": {
     "cancel": "Peruuta",
@@ -771,6 +777,8 @@
     "keyMetrics": "Keskeiset mittarit"
   },
   "public": {
+    "loadingEventDetails": "[MISSING] Loading event details",
+    "registerFor": "[MISSING] Register for",
     "comingSoon": "Tulossa pian...",
     "preview": {
       "title": "Esikatselutila",

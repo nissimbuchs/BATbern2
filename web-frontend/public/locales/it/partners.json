@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Pagina {{current}} di {{total}}",
-    "partners": "{{count}} partner",
-    "partners_plural": "{{count}} partner",
     "firstPage": "Prima pagina",
     "previousPage": "Pagina precedente",
     "nextPage": "Pagina successiva",
     "lastPage": "Ultima pagina",
-    "ariaLabel": "Paginazione elenco partner"
+    "ariaLabel": "Paginazione elenco partner",
+    "partners_one": "{{count}} partner",
+    "partners_other": "{{count}} partner"
   },
   "empty": {
     "noPartners": "Nessun partner trovato",
@@ -67,7 +67,8 @@
   "loading": "Caricamento partner...",
   "error": {
     "failedToLoad": "Impossibile caricare i partner",
-    "tryAgain": "Riprova più tardi"
+    "tryAgain": "Riprova più tardi",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partner trovato",
@@ -167,20 +168,25 @@
       "titleLabel": "Titolo",
       "contentLabel": "Contenuto",
       "htmlSupported": "La formattazione HTML è supportata",
-      "noNotes": "Nessuna nota ancora"
+      "noNotes": "Nessuna nota ancora",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Impostazioni",
       "activePartnership": "Partnership attiva",
       "exportData": "Esporta dati del partner",
-      "deletePartner": "Elimina dati del partner"
+      "deletePartner": "Elimina dati del partner",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Panoramica",
       "contacts": "Contatti",
       "meetings": "Riunioni",
       "analytics": "Analisi",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Dettagli della partnership",
@@ -197,6 +203,16 @@
         "accountManager": "Account manager dedicato",
         "eventAccess": "Accesso agli eventi"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

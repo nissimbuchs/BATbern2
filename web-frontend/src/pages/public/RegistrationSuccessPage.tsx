@@ -8,12 +8,14 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
 import { CheckCircle2, Mail, UserPlus, ArrowLeft } from 'lucide-react';
 
 const RegistrationSuccessPage = () => {
+  const { t } = useTranslation('registration');
   const [email, setEmail] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -51,11 +53,9 @@ const RegistrationSuccessPage = () => {
       <PublicLayout>
         <div className="container mx-auto px-4 py-24 max-w-2xl text-center">
           <Mail className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-light mb-4">Registration Pending</h1>
-          <p className="text-zinc-400 mb-4">
-            If you submitted a registration, please check your email for the confirmation link.
-          </p>
-          <p className="text-sm text-zinc-500 mb-8">The confirmation link is valid for 48 hours.</p>
+          <h1 className="text-3xl font-light mb-4">{t('successPage.pendingTitle')}</h1>
+          <p className="text-zinc-400 mb-4">{t('successPage.pendingMessage')}</p>
+          <p className="text-sm text-zinc-500 mb-8">{t('successPage.pendingLinkValidity')}</p>
           <Button asChild variant="outline">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -73,14 +73,14 @@ const RegistrationSuccessPage = () => {
         {/* Success Header */}
         <div className="text-center mb-8">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h1 className="text-4xl font-light mb-2">Registration Submitted!</h1>
-          <p className="text-xl text-zinc-400">Check your email to confirm your registration</p>
+          <h1 className="text-4xl font-light mb-2">{t('successPage.title')}</h1>
+          <p className="text-xl text-zinc-400">{t('successPage.subtitle')}</p>
         </div>
 
         {/* Email Confirmation Card */}
         <Card className="p-8 mb-8 text-center">
           <Mail className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-light mb-4">Confirmation Email Sent</h2>
+          <h2 className="text-2xl font-light mb-4">{t('successPage.emailSentTitle')}</h2>
           {email && (
             <p className="text-zinc-300 mb-4">
               We've sent a confirmation email to{' '}
@@ -93,11 +93,13 @@ const RegistrationSuccessPage = () => {
           </p>
 
           <div className="border-t border-zinc-800 pt-6 mt-6">
-            <h3 className="text-sm font-medium text-zinc-300 mb-2">Didn't receive the email?</h3>
+            <h3 className="text-sm font-medium text-zinc-300 mb-2">
+              {t('successPage.noEmailTitle')}
+            </h3>
             <ul className="text-sm text-zinc-400 space-y-1">
-              <li>• Check your spam/junk folder</li>
-              <li>• Make sure you entered the correct email address</li>
-              <li>• Wait a few minutes and check again</li>
+              <li>• {t('successPage.noEmailCheck1')}</li>
+              <li>• {t('successPage.noEmailCheck2')}</li>
+              <li>• {t('successPage.noEmailCheck3')}</li>
             </ul>
           </div>
         </Card>
@@ -107,13 +109,8 @@ const RegistrationSuccessPage = () => {
           <div className="flex items-start gap-3">
             <UserPlus className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-lg font-light mb-2">
-                Create an Account to Manage Your Registrations
-              </h3>
-              <p className="text-sm text-zinc-400 mb-4">
-                After confirming your registration via email, you can create an account to view and
-                manage all your event registrations in one place.
-              </p>
+              <h3 className="text-lg font-light mb-2">{t('successPage.createAccountTitle')}</h3>
+              <p className="text-sm text-zinc-400 mb-4">{t('successPage.createAccountText')}</p>
               {email && (
                 <Button asChild variant="outline" size="sm">
                   <Link to={`/auth/register?email=${encodeURIComponent(email)}`}>

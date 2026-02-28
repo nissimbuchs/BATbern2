@@ -485,7 +485,11 @@
         "fileTooLarge": "Datei z'gross. Maximali Grösse isch 50MB.",
         "invalidType": "Ungültige Dateityp. Nur PPTX, PDF und KEY-Dateie si erlaubt.",
         "uploadFailed": "Upload fehlgschlage. Bitte nomol versuche."
-      }
+      },
+      "uploadAria": "[MISSING] Upload presentation file"
+    },
+    "photo": {
+      "uploadAria": "[MISSING] Upload profile photo"
     }
   },
   "archive": {
@@ -539,6 +543,10 @@
     "deleteConfirmation": {
       "title": "Benarichtigig lösche",
       "message": "Bisch sicher, dass du die Benarichtigig lösche wötsch?"
+    },
+    "priority": {
+      "urgent": "[MISSING] URGENT",
+      "high": "[MISSING] HIGH"
     }
   },
   "emailTemplates": {

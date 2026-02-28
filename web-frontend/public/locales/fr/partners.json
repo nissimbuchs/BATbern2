@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Page {{current}} sur {{total}}",
-    "partners": "{{count}} partenaire",
-    "partners_plural": "{{count}} partenaires",
     "firstPage": "Première page",
     "previousPage": "Page précédente",
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
-    "ariaLabel": "Pagination de la liste des partenaires"
+    "ariaLabel": "Pagination de la liste des partenaires",
+    "partners_one": "{{count}} partenaire",
+    "partners_other": "{{count}} partenaires"
   },
   "empty": {
     "noPartners": "Aucun partenaire trouvé",
@@ -67,7 +67,8 @@
   "loading": "Chargement des partenaires...",
   "error": {
     "failedToLoad": "Impossible de charger les partenaires",
-    "tryAgain": "Veuillez réessayer plus tard"
+    "tryAgain": "Veuillez réessayer plus tard",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partenaire trouvé",
@@ -167,20 +168,25 @@
       "titleLabel": "Titre",
       "contentLabel": "Contenu",
       "htmlSupported": "La mise en forme HTML est prise en charge",
-      "noNotes": "Aucune note pour l'instant"
+      "noNotes": "Aucune note pour l'instant",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Paramètres",
       "activePartnership": "Partenariat actif",
       "exportData": "Exporter les données du partenaire",
-      "deletePartner": "Supprimer les données du partenaire"
+      "deletePartner": "Supprimer les données du partenaire",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Aperçu",
       "contacts": "Contacts",
       "meetings": "Réunions",
       "analytics": "Analyses",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Détails du partenariat",
@@ -197,6 +203,16 @@
         "accountManager": "Chargé de compte dédié",
         "eventAccess": "Accès aux événements"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

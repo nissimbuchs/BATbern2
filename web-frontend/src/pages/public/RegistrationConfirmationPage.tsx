@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { createEvent, EventAttributes } from 'ics';
@@ -24,6 +25,7 @@ import { eventApiClient } from '@/services/eventApiClient';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 
 const RegistrationConfirmationPage = () => {
+  const { t } = useTranslation('registration');
   const params = useParams<{ confirmationCode: string; eventCode?: string }>();
   const confirmationCode = params.confirmationCode;
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
@@ -169,15 +171,17 @@ const RegistrationConfirmationPage = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center py-24">
-            <p className="text-zinc-400">Loading confirmation...</p>
+            <p className="text-zinc-400">{t('confirmationPage.loading')}</p>
           </div>
         )}
 
         {/* Error State */}
         {error && (
           <div className="text-center py-24">
-            <h2 className="text-2xl font-light text-zinc-300 mb-4">Registration not found</h2>
-            <p className="text-zinc-400 mb-8">Please check your confirmation code and try again.</p>
+            <h2 className="text-2xl font-light text-zinc-300 mb-4">
+              {t('confirmationPage.notFound.title')}
+            </h2>
+            <p className="text-zinc-400 mb-8">{t('confirmationPage.notFound.message')}</p>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -193,7 +197,7 @@ const RegistrationConfirmationPage = () => {
             {/* Success Header */}
             <div className="text-center mb-8">
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-              <h1 className="text-4xl font-light mb-2">Registration Confirmed!</h1>
+              <h1 className="text-4xl font-light mb-2">{t('confirmation.success.title')}</h1>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <p className="text-xl text-zinc-300 font-mono">{registration.registrationCode}</p>
                 <Button
@@ -201,7 +205,7 @@ const RegistrationConfirmationPage = () => {
                   size="sm"
                   onClick={handleCopyCode}
                   className="h-8 w-8 p-0"
-                  aria-label="Copy confirmation code"
+                  aria-label={t('confirmationPage.copyCode')}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -211,9 +215,13 @@ const RegistrationConfirmationPage = () => {
             {/* QR Code Card */}
             {qrCodeUrl && (
               <Card className="p-8 mb-8 text-center">
-                <h2 className="text-xl font-light mb-4">Your Check-In QR Code</h2>
+                <h2 className="text-xl font-light mb-4">{t('confirmationPage.qrCodeTitle')}</h2>
                 <div className="inline-block p-4 bg-white rounded-lg mb-4">
-                  <img src={qrCodeUrl} alt="Registration QR Code" className="w-64 h-64" />
+                  <img
+                    src={qrCodeUrl}
+                    alt={t('confirmationPage.qrCodeAlt')}
+                    className="w-64 h-64"
+                  />
                 </div>
                 <p className="text-sm text-zinc-400">
                   Present this QR code at the event for quick check-in
@@ -223,31 +231,31 @@ const RegistrationConfirmationPage = () => {
 
             {/* Registration Details Card */}
             <Card className="p-6 mb-8">
-              <h2 className="text-xl font-light mb-4">Registration Details</h2>
+              <h2 className="text-xl font-light mb-4">{t('confirmationPage.detailsTitle')}</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Name:</span>
+                  <span className="text-zinc-400">{t('common:labels.name')}:</span>
                   <span className="text-zinc-100">
                     {registration.firstName} {registration.lastName}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Email:</span>
+                  <span className="text-zinc-400">{t('common:labels.email')}:</span>
                   <span className="text-zinc-100">{registration.email}</span>
                 </div>
                 {registration.company && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Company:</span>
+                    <span className="text-zinc-400">{t('common:labels.company')}:</span>
                     <span className="text-zinc-100">{registration.company}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Event:</span>
+                  <span className="text-zinc-400">{t('common:labels.event')}:</span>
                   <span className="text-zinc-100">{registration.eventTitle}</span>
                 </div>
                 {registration.eventDate && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Date:</span>
+                    <span className="text-zinc-400">{t('common:labels.date')}:</span>
                     <span className="text-zinc-100">
                       {new Date(registration.eventDate).toLocaleDateString('de-CH', {
                         weekday: 'long',
@@ -299,7 +307,9 @@ const RegistrationConfirmationPage = () => {
 
               {/* Social Sharing */}
               <div className="space-y-3" data-testid="social-sharing">
-                <p className="text-sm text-zinc-400 text-center">Share with your network:</p>
+                <p className="text-sm text-zinc-400 text-center">
+                  {t('confirmationPage.shareLabel')}
+                </p>
                 <div className="grid grid-cols-3 gap-3">
                   <Button variant="outline" onClick={handleLinkedInShare} className="flex-1">
                     <Share2 className="h-4 w-4 mr-2" />
@@ -320,10 +330,10 @@ const RegistrationConfirmationPage = () => {
             {/* Navigation Links */}
             <div className="grid grid-cols-2 gap-4 mb-8">
               <Button asChild variant="outline">
-                <Link to={`/register/${eventCode}`}>Register Another Person</Link>
+                <Link to={`/register/${eventCode}`}>{t('confirmationPage.registerAnother')}</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to={`/events/${eventCode}`}>View Event Details</Link>
+                <Link to={`/events/${eventCode}`}>{t('confirmationPage.viewEventDetails')}</Link>
               </Button>
             </div>
 

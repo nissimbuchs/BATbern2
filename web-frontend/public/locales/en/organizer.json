@@ -457,6 +457,24 @@
       "confirm": "Select this topic",
       "cancel": "Keep exploring",
       "saveError": "Failed to save topic selection. Please try again."
-    }
+    },
+    "noEventCode": "No event code provided"
+  },
+  "livePreview": {
+    "devicePreviewMode": "device preview mode",
+    "desktopPreview": "Desktop preview",
+    "mobilePreview": "Mobile preview",
+    "printPreview": "Print preview",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "print": "Print",
+    "refreshPreview": "Refresh preview",
+    "switchedTo": "Switched to {{device}} preview",
+    "refreshingPreview": "Refreshing preview...",
+    "failedToLoad": "Failed to load preview. Please try again.",
+    "iframeTitle": "Event preview",
+    "iframeAriaLabel": "Event content preview",
+    "previewModeCaption": "Preview Mode: {{mode}} | Phase: {{phase}}",
+    "deviceCaption": "Device: {{device}} ({{width}} x {{height}})"
   }
 }

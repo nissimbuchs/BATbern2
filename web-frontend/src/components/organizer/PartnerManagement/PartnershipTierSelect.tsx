@@ -9,6 +9,7 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { PARTNERSHIP_TIERS, PartnershipLevel } from './partnershipTiers.constants';
 
 interface PartnershipTierSelectProps {
@@ -42,18 +43,20 @@ export const PartnershipTierSelect: React.FC<PartnershipTierSelectProps> = ({
   disabled = false,
   required = true,
 }) => {
+  const { t } = useTranslation('partners');
+
   const handleChange = (event: SelectChangeEvent) => {
     onChange(event.target.value);
   };
 
   return (
     <FormControl fullWidth error={!!error} disabled={disabled} required={required}>
-      <InputLabel id="partnership-tier-label">Partnership Tier</InputLabel>
+      <InputLabel id="partnership-tier-label">{t('detail.overviewTab.tier')}</InputLabel>
       <Select
         labelId="partnership-tier-label"
         id="partnership-tier-select"
         value={value}
-        label="Partnership Tier"
+        label={t('detail.overviewTab.tier')}
         onChange={handleChange}
         data-testid="partnership-tier-select"
         renderValue={(selected) => {

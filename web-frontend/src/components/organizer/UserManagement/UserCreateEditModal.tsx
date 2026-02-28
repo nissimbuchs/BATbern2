@@ -341,7 +341,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                       <label htmlFor="modal-profile-photo-upload">
                         <Tooltip title={t('modal.editUser.uploadPhoto', 'Upload Photo')}>
                           <IconButton
-                            aria-label="Upload profile photo"
+                            aria-label={t('modal.editUser.uploadPhotoAria')}
                             component="span"
                             size="small"
                             disabled={isUploadingPhoto}
@@ -375,7 +375,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                 {profilePictureUrl && (
                   <Tooltip title={t('modal.editUser.removePhoto', 'Remove Photo')}>
                     <IconButton
-                      aria-label="Remove profile photo"
+                      aria-label={t('modal.editUser.removePhotoAria')}
                       size="small"
                       onClick={handlePhotoRemove}
                       disabled={isUploadingPhoto}

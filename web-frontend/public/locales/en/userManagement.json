@@ -93,6 +93,10 @@
       "cascadeWarning": "All associated data will also be deleted.",
       "cannotDelete": "This user cannot be deleted",
       "lastOrganizerWarning": "You cannot delete the last organizer. There must be at least {{count}} organizers in the system."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Upload profile photo",
+      "removePhotoAria": "Remove profile photo"
     }
   },
   "pagination": {
@@ -216,11 +220,99 @@
     },
     "badges": {
       "synthetic": "Synthetic",
-      "eventsCount": "{{count}} events"
+      "eventsCount": "{{count}} events",
+      "existing": "Existing",
+      "new": "New"
     },
     "noParticipants": "This user has not participated in any events yet.",
     "loadingEvents": "Loading events...",
-    "errorLoadingEvents": "Failed to load event participations"
+    "errorLoadingEvents": "Failed to load event participations",
+    "aria": {
+      "statusLabel": "Import status: {{label}}",
+      "dropzone": "CSV file upload dropzone. Drag and drop a CSV file or click to select",
+      "fileInput": "File input for CSV upload",
+      "previewTable": "Participant import preview table",
+      "participantTable": "Participants with import status",
+      "importProgress": "Import progress",
+      "closeModal": "Close import modal",
+      "startImport": "Start importing participants from CSV file"
+    },
+    "parseError": "Failed to parse CSV",
+    "importFailed": "Import failed"
+  },
+  "settings": {
+    "tabs": {
+      "account": "Account",
+      "notifications": "Notifications",
+      "privacy": "Privacy"
+    },
+    "account": {
+      "title": "Account Settings",
+      "emailStatus": "Email address cannot be changed",
+      "changePassword": "Change Password",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeAuto": "Auto (follow system)",
+      "timezone": "Timezone",
+      "save": "Save Account Settings"
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "epic7Notice": "Advanced notification settings coming in a future update.",
+      "channels": "Notification Channels",
+      "channelEmail": "Email Notifications",
+      "channelInApp": "In-App Notifications",
+      "channelPush": "Push Notifications",
+      "frequency": "Notification Frequency",
+      "frequencyImmediate": "Immediate",
+      "frequencyDaily": "Daily Digest",
+      "frequencyWeekly": "Weekly Digest",
+      "save": "Save Notification Settings"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscribe": "Subscribe to newsletter",
+      "description": "Receive monthly updates about BATbern events"
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "visibility": "Profile Visibility",
+      "visibilityPublic": "Public",
+      "visibilityMembersOnly": "Members Only",
+      "visibilityPrivate": "Private",
+      "infoDisplay": "Information Display",
+      "showEmail": "Show email address",
+      "showCompany": "Show company affiliation",
+      "showActivity": "Show activity history",
+      "communication": "Communication",
+      "allowMessaging": "Allow direct messages from other users",
+      "viewPolicy": "View Privacy Policy",
+      "save": "Save Privacy Settings"
+    }
+  },
+  "profile": {
+    "personalInfo": "Personal Information",
+    "editProfile": "Edit Profile",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "bio": "Bio",
+    "bioValidation": "Bio must be {{max}} characters or less",
+    "saveChanges": "Save Changes",
+    "removePhotoConfirm": "Are you sure you want to remove your profile photo?",
+    "labelName": "Name:",
+    "labelEmail": "Email:",
+    "labelCompany": "Company:",
+    "labelBio": "Bio:",
+    "recentActivity": "Recent Activity",
+    "noActivity": "No recent activity",
+    "viewAll": "View All →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Upload Photo",
+    "removeTooltip": "Remove Photo",
+    "verified": "Verified",
+    "memberSince": "Member since {{date}}"
   },
   "userDetail": {
     "tabs": {

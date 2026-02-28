@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Sivu {{current}} / {{total}}",
-    "partners": "{{count}} kumppani",
-    "partners_plural": "{{count}} kumppania",
     "firstPage": "Ensimmäinen sivu",
     "previousPage": "Edellinen sivu",
     "nextPage": "Seuraava sivu",
     "lastPage": "Viimeinen sivu",
-    "ariaLabel": "Kumppaniluettelon sivutus"
+    "ariaLabel": "Kumppaniluettelon sivutus",
+    "partners_one": "{{count}} kumppani",
+    "partners_other": "{{count}} kumppania"
   },
   "empty": {
     "noPartners": "Kumppaneita ei löydetty",
@@ -67,7 +67,8 @@
   "loading": "Ladataan kumppaneita...",
   "error": {
     "failedToLoad": "Kumppaneiden lataaminen epäonnistui",
-    "tryAgain": "Yritä uudelleen myöhemmin"
+    "tryAgain": "Yritä uudelleen myöhemmin",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} kumppani löydetty",
@@ -167,20 +168,25 @@
       "titleLabel": "Otsikko",
       "contentLabel": "Sisältö",
       "htmlSupported": "HTML-muotoilu on tuettu",
-      "noNotes": "Ei muistiinpanoja vielä"
+      "noNotes": "Ei muistiinpanoja vielä",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Asetukset",
       "activePartnership": "Aktiivinen kumppanuus",
       "exportData": "Vie kumppanin tiedot",
-      "deletePartner": "Poista kumppanin tiedot"
+      "deletePartner": "Poista kumppanin tiedot",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Yleiskatsaus",
       "contacts": "Yhteystiedot",
       "meetings": "Kokoukset",
       "analytics": "Analytiikka",
-      "settings": "Asetukset"
+      "settings": "Asetukset",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Kumppanuuden tiedot",
@@ -197,6 +203,16 @@
         "accountManager": "Omistettu asiakaspäällikkö",
         "eventAccess": "Pääsy tapahtumiin"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

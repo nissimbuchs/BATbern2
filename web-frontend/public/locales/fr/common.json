@@ -302,12 +302,24 @@
       "importButtonWithCount": "Importer {{count}} événements",
       "columns": {
         "eventNumber": "#",
-        "organizer": "Organisateur"
+        "organizer": "Organisateur",
+        "category": "[MISSING] Category"
       },
       "errors": {
         "invalidFile": "Type de fichier invalide. Veuillez télécharger un fichier JSON.",
         "parseError": "Échec de l'analyse du fichier JSON : {{error}}",
         "importFailed": "Échec de l'importation de l'événement {{number}} : {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
+        "import": "[MISSING] Import",
+        "ignore": "[MISSING] Ignore",
+        "fieldTitle": "[MISSING] Title:",
+        "fieldDescription": "[MISSING] Description:",
+        "fieldTopic": "[MISSING] Topic/Category:",
+        "fieldDate": "[MISSING] Date:",
+        "fieldVenue": "[MISSING] Venue:",
+        "fieldOrganizer": "[MISSING] Organizer:"
       }
     }
   },
@@ -449,7 +461,19 @@
       "nextStepsInfo": "L'organisateur examinera votre soumission et vous contactera si des modifications sont nécessaires.",
       "revisionRequested": "Révision demandée",
       "reviewedBy": "Révisé par",
-      "on": "le"
+      "on": "le",
+      "loadingContent": "[MISSING] Loading content...",
+      "linkHasExpired": "[MISSING] Link Has Expired",
+      "invalidLinkNotValidMessage": "[MISSING] This link is not valid. Please check your email for the correct link.",
+      "cannotSubmit": "[MISSING] Cannot Submit Content",
+      "cannotSubmitMessage": "[MISSING] You cannot submit content at this time. Please accept the invitation first or contact the organizer for assistance.",
+      "goToDashboard": "[MISSING] Go to Speaker Dashboard",
+      "submitYourContent": "[MISSING] Submit Your Content",
+      "dashboard": "[MISSING] Dashboard",
+      "editProfile": "[MISSING] Edit Profile",
+      "titlePlaceholder": "[MISSING] Enter your presentation title",
+      "abstractPlaceholder": "[MISSING] Describe what your presentation will cover...",
+      "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
       "dragDropTitle": "Télécharger la présentation",
@@ -466,7 +490,117 @@
         "fileTooLarge": "Le fichier est trop volumineux. La taille maximale est de 50 Mo.",
         "invalidType": "Type de fichier invalide. Seuls les fichiers PPTX, PDF et KEY sont autorisés.",
         "uploadFailed": "Échec du téléchargement. Veuillez réessayer."
-      }
+      },
+      "presentationFile": "[MISSING] Presentation file",
+      "changeFile": "[MISSING] Change file",
+      "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
+      "orClickBrowse": "[MISSING] or click to browse",
+      "invalidFileType": "[MISSING] Invalid file type. Accepted formats: PPTX, PDF, KEY",
+      "fileTooLarge": "[MISSING] File size must be less than 50MB",
+      "acceptedFormats": "[MISSING] Accepted formats: PPTX, PDF, KEY (max 50MB)",
+      "uploadAria": "[MISSING] Upload presentation file"
+    },
+    "invitationResponse": {
+      "invalidLink": "[MISSING] Invalid Link",
+      "invalidLinkMessage": "[MISSING] This page requires a valid invitation link from your email.",
+      "loading": "[MISSING] Loading Invitation...",
+      "loadingMessage": "[MISSING] Please wait while we verify your link.",
+      "loadingAria": "[MISSING] Loading invitation",
+      "needHelp": "[MISSING] Need Help?",
+      "checkEmail": "[MISSING] Check your email for a more recent invitation link",
+      "requestNew": "[MISSING] Request a new invitation from the organizers",
+      "alreadyResponded": "[MISSING] Already Responded",
+      "yourResponse": "[MISSING] Your Response",
+      "commentsPlaceholder": "[MISSING] Any questions or comments for the organizers...",
+      "declinePlaceholder": "[MISSING] Please let us know why you can't participate...",
+      "submit": "[MISSING] Submit Response",
+      "submitted": "[MISSING] Response Submitted!",
+      "whatsNext": "[MISSING] What's Next?",
+      "completeProfile": "[MISSING] Complete Your Profile",
+      "linkNotValid": "[MISSING] This invitation link is not valid.",
+      "backToHome": "[MISSING] Back to Home",
+      "linkExpired": "[MISSING] Link Expired",
+      "linkExpiredMessage": "[MISSING] This invitation link has expired. Please contact the event organizers.",
+      "linkAlreadyUsed": "[MISSING] Link Already Used",
+      "linkAlreadyUsedMessage": "[MISSING] This invitation link has already been used.",
+      "genericError": "[MISSING] Error",
+      "genericErrorMessage": "[MISSING] An error occurred while validating your invitation.",
+      "unexpectedErrorMessage": "[MISSING] An unexpected error occurred.",
+      "contactOrganizersAt": "[MISSING] Contact the event organizers at",
+      "alreadyRespondedOn": "[MISSING] You have already responded to this invitation on {{date}}.",
+      "yourResponseWas": "[MISSING] Your response:",
+      "accepted": "[MISSING] Accepted",
+      "declined": "[MISSING] Declined",
+      "tentative": "[MISSING] Tentative",
+      "manageProfileText": "[MISSING] You can manage your speaker profile and content submissions from your speaker dashboard.",
+      "reconsiderText": "[MISSING] If you'd like to reconsider, please contact the event organizers directly.",
+      "invitedToSpeak": "[MISSING] You're Invited to Speak at",
+      "respondBy": "[MISSING] Respond by",
+      "dear": "[MISSING] Dear",
+      "invitationBody": "[MISSING] We would be honored to have you as a speaker at this event. Please let us know if you can join us by selecting one of the options below.",
+      "accept": "[MISSING] Accept",
+      "decline": "[MISSING] Decline",
+      "messageToOrganizers": "[MISSING] Message to Organizers (optional)",
+      "reasonForDeclining": "[MISSING] Reason for declining",
+      "reasonRequired": "[MISSING] A reason is required to decline",
+      "submitting": "[MISSING] Submitting...",
+      "failedToSubmit": "[MISSING] Failed to submit response",
+      "thankYouResponse": "[MISSING] Thank you, {{name}}, for your response.",
+      "contentDeadline": "[MISSING] Content submission deadline:"
+    },
+    "profile": {
+      "invalidLink": "[MISSING] Invalid Link",
+      "invalidLinkMessage": "[MISSING] This page requires a valid profile link from your email.",
+      "backToHome": "[MISSING] Back to Home",
+      "loadingAria": "[MISSING] Loading profile",
+      "loading": "[MISSING] Loading Profile...",
+      "loadingMessage": "[MISSING] Please wait while we load your profile.",
+      "linkExpired": "[MISSING] Link Expired",
+      "linkExpiredMessage": "[MISSING] This profile link has expired. Please contact the event organizers.",
+      "invalidLinkNotValid": "[MISSING] This profile link is not valid.",
+      "genericError": "[MISSING] Error",
+      "genericErrorMessage": "[MISSING] An error occurred while loading your profile.",
+      "unexpectedError": "[MISSING] An unexpected error occurred.",
+      "pageTitle": "[MISSING] Your Speaker Profile",
+      "pageSubtitle": "[MISSING] Update your information for event materials",
+      "profileCompleteness": "[MISSING] Profile Completeness",
+      "completeProfileHint": "[MISSING] Complete your profile for better visibility",
+      "missing": "[MISSING] Missing:",
+      "basicInfo": "[MISSING] Basic Information",
+      "emailReadOnly": "[MISSING] Email (read-only)",
+      "bio": "[MISSING] Bio",
+      "bioPlaceholder": "[MISSING] Tell us about yourself...",
+      "bioExceeds": "[MISSING] Bio must not exceed 500 characters",
+      "maxExpertiseAreas": "[MISSING] Maximum 10 expertise areas allowed",
+      "maxSpeakingTopics": "[MISSING] Maximum 10 speaking topics allowed",
+      "socialLinks": "[MISSING] Social Links",
+      "linkedInUrl": "[MISSING] LinkedIn URL",
+      "invalidLinkedIn": "[MISSING] Must be a valid LinkedIn URL",
+      "contentSubmissionSection": "[MISSING] Content Submission",
+      "assignedTo": "[MISSING] You're assigned to:",
+      "contentSubmitDescription": "[MISSING] Submit your presentation title, abstract, and materials for review.",
+      "submitContent": "[MISSING] Submit Your Content",
+      "saving": "[MISSING] Saving...",
+      "saveChanges": "[MISSING] Save Changes",
+      "savedSuccessfully": "[MISSING] Profile updated successfully!",
+      "saveFailed": "[MISSING] Failed to save profile"
+    },
+    "photo": {
+      "invalidFileType": "[MISSING] Invalid file type. Accepted formats: JPEG, PNG, WebP",
+      "fileTooLarge": "[MISSING] File size must be less than 5MB",
+      "changePhoto": "[MISSING] Change photo",
+      "dragDropHere": "[MISSING] Drag and drop a photo here",
+      "orClickBrowse": "[MISSING] or click to browse",
+      "supportedFormats": "[MISSING] JPEG, PNG, WebP (max 5MB)",
+      "uploading": "[MISSING] Uploading...",
+      "cancel": "[MISSING] Cancel",
+      "uploadAria": "[MISSING] Upload profile photo"
+    },
+    "magicLogin": {
+      "processing": "[MISSING] Processing login...",
+      "redirecting": "[MISSING] Redirecting to dashboard...",
+      "invalidLinkTitle": "[MISSING] Link Invalid",
+      "defaultError": "[MISSING] This link is no longer valid. Please contact the organizer."
     }
   },
   "archive": {
@@ -520,6 +654,11 @@
     "deleteConfirmation": {
       "title": "Supprimer la notification",
       "message": "Êtes-vous sûr de vouloir supprimer cette notification ?"
+    },
+    "notificationFeed": "[MISSING] Notification feed",
+    "priority": {
+      "urgent": "[MISSING] URGENT",
+      "high": "[MISSING] HIGH"
     }
   },
   "emailTemplates": {
@@ -610,7 +749,9 @@
     "gridView": "Grid view",
     "listView": "List view",
     "sessions": "Sessions",
-    "topics": "Topics"
+    "topics": "Topics",
+    "firstName": "[MISSING] First Name",
+    "lastName": "[MISSING] Last Name"
   },
   "filters": {
     "status": {
@@ -621,5 +762,29 @@
       "confirmed": "Confirmed",
       "error": "Error"
     }
+  },
+  "companySearch": {
+    "noOptions": "[MISSING] No companies found",
+    "searchAriaLabel": "[MISSING] Search companies",
+    "clearSearchAriaLabel": "[MISSING] Clear search"
+  },
+  "countdown": {
+    "nextEvent": "[MISSING] Next Event",
+    "today": "[MISSING] Today!",
+    "tomorrow": "[MISSING] Tomorrow!",
+    "daysUntil": "[MISSING] {{count}} days until event"
+  },
+  "errors": {
+    "somethingWentWrong": "[MISSING] Something went wrong",
+    "tryAgain": "[MISSING] Try Again",
+    "unexpectedError": "[MISSING] We're sorry for the inconvenience. An unexpected error occurred.",
+    "devDetails": "[MISSING] Error details (dev only):",
+    "refreshPage": "[MISSING] Refresh Page",
+    "goHome": "[MISSING] Go to Home"
+  },
+  "bootstrap": {
+    "loading": "[MISSING] Loading BATbern...",
+    "configFailed": "[MISSING] Configuration Load Failed",
+    "reloadPage": "[MISSING] Reload Page"
   }
 }

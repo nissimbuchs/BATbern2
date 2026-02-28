@@ -89,7 +89,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Chip label={meeting.meetingType} size="small" variant="outlined" />
                         {meeting.inviteSentAt && (
-                          <Chip label="Invite Sent" size="small" color="success" />
+                          <Chip label={t('meetings.inviteSent')} size="small" color="success" />
                         )}
                       </Stack>
                     </Box>

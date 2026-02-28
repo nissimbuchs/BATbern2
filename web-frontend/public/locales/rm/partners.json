@@ -52,13 +52,13 @@
   },
   "pagination": {
     "page": "Pagina {{current}} da {{total}}",
-    "partners": "{{count}} partenari",
-    "partners_plural": "{{count}} partenaris",
     "firstPage": "Prima pagina",
     "previousPage": "Pagina precedenta",
     "nextPage": "Proxima pagina",
     "lastPage": "Ultima pagina",
-    "ariaLabel": "Paginaziun da la glista da partenaris"
+    "ariaLabel": "Paginaziun da la glista da partenaris",
+    "partners_one": "{{count}} partenari",
+    "partners_other": "{{count}} partenaris"
   },
   "empty": {
     "noPartners": "Nagins partenaris chattads",
@@ -67,7 +67,8 @@
   "loading": "Chargiar partenaris...",
   "error": {
     "failedToLoad": "Impussibel da chargiare partenaris",
-    "tryAgain": "Emprova puspè pli tard"
+    "tryAgain": "Emprova puspè pli tard",
+    "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partenari chattà",
@@ -167,20 +168,25 @@
       "titleLabel": "Titel",
       "contentLabel": "Cuntegn",
       "htmlSupported": "La furmatizaziun HTML è sustegnida",
-      "noNotes": "Naginas notas anc"
+      "noNotes": "Naginas notas anc",
+      "failedToLoadNotes": "[MISSING] Failed to load notes",
+      "deleteNote": "[MISSING] Delete note"
     },
     "settingsTab": {
       "title": "Parametras",
       "activePartnership": "Partnerada activa",
       "exportData": "Exportar datas dal partenari",
-      "deletePartner": "Stizzar datas dal partenari"
+      "deletePartner": "Stizzar datas dal partenari",
+      "accessDenied": "[MISSING] Access Denied",
+      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
     },
     "tabs": {
       "overview": "Survista",
       "contacts": "Contacts",
       "meetings": "Inscunters",
       "analytics": "Analiticas",
-      "settings": "Parametras"
+      "settings": "Parametras",
+      "partnerDetailTabs": "[MISSING] Partner detail tabs"
     },
     "overviewTab": {
       "title": "Detagls da la partnerada",
@@ -197,6 +203,16 @@
         "accountManager": "Manaschi da conto dedicà",
         "eventAccess": "Access ad occurrenzas"
       }
+    },
+    "errors": {
+      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
+      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
+      "notFound": "[MISSING] Partner Not Found",
+      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
+      "loading": "[MISSING] Error Loading Partner",
+      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
+      "noData": "[MISSING] No Data",
+      "noDataMessage": "[MISSING] No partner data available."
     }
   },
   "meetings": {

@@ -46,7 +46,7 @@ export const RegistrationWizard = ({
   inline = false,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['registration', 'common']);
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
 
   // Wizard state
@@ -77,7 +77,7 @@ export const RegistrationWizard = ({
       // Validate Step 1 before proceeding
       const isValid = await step1Ref.current?.validateAndSync();
       if (!isValid) {
-        setError('Please fill in all required fields correctly.');
+        setError(t('wizard.errors.fillRequired'));
         return;
       }
       setError(null);
@@ -123,7 +123,7 @@ export const RegistrationWizard = ({
   }, [currentStep, inline]);
 
   const handleCancel = () => {
-    if (confirm('Are you sure you want to cancel registration?')) {
+    if (confirm(t('wizard.cancelConfirm'))) {
       if (onCancel) {
         // Inline mode: collapse wizard
         onCancel();
@@ -138,7 +138,7 @@ export const RegistrationWizard = ({
   const handleSubmit = async () => {
     // Validate terms accepted
     if (!formData.termsAccepted) {
-      setError('You must accept the terms and conditions to register.');
+      setError(t('wizard.errors.acceptTerms'));
       return;
     }
 
@@ -177,8 +177,7 @@ export const RegistrationWizard = ({
         setIsSubmitting(false);
       } else {
         // Other errors: show error message
-        const errorMessage =
-          err instanceof Error ? err.message : 'Registration failed. Please try again.';
+        const errorMessage = err instanceof Error ? err.message : t('wizard.errors.failed');
         setError(errorMessage);
         setIsSubmitting(false);
       }
@@ -197,7 +196,7 @@ export const RegistrationWizard = ({
         onClick={() => setCurrentStep(1)}
         className="text-blue-400 hover:text-blue-300"
       >
-        Edit
+        {t('wizard.buttons.edit')}
       </Button>
     </div>
   );
@@ -208,36 +207,34 @@ export const RegistrationWizard = ({
       <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
         <div className="text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h2 className="text-3xl font-light mb-2">{t('registration.success.title')}</h2>
-          <p className="text-xl text-zinc-400 mb-8">{t('registration.success.subtitle')}</p>
+          <h2 className="text-3xl font-light mb-2">{t('success.title')}</h2>
+          <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
           <div className="flex items-start gap-3">
             <Mail className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
             <div className="flex-1">
-              <h3 className="text-lg font-medium mb-2">{t('registration.success.emailSent')}</h3>
+              <h3 className="text-lg font-medium mb-2">{t('success.emailSent')}</h3>
               {registeredEmail && (
                 <p className="text-zinc-300 mb-3">
-                  {t('registration.success.emailSentTo')}{' '}
+                  {t('success.emailSentTo')}{' '}
                   <span className="font-mono text-blue-400">{registeredEmail}</span>
                 </p>
               )}
               <p className="text-sm text-zinc-400 mb-4">
-                {t('registration.success.clickLink')}{' '}
-                <span className="text-zinc-300 font-medium">
-                  {t('registration.success.validFor')}
-                </span>
-                {t('registration.success.valid')}
+                {t('success.clickLink')}{' '}
+                <span className="text-zinc-300 font-medium">{t('success.validFor')}</span>
+                {t('success.valid')}
               </p>
               <div className="bg-zinc-800/50 border border-zinc-700 rounded p-3 mt-4">
                 <p className="text-sm font-medium text-zinc-300 mb-1">
-                  {t('registration.success.didntReceive')}
+                  {t('success.didntReceive')}
                 </p>
                 <ul className="text-sm text-zinc-400 space-y-1 ml-4">
-                  <li>• {t('registration.success.checkSpam')}</li>
-                  <li>• {t('registration.success.checkEmail')}</li>
-                  <li>• {t('registration.success.waitMinutes')}</li>
+                  <li>• {t('success.checkSpam')}</li>
+                  <li>• {t('success.checkEmail')}</li>
+                  <li>• {t('success.waitMinutes')}</li>
                 </ul>
               </div>
             </div>
@@ -248,7 +245,7 @@ export const RegistrationWizard = ({
           {onCancel && (
             <Button variant="outline" onClick={onCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('registration.success.close')}
+              {t('success.close')}
             </Button>
           )}
           {!inline && (
@@ -272,14 +269,14 @@ export const RegistrationWizard = ({
               currentStep === 1 ? 'text-blue-400 font-medium' : 'text-zinc-500'
             }`}
           >
-            1. Your Details
+            {t('wizard.steps.step1Progress')}
           </span>
           <span
             className={`text-sm ${
               currentStep === 2 ? 'text-blue-400 font-medium' : 'text-zinc-500'
             }`}
           >
-            2. Confirm Registration
+            {t('wizard.steps.step2Progress')}
           </span>
         </div>
         <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
@@ -295,7 +292,7 @@ export const RegistrationWizard = ({
         {/* Step 1: Personal Details */}
         <RegistrationAccordion
           isExpanded={currentStep === 1}
-          title="Step 1: Your Details"
+          title={t('wizard.steps.step1Title')}
           summary={step1Summary}
           onToggle={() => {
             if (currentStep !== 1) {
@@ -310,7 +307,7 @@ export const RegistrationWizard = ({
         {/* Step 2: Confirm Registration */}
         <RegistrationAccordion
           isExpanded={currentStep === 2}
-          title="Step 2: Confirm Registration"
+          title={t('wizard.steps.step2Title')}
           onToggle={() => {
             // Step 2 can only be accessed by clicking Next from Step 1
             // Clicking the header when collapsed should not expand it
@@ -337,16 +334,16 @@ export const RegistrationWizard = ({
       {/* Navigation Buttons */}
       <div className="mt-8 flex justify-between">
         <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-          Cancel
+          {t('wizard.buttons.cancel')}
         </Button>
         <div className="flex gap-4">
           {currentStep > 1 && (
             <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>
-              ← Back
+              {t('wizard.buttons.back')}
             </Button>
           )}
           {currentStep < 2 ? (
-            <Button onClick={handleNext}>Next →</Button>
+            <Button onClick={handleNext}>{t('wizard.buttons.next')}</Button>
           ) : (
             <Button
               onClick={handleSubmit}
@@ -356,10 +353,10 @@ export const RegistrationWizard = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
+                  {t('wizard.buttons.submitting')}
                 </>
               ) : (
-                'Complete Registration'
+                t('wizard.buttons.complete')
               )}
             </Button>
           )}

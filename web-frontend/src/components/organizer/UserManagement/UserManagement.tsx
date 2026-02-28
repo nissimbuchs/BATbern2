@@ -16,6 +16,7 @@
 
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import UserList from './UserList';
 import { UserDetailView } from './UserDetailView';
 import UserCreateEditModal from './UserCreateEditModal';
@@ -25,6 +26,7 @@ import type { User } from '@/types/user.types';
 const UserDetailPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation('userManagement');
   const [editUser, setEditUser] = useState<User | null>(null);
 
   // Fetch user by ID with company details
@@ -54,7 +56,7 @@ const UserDetailPage: React.FC = () => {
   }
 
   if (isError || !user) {
-    return <div>User not found</div>;
+    return <div>{t('error.notFound')}</div>;
   }
 
   return (
