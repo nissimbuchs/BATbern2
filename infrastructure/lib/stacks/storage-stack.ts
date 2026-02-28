@@ -44,7 +44,7 @@ export class StorageStack extends cdk.Stack {
         {
           id: 'DeleteOldLogs',
           enabled: true,
-          expiration: cdk.Duration.days(isProd ? 90 : 30),
+          expiration: cdk.Duration.days(30),
         },
         {
           id: 'TransitionToIA',
@@ -130,11 +130,11 @@ export class StorageStack extends cdk.Stack {
         {
           id: 'DeleteOldBackups',
           enabled: true,
-          expiration: cdk.Duration.days(isProd ? 365 : 30),
+          expiration: cdk.Duration.days(isProd ? 90 : 30),
         },
         {
           id: 'TransitionToGlacier',
-          enabled: isProd,
+          enabled: false,
           transitions: [
             {
               storageClass: s3.StorageClass.GLACIER,
