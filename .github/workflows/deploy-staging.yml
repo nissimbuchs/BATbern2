@@ -104,7 +104,9 @@ jobs:
           echo "$CHANGED_FILES"
           echo ""
 
-          # Initialize all flags as false
+          # Initialize all flags as false (shell vars for summary display + GITHUB_OUTPUT for subsequent steps)
+          FRONTEND_CHANGED=false
+          INFRASTRUCTURE_CHANGED=false
           echo "frontend=false" >> $GITHUB_OUTPUT
           echo "infrastructure=false" >> $GITHUB_OUTPUT
           echo "deploy_all=false" >> $GITHUB_OUTPUT
@@ -113,12 +115,14 @@ jobs:
           # Check for frontend changes
           if echo "$CHANGED_FILES" | grep -q "^web-frontend/"; then
             echo "✓ Frontend changes detected"
+            FRONTEND_CHANGED=true
             echo "frontend=true" >> $GITHUB_OUTPUT
           fi
 
           # Check for infrastructure changes (requires full deployment)
           if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package"; then
             echo "✓ Infrastructure code changes detected - will deploy all stacks"
+            INFRASTRUCTURE_CHANGED=true
             echo "infrastructure=true" >> $GITHUB_OUTPUT
             echo "deploy_all=true" >> $GITHUB_OUTPUT
             echo "needs_database_backup=true" >> $GITHUB_OUTPUT
@@ -177,12 +181,12 @@ jobs:
             echo "services=false" >> $GITHUB_OUTPUT
           fi
 
-          # Summary
+          # Summary (uses shell vars — ${{ }} expressions cannot read outputs from the same step)
           echo ""
           echo "📊 Deployment plan:"
-          echo "  Frontend: $([ "${{ steps.changes.outputs.frontend }}" = "true" ] && echo "YES" || echo "no")"
+          echo "  Frontend: $([ "$FRONTEND_CHANGED" = "true" ] && echo "YES" || echo "no")"
           echo "  Services: ${CHANGED_SERVICES:-none}"
-          echo "  Infrastructure: $([ "${{ steps.changes.outputs.infrastructure }}" = "true" ] && echo "YES (full deployment)" || echo "no")"
+          echo "  Infrastructure: $([ "$INFRASTRUCTURE_CHANGED" = "true" ] && echo "YES (full deployment)" || echo "no")"
 
       - name: Build frontend for deployment
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.deploy_all == 'true'
