@@ -160,7 +160,7 @@ function handler(event) {
           contentSecurityPolicy:
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
-            "worker-src 'self' blob:; " +
+            "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
