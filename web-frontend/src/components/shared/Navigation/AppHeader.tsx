@@ -89,7 +89,7 @@ const AppHeader = React.memo(function AppHeader({
     navigate('/login', { replace: true });
   };
 
-  const handleLanguageChange = (language: 'de' | 'en') => {
+  const handleLanguageChange = (language: string) => {
     // Language change is handled inside UserMenuDropdown
     console.log('[AppHeader] Language changed to:', language);
   };
