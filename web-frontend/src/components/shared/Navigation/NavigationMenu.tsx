@@ -101,7 +101,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
   };
 
   return (
-    <nav aria-label="main navigation">
+    <nav aria-label={t('navigation.mainNav')}>
       <List
         sx={{
           display: 'flex',

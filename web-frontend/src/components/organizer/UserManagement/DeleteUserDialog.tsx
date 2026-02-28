@@ -55,7 +55,12 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
             <WarningIcon color="error" />
             <Typography variant="h6">{t('modal.deleteConfirm.title')}</Typography>
           </Box>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>

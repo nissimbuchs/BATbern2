@@ -23,7 +23,13 @@
     "partnerTopics": "Partner Topics",
     "partnerMeetings": "Partner Meetings",
     "topics": "Topic Suggestions",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Login",
@@ -107,7 +113,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "language": {
     "select": "Select Language",
@@ -195,7 +204,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Users"
+        "users": "Users",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "No company data available"
     },
@@ -354,7 +364,9 @@
         "invalidFile": "Invalid file. Only sessions.json is allowed.",
         "parseError": "Parse error: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Select Organizer",
@@ -397,7 +409,9 @@
       "onTime": "On time",
       "pastEvent": "Past event",
       "materialAvailable": "Material available",
-      "noMaterials": "No materials"
+      "noMaterials": "No materials",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Invalid Link",
@@ -596,7 +610,10 @@
     "priority": {
       "urgent": "URGENT",
       "high": "HIGH"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Layout Templates",
@@ -627,12 +644,17 @@
       "htmlBodyRequired": "HTML body is required.",
       "subjectRequired": "Subject is required for content templates.",
       "templateKeyRequired": "Template key is required."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Event could not be loaded",
     "errorMessage": "Please check your network connection and try again.",
-    "retryButton": "Retry"
+    "retryButton": "Retry",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "companySearch": {
     "noOptions": "No companies found",
@@ -686,5 +708,17 @@
       "confirmDelete": "Delete template?",
       "deleteFailed": "Failed to delete template. Please try again."
     }
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

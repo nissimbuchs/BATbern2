@@ -155,7 +155,7 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
               fullWidth
               multiline
               rows={2}
-              label="Description (optional)"
+              label={t('acceptTopic.descriptionOptional')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               variant="outlined"
@@ -164,7 +164,7 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
             <TextField
               select
               fullWidth
-              label="Category"
+              label={t('topicBacklog.createModal.fields.category')}
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               variant="outlined"

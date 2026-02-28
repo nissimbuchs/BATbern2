@@ -38,7 +38,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ roles, activeRole, o
       size="small"
       value={activeRole}
       onChange={handleChange}
-      aria-label="active role"
+      aria-label={t('navigation.activeRole')}
       sx={{ mr: 2 }}
     >
       {roles.map((role) => (

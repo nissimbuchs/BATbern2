@@ -95,7 +95,8 @@
       "exportData": "パートナーデータをエクスポート",
       "deletePartner": "パートナーデータを削除",
       "accessDenied": "アクセス拒否",
-      "accessDeniedMessage": "このセクションは主催者のみがアクセスできます。"
+      "accessDeniedMessage": "このセクションは主催者のみがアクセスできます。",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "概要",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "春季ミーティング",
         "autumn": "秋季ミーティング"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "カレンダー招待を送信",
     "inviteSent": "招待を送信済み",
@@ -183,7 +185,11 @@
         "loading": "エクスポート中..."
       },
       "noData": "選択した期間の出席データが見つかりません",
-      "error": "出席データの読み込みに失敗しました"
+      "error": "出席データの読み込みに失敗しました",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "トピックの提案",
@@ -226,9 +232,15 @@
         },
         "status": "ステータス",
         "plannedEvent": "予定イベント",
-        "save": "保存"
+        "save": "保存",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "トピックの読み込みに失敗しました"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

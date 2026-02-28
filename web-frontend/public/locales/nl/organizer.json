@@ -208,7 +208,8 @@
         "failed": "Vastleggen van benadering mislukt",
         "loadHistory": "Laden van contactgeschiedenis mislukt"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Sprekerstatus",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Voorvertoning evenementinhoud",
     "previewModeCaption": "Voorbeeldmodus: {{mode}} | Fase: {{phase}}",
     "deviceCaption": "Apparaat: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

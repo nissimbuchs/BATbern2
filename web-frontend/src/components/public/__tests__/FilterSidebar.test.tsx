@@ -18,6 +18,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'archive.filters.title': 'Filters',
+        'filters.ariaLabel': 'Event filters',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',

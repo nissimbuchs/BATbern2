@@ -23,7 +23,13 @@
     "partnerTopics": "Temas da partners",
     "partnerMeetings": "Inscunters da partners",
     "topics": "Propostas da temas",
-    "openMenu": "Avrir il menu"
+    "openMenu": "Avrir il menu",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Annunziar",
@@ -162,7 +168,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Utilisaders"
+        "users": "Utilisaders",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "Nagins datas d'empresa disponiblas"
     },
@@ -321,7 +328,9 @@
         "invalidFile": "File nunvalid. Mo sessions.json è permess.",
         "parseError": "Errur d'analisa: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Tscherner organisader",
@@ -364,7 +373,9 @@
       "onTime": "En temp",
       "pastEvent": "Event passà",
       "materialAvailable": "Material disponibel",
-      "noMaterials": "Nagin material"
+      "noMaterials": "Nagin material",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Link nunvalid",
@@ -563,7 +574,10 @@
     "priority": {
       "urgent": "URGENT",
       "high": "AULT"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Moduls da layout",
@@ -594,12 +608,17 @@
       "htmlBodyRequired": "Il corp HTML è obligatori.",
       "subjectRequired": "L'object è obligatori per moduls da cuntegn.",
       "templateKeyRequired": "La clav dal modul è obligatoria."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "L'event n'ha betg pudì vegnir chargià",
     "errorMessage": "Controllai vossa connexiun da rait ed empruvai danovamain.",
-    "retryButton": "Reempruvar"
+    "retryButton": "Reempruvar",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -661,7 +680,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "companySearch": {
     "noOptions": "Naginas cumpagnias chattadas",
@@ -686,5 +708,17 @@
     "loading": "Cargament da BATbern...",
     "configFailed": "Cargament da la configuraziun ha fallì",
     "reloadPage": "Recargiar la pagina"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

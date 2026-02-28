@@ -109,7 +109,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
       open={open}
       onClose={onClose}
       role="menu"
-      aria-label="User menu"
+      aria-label={t('navigation.userMenu')}
       MenuListProps={{
         'aria-labelledby': 'user-menu-button',
       }}
@@ -165,7 +165,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             onChange={handleLanguageChange}
             size="small"
             sx={{ minWidth: 160 }}
-            aria-label="Language selector"
+            aria-label={t('language.select')}
           >
             {Object.keys(i18n.options?.resources ?? {}).map((code) => (
               <MenuItem key={code} value={code}>

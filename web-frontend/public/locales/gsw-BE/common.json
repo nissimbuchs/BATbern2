@@ -23,7 +23,13 @@
     "partnerTopics": "Partner-Theme",
     "partnerMeetings": "Partner-Treffe",
     "topics": "Themenvorschläg",
-    "openMenu": "Menü ufmache"
+    "openMenu": "Menü ufmache",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Ämälde",
@@ -93,7 +99,10 @@
       "pending": "Hangend",
       "confirmed": "Bestätigt",
       "error": "Fähler"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "language": {
     "select": "Sprach uswähle",
@@ -181,7 +190,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Benutzer"
+        "users": "Benutzer",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "Kei Firmadaten verfügbar"
     },
@@ -328,7 +338,9 @@
         "invalidFile": "Ungültige Datei. Nur sessions.json isch erlaubt.",
         "parseError": "Verarbeitigsfähler: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Organisator uswähle",
@@ -371,7 +383,9 @@
       "onTime": "Pünktlich",
       "pastEvent": "Früecheris Ereignis",
       "materialAvailable": "Material verfügbar",
-      "noMaterials": "Kei Materialien"
+      "noMaterials": "Kei Materialien",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Ungültige Link",
@@ -451,7 +465,10 @@
     "priority": {
       "urgent": "DRINGEND",
       "high": "HOCH"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Layout-Vorlagen",
@@ -482,12 +499,17 @@
       "htmlBodyRequired": "HTML-Inhaut isch Pflicht.",
       "subjectRequired": "Betreff isch Pflicht für Inhautvorlagen.",
       "templateKeyRequired": "Vorlagenschlüssel isch Pflicht."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Veranstatig chöne nid gglade werde",
     "errorMessage": "Bitte d'Netzwerkverbindig prüefe und nomol versuche.",
-    "retryButton": "Nomol versuche"
+    "retryButton": "Nomol versuche",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -517,5 +539,17 @@
       "confirmDelete": "Vorlage lösche?",
       "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
     }
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

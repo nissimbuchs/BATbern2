@@ -162,7 +162,8 @@
       "participantTable": "Participants cun status d'import",
       "importProgress": "Progress da l'import",
       "closeModal": "Serrar la fanestra d'import",
-      "startImport": "Entschaiver l'import dals participants dal file CSV"
+      "startImport": "Entschaiver l'import dals participants dal file CSV",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "L'analisa dal CSV ha fallì",
     "importFailed": "L'import ha fallì"
@@ -170,7 +171,8 @@
   "userDetail": {
     "tabs": {
       "overview": "Survista",
-      "eventsParticipated": "Occurrenzas participadas"
+      "eventsParticipated": "Occurrenzas participadas",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "Survista dal profil dal utilisader. Infurmaziuns supplementaras pon vegnir agiuntadas qua.",
     "eventsTable": {

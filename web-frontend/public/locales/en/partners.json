@@ -95,7 +95,8 @@
       "exportData": "Export Partner Data",
       "deletePartner": "Delete Partner Data",
       "accessDenied": "Access Denied",
-      "accessDeniedMessage": "This section is only accessible to organizers."
+      "accessDeniedMessage": "This section is only accessible to organizers.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Overview",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Spring Meeting",
         "autumn": "Autumn Meeting"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Send Calendar Invite",
     "inviteSent": "Invite Sent",
@@ -183,7 +185,11 @@
         "loading": "Exporting..."
       },
       "noData": "No attendance data found for the selected period",
-      "error": "Failed to load attendance data"
+      "error": "Failed to load attendance data",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Topic Suggestions",
@@ -226,9 +232,15 @@
         },
         "status": "Status",
         "plannedEvent": "Planned Event",
-        "save": "Save"
+        "save": "Save",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Failed to load topics"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

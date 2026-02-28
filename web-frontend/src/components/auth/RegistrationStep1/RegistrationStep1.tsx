@@ -156,7 +156,9 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
               <IconButton
                 onClick={() => setShowPassword(!showPassword)}
                 edge="end"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={t(
+                  showPassword ? 'registration.hidePassword' : 'registration.showPassword'
+                )}
               >
                 {showPassword ? <VisibilityOff /> : <Visibility />}
               </IconButton>
@@ -242,7 +244,9 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
               <IconButton
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 edge="end"
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                aria-label={t(
+                  showConfirmPassword ? 'registration.hidePassword' : 'registration.showPassword'
+                )}
               >
                 {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
               </IconButton>

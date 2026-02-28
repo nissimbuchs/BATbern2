@@ -449,7 +449,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
       {/* Story 5.9: Tabs for Details and Materials */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Session edit tabs">
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label={t('sessionEdit.tabs.ariaLabel')}
+        >
           <Tab label={t('sessionEdit.tabs.details', 'Details')} />
           <Tab label={t('sessionEdit.tabs.materials', 'Materials')} />
           <Tab label={t('common:navigation.speakers')} />

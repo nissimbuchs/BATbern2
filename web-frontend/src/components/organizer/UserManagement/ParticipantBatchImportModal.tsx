@@ -320,7 +320,9 @@ export function ParticipantBatchImportModal({
             <LinearProgress
               variant="determinate"
               value={progress}
-              aria-label={`Import progress: ${Math.round(progress)}% complete`}
+              aria-label={t('participantImport.aria.progressBar', {
+                percent: Math.round(progress),
+              })}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
               {t('participantImport.progress', {

@@ -173,7 +173,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
         </Alert>
       ) : (
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="partner topic suggestions">
+          <Table size="small" aria-label={t('portal.topics.organizer.tableAriaLabel')}>
             <TableHead>
               <TableRow>
                 <TableCell>{t('portal.topics.col.topic')}</TableCell>
@@ -227,7 +227,9 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                       <IconButton
                         size="small"
                         onClick={() => setEditingTopic(topic)}
-                        aria-label={`edit topic ${topic.title}`}
+                        aria-label={t('portal.topics.organizer.editAriaLabel', {
+                          title: topic.title,
+                        })}
                         data-testid={`edit-topic-${topic.id}`}
                       >
                         <EditIcon fontSize="small" />
@@ -237,7 +239,9 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                       <IconButton
                         size="small"
                         onClick={() => setDeletingTopicId(topic.id)}
-                        aria-label={`delete topic ${topic.title}`}
+                        aria-label={t('portal.topics.organizer.deleteAriaLabel', {
+                          title: topic.title,
+                        })}
                         data-testid={`delete-topic-${topic.id}`}
                       >
                         <DeleteIcon fontSize="small" />

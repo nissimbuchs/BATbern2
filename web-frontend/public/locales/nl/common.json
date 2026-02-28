@@ -23,7 +23,13 @@
     "partnerTopics": "Partneronderwerpen",
     "partnerMeetings": "Partnervergaderingen",
     "topics": "Onderwerpssuggesties",
-    "openMenu": "Menu openen"
+    "openMenu": "Menu openen",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Inloggen",
@@ -162,7 +168,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Gebruikers"
+        "users": "Gebruikers",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "Geen bedrijfsgegevens beschikbaar"
     },
@@ -321,7 +328,9 @@
         "invalidFile": "Ongeldig bestand. Alleen sessions.json is toegestaan.",
         "parseError": "Parsefout: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Organisator selecteren",
@@ -364,7 +373,9 @@
       "onTime": "Op tijd",
       "pastEvent": "Afgelopen evenement",
       "materialAvailable": "Materiaal beschikbaar",
-      "noMaterials": "Geen materialen"
+      "noMaterials": "Geen materialen",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Ongeldige link",
@@ -563,7 +574,10 @@
     "priority": {
       "urgent": "URGENT",
       "high": "HOOG"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Lay-outsjablonen",
@@ -594,12 +608,17 @@
       "htmlBodyRequired": "HTML-tekst is verplicht.",
       "subjectRequired": "Onderwerp is verplicht voor inhoudssjablonen.",
       "templateKeyRequired": "Sjabloonsleutel is verplicht."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Evenement kon niet worden geladen",
     "errorMessage": "Controleer uw netwerkverbinding en probeer het opnieuw.",
-    "retryButton": "Opnieuw proberen"
+    "retryButton": "Opnieuw proberen",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -661,7 +680,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "companySearch": {
     "noOptions": "Geen bedrijven gevonden",
@@ -686,5 +708,17 @@
     "loading": "BATbern laden...",
     "configFailed": "Configuratie laden mislukt",
     "reloadPage": "Pagina opnieuw laden"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

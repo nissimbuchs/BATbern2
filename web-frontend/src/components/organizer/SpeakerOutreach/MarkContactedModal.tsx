@@ -149,7 +149,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           {t('speakerOutreach.markContactedModal.title')}
-          <IconButton onClick={onClose} size="small" aria-label="close">
+          <IconButton onClick={onClose} size="small" aria-label={t('common:actions.close')}>
             <CloseIcon />
           </IconButton>
         </Box>

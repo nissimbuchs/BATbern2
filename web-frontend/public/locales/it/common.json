@@ -23,7 +23,13 @@
     "partnerTopics": "Argomenti partner",
     "partnerMeetings": "Incontri partner",
     "topics": "Suggerimenti di argomenti",
-    "openMenu": "Apri menu"
+    "openMenu": "Apri menu",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Accedi",
@@ -162,7 +168,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Utenti"
+        "users": "Utenti",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "Nessun dato aziendale disponibile"
     },
@@ -321,7 +328,9 @@
         "invalidFile": "File non valido. Sono consentiti solo file sessions.json.",
         "parseError": "Errore di analisi: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Seleziona organizzatore",
@@ -364,7 +373,9 @@
       "onTime": "Nei tempi",
       "pastEvent": "Evento passato",
       "materialAvailable": "Materiale disponibile",
-      "noMaterials": "Nessun materiale"
+      "noMaterials": "Nessun materiale",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Link non valido",
@@ -563,7 +574,10 @@
     "priority": {
       "urgent": "URGENTE",
       "high": "ALTO"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Modelli di layout",
@@ -594,12 +608,17 @@
       "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
       "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
       "templateKeyRequired": "La chiave del modello è obbligatoria."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Impossibile caricare l'evento",
     "errorMessage": "Controlla la connessione di rete e riprova.",
-    "retryButton": "Riprova"
+    "retryButton": "Riprova",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -661,7 +680,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "companySearch": {
     "noOptions": "Nessuna azienda trovata",
@@ -686,5 +708,17 @@
     "loading": "Caricamento BATbern...",
     "configFailed": "Caricamento configurazione fallito",
     "reloadPage": "Ricarica pagina"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

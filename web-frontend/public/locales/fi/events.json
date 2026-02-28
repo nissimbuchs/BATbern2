@@ -115,6 +115,11 @@
       "typeNewsletter": "Uutiskirje",
       "typeReminder": "Muistutus",
       "previewTitle": "Sähköpostin esikatselu"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -143,10 +148,17 @@
       "allYears": "Kaikki vuodet",
       "showArchived": "Näytä arkistoidut tapahtumat",
       "activeFilters": "{{count}} suodatin aktiivinen",
-      "clearAll": "Tyhjennä kaikki"
+      "clearAll": "Tyhjennä kaikki",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "Tapahtumien lataaminen epäonnistui"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -218,7 +230,10 @@
       "updateTaskFailed": "Tehtävän päivittäminen epäonnistui",
       "createTaskFailed": "Tehtävän luominen epäonnistui"
     },
-    "criticalTasksWidget": "Kriittiset tehtävät"
+    "criticalTasksWidget": "Kriittiset tehtävät",
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "Luo uusi tapahtuma",
@@ -450,6 +465,14 @@
       "cdnFailed": "CDN epäonnistui",
       "cdnUnknown": "Tuntematon",
       "noVersions": "Versiohistoriaa ei ole saatavilla"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -537,7 +560,8 @@
     "tabs": {
       "details": "Tiedot",
       "materials": "Materiaalit",
-      "speakers": "Puhujat"
+      "speakers": "Puhujat",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "Istunnon puhujat",
@@ -699,5 +723,23 @@
       "resubscribeLink": "Tilaa uudelleen",
       "invalidToken": "Tämä tilauksen peruutuslinkki on virheellinen tai sitä on jo käytetty."
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

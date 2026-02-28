@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 type Speed = 'slow' | 'normal' | 'fast';
 
 interface BATbernLoaderProps {
@@ -21,6 +23,7 @@ export function BATbernLoader({
   speed = 'normal',
   'data-testid': testId,
 }: BATbernLoaderProps) {
+  const { t } = useTranslation();
   const total = SPEED_TOTALS[speed];
 
   return (
@@ -29,7 +32,7 @@ export function BATbernLoader({
       width={size}
       height={size}
       className={className}
-      aria-label="Loading…"
+      aria-label={t('actions.loading')}
       role="progressbar"
       data-testid={testId}
     >

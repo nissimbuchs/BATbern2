@@ -208,7 +208,8 @@
         "failed": "Échec de l'enregistrement du démarchage",
         "loadHistory": "Échec du chargement de l'historique des contacts"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Statut des intervenants",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Aperçu du contenu de l'événement",
     "previewModeCaption": "Mode aperçu : {{mode}} | Phase : {{phase}}",
     "deviceCaption": "Appareil : {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

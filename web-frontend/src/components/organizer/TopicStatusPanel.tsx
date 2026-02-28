@@ -329,7 +329,7 @@ const TopicStatusPanel: React.FC = () => {
                       {row.status === 'SELECTED' && (
                         <TextField
                           size="small"
-                          placeholder="e.g. BATbern58"
+                          placeholder={t('topicStatus.eventCodePlaceholder')}
                           value={row.plannedEvent}
                           onChange={(e) => setRowField(topic.id, 'plannedEvent', e.target.value)}
                           inputProps={{ maxLength: 100 }}

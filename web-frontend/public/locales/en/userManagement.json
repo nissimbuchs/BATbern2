@@ -162,7 +162,8 @@
       "participantTable": "Participants with import status",
       "importProgress": "Import progress",
       "closeModal": "Close import modal",
-      "startImport": "Start importing participants from CSV file"
+      "startImport": "Start importing participants from CSV file",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "Failed to parse CSV",
     "importFailed": "Import failed"
@@ -244,7 +245,8 @@
   "userDetail": {
     "tabs": {
       "overview": "Overview",
-      "eventsParticipated": "Events Participated"
+      "eventsParticipated": "Events Participated",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "User profile overview. Additional information can be added here.",
     "eventsTable": {

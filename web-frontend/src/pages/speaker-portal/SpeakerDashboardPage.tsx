@@ -77,7 +77,10 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
     <Card
       className="p-6 mb-4"
       role="article"
-      aria-label={`${event.eventTitle} - ${event.workflowStateLabel}`}
+      aria-label={t('speakerPortal.dashboard.eventCardAriaLabel', {
+        title: event.eventTitle,
+        status: event.workflowStateLabel,
+      })}
     >
       <div className="flex flex-col gap-4">
         {/* Event header */}
@@ -378,7 +381,9 @@ const SpeakerDashboardPage = () => {
                     <div
                       className="w-16 h-16 rounded-full bg-muted flex items-center justify-center"
                       role="img"
-                      aria-label={`${dashboard.speakerName} profile placeholder`}
+                      aria-label={t('speakerPortal.dashboard.profilePlaceholder', {
+                        name: dashboard.speakerName,
+                      })}
                     >
                       <User className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
                     </div>

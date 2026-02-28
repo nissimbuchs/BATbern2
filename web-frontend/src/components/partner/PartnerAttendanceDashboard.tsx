@@ -184,6 +184,7 @@ interface SummaryRow {
 }
 
 const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) => {
+  const { t } = useTranslation('partners');
   const rows = useMemo(
     () =>
       [...summaries]
@@ -198,7 +199,7 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
   );
 
   return (
-    <ChartSection title="Attendance per Event — Your Company vs. Total">
+    <ChartSection title={t('portal.analytics.charts.companyVsTotal')}>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={rows} margin={{ top: 4, right: 40, left: 0, bottom: 56 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -255,6 +256,7 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
 // ─── Chart 2: Year-over-year trend ────────────────────────────────────────────
 
 const Chart2YearOverYear: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) => {
+  const { t } = useTranslation('partners');
   const rows = useMemo(() => {
     const byYear: Record<string, { company: number; total: number }> = {};
     for (const s of summaries) {
@@ -274,7 +276,7 @@ const Chart2YearOverYear: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }
   }, [summaries]);
 
   return (
-    <ChartSection title="Year-over-Year — Headcount & Attendance Share %">
+    <ChartSection title={t('portal.analytics.charts.yoyHeadcount')}>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={rows} margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" />

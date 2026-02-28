@@ -72,7 +72,7 @@ export function FilterSidebar({
     <aside
       className="space-y-6"
       role="complementary"
-      aria-label="Event filters"
+      aria-label={t('filters.ariaLabel')}
       data-testid="filter-sidebar"
     >
       {/* Header */}
@@ -148,7 +148,7 @@ export function FilterSidebar({
           data-testid="sort-select"
           value={currentSort}
           onChange={(e) => onSortChange(e.target.value)}
-          aria-label="Sort By"
+          aria-label={t('labels.sortBy')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {SORT_OPTIONS.map((option) => (

@@ -162,7 +162,8 @@
       "participantTable": "インポートステータス付き参加者",
       "importProgress": "インポートの進行状況",
       "closeModal": "インポートウィンドウを閉じる",
-      "startImport": "CSVファイルから参加者のインポートを開始"
+      "startImport": "CSVファイルから参加者のインポートを開始",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "CSVの解析に失敗しました",
     "importFailed": "インポートに失敗しました"
@@ -170,7 +171,8 @@
   "userDetail": {
     "tabs": {
       "overview": "概要",
-      "eventsParticipated": "参加イベント"
+      "eventsParticipated": "参加イベント",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "ユーザープロフィールの概要。ここに追加情報を記載できます。",
     "eventsTable": {

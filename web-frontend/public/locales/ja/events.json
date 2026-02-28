@@ -115,6 +115,11 @@
       "typeNewsletter": "ニュースレター",
       "typeReminder": "リマインダー",
       "previewTitle": "メールプレビュー"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -143,10 +148,17 @@
       "allYears": "すべての年",
       "showArchived": "アーカイブ済みイベントを表示",
       "activeFilters": "{{count}}個のフィルターが有効",
-      "clearAll": "すべてクリア"
+      "clearAll": "すべてクリア",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "イベントの読み込みに失敗しました"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -218,7 +230,10 @@
       "updateTaskFailed": "タスクの更新に失敗しました",
       "createTaskFailed": "タスクの作成に失敗しました"
     },
-    "criticalTasksWidget": "重要タスク"
+    "criticalTasksWidget": "重要タスク",
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "新規イベントを作成",
@@ -450,6 +465,14 @@
       "cdnFailed": "CDN失敗",
       "cdnUnknown": "不明",
       "noVersions": "バージョン履歴がありません"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -537,7 +560,8 @@
     "tabs": {
       "details": "詳細",
       "materials": "資料",
-      "speakers": "スピーカー"
+      "speakers": "スピーカー",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "セッションスピーカー",
@@ -699,5 +723,23 @@
       "resubscribeLink": "再登録する",
       "invalidToken": "この登録解除リンクは無効であるか、既に使用されています。"
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

@@ -23,7 +23,13 @@
     "partnerTopics": "Kumppaniaiheet",
     "partnerMeetings": "Kumppanikokoukset",
     "topics": "Aiheehdotukset",
-    "openMenu": "Avaa valikko"
+    "openMenu": "Avaa valikko",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Kirjaudu sisään",
@@ -162,7 +168,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "Käyttäjät"
+        "users": "Käyttäjät",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "Yritystietoja ei ole saatavilla"
     },
@@ -321,7 +328,9 @@
         "invalidFile": "Virheellinen tiedosto. Vain sessions.json on sallittu.",
         "parseError": "Jäsennysvirhe: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Valitse järjestäjä",
@@ -364,7 +373,9 @@
       "onTime": "Ajallaan",
       "pastEvent": "Mennyt tapahtuma",
       "materialAvailable": "Materiaali saatavilla",
-      "noMaterials": "Ei materiaaleja"
+      "noMaterials": "Ei materiaaleja",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "Virheellinen linkki",
@@ -563,7 +574,10 @@
     "priority": {
       "urgent": "KIIREELLINEN",
       "high": "KORKEA"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "Asettelupohjat",
@@ -594,12 +608,17 @@
       "htmlBodyRequired": "HTML-runko on pakollinen.",
       "subjectRequired": "Aihe on pakollinen sisältöpohjille.",
       "templateKeyRequired": "Pohjan avain on pakollinen."
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Tapahtumaa ei voitu ladata",
     "errorMessage": "Tarkista verkkoyhteytesi ja yritä uudelleen.",
-    "retryButton": "Yritä uudelleen"
+    "retryButton": "Yritä uudelleen",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -661,7 +680,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "companySearch": {
     "noOptions": "Yrityksiä ei löydy",
@@ -686,5 +708,17 @@
     "loading": "Ladataan BATbernia...",
     "configFailed": "Konfiguraation lataaminen epäonnistui",
     "reloadPage": "Lataa sivu uudelleen"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

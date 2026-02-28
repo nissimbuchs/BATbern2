@@ -260,7 +260,7 @@ export const ResetPasswordForm: React.FC = () => {
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={t(showPassword ? 'login.hidePassword' : 'login.showPassword')}
                   onClick={() => setShowPassword(!showPassword)}
                   edge="end"
                 >
@@ -309,7 +309,7 @@ export const ResetPasswordForm: React.FC = () => {
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-label={t(showConfirmPassword ? 'login.hidePassword' : 'login.showPassword')}
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   edge="end"
                 >

@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Close, Logout } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { NavigationMenu } from './NavigationMenu';
 import { RoleSelector } from './RoleSelector';
 import type { UserRole } from '@/types/auth';
@@ -43,6 +44,7 @@ export function MobileDrawer({
   activeRole,
   onRoleChange,
 }: MobileDrawerProps) {
+  const { t } = useTranslation();
   const handleLogout = () => {
     // Logout will be handled by parent component
     onClose();
@@ -53,7 +55,7 @@ export function MobileDrawer({
       anchor="left"
       open={open}
       onClose={onClose}
-      aria-label="mobile navigation"
+      aria-label={t('navigation.mobileNav')}
       ModalProps={{
         keepMounted: false, // Unmount content when closed for better performance and cleaner DOM
       }}
@@ -81,7 +83,7 @@ export function MobileDrawer({
               style={{ height: 36, width: 'auto' }}
             />
           </Box>
-          <IconButton onClick={onClose} edge="end" aria-label="close">
+          <IconButton onClick={onClose} edge="end" aria-label={t('actions.close')}>
             <Close />
           </IconButton>
         </Box>

@@ -208,7 +208,8 @@
         "failed": "Registrazione contatto non riuscita",
         "loadHistory": "Caricamento cronologia contatti non riuscito"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Stato relatori",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Anteprima contenuto evento",
     "previewModeCaption": "Modalità anteprima: {{mode}} | Fase: {{phase}}",
     "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

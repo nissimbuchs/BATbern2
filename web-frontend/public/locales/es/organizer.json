@@ -208,7 +208,8 @@
         "failed": "Error al registrar el contacto",
         "loadHistory": "Error al cargar el historial de contactos"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Estado de ponentes",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Vista previa del contenido del evento",
     "previewModeCaption": "Modo vista previa: {{mode}} | Fase: {{phase}}",
     "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

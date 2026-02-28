@@ -149,7 +149,7 @@ export const EmailTemplatePreviewModal: React.FC<Props> = ({ template, onClose }
           <iframe
             srcDoc={mergedHtml}
             sandbox="allow-same-origin"
-            title="Email Preview"
+            title={t('emailTemplates.previewTitle', 'Email Preview')}
             style={{
               width: '100%',
               height: '600px',

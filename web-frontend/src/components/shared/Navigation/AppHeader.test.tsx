@@ -65,6 +65,9 @@ vi.mock('react-i18next', () => ({
         'role.speaker': 'Speaker',
         'role.partner': 'Partner',
         'role.attendee': 'Attendee',
+        'navigation.notifications': 'Notifications',
+        'navigation.userMenu': 'User menu',
+        'navigation.openMenu': 'menu',
       };
       return translations[key] || key;
     },

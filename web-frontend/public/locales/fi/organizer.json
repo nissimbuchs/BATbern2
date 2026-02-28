@@ -208,7 +208,8 @@
         "failed": "Yhteydenoton tallentaminen epäonnistui",
         "loadHistory": "Yhteydenottohistorian lataaminen epäonnistui"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Puhujien tila",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Tapahtuman sisällön esikatselu",
     "previewModeCaption": "Esikatselutila: {{mode}} | Vaihe: {{phase}}",
     "deviceCaption": "Laite: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

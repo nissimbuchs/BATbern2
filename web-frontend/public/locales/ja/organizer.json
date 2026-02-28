@@ -208,7 +208,8 @@
         "failed": "アウトリーチの記録に失敗しました",
         "loadHistory": "連絡履歴の読み込みに失敗しました"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "登壇者ステータス",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "イベントコンテンツプレビュー",
     "previewModeCaption": "プレビューモード：{{mode}} | フェーズ：{{phase}}",
     "deviceCaption": "デバイス：{{device}}（{{width}} x {{height}}）"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

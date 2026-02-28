@@ -224,7 +224,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
             <Chip
               label={totalCount}
               size="small"
-              aria-label={`${totalCount} total notifications`}
+              aria-label={t('notifications.totalCountAriaLabel', { count: totalCount })}
             />
           </Badge>
         </Stack>

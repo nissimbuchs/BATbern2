@@ -115,6 +115,11 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Memorativ",
       "previewTitle": "Prevista e-mail"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -143,10 +148,17 @@
       "allYears": "Tuts onns",
       "showArchived": "Mussar eveniments archivads",
       "activeFilters": "{{count}} filter activ",
-      "clearAll": "Stizzar tut"
+      "clearAll": "Stizzar tut",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "Chargiar eveniments fallì"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -218,7 +230,10 @@
       "updateTaskFailed": "Actualisar incumbensa fallì",
       "createTaskFailed": "Crear incumbensa fallì"
     },
-    "criticalTasksWidget": "Incumbensas criticas"
+    "criticalTasksWidget": "Incumbensas criticas",
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "Crear nov eveniment",
@@ -450,6 +465,14 @@
       "cdnFailed": "CDN fallì",
       "cdnUnknown": "Nunenconuschent",
       "noVersions": "Nagina istorgia da versiuns disponibla"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -537,7 +560,8 @@
     "tabs": {
       "details": "Detagls",
       "materials": "Materialas",
-      "speakers": "Referents"
+      "speakers": "Referents",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "Referents da la sessiun",
@@ -699,5 +723,23 @@
       "resubscribeLink": "Abonnar puspè",
       "invalidToken": "Quest link da desabonnaziun è invalid u è vegnì gia utilisà."
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

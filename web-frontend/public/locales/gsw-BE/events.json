@@ -121,6 +121,11 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Erinnerig",
       "previewTitle": "E-Mail-Vorschau"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -149,10 +154,17 @@
       "allYears": "Alli Jahr",
       "showArchived": "Archivierti Veranstaltigen zeige",
       "activeFilters": "{{count}} Filter aktiv",
-      "clearAll": "Alli lösche"
+      "clearAll": "Alli lösche",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "Veranstaltigen chöne nid gglade werde"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -223,7 +235,10 @@
       "eventRequired": "Bitte e Veranstatig uswähle oder als Vorlage spychere",
       "updateTaskFailed": "Ufgab chöne nid aktualisiert werde",
       "createTaskFailed": "Ufgab chöne nid erstellt werde"
-    }
+    },
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "Neui Veranstatig erstelle",
@@ -455,6 +470,14 @@
       "cdnFailed": "CDN fehlgschlage",
       "cdnUnknown": "Unbekannt",
       "noVersions": "Kei Versionsverlauf verfügbar"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -539,7 +562,8 @@
     "tabs": {
       "details": "Details",
       "materials": "Materialien",
-      "speakers": "Redneri"
+      "speakers": "Redneri",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "Session-Redneri",
@@ -701,5 +725,23 @@
       "resubscribeLink": "Nomol abonniere",
       "invalidToken": "Dä Abmäldigslink isch ungültig oder scho verwändet worde."
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

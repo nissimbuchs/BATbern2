@@ -98,7 +98,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
       tabIndex={0}
-      aria-label={`Event card for ${event.title}`}
+      aria-label={t('dashboard.eventCard.ariaLabel', { title: event.title })}
       sx={{
         height: '100%',
         display: 'flex',
@@ -186,7 +186,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               variant="determinate"
               value={progress}
               color={getProgressColor(progress)}
-              aria-label={`Workflow progress ${progress}%`}
+              aria-label={t('dashboard.eventCard.progressAriaLabel', { progress })}
               aria-valuenow={progress}
               sx={{ height: 8, borderRadius: 1, flex: 1 }}
             />
@@ -209,7 +209,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
             <IconButton
               size="small"
               onClick={handleSelectTopic}
-              aria-label={`Select topic for ${event.title}`}
+              aria-label={t('dashboard.eventCard.selectTopicAriaLabel', { title: event.title })}
               color="primary"
             >
               <TopicIcon />
@@ -217,7 +217,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
             <IconButton
               size="small"
               onClick={handleEdit}
-              aria-label={`Edit ${event.title}`}
+              aria-label={t('dashboard.eventCard.editAriaLabel', { title: event.title })}
               color="primary"
               data-testid="event-card-edit-button"
             >

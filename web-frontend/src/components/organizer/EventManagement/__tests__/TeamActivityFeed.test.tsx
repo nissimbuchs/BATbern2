@@ -69,6 +69,9 @@ vi.mock('react-i18next', () => ({
       if (key === 'dashboard.activityCount' && params) {
         return `${params.count} ${params.count === 1 ? 'activity' : 'activities'}`;
       }
+      if (key === 'notifications.totalCountAriaLabel' && params) {
+        return `${params.count} total notifications`;
+      }
 
       return translations[key] || key;
     },

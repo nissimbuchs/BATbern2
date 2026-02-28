@@ -23,7 +23,13 @@
     "partnerTopics": "パートナートピック",
     "partnerMeetings": "パートナーミーティング",
     "topics": "トピック提案",
-    "openMenu": "メニューを開く"
+    "openMenu": "メニューを開く",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "ログイン",
@@ -162,7 +168,8 @@
     },
     "detail": {
       "tabs": {
-        "users": "ユーザー"
+        "users": "ユーザー",
+        "ariaLabel": "Company detail tabs"
       },
       "noData": "企業データがありません"
     },
@@ -321,7 +328,9 @@
         "invalidFile": "無効なファイルです。sessions.jsonのみ使用できます。",
         "parseError": "解析エラー: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "主催者を選択",
@@ -364,7 +373,9 @@
       "onTime": "期限内",
       "pastEvent": "過去のイベント",
       "materialAvailable": "資料あり",
-      "noMaterials": "資料なし"
+      "noMaterials": "資料なし",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
       "invalidLink": "無効なリンク",
@@ -563,7 +574,10 @@
     "priority": {
       "urgent": "緊急",
       "high": "高"
-    }
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
     "layoutTemplates": "レイアウトテンプレート",
@@ -594,12 +608,17 @@
       "htmlBodyRequired": "HTML本文は必須です。",
       "subjectRequired": "コンテンツテンプレートには件名が必須です。",
       "templateKeyRequired": "テンプレートキーは必須です。"
-    }
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "イベントを読み込めませんでした",
     "errorMessage": "ネットワーク接続を確認して再試行してください。",
-    "retryButton": "再試行"
+    "retryButton": "再試行",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -661,7 +680,10 @@
       "pending": "Pending",
       "confirmed": "Confirmed",
       "error": "Error"
-    }
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
   },
   "companySearch": {
     "noOptions": "企業が見つかりません",
@@ -686,5 +708,17 @@
     "loading": "BATbernを読み込み中...",
     "configFailed": "設定の読み込みに失敗しました",
     "reloadPage": "ページを再読み込み"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

@@ -208,7 +208,8 @@
         "failed": "Documentar contact ha fallì",
         "loadHistory": "Chargiar istorgia da contacts ha fallì"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Status da referents",
@@ -436,5 +437,8 @@
     "iframeAriaLabel": "Avisament dal cuntegn da l'eveniment",
     "previewModeCaption": "Modus d'avisament: {{mode}} | Fasa: {{phase}}",
     "deviceCaption": "Apparat: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

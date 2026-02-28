@@ -249,7 +249,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
       {/* Top Tabs — desktop only */}
       {!isMobile && (
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="user detail tabs">
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label={t('userDetail.tabs.ariaLabel')}
+          >
             <Tab
               label={t('common:labels.overview')}
               id="user-tab-0"

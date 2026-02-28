@@ -231,7 +231,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   secondaryAction={
                     <IconButton
                       edge="end"
-                      aria-label="delete"
+                      aria-label={t('actions.delete')}
                       onClick={() => handleRemoveFile(file.uploadId)}
                       disabled={isUploading}
                     >

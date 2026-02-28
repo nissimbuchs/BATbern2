@@ -162,7 +162,8 @@
       "participantTable": "Deelnemers met importstatus",
       "importProgress": "Importvoortgang",
       "closeModal": "Importvenster sluiten",
-      "startImport": "Deelnemers importeren uit CSV-bestand starten"
+      "startImport": "Deelnemers importeren uit CSV-bestand starten",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "CSV verwerken mislukt",
     "importFailed": "Import mislukt"
@@ -170,7 +171,8 @@
   "userDetail": {
     "tabs": {
       "overview": "Overzicht",
-      "eventsParticipated": "Bijgewoonde evenementen"
+      "eventsParticipated": "Bijgewoonde evenementen",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "Overzicht van gebruikersprofiel. Hier kan aanvullende informatie worden toegevoegd.",
     "eventsTable": {

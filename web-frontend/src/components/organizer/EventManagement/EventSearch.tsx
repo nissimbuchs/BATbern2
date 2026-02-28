@@ -273,7 +273,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
             label={t('dashboard.filter.activeFilters', { count: activeFilterCount })}
             size="small"
             variant="outlined"
-            aria-label={`${activeFilterCount} filters active`}
+            aria-label={t('dashboard.filter.filtersActiveAriaLabel', { count: activeFilterCount })}
           />
           <Button
             size="small"

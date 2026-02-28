@@ -93,6 +93,8 @@ vi.mock('react-i18next', () => ({
         'menu.help': 'Help',
         'menu.logout': 'Logout',
         'role.organizer': 'Organizer',
+        'navigation.notifications': 'Notifications',
+        'navigation.userMenu': 'User menu',
       };
       return translations[key] || key;
     },

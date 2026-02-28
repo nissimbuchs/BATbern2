@@ -38,9 +38,10 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
   onSelect,
   onSearchChange,
   debounceMs = 300,
-  placeholder = 'Search companies...',
+  placeholder,
 }) => {
   const { t } = useTranslation('common');
+  const effectivePlaceholder = placeholder ?? t('company.search.placeholder');
   const [inputValue, setInputValue] = useState('');
   const [debouncedValue, setDebouncedValue] = useState('');
   const [options, setOptions] = useState<Array<{ id: string; name: string }>>([]);
@@ -158,7 +159,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
       renderInput={(params) => (
         <TextField
           {...params}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           aria-label={t('companySearch.searchAriaLabel')}
           aria-autocomplete="list"
           data-testid="search-input"

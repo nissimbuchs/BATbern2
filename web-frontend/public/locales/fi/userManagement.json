@@ -162,7 +162,8 @@
       "participantTable": "Osallistujat ja tuonnin tila",
       "importProgress": "Tuonnin edistyminen",
       "closeModal": "Sulje tuonti-ikkuna",
-      "startImport": "Aloita osallistujien tuonti CSV-tiedostosta"
+      "startImport": "Aloita osallistujien tuonti CSV-tiedostosta",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "CSV-tiedoston jäsennys epäonnistui",
     "importFailed": "Tuonti epäonnistui"
@@ -170,7 +171,8 @@
   "userDetail": {
     "tabs": {
       "overview": "Yleiskatsaus",
-      "eventsParticipated": "Osallistutut tapahtumat"
+      "eventsParticipated": "Osallistutut tapahtumat",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "Käyttäjäprofiilin yleiskatsaus. Lisätietoja voidaan lisätä tähän.",
     "eventsTable": {

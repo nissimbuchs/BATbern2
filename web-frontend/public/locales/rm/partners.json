@@ -95,7 +95,8 @@
       "exportData": "Exportar datas dal partenari",
       "deletePartner": "Stizzar datas dal partenari",
       "accessDenied": "Access refusà",
-      "accessDeniedMessage": "Questa secziun è accessibla mo als organisaturs."
+      "accessDeniedMessage": "Questa secziun è accessibla mo als organisaturs.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Survista",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Inscunter da primavaira",
         "autumn": "Inscunter d'atun"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Trametter invitaziun da chalender",
     "inviteSent": "Invitaziun tramessa",
@@ -183,7 +185,11 @@
         "loading": "Exportar..."
       },
       "noData": "Naginas datas da participaziun chattadas per il periodi tschernì",
-      "error": "Impussibel da chargiare datas da participaziun"
+      "error": "Impussibel da chargiare datas da participaziun",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Propostas da temas",
@@ -226,9 +232,15 @@
         },
         "status": "Status",
         "plannedEvent": "Occurrenza planisada",
-        "save": "Memorisar"
+        "save": "Memorisar",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Impussibel da chargiare temas"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

@@ -115,6 +115,11 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Recordatorio",
       "previewTitle": "Vista previa del correo"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -143,10 +148,17 @@
       "allYears": "Todos los años",
       "showArchived": "Mostrar eventos archivados",
       "activeFilters": "{{count}} filtro activo",
-      "clearAll": "Borrar todo"
+      "clearAll": "Borrar todo",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "Error al cargar eventos"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -218,7 +230,10 @@
       "updateTaskFailed": "Error al actualizar la tarea",
       "createTaskFailed": "Error al crear la tarea"
     },
-    "criticalTasksWidget": "Tareas críticas"
+    "criticalTasksWidget": "Tareas críticas",
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "Crear nuevo evento",
@@ -450,6 +465,14 @@
       "cdnFailed": "CDN fallido",
       "cdnUnknown": "Desconocido",
       "noVersions": "No hay historial de versiones disponible"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -537,7 +560,8 @@
     "tabs": {
       "details": "Detalles",
       "materials": "Materiales",
-      "speakers": "Ponentes"
+      "speakers": "Ponentes",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "Ponentes de la sesión",
@@ -699,5 +723,23 @@
       "resubscribeLink": "Suscribirse de nuevo",
       "invalidToken": "Este enlace de cancelación de suscripción no es válido o ya ha sido utilizado."
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

@@ -289,7 +289,9 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                                               )
                                             }
                                             disabled={isDownloading}
-                                            aria-label={`Download ${material.fileName}`}
+                                            aria-label={t('materials.downloadAriaLabel', {
+                                              fileName: material.fileName,
+                                            })}
                                             className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                                           >
                                             {getMaterialTypeIcon(material.materialType)}

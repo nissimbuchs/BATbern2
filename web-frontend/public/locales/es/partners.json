@@ -95,7 +95,8 @@
       "exportData": "Exportar datos del socio",
       "deletePartner": "Eliminar datos del socio",
       "accessDenied": "Acceso denegado",
-      "accessDeniedMessage": "Esta sección solo es accesible para organizadores."
+      "accessDeniedMessage": "Esta sección solo es accesible para organizadores.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Resumen",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Reunión de primavera",
         "autumn": "Reunión de otoño"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Enviar invitación de calendario",
     "inviteSent": "Invitación enviada",
@@ -183,7 +185,11 @@
         "loading": "Exportando..."
       },
       "noData": "No se encontraron datos de asistencia para el período seleccionado",
-      "error": "Error al cargar los datos de asistencia"
+      "error": "Error al cargar los datos de asistencia",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Sugerencias de temas",
@@ -226,9 +232,15 @@
         },
         "status": "Estado",
         "plannedEvent": "Evento planificado",
-        "save": "Guardar"
+        "save": "Guardar",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Error al cargar los temas"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

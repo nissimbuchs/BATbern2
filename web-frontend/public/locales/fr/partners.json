@@ -95,7 +95,8 @@
       "exportData": "Exporter les données du partenaire",
       "deletePartner": "Supprimer les données du partenaire",
       "accessDenied": "Accès refusé",
-      "accessDeniedMessage": "Cette section est uniquement accessible aux organisateurs."
+      "accessDeniedMessage": "Cette section est uniquement accessible aux organisateurs.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Aperçu",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Réunion de printemps",
         "autumn": "Réunion d'automne"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Envoyer une invitation de calendrier",
     "inviteSent": "Invitation envoyée",
@@ -183,7 +185,11 @@
         "loading": "Exportation..."
       },
       "noData": "Aucune donnée de présence trouvée pour la période sélectionnée",
-      "error": "Échec du chargement des données de présence"
+      "error": "Échec du chargement des données de présence",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Suggestions de sujets",
@@ -226,9 +232,15 @@
         },
         "status": "Statut",
         "plannedEvent": "Événement prévu",
-        "save": "Enregistrer"
+        "save": "Enregistrer",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Échec du chargement des sujets"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

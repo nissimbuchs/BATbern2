@@ -319,7 +319,12 @@ export const SessionBatchImportModal: React.FC<SessionBatchImportModalProps> = (
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={`${candidate.speakersCount} speaker${candidate.speakersCount !== 1 ? 's' : ''}`}
+                          label={t(
+                            candidate.speakersCount === 1
+                              ? 'session.speakerCount'
+                              : 'session.speakersCount',
+                            { count: candidate.speakersCount }
+                          )}
                           size="small"
                           variant="outlined"
                           color={candidate.speakersCount > 0 ? 'primary' : 'default'}

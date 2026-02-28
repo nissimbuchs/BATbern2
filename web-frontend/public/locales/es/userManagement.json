@@ -162,7 +162,8 @@
       "participantTable": "Participantes con estado de importación",
       "importProgress": "Progreso de importación",
       "closeModal": "Cerrar ventana de importación",
-      "startImport": "Iniciar importación de participantes desde archivo CSV"
+      "startImport": "Iniciar importación de participantes desde archivo CSV",
+      "progressBar": "Import progress: {{percent}}% complete"
     },
     "parseError": "Error al analizar el CSV",
     "importFailed": "Importación fallida"
@@ -170,7 +171,8 @@
   "userDetail": {
     "tabs": {
       "overview": "Resumen",
-      "eventsParticipated": "Eventos en los que participó"
+      "eventsParticipated": "Eventos en los que participó",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "Resumen del perfil del usuario. Se puede agregar información adicional aquí.",
     "eventsTable": {

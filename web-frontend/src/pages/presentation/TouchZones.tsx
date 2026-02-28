@@ -18,6 +18,7 @@
  */
 
 import React, { type JSX, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /** Max pixel movement for a gesture to still count as a tap (not a swipe). */
 const TAP_MAX_MOVE = 20;
@@ -38,6 +39,7 @@ export function TouchZones({
   onToggleBlank,
   isBlankActive,
 }: TouchZonesProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <>
       {/* Left zone — go back */}
@@ -53,7 +55,7 @@ export function TouchZones({
           width: '20%',
           bottom: '15%',
         }}
-        aria-label="Previous section"
+        aria-label={t('presentation.previousSection')}
       />
 
       {/* Right zone — advance */}
@@ -69,7 +71,7 @@ export function TouchZones({
           width: '20%',
           bottom: '15%',
         }}
-        aria-label="Next section"
+        aria-label={t('presentation.nextSection')}
       />
 
       {/* Bottom zone — toggle break (B key) */}

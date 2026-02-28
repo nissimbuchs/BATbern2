@@ -115,6 +115,11 @@
       "typeNewsletter": "Nieuwsbrief",
       "typeReminder": "Herinnering",
       "previewTitle": "E-mailvoorbeeld"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
     }
   },
   "dashboard": {
@@ -143,10 +148,17 @@
       "allYears": "Alle jaren",
       "showArchived": "Gearchiveerde evenementen tonen",
       "activeFilters": "{{count}} filter actief",
-      "clearAll": "Alles wissen"
+      "clearAll": "Alles wissen",
+      "filtersActiveAriaLabel": "{{count}} filters active"
     },
     "errors": {
       "failedToLoadEvents": "Laden van evenementen mislukt"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
     }
   },
   "tabs": {
@@ -218,7 +230,10 @@
       "updateTaskFailed": "Bijwerken van taak mislukt",
       "createTaskFailed": "Aanmaken van taak mislukt"
     },
-    "criticalTasksWidget": "Kritieke taken"
+    "criticalTasksWidget": "Kritieke taken",
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
   },
   "form": {
     "createEvent": "Nieuw evenement aanmaken",
@@ -450,6 +465,14 @@
       "cdnFailed": "CDN mislukt",
       "cdnUnknown": "Onbekend",
       "noVersions": "Geen versiegeschiedenis beschikbaar"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
     }
   },
   "notifications": {
@@ -537,7 +560,8 @@
     "tabs": {
       "details": "Details",
       "materials": "Materialen",
-      "speakers": "Sprekers"
+      "speakers": "Sprekers",
+      "ariaLabel": "Session edit tabs"
     },
     "speakers": {
       "title": "Sessiesprekers",
@@ -699,5 +723,23 @@
       "resubscribeLink": "Opnieuw abonneren",
       "invalidToken": "Deze afmeldlink is ongeldig of is al gebruikt."
     }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
   }
 }

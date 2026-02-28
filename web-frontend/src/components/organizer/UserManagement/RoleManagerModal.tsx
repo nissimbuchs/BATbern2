@@ -99,7 +99,12 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
       <DialogTitle id="role-manager-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">{t('modal.editRoles.title')}</Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>

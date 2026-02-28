@@ -95,7 +95,8 @@
       "exportData": "Vie kumppanin tiedot",
       "deletePartner": "Poista kumppanin tiedot",
       "accessDenied": "Pääsy kielletty",
-      "accessDeniedMessage": "Tähän osioon pääsevät vain järjestäjät."
+      "accessDeniedMessage": "Tähän osioon pääsevät vain järjestäjät.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Yleiskatsaus",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Kevätkokoous",
         "autumn": "Syyskokoous"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Lähetä kalenterikutsu",
     "inviteSent": "Kutsu lähetetty",
@@ -183,7 +185,11 @@
         "loading": "Viedään..."
       },
       "noData": "Valitulle ajanjaksolle ei löydetty osallistumistietoja",
-      "error": "Osallistumistietojen lataaminen epäonnistui"
+      "error": "Osallistumistietojen lataaminen epäonnistui",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Aihe-ehdotukset",
@@ -226,9 +232,15 @@
         },
         "status": "Tila",
         "plannedEvent": "Suunniteltu tapahtuma",
-        "save": "Tallenna"
+        "save": "Tallenna",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Aiheiden lataaminen epäonnistui"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

@@ -415,7 +415,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       </Typography>
 
       <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table aria-label="speakers and sessions table">
+        <Table aria-label={t('speakersTable.ariaLabel')}>
           <TableHead>
             <TableRow>
               <TableCell>{t('speakers.slotTime')}</TableCell>

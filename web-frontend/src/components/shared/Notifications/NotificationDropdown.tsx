@@ -112,7 +112,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
           secondaryAction={
             <IconButton
               edge="end"
-              aria-label="delete notification"
+              aria-label={t('notifications.deleteAriaLabel')}
               onClick={(e) => handleDeleteClick(notification.id, e)}
               size="small"
             >
@@ -216,7 +216,12 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
                   {t('notifications.markAllAsRead', 'Mark all as read')}
                 </Button>
               )}
-              <IconButton onClick={onReload} disabled={isLoading} aria-label="reload" size="small">
+              <IconButton
+                onClick={onReload}
+                disabled={isLoading}
+                aria-label={t('notifications.reload')}
+                size="small"
+              >
                 <RefreshIcon />
               </IconButton>
             </Box>
@@ -227,7 +232,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
             role="status"
             sx={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}
           >
-            {unreadCount} unread notifications
+            {t('notifications.unreadCount', { count: unreadCount })}
           </Box>
 
           <Divider />
@@ -245,7 +250,12 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
               <Alert severity="error" sx={{ mb: 1 }}>
                 {error}
               </Alert>
-              <Button fullWidth variant="outlined" onClick={onReload} aria-label="retry">
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={onReload}
+                aria-label={t('actions.retry')}
+              >
                 {t('notifications.retry', 'Retry')}
               </Button>
             </Box>
@@ -286,7 +296,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDeleteCancel} aria-label="cancel">
+            <Button onClick={handleDeleteCancel} aria-label={t('actions.cancel')}>
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleDeleteConfirm} color="error" autoFocus>

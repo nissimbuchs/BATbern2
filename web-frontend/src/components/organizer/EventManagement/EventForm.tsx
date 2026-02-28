@@ -909,7 +909,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     label={t('form.venue')}
                     fullWidth
                     margin="normal"
-                    placeholder="e.g., Kornhausforum Bern"
+                    placeholder={t('eventForm.venue.namePlaceholder')}
                     data-testid="venue-name-field"
                   />
                 )}
@@ -924,7 +924,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     label={t('form.venueAddress')}
                     fullWidth
                     margin="normal"
-                    placeholder="e.g., Kornhausplatz 18, 3011 Bern"
+                    placeholder={t('eventForm.venue.addressPlaceholder')}
                     data-testid="venue-address-field"
                   />
                 )}

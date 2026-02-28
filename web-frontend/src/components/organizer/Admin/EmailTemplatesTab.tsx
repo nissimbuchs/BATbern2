@@ -182,7 +182,7 @@ export const EmailTemplatesTab: React.FC = () => {
             if (v) setCategoryFilter(v);
           }}
           size="small"
-          aria-label="Category filter"
+          aria-label={t('common:filters.categoryFilter')}
         >
           <ToggleButton value="SPEAKER">
             {t('emailTemplates.categories.SPEAKER', 'Speakers')}
@@ -205,7 +205,7 @@ export const EmailTemplatesTab: React.FC = () => {
             if (v) setLocaleFilter(v);
           }}
           size="small"
-          aria-label="Language filter"
+          aria-label={t('common:filters.languageFilter')}
         >
           <ToggleButton value="de">DE</ToggleButton>
           <ToggleButton value="en">EN</ToggleButton>

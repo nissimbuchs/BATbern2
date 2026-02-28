@@ -208,7 +208,8 @@
         "failed": "Fehler beim Aufzeichnen der Kontaktierung",
         "loadHistory": "Fehler beim Laden des Kontaktverlaufs"
       }
-    }
+    },
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Sprecher-Status",
@@ -437,5 +438,8 @@
     "iframeAriaLabel": "Inhalt der Veranstaltungsvorschau",
     "previewModeCaption": "Vorschaumodus: {{mode}} | Phase: {{phase}}",
     "deviceCaption": "Gerät: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

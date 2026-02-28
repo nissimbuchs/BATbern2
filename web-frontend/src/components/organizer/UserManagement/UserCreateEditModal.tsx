@@ -312,7 +312,12 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
           <Typography variant="h6">
             {isEditMode ? t('modal.editUser.title', 'Edit User') : t('modal.createUser.title')}
           </Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>

@@ -7,9 +7,11 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, Box, Collapse, IconButton } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useEnvironment } from '@/contexts/useEnvironment';
 
 export const ReleaseNotesInfoBox: React.FC = () => {
+  const { t } = useTranslation();
   const environment = useEnvironment();
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,7 +72,7 @@ export const ReleaseNotesInfoBox: React.FC = () => {
           severity="info"
           action={
             <IconButton
-              aria-label="close"
+              aria-label={t('actions.close')}
               color="inherit"
               size="small"
               onClick={() => setDismissed(true)}
@@ -84,7 +86,7 @@ export const ReleaseNotesInfoBox: React.FC = () => {
             },
           }}
         >
-          <AlertTitle sx={{ fontWeight: 'bold' }}>Release Notes</AlertTitle>
+          <AlertTitle sx={{ fontWeight: 'bold' }}>{t('releaseNotes.title')}</AlertTitle>
           <Box
             component="pre"
             sx={{

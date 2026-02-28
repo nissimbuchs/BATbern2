@@ -109,7 +109,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      expect(screen.getByRole('button', { name: /reload/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /aktualisieren/i })).toBeInTheDocument();
     });
 
     it('should_displayNotificationDetails_when_notificationRendered', () => {
@@ -206,7 +206,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      const reloadButton = screen.getByRole('button', { name: /reload/i });
+      const reloadButton = screen.getByRole('button', { name: /aktualisieren/i });
       await user.click(reloadButton);
 
       expect(onReload).toHaveBeenCalledTimes(1);
@@ -225,7 +225,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      const reloadButton = screen.getByRole('button', { name: /reload/i });
+      const reloadButton = screen.getByRole('button', { name: /aktualisieren/i });
       expect(reloadButton).toBeDisabled();
     });
 
@@ -424,7 +424,7 @@ describe('NotificationDropdown', () => {
       const deleteButton = screen.getByLabelText(/delete notification/i);
       await user.click(deleteButton);
 
-      const cancelButton = await screen.findByRole('button', { name: /cancel/i });
+      const cancelButton = await screen.findByRole('button', { name: /abbrechen/i });
       await user.click(cancelButton);
 
       expect(onDelete).not.toHaveBeenCalled();
@@ -562,7 +562,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      const retryButton = screen.getByRole('button', { name: /retry/i });
+      const retryButton = screen.getByRole('button', { name: /wiederholen/i });
       await user.click(retryButton);
 
       expect(onReload).toHaveBeenCalledTimes(1);

@@ -1,1 +1,8 @@
-{}
+{
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
+  }
+}

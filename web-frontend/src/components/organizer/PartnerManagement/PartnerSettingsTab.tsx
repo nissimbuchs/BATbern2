@@ -102,7 +102,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
                 onChange={(e) => onUpdateAutoRenewal?.(e.target.checked)}
               />
             }
-            label="Auto-Renewal"
+            label={t('detail.settingsTab.autoRenewal')}
           />
           {renewalDateFormatted && (
             <Typography variant="body2" sx={{ mt: 1 }}>

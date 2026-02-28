@@ -95,7 +95,8 @@
       "exportData": "Partnergegevens exporteren",
       "deletePartner": "Partnergegevens verwijderen",
       "accessDenied": "Toegang geweigerd",
-      "accessDeniedMessage": "Dit gedeelte is alleen toegankelijk voor organisatoren."
+      "accessDeniedMessage": "Dit gedeelte is alleen toegankelijk voor organisatoren.",
+      "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
       "overview": "Overzicht",
@@ -146,7 +147,8 @@
       "type": {
         "spring": "Voorjaarsvergadering",
         "autumn": "Herfstvergadering"
-      }
+      },
+      "eventCodePlaceholder": "BATbern57"
     },
     "sendInvite": "Kalenderuitnodiging versturen",
     "inviteSent": "Uitnodiging verzonden",
@@ -183,7 +185,11 @@
         "loading": "Exporteren..."
       },
       "noData": "Geen aanwezigheidsgegevens gevonden voor de geselecteerde periode",
-      "error": "Laden van aanwezigheidsgegevens mislukt"
+      "error": "Laden van aanwezigheidsgegevens mislukt",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
     },
     "topics": {
       "title": "Onderwerpssuggesties",
@@ -226,9 +232,15 @@
         },
         "status": "Status",
         "plannedEvent": "Gepland evenement",
-        "save": "Opslaan"
+        "save": "Opslaan",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
       },
       "error": "Laden van onderwerpen mislukt"
     }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
   }
 }

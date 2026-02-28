@@ -20,6 +20,7 @@ vi.mock('react-i18next', () => ({
       const translations: Record<string, string> = {
         'language.de': 'Deutsch',
         'language.en': 'English',
+        'language.select': 'Language selector',
       };
       return translations[key] ?? key;
     },

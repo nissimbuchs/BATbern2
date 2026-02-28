@@ -538,7 +538,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     fullWidth
                     size="small"
                     type="email"
-                    placeholder="speaker@example.com"
+                    placeholder={t('speakerOutreach.emailPlaceholder')}
                   />
                   <Button
                     variant="outlined"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Step, StepLabel, Stepper, Typography, Chip } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircle as CheckIcon,
   RadioButtonUnchecked as PendingIcon,
@@ -22,12 +23,7 @@ export interface PublishingTimelineProps {
   scheduledDates?: Partial<Record<PublishingPhase, string>>;
 }
 
-const phases: Array<{ key: PublishingPhase | 'updates'; label: string }> = [
-  { key: 'topic', label: 'Topic' },
-  { key: 'speakers', label: 'Speakers' },
-  { key: 'agenda', label: 'Agenda' },
-  { key: 'updates', label: 'Updates' },
-];
+const PHASE_KEYS: Array<PublishingPhase | 'updates'> = ['topic', 'speakers', 'agenda', 'updates'];
 
 export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   currentPhase,
@@ -37,6 +33,9 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   publishedDates = {},
   scheduledDates = {},
 }) => {
+  const { t } = useTranslation('events');
+  const phases = PHASE_KEYS.map((key) => ({ key, label: t(`publishing.phases.${key}`) }));
+
   const getPhaseClass = (phaseKey: string): string => {
     // Check published status first - a phase can be both current and published
     if (publishedPhases.includes(phaseKey as PublishingPhase)) return 'complete';
@@ -97,7 +96,7 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
     if (diffDays > 0) {
       return (
         <Chip
-          label={`Auto-publish in ${diffDays} days`}
+          label={t('publishing.autoPublishInDays', { days: diffDays })}
           size="small"
           color="info"
           data-testid={`auto-publish-${phaseKey}`}
@@ -106,7 +105,7 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
     }
     return (
       <Chip
-        label="Auto-publish scheduled"
+        label={t('publishing.autoPublishScheduled')}
         size="small"
         color="default"
         data-testid={`auto-publish-${phaseKey}`}
