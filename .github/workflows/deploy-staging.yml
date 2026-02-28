@@ -181,7 +181,7 @@ jobs:
             echo "services=false" >> $GITHUB_OUTPUT
           fi
 
-          # Summary (uses shell vars — ${{ }} expressions cannot read outputs from the same step)
+          # Summary (uses shell vars — expressions cannot read step outputs from the same step)
           echo ""
           echo "📊 Deployment plan:"
           echo "  Frontend: $([ "$FRONTEND_CHANGED" = "true" ] && echo "YES" || echo "no")"
