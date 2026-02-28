@@ -32,7 +32,9 @@ import {
   getFirstPostBreakSession,
 } from '@/hooks/usePresentationSections';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { useTouchNavigation } from '@/hooks/useTouchNavigation';
 import { TopicBackground } from './presentation/TopicBackground';
+import { TouchZones } from './presentation/TouchZones';
 import { BlankOverlay } from './presentation/BlankOverlay';
 import { AgendaView } from './presentation/AgendaView';
 import { SectionDots } from './presentation/SectionDots';
@@ -99,6 +101,13 @@ export function PresentationPage(): JSX.Element {
   useKeyboardNavigation({
     sectionCount: sections.length,
     currentIndex,
+    isBlankActive,
+    onNext: goNext,
+    onPrev: goPrev,
+    onToggleBlank: toggleBlank,
+  });
+
+  useTouchNavigation({
     isBlankActive,
     onNext: goNext,
     onPrev: goPrev,
@@ -359,8 +368,16 @@ export function PresentationPage(): JSX.Element {
       {/* Section dots progress indicator */}
       <SectionDots count={sections.length} current={currentIndex} />
 
-      {/* B-key break overlay — AnimatePresence fade 0.3s (ACs #9, #23-24, #29) */}
-      <BlankOverlay isActive={isBlankActive}>
+      {/* Touch zones — left/right tap to navigate, bottom tap to toggle break (mobile/tablet) */}
+      <TouchZones
+        onNext={goNext}
+        onPrev={goPrev}
+        onToggleBlank={toggleBlank}
+        isBlankActive={isBlankActive}
+      />
+
+      {/* B-key / bottom-zone break overlay — AnimatePresence fade 0.3s (ACs #9, #23-24, #29) */}
+      <BlankOverlay isActive={isBlankActive} onDismiss={toggleBlank}>
         <div style={{ position: 'fixed', inset: 0, background: '#0a0d14' }}>
           <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
           <BreakSlide firstPostBreakSession={firstPostBreakSession} />
