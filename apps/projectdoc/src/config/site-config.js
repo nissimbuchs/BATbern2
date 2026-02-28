@@ -87,11 +87,29 @@ export default {
       pattern: '*.openapi.yml',
       isTopLevel: true
     },
+    'assessment': {
+      title: 'Quality Assessment',
+      description: 'AI code quality evidence: stability, security, maintainability, and design methodology',
+      icon: '🔬',
+      order: 9,
+      folder: 'assessment',
+      pattern: '**/*.md',
+      isTopLevel: true
+    },
+    'plans': {
+      title: 'Implementation Plans',
+      description: 'Deferred feature plans and technical specifications',
+      icon: '🗺️',
+      order: 10,
+      folder: 'plans',
+      pattern: '**/*.md',
+      isTopLevel: false
+    },
     'reports': {
       title: 'Test & Quality Reports',
       description: 'Comprehensive test results, coverage, security, and quality metrics dashboard',
       icon: '📊',
-      order: 9,
+      order: 11,
       externalLink: '/reports/index.html',
       isExternal: true,
       isTopLevel: true
@@ -141,7 +159,7 @@ export const topLevelSections = [
     description: 'Architecture, guides, and technical specs',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg>',
     path: '/documentation/index.html',
-    categories: ['architecture', 'prd-enhanced', 'wireframes', 'epics', 'stories', 'project-docs'],
+    categories: ['architecture', 'prd-enhanced', 'wireframes', 'epics', 'stories', 'project-docs', 'assessment', 'plans'],
     order: 2
   },
   {
