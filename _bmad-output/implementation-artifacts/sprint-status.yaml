@@ -150,6 +150,7 @@ development_status:
   10-7-newsletter-subscription-and-sending: review            # anonymous subscribe widget, token-based unsubscribe, account toggle, organizer send tab; prereq: 10.2
   10-8a-moderator-presentation-page: in-progress              # fullscreen projector page; keyboard nav; break flow; 60s poll; no Framer Motion; CUMS V14 migration
   10-8b-moderator-presentation-page-animations: review # animation layer on 10.8a: FLIP, Ken Burns, section springs, stagger, break/apéro effects; prereq: 10.8a
+  10-9-i18n-cleanup: ready-for-dev                      # 4-phase cleanup: deduplication, hardcoded text, test resilience, unused key removal; plan: docs/plans/i18n-cleanup-plan.md
   epic-10-retrospective: optional
 
   # ============================================================

@@ -581,4 +581,82 @@ As an **event moderator**, I want the presentation page to have polished, fluid 
 
 ---
 
+### Story 10.9: i18n Cleanup — Deduplication, Hardcoded Text, Test Resilience & Unused Key Removal
+
+**Story file**: `_bmad-output/implementation-artifacts/10-9-i18n-cleanup.md`
+**Plan**: `docs/plans/i18n-cleanup-plan.md`
+**Status**: ready-for-dev
+**Prerequisite**: None (independent — frontend-only, no backend or DB changes)
+
+**User Story:**
+As a **frontend developer and future contributor**, I want the translation system to be clean, consistent, and test-resilient, so that adding a new language or renaming a translation value never causes surprises in tests or the UI.
+
+**Scope:**
+
+Four phases executed **in dependency order** (do not parallelize):
+
+| Phase | Goal | Scope |
+|-------|------|-------|
+| **1 — Deduplicate** | Consolidate cross-namespace duplicate values into `common` | 89 redirect-to-common + 80 new common keys; rename awkward key paths |
+| **2 — Hardcoded text** | Replace hardcoded UI strings with `t()` calls | 78 prod files, 254 hits (excl. PrivacyPage, SupportPage) |
+| **3 — Test resilience** | Add `data-testid` anchors; refactor unit + E2E tests off text literals | 180 unit test files (~4,400 assertions); 32 E2E spec files (~320 brittle patterns) |
+| **4 — Unused key analysis** | Smart automated analysis of 830 flagged unused keys; delete confirmed dead keys | Scripted tooling + deletion |
+
+**Phase 1 — Consolidate Duplicates:**
+- 302 unique values appear in 2+ keys; 169 span multiple namespaces
+- Sub-task 1.1: 89 duplicates already have a canonical `common` key — redirect callers, delete duplicates from other namespaces
+- Sub-task 1.2: 80 duplicates not yet in `common` — add under `common:labels.*`, `common:filters.*`, `common:actions.*` hierarchy
+- Rename awkward existing `common` keys to semantic generics (e.g., `common:company.batchImport.columns.status` → `common:labels.status`)
+- All 9 locale files must stay in sync (same keys removed/added in same commit)
+- Full duplicates list: `/tmp/duplicates_report.txt`
+
+**Phase 2 — Hardcoded Text:**
+- Groups: A (public pages, 41 hits), B (speaker portal, 50 hits), C (organizer, 56 hits), D (shared/user, 45 hits)
+- EN translation value must be a **character-for-character copy** of the hardcoded string replaced (same casing, punctuation, whitespace) — this is what keeps co-located tests passing
+- Non-EN locales: add key with `[MISSING]` prefix as placeholder
+- Excluded: `PrivacyPage.tsx`, `SupportPage.tsx` (intentionally German)
+- Full hardcoded detail: `/tmp/hardcoded_prod_detail.txt`
+
+**Phase 3 — Test Resilience:**
+- 3A: Add `data-testid` attributes to components (naming: `[feature]-[component]-[element]` kebab-case)
+- 3B: Refactor Vitest unit tests — replace `getByText('...')` with `getByRole(..., { name: /regex/i })` or `getByTestId`
+- 3C: Refactor Playwright E2E — replace `button:has-text('...')`, `text=/regex/i`, `locator('h1')` with `getByRole` or `getByTestId`
+- Keep data-content assertions intact (e.g., `text=BATbern57`)
+
+**Phase 4 — Unused Key Analysis:**
+- Detect dynamic `t()` patterns (`` t(`prefix.${var}`) ``) to build prefix exclusion list
+- Cross-reference prop-drilling patterns (`label: t(...)`, `title: t(...)`)
+- Classify 830 flagged keys into: Definitely unused / Possibly dynamic / Needs manual check (target: <50 in last bucket)
+- Delete confirmed unused keys from all 9 locale files
+- Commit `scripts/i18n/analyze-unused.py` and `docs/plans/i18n-unused-keys-report.md`
+
+**Critical test context:**
+Tests run with **real i18n** (not mocks) — `src/test/setup.ts` initialises `src/i18n/config` and calls `i18n.changeLanguage('en')`. Tests assert on rendered EN text. If an EN translation value differs from the hardcoded string it replaces — even in capitalisation — co-located `getByText` tests will break.
+
+**Key new files:**
+```
+scripts/i18n/scan-hardcoded.py               — Phase 2 scanner
+scripts/i18n/analyze-unused.py              — Phase 4 analyzer
+docs/plans/i18n-unused-keys-report.md       — Phase 4 output report
+```
+
+**Key modified files:**
+```
+web-frontend/public/locales/en/*.json       — canonical EN locale (all 10 namespaces)
+web-frontend/public/locales/{de,fr,it,rm,es,fi,nl,ja}/*.json  — all other locales
+web-frontend/src/components/**/*.tsx        — data-testid additions (Phase 3A)
+web-frontend/src/**/__tests__/**/*.test.tsx — unit test refactors (Phase 3B)
+web-frontend/e2e/**/*.spec.ts               — E2E refactors (Phase 3C)
+```
+
+**Definition of Done (Story 10.9):**
+- [ ] Phase 1: All 169 cross-namespace duplicates resolved; awkward `common` key paths renamed; all 9 locales in sync; `npm run test -- --run` 0 failures; `npm run type-check` passes; Playwright `chromium` passes
+- [ ] Phase 2: 0 hardcoded UI strings in 78 scoped files (re-run scanner); all high-risk test files verified green (RegistrationWizard ×197, InvitationResponsePage ×91, ParticipantBatchImportModal ×74, PartnerFilters ×70, FilterSidebar ×61, CompanyAutocomplete ×63); all 3 Playwright projects pass
+- [ ] Phase 3: 0 `button:has-text()`, 0 `text=/...translation.../i`, 0 `locator('h1/h2/label/tbody tr')` in any spec file; 0 `getByText('EN label')` in unit tests; all 3 Playwright projects pass; `data-testid` convention followed
+- [ ] Phase 4: `analyze-unused.py` committed and runnable; "Definitely unused" keys deleted; "Needs manual check" ≤ 50 keys; `i18n-unused-keys-report.md` committed; full test suite passes after deletion
+- [ ] No `i18next: missing key` warnings in browser console for EN locale after each phase
+- [ ] `npm run lint` passes after each phase
+
+---
+
 **END OF EPIC 10**
