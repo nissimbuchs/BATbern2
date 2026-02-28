@@ -418,23 +418,23 @@
       "cancel": "Verder verkennen",
       "saveError": "Opslaan van onderwerpselectie mislukt. Probeer het opnieuw."
     },
-    "noEventCode": "[MISSING] No event code provided"
+    "noEventCode": "Geen evenementcode opgegeven"
   },
   "livePreview": {
-    "devicePreviewMode": "[MISSING] device preview mode",
-    "desktopPreview": "[MISSING] Desktop preview",
-    "mobilePreview": "[MISSING] Mobile preview",
-    "printPreview": "[MISSING] Print preview",
-    "desktop": "[MISSING] Desktop",
-    "mobile": "[MISSING] Mobile",
-    "print": "[MISSING] Print",
-    "refreshPreview": "[MISSING] Refresh preview",
-    "switchedTo": "[MISSING] Switched to {{device}} preview",
-    "refreshingPreview": "[MISSING] Refreshing preview...",
-    "failedToLoad": "[MISSING] Failed to load preview. Please try again.",
-    "iframeTitle": "[MISSING] Event preview",
-    "iframeAriaLabel": "[MISSING] Event content preview",
-    "previewModeCaption": "[MISSING] Preview Mode: {{mode}} | Phase: {{phase}}",
-    "deviceCaption": "[MISSING] Device: {{device}} ({{width}} x {{height}})"
+    "devicePreviewMode": "apparaat voorbeeldmodus",
+    "desktopPreview": "Bureaubladvoorbeeld",
+    "mobilePreview": "Mobiel voorbeeld",
+    "printPreview": "Afdrukvoorbeeld",
+    "desktop": "Bureaublad",
+    "mobile": "Mobiel",
+    "print": "Afdrukken",
+    "refreshPreview": "Voorbeeld vernieuwen",
+    "switchedTo": "Overgeschakeld naar {{device}} voorbeeld",
+    "refreshingPreview": "Voorbeeld vernieuwen...",
+    "failedToLoad": "Voorbeeld laden mislukt. Probeer opnieuw.",
+    "iframeTitle": "Evenementvoorbeeld",
+    "iframeAriaLabel": "Voorvertoning evenementinhoud",
+    "previewModeCaption": "Voorbeeldmodus: {{mode}} | Fase: {{phase}}",
+    "deviceCaption": "Apparaat: {{device}} ({{width}} x {{height}})"
   }
 }

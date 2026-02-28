@@ -218,7 +218,7 @@
       "updateTaskFailed": "Aggiornamento attività fallito",
       "createTaskFailed": "Creazione attività fallita"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Attività critiche"
   },
   "form": {
     "createEvent": "Crea nuovo evento",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Stato",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Cerca eventi",
+    "clearSearchAriaLabel": "Cancella ricerca",
+    "clearAllAriaLabel": "Cancella tutti i filtri"
   },
   "validation": {
     "eventNumberRequired": "Il numero evento è obbligatorio",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Elementi per pagina"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "Nessun evento trovato",
+    "eventList": "Elenco eventi"
   },
   "common": {
     "cancel": "Annulla",
@@ -475,8 +475,8 @@
     "loading": "Caricamento..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Caricamento dettagli evento",
+    "registerFor": "Iscriviti a",
     "comingSoon": "Prossimamente...",
     "preview": {
       "title": "Modalità anteprima",

@@ -418,23 +418,23 @@
       "cancel": "Seguir explorando",
       "saveError": "Error al guardar la selección del tema. Por favor, inténtalo de nuevo."
     },
-    "noEventCode": "[MISSING] No event code provided"
+    "noEventCode": "No se proporcionó código de evento"
   },
   "livePreview": {
-    "devicePreviewMode": "[MISSING] device preview mode",
-    "desktopPreview": "[MISSING] Desktop preview",
-    "mobilePreview": "[MISSING] Mobile preview",
-    "printPreview": "[MISSING] Print preview",
-    "desktop": "[MISSING] Desktop",
-    "mobile": "[MISSING] Mobile",
-    "print": "[MISSING] Print",
-    "refreshPreview": "[MISSING] Refresh preview",
-    "switchedTo": "[MISSING] Switched to {{device}} preview",
-    "refreshingPreview": "[MISSING] Refreshing preview...",
-    "failedToLoad": "[MISSING] Failed to load preview. Please try again.",
-    "iframeTitle": "[MISSING] Event preview",
-    "iframeAriaLabel": "[MISSING] Event content preview",
-    "previewModeCaption": "[MISSING] Preview Mode: {{mode}} | Phase: {{phase}}",
-    "deviceCaption": "[MISSING] Device: {{device}} ({{width}} x {{height}})"
+    "devicePreviewMode": "modo de vista previa del dispositivo",
+    "desktopPreview": "Vista previa de escritorio",
+    "mobilePreview": "Vista previa móvil",
+    "printPreview": "Vista previa de impresión",
+    "desktop": "Escritorio",
+    "mobile": "Móvil",
+    "print": "Imprimir",
+    "refreshPreview": "Actualizar vista previa",
+    "switchedTo": "Cambiado a vista previa {{device}}",
+    "refreshingPreview": "Actualizando vista previa...",
+    "failedToLoad": "Error al cargar la vista previa. Inténtalo de nuevo.",
+    "iframeTitle": "Vista previa del evento",
+    "iframeAriaLabel": "Vista previa del contenido del evento",
+    "previewModeCaption": "Modo vista previa: {{mode}} | Fase: {{phase}}",
+    "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
   }
 }

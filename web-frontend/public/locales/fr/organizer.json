@@ -418,23 +418,23 @@
       "cancel": "Continuer à explorer",
       "saveError": "Échec de l'enregistrement de la sélection du sujet. Veuillez réessayer."
     },
-    "noEventCode": "[MISSING] No event code provided"
+    "noEventCode": "Aucun code d'événement fourni"
   },
   "livePreview": {
-    "devicePreviewMode": "[MISSING] device preview mode",
-    "desktopPreview": "[MISSING] Desktop preview",
-    "mobilePreview": "[MISSING] Mobile preview",
-    "printPreview": "[MISSING] Print preview",
-    "desktop": "[MISSING] Desktop",
-    "mobile": "[MISSING] Mobile",
-    "print": "[MISSING] Print",
-    "refreshPreview": "[MISSING] Refresh preview",
-    "switchedTo": "[MISSING] Switched to {{device}} preview",
-    "refreshingPreview": "[MISSING] Refreshing preview...",
-    "failedToLoad": "[MISSING] Failed to load preview. Please try again.",
-    "iframeTitle": "[MISSING] Event preview",
-    "iframeAriaLabel": "[MISSING] Event content preview",
-    "previewModeCaption": "[MISSING] Preview Mode: {{mode}} | Phase: {{phase}}",
-    "deviceCaption": "[MISSING] Device: {{device}} ({{width}} x {{height}})"
+    "devicePreviewMode": "mode aperçu appareil",
+    "desktopPreview": "Aperçu bureau",
+    "mobilePreview": "Aperçu mobile",
+    "printPreview": "Aperçu impression",
+    "desktop": "Bureau",
+    "mobile": "Mobile",
+    "print": "Imprimer",
+    "refreshPreview": "Actualiser l'aperçu",
+    "switchedTo": "Basculé vers aperçu {{device}}",
+    "refreshingPreview": "Actualisation de l'aperçu...",
+    "failedToLoad": "Échec du chargement de l'aperçu. Veuillez réessayer.",
+    "iframeTitle": "Aperçu de l'événement",
+    "iframeAriaLabel": "Aperçu du contenu de l'événement",
+    "previewModeCaption": "Mode aperçu : {{mode}} | Phase : {{phase}}",
+    "deviceCaption": "Appareil : {{device}} ({{width}} x {{height}})"
   }
 }

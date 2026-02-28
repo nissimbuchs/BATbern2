@@ -1,9 +1,9 @@
 {
   "participantImport": {
     "aria": {
-      "importProgress": "[MISSING] Import progress",
-      "closeModal": "[MISSING] Close import modal",
-      "startImport": "[MISSING] Start importing participants from CSV file"
+      "importProgress": "Importfortschritt",
+      "closeModal": "Importdialog schliesse",
+      "startImport": "Teilnehmer us dr CSV-Datei importiere"
     }
   }
 }

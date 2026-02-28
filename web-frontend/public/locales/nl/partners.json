@@ -46,7 +46,7 @@
   "loading": "Partners laden...",
   "error": {
     "failedToLoad": "Laden van partners mislukt",
-    "correlationId": "[MISSING] Correlation ID"
+    "correlationId": "Correlatie-ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partner gevonden",
@@ -86,16 +86,16 @@
       "contentLabel": "Inhoud",
       "htmlSupported": "HTML-opmaak wordt ondersteund",
       "noNotes": "Nog geen notities",
-      "failedToLoadNotes": "[MISSING] Failed to load notes",
-      "deleteNote": "[MISSING] Delete note"
+      "failedToLoadNotes": "Notities laden mislukt",
+      "deleteNote": "Notitie verwijderen"
     },
     "settingsTab": {
       "title": "Instellingen",
       "activePartnership": "Actief partnerschap",
       "exportData": "Partnergegevens exporteren",
       "deletePartner": "Partnergegevens verwijderen",
-      "accessDenied": "[MISSING] Access Denied",
-      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
+      "accessDenied": "Toegang geweigerd",
+      "accessDeniedMessage": "Dit gedeelte is alleen toegankelijk voor organisatoren."
     },
     "tabs": {
       "overview": "Overzicht",
@@ -103,7 +103,7 @@
       "meetings": "Vergaderingen",
       "analytics": "Analyses",
       "settings": "Instellingen",
-      "partnerDetailTabs": "[MISSING] Partner detail tabs"
+      "partnerDetailTabs": "Partnerdetailtabbladen"
     },
     "overviewTab": {
       "title": "Partnerschapsdetails",
@@ -122,14 +122,14 @@
       }
     },
     "errors": {
-      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
-      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
-      "notFound": "[MISSING] Partner Not Found",
-      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
-      "loading": "[MISSING] Error Loading Partner",
-      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
-      "noData": "[MISSING] No Data",
-      "noDataMessage": "[MISSING] No partner data available."
+      "failedToLoadContacts": "Contacten laden mislukt.",
+      "noContactsAssigned": "Er zijn nog geen partnergebruikers toegewezen aan dit bedrijf.",
+      "notFound": "Partner niet gevonden",
+      "notFoundMessage": "De partner \"{{name}}\" is niet gevonden.",
+      "loading": "Fout bij laden partner",
+      "loadingMessage": "Er is een fout opgetreden bij het laden van de partnergegevens. Probeer het later opnieuw.",
+      "noData": "Geen gegevens",
+      "noDataMessage": "Geen partnergegevens beschikbaar."
     }
   },
   "meetings": {

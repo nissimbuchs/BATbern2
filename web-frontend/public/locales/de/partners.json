@@ -46,7 +46,7 @@
   "loading": "Partner werden geladen...",
   "error": {
     "failedToLoad": "Partner konnten nicht geladen werden",
-    "correlationId": "[MISSING] Correlation ID"
+    "correlationId": "Korrelations-ID"
   },
   "screenReader": {
     "searchResults": "{{count}} Partner gefunden",
@@ -86,16 +86,16 @@
       "contentLabel": "Inhalt",
       "htmlSupported": "HTML-Formatierung wird unterstützt",
       "noNotes": "Noch keine Notizen",
-      "failedToLoadNotes": "[MISSING] Failed to load notes",
-      "deleteNote": "[MISSING] Delete note"
+      "failedToLoadNotes": "Notizen konnten nicht geladen werden",
+      "deleteNote": "Notiz löschen"
     },
     "settingsTab": {
       "title": "Einstellungen",
       "activePartnership": "Aktive Partnerschaft",
       "exportData": "Partnerdaten exportieren",
       "deletePartner": "Partnerdaten löschen",
-      "accessDenied": "[MISSING] Access Denied",
-      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
+      "accessDenied": "Zugriff verweigert",
+      "accessDeniedMessage": "Dieser Bereich ist nur für Organisatoren zugänglich."
     },
     "tabs": {
       "overview": "Übersicht",
@@ -103,7 +103,7 @@
       "meetings": "Meetings",
       "analytics": "Analysen",
       "settings": "Einstellungen",
-      "partnerDetailTabs": "[MISSING] Partner detail tabs"
+      "partnerDetailTabs": "Partner-Detailregisterkarten"
     },
     "overviewTab": {
       "title": "Partnerschaftsdetails",
@@ -122,14 +122,14 @@
       }
     },
     "errors": {
-      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
-      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
-      "notFound": "[MISSING] Partner Not Found",
-      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
-      "loading": "[MISSING] Error Loading Partner",
-      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
-      "noData": "[MISSING] No Data",
-      "noDataMessage": "[MISSING] No partner data available."
+      "failedToLoadContacts": "Kontakte konnten nicht geladen werden.",
+      "noContactsAssigned": "Diesem Unternehmen sind noch keine Partner-Benutzer zugewiesen.",
+      "notFound": "Partner nicht gefunden",
+      "notFoundMessage": "Der Partner \"{{name}}\" konnte nicht gefunden werden.",
+      "loading": "Fehler beim Laden des Partners",
+      "loadingMessage": "Beim Laden der Partner-Details ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+      "noData": "Keine Daten",
+      "noDataMessage": "Keine Partner-Daten verfügbar."
     }
   },
   "meetings": {

@@ -218,7 +218,7 @@
       "updateTaskFailed": "Bijwerken van taak mislukt",
       "createTaskFailed": "Aanmaken van taak mislukt"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Kritieke taken"
   },
   "form": {
     "createEvent": "Nieuw evenement aanmaken",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Status",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Evenementen zoeken",
+    "clearSearchAriaLabel": "Zoekopdracht wissen",
+    "clearAllAriaLabel": "Alle filters wissen"
   },
   "validation": {
     "eventNumberRequired": "Evenementnummer is verplicht",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Items per pagina"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "Geen evenementen gevonden",
+    "eventList": "Evenementenlijst"
   },
   "common": {
     "cancel": "Annuleren",
@@ -475,8 +475,8 @@
     "loading": "Laden..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Evenementdetails laden",
+    "registerFor": "Registreren voor",
     "comingSoon": "Binnenkort beschikbaar...",
     "preview": {
       "title": "Voorbeeldmodus",

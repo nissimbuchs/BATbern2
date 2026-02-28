@@ -218,7 +218,7 @@
       "updateTaskFailed": "タスクの更新に失敗しました",
       "createTaskFailed": "タスクの作成に失敗しました"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "重要タスク"
   },
   "form": {
     "createEvent": "新規イベントを作成",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "ステータス",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "イベントを検索",
+    "clearSearchAriaLabel": "検索をクリア",
+    "clearAllAriaLabel": "すべてのフィルターをクリア"
   },
   "validation": {
     "eventNumberRequired": "イベント番号は必須です",
@@ -460,8 +460,8 @@
     "itemsPerPage": "1ページあたりのアイテム数"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "イベントが見つかりません",
+    "eventList": "イベント一覧"
   },
   "common": {
     "cancel": "キャンセル",
@@ -475,8 +475,8 @@
     "loading": "読み込み中..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "イベント詳細を読み込み中",
+    "registerFor": "登録する：",
     "comingSoon": "近日公開...",
     "preview": {
       "title": "プレビューモード",

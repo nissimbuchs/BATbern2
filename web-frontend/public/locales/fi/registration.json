@@ -35,122 +35,122 @@
     }
   },
   "confirmationPage": {
-    "loading": "[MISSING] Loading confirmation...",
+    "loading": "Ladataan vahvistusta...",
     "notFound": {
-      "title": "[MISSING] Registration not found",
-      "message": "[MISSING] Please check your confirmation code and try again."
+      "title": "Rekisteröintiä ei löydy",
+      "message": "Tarkista vahvistuskoodisi ja yritä uudelleen."
     },
-    "copyCode": "[MISSING] Copy confirmation code",
-    "qrCodeAlt": "[MISSING] Registration QR Code",
-    "qrCodeTitle": "[MISSING] Your Check-In QR Code",
-    "detailsTitle": "[MISSING] Registration Details",
-    "shareLabel": "[MISSING] Share with your network:",
-    "registerAnother": "[MISSING] Register Another Person",
-    "viewEventDetails": "[MISSING] View Event Details"
+    "copyCode": "Kopioi vahvistuskoodi",
+    "qrCodeAlt": "Rekisteröinnin QR-koodi",
+    "qrCodeTitle": "Check-in QR-koodisi",
+    "detailsTitle": "Rekisteröinnin tiedot",
+    "shareLabel": "Jaa verkostosi kanssa:",
+    "registerAnother": "Rekisteröi toinen henkilö",
+    "viewEventDetails": "Näytä tapahtuman tiedot"
   },
   "successPage": {
-    "pendingTitle": "[MISSING] Registration Pending",
-    "pendingMessage": "[MISSING] If you submitted a registration, please check your email for the confirmation link.",
-    "pendingLinkValidity": "[MISSING] The confirmation link is valid for 48 hours.",
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSentTitle": "[MISSING] Confirmation Email Sent",
-    "noEmailTitle": "[MISSING] Didn't receive the email?",
-    "noEmailCheck1": "[MISSING] Check your spam/junk folder",
-    "noEmailCheck2": "[MISSING] Make sure you entered the correct email address",
-    "noEmailCheck3": "[MISSING] Wait a few minutes and check again",
-    "createAccountTitle": "[MISSING] Create an Account to Manage Your Registrations",
-    "createAccountText": "[MISSING] After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+    "pendingTitle": "Rekisteröinti odottaa",
+    "pendingMessage": "Jos lähetit rekisteröinnin, tarkista sähköpostisi vahvistuslinkin saamiseksi.",
+    "pendingLinkValidity": "Vahvistuslinkki on voimassa 48 tuntia.",
+    "title": "Rekisteröinti lähetetty!",
+    "subtitle": "Tarkista sähköpostisi vahvistaaksesi rekisteröintisi",
+    "emailSentTitle": "Vahvistussähköposti lähetetty",
+    "noEmailTitle": "Etkö saanut sähköpostia?",
+    "noEmailCheck1": "Tarkista roskapostikansio",
+    "noEmailCheck2": "Varmista, että syötit oikean sähköpostiosoitteen",
+    "noEmailCheck3": "Odota muutama minuutti ja tarkista uudelleen",
+    "createAccountTitle": "Luo tili hallinnoidaksesi rekisteröintejäsi",
+    "createAccountText": "Sähköpostin kautta vahvistuksen jälkeen voit luoda tilin hallinnoidaksesi kaikkia rekisteröintejäsi."
   },
   "wizard": {
     "steps": {
-      "step1Progress": "[MISSING] 1. Your Details",
-      "step2Progress": "[MISSING] 2. Confirm Registration",
-      "step1Title": "[MISSING] Step 1: Your Details",
-      "step2Title": "[MISSING] Step 2: Confirm Registration"
+      "step1Progress": "1. Tietosi",
+      "step2Progress": "2. Vahvista rekisteröinti",
+      "step1Title": "Vaihe 1: Tietosi",
+      "step2Title": "Vaihe 2: Vahvista rekisteröinti"
     },
     "buttons": {
-      "edit": "[MISSING] Edit",
-      "cancel": "[MISSING] Cancel",
-      "back": "[MISSING] ← Back",
-      "next": "[MISSING] Next →",
-      "complete": "[MISSING] Complete Registration",
-      "submitting": "[MISSING] Submitting..."
+      "edit": "Muokkaa",
+      "cancel": "Peruuta",
+      "back": "← Takaisin",
+      "next": "Seuraava →",
+      "complete": "Viimeistele rekisteröinti",
+      "submitting": "Lähetetään..."
     },
     "errors": {
-      "fillRequired": "[MISSING] Please fill in all required fields correctly.",
-      "acceptTerms": "[MISSING] You must accept the terms and conditions to register.",
-      "failed": "[MISSING] Registration failed. Please try again."
+      "fillRequired": "Täytä kaikki pakollisset kentät oikein.",
+      "acceptTerms": "Sinun täytyy hyväksyä käyttöehdot rekisteröityäksesi.",
+      "failed": "Rekisteröinti epäonnistui. Yritä uudelleen."
     },
-    "cancelConfirm": "[MISSING] Are you sure you want to cancel registration?"
+    "cancelConfirm": "Haluatko varmasti peruuttaa rekisteröinnin?"
   },
   "personalDetails": {
-    "title": "[MISSING] Personal Information",
-    "subtitle": "[MISSING] Please provide your details to register for the event.",
+    "title": "Henkilökohtaiset tiedot",
+    "subtitle": "Syötä tietosi rekisteröityäksesi tapahtumaan.",
     "fields": {
-      "firstName": "[MISSING] First Name *",
-      "lastName": "[MISSING] Last Name *",
-      "emailAddress": "[MISSING] Email Address *",
-      "emailHelper": "[MISSING] We'll send your ticket and event updates here",
-      "company": "[MISSING] Company *",
-      "role": "[MISSING] Role *"
+      "firstName": "Etunimi *",
+      "lastName": "Sukunimi *",
+      "emailAddress": "Sähköpostiosoite *",
+      "emailHelper": "Lähetämme lippusi ja tapahtumatiedotteet tähän",
+      "company": "Yritys *",
+      "role": "Rooli *"
     },
     "validation": {
-      "firstNameRequired": "[MISSING] First name is required",
-      "lastNameRequired": "[MISSING] Last name is required",
-      "invalidEmail": "[MISSING] Invalid email address",
-      "companyRequired": "[MISSING] Company is required",
-      "roleRequired": "[MISSING] Role is required"
+      "firstNameRequired": "Etunimi on pakollinen",
+      "lastNameRequired": "Sukunimi on pakollinen",
+      "invalidEmail": "Virheellinen sähköpostiosoite",
+      "companyRequired": "Yritys on pakollinen",
+      "roleRequired": "Rooli on pakollinen"
     },
     "placeholders": {
-      "firstName": "[MISSING] John",
-      "lastName": "[MISSING] Smith",
-      "email": "[MISSING] john.smith@company.ch",
-      "company": "[MISSING] Search for your company...",
-      "role": "[MISSING] Senior Developer"
+      "firstName": "Matti",
+      "lastName": "Virtanen",
+      "email": "matti.virtanen@yritys.fi",
+      "company": "Etsi yritystäsi...",
+      "role": "Ohjelmistokehittäjä"
     }
   },
   "confirmStep": {
-    "title": "[MISSING] Review & Confirm",
-    "subtitle": "[MISSING] Please review your information and complete your registration.",
-    "personalInfo": "[MISSING] Personal Information",
+    "title": "Tarkista ja vahvista",
+    "subtitle": "Tarkista tietosi ja viimeistele rekisteröinti.",
+    "personalInfo": "Henkilökohtaiset tiedot",
     "commPref": {
-      "title": "[MISSING] Communication Preferences",
-      "reminders": "[MISSING] Send me event reminders (1 week and 1 day before)",
-      "newsletter": "[MISSING] Subscribe to BATbern newsletter (monthly updates)"
+      "title": "Viestintäasetukset",
+      "reminders": "Lähetä minulle muistutuksia (1 viikko ja 1 päivä ennen)",
+      "newsletter": "Tilaa BATbern-uutiskirje (kuukausittaiset päivitykset)"
     },
     "specialRequests": {
-      "label": "[MISSING] Special Requests",
-      "optional": "[MISSING] (Optional)",
-      "placeholder": "[MISSING] Dietary requirements, accessibility needs, etc.",
-      "helper": "[MISSING] Let us know if you have any dietary requirements or accessibility needs."
+      "label": "Erityistoiveet",
+      "optional": "(Valinnainen)",
+      "placeholder": "Ruokavaliovaatimukset, esteettömyystarpeet jne.",
+      "helper": "Kerro meille, jos sinulla on ruokavaliovaatimuksia tai esteettömyystarpeita."
     },
     "terms": {
-      "prefix": "[MISSING] I agree to the",
-      "termsLink": "[MISSING] terms and conditions",
-      "separator": "[MISSING] and",
-      "privacyLink": "[MISSING] privacy policy",
+      "prefix": "Hyväksyn",
+      "termsLink": "käyttöehdot",
+      "separator": "ja",
+      "privacyLink": "tietosuojakäytännön",
       "required": "*",
-      "error": "[MISSING] You must accept the terms and conditions to complete registration."
+      "error": "Sinun täytyy hyväksyä käyttöehdot viimeistelläksesi rekisteröinnin."
     },
     "account": {
-      "title": "[MISSING] Want to manage all your registrations in one place?",
-      "message": "[MISSING] After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
+      "title": "Haluatko hallita kaikkia rekisteröintejäsi yhdessä paikassa?",
+      "message": "Rekisteröinnin jälkeen voit luoda ilmaisen tilin rekisteröintihistoriasi hallinnoimiseksi."
     }
   },
   "success": {
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSent": "[MISSING] Confirmation Email Sent",
-    "emailSentTo": "[MISSING] We've sent a confirmation email to",
-    "clickLink": "[MISSING] Click the link in the email to confirm your registration.",
-    "validFor": "[MISSING] This link is valid for",
-    "valid": "[MISSING] 24 hours",
-    "didntReceive": "[MISSING] Didn't receive the email?",
-    "checkSpam": "[MISSING] Check your spam folder",
-    "checkEmail": "[MISSING] Verify the email address is correct",
-    "waitMinutes": "[MISSING] Wait a few minutes and try again",
-    "close": "[MISSING] Close"
+    "title": "Rekisteröinti lähetetty!",
+    "subtitle": "Tarkista sähköpostisi vahvistaaksesi rekisteröintisi",
+    "emailSent": "Vahvistussähköposti lähetetty",
+    "emailSentTo": "Lähetimme vahvistussähköpostin osoitteeseen",
+    "clickLink": "Napsauta sähköpostin linkkiä vahvistaaksesi rekisteröintisi.",
+    "validFor": "Tämä linkki on voimassa",
+    "valid": "24 tuntia",
+    "didntReceive": "Etkö saanut sähköpostia?",
+    "checkSpam": "Tarkista roskapostikansio",
+    "checkEmail": "Tarkista, että sähköpostiosoite on oikein",
+    "waitMinutes": "Odota muutama minuutti ja yritä uudelleen",
+    "close": "Sulje"
   },
   "confirmation": {
     "loading": {
@@ -182,9 +182,9 @@
     }
   },
   "companySearch": {
-    "error": "[MISSING] Error loading companies",
-    "noResults": "[MISSING] No existing company found",
-    "createNew": "[MISSING] You can continue with \"{{value}}\" as a new company",
-    "minChars": "[MISSING] Type at least 2 characters to search"
+    "error": "Virhe yritysten lataamisessa",
+    "noResults": "Olemassa olevaa yritystä ei löydy",
+    "createNew": "Voit jatkaa \"{{value}}\" uutena yrityksenä",
+    "minChars": "Kirjoita vähintään 2 merkkiä hakua varten"
   }
 }

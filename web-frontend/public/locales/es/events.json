@@ -218,7 +218,7 @@
       "updateTaskFailed": "Error al actualizar la tarea",
       "createTaskFailed": "Error al crear la tarea"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Tareas críticas"
   },
   "form": {
     "createEvent": "Crear nuevo evento",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Estado",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Buscar eventos",
+    "clearSearchAriaLabel": "Borrar búsqueda",
+    "clearAllAriaLabel": "Borrar todos los filtros"
   },
   "validation": {
     "eventNumberRequired": "El número de evento es obligatorio",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Elementos por página"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "No se encontraron eventos",
+    "eventList": "Lista de eventos"
   },
   "common": {
     "cancel": "Cancelar",
@@ -475,8 +475,8 @@
     "loading": "Cargando..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Cargando detalles del evento",
+    "registerFor": "Registrarse para",
     "comingSoon": "Próximamente...",
     "preview": {
       "title": "Modo vista previa",

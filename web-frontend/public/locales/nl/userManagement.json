@@ -67,8 +67,8 @@
       "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd."
     },
     "editUser": {
-      "uploadPhotoAria": "[MISSING] Upload profile photo",
-      "removePhotoAria": "[MISSING] Remove profile photo"
+      "uploadPhotoAria": "Profielfoto uploaden",
+      "removePhotoAria": "Profielfoto verwijderen"
     }
   },
   "pagination": {
@@ -151,21 +151,21 @@
     "badges": {
       "synthetic": "Synthetisch",
       "eventsCount": "{{count}} evenementen",
-      "existing": "[MISSING] Existing",
-      "new": "[MISSING] New"
+      "existing": "Bestaand",
+      "new": "Nieuw"
     },
     "aria": {
-      "statusLabel": "[MISSING] Import status: {{label}}",
-      "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
-      "fileInput": "[MISSING] File input for CSV upload",
-      "previewTable": "[MISSING] Participant import preview table",
-      "participantTable": "[MISSING] Participants with import status",
-      "importProgress": "[MISSING] Import progress",
-      "closeModal": "[MISSING] Close import modal",
-      "startImport": "[MISSING] Start importing participants from CSV file"
+      "statusLabel": "Importstatus: {{label}}",
+      "dropzone": "CSV-bestand uploadzone. Sleep een CSV-bestand of klik om te selecteren",
+      "fileInput": "Bestandsinvoer voor CSV-import",
+      "previewTable": "Voorbeeldtabel deelnemersimport",
+      "participantTable": "Deelnemers met importstatus",
+      "importProgress": "Importvoortgang",
+      "closeModal": "Importvenster sluiten",
+      "startImport": "Deelnemers importeren uit CSV-bestand starten"
     },
-    "parseError": "[MISSING] Failed to parse CSV",
-    "importFailed": "[MISSING] Import failed"
+    "parseError": "CSV verwerken mislukt",
+    "importFailed": "Import mislukt"
   },
   "userDetail": {
     "tabs": {
@@ -194,76 +194,76 @@
   },
   "settings": {
     "tabs": {
-      "account": "[MISSING] Account",
-      "notifications": "[MISSING] Notifications",
-      "privacy": "[MISSING] Privacy"
+      "account": "Account",
+      "notifications": "Meldingen",
+      "privacy": "Privacy"
     },
     "account": {
-      "title": "[MISSING] Account Settings",
-      "emailStatus": "[MISSING] Email address cannot be changed",
-      "changePassword": "[MISSING] Change Password",
-      "theme": "[MISSING] Theme",
-      "themeLight": "[MISSING] Light",
-      "themeDark": "[MISSING] Dark",
-      "themeAuto": "[MISSING] Auto (follow system)",
-      "timezone": "[MISSING] Timezone",
-      "save": "[MISSING] Save Account Settings"
+      "title": "Accountinstellingen",
+      "emailStatus": "E-mailadres kan niet worden gewijzigd",
+      "changePassword": "Wachtwoord wijzigen",
+      "theme": "Thema",
+      "themeLight": "Licht",
+      "themeDark": "Donker",
+      "themeAuto": "Automatisch (systeeminstelling volgen)",
+      "timezone": "Tijdzone",
+      "save": "Accountinstellingen opslaan"
     },
     "notifications": {
-      "title": "[MISSING] Notification Preferences",
-      "epic7Notice": "[MISSING] Advanced notification settings coming in a future update.",
-      "channels": "[MISSING] Notification Channels",
-      "channelEmail": "[MISSING] Email Notifications",
-      "channelInApp": "[MISSING] In-App Notifications",
-      "channelPush": "[MISSING] Push Notifications",
-      "frequency": "[MISSING] Notification Frequency",
-      "frequencyImmediate": "[MISSING] Immediate",
-      "frequencyDaily": "[MISSING] Daily Digest",
-      "frequencyWeekly": "[MISSING] Weekly Digest",
-      "save": "[MISSING] Save Notification Settings"
+      "title": "Meldingsvoorkeuren",
+      "epic7Notice": "Geavanceerde meldingsinstellingen komen in een toekomstige update.",
+      "channels": "Meldingskanalen",
+      "channelEmail": "E-mailmeldingen",
+      "channelInApp": "In-app meldingen",
+      "channelPush": "Push-meldingen",
+      "frequency": "Meldingsfrequentie",
+      "frequencyImmediate": "Onmiddellijk",
+      "frequencyDaily": "Dagelijkse samenvatting",
+      "frequencyWeekly": "Wekelijkse samenvatting",
+      "save": "Meldingsinstellingen opslaan"
     },
     "newsletter": {
-      "title": "[MISSING] Newsletter",
-      "subscribe": "[MISSING] Subscribe to newsletter",
-      "description": "[MISSING] Receive monthly updates about BATbern events"
+      "title": "Nieuwsbrief",
+      "subscribe": "Abonneren op nieuwsbrief",
+      "description": "Maandelijkse updates over BATbern evenementen ontvangen"
     },
     "privacy": {
-      "title": "[MISSING] Privacy Settings",
-      "visibility": "[MISSING] Profile Visibility",
-      "visibilityPublic": "[MISSING] Public",
-      "visibilityMembersOnly": "[MISSING] Members Only",
-      "visibilityPrivate": "[MISSING] Private",
-      "infoDisplay": "[MISSING] Information Display",
-      "showEmail": "[MISSING] Show email address",
-      "showCompany": "[MISSING] Show company affiliation",
-      "showActivity": "[MISSING] Show activity history",
-      "communication": "[MISSING] Communication",
-      "allowMessaging": "[MISSING] Allow direct messages from other users",
-      "viewPolicy": "[MISSING] View Privacy Policy",
-      "save": "[MISSING] Save Privacy Settings"
+      "title": "Privacy-instellingen",
+      "visibility": "Profielzichtbaarheid",
+      "visibilityPublic": "Openbaar",
+      "visibilityMembersOnly": "Alleen leden",
+      "visibilityPrivate": "Privé",
+      "infoDisplay": "Informatie weergave",
+      "showEmail": "E-mailadres tonen",
+      "showCompany": "Bedrijfsaansluiting tonen",
+      "showActivity": "Activiteitsgeschiedenis tonen",
+      "communication": "Communicatie",
+      "allowMessaging": "Directe berichten van andere gebruikers toestaan",
+      "viewPolicy": "Privacybeleid bekijken",
+      "save": "Privacy-instellingen opslaan"
     }
   },
   "profile": {
-    "personalInfo": "[MISSING] Personal Information",
-    "editProfile": "[MISSING] Edit Profile",
-    "firstName": "[MISSING] First Name",
-    "lastName": "[MISSING] Last Name",
-    "bio": "[MISSING] Bio",
-    "bioValidation": "[MISSING] Bio must be {{max}} characters or less",
-    "saveChanges": "[MISSING] Save Changes",
-    "removePhotoConfirm": "[MISSING] Are you sure you want to remove your profile photo?",
-    "labelName": "[MISSING] Name:",
-    "labelEmail": "[MISSING] Email:",
-    "labelCompany": "[MISSING] Company:",
-    "labelBio": "[MISSING] Bio:",
-    "recentActivity": "[MISSING] Recent Activity",
-    "noActivity": "[MISSING] No recent activity",
-    "viewAll": "[MISSING] View All →"
+    "personalInfo": "Persoonlijke informatie",
+    "editProfile": "Profiel bewerken",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "bio": "Bio",
+    "bioValidation": "Bio moet {{max}} tekens of minder zijn",
+    "saveChanges": "Wijzigingen opslaan",
+    "removePhotoConfirm": "Weet u zeker dat u uw profielfoto wilt verwijderen?",
+    "labelName": "Naam:",
+    "labelEmail": "E-mail:",
+    "labelCompany": "Bedrijf:",
+    "labelBio": "Bio:",
+    "recentActivity": "Recente activiteit",
+    "noActivity": "Geen recente activiteit",
+    "viewAll": "Alles bekijken →"
   },
   "profileHeader": {
-    "uploadTooltip": "[MISSING] Upload Photo",
-    "removeTooltip": "[MISSING] Remove Photo",
-    "verified": "[MISSING] Verified",
-    "memberSince": "[MISSING] Member since {{date}}"
+    "uploadTooltip": "Foto uploaden",
+    "removeTooltip": "Foto verwijderen",
+    "verified": "Geverifieerd",
+    "memberSince": "Lid sinds {{date}}"
   }
 }

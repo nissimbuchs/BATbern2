@@ -35,122 +35,122 @@
     }
   },
   "confirmationPage": {
-    "loading": "[MISSING] Loading confirmation...",
+    "loading": "Bevestiging laden...",
     "notFound": {
-      "title": "[MISSING] Registration not found",
-      "message": "[MISSING] Please check your confirmation code and try again."
+      "title": "Registratie niet gevonden",
+      "message": "Controleer uw bevestigingscode en probeer opnieuw."
     },
-    "copyCode": "[MISSING] Copy confirmation code",
-    "qrCodeAlt": "[MISSING] Registration QR Code",
-    "qrCodeTitle": "[MISSING] Your Check-In QR Code",
-    "detailsTitle": "[MISSING] Registration Details",
-    "shareLabel": "[MISSING] Share with your network:",
-    "registerAnother": "[MISSING] Register Another Person",
-    "viewEventDetails": "[MISSING] View Event Details"
+    "copyCode": "Bevestigingscode kopiëren",
+    "qrCodeAlt": "Registratie QR-code",
+    "qrCodeTitle": "Uw check-in QR-code",
+    "detailsTitle": "Registratiedetails",
+    "shareLabel": "Delen met uw netwerk:",
+    "registerAnother": "Nog iemand registreren",
+    "viewEventDetails": "Evenementdetails bekijken"
   },
   "successPage": {
-    "pendingTitle": "[MISSING] Registration Pending",
-    "pendingMessage": "[MISSING] If you submitted a registration, please check your email for the confirmation link.",
-    "pendingLinkValidity": "[MISSING] The confirmation link is valid for 48 hours.",
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSentTitle": "[MISSING] Confirmation Email Sent",
-    "noEmailTitle": "[MISSING] Didn't receive the email?",
-    "noEmailCheck1": "[MISSING] Check your spam/junk folder",
-    "noEmailCheck2": "[MISSING] Make sure you entered the correct email address",
-    "noEmailCheck3": "[MISSING] Wait a few minutes and check again",
-    "createAccountTitle": "[MISSING] Create an Account to Manage Your Registrations",
-    "createAccountText": "[MISSING] After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+    "pendingTitle": "Registratie in afwachting",
+    "pendingMessage": "Als u een registratie heeft ingediend, controleer dan uw e-mail voor de bevestigingslink.",
+    "pendingLinkValidity": "De bevestigingslink is 48 uur geldig.",
+    "title": "Registratie ingediend!",
+    "subtitle": "Controleer uw e-mail om uw registratie te bevestigen",
+    "emailSentTitle": "Bevestigings-e-mail verzonden",
+    "noEmailTitle": "Geen e-mail ontvangen?",
+    "noEmailCheck1": "Controleer uw spammap",
+    "noEmailCheck2": "Zorg ervoor dat u het juiste e-mailadres heeft ingevoerd",
+    "noEmailCheck3": "Wacht een paar minuten en controleer opnieuw",
+    "createAccountTitle": "Maak een account aan om uw registraties te beheren",
+    "createAccountText": "Na bevestiging via e-mail kunt u een account aanmaken om al uw registraties te beheren."
   },
   "wizard": {
     "steps": {
-      "step1Progress": "[MISSING] 1. Your Details",
-      "step2Progress": "[MISSING] 2. Confirm Registration",
-      "step1Title": "[MISSING] Step 1: Your Details",
-      "step2Title": "[MISSING] Step 2: Confirm Registration"
+      "step1Progress": "1. Uw gegevens",
+      "step2Progress": "2. Registratie bevestigen",
+      "step1Title": "Stap 1: Uw gegevens",
+      "step2Title": "Stap 2: Registratie bevestigen"
     },
     "buttons": {
-      "edit": "[MISSING] Edit",
-      "cancel": "[MISSING] Cancel",
-      "back": "[MISSING] ← Back",
-      "next": "[MISSING] Next →",
-      "complete": "[MISSING] Complete Registration",
-      "submitting": "[MISSING] Submitting..."
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "back": "← Terug",
+      "next": "Volgende →",
+      "complete": "Registratie voltooien",
+      "submitting": "Verzenden..."
     },
     "errors": {
-      "fillRequired": "[MISSING] Please fill in all required fields correctly.",
-      "acceptTerms": "[MISSING] You must accept the terms and conditions to register.",
-      "failed": "[MISSING] Registration failed. Please try again."
+      "fillRequired": "Vul alle verplichte velden correct in.",
+      "acceptTerms": "U moet akkoord gaan met de algemene voorwaarden om te registreren.",
+      "failed": "Registratie mislukt. Probeer opnieuw."
     },
-    "cancelConfirm": "[MISSING] Are you sure you want to cancel registration?"
+    "cancelConfirm": "Weet u zeker dat u de registratie wilt annuleren?"
   },
   "personalDetails": {
-    "title": "[MISSING] Personal Information",
-    "subtitle": "[MISSING] Please provide your details to register for the event.",
+    "title": "Persoonlijke informatie",
+    "subtitle": "Vul uw gegevens in om te registreren voor het evenement.",
     "fields": {
-      "firstName": "[MISSING] First Name *",
-      "lastName": "[MISSING] Last Name *",
-      "emailAddress": "[MISSING] Email Address *",
-      "emailHelper": "[MISSING] We'll send your ticket and event updates here",
-      "company": "[MISSING] Company *",
-      "role": "[MISSING] Role *"
+      "firstName": "Voornaam *",
+      "lastName": "Achternaam *",
+      "emailAddress": "E-mailadres *",
+      "emailHelper": "We sturen uw ticket en evenementupdates hierheen",
+      "company": "Bedrijf *",
+      "role": "Functie *"
     },
     "validation": {
-      "firstNameRequired": "[MISSING] First name is required",
-      "lastNameRequired": "[MISSING] Last name is required",
-      "invalidEmail": "[MISSING] Invalid email address",
-      "companyRequired": "[MISSING] Company is required",
-      "roleRequired": "[MISSING] Role is required"
+      "firstNameRequired": "Voornaam is verplicht",
+      "lastNameRequired": "Achternaam is verplicht",
+      "invalidEmail": "Ongeldig e-mailadres",
+      "companyRequired": "Bedrijf is verplicht",
+      "roleRequired": "Functie is verplicht"
     },
     "placeholders": {
-      "firstName": "[MISSING] John",
-      "lastName": "[MISSING] Smith",
-      "email": "[MISSING] john.smith@company.ch",
-      "company": "[MISSING] Search for your company...",
-      "role": "[MISSING] Senior Developer"
+      "firstName": "Jan",
+      "lastName": "de Vries",
+      "email": "jan.devries@bedrijf.nl",
+      "company": "Zoek uw bedrijf...",
+      "role": "Senior ontwikkelaar"
     }
   },
   "confirmStep": {
-    "title": "[MISSING] Review & Confirm",
-    "subtitle": "[MISSING] Please review your information and complete your registration.",
-    "personalInfo": "[MISSING] Personal Information",
+    "title": "Controleren en bevestigen",
+    "subtitle": "Controleer uw gegevens en voltooi uw registratie.",
+    "personalInfo": "Persoonlijke informatie",
     "commPref": {
-      "title": "[MISSING] Communication Preferences",
-      "reminders": "[MISSING] Send me event reminders (1 week and 1 day before)",
-      "newsletter": "[MISSING] Subscribe to BATbern newsletter (monthly updates)"
+      "title": "Communicatievoorkeuren",
+      "reminders": "Stuur mij herinneringen (1 week en 1 dag van tevoren)",
+      "newsletter": "Abonneer op BATbern nieuwsbrief (maandelijkse updates)"
     },
     "specialRequests": {
-      "label": "[MISSING] Special Requests",
-      "optional": "[MISSING] (Optional)",
-      "placeholder": "[MISSING] Dietary requirements, accessibility needs, etc.",
-      "helper": "[MISSING] Let us know if you have any dietary requirements or accessibility needs."
+      "label": "Speciale verzoeken",
+      "optional": "(Optioneel)",
+      "placeholder": "Dieetvereisten, toegankelijkheidsbehoeften, enz.",
+      "helper": "Laat ons weten of u dieetvereisten of toegankelijkheidsbehoeften heeft."
     },
     "terms": {
-      "prefix": "[MISSING] I agree to the",
-      "termsLink": "[MISSING] terms and conditions",
-      "separator": "[MISSING] and",
-      "privacyLink": "[MISSING] privacy policy",
+      "prefix": "Ik ga akkoord met de",
+      "termsLink": "algemene voorwaarden",
+      "separator": "en het",
+      "privacyLink": "privacybeleid",
       "required": "*",
-      "error": "[MISSING] You must accept the terms and conditions to complete registration."
+      "error": "U moet akkoord gaan met de algemene voorwaarden om de registratie te voltooien."
     },
     "account": {
-      "title": "[MISSING] Want to manage all your registrations in one place?",
-      "message": "[MISSING] After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
+      "title": "Wilt u al uw registraties op één plek beheren?",
+      "message": "Na registratie kunt u een gratis account aanmaken om al uw registraties te beheren."
     }
   },
   "success": {
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSent": "[MISSING] Confirmation Email Sent",
-    "emailSentTo": "[MISSING] We've sent a confirmation email to",
-    "clickLink": "[MISSING] Click the link in the email to confirm your registration.",
-    "validFor": "[MISSING] This link is valid for",
-    "valid": "[MISSING] 24 hours",
-    "didntReceive": "[MISSING] Didn't receive the email?",
-    "checkSpam": "[MISSING] Check your spam folder",
-    "checkEmail": "[MISSING] Verify the email address is correct",
-    "waitMinutes": "[MISSING] Wait a few minutes and try again",
-    "close": "[MISSING] Close"
+    "title": "Registratie ingediend!",
+    "subtitle": "Controleer uw e-mail om uw registratie te bevestigen",
+    "emailSent": "Bevestigings-e-mail verzonden",
+    "emailSentTo": "We hebben een bevestigings-e-mail verzonden naar",
+    "clickLink": "Klik op de link in de e-mail om uw registratie te bevestigen.",
+    "validFor": "Deze link is geldig voor",
+    "valid": "24 uur",
+    "didntReceive": "Geen e-mail ontvangen?",
+    "checkSpam": "Controleer uw spammap",
+    "checkEmail": "Controleer of het e-mailadres correct is",
+    "waitMinutes": "Wacht een paar minuten en probeer opnieuw",
+    "close": "Sluiten"
   },
   "confirmation": {
     "loading": {
@@ -182,9 +182,9 @@
     }
   },
   "companySearch": {
-    "error": "[MISSING] Error loading companies",
-    "noResults": "[MISSING] No existing company found",
-    "createNew": "[MISSING] You can continue with \"{{value}}\" as a new company",
-    "minChars": "[MISSING] Type at least 2 characters to search"
+    "error": "Fout bij laden bedrijven",
+    "noResults": "Geen bestaand bedrijf gevonden",
+    "createNew": "U kunt doorgaan met \"{{value}}\" als nieuw bedrijf",
+    "minChars": "Typ minstens 2 tekens om te zoeken"
   }
 }

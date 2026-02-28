@@ -67,8 +67,8 @@
       "cascadeWarning": "Tut las datas associadas vegnan er stritgadas."
     },
     "editUser": {
-      "uploadPhotoAria": "[MISSING] Upload profile photo",
-      "removePhotoAria": "[MISSING] Remove profile photo"
+      "uploadPhotoAria": "Chargiar la foto da profil",
+      "removePhotoAria": "Stizzar la foto da profil"
     }
   },
   "pagination": {
@@ -151,21 +151,21 @@
     "badges": {
       "synthetic": "Sintetic",
       "eventsCount": "{{count}} occurrenzas",
-      "existing": "[MISSING] Existing",
-      "new": "[MISSING] New"
+      "existing": "Existent",
+      "new": "Nov"
     },
     "aria": {
-      "statusLabel": "[MISSING] Import status: {{label}}",
-      "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
-      "fileInput": "[MISSING] File input for CSV upload",
-      "previewTable": "[MISSING] Participant import preview table",
-      "participantTable": "[MISSING] Participants with import status",
-      "importProgress": "[MISSING] Import progress",
-      "closeModal": "[MISSING] Close import modal",
-      "startImport": "[MISSING] Start importing participants from CSV file"
+      "statusLabel": "Status d'import: {{label}}",
+      "dropzone": "Zona da chargament da file CSV. Drizzar in file CSV u cliccar per tscherner",
+      "fileInput": "Endatada da file per import CSV",
+      "previewTable": "Tabella d'avisament d'import dals participants",
+      "participantTable": "Participants cun status d'import",
+      "importProgress": "Progress da l'import",
+      "closeModal": "Serrar la fanestra d'import",
+      "startImport": "Entschaiver l'import dals participants dal file CSV"
     },
-    "parseError": "[MISSING] Failed to parse CSV",
-    "importFailed": "[MISSING] Import failed"
+    "parseError": "L'analisa dal CSV ha fallì",
+    "importFailed": "L'import ha fallì"
   },
   "userDetail": {
     "tabs": {
@@ -194,76 +194,76 @@
   },
   "settings": {
     "tabs": {
-      "account": "[MISSING] Account",
-      "notifications": "[MISSING] Notifications",
-      "privacy": "[MISSING] Privacy"
+      "account": "Conto",
+      "notifications": "Notificaziuns",
+      "privacy": "Protecziun dals datas"
     },
     "account": {
-      "title": "[MISSING] Account Settings",
-      "emailStatus": "[MISSING] Email address cannot be changed",
-      "changePassword": "[MISSING] Change Password",
-      "theme": "[MISSING] Theme",
-      "themeLight": "[MISSING] Light",
-      "themeDark": "[MISSING] Dark",
-      "themeAuto": "[MISSING] Auto (follow system)",
-      "timezone": "[MISSING] Timezone",
-      "save": "[MISSING] Save Account Settings"
+      "title": "Parameters dal conto",
+      "emailStatus": "L'adressa e-mail na po betg vegnir midada",
+      "changePassword": "Midar la pled-clav",
+      "theme": "Tema",
+      "themeLight": "Cler",
+      "themeDark": "Stgir",
+      "themeAuto": "Automatic (suandar il sistem)",
+      "timezone": "Zona temporala",
+      "save": "Memorisar ils parameters dal conto"
     },
     "notifications": {
-      "title": "[MISSING] Notification Preferences",
-      "epic7Notice": "[MISSING] Advanced notification settings coming in a future update.",
-      "channels": "[MISSING] Notification Channels",
-      "channelEmail": "[MISSING] Email Notifications",
-      "channelInApp": "[MISSING] In-App Notifications",
-      "channelPush": "[MISSING] Push Notifications",
-      "frequency": "[MISSING] Notification Frequency",
-      "frequencyImmediate": "[MISSING] Immediate",
-      "frequencyDaily": "[MISSING] Daily Digest",
-      "frequencyWeekly": "[MISSING] Weekly Digest",
-      "save": "[MISSING] Save Notification Settings"
+      "title": "Preferenzas da notificaziun",
+      "epic7Notice": "Parameters da notificaziun avanzads vegnan en in update futur.",
+      "channels": "Canals da notificaziun",
+      "channelEmail": "Notificaziuns via e-mail",
+      "channelInApp": "Notificaziuns en l'app",
+      "channelPush": "Notificaziuns push",
+      "frequency": "Frequenza da notificaziun",
+      "frequencyImmediate": "Immediat",
+      "frequencyDaily": "Resumaziun giornaliera",
+      "frequencyWeekly": "Resumaziun settimanalas",
+      "save": "Memorisar las preferenzas da notificaziun"
     },
     "newsletter": {
-      "title": "[MISSING] Newsletter",
-      "subscribe": "[MISSING] Subscribe to newsletter",
-      "description": "[MISSING] Receive monthly updates about BATbern events"
+      "title": "Newsletter",
+      "subscribe": "Abunnar la newsletter",
+      "description": "Retschever actualisaziuns mensualas davart ils eveniments BATbern"
     },
     "privacy": {
-      "title": "[MISSING] Privacy Settings",
-      "visibility": "[MISSING] Profile Visibility",
-      "visibilityPublic": "[MISSING] Public",
-      "visibilityMembersOnly": "[MISSING] Members Only",
-      "visibilityPrivate": "[MISSING] Private",
-      "infoDisplay": "[MISSING] Information Display",
-      "showEmail": "[MISSING] Show email address",
-      "showCompany": "[MISSING] Show company affiliation",
-      "showActivity": "[MISSING] Show activity history",
-      "communication": "[MISSING] Communication",
-      "allowMessaging": "[MISSING] Allow direct messages from other users",
-      "viewPolicy": "[MISSING] View Privacy Policy",
-      "save": "[MISSING] Save Privacy Settings"
+      "title": "Parameters da protecziun dals datas",
+      "visibility": "Visibilitad dal profil",
+      "visibilityPublic": "Public",
+      "visibilityMembersOnly": "Mo per commembers",
+      "visibilityPrivate": "Privat",
+      "infoDisplay": "Mussar infurmaziuns",
+      "showEmail": "Mussar l'adressa e-mail",
+      "showCompany": "Mussar l'affiliaziun a la cumpagnia",
+      "showActivity": "Mussar la cronologia da l'activitad",
+      "communication": "Communicaziun",
+      "allowMessaging": "Permetter messadis directs d'auters utilisaders",
+      "viewPolicy": "Vesair la politica da protecziun dals datas",
+      "save": "Memorisar ils parameters da protecziun dals datas"
     }
   },
   "profile": {
-    "personalInfo": "[MISSING] Personal Information",
-    "editProfile": "[MISSING] Edit Profile",
-    "firstName": "[MISSING] First Name",
-    "lastName": "[MISSING] Last Name",
-    "bio": "[MISSING] Bio",
-    "bioValidation": "[MISSING] Bio must be {{max}} characters or less",
-    "saveChanges": "[MISSING] Save Changes",
-    "removePhotoConfirm": "[MISSING] Are you sure you want to remove your profile photo?",
-    "labelName": "[MISSING] Name:",
-    "labelEmail": "[MISSING] Email:",
-    "labelCompany": "[MISSING] Company:",
-    "labelBio": "[MISSING] Bio:",
-    "recentActivity": "[MISSING] Recent Activity",
-    "noActivity": "[MISSING] No recent activity",
-    "viewAll": "[MISSING] View All →"
+    "personalInfo": "Infurmaziuns persunalas",
+    "editProfile": "Modifitgar il profil",
+    "firstName": "Prenum",
+    "lastName": "Num",
+    "bio": "Biografia",
+    "bioValidation": "La biografia sto avair {{max}} segns u main",
+    "saveChanges": "Memorisar las midadas",
+    "removePhotoConfirm": "Essas vus segirs da vulair stizzar vostra foto da profil?",
+    "labelName": "Num:",
+    "labelEmail": "E-mail:",
+    "labelCompany": "Cumpagnia:",
+    "labelBio": "Biografia:",
+    "recentActivity": "Activitad recenta",
+    "noActivity": "Nagina activitad recenta",
+    "viewAll": "Vesair tut →"
   },
   "profileHeader": {
-    "uploadTooltip": "[MISSING] Upload Photo",
-    "removeTooltip": "[MISSING] Remove Photo",
-    "verified": "[MISSING] Verified",
-    "memberSince": "[MISSING] Member since {{date}}"
+    "uploadTooltip": "Chargiar foto",
+    "removeTooltip": "Stizzar foto",
+    "verified": "Verificà",
+    "memberSince": "Commemher dapi {{date}}"
   }
 }

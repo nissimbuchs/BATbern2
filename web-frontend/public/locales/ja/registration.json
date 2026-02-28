@@ -35,122 +35,122 @@
     }
   },
   "confirmationPage": {
-    "loading": "[MISSING] Loading confirmation...",
+    "loading": "確認を読み込み中...",
     "notFound": {
-      "title": "[MISSING] Registration not found",
-      "message": "[MISSING] Please check your confirmation code and try again."
+      "title": "登録が見つかりません",
+      "message": "確認コードを確認して、もう一度お試しください。"
     },
-    "copyCode": "[MISSING] Copy confirmation code",
-    "qrCodeAlt": "[MISSING] Registration QR Code",
-    "qrCodeTitle": "[MISSING] Your Check-In QR Code",
-    "detailsTitle": "[MISSING] Registration Details",
-    "shareLabel": "[MISSING] Share with your network:",
-    "registerAnother": "[MISSING] Register Another Person",
-    "viewEventDetails": "[MISSING] View Event Details"
+    "copyCode": "確認コードをコピー",
+    "qrCodeAlt": "登録QRコード",
+    "qrCodeTitle": "チェックインQRコード",
+    "detailsTitle": "登録詳細",
+    "shareLabel": "ネットワークで共有：",
+    "registerAnother": "別の人を登録",
+    "viewEventDetails": "イベント詳細を見る"
   },
   "successPage": {
-    "pendingTitle": "[MISSING] Registration Pending",
-    "pendingMessage": "[MISSING] If you submitted a registration, please check your email for the confirmation link.",
-    "pendingLinkValidity": "[MISSING] The confirmation link is valid for 48 hours.",
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSentTitle": "[MISSING] Confirmation Email Sent",
-    "noEmailTitle": "[MISSING] Didn't receive the email?",
-    "noEmailCheck1": "[MISSING] Check your spam/junk folder",
-    "noEmailCheck2": "[MISSING] Make sure you entered the correct email address",
-    "noEmailCheck3": "[MISSING] Wait a few minutes and check again",
-    "createAccountTitle": "[MISSING] Create an Account to Manage Your Registrations",
-    "createAccountText": "[MISSING] After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+    "pendingTitle": "登録保留中",
+    "pendingMessage": "登録を送信した場合は、確認リンクのメールをご確認ください。",
+    "pendingLinkValidity": "確認リンクは48時間有効です。",
+    "title": "登録を送信しました！",
+    "subtitle": "メールで登録を確認してください",
+    "emailSentTitle": "確認メールを送信しました",
+    "noEmailTitle": "メールが届きませんか？",
+    "noEmailCheck1": "迷惑メールフォルダを確認してください",
+    "noEmailCheck2": "正しいメールアドレスを入力したか確認してください",
+    "noEmailCheck3": "数分待ってからもう一度確認してください",
+    "createAccountTitle": "アカウントを作成して登録を管理しましょう",
+    "createAccountText": "メールで登録を確認後、アカウントを作成してすべての登録を一元管理できます。"
   },
   "wizard": {
     "steps": {
-      "step1Progress": "[MISSING] 1. Your Details",
-      "step2Progress": "[MISSING] 2. Confirm Registration",
-      "step1Title": "[MISSING] Step 1: Your Details",
-      "step2Title": "[MISSING] Step 2: Confirm Registration"
+      "step1Progress": "1. あなたの情報",
+      "step2Progress": "2. 登録を確認",
+      "step1Title": "ステップ1：あなたの情報",
+      "step2Title": "ステップ2：登録を確認"
     },
     "buttons": {
-      "edit": "[MISSING] Edit",
-      "cancel": "[MISSING] Cancel",
-      "back": "[MISSING] ← Back",
-      "next": "[MISSING] Next →",
-      "complete": "[MISSING] Complete Registration",
-      "submitting": "[MISSING] Submitting..."
+      "edit": "編集",
+      "cancel": "キャンセル",
+      "back": "← 戻る",
+      "next": "次へ →",
+      "complete": "登録を完了",
+      "submitting": "送信中..."
     },
     "errors": {
-      "fillRequired": "[MISSING] Please fill in all required fields correctly.",
-      "acceptTerms": "[MISSING] You must accept the terms and conditions to register.",
-      "failed": "[MISSING] Registration failed. Please try again."
+      "fillRequired": "必須項目をすべて正しく入力してください。",
+      "acceptTerms": "登録するには利用規約に同意する必要があります。",
+      "failed": "登録に失敗しました。もう一度お試しください。"
     },
-    "cancelConfirm": "[MISSING] Are you sure you want to cancel registration?"
+    "cancelConfirm": "登録をキャンセルしてよろしいですか？"
   },
   "personalDetails": {
-    "title": "[MISSING] Personal Information",
-    "subtitle": "[MISSING] Please provide your details to register for the event.",
+    "title": "個人情報",
+    "subtitle": "イベントに登録するために情報を入力してください。",
     "fields": {
-      "firstName": "[MISSING] First Name *",
-      "lastName": "[MISSING] Last Name *",
-      "emailAddress": "[MISSING] Email Address *",
-      "emailHelper": "[MISSING] We'll send your ticket and event updates here",
-      "company": "[MISSING] Company *",
-      "role": "[MISSING] Role *"
+      "firstName": "名 *",
+      "lastName": "姓 *",
+      "emailAddress": "メールアドレス *",
+      "emailHelper": "チケットとイベント情報をこちらに送信します",
+      "company": "会社 *",
+      "role": "役職 *"
     },
     "validation": {
-      "firstNameRequired": "[MISSING] First name is required",
-      "lastNameRequired": "[MISSING] Last name is required",
-      "invalidEmail": "[MISSING] Invalid email address",
-      "companyRequired": "[MISSING] Company is required",
-      "roleRequired": "[MISSING] Role is required"
+      "firstNameRequired": "名は必須です",
+      "lastNameRequired": "姓は必須です",
+      "invalidEmail": "無効なメールアドレスです",
+      "companyRequired": "会社は必須です",
+      "roleRequired": "役職は必須です"
     },
     "placeholders": {
-      "firstName": "[MISSING] John",
-      "lastName": "[MISSING] Smith",
-      "email": "[MISSING] john.smith@company.ch",
-      "company": "[MISSING] Search for your company...",
-      "role": "[MISSING] Senior Developer"
+      "firstName": "太郎",
+      "lastName": "山田",
+      "email": "taro.yamada@kaisha.co.jp",
+      "company": "会社を検索...",
+      "role": "シニアエンジニア"
     }
   },
   "confirmStep": {
-    "title": "[MISSING] Review & Confirm",
-    "subtitle": "[MISSING] Please review your information and complete your registration.",
-    "personalInfo": "[MISSING] Personal Information",
+    "title": "確認と登録",
+    "subtitle": "情報を確認して登録を完了してください。",
+    "personalInfo": "個人情報",
     "commPref": {
-      "title": "[MISSING] Communication Preferences",
-      "reminders": "[MISSING] Send me event reminders (1 week and 1 day before)",
-      "newsletter": "[MISSING] Subscribe to BATbern newsletter (monthly updates)"
+      "title": "コミュニケーション設定",
+      "reminders": "リマインダーを送信（1週間前と前日）",
+      "newsletter": "BATbernニュースレターを購読（毎月の更新）"
     },
     "specialRequests": {
-      "label": "[MISSING] Special Requests",
-      "optional": "[MISSING] (Optional)",
-      "placeholder": "[MISSING] Dietary requirements, accessibility needs, etc.",
-      "helper": "[MISSING] Let us know if you have any dietary requirements or accessibility needs."
+      "label": "特別なリクエスト",
+      "optional": "（任意）",
+      "placeholder": "食事の制限、アクセシビリティのニーズなど",
+      "helper": "食事制限やアクセシビリティのニーズがあればお知らせください。"
     },
     "terms": {
-      "prefix": "[MISSING] I agree to the",
-      "termsLink": "[MISSING] terms and conditions",
-      "separator": "[MISSING] and",
-      "privacyLink": "[MISSING] privacy policy",
+      "prefix": "私は",
+      "termsLink": "利用規約",
+      "separator": "と",
+      "privacyLink": "プライバシーポリシー",
       "required": "*",
-      "error": "[MISSING] You must accept the terms and conditions to complete registration."
+      "error": "登録を完了するには利用規約に同意する必要があります。"
     },
     "account": {
-      "title": "[MISSING] Want to manage all your registrations in one place?",
-      "message": "[MISSING] After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
+      "title": "すべての登録を一か所で管理しませんか？",
+      "message": "登録後、無料アカウントを作成して登録履歴の管理ができます。"
     }
   },
   "success": {
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSent": "[MISSING] Confirmation Email Sent",
-    "emailSentTo": "[MISSING] We've sent a confirmation email to",
-    "clickLink": "[MISSING] Click the link in the email to confirm your registration.",
-    "validFor": "[MISSING] This link is valid for",
-    "valid": "[MISSING] 24 hours",
-    "didntReceive": "[MISSING] Didn't receive the email?",
-    "checkSpam": "[MISSING] Check your spam folder",
-    "checkEmail": "[MISSING] Verify the email address is correct",
-    "waitMinutes": "[MISSING] Wait a few minutes and try again",
-    "close": "[MISSING] Close"
+    "title": "登録を送信しました！",
+    "subtitle": "メールで登録を確認してください",
+    "emailSent": "確認メールを送信しました",
+    "emailSentTo": "確認メールを送信しました：",
+    "clickLink": "メールのリンクをクリックして登録を確認してください。",
+    "validFor": "このリンクの有効期限は",
+    "valid": "24時間",
+    "didntReceive": "メールが届きませんか？",
+    "checkSpam": "迷惑メールフォルダを確認してください",
+    "checkEmail": "メールアドレスが正しいか確認してください",
+    "waitMinutes": "数分待ってからもう一度お試しください",
+    "close": "閉じる"
   },
   "confirmation": {
     "loading": {
@@ -182,9 +182,9 @@
     }
   },
   "companySearch": {
-    "error": "[MISSING] Error loading companies",
-    "noResults": "[MISSING] No existing company found",
-    "createNew": "[MISSING] You can continue with \"{{value}}\" as a new company",
-    "minChars": "[MISSING] Type at least 2 characters to search"
+    "error": "企業の読み込みエラー",
+    "noResults": "既存の企業が見つかりません",
+    "createNew": "「{{value}}」を新しい企業として続行できます",
+    "minChars": "検索するには2文字以上入力してください"
   }
 }

@@ -35,122 +35,122 @@
     }
   },
   "confirmationPage": {
-    "loading": "[MISSING] Loading confirmation...",
+    "loading": "Cargando confirmación...",
     "notFound": {
-      "title": "[MISSING] Registration not found",
-      "message": "[MISSING] Please check your confirmation code and try again."
+      "title": "Registro no encontrado",
+      "message": "Verifica tu código de confirmación e inténtalo de nuevo."
     },
-    "copyCode": "[MISSING] Copy confirmation code",
-    "qrCodeAlt": "[MISSING] Registration QR Code",
-    "qrCodeTitle": "[MISSING] Your Check-In QR Code",
-    "detailsTitle": "[MISSING] Registration Details",
-    "shareLabel": "[MISSING] Share with your network:",
-    "registerAnother": "[MISSING] Register Another Person",
-    "viewEventDetails": "[MISSING] View Event Details"
+    "copyCode": "Copiar código de confirmación",
+    "qrCodeAlt": "Código QR de registro",
+    "qrCodeTitle": "Tu código QR de check-in",
+    "detailsTitle": "Detalles del registro",
+    "shareLabel": "Compartir con tu red:",
+    "registerAnother": "Registrar otra persona",
+    "viewEventDetails": "Ver detalles del evento"
   },
   "successPage": {
-    "pendingTitle": "[MISSING] Registration Pending",
-    "pendingMessage": "[MISSING] If you submitted a registration, please check your email for the confirmation link.",
-    "pendingLinkValidity": "[MISSING] The confirmation link is valid for 48 hours.",
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSentTitle": "[MISSING] Confirmation Email Sent",
-    "noEmailTitle": "[MISSING] Didn't receive the email?",
-    "noEmailCheck1": "[MISSING] Check your spam/junk folder",
-    "noEmailCheck2": "[MISSING] Make sure you entered the correct email address",
-    "noEmailCheck3": "[MISSING] Wait a few minutes and check again",
-    "createAccountTitle": "[MISSING] Create an Account to Manage Your Registrations",
-    "createAccountText": "[MISSING] After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+    "pendingTitle": "Registro pendiente",
+    "pendingMessage": "Si enviaste un registro, revisa tu correo para el enlace de confirmación.",
+    "pendingLinkValidity": "El enlace de confirmación es válido por 48 horas.",
+    "title": "¡Registro enviado!",
+    "subtitle": "Revisa tu correo para confirmar tu registro",
+    "emailSentTitle": "Correo de confirmación enviado",
+    "noEmailTitle": "¿No recibiste el correo?",
+    "noEmailCheck1": "Revisa tu carpeta de spam",
+    "noEmailCheck2": "Asegúrate de haber ingresado el correo correcto",
+    "noEmailCheck3": "Espera unos minutos y vuelve a revisar",
+    "createAccountTitle": "Crea una cuenta para gestionar tus registros",
+    "createAccountText": "Después de confirmar tu registro por correo, puedes crear una cuenta para gestionar todos tus registros."
   },
   "wizard": {
     "steps": {
-      "step1Progress": "[MISSING] 1. Your Details",
-      "step2Progress": "[MISSING] 2. Confirm Registration",
-      "step1Title": "[MISSING] Step 1: Your Details",
-      "step2Title": "[MISSING] Step 2: Confirm Registration"
+      "step1Progress": "1. Tus datos",
+      "step2Progress": "2. Confirmar registro",
+      "step1Title": "Paso 1: Tus datos",
+      "step2Title": "Paso 2: Confirmar registro"
     },
     "buttons": {
-      "edit": "[MISSING] Edit",
-      "cancel": "[MISSING] Cancel",
-      "back": "[MISSING] ← Back",
-      "next": "[MISSING] Next →",
-      "complete": "[MISSING] Complete Registration",
-      "submitting": "[MISSING] Submitting..."
+      "edit": "Editar",
+      "cancel": "Cancelar",
+      "back": "← Atrás",
+      "next": "Siguiente →",
+      "complete": "Completar registro",
+      "submitting": "Enviando..."
     },
     "errors": {
-      "fillRequired": "[MISSING] Please fill in all required fields correctly.",
-      "acceptTerms": "[MISSING] You must accept the terms and conditions to register.",
-      "failed": "[MISSING] Registration failed. Please try again."
+      "fillRequired": "Completa todos los campos obligatorios correctamente.",
+      "acceptTerms": "Debes aceptar los términos y condiciones para registrarte.",
+      "failed": "Registro fallido. Inténtalo de nuevo."
     },
-    "cancelConfirm": "[MISSING] Are you sure you want to cancel registration?"
+    "cancelConfirm": "¿Estás seguro/a de que quieres cancelar el registro?"
   },
   "personalDetails": {
-    "title": "[MISSING] Personal Information",
-    "subtitle": "[MISSING] Please provide your details to register for the event.",
+    "title": "Información personal",
+    "subtitle": "Proporciona tus datos para registrarte en el evento.",
     "fields": {
-      "firstName": "[MISSING] First Name *",
-      "lastName": "[MISSING] Last Name *",
-      "emailAddress": "[MISSING] Email Address *",
-      "emailHelper": "[MISSING] We'll send your ticket and event updates here",
-      "company": "[MISSING] Company *",
-      "role": "[MISSING] Role *"
+      "firstName": "Nombre *",
+      "lastName": "Apellido *",
+      "emailAddress": "Dirección de correo electrónico *",
+      "emailHelper": "Te enviaremos tu entrada y actualizaciones aquí",
+      "company": "Empresa *",
+      "role": "Cargo *"
     },
     "validation": {
-      "firstNameRequired": "[MISSING] First name is required",
-      "lastNameRequired": "[MISSING] Last name is required",
-      "invalidEmail": "[MISSING] Invalid email address",
-      "companyRequired": "[MISSING] Company is required",
-      "roleRequired": "[MISSING] Role is required"
+      "firstNameRequired": "El nombre es obligatorio",
+      "lastNameRequired": "El apellido es obligatorio",
+      "invalidEmail": "Dirección de correo no válida",
+      "companyRequired": "La empresa es obligatoria",
+      "roleRequired": "El cargo es obligatorio"
     },
     "placeholders": {
-      "firstName": "[MISSING] John",
-      "lastName": "[MISSING] Smith",
-      "email": "[MISSING] john.smith@company.ch",
-      "company": "[MISSING] Search for your company...",
-      "role": "[MISSING] Senior Developer"
+      "firstName": "Juan",
+      "lastName": "García",
+      "email": "juan.garcia@empresa.ch",
+      "company": "Busca tu empresa...",
+      "role": "Desarrollador senior"
     }
   },
   "confirmStep": {
-    "title": "[MISSING] Review & Confirm",
-    "subtitle": "[MISSING] Please review your information and complete your registration.",
-    "personalInfo": "[MISSING] Personal Information",
+    "title": "Revisar y confirmar",
+    "subtitle": "Revisa tu información y completa el registro.",
+    "personalInfo": "Información personal",
     "commPref": {
-      "title": "[MISSING] Communication Preferences",
-      "reminders": "[MISSING] Send me event reminders (1 week and 1 day before)",
-      "newsletter": "[MISSING] Subscribe to BATbern newsletter (monthly updates)"
+      "title": "Preferencias de comunicación",
+      "reminders": "Enviarme recordatorios (1 semana y 1 día antes)",
+      "newsletter": "Suscribirme al boletín de BATbern (actualizaciones mensuales)"
     },
     "specialRequests": {
-      "label": "[MISSING] Special Requests",
-      "optional": "[MISSING] (Optional)",
-      "placeholder": "[MISSING] Dietary requirements, accessibility needs, etc.",
-      "helper": "[MISSING] Let us know if you have any dietary requirements or accessibility needs."
+      "label": "Solicitudes especiales",
+      "optional": "(Opcional)",
+      "placeholder": "Requisitos dietéticos, necesidades de accesibilidad, etc.",
+      "helper": "Indícanos si tienes requisitos dietéticos o necesidades de accesibilidad."
     },
     "terms": {
-      "prefix": "[MISSING] I agree to the",
-      "termsLink": "[MISSING] terms and conditions",
-      "separator": "[MISSING] and",
-      "privacyLink": "[MISSING] privacy policy",
+      "prefix": "Acepto los",
+      "termsLink": "términos y condiciones",
+      "separator": "y la",
+      "privacyLink": "política de privacidad",
       "required": "*",
-      "error": "[MISSING] You must accept the terms and conditions to complete registration."
+      "error": "Debes aceptar los términos y condiciones para completar el registro."
     },
     "account": {
-      "title": "[MISSING] Want to manage all your registrations in one place?",
-      "message": "[MISSING] After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
+      "title": "¿Quieres gestionar todos tus registros en un solo lugar?",
+      "message": "Después de registrarte, puedes crear una cuenta gratuita para gestionar tus registros."
     }
   },
   "success": {
-    "title": "[MISSING] Registration Submitted!",
-    "subtitle": "[MISSING] Check your email to confirm your registration",
-    "emailSent": "[MISSING] Confirmation Email Sent",
-    "emailSentTo": "[MISSING] We've sent a confirmation email to",
-    "clickLink": "[MISSING] Click the link in the email to confirm your registration.",
-    "validFor": "[MISSING] This link is valid for",
-    "valid": "[MISSING] 24 hours",
-    "didntReceive": "[MISSING] Didn't receive the email?",
-    "checkSpam": "[MISSING] Check your spam folder",
-    "checkEmail": "[MISSING] Verify the email address is correct",
-    "waitMinutes": "[MISSING] Wait a few minutes and try again",
-    "close": "[MISSING] Close"
+    "title": "¡Registro enviado!",
+    "subtitle": "Revisa tu correo para confirmar tu registro",
+    "emailSent": "Correo de confirmación enviado",
+    "emailSentTo": "Hemos enviado un correo de confirmación a",
+    "clickLink": "Haz clic en el enlace del correo para confirmar tu registro.",
+    "validFor": "Este enlace es válido por",
+    "valid": "24 horas",
+    "didntReceive": "¿No recibiste el correo?",
+    "checkSpam": "Revisa tu carpeta de spam",
+    "checkEmail": "Verifica que la dirección de correo sea correcta",
+    "waitMinutes": "Espera unos minutos y vuelve a intentar",
+    "close": "Cerrar"
   },
   "confirmation": {
     "loading": {
@@ -182,9 +182,9 @@
     }
   },
   "companySearch": {
-    "error": "[MISSING] Error loading companies",
-    "noResults": "[MISSING] No existing company found",
-    "createNew": "[MISSING] You can continue with \"{{value}}\" as a new company",
-    "minChars": "[MISSING] Type at least 2 characters to search"
+    "error": "Error al cargar las empresas",
+    "noResults": "No se encontró ninguna empresa existente",
+    "createNew": "Puedes continuar con \"{{value}}\" como nueva empresa",
+    "minChars": "Escribe al menos 2 caracteres para buscar"
   }
 }

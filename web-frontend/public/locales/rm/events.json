@@ -218,7 +218,7 @@
       "updateTaskFailed": "Actualisar incumbensa fallì",
       "createTaskFailed": "Crear incumbensa fallì"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Incumbensas criticas"
   },
   "form": {
     "createEvent": "Crear nov eveniment",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Status",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Tschertgar eveniments",
+    "clearSearchAriaLabel": "Stizzar la tschertga",
+    "clearAllAriaLabel": "Stizzar tut ils filters"
   },
   "validation": {
     "eventNumberRequired": "Il numer d'eveniment è obligatori",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Elements per pagina"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "Nagins eveniments chattads",
+    "eventList": "Lista d'eveniments"
   },
   "common": {
     "cancel": "Annullar",
@@ -475,8 +475,8 @@
     "loading": "Chargiar..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Cargament dals detagls da l'eveniment",
+    "registerFor": "S'annunziar per",
     "comingSoon": "Cumma pauc...",
     "preview": {
       "title": "Modus prevista",

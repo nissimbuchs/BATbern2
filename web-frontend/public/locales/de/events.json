@@ -218,7 +218,7 @@
       "updateTaskFailed": "Aufgabe konnte nicht aktualisiert werden",
       "createTaskFailed": "Aufgabe konnte nicht erstellt werden"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Kritische Aufgaben"
   },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Status",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Veranstaltungen suchen",
+    "clearSearchAriaLabel": "Suche löschen",
+    "clearAllAriaLabel": "Alle Filter löschen"
   },
   "validation": {
     "eventNumberRequired": "Veranstaltungsnummer ist erforderlich",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Einträge pro Seite"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "Keine Veranstaltungen gefunden",
+    "eventList": "Veranstaltungsliste"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -475,8 +475,8 @@
     "loading": "Lädt..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Veranstaltungsdetails werden geladen",
+    "registerFor": "Anmelden für",
     "comingSoon": "Demnächst...",
     "preview": {
       "title": "Vorschau-Modus",

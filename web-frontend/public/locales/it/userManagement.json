@@ -67,8 +67,8 @@
       "cascadeWarning": "Verranno eliminati anche tutti i dati associati."
     },
     "editUser": {
-      "uploadPhotoAria": "[MISSING] Upload profile photo",
-      "removePhotoAria": "[MISSING] Remove profile photo"
+      "uploadPhotoAria": "Carica foto profilo",
+      "removePhotoAria": "Rimuovi foto profilo"
     }
   },
   "pagination": {
@@ -151,21 +151,21 @@
     "badges": {
       "synthetic": "Sintetico",
       "eventsCount": "{{count}} eventi",
-      "existing": "[MISSING] Existing",
-      "new": "[MISSING] New"
+      "existing": "Esistente",
+      "new": "Nuovo"
     },
     "aria": {
-      "statusLabel": "[MISSING] Import status: {{label}}",
-      "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
-      "fileInput": "[MISSING] File input for CSV upload",
-      "previewTable": "[MISSING] Participant import preview table",
-      "participantTable": "[MISSING] Participants with import status",
-      "importProgress": "[MISSING] Import progress",
-      "closeModal": "[MISSING] Close import modal",
-      "startImport": "[MISSING] Start importing participants from CSV file"
+      "statusLabel": "Stato importazione: {{label}}",
+      "dropzone": "Area caricamento file CSV. Trascina un file CSV o clicca per selezionare",
+      "fileInput": "Input file per caricamento CSV",
+      "previewTable": "Tabella anteprima importazione partecipanti",
+      "participantTable": "Partecipanti con stato importazione",
+      "importProgress": "Avanzamento importazione",
+      "closeModal": "Chiudi finestra importazione",
+      "startImport": "Avvia importazione partecipanti da file CSV"
     },
-    "parseError": "[MISSING] Failed to parse CSV",
-    "importFailed": "[MISSING] Import failed"
+    "parseError": "Analisi CSV fallita",
+    "importFailed": "Importazione fallita"
   },
   "userDetail": {
     "tabs": {
@@ -194,76 +194,76 @@
   },
   "settings": {
     "tabs": {
-      "account": "[MISSING] Account",
-      "notifications": "[MISSING] Notifications",
-      "privacy": "[MISSING] Privacy"
+      "account": "Account",
+      "notifications": "Notifiche",
+      "privacy": "Privacy"
     },
     "account": {
-      "title": "[MISSING] Account Settings",
-      "emailStatus": "[MISSING] Email address cannot be changed",
-      "changePassword": "[MISSING] Change Password",
-      "theme": "[MISSING] Theme",
-      "themeLight": "[MISSING] Light",
-      "themeDark": "[MISSING] Dark",
-      "themeAuto": "[MISSING] Auto (follow system)",
-      "timezone": "[MISSING] Timezone",
-      "save": "[MISSING] Save Account Settings"
+      "title": "Impostazioni account",
+      "emailStatus": "L'indirizzo email non può essere modificato",
+      "changePassword": "Cambia password",
+      "theme": "Tema",
+      "themeLight": "Chiaro",
+      "themeDark": "Scuro",
+      "themeAuto": "Automatico (segui sistema)",
+      "timezone": "Fuso orario",
+      "save": "Salva impostazioni account"
     },
     "notifications": {
-      "title": "[MISSING] Notification Preferences",
-      "epic7Notice": "[MISSING] Advanced notification settings coming in a future update.",
-      "channels": "[MISSING] Notification Channels",
-      "channelEmail": "[MISSING] Email Notifications",
-      "channelInApp": "[MISSING] In-App Notifications",
-      "channelPush": "[MISSING] Push Notifications",
-      "frequency": "[MISSING] Notification Frequency",
-      "frequencyImmediate": "[MISSING] Immediate",
-      "frequencyDaily": "[MISSING] Daily Digest",
-      "frequencyWeekly": "[MISSING] Weekly Digest",
-      "save": "[MISSING] Save Notification Settings"
+      "title": "Preferenze notifiche",
+      "epic7Notice": "Impostazioni notifiche avanzate disponibili in un aggiornamento futuro.",
+      "channels": "Canali di notifica",
+      "channelEmail": "Notifiche email",
+      "channelInApp": "Notifiche in-app",
+      "channelPush": "Notifiche push",
+      "frequency": "Frequenza notifiche",
+      "frequencyImmediate": "Immediato",
+      "frequencyDaily": "Riepilogo giornaliero",
+      "frequencyWeekly": "Riepilogo settimanale",
+      "save": "Salva impostazioni notifiche"
     },
     "newsletter": {
-      "title": "[MISSING] Newsletter",
-      "subscribe": "[MISSING] Subscribe to newsletter",
-      "description": "[MISSING] Receive monthly updates about BATbern events"
+      "title": "Newsletter",
+      "subscribe": "Iscriviti alla newsletter",
+      "description": "Ricevi aggiornamenti mensili sugli eventi BATbern"
     },
     "privacy": {
-      "title": "[MISSING] Privacy Settings",
-      "visibility": "[MISSING] Profile Visibility",
-      "visibilityPublic": "[MISSING] Public",
-      "visibilityMembersOnly": "[MISSING] Members Only",
-      "visibilityPrivate": "[MISSING] Private",
-      "infoDisplay": "[MISSING] Information Display",
-      "showEmail": "[MISSING] Show email address",
-      "showCompany": "[MISSING] Show company affiliation",
-      "showActivity": "[MISSING] Show activity history",
-      "communication": "[MISSING] Communication",
-      "allowMessaging": "[MISSING] Allow direct messages from other users",
-      "viewPolicy": "[MISSING] View Privacy Policy",
-      "save": "[MISSING] Save Privacy Settings"
+      "title": "Impostazioni privacy",
+      "visibility": "Visibilità profilo",
+      "visibilityPublic": "Pubblico",
+      "visibilityMembersOnly": "Solo membri",
+      "visibilityPrivate": "Privato",
+      "infoDisplay": "Visualizzazione informazioni",
+      "showEmail": "Mostra indirizzo email",
+      "showCompany": "Mostra affiliazione aziendale",
+      "showActivity": "Mostra cronologia attività",
+      "communication": "Comunicazione",
+      "allowMessaging": "Consenti messaggi diretti da altri utenti",
+      "viewPolicy": "Visualizza privacy policy",
+      "save": "Salva impostazioni privacy"
     }
   },
   "profile": {
-    "personalInfo": "[MISSING] Personal Information",
-    "editProfile": "[MISSING] Edit Profile",
-    "firstName": "[MISSING] First Name",
-    "lastName": "[MISSING] Last Name",
-    "bio": "[MISSING] Bio",
-    "bioValidation": "[MISSING] Bio must be {{max}} characters or less",
-    "saveChanges": "[MISSING] Save Changes",
-    "removePhotoConfirm": "[MISSING] Are you sure you want to remove your profile photo?",
-    "labelName": "[MISSING] Name:",
-    "labelEmail": "[MISSING] Email:",
-    "labelCompany": "[MISSING] Company:",
-    "labelBio": "[MISSING] Bio:",
-    "recentActivity": "[MISSING] Recent Activity",
-    "noActivity": "[MISSING] No recent activity",
-    "viewAll": "[MISSING] View All →"
+    "personalInfo": "Informazioni personali",
+    "editProfile": "Modifica profilo",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "bio": "Biografia",
+    "bioValidation": "La biografia deve contenere {{max}} caratteri o meno",
+    "saveChanges": "Salva modifiche",
+    "removePhotoConfirm": "Sei sicuro/a di voler rimuovere la foto profilo?",
+    "labelName": "Nome:",
+    "labelEmail": "Email:",
+    "labelCompany": "Azienda:",
+    "labelBio": "Biografia:",
+    "recentActivity": "Attività recente",
+    "noActivity": "Nessuna attività recente",
+    "viewAll": "Vedi tutto →"
   },
   "profileHeader": {
-    "uploadTooltip": "[MISSING] Upload Photo",
-    "removeTooltip": "[MISSING] Remove Photo",
-    "verified": "[MISSING] Verified",
-    "memberSince": "[MISSING] Member since {{date}}"
+    "uploadTooltip": "Carica foto",
+    "removeTooltip": "Rimuovi foto",
+    "verified": "Verificato",
+    "memberSince": "Membro dal {{date}}"
   }
 }

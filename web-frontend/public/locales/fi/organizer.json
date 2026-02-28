@@ -418,23 +418,23 @@
       "cancel": "Jatka tutkimista",
       "saveError": "Aiheen valinnan tallentaminen epäonnistui. Yritä uudelleen."
     },
-    "noEventCode": "[MISSING] No event code provided"
+    "noEventCode": "Tapahtumatunnusta ei annettu"
   },
   "livePreview": {
-    "devicePreviewMode": "[MISSING] device preview mode",
-    "desktopPreview": "[MISSING] Desktop preview",
-    "mobilePreview": "[MISSING] Mobile preview",
-    "printPreview": "[MISSING] Print preview",
-    "desktop": "[MISSING] Desktop",
-    "mobile": "[MISSING] Mobile",
-    "print": "[MISSING] Print",
-    "refreshPreview": "[MISSING] Refresh preview",
-    "switchedTo": "[MISSING] Switched to {{device}} preview",
-    "refreshingPreview": "[MISSING] Refreshing preview...",
-    "failedToLoad": "[MISSING] Failed to load preview. Please try again.",
-    "iframeTitle": "[MISSING] Event preview",
-    "iframeAriaLabel": "[MISSING] Event content preview",
-    "previewModeCaption": "[MISSING] Preview Mode: {{mode}} | Phase: {{phase}}",
-    "deviceCaption": "[MISSING] Device: {{device}} ({{width}} x {{height}})"
+    "devicePreviewMode": "laitteen esikatselutila",
+    "desktopPreview": "Työpöydän esikatselu",
+    "mobilePreview": "Mobiiliesikatselu",
+    "printPreview": "Tulostuksen esikatselu",
+    "desktop": "Työpöytä",
+    "mobile": "Mobiili",
+    "print": "Tulosta",
+    "refreshPreview": "Päivitä esikatselu",
+    "switchedTo": "Vaihdettu {{device}}-esikatseluun",
+    "refreshingPreview": "Päivitetään esikatselua...",
+    "failedToLoad": "Esikatselun lataaminen epäonnistui. Yritä uudelleen.",
+    "iframeTitle": "Tapahtuman esikatselu",
+    "iframeAriaLabel": "Tapahtuman sisällön esikatselu",
+    "previewModeCaption": "Esikatselutila: {{mode}} | Vaihe: {{phase}}",
+    "deviceCaption": "Laite: {{device}} ({{width}} x {{height}})"
   }
 }

@@ -218,7 +218,7 @@
       "updateTaskFailed": "Tehtävän päivittäminen epäonnistui",
       "createTaskFailed": "Tehtävän luominen epäonnistui"
     },
-    "criticalTasksWidget": "[MISSING] Critical tasks widget"
+    "criticalTasksWidget": "Kriittiset tehtävät"
   },
   "form": {
     "createEvent": "Luo uusi tapahtuma",
@@ -280,9 +280,9 @@
   },
   "filters": {
     "status": "Tila",
-    "searchAriaLabel": "[MISSING] Search events",
-    "clearSearchAriaLabel": "[MISSING] Clear search",
-    "clearAllAriaLabel": "[MISSING] Clear all filters"
+    "searchAriaLabel": "Etsi tapahtumia",
+    "clearSearchAriaLabel": "Tyhjennä haku",
+    "clearAllAriaLabel": "Tyhjennä kaikki suodattimet"
   },
   "validation": {
     "eventNumberRequired": "Tapahtuman numero on pakollinen",
@@ -460,8 +460,8 @@
     "itemsPerPage": "Kohteita per sivu"
   },
   "accessibility": {
-    "noEventsFound": "[MISSING] No events found",
-    "eventList": "[MISSING] Event list"
+    "noEventsFound": "Tapahtumia ei löydy",
+    "eventList": "Tapahtumalista"
   },
   "common": {
     "cancel": "Peruuta",
@@ -475,8 +475,8 @@
     "loading": "Ladataan..."
   },
   "public": {
-    "loadingEventDetails": "[MISSING] Loading event details",
-    "registerFor": "[MISSING] Register for",
+    "loadingEventDetails": "Ladataan tapahtuman tietoja",
+    "registerFor": "Rekisteröidy tapahtumaan",
     "comingSoon": "Tulossa pian...",
     "preview": {
       "title": "Esikatselutila",

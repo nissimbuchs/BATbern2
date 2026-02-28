@@ -1,11 +1,11 @@
 {
   "personalDetails": {
     "placeholders": {
-      "firstName": "[MISSING] John",
-      "lastName": "[MISSING] Smith",
-      "email": "[MISSING] john.smith@company.ch",
-      "company": "[MISSING] Search for your company...",
-      "role": "[MISSING] Senior Developer"
+      "firstName": "Hansruedi",
+      "lastName": "Müller",
+      "email": "hansruedi.mueller@firma.ch",
+      "company": "Firma sueche...",
+      "role": "Senior Entwickler"
     }
   }
 }

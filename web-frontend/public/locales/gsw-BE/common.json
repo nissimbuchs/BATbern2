@@ -398,10 +398,10 @@
     },
     "upload": {
       "uploading": "Wird ufeglade...",
-      "uploadAria": "[MISSING] Upload presentation file"
+      "uploadAria": "Präsentationsdatei uflade"
     },
     "photo": {
-      "uploadAria": "[MISSING] Upload profile photo"
+      "uploadAria": "Profilfoto uflade"
     }
   },
   "archive": {
@@ -449,8 +449,8 @@
       "message": "Bisch sicher, dass du die Benarichtigig lösche wötsch?"
     },
     "priority": {
-      "urgent": "[MISSING] URGENT",
-      "high": "[MISSING] HIGH"
+      "urgent": "DRINGEND",
+      "high": "HOCH"
     }
   },
   "emailTemplates": {

@@ -67,8 +67,8 @@
       "cascadeWarning": "関連するすべてのデータも削除されます。"
     },
     "editUser": {
-      "uploadPhotoAria": "[MISSING] Upload profile photo",
-      "removePhotoAria": "[MISSING] Remove profile photo"
+      "uploadPhotoAria": "プロフィール写真をアップロード",
+      "removePhotoAria": "プロフィール写真を削除"
     }
   },
   "pagination": {
@@ -151,21 +151,21 @@
     "badges": {
       "synthetic": "合成データ",
       "eventsCount": "{{count}} 件のイベント",
-      "existing": "[MISSING] Existing",
-      "new": "[MISSING] New"
+      "existing": "既存",
+      "new": "新規"
     },
     "aria": {
-      "statusLabel": "[MISSING] Import status: {{label}}",
-      "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
-      "fileInput": "[MISSING] File input for CSV upload",
-      "previewTable": "[MISSING] Participant import preview table",
-      "participantTable": "[MISSING] Participants with import status",
-      "importProgress": "[MISSING] Import progress",
-      "closeModal": "[MISSING] Close import modal",
-      "startImport": "[MISSING] Start importing participants from CSV file"
+      "statusLabel": "インポートステータス：{{label}}",
+      "dropzone": "CSVファイルのアップロードエリア。CSVファイルをドラッグ＆ドロップするかクリックして選択",
+      "fileInput": "CSVインポート用ファイル入力",
+      "previewTable": "参加者インポートプレビューテーブル",
+      "participantTable": "インポートステータス付き参加者",
+      "importProgress": "インポートの進行状況",
+      "closeModal": "インポートウィンドウを閉じる",
+      "startImport": "CSVファイルから参加者のインポートを開始"
     },
-    "parseError": "[MISSING] Failed to parse CSV",
-    "importFailed": "[MISSING] Import failed"
+    "parseError": "CSVの解析に失敗しました",
+    "importFailed": "インポートに失敗しました"
   },
   "userDetail": {
     "tabs": {
@@ -194,76 +194,76 @@
   },
   "settings": {
     "tabs": {
-      "account": "[MISSING] Account",
-      "notifications": "[MISSING] Notifications",
-      "privacy": "[MISSING] Privacy"
+      "account": "アカウント",
+      "notifications": "通知",
+      "privacy": "プライバシー"
     },
     "account": {
-      "title": "[MISSING] Account Settings",
-      "emailStatus": "[MISSING] Email address cannot be changed",
-      "changePassword": "[MISSING] Change Password",
-      "theme": "[MISSING] Theme",
-      "themeLight": "[MISSING] Light",
-      "themeDark": "[MISSING] Dark",
-      "themeAuto": "[MISSING] Auto (follow system)",
-      "timezone": "[MISSING] Timezone",
-      "save": "[MISSING] Save Account Settings"
+      "title": "アカウント設定",
+      "emailStatus": "メールアドレスは変更できません",
+      "changePassword": "パスワードを変更",
+      "theme": "テーマ",
+      "themeLight": "ライト",
+      "themeDark": "ダーク",
+      "themeAuto": "自動（システム設定に従う）",
+      "timezone": "タイムゾーン",
+      "save": "アカウント設定を保存"
     },
     "notifications": {
-      "title": "[MISSING] Notification Preferences",
-      "epic7Notice": "[MISSING] Advanced notification settings coming in a future update.",
-      "channels": "[MISSING] Notification Channels",
-      "channelEmail": "[MISSING] Email Notifications",
-      "channelInApp": "[MISSING] In-App Notifications",
-      "channelPush": "[MISSING] Push Notifications",
-      "frequency": "[MISSING] Notification Frequency",
-      "frequencyImmediate": "[MISSING] Immediate",
-      "frequencyDaily": "[MISSING] Daily Digest",
-      "frequencyWeekly": "[MISSING] Weekly Digest",
-      "save": "[MISSING] Save Notification Settings"
+      "title": "通知設定",
+      "epic7Notice": "高度な通知設定は今後のアップデートで追加される予定です。",
+      "channels": "通知チャンネル",
+      "channelEmail": "メール通知",
+      "channelInApp": "アプリ内通知",
+      "channelPush": "プッシュ通知",
+      "frequency": "通知頻度",
+      "frequencyImmediate": "即時",
+      "frequencyDaily": "日次ダイジェスト",
+      "frequencyWeekly": "週次ダイジェスト",
+      "save": "通知設定を保存"
     },
     "newsletter": {
-      "title": "[MISSING] Newsletter",
-      "subscribe": "[MISSING] Subscribe to newsletter",
-      "description": "[MISSING] Receive monthly updates about BATbern events"
+      "title": "ニュースレター",
+      "subscribe": "ニュースレターを購読",
+      "description": "BATbernイベントに関する毎月の更新を受け取る"
     },
     "privacy": {
-      "title": "[MISSING] Privacy Settings",
-      "visibility": "[MISSING] Profile Visibility",
-      "visibilityPublic": "[MISSING] Public",
-      "visibilityMembersOnly": "[MISSING] Members Only",
-      "visibilityPrivate": "[MISSING] Private",
-      "infoDisplay": "[MISSING] Information Display",
-      "showEmail": "[MISSING] Show email address",
-      "showCompany": "[MISSING] Show company affiliation",
-      "showActivity": "[MISSING] Show activity history",
-      "communication": "[MISSING] Communication",
-      "allowMessaging": "[MISSING] Allow direct messages from other users",
-      "viewPolicy": "[MISSING] View Privacy Policy",
-      "save": "[MISSING] Save Privacy Settings"
+      "title": "プライバシー設定",
+      "visibility": "プロフィールの公開設定",
+      "visibilityPublic": "公開",
+      "visibilityMembersOnly": "メンバーのみ",
+      "visibilityPrivate": "プライベート",
+      "infoDisplay": "情報表示",
+      "showEmail": "メールアドレスを表示",
+      "showCompany": "所属企業を表示",
+      "showActivity": "アクティビティ履歴を表示",
+      "communication": "コミュニケーション",
+      "allowMessaging": "他のユーザーからのダイレクトメッセージを許可",
+      "viewPolicy": "プライバシーポリシーを見る",
+      "save": "プライバシー設定を保存"
     }
   },
   "profile": {
-    "personalInfo": "[MISSING] Personal Information",
-    "editProfile": "[MISSING] Edit Profile",
-    "firstName": "[MISSING] First Name",
-    "lastName": "[MISSING] Last Name",
-    "bio": "[MISSING] Bio",
-    "bioValidation": "[MISSING] Bio must be {{max}} characters or less",
-    "saveChanges": "[MISSING] Save Changes",
-    "removePhotoConfirm": "[MISSING] Are you sure you want to remove your profile photo?",
-    "labelName": "[MISSING] Name:",
-    "labelEmail": "[MISSING] Email:",
-    "labelCompany": "[MISSING] Company:",
-    "labelBio": "[MISSING] Bio:",
-    "recentActivity": "[MISSING] Recent Activity",
-    "noActivity": "[MISSING] No recent activity",
-    "viewAll": "[MISSING] View All →"
+    "personalInfo": "個人情報",
+    "editProfile": "プロフィールを編集",
+    "firstName": "名",
+    "lastName": "姓",
+    "bio": "自己紹介",
+    "bioValidation": "自己紹介は{{max}}文字以内にしてください",
+    "saveChanges": "変更を保存",
+    "removePhotoConfirm": "プロフィール写真を削除してもよろしいですか？",
+    "labelName": "名前：",
+    "labelEmail": "メール：",
+    "labelCompany": "会社：",
+    "labelBio": "自己紹介：",
+    "recentActivity": "最近のアクティビティ",
+    "noActivity": "最近のアクティビティはありません",
+    "viewAll": "すべて見る →"
   },
   "profileHeader": {
-    "uploadTooltip": "[MISSING] Upload Photo",
-    "removeTooltip": "[MISSING] Remove Photo",
-    "verified": "[MISSING] Verified",
-    "memberSince": "[MISSING] Member since {{date}}"
+    "uploadTooltip": "写真をアップロード",
+    "removeTooltip": "写真を削除",
+    "verified": "認証済み",
+    "memberSince": "{{date}}からのメンバー"
   }
 }

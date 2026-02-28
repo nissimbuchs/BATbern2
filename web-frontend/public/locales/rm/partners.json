@@ -46,7 +46,7 @@
   "loading": "Chargiar partenaris...",
   "error": {
     "failedToLoad": "Impussibel da chargiare partenaris",
-    "correlationId": "[MISSING] Correlation ID"
+    "correlationId": "ID da correlaziun"
   },
   "screenReader": {
     "searchResults": "{{count}} partenari chattà",
@@ -86,16 +86,16 @@
       "contentLabel": "Cuntegn",
       "htmlSupported": "La furmatizaziun HTML è sustegnida",
       "noNotes": "Naginas notas anc",
-      "failedToLoadNotes": "[MISSING] Failed to load notes",
-      "deleteNote": "[MISSING] Delete note"
+      "failedToLoadNotes": "Il cargament da las notas ha fallì",
+      "deleteNote": "Stizzar la nota"
     },
     "settingsTab": {
       "title": "Parametras",
       "activePartnership": "Partnerada activa",
       "exportData": "Exportar datas dal partenari",
       "deletePartner": "Stizzar datas dal partenari",
-      "accessDenied": "[MISSING] Access Denied",
-      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
+      "accessDenied": "Access refusà",
+      "accessDeniedMessage": "Questa secziun è accessibla mo als organisaturs."
     },
     "tabs": {
       "overview": "Survista",
@@ -103,7 +103,7 @@
       "meetings": "Inscunters",
       "analytics": "Analiticas",
       "settings": "Parametras",
-      "partnerDetailTabs": "[MISSING] Partner detail tabs"
+      "partnerDetailTabs": "Tabs da detagls dal partner"
     },
     "overviewTab": {
       "title": "Detagls da la partnerada",
@@ -122,14 +122,14 @@
       }
     },
     "errors": {
-      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
-      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
-      "notFound": "[MISSING] Partner Not Found",
-      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
-      "loading": "[MISSING] Error Loading Partner",
-      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
-      "noData": "[MISSING] No Data",
-      "noDataMessage": "[MISSING] No partner data available."
+      "failedToLoadContacts": "Il cargament dals contacts ha fallì.",
+      "noContactsAssigned": "Naguns utilisaders partners èn attribuids a questa cumpagnia.",
+      "notFound": "Partner betg chattà",
+      "notFoundMessage": "Il partner \"{{name}}\" n'è betg stà chattà.",
+      "loading": "Errur durant il cargament dal partner",
+      "loadingMessage": "Igl è sa producì in-a errur durant il cargament dals detagls dal partner. Pruvai anc ina giada.",
+      "noData": "Nagins datas",
+      "noDataMessage": "Naginas datas da partner disponiblas."
     }
   },
   "meetings": {

@@ -419,23 +419,23 @@
       "cancel": "Weiter erkunden",
       "saveError": "Themenauswahl konnte nicht gespeichert werden. Bitte erneut versuchen."
     },
-    "noEventCode": "[MISSING] No event code provided"
+    "noEventCode": "Kein Veranstaltungscode angegeben"
   },
   "livePreview": {
-    "devicePreviewMode": "[MISSING] device preview mode",
-    "desktopPreview": "[MISSING] Desktop preview",
-    "mobilePreview": "[MISSING] Mobile preview",
-    "printPreview": "[MISSING] Print preview",
-    "desktop": "[MISSING] Desktop",
-    "mobile": "[MISSING] Mobile",
-    "print": "[MISSING] Print",
-    "refreshPreview": "[MISSING] Refresh preview",
-    "switchedTo": "[MISSING] Switched to {{device}} preview",
-    "refreshingPreview": "[MISSING] Refreshing preview...",
-    "failedToLoad": "[MISSING] Failed to load preview. Please try again.",
-    "iframeTitle": "[MISSING] Event preview",
-    "iframeAriaLabel": "[MISSING] Event content preview",
-    "previewModeCaption": "[MISSING] Preview Mode: {{mode}} | Phase: {{phase}}",
-    "deviceCaption": "[MISSING] Device: {{device}} ({{width}} x {{height}})"
+    "devicePreviewMode": "Gerätvorschaumodus",
+    "desktopPreview": "Desktop-Vorschau",
+    "mobilePreview": "Mobile Vorschau",
+    "printPreview": "Druckvorschau",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "print": "Drucken",
+    "refreshPreview": "Vorschau aktualisieren",
+    "switchedTo": "Zu {{device}}-Vorschau gewechselt",
+    "refreshingPreview": "Vorschau wird aktualisiert...",
+    "failedToLoad": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "iframeTitle": "Veranstaltungsvorschau",
+    "iframeAriaLabel": "Inhalt der Veranstaltungsvorschau",
+    "previewModeCaption": "Vorschaumodus: {{mode}} | Phase: {{phase}}",
+    "deviceCaption": "Gerät: {{device}} ({{width}} x {{height}})"
   }
 }

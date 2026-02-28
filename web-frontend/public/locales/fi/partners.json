@@ -46,7 +46,7 @@
   "loading": "Ladataan kumppaneita...",
   "error": {
     "failedToLoad": "Kumppaneiden lataaminen epäonnistui",
-    "correlationId": "[MISSING] Correlation ID"
+    "correlationId": "Korrelaatiotunnus"
   },
   "screenReader": {
     "searchResults": "{{count}} kumppani löydetty",
@@ -86,16 +86,16 @@
       "contentLabel": "Sisältö",
       "htmlSupported": "HTML-muotoilu on tuettu",
       "noNotes": "Ei muistiinpanoja vielä",
-      "failedToLoadNotes": "[MISSING] Failed to load notes",
-      "deleteNote": "[MISSING] Delete note"
+      "failedToLoadNotes": "Muistiinpanojen lataaminen epäonnistui",
+      "deleteNote": "Poista muistiinpano"
     },
     "settingsTab": {
       "title": "Asetukset",
       "activePartnership": "Aktiivinen kumppanuus",
       "exportData": "Vie kumppanin tiedot",
       "deletePartner": "Poista kumppanin tiedot",
-      "accessDenied": "[MISSING] Access Denied",
-      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
+      "accessDenied": "Pääsy kielletty",
+      "accessDeniedMessage": "Tähän osioon pääsevät vain järjestäjät."
     },
     "tabs": {
       "overview": "Yleiskatsaus",
@@ -103,7 +103,7 @@
       "meetings": "Kokoukset",
       "analytics": "Analytiikka",
       "settings": "Asetukset",
-      "partnerDetailTabs": "[MISSING] Partner detail tabs"
+      "partnerDetailTabs": "Kumppanin tietovälilehdet"
     },
     "overviewTab": {
       "title": "Kumppanuuden tiedot",
@@ -122,14 +122,14 @@
       }
     },
     "errors": {
-      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
-      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
-      "notFound": "[MISSING] Partner Not Found",
-      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
-      "loading": "[MISSING] Error Loading Partner",
-      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
-      "noData": "[MISSING] No Data",
-      "noDataMessage": "[MISSING] No partner data available."
+      "failedToLoadContacts": "Yhteystietojen lataaminen epäonnistui.",
+      "noContactsAssigned": "Tälle yritykselle ei ole vielä määritetty kumppanin käyttäjiä.",
+      "notFound": "Kumppania ei löydy",
+      "notFoundMessage": "Kumppania \"{{name}}\" ei löydy.",
+      "loading": "Virhe kumppanin lataamisessa",
+      "loadingMessage": "Kumppanin tietojen lataamisessa tapahtui virhe. Yritä myöhemmin uudelleen.",
+      "noData": "Ei tietoja",
+      "noDataMessage": "Kumppanin tietoja ei ole saatavilla."
     }
   },
   "meetings": {

@@ -46,7 +46,7 @@
   "loading": "パートナーを読み込み中...",
   "error": {
     "failedToLoad": "パートナーの読み込みに失敗しました",
-    "correlationId": "[MISSING] Correlation ID"
+    "correlationId": "相関ID"
   },
   "screenReader": {
     "searchResults": "{{count}}社のパートナーが見つかりました",
@@ -86,16 +86,16 @@
       "contentLabel": "内容",
       "htmlSupported": "HTMLフォーマットがサポートされています",
       "noNotes": "まだメモがありません",
-      "failedToLoadNotes": "[MISSING] Failed to load notes",
-      "deleteNote": "[MISSING] Delete note"
+      "failedToLoadNotes": "ノートの読み込みに失敗しました",
+      "deleteNote": "ノートを削除"
     },
     "settingsTab": {
       "title": "設定",
       "activePartnership": "アクティブなパートナーシップ",
       "exportData": "パートナーデータをエクスポート",
       "deletePartner": "パートナーデータを削除",
-      "accessDenied": "[MISSING] Access Denied",
-      "accessDeniedMessage": "[MISSING] This section is only accessible to organizers."
+      "accessDenied": "アクセス拒否",
+      "accessDeniedMessage": "このセクションは主催者のみがアクセスできます。"
     },
     "tabs": {
       "overview": "概要",
@@ -103,7 +103,7 @@
       "meetings": "ミーティング",
       "analytics": "分析",
       "settings": "設定",
-      "partnerDetailTabs": "[MISSING] Partner detail tabs"
+      "partnerDetailTabs": "パートナー詳細タブ"
     },
     "overviewTab": {
       "title": "パートナーシップの詳細",
@@ -122,14 +122,14 @@
       }
     },
     "errors": {
-      "failedToLoadContacts": "[MISSING] Failed to load contacts.",
-      "noContactsAssigned": "[MISSING] No partner users are assigned to this company yet.",
-      "notFound": "[MISSING] Partner Not Found",
-      "notFoundMessage": "[MISSING] The partner \"{{name}}\" could not be found.",
-      "loading": "[MISSING] Error Loading Partner",
-      "loadingMessage": "[MISSING] An error occurred while loading the partner details. Please try again later.",
-      "noData": "[MISSING] No Data",
-      "noDataMessage": "[MISSING] No partner data available."
+      "failedToLoadContacts": "連絡先の読み込みに失敗しました。",
+      "noContactsAssigned": "この企業にはまだパートナーユーザーが割り当てられていません。",
+      "notFound": "パートナーが見つかりません",
+      "notFoundMessage": "パートナー「{{name}}」が見つかりません。",
+      "loading": "パートナーの読み込みエラー",
+      "loadingMessage": "パートナー詳細の読み込み中にエラーが発生しました。後でもう一度お試しください。",
+      "noData": "データなし",
+      "noDataMessage": "パートナーデータがありません。"
     }
   },
   "meetings": {
