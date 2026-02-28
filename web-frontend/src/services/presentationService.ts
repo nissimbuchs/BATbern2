@@ -58,13 +58,20 @@ export const getUpcomingEvents = async (): Promise<components['schemas']['Event'
   const response = await apiClient.get<{ data: components['schemas']['Event'][] }>('/events', {
     params: {
       status: 'AGENDA_PUBLISHED,TOPIC_SELECTION_DONE,TOPIC_SELECTION,CREATED',
-      limit: 3,
+      limit: 10,
       sort: 'date',
     },
     ...SKIP_AUTH,
   });
   // API returns paginated response; extract data array
-  return response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
+  const events = response.data.data ?? (response.data as unknown as components['schemas']['Event'][]);
+  // Filter to strictly future events (same pattern as public UpcomingEventsSection),
+  // then sort by date ascending and take the first 3.
+  const now = new Date();
+  return events
+    .filter((e) => new Date(e.date) > now)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3);
 };
 
 /**
