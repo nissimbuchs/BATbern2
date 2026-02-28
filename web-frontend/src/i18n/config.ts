@@ -199,8 +199,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'de', // Default language for first access
-    fallbackLng: 'de', // Fallback if language not found
+    fallbackLng: 'de', // Fallback if no language detected or not found
     defaultNS: 'common',
     ns: [
       'common',
@@ -214,7 +213,7 @@ i18n
       'registration',
     ],
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'htmlTag'],
       caches: ['localStorage'],
       lookupLocalStorage: 'batbern-language',
     },

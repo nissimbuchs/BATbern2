@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -41,10 +41,6 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const supportedLanguages = ['de', 'en', 'fr', 'it', 'rm', 'es', 'fi', 'nl', 'ja'];
-  const [currentLanguage, setCurrentLanguage] = useState<string>(
-    supportedLanguages.includes(user.preferences.language) ? user.preferences.language : 'de'
-  );
 
   const handleProfileClick = () => {
     console.log('[UserMenuDropdown] Profile clicked, navigating to /account');
@@ -88,7 +84,6 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 
   const handleLanguageChange = async (event: SelectChangeEvent<string>) => {
     const newLang = event.target.value;
-    setCurrentLanguage(newLang);
 
     // Update i18n
     await i18n.changeLanguage(newLang);
@@ -166,7 +161,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LanguageIcon fontSize="small" />
           <Select
-            value={currentLanguage}
+            value={i18n.language}
             onChange={handleLanguageChange}
             size="small"
             sx={{ minWidth: 160 }}
