@@ -7,7 +7,7 @@ DO $$
 DECLARE
     v_constraint_name TEXT;
 BEGIN
-    SELECT constraint_name INTO v_constraint_name
+    SELECT tc.constraint_name INTO v_constraint_name
     FROM information_schema.table_constraints tc
     JOIN information_schema.check_constraints cc
       ON tc.constraint_name = cc.constraint_name
