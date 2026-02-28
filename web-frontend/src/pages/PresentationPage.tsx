@@ -383,7 +383,7 @@ export function PresentationPage(): JSX.Element {
       <BlankOverlay isActive={isBlankActive} onDismiss={toggleBlank}>
         <div style={{ position: 'fixed', inset: 0, background: '#0a0d14' }}>
           <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
-          {!isBreakSection && <BreakSlide firstPostBreakSession={firstPostBreakSession} />}
+          {!isBreakSection && <BreakSlide />}
         </div>
       </BlankOverlay>
     </div>

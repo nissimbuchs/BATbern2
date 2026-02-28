@@ -48,3 +48,4 @@ public class PaginatedResponse<T> {
      */
     private PaginationMetadata pagination;
 }
+
