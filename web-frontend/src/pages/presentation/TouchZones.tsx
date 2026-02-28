@@ -135,7 +135,7 @@ function TapZone({
         ...style,
         cursor: 'pointer',
         userSelect: 'none',
-        WebkitUserSelect: 'none' as React.CSSProperties['userSelect'],
+        WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'],
         WebkitTapHighlightColor: 'transparent',
         display: 'flex',
         alignItems,
