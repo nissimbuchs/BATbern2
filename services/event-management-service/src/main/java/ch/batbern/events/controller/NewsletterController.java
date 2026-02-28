@@ -140,7 +140,19 @@ public class NewsletterController {
     // ── Organizer endpoints ───────────────────────────────────────────────────
 
     /**
+     * AC10: Active subscriber count only (ORGANIZER only).
+     * Cheap COUNT query — used by the newsletter tab to display subscriber totals.
+     */
+    @GetMapping("/newsletter/subscribers/count")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Map<String, Long>> getSubscriberCount() {
+        return ResponseEntity.ok(Map.of("totalActive", subscriberService.getActiveCount()));
+    }
+
+    /**
      * AC10: List all subscribers (ORGANIZER only).
+     * Returns the full subscriber list — kept for future admin subscriber-management UI.
+     * Do NOT call this from the newsletter tab; use /subscribers/count instead.
      */
     @GetMapping("/newsletter/subscribers")
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -151,7 +163,7 @@ public class NewsletterController {
                 .map(subscriberService::toResponse)
                 .toList();
         return ResponseEntity.ok(Map.of(
-                "totalCount", count,
+                "totalActive", count,
                 "subscribers", subscribers
         ));
     }

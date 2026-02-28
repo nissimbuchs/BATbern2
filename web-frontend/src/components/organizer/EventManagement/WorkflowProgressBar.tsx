@@ -20,26 +20,19 @@ import {
   Box,
   LinearProgress,
   Typography,
-  Button,
   Tooltip,
   Stack,
   Chip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import {
-  ArrowForward as ArrowForwardIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Warning as WarningIcon, Error as ErrorIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { WorkflowState } from '@/types/event.types';
 import { WORKFLOW_STATE_ORDER, getProgressColor } from '@/utils/workflow/workflowState';
 
 interface WorkflowProgressBarProps {
   workflow: WorkflowState;
-  eventCode: string;
   compact?: boolean;
   /** Optional: Explicit workflow state (overrides derivation from currentStep) */
   workflowState?: string;
@@ -47,11 +40,9 @@ interface WorkflowProgressBarProps {
 
 export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   workflow,
-  eventCode,
   compact = false,
 }) => {
   const { t } = useTranslation('events');
-  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -69,19 +60,6 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
 
   // Check for critical blockers
   const hasCriticalBlockers = blockers.some((b) => b.severity === 'critical');
-
-  // Navigation handler
-  const handleNavigateToWorkflow = () => {
-    navigate(`/organizer/events/${eventCode}/workflow`);
-  };
-
-  // Keyboard navigation handler
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleNavigateToWorkflow();
-    }
-  };
 
   // Get progress bar color
   const progressColor = getProgressColor(completionPercentage);
@@ -145,24 +123,7 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
             aria-label={t('workflow.progressBarLabel', {
               percentage: completionPercentage,
             })}
-            tabIndex={0}
-            onClick={handleNavigateToWorkflow}
-            onKeyDown={handleKeyDown}
-            sx={{
-              flex: 1,
-              cursor: 'pointer',
-              borderRadius: 1,
-              overflow: 'hidden',
-              '&:hover': {
-                opacity: 0.9,
-                outline: `2px solid ${theme.palette.primary.main}`,
-                outlineOffset: '2px',
-              },
-              '&:focus': {
-                outline: `2px solid ${theme.palette.primary.main}`,
-                outlineOffset: '2px',
-              },
-            }}
+            sx={{ flex: 1, borderRadius: 1, overflow: 'hidden' }}
           >
             <LinearProgress
               variant="determinate"
@@ -179,19 +140,6 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
           </Typography>
         </Stack>
       </Box>
-
-      {/* View Details Button (Hidden on mobile - progress bar is clickable) */}
-      {!isMobile && !compact && (
-        <Button
-          variant="outlined"
-          size="small"
-          endIcon={<ArrowForwardIcon />}
-          onClick={handleNavigateToWorkflow}
-          sx={{ whiteSpace: 'nowrap' }}
-        >
-          {t('workflow.viewDetails')}
-        </Button>
-      )}
     </Box>
   );
 };

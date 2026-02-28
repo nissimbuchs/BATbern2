@@ -47,7 +47,7 @@ export interface NewsletterSendHistoryItem {
 }
 
 export interface SubscriberCountResponse {
-  totalCount: number;
+  totalActive: number;
 }
 
 /** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
@@ -90,7 +90,7 @@ export async function patchMySubscription(
 
 /** Get total active subscriber count (ORGANIZER only). */
 export async function getSubscriberCount(): Promise<SubscriberCountResponse> {
-  const response = await apiClient.get<SubscriberCountResponse>('/newsletter/subscribers');
+  const response = await apiClient.get<SubscriberCountResponse>('/newsletter/subscribers/count');
   return response.data;
 }
 

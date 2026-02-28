@@ -170,6 +170,32 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.subscribed").value(false));
     }
 
+    // ── AC10: GET /newsletter/subscribers/count (ORGANIZER only) ─────────────
+
+    @Test
+    @DisplayName("GET /newsletter/subscribers/count — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void getSubscriberCount_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /newsletter/subscribers/count — organizer, no subscribers → totalActive=0")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void getSubscriberCount_organizer_returnsCount() throws Exception {
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("a@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-1")
+                .build());
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("b@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-2")
+                .build());
+
+        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalActive").value(2));
+    }
+
     // ── AC10: GET /newsletter/subscribers (ORGANIZER only) ───────────────────
 
     @Test
@@ -181,12 +207,12 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
-    @DisplayName("GET /newsletter/subscribers — organizer → 200 with totalCount")
+    @DisplayName("GET /newsletter/subscribers — organizer → 200 with totalActive")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
     void listSubscribers_organizer_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/newsletter/subscribers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalCount").exists());
+                .andExpect(jsonPath("$.totalActive").exists());
     }
 
     // ── AC10: Event-scoped endpoints — auth checks ─────────────────────────

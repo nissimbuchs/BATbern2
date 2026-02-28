@@ -12,13 +12,13 @@ import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
-  CircularProgress,
   Typography,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
+import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { ArrowBack } from '@mui/icons-material';
 import { useTopicSessionData } from '@/components/BlobTopicSelector/useTopicSessionData';
 import BlobTopicSelector from '@/components/BlobTopicSelector/BlobTopicSelector';
@@ -109,7 +109,7 @@ const BlobTopicSelectorPage: React.FC = () => {
             height: '100vh',
           }}
         >
-          <CircularProgress sx={{ color: '#1976d2' }} />
+          <BATbernLoader size={80} />
         </Box>
       )}
 
