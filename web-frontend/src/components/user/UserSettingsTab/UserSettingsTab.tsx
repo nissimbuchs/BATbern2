@@ -27,6 +27,7 @@ import {
   useUpdateUserPreferences,
   useUpdateUserSettings,
 } from '@/hooks/useUserAccount/useUserAccount';
+import { useTranslation } from 'react-i18next';
 import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 interface UserSettingsTabProps {
@@ -54,9 +55,11 @@ function TabPanel(props: TabPanelProps) {
 function NewsletterSection() {
   const { data: status, isLoading } = useMySubscription();
   const patchMutation = usePatchMySubscription();
+  const { i18n } = useTranslation();
 
   function handleToggle(checked: boolean) {
-    patchMutation.mutate(checked);
+    const language = i18n.language?.startsWith('de') ? 'de' : 'en';
+    patchMutation.mutate({ subscribed: checked, language });
   }
 
   if (isLoading) {

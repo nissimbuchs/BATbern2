@@ -59,6 +59,28 @@ test.describe('Moderator Presentation Page', () => {
     await expect(agendaContainer).toHaveAttribute('data-layout', 'sidebar');
   });
 
+  test('pressing ArrowLeft from session slide returns agenda to center (AC #4)', async ({
+    page,
+  }) => {
+    await page.goto(PRESENTATION_URL);
+    await expect(page.locator('text=BATbern').first()).toBeVisible({ timeout: 15_000 });
+
+    // Navigate forward into the first session slide (5× ArrowRight)
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(100);
+    }
+    // Wait for sidebar FLIP to complete
+    await page.waitForTimeout(500);
+    const agendaContainer = page.locator('[data-testid="agenda-flip-container"]');
+    await expect(agendaContainer).toHaveAttribute('data-layout', 'sidebar');
+
+    // Navigate back to Agenda Preview — sidebar should FLIP back to center
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(500);
+    await expect(agendaContainer).toHaveAttribute('data-layout', 'center');
+  });
+
   test('no horizontal scrollbar at 1920×1080 (AC #41)', async ({ page }) => {
     await page.goto(PRESENTATION_URL);
     await expect(page.locator('text=BATbern').first()).toBeVisible({ timeout: 15_000 });

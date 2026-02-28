@@ -622,6 +622,21 @@ Completed in 2 sessions (2026-02-25):
 - `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java`
 - `services/event-management-service/src/test/java/ch/batbern/events/controller/NewsletterControllerIntegrationTest.java`
 
+### New files (CR fixes — 2026-02-28)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/NewsletterRecipientId.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/NewsletterRecipient.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterRecipientRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/PatchMySubscriptionRequest.java`
+- `services/event-management-service/src/main/resources/db/migration/V72__add_newsletter_subscriber_username_index.sql`
+
+### Modified files (CR fixes — 2026-02-28)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java` — added recipientRepository, extracted createSendAuditRecord/recordRecipient, removed @Transactional from sendNewsletter
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java` — totalActive→totalCount, PatchMySubscriptionRequest DTO
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/NewsletterControllerIntegrationTest.java` — 6 new auth/404 tests for event-scoped endpoints
+- `web-frontend/src/services/newsletterService.ts` — patchMySubscription accepts language param
+- `web-frontend/src/hooks/useNewsletter/useNewsletter.ts` — usePatchMySubscription mutation var changed to {subscribed, language}
+- `web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx` — pass i18n.language in handleToggle
+
 ### Modified files (Tasks 12-19 wiring)
 - `web-frontend/src/pages/public/HomePage.tsx` — added NewsletterSubscribeWidget in footer
 - `web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx` — added Newsletter toggle in Notifications tab
@@ -634,9 +649,18 @@ Completed in 2 sessions (2026-02-25):
 
 ## Change Log
 - 2026-02-25: Story picked up for development (Amelia / dev agent)
+- 2026-02-28: Code review fixes applied (Amelia / dev agent — CR session):
+  - C1: Created NewsletterRecipientId.java + NewsletterRecipient.java + NewsletterRecipientRepository.java; wired recipientRepository into NewsletterEmailService.sendNewsletter() to populate newsletter_recipients per AC10
+  - C1/M1: Extracted createSendAuditRecord() + recordRecipient() as @Transactional helpers; removed @Transactional from sendNewsletter() to prevent long-held DB connection during bulk SMTP sends
+  - C2: Changed NewsletterController.listSubscribers() response key totalActive → totalCount to match frontend SubscriberCountResponse interface (subscriber count was always 0)
+  - H1: Created PatchMySubscriptionRequest.java DTO with @NotNull Boolean subscribed; replaced raw Map<String,Object> in PATCH /newsletter/my-subscription for proper validation
+  - H2: Added 6 integration tests to NewsletterControllerIntegrationTest covering send/preview/history auth (403) and unknown event (404) — total: 17 tests
+  - H3: Updated patchMySubscription() in newsletterService.ts + usePatchMySubscription() hook to accept and forward language; UserSettingsTab.NewsletterSection now passes i18n.language
+  - M2: Created V72__add_newsletter_subscriber_username_index.sql partial index on newsletter_subscribers.username
+  - M3: Fixed story Status inconsistency (footer now matches header: review)
 
 ---
 
 ## Status
 
-in-progress
+review

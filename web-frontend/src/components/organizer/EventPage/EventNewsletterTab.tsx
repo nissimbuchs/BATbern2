@@ -98,7 +98,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
     );
   }
 
-  const activeCount = subscriberCountQuery.data?.totalCount ?? 0;
+  const activeCount = subscriberCountQuery.data?.totalActive ?? 0;
   const sendType =
     pendingSendType === 'reminder'
       ? t('eventPage.newsletter.sendReminder')

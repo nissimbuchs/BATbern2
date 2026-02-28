@@ -15,9 +15,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 interface BlankOverlayProps {
   isActive: boolean;
   children: ReactNode;
+  /** Called when the overlay itself is tapped/clicked — allows touch-to-dismiss on mobile. */
+  onDismiss?: () => void;
 }
 
-export function BlankOverlay({ isActive, children }: BlankOverlayProps): JSX.Element {
+export function BlankOverlay({ isActive, children, onDismiss }: BlankOverlayProps): JSX.Element {
   return (
     <AnimatePresence>
       {isActive && (
@@ -27,7 +29,13 @@ export function BlankOverlay({ isActive, children }: BlankOverlayProps): JSX.Ele
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            cursor: onDismiss ? 'pointer' : undefined,
+          }}
+          onClick={onDismiss}
         >
           {children}
         </motion.div>

@@ -8,6 +8,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import * as d3 from 'd3';
 import { Alert, Box, Button, IconButton, Snackbar, TextField, Typography } from '@mui/material';
 import {
@@ -130,8 +131,8 @@ function blobPath(r: number, phase: number): string {
 
 /** Pixels added to a blue blob's radius per absorbed company logo. */
 const GROW_PER_LOGO = 6;
-/** Pixels removed from a blue blob's radius per absorbed red star (= 2 × company logo penalty). */
-const SHRINK_PER_RED_STAR = 2 * GROW_PER_LOGO;
+/** Pixels removed from a blue blob's radius per absorbed red star (= 1 × company logo penalty). */
+const SHRINK_PER_RED_STAR = GROW_PER_LOGO;
 
 /**
  * Compute per-cluster forceLink attraction strengths for a partner company
@@ -185,6 +186,7 @@ interface BlobTopicSelectorProps {
 const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessionData }) => {
   const { t } = useTranslation('organizer');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // D3 refs — not React state, no re-render on change
   const svgRef = useRef<SVGSVGElement>(null);
@@ -259,7 +261,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     svg.selectAll('*').remove();
 
-    // Dark navy background — click deselects any selected blue blob
+    // Dark navy background — click deselects any selected blue blob.
+    // On mobile (no keyboard), tapping empty space opens the floating input (AC 10).
+    // D3 zoom suppresses the click event after a pan drag, so this only fires on genuine taps.
     svg
       .append('rect')
       .attr('width', w)
@@ -274,7 +278,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               d3.select(this).select('path.blob-shape').attr('filter', null);
             });
           selectedBlobIdRef.current = null;
+          return; // deselected a blob — don't also open the input
         }
+        // Open floating input on empty-canvas tap/click (mobile-friendly)
+        setShowInput(true);
       });
 
     // Defs for filters
@@ -372,13 +379,19 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    // Derive the recency anchor from the current event being planned (URL param), not the DB max.
-    // Using the DB max is wrong when test/future events (e.g., BATbern73) exist — they push all
-    // historical events out of the 6-event recency window and prevent red stars from igniting.
+    // Use the highest event number BELOW the current event as the recency anchor.
+    // Using codeNum directly breaks when test/future events have a large gap (e.g., BATbern73 while
+    // real events only go up to 57) — the 12-event window would exclude all past events.
     const codeNum = parseInt(eventCode.replace(/\D/g, ''), 10);
-    const maxEventNum = isNaN(codeNum)
-      ? sessionData.pastEvents.reduce((max, e) => Math.max(max, e.eventNumber), 0)
-      : codeNum;
+    const previousEvents = isNaN(codeNum)
+      ? sessionData.pastEvents
+      : sessionData.pastEvents.filter((e) => e.eventNumber < codeNum);
+    const maxEventNum =
+      previousEvents.length > 0
+        ? Math.max(...previousEvents.map((e) => e.eventNumber))
+        : isNaN(codeNum)
+          ? 0
+          : codeNum;
     mostRecentEventNumRef.current = maxEventNum;
     setMostRecentEventNum(maxEventNum);
 
@@ -405,14 +418,14 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       };
     };
 
-    // Backlog ghosts (white) — radius driven by staleness score (83–100 → 28–55px)
+    // Backlog ghosts (white) — radius driven by staleness score (83–100 → 28–40px)
     // Guard against old cached API responses where items were plain strings
     sessionData.organizerBacklog.forEach((item, i) => {
       const title = typeof item === 'string' ? item : item.title;
       const topicCode = typeof item === 'string' ? undefined : item.topicCode;
       const staleness = typeof item === 'string' ? 83 : (item.stalenessScore ?? 83);
       if (!title) return;
-      const r = Math.round(28 + ((staleness - 83) / 17) * 27);
+      const r = Math.round(28 + ((staleness - 83) / 17) * 12);
       const orb = makeGhostOrbit();
       newNodes.push({
         id: `ghost-backlog-${i}`,
@@ -1074,6 +1087,36 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .attr('r', ghost.r)
           .attr('fill', fillColor)
           .attr('opacity', fillOpacity);
+        // BATbern spinner — organizer (backlog) ghosts only, sits between circle and text label
+        if (node.type === 'ghost-backlog') {
+          const s = ghost.r * 0.014; // scale 100x100 viewBox to ~70% of ghost diameter
+          group
+            .append('g')
+            .attr('class', 'bat-org-spinner')
+            .attr('transform', `translate(${-ghost.r * 0.7},${-ghost.r * 0.7 + s}) scale(${s})`)
+            .attr('opacity', 0.5)
+            .attr('pointer-events', 'none')
+            .call((spinnerG) => {
+              spinnerG
+                .append('g')
+                .attr('class', 'ghost-org-arrow ghost-org-arrow-1')
+                .attr('fill', 'rgba(52,152,219,0.85)')
+                .append('path')
+                .attr(
+                  'd',
+                  'M35.822,21.061c8.877,0.261,16.278,3.112,22.344,9.105c1.02,1.007,1.862,1.383,3.196,0.678  c1.135-0.6,2.4-0.948,3.584-1.46c1.17-0.506,1.687-0.421,1.453,1.086c-0.744,4.796-1.39,9.607-2.081,14.411  c-0.306,2.128-0.647,4.251-0.936,6.381c-0.143,1.055-0.554,1.309-1.425,0.62c-5.598-4.425-11.193-8.855-16.804-13.262  c-1.002-0.787-0.533-1.142,0.32-1.479c0.972-0.384,1.941-0.774,2.907-1.172c0.489-0.202,1.214-0.249,1.232-0.898  c0.014-0.504-0.622-0.706-1.017-0.981c-7.132-4.97-17.108-5.073-24.534-0.159c-6.465,4.279-9.702,10.438-10.144,18.109  c-0.18,3.131-1.942,5.125-4.643,5.087c-2.693-0.038-4.588-2.316-4.527-5.442c0.299-15.337,12.257-28.445,27.624-30.27  C33.651,21.262,34.936,21.151,35.822,21.061z'
+                );
+              spinnerG
+                .append('g')
+                .attr('class', 'ghost-org-arrow ghost-org-arrow-2')
+                .attr('fill', 'rgba(26,111,168,0.85)')
+                .append('path')
+                .attr(
+                  'd',
+                  'M63.149,76.87c-7.916-0.206-15.29-3.125-21.373-9.075c-1.033-1.01-1.879-1.349-3.197-0.648  c-1.079,0.573-2.291,0.888-3.415,1.384c-1.282,0.565-1.851,0.323-1.622-1.184c0.665-4.373,1.302-8.749,1.945-13.125  c0.33-2.248,0.654-4.498,0.97-6.748c0.296-2.105,0.518-2.219,2.137-0.944c5.268,4.146,10.511,8.324,15.794,12.452  c1.139,0.89,1.436,1.475-0.233,1.994c-0.935,0.291-1.812,0.768-2.741,1.083c-1.481,0.503-1.182,1.077-0.141,1.764  c5.296,3.493,11.052,4.59,17.262,3.319c9.38-1.92,17.277-10.642,17.434-20.875c0.05-3.239,1.767-5.249,4.389-5.391  c2.683-0.145,4.711,1.851,4.785,4.709c0.337,13.023-8.736,25.494-21.634,29.705C70.331,76.326,67.061,76.839,63.149,76.87z'
+                );
+            });
+        }
         wrapSvgText(
           group
             .append('text')
@@ -1808,7 +1851,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         // PATCH sets both topicCode + topicSelectionNote in one call — no state machine restriction
         await blobTopicService.acceptTopic(eventCode, topicCode, note);
 
-        navigate(`/organizer/events/${eventCode}?tab=speakers`);
+        // Invalidate cached event data so topic page shows the updated topic immediately (bug #4)
+        await queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+
+        navigate(`/organizer/topics?eventCode=${eventCode}`);
       } catch {
         setAcceptError(
           t('blobSelector.accept.saveError', {
@@ -1818,7 +1864,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       }
       setAcceptBlob(null);
     },
-    [acceptBlob, eventCode, navigate, t]
+    [acceptBlob, eventCode, navigate, queryClient, t]
   );
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -1835,6 +1881,28 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           animation: blobPulse 3s ease-in-out infinite;
           transform-box: fill-box;
           transform-origin: center;
+        }
+        /* BATbern spinner for organizer (backlog) ghost blobs */
+        @media (prefers-reduced-motion: no-preference) {
+          .ghost-org-arrow { transform-box: fill-box; }
+          .ghost-org-arrow-1 {
+            transform-origin: 50% 87%;
+            animation: ghost-org-spin-double 3.0s linear infinite;
+          }
+          .ghost-org-arrow-2 {
+            transform-origin: 50% 16%;
+            animation: ghost-org-spin-single 3.0s linear infinite;
+          }
+          @keyframes ghost-org-spin-double {
+            0%      { transform: rotate(0deg); }
+            33.33%  { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+            100%    { transform: rotate(720deg); }
+          }
+          @keyframes ghost-org-spin-single {
+            0%      { transform: rotate(0deg); }
+            33.33%  { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+            100%    { transform: rotate(360deg); }
+          }
         }
       `}</style>
 

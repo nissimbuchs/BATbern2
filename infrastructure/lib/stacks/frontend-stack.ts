@@ -75,6 +75,23 @@ function handler(event) {
       comment: 'SPA routing handler for React application',
     });
 
+    // CloudFront Function to prevent browser caching of HTML responses.
+    // Content-addressed assets (JS/CSS with hash in filename) are served via
+    // /assets/* and /*.js behaviors and are NOT affected by this function.
+    // Without this, browsers apply heuristic caching to index.html, causing
+    // stale JS file references after deployments (MIME type errors).
+    const htmlNoCacheFunction = new cloudfront.Function(this, 'HtmlNoCacheFunction', {
+      functionName: `${envName}-html-no-cache`,
+      code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+  var response = event.response;
+  response.headers['cache-control'] = { value: 'no-store, no-cache, must-revalidate' };
+  return response;
+}
+      `),
+      comment: 'Prevents browser caching of HTML responses to avoid stale JS references after deployments',
+    });
+
     // Cache policy for static assets
     const staticAssetsCachePolicy = new cloudfront.CachePolicy(this, 'StaticAssetsCache', {
       cachePolicyName: `${envName}-static-assets`,
@@ -143,11 +160,11 @@ function handler(event) {
           contentSecurityPolicy:
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
-            "worker-src 'self' blob:; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud; " +
+            "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud; " +
+            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
             "frame-src 'self' https://maps.google.com https://www.google.com; " +
             "object-src 'none'; " +
             "base-uri 'self'; " +
@@ -184,6 +201,10 @@ function handler(event) {
           {
             function: routerFunction,
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+          {
+            function: htmlNoCacheFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_RESPONSE,
           },
         ],
       },

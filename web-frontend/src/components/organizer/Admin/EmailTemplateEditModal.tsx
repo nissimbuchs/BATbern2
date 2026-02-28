@@ -224,6 +224,10 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
           </Box>
         ) : (
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+            {/* Security note: TinyMCE API key is intentionally committed.
+               It is a domain-locked free-tier key restricted to BATbern domains.
+               No sensitive data is processed by TinyMCE cloud — it only loads the editor JS bundle.
+               Risk accepted (code review 2026-02-28). */}
             <TinyMCEEditor
               apiKey="vfen2deuuzo9vxkqtwegdhngiujb74mu2pb3l5fg9o31ekvf"
               value={htmlBody}

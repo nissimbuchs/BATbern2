@@ -95,10 +95,13 @@ export function usePresentationSections(
       const preBreak = speakerSessions.filter(
         (s) => s.startTime && new Date(s.startTime) < new Date(breakSession.startTime!)
       );
-      // Post-break speaker sections — use endTime boundary (consistent with getFirstPostBreakSession)
+      // Post-break speaker sections — sessions starting AT OR AFTER break end (>=, not >).
+      // Using strictly-greater-than would exclude sessions that start exactly when the
+      // break ends, which is the normal case in BATbern schedules (e.g. break 19:30–20:00,
+      // next talk at 20:00). Fix: use >= so boundary-equal sessions are included.
       const breakBoundary = breakSession.endTime ?? breakSession.startTime!;
       const postBreak = speakerSessions.filter(
-        (s) => s.startTime && new Date(s.startTime) > new Date(breakBoundary)
+        (s) => s.startTime && new Date(s.startTime) >= new Date(breakBoundary)
       );
 
       preBreak.forEach((s) => {
@@ -185,12 +188,13 @@ export function getFirstPostBreakSession(
     return null;
   }
 
+  // Use >= so a session starting exactly at break end time is included (same fix as postBreak filter above).
   return (
     sorted.find(
       (s) =>
         SPEAKER_SESSION_TYPES.has(s.sessionType ?? '') &&
         s.startTime &&
-        new Date(s.startTime) > new Date(breakSession.endTime!)
+        new Date(s.startTime) >= new Date(breakSession.endTime!)
     ) ?? null
   );
 }

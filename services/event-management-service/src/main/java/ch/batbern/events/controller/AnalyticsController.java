@@ -8,8 +8,10 @@ import ch.batbern.events.dto.generated.CompanyDistributionResponse;
 import ch.batbern.events.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/analytics")
 @PreAuthorize("hasAnyRole('ORGANIZER', 'PARTNER')")
 @RequiredArgsConstructor
+@Validated
 @Slf4j
 public class AnalyticsController {
 
@@ -89,7 +92,7 @@ public class AnalyticsController {
      */
     @GetMapping("/companies/distribution")
     public ResponseEntity<CompanyDistributionResponse> getCompanyDistribution(
-            @RequestParam String eventCode) {
+            @RequestParam @NotBlank String eventCode) {
         log.debug("GET /api/v1/analytics/companies/distribution eventCode={}", eventCode);
         return ResponseEntity.ok(analyticsService.getCompanyDistribution(eventCode));
     }

@@ -42,26 +42,6 @@ interface Props {
   isLoading?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PieTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload as CompanyAttendanceShare;
-  return (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid #ccc',
-        borderRadius: 4,
-        padding: '8px 12px',
-        fontSize: 12,
-      }}
-    >
-      <div style={{ fontWeight: 600 }}>{d.displayName ?? d.companyName}</div>
-      <div style={{ marginTop: 4 }}>{d.attendeeCount} attendees</div>
-    </div>
-  );
-};
-
 const CompanyDistributionPieChart = ({
   allTimeDistribution,
   events,
@@ -71,6 +51,28 @@ const CompanyDistributionPieChart = ({
 }: Props) => {
   const { t } = useTranslation('organizer');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const PieTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload as CompanyAttendanceShare;
+    return (
+      <div
+        style={{
+          background: '#fff',
+          border: '1px solid #ccc',
+          borderRadius: 4,
+          padding: '8px 12px',
+          fontSize: 12,
+        }}
+      >
+        <div style={{ fontWeight: 600 }}>{d.displayName ?? d.companyName}</div>
+        <div style={{ marginTop: 4 }}>
+          {d.attendeeCount} {t('analytics.labels.attendees')}
+        </div>
+      </div>
+    );
+  };
 
   // Ref holds current hover index synchronously; state drives re-render.
   // renderSlice closes over the ref (not state) → stable [] deps → no remount.

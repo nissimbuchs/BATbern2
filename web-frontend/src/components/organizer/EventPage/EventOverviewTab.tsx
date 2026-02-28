@@ -161,7 +161,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 steps: [],
                 blockers: [],
               }}
-              eventCode={eventCode}
               workflowState={event.workflowState || 'CREATED'}
               compact
             />

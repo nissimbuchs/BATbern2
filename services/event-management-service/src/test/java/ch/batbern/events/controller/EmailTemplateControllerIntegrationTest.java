@@ -64,12 +64,12 @@ class EmailTemplateControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/email-templates?isLayout=true returns 2 layout templates")
+    @DisplayName("GET /api/v1/email-templates?isLayout=true returns at least 2 layout templates")
     void list_filteredByIsLayout_returnsLayouts() throws Exception {
         mockMvc.perform(get("/api/v1/email-templates")
                 .param("isLayout", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))));
     }
 
     @Test

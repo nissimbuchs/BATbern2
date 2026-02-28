@@ -10,7 +10,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
   Chip,
   Divider,
   IconButton,
@@ -25,7 +24,6 @@ import {
   Typography,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   InfoOutlined as InfoIcon,
@@ -70,7 +68,6 @@ export const EmailTemplatesTab: React.FC = () => {
   const [editTemplate, setEditTemplate] = useState<EmailTemplateResponse | undefined>(undefined);
   const [isLayoutEdit, setIsLayoutEdit] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplateResponse | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
 
@@ -82,7 +79,6 @@ export const EmailTemplatesTab: React.FC = () => {
     setEditTemplate(tmpl);
     setIsLayoutEdit(layoutMode);
     setEditOpen(true);
-    setCreateOpen(false);
   };
 
   const handleDelete = async (tmpl: EmailTemplateResponse) => {
@@ -172,32 +168,10 @@ export const EmailTemplatesTab: React.FC = () => {
       <Divider sx={{ my: 3 }} />
 
       {/* ── Content Templates ── */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
-      >
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h6">
           {t('emailTemplates.contentTemplates', 'Email Content')}
         </Typography>
-        <Button
-          startIcon={<AddIcon />}
-          variant="outlined"
-          onClick={() => {
-            setEditTemplate(undefined);
-            setIsLayoutEdit(false);
-            setCreateOpen(true);
-            setEditOpen(false);
-          }}
-          data-testid="add-email-template-btn"
-        >
-          {t('emailTemplates.newTemplate', '+ New Template')}
-        </Button>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
@@ -333,15 +307,6 @@ export const EmailTemplatesTab: React.FC = () => {
           template={editTemplate}
           isLayoutMode={isLayoutEdit}
           onClose={() => setEditOpen(false)}
-        />
-      )}
-
-      {/* Create Modal */}
-      {createOpen && (
-        <EmailTemplateEditModal
-          template={undefined}
-          isLayoutMode={false}
-          onClose={() => setCreateOpen(false)}
         />
       )}
 

@@ -97,6 +97,37 @@ describe('usePresentationSections', () => {
     ]);
   });
 
+  test('includes post-break session starting exactly at break end time (>= boundary)', () => {
+    // Real BATbern schedule: break 19:30–20:00, next talk at 20:00.
+    // With strict > the 20:00 session was silently excluded, causing navigation to skip it.
+    const breakExact = makeSession(
+      'break',
+      'break',
+      '2026-06-01T19:30:00Z',
+      '2026-06-01T20:00:00Z'
+    );
+    const postBreakExact = makeSession('session-exact', 'presentation', '2026-06-01T20:00:00Z');
+    const sessions = [PRE_BREAK_1, breakExact, postBreakExact];
+    const { result } = renderHook(() => usePresentationSections(MOCK_EVENT, sessions));
+    const types = result.current.map((s) => s.type);
+
+    expect(types).toEqual([
+      'welcome',
+      'about',
+      'committee',
+      'topic-reveal',
+      'agenda-preview',
+      'session', // PRE_BREAK_1
+      'break',
+      'agenda-recap',
+      'session', // postBreakExact — must NOT be skipped
+      'upcoming-events',
+      'apero',
+    ]);
+    const sessionKeys = result.current.filter((s) => s.type === 'session').map((s) => s.key);
+    expect(sessionKeys).toContain('session-session-exact');
+  });
+
   test('excludes moderation and networking sessions (AC #13)', () => {
     const sessions = [PRE_BREAK_1, MODERATION, NETWORKING];
     const { result } = renderHook(() => usePresentationSections(MOCK_EVENT, sessions));
@@ -143,6 +174,19 @@ describe('getFirstPostBreakSession', () => {
     const sessions = [PRE_BREAK_1, BREAK, POST_BREAK_1, POST_BREAK_2];
     const first = getFirstPostBreakSession(sessions);
     expect(first?.sessionSlug).toBe('session-3');
+  });
+
+  test('returns session that starts exactly at break end time (>= boundary)', () => {
+    const breakExact = makeSession(
+      'break',
+      'break',
+      '2026-06-01T19:30:00Z',
+      '2026-06-01T20:00:00Z'
+    );
+    const postBreakExact = makeSession('session-exact', 'presentation', '2026-06-01T20:00:00Z');
+    const sessions = [PRE_BREAK_1, breakExact, postBreakExact];
+    const first = getFirstPostBreakSession(sessions);
+    expect(first?.sessionSlug).toBe('session-exact');
   });
 
   test('returns null when break has no end time', () => {

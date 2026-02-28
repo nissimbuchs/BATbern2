@@ -29,9 +29,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock WorkflowProgressBar
 vi.mock('@/components/organizer/EventManagement', () => ({
-  WorkflowProgressBar: ({ eventCode }: { eventCode: string }) => (
-    <div data-testid="workflow-progress-bar">{eventCode}</div>
-  ),
+  WorkflowProgressBar: () => <div data-testid="workflow-progress-bar" />,
 }));
 
 // Mock event data

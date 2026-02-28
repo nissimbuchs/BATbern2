@@ -8,6 +8,7 @@ import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.dto.NewsletterSubscribeRequest;
 import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.dto.NewsletterUnsubscribeRequest;
+import ch.batbern.events.dto.PatchMySubscriptionRequest;
 import ch.batbern.events.dto.SubscriberResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
@@ -128,18 +129,30 @@ public class NewsletterController {
     @PatchMapping("/newsletter/my-subscription")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NewsletterSubscriptionStatusResponse> patchMySubscription(
-            @RequestBody Map<String, Object> body) {
+            @Valid @RequestBody PatchMySubscriptionRequest request) {
         String username = securityContextHelper.getCurrentUsername();
         String email = securityContextHelper.getCurrentUserEmail();
-        boolean subscribed = Boolean.TRUE.equals(body.get("subscribed"));
-        String language = body.containsKey("language") ? (String) body.get("language") : "de";
+        boolean subscribed = Boolean.TRUE.equals(request.getSubscribed());
+        String language = request.getLanguage() != null ? request.getLanguage() : "de";
         return ResponseEntity.ok(subscriberService.patchMySubscription(username, email, subscribed, language));
     }
 
     // ── Organizer endpoints ───────────────────────────────────────────────────
 
     /**
+     * AC10: Active subscriber count only (ORGANIZER only).
+     * Cheap COUNT query — used by the newsletter tab to display subscriber totals.
+     */
+    @GetMapping("/newsletter/subscribers/count")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Map<String, Long>> getSubscriberCount() {
+        return ResponseEntity.ok(Map.of("totalActive", subscriberService.getActiveCount()));
+    }
+
+    /**
      * AC10: List all subscribers (ORGANIZER only).
+     * Returns the full subscriber list — kept for future admin subscriber-management UI.
+     * Do NOT call this from the newsletter tab; use /subscribers/count instead.
      */
     @GetMapping("/newsletter/subscribers")
     @PreAuthorize("hasRole('ORGANIZER')")

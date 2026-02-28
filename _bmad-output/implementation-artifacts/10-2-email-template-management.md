@@ -1,6 +1,6 @@
 # Story 10.2: Email Template Management
 
-Status: review
+Status: done
 
 ## Story
 

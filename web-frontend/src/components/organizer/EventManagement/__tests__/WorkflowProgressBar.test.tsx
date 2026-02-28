@@ -8,25 +8,19 @@
  * Tests for workflow progress bar with:
  * - Progress bar showing completion percentage
  * - Current step indicator (Step X/16: Step Name)
- * - Clickable progress bar navigation
  * - Warning indicators for blockers (⚠️)
- * - [View Workflow Details] button
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { WorkflowState } from '@/types/event.types';
-
-// Mock navigate function
-const mockNavigate = vi.fn();
 
 // Mock react-router-dom (MUST be before component import)
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => mockNavigate,
     BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
@@ -38,9 +32,6 @@ vi.mock('react-i18next', () => ({
       if (key === 'workflow.stepIndicator') {
         return `Step ${params.current}/${params.total}`;
       }
-      if (key === 'workflow.viewDetails') {
-        return 'View Workflow Details';
-      }
       if (key === 'workflow.blockers') {
         return `${params.count} blocker${params.count > 1 ? 's' : ''}`;
       }
@@ -48,7 +39,7 @@ vi.mock('react-i18next', () => ({
         return 'Completed';
       }
       if (key === 'workflow.progressBarLabel') {
-        return `Click to view workflow details. ${params.percentage}% complete`;
+        return `${params.percentage}% complete`;
       }
       // Handle workflow state translations
       if (key.startsWith('workflow.states.')) {
@@ -75,10 +66,6 @@ vi.mock('react-i18next', () => ({
 import { WorkflowProgressBar } from '../WorkflowProgressBar';
 
 describe('WorkflowProgressBar Component', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
-
   const mockWorkflowInProgress: WorkflowState = {
     currentStep: 4,
     totalSteps: 9,
@@ -150,27 +137,23 @@ describe('WorkflowProgressBar Component', () => {
 
   describe('Progress Bar Display (AC5)', () => {
     it('should_displayProgressBar_when_workflowLoaded', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /complete/i });
       expect(progressBar).toBeInTheDocument();
     });
 
     it('should_displayCompletionPercentage_when_workflowInProgress', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
       // Should show "44%" completion
       expect(screen.getByText(/44%/i)).toBeInTheDocument();
     });
 
     it('should_setProgressBarValue_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details.*44%/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /44% complete/i });
       expect(progressBar).toHaveAttribute('aria-valuenow', '44');
       expect(progressBar).toHaveAttribute('aria-valuemin', '0');
       expect(progressBar).toHaveAttribute('aria-valuemax', '100');
@@ -183,7 +166,7 @@ describe('WorkflowProgressBar Component', () => {
         completionPercentage: 12,
       };
 
-      render(<WorkflowProgressBar workflow={lowProgressWorkflow} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={lowProgressWorkflow} />);
 
       // MUI LinearProgress doesn't add warning class - color is controlled by the 'color' prop
       // This test will be adjusted to check the LinearProgress color prop instead
@@ -192,7 +175,7 @@ describe('WorkflowProgressBar Component', () => {
     });
 
     it.skip('should_displayPrimaryColor_when_progressBetween30And70Percent', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
       // MUI LinearProgress doesn't add primary class - color is controlled by the 'color' prop
       const progressBar = screen.getByRole('progressbar');
@@ -206,7 +189,7 @@ describe('WorkflowProgressBar Component', () => {
         completionPercentage: 87,
       };
 
-      render(<WorkflowProgressBar workflow={highProgressWorkflow} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={highProgressWorkflow} />);
 
       // MUI LinearProgress doesn't add success class - color is controlled by the 'color' prop
       const progressBar = screen.getByRole('progressbar');
@@ -214,47 +197,45 @@ describe('WorkflowProgressBar Component', () => {
     });
 
     it('should_display100Percent_when_workflowCompleted', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowCompleted} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowCompleted} />);
 
       expect(screen.getByText(/100%/i)).toBeInTheDocument();
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details.*100%/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /100% complete/i });
       expect(progressBar).toHaveAttribute('aria-valuenow', '100');
     });
   });
 
   describe('Warning Indicators (AC5)', () => {
     it('should_notDisplayWarningIcon_when_noBlockers', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
       const warningIcon = screen.queryByText('⚠️');
       expect(warningIcon).not.toBeInTheDocument();
     });
 
     it('should_displayWarningIndicator_when_blockersExist', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} />);
 
       // Should show warning indicator - check for blocker count text instead (more reliable)
       expect(screen.getByText(/2 blocker/i)).toBeInTheDocument();
     });
 
     it('should_displayBlockerCount_when_multipleBlockers', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} />);
 
       // Should show "2 blockers" or "2 issues"
       expect(screen.getByText(/2 blocker/i)).toBeInTheDocument();
     });
 
     it('should_showCriticalWarning_when_criticalBlockerExists', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} />);
 
       // Should have critical indicator (red color or 🔴)
       expect(screen.getByText(/🔴/)).toBeInTheDocument();
     });
 
     it.skip('should_displayBlockerTooltip_when_hoveringWarningIcon', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} />);
 
       const warningIcon = screen.getByText('⚠️');
       fireEvent.mouseOver(warningIcon);
@@ -265,7 +246,7 @@ describe('WorkflowProgressBar Component', () => {
     });
 
     it.skip('should_displayAllBlockerMessages_when_hoveringWarningIcon', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowWithBlockers} />);
 
       const warningIcon = screen.getByText('⚠️');
       fireEvent.mouseOver(warningIcon);
@@ -277,136 +258,35 @@ describe('WorkflowProgressBar Component', () => {
     });
   });
 
-  describe('Clickable Progress Bar Navigation (AC5)', () => {
-    it('should_navigateToWorkflow_when_progressBarClicked', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      fireEvent.click(progressBar);
-
-      // Should navigate to workflow visualization page
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BATbern56/workflow');
-    });
-
-    it('should_showPointerCursor_when_hoveringProgressBar', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      // Should have cursor pointer style
-      expect(progressBar).toHaveStyle({ cursor: 'pointer' });
-    });
-
-    it('should_haveAccessibleClickLabel_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      // Should have aria-label for accessibility
-      expect(progressBar).toHaveAttribute('aria-label');
-      expect(progressBar.getAttribute('aria-label')).toMatch(/click to view workflow details/i);
-    });
-  });
-
-  describe('View Workflow Details Button (AC5)', () => {
-    it('should_displayViewDetailsButton_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const viewButton = screen.getByRole('button', { name: /view workflow details/i });
-      expect(viewButton).toBeInTheDocument();
-    });
-
-    it('should_navigateToWorkflow_when_viewButtonClicked', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const viewButton = screen.getByRole('button', { name: /view workflow details/i });
-      fireEvent.click(viewButton);
-
-      // Should navigate to workflow visualization page
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BATbern56/workflow');
-    });
-
-    it('should_haveIconInButton_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const viewButton = screen.getByRole('button', { name: /view workflow details/i });
-      // Should contain an icon (e.g., arrow or workflow icon)
-      expect(viewButton).toContainHTML('svg');
-    });
-  });
-
   describe('Accessibility (WCAG 2.1 AA)', () => {
     it('should_haveProgressRole_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /complete/i });
       expect(progressBar).toBeInTheDocument();
     });
 
     it('should_haveAriaValueAttributes_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /complete/i });
       expect(progressBar).toHaveAttribute('aria-valuenow');
       expect(progressBar).toHaveAttribute('aria-valuemin');
       expect(progressBar).toHaveAttribute('aria-valuemax');
     });
 
     it('should_haveAriaLabel_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} />);
 
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
+      const progressBar = screen.getByRole('progressbar', { name: /complete/i });
       expect(progressBar).toHaveAttribute('aria-label');
-    });
-
-    it('should_beFocusable_when_clickable', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      expect(progressBar).toHaveAttribute('tabIndex', '0');
-    });
-
-    it('should_handleKeyboardNavigation_when_enterPressed', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      fireEvent.keyDown(progressBar, { key: 'Enter', code: 'Enter' });
-
-      // Should navigate when Enter is pressed
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BATbern56/workflow');
-    });
-
-    it('should_handleKeyboardNavigation_when_spacePressed', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details/i,
-      });
-      fireEvent.keyDown(progressBar, { key: ' ', code: 'Space' });
-
-      // Should navigate when Space is pressed
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/BATbern56/workflow');
     });
   });
 
   describe('Error Handling', () => {
     it('should_displayZeroPercent_when_workflowUndefined', () => {
       // @ts-expect-error Testing undefined workflow
-      render(<WorkflowProgressBar workflow={undefined} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={undefined} />);
 
       expect(screen.getByText(/0%/i)).toBeInTheDocument();
     });
@@ -420,7 +300,7 @@ describe('WorkflowProgressBar Component', () => {
         blockers: [],
       };
 
-      render(<WorkflowProgressBar workflow={incompleteWorkflow} eventCode="BATbern56" />);
+      render(<WorkflowProgressBar workflow={incompleteWorkflow} />);
 
       // Component shows percentage even when step name is missing
       expect(screen.getByText(/43%/i)).toBeInTheDocument();

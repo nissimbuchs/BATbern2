@@ -1,6 +1,6 @@
 # Story 10.8b: Moderator Presentation Page — Animations
 
-Status: review
+Status: done
 Prerequisite: Story 10.8a complete and deployed
 
 ## Story
@@ -34,12 +34,12 @@ so that the audience experience feels dynamic and professional — not like a st
 10. Organizer cards animate in with staggered fly-in: `y: 30 → 0, opacity: 0 → 1`, each card delayed by `index × 0.12s`
 
 ### BreakSlide Animations
-11. Break overlay shows BATbern `~` spinner (CSS `@keyframes` rotation, 3s loop)
+11. Break overlay shows BATbern spinner via `<BATbernLoader size={80} speed="slow" />` (SVG arrows animation, 4.8s cycle)
 12. Animated coffee cup with steam lines rising and fading (CSS `@keyframes`, 2s loop)
 13. 8–12 floating coffee beans staggered upward with gentle sway
 
 ### AperoSlide Spinner
-14. Apéro section shows BATbern `~` spinner (same CSS `@keyframes` as BreakSlide spinner, 3s loop)
+14. Apéro section shows BATbern spinner via `<BATbernLoader size={120} speed="slow" />` (same component as BreakSlide and loading state)
 
 ## Tasks / Subtasks
 
@@ -100,8 +100,8 @@ so that the audience experience feels dynamic and professional — not like a st
 - [x] Section transitions: directional spring via `AnimatePresence mode="wait"` + variants
 - [x] BlankOverlay fades in/out via `AnimatePresence` + `motion.div` opacity 0→1→0 in 0.3s
 - [x] Committee cards stagger in with `y: 30→0, opacity: 0→1, delay: index × 0.12s`
-- [x] BreakSlide: spinner + steam lines + floating beans (CSS `@keyframes` in shared module)
-- [x] AperoSlide: `~` spinner via shared `presentation-animations.module.css`
+- [x] BreakSlide: `<BATbernLoader>` spinner + steam lines + floating beans (CSS `@keyframes` in shared module)
+- [x] AperoSlide: `<BATbernLoader>` spinner (same component as BreakSlide and loading state)
 - [x] All Story 10.8a ACs continue to pass — 3756 tests pass, 0 failures
 - [x] Type-check passes, 0 TypeScript errors
 
@@ -165,19 +165,28 @@ All 9 phases complete. framer-motion@12.34.3 installed. All 3756 unit tests pass
 
 Key decisions:
 - AgendaView pulled to page-level `motion.div` for FLIP — AgendaPreviewSlide/AgendaRecapSlide now render heading only
-- AgendaView.module.css `.sidebar` absolute positioning removed (container handles it via PresentationPage.module.css)
+- FLIP strategy: `layoutId` (not `layout` + CSS class) — avoids transform composition conflict with `translate(-50%,-50%)` centering
 - `data-testid="agenda-flip-container"` + `data-layout` added for E2E FLIP verification
 - framer-motion mocked globally in `src/test/setup.ts` — all motion elements render as plain HTML in JSDOM
 - 10 coffee beans with fixed configs (no random) to avoid re-render layout shifts
+- BATbernLoader SVG spinner used for ACs #11/#14 (consistent with page loading state); no CSS text-spinner
+
+Code review fixes (2026-02-28):
+- Deleted dead `PresentationPage.module.css` (CSS class approach abandoned in favour of layoutId)
+- Removed dead `.spinner` / `@keyframes spin` from `presentation-animations.module.css`
+- Added `AgendaView.tsx` to File List (was missing despite layout prop being added)
+- Added E2E test for backward FLIP navigation (AC #4: sidebar → center)
+- Fixed double BreakSlide: BlankOverlay omits BreakSlide when current section is already 'break'
+- AgendaPreviewSlide / AgendaRecapSlide: `return null` instead of `return <div />`
 
 ### File List
 
 - web-frontend/package.json
 - web-frontend/package-lock.json
 - web-frontend/src/pages/PresentationPage.tsx
-- web-frontend/src/pages/PresentationPage.module.css (NEW)
 - web-frontend/src/pages/presentation/TopicBackground.tsx
 - web-frontend/src/pages/presentation/BlankOverlay.tsx
+- web-frontend/src/pages/presentation/AgendaView.tsx
 - web-frontend/src/pages/presentation/AgendaView.module.css
 - web-frontend/src/pages/presentation/presentation-animations.module.css (NEW)
 - web-frontend/src/pages/presentation/slides/AgendaPreviewSlide.tsx
