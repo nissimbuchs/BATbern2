@@ -71,11 +71,12 @@ export function useMySubscription(): UseQueryResult<NewsletterSubscriptionStatus
 export function usePatchMySubscription(): UseMutationResult<
   NewsletterSubscriptionStatusResponse,
   Error,
-  boolean
+  { subscribed: boolean; language?: string }
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: newsletterService.patchMySubscription,
+    mutationFn: ({ subscribed, language }) =>
+      newsletterService.patchMySubscription(subscribed, language),
     onSuccess: (data) => {
       queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscription, data);
     },

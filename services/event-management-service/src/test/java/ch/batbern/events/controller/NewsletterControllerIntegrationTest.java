@@ -181,11 +181,77 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
-    @DisplayName("GET /newsletter/subscribers — organizer → 200 with count")
+    @DisplayName("GET /newsletter/subscribers — organizer → 200 with totalCount")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
     void listSubscribers_organizer_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/newsletter/subscribers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalActive").exists());
+                .andExpect(jsonPath("$.totalCount").exists());
+    }
+
+    // ── AC10: Event-scoped endpoints — auth checks ─────────────────────────
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/send — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void sendNewsletter_nonOrganizer_returns403() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
+
+        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/send — organizer, unknown event → 404")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void sendNewsletter_unknownEvent_returns404() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
+
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/preview — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void previewNewsletter_nonOrganizer_returns403() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
+
+        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/preview — organizer, unknown event → 404")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void previewNewsletter_unknownEvent_returns404() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
+
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /events/{code}/newsletter/history — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void getHistory_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern-test/newsletter/history"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /events/{code}/newsletter/history — organizer, unknown event → 404")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void getHistory_unknownEvent_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/events/NONEXISTENT-EVENT/newsletter/history"))
+                .andExpect(status().isNotFound());
     }
 }

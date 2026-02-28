@@ -1,6 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.NewsletterRecipient;
+import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
@@ -8,6 +10,7 @@ import ch.batbern.events.dto.NewsletterPreviewResponse;
 import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
@@ -61,6 +64,7 @@ public class NewsletterEmailService {
     private final EmailTemplateService emailTemplateService;
     private final NewsletterSubscriberService subscriberService;
     private final NewsletterSendRepository sendRepository;
+    private final NewsletterRecipientRepository recipientRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserService sessionUserService;
     private final EventRepository eventRepository;
@@ -98,35 +102,29 @@ public class NewsletterEmailService {
     /**
      * Sends the newsletter to all active subscribers and records the send.
      *
+     * <p>Note: email sending is intentionally performed outside of a DB transaction
+     * to avoid holding a connection open during potentially long SMTP operations.
+     * The audit record is committed first via {@link #createSendAuditRecord}.
+     *
      * @param event           the event
      * @param isReminder      whether to use "Reminder: " prefix
      * @param locale          "de" or "en"
      * @param sentByUsername  organizer's username for audit log
      * @return summary of the send operation
      */
-    @Transactional
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername) {
         List<NewsletterSubscriber> subscribers = subscriberService.findActiveSubscribers();
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-
-        // Compute subject once (shared across recipients)
         String subject = buildSubject(event, isReminder, locale, baseVars);
 
-        // Send audit record
-        NewsletterSend send = NewsletterSend.builder()
-                .eventId(event.getId())
-                .templateKey(TEMPLATE_KEY)
-                .reminder(isReminder)
-                .locale(locale)
-                .sentAt(Instant.now())
-                .sentByUsername(sentByUsername)
-                .recipientCount(subscribers.size())
-                .build();
-        NewsletterSend saved = sendRepository.save(send);
+        // Persist send audit record first (committed immediately — own transaction)
+        NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
+                subscribers.size());
 
-        // Per-recipient send
+        // Per-recipient send + recipient audit row (outside main transaction)
         for (NewsletterSubscriber subscriber : subscribers) {
+            String deliveryStatus = "sent";
             try {
                 String unsubscribeLink = baseUrl + "/unsubscribe?token=" + subscriber.getUnsubscribeToken();
                 Map<String, String> recipientVars = new HashMap<>(baseVars);
@@ -137,12 +135,41 @@ public class NewsletterEmailService {
                 emailService.sendHtmlEmail(subscriber.getEmail(), subject, mergedHtml);
             } catch (Exception e) {
                 log.error("Failed to send newsletter to {}: {}", subscriber.getEmail(), e.getMessage());
+                deliveryStatus = "failed";
             }
+            // AC10: log each recipient in newsletter_recipients
+            recordRecipient(saved.getId(), subscriber.getEmail(), deliveryStatus);
         }
 
         log.info("Newsletter sent for event {} by {}: {} recipients",
                 event.getEventCode(), sentByUsername, subscribers.size());
         return toResponse(saved);
+    }
+
+    /** Saves the newsletter_sends audit row in its own transaction. */
+    @Transactional
+    protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
+                                                   String sentByUsername, int recipientCount) {
+        NewsletterSend send = NewsletterSend.builder()
+                .eventId(event.getId())
+                .templateKey(TEMPLATE_KEY)
+                .reminder(isReminder)
+                .locale(locale)
+                .sentAt(Instant.now())
+                .sentByUsername(sentByUsername)
+                .recipientCount(recipientCount)
+                .build();
+        return sendRepository.save(send);
+    }
+
+    /** Saves a single newsletter_recipients row in its own transaction. */
+    @Transactional
+    protected void recordRecipient(java.util.UUID sendId, String email, String deliveryStatus) {
+        NewsletterRecipient recipient = NewsletterRecipient.builder()
+                .id(new NewsletterRecipientId(sendId, email))
+                .deliveryStatus(deliveryStatus)
+                .build();
+        recipientRepository.save(recipient);
     }
 
     // ── Variable building ─────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.dto.NewsletterSubscribeRequest;
 import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.dto.NewsletterUnsubscribeRequest;
+import ch.batbern.events.dto.PatchMySubscriptionRequest;
 import ch.batbern.events.dto.SubscriberResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
@@ -128,11 +129,11 @@ public class NewsletterController {
     @PatchMapping("/newsletter/my-subscription")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NewsletterSubscriptionStatusResponse> patchMySubscription(
-            @RequestBody Map<String, Object> body) {
+            @Valid @RequestBody PatchMySubscriptionRequest request) {
         String username = securityContextHelper.getCurrentUsername();
         String email = securityContextHelper.getCurrentUserEmail();
-        boolean subscribed = Boolean.TRUE.equals(body.get("subscribed"));
-        String language = body.containsKey("language") ? (String) body.get("language") : "de";
+        boolean subscribed = Boolean.TRUE.equals(request.getSubscribed());
+        String language = request.getLanguage() != null ? request.getLanguage() : "de";
         return ResponseEntity.ok(subscriberService.patchMySubscription(username, email, subscribed, language));
     }
 
@@ -150,7 +151,7 @@ public class NewsletterController {
                 .map(subscriberService::toResponse)
                 .toList();
         return ResponseEntity.ok(Map.of(
-                "totalActive", count,
+                "totalCount", count,
                 "subscribers", subscribers
         ));
     }

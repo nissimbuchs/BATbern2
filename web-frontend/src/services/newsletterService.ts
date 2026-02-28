@@ -78,11 +78,12 @@ export async function getMySubscription(): Promise<NewsletterSubscriptionStatusR
 
 /** Update newsletter subscription status for the authenticated user. */
 export async function patchMySubscription(
-  subscribed: boolean
+  subscribed: boolean,
+  language?: string
 ): Promise<NewsletterSubscriptionStatusResponse> {
   const response = await apiClient.patch<NewsletterSubscriptionStatusResponse>(
     '/newsletter/my-subscription',
-    { subscribed }
+    { subscribed, ...(language ? { language } : {}) }
   );
   return response.data;
 }
