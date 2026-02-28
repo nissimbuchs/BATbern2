@@ -214,7 +214,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         {/* Quick actions (AC2) */}
         <nav
           className="flex flex-wrap gap-2 pt-2 border-t border-border"
-          aria-label={t('speakerPortal.dashboard.actions')}
+          aria-label={t('labels.actions')}
         >
           {event.respondUrl && (
             <Link

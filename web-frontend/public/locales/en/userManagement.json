@@ -1,27 +1,16 @@
 {
   "title": "User Management",
   "addUser": "Add User",
-  "back": "Back",
   "search": {
     "placeholder": "Search by name or email...",
-    "noResults": "No users found",
-    "clearFilters": "Clear filters"
-  },
-  "viewMode": {
-    "toggle": "Toggle view mode",
-    "grid": "Grid view",
-    "list": "List view"
+    "noResults": "No users found"
   },
   "filters": {
     "title": "Filters",
     "clearAll": "Clear all filters",
     "role": {
       "label": "Role",
-      "all": "All Roles",
-      "organizer": "Organizer",
-      "speaker": "Speaker",
-      "partner": "Partner",
-      "attendee": "Attendee"
+      "all": "All Roles"
     },
     "company": {
       "label": "Company",
@@ -29,41 +18,26 @@
       "placeholder": "Select company..."
     },
     "status": {
-      "label": "Status",
       "active": "Active",
-      "inactive": "Inactive",
-      "all": "All"
+      "inactive": "Inactive"
     }
   },
   "table": {
     "viewUser": "View user {{name}}",
     "headers": {
-      "name": "Name",
-      "email": "Email",
-      "company": "Company",
-      "roles": "Roles",
-      "status": "Status",
-      "actions": "Actions"
+      "roles": "Roles"
     },
     "showing": "Showing {{count}} users",
     "showingRange": "{{from}}-{{to}} of {{total}} users",
     "perPage": "per page",
     "empty": "No users found",
     "emptySearch": "No users match your search. Try clearing the filters.",
-    "sortBy": "Sort by",
     "ascending": "Ascending",
     "descending": "Descending"
   },
   "actions": {
     "view": "View",
-    "editRoles": "Edit Roles",
-    "delete": "Delete",
-    "retry": "Retry",
-    "save": "Save",
-    "cancel": "Cancel",
-    "close": "Close",
-    "edit": "Edit",
-    "confirm": "Confirm"
+    "editRoles": "Edit Roles"
   },
   "roles": {
     "organizer": "Organizer",
@@ -118,13 +92,10 @@
       "gdprWarning": "GDPR Notice: This action will permanently delete all user data and cannot be undone.",
       "cascadeWarning": "All associated data will also be deleted.",
       "cannotDelete": "This user cannot be deleted",
-      "lastOrganizerWarning": "You cannot delete the last organizer. There must be at least {{count}} organizers in the system.",
-      "deleting": "Deleting..."
+      "lastOrganizerWarning": "You cannot delete the last organizer. There must be at least {{count}} organizers in the system."
     }
   },
   "pagination": {
-    "previous": "Previous",
-    "next": "Next",
     "page": "Page {{page}} of {{total}}",
     "itemsPerPage": "Items per page",
     "goToPage": "Go to page"
@@ -132,7 +103,6 @@
   "loading": {
     "users": "Loading users...",
     "search": "Searching...",
-    "delete": "Deleting...",
     "save": "Saving...",
     "updating": "Updating..."
   },
@@ -201,12 +171,6 @@
     "cancelButton": "Cancel",
     "importButton": "Create {{new}} / Update {{update}}",
     "allSkipped": "No changes to import",
-    "columns": {
-      "name": "Name",
-      "email": "Email",
-      "company": "Company",
-      "status": "Status"
-    },
     "status": {
       "pending": "New",
       "importing": "Importing...",
@@ -237,12 +201,6 @@
     "startImport": "Start Import",
     "progress": "Importing: {{current}} / {{total}}",
     "summary": "Import Summary",
-    "columns": {
-      "name": "Name",
-      "email": "Email",
-      "events": "Events",
-      "status": "Status"
-    },
     "status": {
       "pending": "Pending",
       "importing": "Importing",

@@ -452,7 +452,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="Session edit tabs">
           <Tab label={t('sessionEdit.tabs.details', 'Details')} />
           <Tab label={t('sessionEdit.tabs.materials', 'Materials')} />
-          <Tab label={t('sessionEdit.tabs.speakers', 'Speakers')} />
+          <Tab label={t('common:navigation.speakers')} />
         </Tabs>
       </Box>
 
@@ -670,7 +670,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
       <DialogActions>
         <Button onClick={handleClose} disabled={saving}>
-          {t('common.cancel', 'Cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleSave}
@@ -678,7 +678,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
           disabled={saving}
           startIcon={saving ? <CircularProgress size={20} /> : undefined}
         >
-          {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+          {saving ? t('common:actions.saving') : t('common:actions.save')}
         </Button>
       </DialogActions>
     </Dialog>

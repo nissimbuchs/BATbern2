@@ -58,7 +58,7 @@ const SessionsPerCompanyChart = ({ data, topN, partnerCompany, isLoading }: Prop
   const columns: ColumnDef<CompanySessionItem>[] = [
     { key: 'displayName', label: 'Company' },
     { key: 'sessionCount', label: t('analytics.labels.sessions'), align: 'right' },
-    { key: 'uniqueSpeakers', label: t('analytics.labels.speakers'), align: 'right' },
+    { key: 'uniqueSpeakers', label: t('common:navigation.speakers'), align: 'right' },
   ];
 
   return (
@@ -86,7 +86,7 @@ const SessionsPerCompanyChart = ({ data, topN, partnerCompany, isLoading }: Prop
               value,
               name === 'sessionCount'
                 ? t('analytics.labels.sessions')
-                : t('analytics.labels.speakers'),
+                : t('common:navigation.speakers'),
             ]}
           />
           <Bar dataKey="sessionCount" name="sessionCount">

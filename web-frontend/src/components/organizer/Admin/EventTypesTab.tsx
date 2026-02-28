@@ -95,7 +95,7 @@ export const EventTypesTab: React.FC = () => {
                   onClick={() => handleEditClick(config.type)}
                   aria-label={`Edit ${config.type}`}
                 >
-                  {t('dashboard.actions.edit')}
+                  {t('common:actions.edit')}
                 </Button>
               </CardActions>
             </Card>
@@ -105,7 +105,7 @@ export const EventTypesTab: React.FC = () => {
 
       <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
-          {t('dashboard.actions.edit')} {editingType && getEventTypeName(editingType)}
+          {t('common:actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>

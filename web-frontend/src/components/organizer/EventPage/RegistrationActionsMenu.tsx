@@ -123,7 +123,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel} disabled={deleteMutation.isPending}>
-            {t('eventPage.participantTable.deleteDialog.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleDeleteConfirm}
@@ -132,7 +132,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({ parti
             disabled={deleteMutation.isPending}
             autoFocus
           >
-            {t('eventPage.participantTable.deleteDialog.confirm')}
+            {t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

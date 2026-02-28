@@ -167,7 +167,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             sx={{ minWidth: 160 }}
             aria-label="Language selector"
           >
-            {Object.keys(i18n.options.resources ?? {}).map((code) => (
+            {Object.keys(i18n.options?.resources ?? {}).map((code) => (
               <MenuItem key={code} value={code}>
                 {code.toUpperCase()} — {t(`language.${code}`)}
               </MenuItem>

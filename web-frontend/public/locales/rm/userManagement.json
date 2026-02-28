@@ -1,27 +1,17 @@
 {
   "title": "Gestiun da ils utilisaders",
   "addUser": "Agiuntar utilisader",
-  "back": "Enavos",
   "search": {
     "placeholder": "Tschertgar per num u e-mail...",
-    "noResults": "Nagin utilisader chattà",
-    "clearFilters": "Stritgar ils filtros"
+    "noResults": "Nagin utilisader chattà"
   },
-  "viewMode": {
-    "toggle": "Midar il modus da visualisaziun",
-    "grid": "Vista en grid",
-    "list": "Vista en glista"
-  },
+  "viewMode": {},
   "filters": {
     "title": "Filtros",
     "clearAll": "Stritgar tuts ils filtros",
     "role": {
       "label": "Rolla",
-      "all": "Tuttas rollas",
-      "organizer": "Organisatur",
-      "speaker": "Referent",
-      "partner": "Partner",
-      "attendee": "Participant"
+      "all": "Tuttas rollas"
     },
     "company": {
       "label": "Interpresa",
@@ -29,41 +19,26 @@
       "placeholder": "Tscherner interpresa..."
     },
     "status": {
-      "label": "Status",
       "active": "Activ",
-      "inactive": "Inactiv",
-      "all": "Tuts"
+      "inactive": "Inactiv"
     }
   },
   "table": {
     "viewUser": "Mussar utilisader {{name}}",
     "headers": {
-      "name": "Num",
-      "email": "E-mail",
-      "company": "Interpresa",
-      "roles": "Rollas",
-      "status": "Status",
-      "actions": "Acziuns"
+      "roles": "Rollas"
     },
     "showing": "Visualisaziun da {{count}} utilisaders",
     "showingRange": "{{from}}-{{to}} da {{total}} utilisaders",
     "perPage": "per pagina",
     "empty": "Nagin utilisader chattà",
     "emptySearch": "Nagin utilisader correspunda a tia tschertga. Prova da stritgar ils filtros.",
-    "sortBy": "Zavrar per",
     "ascending": "Ascendent",
     "descending": "Descendent"
   },
   "actions": {
     "view": "Mussar",
-    "editRoles": "Modifitgar rollas",
-    "delete": "Stritgar",
-    "retry": "Retentar",
-    "save": "Memorisar",
-    "cancel": "Interrumper",
-    "close": "Serrar",
-    "edit": "Modifitgar",
-    "confirm": "Confermar"
+    "editRoles": "Modifitgar rollas"
   },
   "roles": {
     "organizer": "Organisatur",
@@ -118,13 +93,10 @@
       "gdprWarning": "Avis GDPR: Questa acziun stritga definitivamain tut las datas dal utilisader e na po betg vegnir revocada.",
       "cascadeWarning": "Tut las datas associadas vegnan er stritgadas.",
       "cannotDelete": "Quest utilisader na po betg vegnir stritgà",
-      "lastOrganizerWarning": "Ti na pos betg stritgar l'ultim organisatur. Ins sto haver almain {{count}} organisaturs en il sistem.",
-      "deleting": "Stritgar..."
+      "lastOrganizerWarning": "Ti na pos betg stritgar l'ultim organisatur. Ins sto haver almain {{count}} organisaturs en il sistem."
     }
   },
   "pagination": {
-    "previous": "Precedent",
-    "next": "Suandant",
     "page": "Pagina {{page}} da {{total}}",
     "itemsPerPage": "Elements per pagina",
     "goToPage": "Ir a la pagina"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "Chargiar utilisaders...",
     "search": "Tschertgar...",
-    "delete": "Stritgar...",
     "save": "Memorisar...",
     "updating": "Actualisar..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "Interrumper",
     "importButton": "Crear {{new}} / Actualisar {{update}}",
     "allSkipped": "Naginas midadas per importar",
-    "columns": {
-      "name": "Num",
-      "email": "E-mail",
-      "company": "Interpresa",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "Nov",
       "importing": "Importaziun...",
@@ -237,12 +203,7 @@
     "startImport": "Entscheiver import",
     "progress": "Importaziun: {{current}} / {{total}}",
     "summary": "Resumé da l'import",
-    "columns": {
-      "name": "Num",
-      "email": "E-mail",
-      "events": "Occurrenzas",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "En spetga",
       "importing": "Importaziun",

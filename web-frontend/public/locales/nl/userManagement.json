@@ -1,27 +1,17 @@
 {
   "title": "Gebruikersbeheer",
   "addUser": "Gebruiker toevoegen",
-  "back": "Terug",
   "search": {
     "placeholder": "Zoeken op naam of e-mail...",
-    "noResults": "Geen gebruikers gevonden",
-    "clearFilters": "Filters wissen"
+    "noResults": "Geen gebruikers gevonden"
   },
-  "viewMode": {
-    "toggle": "Weergavemodus wisselen",
-    "grid": "Rasterweergave",
-    "list": "Lijstweergave"
-  },
+  "viewMode": {},
   "filters": {
     "title": "Filters",
     "clearAll": "Alle filters wissen",
     "role": {
       "label": "Rol",
-      "all": "Alle rollen",
-      "organizer": "Organisator",
-      "speaker": "Spreker",
-      "partner": "Partner",
-      "attendee": "Deelnemer"
+      "all": "Alle rollen"
     },
     "company": {
       "label": "Bedrijf",
@@ -29,41 +19,26 @@
       "placeholder": "Selecteer bedrijf..."
     },
     "status": {
-      "label": "Status",
       "active": "Actief",
-      "inactive": "Inactief",
-      "all": "Alle"
+      "inactive": "Inactief"
     }
   },
   "table": {
     "viewUser": "Gebruiker {{name}} bekijken",
     "headers": {
-      "name": "Naam",
-      "email": "E-mail",
-      "company": "Bedrijf",
-      "roles": "Rollen",
-      "status": "Status",
-      "actions": "Acties"
+      "roles": "Rollen"
     },
     "showing": "{{count}} gebruikers weergegeven",
     "showingRange": "{{from}}-{{to}} van {{total}} gebruikers",
     "perPage": "per pagina",
     "empty": "Geen gebruikers gevonden",
     "emptySearch": "Geen gebruikers komen overeen met uw zoekopdracht. Probeer de filters te wissen.",
-    "sortBy": "Sorteren op",
     "ascending": "Oplopend",
     "descending": "Aflopend"
   },
   "actions": {
     "view": "Bekijken",
-    "editRoles": "Rollen bewerken",
-    "delete": "Verwijderen",
-    "retry": "Opnieuw proberen",
-    "save": "Opslaan",
-    "cancel": "Annuleren",
-    "close": "Sluiten",
-    "edit": "Bewerken",
-    "confirm": "Bevestigen"
+    "editRoles": "Rollen bewerken"
   },
   "roles": {
     "organizer": "Organisator",
@@ -118,13 +93,10 @@
       "gdprWarning": "AVG-kennisgeving: Deze actie verwijdert alle gebruikersgegevens permanent en kan niet ongedaan worden gemaakt.",
       "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd.",
       "cannotDelete": "Deze gebruiker kan niet worden verwijderd",
-      "lastOrganizerWarning": "U kunt de laatste organisator niet verwijderen. Er moeten minimaal {{count}} organisatoren in het systeem zijn.",
-      "deleting": "Verwijderen..."
+      "lastOrganizerWarning": "U kunt de laatste organisator niet verwijderen. Er moeten minimaal {{count}} organisatoren in het systeem zijn."
     }
   },
   "pagination": {
-    "previous": "Vorige",
-    "next": "Volgende",
     "page": "Pagina {{page}} van {{total}}",
     "itemsPerPage": "Items per pagina",
     "goToPage": "Ga naar pagina"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "Gebruikers laden...",
     "search": "Zoeken...",
-    "delete": "Verwijderen...",
     "save": "Opslaan...",
     "updating": "Bijwerken..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "Annuleren",
     "importButton": "{{new}} aanmaken / {{update}} bijwerken",
     "allSkipped": "Geen wijzigingen te importeren",
-    "columns": {
-      "name": "Naam",
-      "email": "E-mail",
-      "company": "Bedrijf",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "Nieuw",
       "importing": "Importeren...",
@@ -237,12 +203,7 @@
     "startImport": "Import starten",
     "progress": "Importeren: {{current}} / {{total}}",
     "summary": "Importoverzicht",
-    "columns": {
-      "name": "Naam",
-      "email": "E-mail",
-      "events": "Evenementen",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "In behandeling",
       "importing": "Importeren",

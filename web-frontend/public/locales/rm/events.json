@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Num",
-        "email": "E-mail",
-        "company": "Interpresa",
-        "status": "Status",
-        "registrationDate": "Data da registraziun",
-        "actions": "Acziuns"
+        "registrationDate": "Data da registraziun"
       },
       "empty": "Naguts participonts registrads enfin ussa",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "taux d'acceptaziun",
       "viewMode": "Modus da visualisaziun",
       "kanban": "Kanban",
-      "sessions": "Sessiuns",
       "addSpeakers": "Agiuntar referents",
       "addToPool": "Agiuntar referents al pool",
       "kanbanView": "Vista Kanban",
@@ -280,7 +274,6 @@
     "eventNumber": "Numer d'eveniment",
     "eventInformation": "Infurmaziuns davart l'eveniment",
     "title": "Titel",
-    "description": "Descripziun",
     "eventDate": "Data dal eveniment",
     "eventType": "Tip d'eveniment",
     "capacity": "Capacitad",
@@ -650,8 +643,6 @@
       "published": "Publicà",
       "phase": "Fasa",
       "publisher": "Publitgant",
-      "status": "Status",
-      "actions": "Acziuns",
       "rollback": "Revenir",
       "current": "Actual",
       "cdnCleared": "CDN stizzà",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Precedent",
-    "next": "Suandant",
     "page": "Pagina {{current}} da {{total}}",
     "itemsPerPage": "Elements per pagina",
     "showing": "Mussar {{from}}-{{to}} da {{total}} elements"
@@ -766,8 +755,6 @@
     "edit": "Modifitgar",
     "close": "Serrar",
     "back": "Enavos",
-    "next": "Suandant",
-    "previous": "Precedent",
     "loading": "Chargiar...",
     "error": "Sbagl",
     "success": "Success"
@@ -808,9 +795,6 @@
       "speakerTBA": "Referent da confirmar"
     },
     "sessions": {
-      "title": "Sessiuns",
-      "gridView": "Vista griglia",
-      "listView": "Vista glista",
       "noSessions": "Naginas sessiuns chatschadas per ils temas tschernids",
       "clearFilters": "Stizzar filters",
       "speaker": "Referent",

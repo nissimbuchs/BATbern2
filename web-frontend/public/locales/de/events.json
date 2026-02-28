@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Name",
-        "email": "E-Mail",
-        "company": "Unternehmen",
-        "status": "Status",
-        "registrationDate": "Anmeldedatum",
-        "actions": "Aktionen"
+        "registrationDate": "Anmeldedatum"
       },
       "empty": "Noch keine Teilnehmer angemeldet",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "Zusagerate",
       "viewMode": "Ansichtsmodus",
       "kanban": "Kanban",
-      "sessions": "Sessions",
       "addSpeakers": "Referenten hinzufügen",
       "addToPool": "Referenten zum Pool hinzufügen",
       "kanbanView": "Kanban-Ansicht",
@@ -280,7 +274,6 @@
     "eventNumber": "Veranstaltungsnummer",
     "eventInformation": "Veranstaltungsinformationen",
     "title": "Titel",
-    "description": "Beschreibung",
     "eventDate": "Veranstaltungsdatum",
     "eventType": "Veranstaltungstyp",
     "capacity": "Kapazität",
@@ -650,8 +643,6 @@
       "published": "Veröffentlicht",
       "phase": "Phase",
       "publisher": "Veröffentlicht von",
-      "status": "Status",
-      "actions": "Aktionen",
       "rollback": "Zurücksetzen",
       "current": "Aktuell",
       "cdnCleared": "CDN gelöscht",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Zurück",
-    "next": "Weiter",
     "page": "Seite {{current}} von {{total}}",
     "itemsPerPage": "Einträge pro Seite",
     "showing": "{{from}}-{{to}} von {{total}} Einträgen"
@@ -766,8 +755,6 @@
     "edit": "Bearbeiten",
     "close": "Schließen",
     "back": "Zurück",
-    "next": "Weiter",
-    "previous": "Zurück",
     "loading": "Lädt...",
     "error": "Fehler",
     "success": "Erfolg"
@@ -808,9 +795,6 @@
       "speakerTBA": "Referent wird noch bekannt gegeben"
     },
     "sessions": {
-      "title": "Sessions",
-      "gridView": "Rasteransicht",
-      "listView": "Listenansicht",
       "noSessions": "Keine Sessions für die ausgewählten Themen gefunden",
       "clearFilters": "Filter zurücksetzen",
       "speaker": "Referent",

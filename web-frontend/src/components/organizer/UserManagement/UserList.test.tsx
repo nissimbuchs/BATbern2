@@ -177,7 +177,7 @@ describe('UserList Component', () => {
 
       renderWithProviders(<UserList />);
 
-      const retryButton = screen.getByText('actions.retry');
+      const retryButton = screen.getByText('common:actions.retry');
       await user.click(retryButton);
 
       expect(mockRefetch).toHaveBeenCalled();

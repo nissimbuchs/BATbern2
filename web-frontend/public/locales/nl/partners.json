@@ -20,11 +20,7 @@
     "silver": "Zilver",
     "bronze": "Brons"
   },
-  "viewMode": {
-    "label": "Weergavemodus",
-    "grid": "Rasterweergave",
-    "list": "Lijstweergave"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Sorteren op",
     "engagement": "Betrokkenheidsscore",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Toegewijde accountmanager",
       "eventAccess": "Toegang tot evenementen"
     },
-    "actions": {
-      "save": "Opslaan",
-      "cancel": "Annuleren",
-      "saving": "Opslaan...",
-      "delete": "Verwijderen"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "U heeft niet-opgeslagen wijzigingen. Weet u zeker dat u wilt sluiten?",
       "createSuccess": "Partnerschap succesvol aangemaakt",
@@ -189,8 +180,6 @@
       "contacts": "Contacten",
       "meetings": "Vergaderingen",
       "analytics": "Analyses",
-      "notes": "Notities",
-      "topics": "Onderwerpen",
       "settings": "Instellingen"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "Kalenderuitnodiging sturen naar alle partnercontacten?",
     "inviteQueued": "Kalenderuitnodiging wordt verstuurd...",
     "columns": {
-      "event": "Evenement",
       "type": "Type",
       "date": "Datum",
       "location": "Locatie",
@@ -265,7 +253,6 @@
       "comingSoon": "Analyses binnenkort beschikbaar",
       "title": "Aanwezigheidsdashboard",
       "table": {
-        "event": "Evenement",
         "date": "Datum",
         "yourAttendees": "Uw deelnemers",
         "totalAttendees": "Totaal deelnemers",

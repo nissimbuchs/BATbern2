@@ -166,7 +166,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
           <DialogContent>
             <Stack spacing={3} mt={1}>
               <TextField
-                label={t('detail.notesTab.titleLabel')}
+                label={t('common:labels.title')}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 fullWidth
@@ -185,13 +185,13 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseModal}>{t('modal.actions.cancel')}</Button>
+            <Button onClick={handleCloseModal}>{t('common:actions.cancel')}</Button>
             <Button
               variant="contained"
               onClick={handleSaveNote}
               disabled={!formData.title || !formData.content}
             >
-              {t('modal.actions.save')}
+              {t('common:actions.save')}
             </Button>
           </DialogActions>
         </Dialog>
@@ -271,14 +271,14 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete}>{t('modal.actions.cancel')}</Button>
+          <Button onClick={handleCancelDelete}>{t('common:actions.cancel')}</Button>
           <Button
             variant="contained"
             color="error"
             onClick={handleConfirmDelete}
             data-testid="confirm-delete-note"
           >
-            {t('modal.actions.delete')}
+            {t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -291,7 +291,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
         <DialogContent>
           <Stack spacing={3} mt={1}>
             <TextField
-              label={t('detail.notesTab.titleLabel')}
+              label={t('common:labels.title')}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               fullWidth
@@ -310,13 +310,13 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>{t('modal.actions.cancel')}</Button>
+          <Button onClick={handleCloseModal}>{t('common:actions.cancel')}</Button>
           <Button
             variant="contained"
             onClick={handleSaveNote}
             disabled={!formData.title || !formData.content}
           >
-            {t('modal.actions.save')}
+            {t('common:actions.save')}
           </Button>
         </DialogActions>
       </Dialog>

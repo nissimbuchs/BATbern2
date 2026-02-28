@@ -153,7 +153,6 @@
         "message": "The following topics have high similarity (>70%) with your selection. Are you sure you want to proceed?",
         "similarity": "Similarity",
         "justification": "Justification (optional)",
-        "cancel": "Cancel",
         "confirm": "Select Anyway"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "This topic was used recently (staleness score: {{score}}%). Please provide justification for using it again.",
         "justification": "Justification",
         "helper": "Explain why this topic should be reused despite being recent",
-        "cancel": "Cancel",
         "confirm": "Override and Select"
       },
       "delete": {
         "title": "Delete Topic",
         "message": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
         "cannotDelete": "Cannot delete this topic because it has been used in {{count}} event(s).",
-        "cancel": "Cancel",
         "confirm": "Delete Topic",
-        "deleting": "Deleting...",
         "success": "Topic deleted successfully",
         "error": "Failed to delete topic. Please try again."
       }
@@ -195,7 +191,6 @@
       "empty": "No speakers in pool yet. Add some above!",
       "expertise": "Expertise",
       "assigned": "Assigned to",
-      "notes": "Notes",
       "error": "Failed to load speaker pool"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Speaker",
     "contactMethod": "Contact Method",
     "contactDate": "Contact Date",
-    "notes": "Notes",
     "markContacted": "Mark as Contacted",
     "filterByOrganizer": "Filter by Organizer",
     "contactHistory": "Contact History",
@@ -266,7 +260,6 @@
     "changeStatus": "Change Status",
     "changeReason": "Reason for status change (optional)",
     "confirmChange": "Change Status",
-    "cancelChange": "Cancel",
     "statusChanged": "Status changed successfully",
     "invalidTransition": "Invalid status transition from {{from}} to {{to}}",
     "historyTitle": "Status History",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Overview",
       "attendance": "Attendance",
-      "topics": "Topics",
       "companies": "Companies"
     },
     "kpi": {

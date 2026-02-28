@@ -109,7 +109,7 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCancel} color="secondary" data-testid="status-change-cancel">
-          {t('organizer:speakerStatus.cancelChange')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleConfirm}

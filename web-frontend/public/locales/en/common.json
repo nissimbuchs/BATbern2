@@ -77,7 +77,45 @@
     "submit": "Submit",
     "close": "Close",
     "sending": "Sending...",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
+    }
   },
   "language": {
     "select": "Select Language",
@@ -89,7 +127,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Wait {{seconds}} seconds",
@@ -117,7 +156,6 @@
     "viewDetails": "View details for {{name}}",
     "noCompaniesFound": "No companies found",
     "adjustFilters": "Try adjusting your search or filters",
-    "backToList": "Back",
     "viewMode": {
       "grid": "Grid view",
       "list": "List view",
@@ -207,7 +245,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Overview",
         "users": "Users",
         "statistics": "Statistics",
         "activity": "Activity"
@@ -218,8 +255,7 @@
     "errors": {
       "loadFailed": "Failed to load company",
       "saveFailed": "An error occurred while saving the company",
-      "deleteFailed": "Failed to delete company",
-      "retry": "Retry"
+      "deleteFailed": "Failed to delete company"
     },
     "search": {
       "placeholder": "Search companies..."
@@ -235,12 +271,10 @@
       "importButton": "Import All",
       "cancelButton": "Cancel",
       "status": {
-        "pending": "Pending",
         "importing": "Importing...",
         "success": "Imported",
         "updated": "Updated",
         "willUpdate": "Will Update",
-        "error": "Error",
         "skipped": "Skipped (exists)"
       },
       "progress": "Importing {{current}} of {{total}}...",
@@ -254,8 +288,7 @@
         "displayName": "Display Name",
         "name": "API Name",
         "industry": "Industry",
-        "website": "Website",
-        "status": "Status"
+        "website": "Website"
       },
       "errors": {
         "invalidFile": "Invalid file type. Please upload a JSON file.",
@@ -300,10 +333,7 @@
       "importButtonWithCount": "Import {{count}} Events",
       "columns": {
         "eventNumber": "#",
-        "title": "Title",
-        "date": "Date",
-        "organizer": "Organizer",
-        "status": "Status"
+        "organizer": "Organizer"
       },
       "errors": {
         "invalidFile": "Invalid file type. Please upload a JSON file.",
@@ -417,7 +447,6 @@
       "urgent": "Urgent",
       "soon": "Due soon",
       "onTime": "On time",
-      "actions": "Actions",
       "pastEvent": "Past event",
       "materialAvailable": "Material available",
       "noMaterials": "No materials"
@@ -501,7 +530,6 @@
       "activeCount_other": "{{count}} active filters"
     },
     "sort": {
-      "label": "Sort by",
       "newest": "Newest first",
       "oldest": "Oldest first"
     },

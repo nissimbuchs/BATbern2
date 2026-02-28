@@ -85,7 +85,7 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
             {t('register.step2.reviewTitle')}
           </Typography>
           <Button variant="text" onClick={onBack} size="small">
-            {t('register.step2.editButton')}
+            {t('common:actions.edit')}
           </Button>
         </Box>
 
@@ -165,7 +165,7 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2 }}>
         <Button variant="outlined" onClick={onBack} fullWidth disabled={isLoading}>
-          {t('register.step2.backButton')}
+          {t('common:actions.back')}
         </Button>
         <Button
           variant="contained"

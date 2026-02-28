@@ -1,27 +1,17 @@
 {
   "title": "Käyttäjähallinta",
   "addUser": "Lisää käyttäjä",
-  "back": "Takaisin",
   "search": {
     "placeholder": "Hae nimellä tai sähköpostilla...",
-    "noResults": "Käyttäjiä ei löydy",
-    "clearFilters": "Tyhjennä suodattimet"
+    "noResults": "Käyttäjiä ei löydy"
   },
-  "viewMode": {
-    "toggle": "Vaihda näkymätilaa",
-    "grid": "Ruudukkonäkymä",
-    "list": "Listanäkymä"
-  },
+  "viewMode": {},
   "filters": {
     "title": "Suodattimet",
     "clearAll": "Tyhjennä kaikki suodattimet",
     "role": {
       "label": "Rooli",
-      "all": "Kaikki roolit",
-      "organizer": "Järjestäjä",
-      "speaker": "Puhuja",
-      "partner": "Kumppani",
-      "attendee": "Osallistuja"
+      "all": "Kaikki roolit"
     },
     "company": {
       "label": "Yritys",
@@ -29,41 +19,26 @@
       "placeholder": "Valitse yritys..."
     },
     "status": {
-      "label": "Tila",
       "active": "Aktiivinen",
-      "inactive": "Ei aktiivinen",
-      "all": "Kaikki"
+      "inactive": "Ei aktiivinen"
     }
   },
   "table": {
     "viewUser": "Näytä käyttäjä {{name}}",
     "headers": {
-      "name": "Nimi",
-      "email": "Sähköposti",
-      "company": "Yritys",
-      "roles": "Roolit",
-      "status": "Tila",
-      "actions": "Toiminnot"
+      "roles": "Roolit"
     },
     "showing": "Näytetään {{count}} käyttäjää",
     "showingRange": "{{from}}-{{to}} / {{total}} käyttäjää",
     "perPage": "per sivu",
     "empty": "Käyttäjiä ei löydy",
     "emptySearch": "Yksikään käyttäjä ei vastaa hakuasi. Kokeile tyhjentää suodattimet.",
-    "sortBy": "Lajittele",
     "ascending": "Nouseva",
     "descending": "Laskeva"
   },
   "actions": {
     "view": "Näytä",
-    "editRoles": "Muokkaa rooleja",
-    "delete": "Poista",
-    "retry": "Yritä uudelleen",
-    "save": "Tallenna",
-    "cancel": "Peruuta",
-    "close": "Sulje",
-    "edit": "Muokkaa",
-    "confirm": "Vahvista"
+    "editRoles": "Muokkaa rooleja"
   },
   "roles": {
     "organizer": "Järjestäjä",
@@ -118,13 +93,10 @@
       "gdprWarning": "GDPR-huomio: Tämä toiminto poistaa pysyvästi kaikki käyttäjätiedot, eikä sitä voi kumota.",
       "cascadeWarning": "Kaikki liittyvät tiedot poistetaan myös.",
       "cannotDelete": "Tätä käyttäjää ei voi poistaa",
-      "lastOrganizerWarning": "Et voi poistaa viimeistä järjestäjää. Järjestelmässä on oltava vähintään {{count}} järjestäjää.",
-      "deleting": "Poistetaan..."
+      "lastOrganizerWarning": "Et voi poistaa viimeistä järjestäjää. Järjestelmässä on oltava vähintään {{count}} järjestäjää."
     }
   },
   "pagination": {
-    "previous": "Edellinen",
-    "next": "Seuraava",
     "page": "Sivu {{page}} / {{total}}",
     "itemsPerPage": "Kohteita per sivu",
     "goToPage": "Siirry sivulle"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "Ladataan käyttäjiä...",
     "search": "Haetaan...",
-    "delete": "Poistetaan...",
     "save": "Tallennetaan...",
     "updating": "Päivitetään..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "Peruuta",
     "importButton": "Luo {{new}} / Päivitä {{update}}",
     "allSkipped": "Ei muutoksia tuotavaksi",
-    "columns": {
-      "name": "Nimi",
-      "email": "Sähköposti",
-      "company": "Yritys",
-      "status": "Tila"
-    },
+    "columns": {},
     "status": {
       "pending": "Uusi",
       "importing": "Tuodaan...",
@@ -237,12 +203,7 @@
     "startImport": "Aloita tuonti",
     "progress": "Tuodaan: {{current}} / {{total}}",
     "summary": "Tuonnin yhteenveto",
-    "columns": {
-      "name": "Nimi",
-      "email": "Sähköposti",
-      "events": "Tapahtumat",
-      "status": "Tila"
-    },
+    "columns": {},
     "status": {
       "pending": "Odottaa",
       "importing": "Tuodaan",

@@ -173,7 +173,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
                 size="small"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'createdAt')}
-                label={t('tasks.sortBy', 'Sort By')}
+                label={t('common:labels.sortBy')}
                 sx={{ minWidth: 150 }}
               >
                 <MenuItem value="dueDate">{t('tasks.dueDate', 'Due Date')}</MenuItem>
@@ -213,7 +213,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
                 <Paper sx={{ p: 2, bgcolor: 'grey.50', minHeight: 500 }}>
                   <Stack direction="row" spacing={1} alignItems="center" mb={2}>
                     <PendingIcon color="action" />
-                    <Typography variant="h6">{t('tasks.pending', 'Pending')}</Typography>
+                    <Typography variant="h6">{t('common:filters.status.pending')}</Typography>
                     <Chip label={pendingTasks.length} size="small" />
                   </Stack>
                   <Typography
@@ -298,7 +298,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelComplete}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleCancelComplete}>{t('common:actions.cancel')}</Button>
           <Button
             onClick={handleConfirmComplete}
             variant="contained"

@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Nom",
-        "email": "E-mail",
-        "company": "Entreprise",
-        "status": "Statut",
-        "registrationDate": "Date d'inscription",
-        "actions": "Actions"
+        "registrationDate": "Date d'inscription"
       },
       "empty": "Aucun participant inscrit pour l'instant",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "taux d'acceptation",
       "viewMode": "Mode d'affichage",
       "kanban": "Kanban",
-      "sessions": "Sessions",
       "addSpeakers": "Ajouter des intervenants",
       "addToPool": "Ajouter des intervenants au pool",
       "kanbanView": "Vue Kanban",
@@ -280,7 +274,6 @@
     "eventNumber": "Numéro d'événement",
     "eventInformation": "Informations sur l'événement",
     "title": "Titre",
-    "description": "Description",
     "eventDate": "Date de l'événement",
     "eventType": "Type d'événement",
     "capacity": "Capacité",
@@ -650,8 +643,6 @@
       "published": "Publié",
       "phase": "Phase",
       "publisher": "Éditeur",
-      "status": "Statut",
-      "actions": "Actions",
       "rollback": "Revenir en arrière",
       "current": "Actuel",
       "cdnCleared": "CDN effacé",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Précédent",
-    "next": "Suivant",
     "page": "Page {{current}} sur {{total}}",
     "itemsPerPage": "Éléments par page",
     "showing": "Affichage de {{from}}-{{to}} sur {{total}} éléments"
@@ -766,8 +755,6 @@
     "edit": "Modifier",
     "close": "Fermer",
     "back": "Retour",
-    "next": "Suivant",
-    "previous": "Précédent",
     "loading": "Chargement...",
     "error": "Erreur",
     "success": "Succès"
@@ -808,9 +795,6 @@
       "speakerTBA": "Intervenant à confirmer"
     },
     "sessions": {
-      "title": "Sessions",
-      "gridView": "Vue grille",
-      "listView": "Vue liste",
       "noSessions": "Aucune session trouvée pour les sujets sélectionnés",
       "clearFilters": "Effacer les filtres",
       "speaker": "Intervenant",

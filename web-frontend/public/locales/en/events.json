@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Name",
-        "email": "Email",
-        "company": "Company",
-        "status": "Status",
-        "registrationDate": "Registration Date",
-        "actions": "Actions"
+        "registrationDate": "Registration Date"
       },
       "empty": "No participants registered yet",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "acceptance rate",
       "viewMode": "View mode",
       "kanban": "Kanban",
-      "sessions": "Sessions",
       "addSpeakers": "Add Speakers",
       "addToPool": "Add Speakers to Pool",
       "kanbanView": "Kanban view",
@@ -280,7 +274,6 @@
     "eventNumber": "Event Number",
     "eventInformation": "Event Information",
     "title": "Title",
-    "description": "Description",
     "eventDate": "Event Date",
     "eventType": "Event Type",
     "capacity": "Capacity",
@@ -650,8 +643,6 @@
       "published": "Published",
       "phase": "Phase",
       "publisher": "Publisher",
-      "status": "Status",
-      "actions": "Actions",
       "rollback": "Rollback",
       "current": "Current",
       "cdnCleared": "CDN Cleared",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Previous",
-    "next": "Next",
     "page": "Page {{current}} of {{total}}",
     "itemsPerPage": "Items per page",
     "showing": "Showing {{from}}-{{to}} of {{total}} items"
@@ -766,8 +755,6 @@
     "edit": "Edit",
     "close": "Close",
     "back": "Back",
-    "next": "Next",
-    "previous": "Previous",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
@@ -808,9 +795,6 @@
       "speakerTBA": "Speaker TBA"
     },
     "sessions": {
-      "title": "Sessions",
-      "gridView": "Grid view",
-      "listView": "List view",
       "noSessions": "No sessions found for selected topics",
       "clearFilters": "Clear Filters",
       "speaker": "Speaker",

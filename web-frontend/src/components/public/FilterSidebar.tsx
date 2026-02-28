@@ -140,7 +140,7 @@ export function FilterSidebar({
       {/* Sort */}
       <div>
         <label htmlFor="sort-select" className="block text-sm font-medium text-gray-900 mb-2">
-          {t('archive.sort.label')}
+          {t('labels.sortBy')}
         </label>
         <select
           id="sort-select"

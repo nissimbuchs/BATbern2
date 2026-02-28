@@ -153,7 +153,6 @@
         "message": "以下のトピックはあなたの選択と高い類似性（70%超）を持っています。本当に続行しますか？",
         "similarity": "類似度",
         "justification": "理由（任意）",
-        "cancel": "キャンセル",
         "confirm": "それでも選択する"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "このトピックは最近使用されました（陳腐化スコア：{{score}}%）。再度使用する理由を入力してください。",
         "justification": "理由",
         "helper": "このトピックを最近使用したにもかかわらず再利用すべき理由を説明してください",
-        "cancel": "キャンセル",
         "confirm": "無視して選択"
       },
       "delete": {
         "title": "トピックを削除",
         "message": "「{{title}}」を削除してもよろしいですか？この操作は元に戻せません。",
         "cannotDelete": "このトピックは{{count}}件のイベントで使用されているため、削除できません。",
-        "cancel": "キャンセル",
         "confirm": "トピックを削除",
-        "deleting": "削除中...",
         "success": "トピックを正常に削除しました",
         "error": "トピックの削除に失敗しました。もう一度お試しください。"
       }
@@ -195,7 +191,6 @@
       "empty": "プールにまだ登壇者がいません。上から追加してください！",
       "expertise": "専門分野",
       "assigned": "担当者",
-      "notes": "メモ",
       "error": "登壇者プールの読み込みに失敗しました"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "登壇者",
     "contactMethod": "連絡方法",
     "contactDate": "連絡日",
-    "notes": "メモ",
     "markContacted": "連絡済みとしてマーク",
     "filterByOrganizer": "主催者でフィルター",
     "contactHistory": "連絡履歴",
@@ -266,7 +260,6 @@
     "changeStatus": "ステータスを変更",
     "changeReason": "ステータス変更の理由（任意）",
     "confirmChange": "ステータスを変更",
-    "cancelChange": "キャンセル",
     "statusChanged": "ステータスが正常に変更されました",
     "invalidTransition": "{{from}}から{{to}}への無効なステータス遷移",
     "historyTitle": "ステータス履歴",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "概要",
       "attendance": "参加状況",
-      "topics": "トピック",
       "companies": "企業"
     },
     "kpi": {

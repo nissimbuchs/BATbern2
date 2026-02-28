@@ -478,11 +478,11 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                 <TableHead>
                   <TableRow>
                     <TableCell width={80}>{t('event.batchImport.columns.eventNumber')}</TableCell>
-                    <TableCell>{t('event.batchImport.columns.title')}</TableCell>
+                    <TableCell>{t('labels.title')}</TableCell>
                     <TableCell width={180}>Category</TableCell>
-                    <TableCell>{t('event.batchImport.columns.date')}</TableCell>
+                    <TableCell>{t('labels.date')}</TableCell>
                     <TableCell>{t('event.batchImport.columns.organizer')}</TableCell>
-                    <TableCell width={150}>{t('event.batchImport.columns.status')}</TableCell>
+                    <TableCell width={150}>{t('labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

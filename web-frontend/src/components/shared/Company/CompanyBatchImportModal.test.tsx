@@ -39,7 +39,7 @@ vi.mock('react-i18next', () => ({
         'company.batchImport.columns.name': 'API Name',
         'company.batchImport.columns.industry': 'Industry',
         'company.batchImport.columns.website': 'Website',
-        'company.batchImport.columns.status': 'Status',
+        'labels.status': 'Status',
         'company.batchImport.errors.invalidFile': 'Invalid file type. Please upload a JSON file.',
         'company.batchImport.errors.parseError': `Failed to parse JSON file: ${params?.error || ''}`,
         'actions.close': 'Close',

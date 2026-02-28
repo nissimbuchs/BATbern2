@@ -153,7 +153,6 @@
         "message": "Les sujets suivants présentent une forte similarité (> 70 %) avec votre sélection. Êtes-vous sûr de vouloir continuer ?",
         "similarity": "Similarité",
         "justification": "Justification (facultatif)",
-        "cancel": "Annuler",
         "confirm": "Sélectionner quand même"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Ce sujet a été utilisé récemment (score d'obsolescence : {{score}} %). Veuillez fournir une justification pour l'utiliser à nouveau.",
         "justification": "Justification",
         "helper": "Expliquez pourquoi ce sujet devrait être réutilisé malgré sa récence",
-        "cancel": "Annuler",
         "confirm": "Ignorer et sélectionner"
       },
       "delete": {
         "title": "Supprimer le sujet",
         "message": "Êtes-vous sûr de vouloir supprimer \"{{title}}\" ? Cette action est irréversible.",
         "cannotDelete": "Impossible de supprimer ce sujet car il a été utilisé dans {{count}} événement(s).",
-        "cancel": "Annuler",
         "confirm": "Supprimer le sujet",
-        "deleting": "Suppression en cours...",
         "success": "Sujet supprimé avec succès",
         "error": "Échec de la suppression du sujet. Veuillez réessayer."
       }
@@ -195,7 +191,6 @@
       "empty": "Aucun intervenant dans le pool. Ajoutez-en ci-dessus !",
       "expertise": "Domaine d'expertise",
       "assigned": "Assigné à",
-      "notes": "Notes",
       "error": "Échec du chargement du pool d'intervenants"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Intervenant",
     "contactMethod": "Méthode de contact",
     "contactDate": "Date de contact",
-    "notes": "Notes",
     "markContacted": "Marquer comme contacté",
     "filterByOrganizer": "Filtrer par organisateur",
     "contactHistory": "Historique des contacts",
@@ -266,7 +260,6 @@
     "changeStatus": "Changer le statut",
     "changeReason": "Raison du changement de statut (facultatif)",
     "confirmChange": "Changer le statut",
-    "cancelChange": "Annuler",
     "statusChanged": "Statut modifié avec succès",
     "invalidTransition": "Transition de statut invalide de {{from}} à {{to}}",
     "historyTitle": "Historique des statuts",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Aperçu",
       "attendance": "Participation",
-      "topics": "Sujets",
       "companies": "Entreprises"
     },
     "kpi": {

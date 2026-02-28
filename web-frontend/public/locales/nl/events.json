@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Naam",
-        "email": "E-mail",
-        "company": "Bedrijf",
-        "status": "Status",
-        "registrationDate": "Registratiedatum",
-        "actions": "Acties"
+        "registrationDate": "Registratiedatum"
       },
       "empty": "Nog geen deelnemers geregistreerd",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "acceptatiepercentage",
       "viewMode": "Weergavemodus",
       "kanban": "Kanban",
-      "sessions": "Sessies",
       "addSpeakers": "Sprekers toevoegen",
       "addToPool": "Sprekers aan pool toevoegen",
       "kanbanView": "Kanban-weergave",
@@ -280,7 +274,6 @@
     "eventNumber": "Evenementnummer",
     "eventInformation": "Evenementinformatie",
     "title": "Titel",
-    "description": "Beschrijving",
     "eventDate": "Evenementdatum",
     "eventType": "Evenementtype",
     "capacity": "Capaciteit",
@@ -650,8 +643,6 @@
       "published": "Gepubliceerd",
       "phase": "Fase",
       "publisher": "Uitgever",
-      "status": "Status",
-      "actions": "Acties",
       "rollback": "Terugdraaien",
       "current": "Huidig",
       "cdnCleared": "CDN gewist",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Vorige",
-    "next": "Volgende",
     "page": "Pagina {{current}} van {{total}}",
     "itemsPerPage": "Items per pagina",
     "showing": "{{from}}-{{to}} van {{total}} items weergeven"
@@ -766,8 +755,6 @@
     "edit": "Bewerken",
     "close": "Sluiten",
     "back": "Terug",
-    "next": "Volgende",
-    "previous": "Vorige",
     "loading": "Laden...",
     "error": "Fout",
     "success": "Geslaagd"
@@ -808,9 +795,6 @@
       "speakerTBA": "Spreker wordt bekendgemaakt"
     },
     "sessions": {
-      "title": "Sessies",
-      "gridView": "Rasterweergave",
-      "listView": "Lijstweergave",
       "noSessions": "Geen sessies gevonden voor geselecteerde onderwerpen",
       "clearFilters": "Filters wissen",
       "speaker": "Spreker",

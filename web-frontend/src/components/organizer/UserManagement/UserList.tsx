@@ -107,7 +107,7 @@ const UserList: React.FC = () => {
             {t('error.loadFailed')}
           </Alert>
           <Button variant="contained" onClick={() => refetch()}>
-            {t('actions.retry')}
+            {t('common:actions.retry')}
           </Button>
         </Box>
       </Container>
@@ -139,13 +139,13 @@ const UserList: React.FC = () => {
                 value={viewMode}
                 exclusive
                 onChange={handleViewModeChange}
-                aria-label={t('viewMode.toggle')}
+                aria-label={t('common:labels.viewMode')}
                 size="small"
               >
-                <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
+                <ToggleButton value="grid" aria-label={t('common:labels.gridView')}>
                   <GridIcon />
                 </ToggleButton>
-                <ToggleButton value="list" aria-label={t('viewMode.list')}>
+                <ToggleButton value="list" aria-label={t('common:labels.listView')}>
                   <ListIcon />
                 </ToggleButton>
               </ToggleButtonGroup>

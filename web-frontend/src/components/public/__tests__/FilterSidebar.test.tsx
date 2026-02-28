@@ -22,7 +22,7 @@ vi.mock('react-i18next', () => ({
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',
         'archive.filters.activeCount': '{{count}} active filters',
-        'archive.sort.label': 'Sort By',
+        'labels.sortBy': 'Sort By',
         'archive.sort.newest': 'Newest First',
         'archive.sort.oldest': 'Oldest First',
         'archive.sort.mostAttended': 'Most Attended',

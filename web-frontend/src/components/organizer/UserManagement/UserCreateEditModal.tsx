@@ -290,10 +290,10 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
   };
 
   const roleOptions: { value: Role; label: string }[] = [
-    { value: 'ORGANIZER', label: t('filters.role.organizer') },
-    { value: 'SPEAKER', label: t('filters.role.speaker') },
-    { value: 'PARTNER', label: t('filters.role.partner') },
-    { value: 'ATTENDEE', label: t('filters.role.attendee') },
+    { value: 'ORGANIZER', label: t('common:role.organizer') },
+    { value: 'SPEAKER', label: t('common:role.speaker') },
+    { value: 'PARTNER', label: t('common:role.partner') },
+    { value: 'ATTENDEE', label: t('common:role.attendee') },
   ];
 
   const mutation = isEditMode ? updateUserMutation : createUserMutation;
@@ -512,7 +512,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined" data-testid="user-create-cancel">
-          {t('actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
@@ -526,7 +526,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
               ? t('modal.editUser.saving', 'Saving...')
               : t('modal.createUser.creating')
             : isEditMode
-              ? t('actions.save')
+              ? t('common:actions.save')
               : t('modal.createUser.title')}
         </Button>
       </DialogActions>

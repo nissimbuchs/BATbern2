@@ -52,7 +52,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should render status toggle', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByRole('combobox', { name: 'filters.status' })).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'common:labels.status' })).toBeInTheDocument();
     });
 
     it('should render reset filters button', () => {
@@ -120,7 +120,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with active when active status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
+      const statusSelect = screen.getByRole('combobox', { name: 'common:labels.status' });
       fireEvent.mouseDown(statusSelect);
 
       const activeOption = screen.getByRole('option', { name: 'filters.statusActive' });
@@ -132,7 +132,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with inactive when inactive status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
+      const statusSelect = screen.getByRole('combobox', { name: 'common:labels.status' });
       fireEvent.mouseDown(statusSelect);
 
       const inactiveOption = screen.getByRole('option', { name: 'filters.statusInactive' });
@@ -144,7 +144,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should display all status options', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
+      const statusSelect = screen.getByRole('combobox', { name: 'common:labels.status' });
       fireEvent.mouseDown(statusSelect);
 
       expect(screen.getByRole('option', { name: 'filters.statusAll' })).toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       render(<PartnerFilters />);
 
       const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
-      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
+      const statusSelect = screen.getByRole('combobox', { name: 'common:labels.status' });
 
       // Check that default values are shown
       expect(tierSelect).toBeInTheDocument();

@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Nimi",
-        "email": "Sähköposti",
-        "company": "Yritys",
-        "status": "Tila",
-        "registrationDate": "Rekisteröintipäivä",
-        "actions": "Toiminnot"
+        "registrationDate": "Rekisteröintipäivä"
       },
       "empty": "Ei rekisteröityneitä osallistujia vielä",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "hyväksymisaste",
       "viewMode": "Näkymätila",
       "kanban": "Kanban",
-      "sessions": "Istunnot",
       "addSpeakers": "Lisää puhujia",
       "addToPool": "Lisää puhujia pooliin",
       "kanbanView": "Kanban-näkymä",
@@ -280,7 +274,6 @@
     "eventNumber": "Tapahtuman numero",
     "eventInformation": "Tapahtuman tiedot",
     "title": "Otsikko",
-    "description": "Kuvaus",
     "eventDate": "Tapahtuman päivämäärä",
     "eventType": "Tapahtuman tyyppi",
     "capacity": "Kapasiteetti",
@@ -650,8 +643,6 @@
       "published": "Julkaistu",
       "phase": "Vaihe",
       "publisher": "Julkaisija",
-      "status": "Tila",
-      "actions": "Toiminnot",
       "rollback": "Palauta",
       "current": "Nykyinen",
       "cdnCleared": "CDN tyhjennetty",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Edellinen",
-    "next": "Seuraava",
     "page": "Sivu {{current}} / {{total}}",
     "itemsPerPage": "Kohteita per sivu",
     "showing": "Näytetään {{from}}-{{to}} / {{total}} kohteesta"
@@ -766,8 +755,6 @@
     "edit": "Muokkaa",
     "close": "Sulje",
     "back": "Takaisin",
-    "next": "Seuraava",
-    "previous": "Edellinen",
     "loading": "Ladataan...",
     "error": "Virhe",
     "success": "Onnistui"
@@ -808,9 +795,6 @@
       "speakerTBA": "Puhuja ilmoitetaan myöhemmin"
     },
     "sessions": {
-      "title": "Istunnot",
-      "gridView": "Ruudukkonäkymä",
-      "listView": "Listanäkymä",
       "noSessions": "Valituille aiheille ei löydy istuntoja",
       "clearFilters": "Tyhjennä suodattimet",
       "speaker": "Puhuja",

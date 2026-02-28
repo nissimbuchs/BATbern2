@@ -13,7 +13,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
-        'public.logistics.date': 'Date',
+        'common:labels.date': 'Date',
         'public.logistics.time': 'Time',
         'public.logistics.location': 'Location',
         'public.logistics.capacity': 'Capacity',

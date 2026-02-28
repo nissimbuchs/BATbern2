@@ -82,11 +82,11 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
 
         {/* Status Filter (AC3 - Color-coded freshness) */}
         <FormControl fullWidth size="small">
-          <InputLabel>{t('topicBacklog.filters.status', 'Status')}</InputLabel>
+          <InputLabel>{t('common:labels.status')}</InputLabel>
           <Select
             value={filters.status || ''}
             onChange={handleStatusChange}
-            label={t('topicBacklog.filters.status', 'Status')}
+            label={t('common:labels.status')}
           >
             <MenuItem value="">
               <em>{t('topicBacklog.filters.allStatuses', 'All Statuses')}</em>
@@ -105,11 +105,11 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
 
         {/* Sort Options */}
         <FormControl fullWidth size="small">
-          <InputLabel>{t('topicBacklog.filters.sort', 'Sort By')}</InputLabel>
+          <InputLabel>{t('common:labels.sortBy', 'Sort By')}</InputLabel>
           <Select
             value={filters.sort || '-stalenessScore'}
             onChange={handleSortChange}
-            label={t('topicBacklog.filters.sort', 'Sort By')}
+            label={t('common:labels.sortBy', 'Sort By')}
             data-testid="filter-sort"
           >
             <MenuItem value="-stalenessScore">

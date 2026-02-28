@@ -216,7 +216,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: topic ? 6 : 12 }}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    {t('form.title', 'Title')}
+                    {t('common:labels.title')}
                   </Typography>
                   <Typography variant="body1">{event.title}</Typography>
                 </Grid>
@@ -237,7 +237,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               {event.description && (
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
-                    {t('form.description', 'Description')}
+                    {t('common:labels.description')}
                   </Typography>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                     {event.description}
@@ -330,7 +330,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               {/* Speakers */}
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
-                  🎤 {t('eventPage.overview.speakers', 'Speakers')}
+                  🎤 {t('common:navigation.speakers')}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   {confirmedSpeakers}/{totalSpeakers}{' '}

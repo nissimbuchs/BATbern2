@@ -242,7 +242,7 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                           {session.speakers && session.speakers.length > 0 ? (
                             <div>
                               <p className="text-xs text-zinc-500 mb-2">
-                                {t('public.program.speaker')}:
+                                {t('common:role.speaker')}:
                               </p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {session.speakers.map((speaker: SessionSpeaker) => (

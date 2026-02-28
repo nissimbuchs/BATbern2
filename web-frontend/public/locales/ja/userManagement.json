@@ -1,27 +1,17 @@
 {
   "title": "ユーザー管理",
   "addUser": "ユーザーを追加",
-  "back": "戻る",
   "search": {
     "placeholder": "名前またはメールで検索...",
-    "noResults": "ユーザーが見つかりません",
-    "clearFilters": "フィルターをクリア"
+    "noResults": "ユーザーが見つかりません"
   },
-  "viewMode": {
-    "toggle": "表示モードを切り替え",
-    "grid": "グリッド表示",
-    "list": "リスト表示"
-  },
+  "viewMode": {},
   "filters": {
     "title": "フィルター",
     "clearAll": "すべてのフィルターをクリア",
     "role": {
       "label": "役割",
-      "all": "すべての役割",
-      "organizer": "オーガナイザー",
-      "speaker": "スピーカー",
-      "partner": "パートナー",
-      "attendee": "参加者"
+      "all": "すべての役割"
     },
     "company": {
       "label": "会社",
@@ -29,41 +19,26 @@
       "placeholder": "会社を選択..."
     },
     "status": {
-      "label": "ステータス",
       "active": "アクティブ",
-      "inactive": "非アクティブ",
-      "all": "すべて"
+      "inactive": "非アクティブ"
     }
   },
   "table": {
     "viewUser": "ユーザー {{name}} を表示",
     "headers": {
-      "name": "名前",
-      "email": "メール",
-      "company": "会社",
-      "roles": "役割",
-      "status": "ステータス",
-      "actions": "操作"
+      "roles": "役割"
     },
     "showing": "{{count}} 人のユーザーを表示中",
     "showingRange": "{{total}} 人中 {{from}}-{{to}}",
     "perPage": "ページあたり",
     "empty": "ユーザーが見つかりません",
     "emptySearch": "検索条件に一致するユーザーがいません。フィルターをクリアしてみてください。",
-    "sortBy": "並び替え",
     "ascending": "昇順",
     "descending": "降順"
   },
   "actions": {
     "view": "表示",
-    "editRoles": "役割を編集",
-    "delete": "削除",
-    "retry": "再試行",
-    "save": "保存",
-    "cancel": "キャンセル",
-    "close": "閉じる",
-    "edit": "編集",
-    "confirm": "確認"
+    "editRoles": "役割を編集"
   },
   "roles": {
     "organizer": "オーガナイザー",
@@ -118,13 +93,10 @@
       "gdprWarning": "GDPRに関する注意：このアクションはすべてのユーザーデータを完全に削除し、元に戻すことはできません。",
       "cascadeWarning": "関連するすべてのデータも削除されます。",
       "cannotDelete": "このユーザーは削除できません",
-      "lastOrganizerWarning": "最後のオーガナイザーを削除することはできません。システムには少なくとも {{count}} 人のオーガナイザーが必要です。",
-      "deleting": "削除中..."
+      "lastOrganizerWarning": "最後のオーガナイザーを削除することはできません。システムには少なくとも {{count}} 人のオーガナイザーが必要です。"
     }
   },
   "pagination": {
-    "previous": "前へ",
-    "next": "次へ",
     "page": "{{total}} ページ中 {{page}} ページ",
     "itemsPerPage": "1ページあたりの件数",
     "goToPage": "ページへ移動"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "ユーザーを読み込み中...",
     "search": "検索中...",
-    "delete": "削除中...",
     "save": "保存中...",
     "updating": "更新中..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "キャンセル",
     "importButton": "{{new}} 件作成 / {{update}} 件更新",
     "allSkipped": "インポートする変更はありません",
-    "columns": {
-      "name": "名前",
-      "email": "メール",
-      "company": "会社",
-      "status": "ステータス"
-    },
+    "columns": {},
     "status": {
       "pending": "新規",
       "importing": "インポート中...",
@@ -237,12 +203,7 @@
     "startImport": "インポートを開始",
     "progress": "インポート中：{{current}} / {{total}}",
     "summary": "インポートサマリー",
-    "columns": {
-      "name": "名前",
-      "email": "メール",
-      "events": "イベント",
-      "status": "ステータス"
-    },
+    "columns": {},
     "status": {
       "pending": "保留中",
       "importing": "インポート中",

@@ -81,7 +81,10 @@
     "retry": "Wiederholen",
     "back": "Zurück",
     "confirm": "Bestätigen",
-    "clearFilters": "Filter löschen"
+    "clearFilters": "Filter löschen",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
   },
   "language": {
     "select": "Sprache wählen",
@@ -599,7 +602,16 @@
     "company": "Unternehmen",
     "email": "E-Mail",
     "dueDate": "Fälligkeitsdatum",
-    "emailAddress": "E-Mail-Adresse"
+    "emailAddress": "E-Mail-Adresse",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics"
   },
   "filters": {
     "status": {

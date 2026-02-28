@@ -20,11 +20,7 @@
     "silver": "シルバー",
     "bronze": "ブロンズ"
   },
-  "viewMode": {
-    "label": "表示モード",
-    "grid": "グリッド表示",
-    "list": "リスト表示"
-  },
+  "viewMode": {},
   "sort": {
     "label": "並び替え",
     "engagement": "エンゲージメントスコア",
@@ -114,12 +110,7 @@
       "dedicatedManager": "専任アカウントマネージャー",
       "eventAccess": "イベントへのアクセス"
     },
-    "actions": {
-      "save": "保存",
-      "cancel": "キャンセル",
-      "saving": "保存中...",
-      "delete": "削除"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "保存されていない変更があります。閉じてもよろしいですか？",
       "createSuccess": "パートナーシップが正常に作成されました",
@@ -189,8 +180,6 @@
       "contacts": "連絡先",
       "meetings": "ミーティング",
       "analytics": "分析",
-      "notes": "メモ",
-      "topics": "トピック",
       "settings": "設定"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "すべてのパートナー連絡先にカレンダー招待を送信しますか？",
     "inviteQueued": "カレンダー招待を送信中...",
     "columns": {
-      "event": "イベント",
       "type": "タイプ",
       "date": "日付",
       "location": "場所",
@@ -265,7 +253,6 @@
       "comingSoon": "分析は近日公開予定",
       "title": "出席ダッシュボード",
       "table": {
-        "event": "イベント",
         "date": "日付",
         "yourAttendees": "あなたの参加者",
         "totalAttendees": "総参加者数",

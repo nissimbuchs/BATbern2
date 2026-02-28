@@ -33,7 +33,7 @@ const TopicManagementPage: React.FC = () => {
     if (eventCode && event) {
       // Event-specific topic management
       return [
-        { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+        { label: t('common:navigation.events'), path: '/organizer/events' },
         {
           label: event.title || t('common.loading', 'Loading...'),
           path: `/organizer/events/${eventCode}`,
@@ -43,7 +43,7 @@ const TopicManagementPage: React.FC = () => {
     }
     // Standalone topic management
     return [
-      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('common:navigation.events'), path: '/organizer/events' },
       { label: t('navigation.topicManagement', 'Topic Management') },
     ];
   }, [eventCode, event?.title, t]);

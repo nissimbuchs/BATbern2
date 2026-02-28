@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Nombre",
-        "email": "Correo electrónico",
-        "company": "Empresa",
-        "status": "Estado",
-        "registrationDate": "Fecha de registro",
-        "actions": "Acciones"
+        "registrationDate": "Fecha de registro"
       },
       "empty": "No hay participantes registrados aún",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "tasa de aceptación",
       "viewMode": "Modo de visualización",
       "kanban": "Kanban",
-      "sessions": "Sesiones",
       "addSpeakers": "Añadir ponentes",
       "addToPool": "Añadir ponentes al grupo",
       "kanbanView": "Vista Kanban",
@@ -280,7 +274,6 @@
     "eventNumber": "Número de evento",
     "eventInformation": "Información del evento",
     "title": "Título",
-    "description": "Descripción",
     "eventDate": "Fecha del evento",
     "eventType": "Tipo de evento",
     "capacity": "Capacidad",
@@ -650,8 +643,6 @@
       "published": "Publicado",
       "phase": "Fase",
       "publisher": "Editor",
-      "status": "Estado",
-      "actions": "Acciones",
       "rollback": "Revertir",
       "current": "Actual",
       "cdnCleared": "CDN limpiado",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Anterior",
-    "next": "Siguiente",
     "page": "Página {{current}} de {{total}}",
     "itemsPerPage": "Elementos por página",
     "showing": "Mostrando {{from}}-{{to}} de {{total}} elementos"
@@ -766,8 +755,6 @@
     "edit": "Editar",
     "close": "Cerrar",
     "back": "Atrás",
-    "next": "Siguiente",
-    "previous": "Anterior",
     "loading": "Cargando...",
     "error": "Error",
     "success": "Éxito"
@@ -808,9 +795,6 @@
       "speakerTBA": "Ponente por confirmar"
     },
     "sessions": {
-      "title": "Sesiones",
-      "gridView": "Vista de cuadrícula",
-      "listView": "Vista de lista",
       "noSessions": "No se encontraron sesiones para los temas seleccionados",
       "clearFilters": "Borrar filtros",
       "speaker": "Ponente",

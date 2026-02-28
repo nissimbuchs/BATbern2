@@ -94,10 +94,10 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
     string,
     { label: string; color: 'primary' | 'secondary' | 'success' | 'info' }
   > = {
-    ORGANIZER: { label: t('filters.role.organizer'), color: 'primary' },
-    SPEAKER: { label: t('filters.role.speaker'), color: 'secondary' },
-    PARTNER: { label: t('filters.role.partner'), color: 'success' },
-    ATTENDEE: { label: t('filters.role.attendee'), color: 'info' },
+    ORGANIZER: { label: t('common:role.organizer'), color: 'primary' },
+    SPEAKER: { label: t('common:role.speaker'), color: 'secondary' },
+    PARTNER: { label: t('common:role.partner'), color: 'success' },
+    ATTENDEE: { label: t('common:role.attendee'), color: 'info' },
   };
 
   return (
@@ -116,12 +116,12 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                 startIcon={<DeleteIcon />}
                 onClick={() => onDelete(user)}
               >
-                {t('actions.delete')}
+                {t('common:actions.delete')}
               </Button>
             )}
             {canEdit && onEdit && (
               <Button variant="contained" startIcon={<EditIcon />} onClick={() => onEdit(user)}>
-                {t('actions.edit')}
+                {t('common:actions.edit')}
               </Button>
             )}
           </Stack>
@@ -251,7 +251,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs value={activeTab} onChange={handleTabChange} aria-label="user detail tabs">
             <Tab
-              label={t('userDetail.tabs.overview')}
+              label={t('common:labels.overview')}
               id="user-tab-0"
               aria-controls="user-tabpanel-0"
             />

@@ -153,7 +153,6 @@
         "message": "Seuraavilla aiheilla on suuri samankaltaisuus (> 70 %) valitsemasi aiheen kanssa. Haluatko varmasti jatkaa?",
         "similarity": "Samankaltaisuus",
         "justification": "Perustelu (valinnainen)",
-        "cancel": "Peruuta",
         "confirm": "Valitse silti"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Tätä aihetta on käytetty äskettäin (vanhenemisPisteet: {{score}} %). Anna perustelu sen uudelleenkäytölle.",
         "justification": "Perustelu",
         "helper": "Selitä, miksi tätä aihetta tulisi käyttää uudelleen tuoreudesta huolimatta",
-        "cancel": "Peruuta",
         "confirm": "Ohita ja valitse"
       },
       "delete": {
         "title": "Poista aihe",
         "message": "Haluatko varmasti poistaa \"{{title}}\"? Tätä toimintoa ei voi kumota.",
         "cannotDelete": "Tätä aihetta ei voi poistaa, koska sitä on käytetty {{count}} tapahtumassa.",
-        "cancel": "Peruuta",
         "confirm": "Poista aihe",
-        "deleting": "Poistetaan...",
         "success": "Aihe poistettu onnistuneesti",
         "error": "Aiheen poistaminen epäonnistui. Yritä uudelleen."
       }
@@ -195,7 +191,6 @@
       "empty": "Ryhmässä ei ole vielä puhujia. Lisää niitä yllä!",
       "expertise": "Asiantuntemus",
       "assigned": "Osoitettu henkilölle",
-      "notes": "Huomiot",
       "error": "Puhujaryhmän lataaminen epäonnistui"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Puhuja",
     "contactMethod": "Yhteydenottotapa",
     "contactDate": "Yhteydenottopäivä",
-    "notes": "Huomiot",
     "markContacted": "Merkitse kontaktoiduksi",
     "filterByOrganizer": "Suodata järjestäjän mukaan",
     "contactHistory": "Yhteydenottohistoria",
@@ -266,7 +260,6 @@
     "changeStatus": "Vaihda tila",
     "changeReason": "Tilanvaihdon syy (valinnainen)",
     "confirmChange": "Vaihda tila",
-    "cancelChange": "Peruuta",
     "statusChanged": "Tila vaihdettu onnistuneesti",
     "invalidTransition": "Virheellinen tilasiirtymä tilasta {{from}} tilaan {{to}}",
     "historyTitle": "Tilahistoria",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Yleiskatsaus",
       "attendance": "Osallistuminen",
-      "topics": "Aiheet",
       "companies": "Yritykset"
     },
     "kpi": {

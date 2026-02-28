@@ -86,7 +86,7 @@ const AttendeesPerEventChart = ({ data, isLoading }: Props) => {
       }}
       size="small"
     >
-      <ToggleButton value="title">{t('analytics.labels.labelToggle.title')}</ToggleButton>
+      <ToggleButton value="title">{t('common:labels.title')}</ToggleButton>
       <ToggleButton value="category">{t('analytics.labels.labelToggle.category')}</ToggleButton>
       <ToggleButton value="both">{t('analytics.labels.labelToggle.both')}</ToggleButton>
     </ToggleButtonGroup>

@@ -153,7 +153,6 @@
         "message": "Die folgenden Themen weisen eine hohe Ähnlichkeit (>70%) mit Ihrer Auswahl auf. Möchten Sie wirklich fortfahren?",
         "similarity": "Ähnlichkeit",
         "justification": "Begründung (optional)",
-        "cancel": "Abbrechen",
         "confirm": "Trotzdem auswählen"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Dieses Thema wurde kürzlich verwendet (Veraltetheitsgrad: {{score}}%). Bitte geben Sie eine Begründung an, um es erneut zu verwenden.",
         "justification": "Begründung",
         "helper": "Erklären Sie, warum dieses Thema trotz seiner Aktualität wiederverwendet werden sollte",
-        "cancel": "Abbrechen",
         "confirm": "Überschreiben und auswählen"
       },
       "delete": {
         "title": "Thema löschen",
         "message": "Möchten Sie \"{{title}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "cannotDelete": "Dieses Thema kann nicht gelöscht werden, da es in {{count}} Veranstaltung(en) verwendet wurde.",
-        "cancel": "Abbrechen",
         "confirm": "Thema löschen",
-        "deleting": "Wird gelöscht...",
         "success": "Thema erfolgreich gelöscht",
         "error": "Fehler beim Löschen des Themas. Bitte versuchen Sie es erneut."
       }
@@ -195,7 +191,6 @@
       "empty": "Noch keine Referenten im Pool. Fügen Sie oben welche hinzu!",
       "expertise": "Fachgebiet",
       "assigned": "Zugewiesen an",
-      "notes": "Notizen",
       "error": "Fehler beim Laden des Referenten-Pools"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Referent",
     "contactMethod": "Kontaktmethode",
     "contactDate": "Kontaktdatum",
-    "notes": "Notizen",
     "markContacted": "Als kontaktiert markieren",
     "filterByOrganizer": "Nach Organisator filtern",
     "contactHistory": "Kontaktverlauf",
@@ -266,7 +260,6 @@
     "changeStatus": "Status ändern",
     "changeReason": "Grund für Statusänderung (optional)",
     "confirmChange": "Status ändern",
-    "cancelChange": "Abbrechen",
     "statusChanged": "Status erfolgreich geändert",
     "invalidTransition": "Ungültiger Statusübergang von {{from}} zu {{to}}",
     "historyTitle": "Status-Verlauf",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Übersicht",
       "attendance": "Teilnahme",
-      "topics": "Themen",
       "companies": "Unternehmen"
     },
     "kpi": {

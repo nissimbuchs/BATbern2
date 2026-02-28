@@ -166,7 +166,7 @@ const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ open, onClose
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} data-testid="create-meeting-cancel">
-          {t('modal.actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           variant="contained"
@@ -174,7 +174,7 @@ const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ open, onClose
           disabled={createMutation.isPending}
           data-testid="create-meeting-submit"
         >
-          {createMutation.isPending ? t('modal.actions.saving') : t('modal.actions.save')}
+          {createMutation.isPending ? t('common:actions.saving') : t('common:actions.save')}
         </Button>
       </DialogActions>
     </Dialog>

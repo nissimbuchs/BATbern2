@@ -153,7 +153,6 @@
         "message": "De volgende onderwerpen hebben een hoge gelijkenis (> 70%) met je selectie. Weet je zeker dat je wilt doorgaan?",
         "similarity": "Gelijkenis",
         "justification": "Motivering (optioneel)",
-        "cancel": "Annuleren",
         "confirm": "Toch selecteren"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Dit onderwerp is recent gebruikt (verouderingsscore: {{score}}%). Geef een motivering om het opnieuw te gebruiken.",
         "justification": "Motivering",
         "helper": "Leg uit waarom dit onderwerp opnieuw gebruikt moet worden ondanks de recente gebruiksdatum",
-        "cancel": "Annuleren",
         "confirm": "Negeren en selecteren"
       },
       "delete": {
         "title": "Onderwerp verwijderen",
         "message": "Weet je zeker dat je \"{{title}}\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
         "cannotDelete": "Dit onderwerp kan niet worden verwijderd omdat het is gebruikt in {{count}} evenement(en).",
-        "cancel": "Annuleren",
         "confirm": "Onderwerp verwijderen",
-        "deleting": "Verwijderen...",
         "success": "Onderwerp succesvol verwijderd",
         "error": "Verwijderen van onderwerp mislukt. Probeer het opnieuw."
       }
@@ -195,7 +191,6 @@
       "empty": "Nog geen sprekers in de pool. Voeg er hierboven wat toe!",
       "expertise": "Expertise",
       "assigned": "Toegewezen aan",
-      "notes": "Notities",
       "error": "Laden van sprekers pool mislukt"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Spreker",
     "contactMethod": "Contactmethode",
     "contactDate": "Contactdatum",
-    "notes": "Notities",
     "markContacted": "Markeren als gecontacteerd",
     "filterByOrganizer": "Filteren op organisator",
     "contactHistory": "Contactgeschiedenis",
@@ -266,7 +260,6 @@
     "changeStatus": "Status wijzigen",
     "changeReason": "Reden voor statuswijziging (optioneel)",
     "confirmChange": "Status wijzigen",
-    "cancelChange": "Annuleren",
     "statusChanged": "Status succesvol gewijzigd",
     "invalidTransition": "Ongeldige statusovergang van {{from}} naar {{to}}",
     "historyTitle": "Statusgeschiedenis",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Overzicht",
       "attendance": "Aanwezigheid",
-      "topics": "Onderwerpen",
       "companies": "Bedrijven"
     },
     "kpi": {

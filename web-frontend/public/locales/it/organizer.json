@@ -153,7 +153,6 @@
         "message": "I seguenti argomenti presentano un'elevata somiglianza (> 70%) con la tua selezione. Sei sicuro di voler procedere?",
         "similarity": "Somiglianza",
         "justification": "Giustificazione (opzionale)",
-        "cancel": "Annulla",
         "confirm": "Seleziona comunque"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Questo argomento è stato utilizzato di recente (punteggio obsolescenza: {{score}}%). Fornisci una giustificazione per utilizzarlo di nuovo.",
         "justification": "Giustificazione",
         "helper": "Spiega perché questo argomento dovrebbe essere riutilizzato nonostante sia recente",
-        "cancel": "Annulla",
         "confirm": "Ignora e seleziona"
       },
       "delete": {
         "title": "Elimina argomento",
         "message": "Sei sicuro di voler eliminare \"{{title}}\"? Questa azione non può essere annullata.",
         "cannotDelete": "Impossibile eliminare questo argomento perché è stato utilizzato in {{count}} evento/i.",
-        "cancel": "Annulla",
         "confirm": "Elimina argomento",
-        "deleting": "Eliminazione in corso...",
         "success": "Argomento eliminato con successo",
         "error": "Eliminazione argomento non riuscita. Riprova."
       }
@@ -195,7 +191,6 @@
       "empty": "Nessun relatore nel pool. Aggiungine qualcuno qui sopra!",
       "expertise": "Competenza",
       "assigned": "Assegnato a",
-      "notes": "Note",
       "error": "Caricamento pool relatori non riuscito"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Relatore",
     "contactMethod": "Metodo di contatto",
     "contactDate": "Data di contatto",
-    "notes": "Note",
     "markContacted": "Segna come contattato",
     "filterByOrganizer": "Filtra per organizzatore",
     "contactHistory": "Cronologia contatti",
@@ -266,7 +260,6 @@
     "changeStatus": "Cambia stato",
     "changeReason": "Motivo del cambio di stato (opzionale)",
     "confirmChange": "Cambia stato",
-    "cancelChange": "Annulla",
     "statusChanged": "Stato modificato con successo",
     "invalidTransition": "Transizione di stato non valida da {{from}} a {{to}}",
     "historyTitle": "Cronologia stati",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Panoramica",
       "attendance": "Presenze",
-      "topics": "Argomenti",
       "companies": "Aziende"
     },
     "kpi": {

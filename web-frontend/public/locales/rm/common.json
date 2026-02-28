@@ -81,7 +81,10 @@
     "retry": "Retry",
     "back": "Back",
     "confirm": "Confirm",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
   },
   "language": {
     "select": "Tscherner lingua",
@@ -598,7 +601,16 @@
     "company": "Company",
     "email": "Email",
     "dueDate": "Due Date",
-    "emailAddress": "Email Address"
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics"
   },
   "filters": {
     "status": {

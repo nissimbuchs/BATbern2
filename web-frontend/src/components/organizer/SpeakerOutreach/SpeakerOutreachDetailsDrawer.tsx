@@ -693,7 +693,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 />
 
                 <TextField
-                  label={t('speakerOutreach.notes')}
+                  label={t('common:labels.notes')}
                   value={formData.notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
                   multiline

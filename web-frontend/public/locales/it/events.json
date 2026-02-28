@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "Nome",
-        "email": "E-mail",
-        "company": "Azienda",
-        "status": "Stato",
-        "registrationDate": "Data di iscrizione",
-        "actions": "Azioni"
+        "registrationDate": "Data di iscrizione"
       },
       "empty": "Nessun partecipante iscritto",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "tasso di accettazione",
       "viewMode": "Modalità visualizzazione",
       "kanban": "Kanban",
-      "sessions": "Sessioni",
       "addSpeakers": "Aggiungi relatori",
       "addToPool": "Aggiungi relatori al pool",
       "kanbanView": "Vista Kanban",
@@ -280,7 +274,6 @@
     "eventNumber": "Numero evento",
     "eventInformation": "Informazioni sull'evento",
     "title": "Titolo",
-    "description": "Descrizione",
     "eventDate": "Data evento",
     "eventType": "Tipo evento",
     "capacity": "Capienza",
@@ -650,8 +643,6 @@
       "published": "Pubblicato",
       "phase": "Fase",
       "publisher": "Editore",
-      "status": "Stato",
-      "actions": "Azioni",
       "rollback": "Ripristina",
       "current": "Corrente",
       "cdnCleared": "CDN cancellato",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "Precedente",
-    "next": "Successivo",
     "page": "Pagina {{current}} di {{total}}",
     "itemsPerPage": "Elementi per pagina",
     "showing": "Visualizzazione {{from}}-{{to}} di {{total}} elementi"
@@ -766,8 +755,6 @@
     "edit": "Modifica",
     "close": "Chiudi",
     "back": "Indietro",
-    "next": "Successivo",
-    "previous": "Precedente",
     "loading": "Caricamento...",
     "error": "Errore",
     "success": "Successo"
@@ -808,9 +795,6 @@
       "speakerTBA": "Relatore da confermare"
     },
     "sessions": {
-      "title": "Sessioni",
-      "gridView": "Vista griglia",
-      "listView": "Vista lista",
       "noSessions": "Nessuna sessione trovata per gli argomenti selezionati",
       "clearFilters": "Cancella filtri",
       "speaker": "Relatore",

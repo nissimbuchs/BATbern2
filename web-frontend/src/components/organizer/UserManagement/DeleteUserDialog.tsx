@@ -99,7 +99,7 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          {t('actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleDelete}
@@ -107,7 +107,7 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
           color="error"
           disabled={deleteUserMutation.isPending}
         >
-          {deleteUserMutation.isPending ? t('modal.deleteConfirm.deleting') : t('actions.delete')}
+          {deleteUserMutation.isPending ? t('common:actions.deleting') : t('common:actions.delete')}
         </Button>
       </DialogActions>
     </Dialog>

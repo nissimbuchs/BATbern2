@@ -1,27 +1,17 @@
 {
   "title": "Gestion des utilisateurs",
   "addUser": "Ajouter un utilisateur",
-  "back": "Retour",
   "search": {
     "placeholder": "Rechercher par nom ou e-mail...",
-    "noResults": "Aucun utilisateur trouvé",
-    "clearFilters": "Effacer les filtres"
+    "noResults": "Aucun utilisateur trouvé"
   },
-  "viewMode": {
-    "toggle": "Basculer le mode d'affichage",
-    "grid": "Vue en grille",
-    "list": "Vue en liste"
-  },
+  "viewMode": {},
   "filters": {
     "title": "Filtres",
     "clearAll": "Effacer tous les filtres",
     "role": {
       "label": "Rôle",
-      "all": "Tous les rôles",
-      "organizer": "Organisateur",
-      "speaker": "Intervenant",
-      "partner": "Partenaire",
-      "attendee": "Participant"
+      "all": "Tous les rôles"
     },
     "company": {
       "label": "Entreprise",
@@ -29,41 +19,26 @@
       "placeholder": "Sélectionner une entreprise..."
     },
     "status": {
-      "label": "Statut",
       "active": "Actif",
-      "inactive": "Inactif",
-      "all": "Tous"
+      "inactive": "Inactif"
     }
   },
   "table": {
     "viewUser": "Voir l'utilisateur {{name}}",
     "headers": {
-      "name": "Nom",
-      "email": "E-mail",
-      "company": "Entreprise",
-      "roles": "Rôles",
-      "status": "Statut",
-      "actions": "Actions"
+      "roles": "Rôles"
     },
     "showing": "Affichage de {{count}} utilisateurs",
     "showingRange": "{{from}}-{{to}} sur {{total}} utilisateurs",
     "perPage": "par page",
     "empty": "Aucun utilisateur trouvé",
     "emptySearch": "Aucun utilisateur ne correspond à votre recherche. Essayez d'effacer les filtres.",
-    "sortBy": "Trier par",
     "ascending": "Croissant",
     "descending": "Décroissant"
   },
   "actions": {
     "view": "Voir",
-    "editRoles": "Modifier les rôles",
-    "delete": "Supprimer",
-    "retry": "Réessayer",
-    "save": "Enregistrer",
-    "cancel": "Annuler",
-    "close": "Fermer",
-    "edit": "Modifier",
-    "confirm": "Confirmer"
+    "editRoles": "Modifier les rôles"
   },
   "roles": {
     "organizer": "Organisateur",
@@ -118,13 +93,10 @@
       "gdprWarning": "Avis RGPD : Cette action supprimera définitivement toutes les données de l'utilisateur et ne peut pas être annulée.",
       "cascadeWarning": "Toutes les données associées seront également supprimées.",
       "cannotDelete": "Cet utilisateur ne peut pas être supprimé",
-      "lastOrganizerWarning": "Vous ne pouvez pas supprimer le dernier organisateur. Il doit y avoir au moins {{count}} organisateurs dans le système.",
-      "deleting": "Suppression..."
+      "lastOrganizerWarning": "Vous ne pouvez pas supprimer le dernier organisateur. Il doit y avoir au moins {{count}} organisateurs dans le système."
     }
   },
   "pagination": {
-    "previous": "Précédent",
-    "next": "Suivant",
     "page": "Page {{page}} sur {{total}}",
     "itemsPerPage": "Éléments par page",
     "goToPage": "Aller à la page"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "Chargement des utilisateurs...",
     "search": "Recherche en cours...",
-    "delete": "Suppression en cours...",
     "save": "Enregistrement en cours...",
     "updating": "Mise à jour en cours..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "Annuler",
     "importButton": "Créer {{new}} / Mettre à jour {{update}}",
     "allSkipped": "Aucun changement à importer",
-    "columns": {
-      "name": "Nom",
-      "email": "E-mail",
-      "company": "Entreprise",
-      "status": "Statut"
-    },
+    "columns": {},
     "status": {
       "pending": "Nouveau",
       "importing": "Importation...",
@@ -237,12 +203,7 @@
     "startImport": "Démarrer l'importation",
     "progress": "Importation : {{current}} / {{total}}",
     "summary": "Résumé de l'importation",
-    "columns": {
-      "name": "Nom",
-      "email": "E-mail",
-      "events": "Événements",
-      "status": "Statut"
-    },
+    "columns": {},
     "status": {
       "pending": "En attente",
       "importing": "Importation",

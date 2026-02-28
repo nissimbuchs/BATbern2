@@ -250,7 +250,7 @@ const TaskBoardPage: React.FC = () => {
               size="small"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'createdAt')}
-              label={t('tasks.sortBy', 'Sort By')}
+              label={t('common:labels.sortBy')}
               sx={{ minWidth: 140 }}
             >
               <MenuItem value="dueDate">{t('tasks.dueDate', 'Due Date')}</MenuItem>
@@ -292,7 +292,7 @@ const TaskBoardPage: React.FC = () => {
                   >
                     <Stack direction="row" spacing={1} alignItems="center" mb={2}>
                       <PendingIcon color="action" />
-                      <Typography variant="h6">{t('tasks.pending', 'Pending')}</Typography>
+                      <Typography variant="h6">{t('common:filters.status.pending')}</Typography>
                       <Chip label={pendingTasks.length} size="small" />
                     </Stack>
                     <Typography
@@ -455,7 +455,7 @@ const TaskBoardPage: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelComplete}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleCancelComplete}>{t('common:actions.cancel')}</Button>
           <Button
             onClick={handleConfirmComplete}
             variant="contained"

@@ -230,7 +230,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
           disabled={createTopicMutation.isPending}
           data-testid="cancel-topic-button"
         >
-          {t('common.cancel', 'Cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           variant="contained"

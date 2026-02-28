@@ -169,7 +169,7 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
           <Typography>{t('meetings.confirmSendInvite')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>{t('modal.actions.cancel')}</Button>
+          <Button onClick={() => setConfirmOpen(false)}>{t('common:actions.cancel')}</Button>
           <Button
             variant="contained"
             onClick={() => inviteMutation.mutate()}

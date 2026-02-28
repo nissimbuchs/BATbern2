@@ -20,11 +20,7 @@
     "silver": "Argient",
     "bronze": "Bronze"
   },
-  "viewMode": {
-    "label": "Modus da visualisaziun",
-    "grid": "Vista en graschiglia",
-    "list": "Vista en glista"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Zavrar tenor",
     "engagement": "Scor d'engaschi",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Manaschi da conto dedicà",
       "eventAccess": "Access ad occurrenzas"
     },
-    "actions": {
-      "save": "Memorisar",
-      "cancel": "Interrumper",
-      "saving": "Memorisar...",
-      "delete": "Stizzar"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "Hai midadas betg memorizadas. Es ti segir da voler serrar?",
       "createSuccess": "Partnerada creada cun success",
@@ -189,8 +180,6 @@
       "contacts": "Contacts",
       "meetings": "Inscunters",
       "analytics": "Analiticas",
-      "notes": "Notas",
-      "topics": "Temas",
       "settings": "Parametras"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "Trametter invitaziun da chalender a tuts contacts dal partenari?",
     "inviteQueued": "Trametter invitaziun da chalender...",
     "columns": {
-      "event": "Occurrenza",
       "type": "Tip",
       "date": "Data",
       "location": "Lieu",
@@ -265,7 +253,6 @@
       "comingSoon": "Analiticas bainpreschent disponiblas",
       "title": "Dashboard da participaziun",
       "table": {
-        "event": "Occurrenza",
         "date": "Data",
         "yourAttendees": "Tes participants",
         "totalAttendees": "Total participants",

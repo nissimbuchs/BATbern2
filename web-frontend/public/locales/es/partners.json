@@ -20,11 +20,7 @@
     "silver": "Plata",
     "bronze": "Bronce"
   },
-  "viewMode": {
-    "label": "Modo de vista",
-    "grid": "Vista de cuadrícula",
-    "list": "Vista de lista"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Ordenar por",
     "engagement": "Puntuación de participación",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Gestor de cuenta dedicado",
       "eventAccess": "Acceso a eventos"
     },
-    "actions": {
-      "save": "Guardar",
-      "cancel": "Cancelar",
-      "saving": "Guardando...",
-      "delete": "Eliminar"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea cerrar?",
       "createSuccess": "Asociación creada exitosamente",
@@ -189,8 +180,6 @@
       "contacts": "Contactos",
       "meetings": "Reuniones",
       "analytics": "Análisis",
-      "notes": "Notas",
-      "topics": "Temas",
       "settings": "Configuración"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "¿Enviar invitación de calendario a todos los contactos del socio?",
     "inviteQueued": "Enviando invitación de calendario...",
     "columns": {
-      "event": "Evento",
       "type": "Tipo",
       "date": "Fecha",
       "location": "Ubicación",
@@ -265,7 +253,6 @@
       "comingSoon": "Análisis próximamente disponibles",
       "title": "Panel de asistencia",
       "table": {
-        "event": "Evento",
         "date": "Fecha",
         "yourAttendees": "Sus asistentes",
         "totalAttendees": "Total de asistentes",

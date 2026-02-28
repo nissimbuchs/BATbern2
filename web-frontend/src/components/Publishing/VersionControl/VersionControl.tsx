@@ -162,8 +162,8 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                 <TableCell>{t('publishing.versionControl.published')}</TableCell>
                 <TableCell>{t('publishing.versionControl.phase')}</TableCell>
                 <TableCell>{t('publishing.versionControl.publisher')}</TableCell>
-                <TableCell>{t('publishing.versionControl.status')}</TableCell>
-                <TableCell>{t('publishing.versionControl.actions')}</TableCell>
+                <TableCell>{t('common:labels.status')}</TableCell>
+                <TableCell>{t('common:labels.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

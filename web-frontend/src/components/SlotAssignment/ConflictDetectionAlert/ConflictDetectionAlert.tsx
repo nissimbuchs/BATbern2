@@ -187,7 +187,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          {t('slotAssignment.actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button onClick={onResolve} variant="contained" color="primary">
           {t('slotAssignment.conflicts.chooseDifferentSlot')}

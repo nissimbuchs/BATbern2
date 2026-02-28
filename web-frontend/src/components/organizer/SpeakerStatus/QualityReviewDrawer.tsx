@@ -194,7 +194,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
           {/* Speaker Information */}
           <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t('qualityReview.speaker')}
+              {t('common:role.speaker')}
             </Typography>
             <Typography variant="h6">{speaker?.speakerName}</Typography>
             <Typography variant="body2" color="text.secondary">
@@ -329,7 +329,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                   disabled={reviewMutation.isPending}
                   fullWidth
                 >
-                  {t('common.cancel')}
+                  {t('common:actions.cancel')}
                 </Button>
               </Box>
             </Box>

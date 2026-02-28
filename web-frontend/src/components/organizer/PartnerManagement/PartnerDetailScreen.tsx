@@ -172,7 +172,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
       {
-        label: t('navigation.partners', 'Partners'),
+        label: t('common:navigation.partners'),
         path: currentUser.role === 'PARTNER' ? '/partners' : '/organizer/partners',
       },
       { label: partner?.companyName || resolvedCompanyName || t('common.loading', 'Loading...') },
@@ -244,7 +244,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     { key: 'overview', label: tPartners('detail.tabs.overview'), icon: <OverviewIcon /> },
     { key: 'contacts', label: tPartners('detail.tabs.contacts'), icon: <ContactsIcon /> },
     { key: 'meetings', label: tPartners('detail.tabs.meetings'), icon: <MeetingsIcon /> },
-    { key: 'analytics', label: tPartners('detail.tabs.analytics'), icon: <AnalyticsIcon /> },
+    { key: 'analytics', label: tPartners('common:navigation.analytics'), icon: <AnalyticsIcon /> },
     { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
     { key: 'topics', label: tPartners('detail.tabs.topics'), icon: <TopicsIcon /> },
     { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },

@@ -183,9 +183,9 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                 <TableCell align="center" width={80}>
                   {t('portal.topics.organizer.col.votes')}
                 </TableCell>
-                <TableCell width={110}>{t('portal.topics.col.date')}</TableCell>
+                <TableCell width={110}>{t('common:labels.date')}</TableCell>
                 <TableCell align="right" width={100}>
-                  {t('portal.topics.organizer.col.actions')}
+                  {t('common:labels.actions')}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -223,7 +223,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <Tooltip title={t('portal.topics.edit')}>
+                    <Tooltip title={t('common:actions.edit')}>
                       <IconButton
                         size="small"
                         onClick={() => setEditingTopic(topic)}
@@ -233,7 +233,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('portal.topics.delete')}>
+                    <Tooltip title={t('common:actions.delete')}>
                       <IconButton
                         size="small"
                         onClick={() => setDeletingTopicId(topic.id)}
@@ -270,7 +270,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
         onClose={() => setDeletingTopicId(null)}
         aria-labelledby="delete-topic-dialog-title"
       >
-        <DialogTitle id="delete-topic-dialog-title">{t('portal.topics.delete')}</DialogTitle>
+        <DialogTitle id="delete-topic-dialog-title">{t('common:actions.delete')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
             {topics.find((t) => t.id === deletingTopicId)?.title}
@@ -283,7 +283,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
             color="error"
             data-testid="confirm-delete-button"
           >
-            {t('portal.topics.delete')}
+            {t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

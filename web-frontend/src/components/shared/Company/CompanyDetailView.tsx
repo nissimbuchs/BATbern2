@@ -412,7 +412,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </Alert>
         {onRetry && (
           <Button variant="contained" onClick={onRetry}>
-            {t('company.errors.retry')}
+            {t('actions.retry')}
           </Button>
         )}
       </Box>

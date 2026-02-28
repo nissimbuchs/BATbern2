@@ -24,6 +24,7 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerStatus.changeReason': 'Reason for status change (optional)',
         'organizer:speakerStatus.confirmChange': 'Change Status',
         'organizer:speakerStatus.cancelChange': 'Cancel',
+        'common:actions.cancel': 'Cancel',
         'organizer:speakerStatus.reasonHelperText': `Optional (max ${params?.max} characters)`,
         'organizer:speakerStatus.reasonPlaceholder': 'e.g., Speaker confirmed via email',
         'organizer:speakerStatus.reasonTooLong': `Reason is too long (${params?.current}/${params?.max} characters)`,

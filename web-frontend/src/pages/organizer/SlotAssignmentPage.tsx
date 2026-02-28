@@ -68,7 +68,7 @@ const SlotAssignmentPage: React.FC = () => {
           }}
           sx={{ cursor: 'pointer' }}
         >
-          {t('navigation.events')}
+          {t('common:navigation.events')}
         </Link>
         <Link
           color="inherit"

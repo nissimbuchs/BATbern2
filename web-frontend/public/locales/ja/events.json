@@ -46,12 +46,7 @@
     },
     "participantTable": {
       "headers": {
-        "name": "名前",
-        "email": "メール",
-        "company": "会社",
-        "status": "ステータス",
-        "registrationDate": "登録日",
-        "actions": "アクション"
+        "registrationDate": "登録日"
       },
       "empty": "まだ参加者が登録されていません",
       "actions": {
@@ -105,7 +100,6 @@
       "acceptanceRate": "承諾率",
       "viewMode": "表示モード",
       "kanban": "カンバン",
-      "sessions": "セッション",
       "addSpeakers": "スピーカーを追加",
       "addToPool": "プールにスピーカーを追加",
       "kanbanView": "カンバンビュー",
@@ -280,7 +274,6 @@
     "eventNumber": "イベント番号",
     "eventInformation": "イベント情報",
     "title": "タイトル",
-    "description": "説明",
     "eventDate": "イベント日",
     "eventType": "イベントタイプ",
     "capacity": "定員",
@@ -650,8 +643,6 @@
       "published": "公開済み",
       "phase": "フェーズ",
       "publisher": "公開者",
-      "status": "ステータス",
-      "actions": "アクション",
       "rollback": "ロールバック",
       "current": "現在",
       "cdnCleared": "CDNクリア済み",
@@ -722,8 +713,6 @@
     }
   },
   "pagination": {
-    "previous": "前へ",
-    "next": "次へ",
     "page": "{{total}}ページ中{{current}}ページ",
     "itemsPerPage": "1ページあたりのアイテム数",
     "showing": "{{total}}件中{{from}}-{{to}}件を表示"
@@ -766,8 +755,6 @@
     "edit": "編集",
     "close": "閉じる",
     "back": "戻る",
-    "next": "次へ",
-    "previous": "前へ",
     "loading": "読み込み中...",
     "error": "エラー",
     "success": "成功"
@@ -808,9 +795,6 @@
       "speakerTBA": "スピーカー未定"
     },
     "sessions": {
-      "title": "セッション",
-      "gridView": "グリッドビュー",
-      "listView": "リストビュー",
       "noSessions": "選択したトピックのセッションが見つかりません",
       "clearFilters": "フィルターをクリア",
       "speaker": "スピーカー",

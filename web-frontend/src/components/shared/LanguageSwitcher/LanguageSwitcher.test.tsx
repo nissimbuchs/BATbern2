@@ -62,7 +62,7 @@ describe('LanguageSwitcher Component', () => {
       // Open the select dropdown and click on English
       fireEvent.mouseDown(select);
 
-      const englishOption = await screen.findByText('EN');
+      const englishOption = await screen.findByText('EN — English');
       fireEvent.click(englishOption);
 
       await waitFor(() => {
@@ -81,7 +81,7 @@ describe('LanguageSwitcher Component', () => {
 
       // Change to English
       fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN');
+      const englishOption = await screen.findByText('EN — English');
       fireEvent.click(englishOption);
 
       await waitFor(() => {
@@ -112,7 +112,7 @@ describe('LanguageSwitcher Component', () => {
       // Change to English
       const select = screen.getByRole('combobox');
       fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN');
+      const englishOption = await screen.findByText('EN — English');
       fireEvent.click(englishOption);
 
       // Should now show English text
@@ -132,7 +132,7 @@ describe('LanguageSwitcher Component', () => {
 
       // Change to English
       fireEvent.mouseDown(select);
-      const englishOption = await screen.findByText('EN');
+      const englishOption = await screen.findByText('EN — English');
       fireEvent.click(englishOption);
 
       await waitFor(() => {

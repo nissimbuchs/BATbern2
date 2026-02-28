@@ -153,7 +153,6 @@
         "message": "Ils suandants temas han ina alta similaridat (> 70%) cun tia tscherna. Est ti segir da vulair cuntinuar?",
         "similarity": "Similaridat",
         "justification": "Giustificaziun (facultativ)",
-        "cancel": "Interrumper",
         "confirm": "Tscherner mintgatant"
       },
       "override": {
@@ -161,16 +160,13 @@
         "message": "Quest tema è vegnì utilisà recentemente (score d'obsolescenza: {{score}}%). Dà ina giustificaziun per utilisar el anc ina giada.",
         "justification": "Giustificaziun",
         "helper": "Spiega perché quest tema duess vegnir reutilisà malgrà ch'el è recent",
-        "cancel": "Interrumper",
         "confirm": "Ignorar e tscherner"
       },
       "delete": {
         "title": "Stizzar tema",
         "message": "Est ti segir da vulair stizzar \"{{title}}\"? Questa acziun na po betg vegnir revocada.",
         "cannotDelete": "Impussibel da stizzar quest tema perché el è vegnì utilisà en {{count}} occurrenza/s.",
-        "cancel": "Interrumper",
         "confirm": "Stizzar tema",
-        "deleting": "Stizzament...",
         "success": "Tema stizzà cun success",
         "error": "Stizzar tema ha fallì. Emprova anc ina giada."
       }
@@ -195,7 +191,6 @@
       "empty": "Nagins referents en il pool. Agiunter ins qua sura!",
       "expertise": "Cumpetenza",
       "assigned": "Assignà a",
-      "notes": "Notas",
       "error": "Chargiar pool da referents ha fallì"
     },
     "actions": {
@@ -220,7 +215,6 @@
     "speakerName": "Referent",
     "contactMethod": "Metoda da contact",
     "contactDate": "Data da contact",
-    "notes": "Notas",
     "markContacted": "Marcar sco contactà",
     "filterByOrganizer": "Filtrar tenor organisatur",
     "contactHistory": "Istorgia da contacts",
@@ -266,7 +260,6 @@
     "changeStatus": "Midar status",
     "changeReason": "Motiv da midada da status (facultativ)",
     "confirmChange": "Midar status",
-    "cancelChange": "Interrumper",
     "statusChanged": "Status midà cun success",
     "invalidTransition": "Transiziun da status nunvalida da {{from}} a {{to}}",
     "historyTitle": "Istorgia da status",
@@ -407,7 +400,6 @@
     "tabs": {
       "overview": "Survista",
       "attendance": "Participaziun",
-      "topics": "Temas",
       "companies": "Interpresas"
     },
     "kpi": {

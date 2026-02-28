@@ -20,11 +20,7 @@
     "silver": "Argento",
     "bronze": "Bronzo"
   },
-  "viewMode": {
-    "label": "Modalità di visualizzazione",
-    "grid": "Vista a griglia",
-    "list": "Vista a elenco"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Ordina per",
     "engagement": "Punteggio di coinvolgimento",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Account manager dedicato",
       "eventAccess": "Accesso agli eventi"
     },
-    "actions": {
-      "save": "Salva",
-      "cancel": "Annulla",
-      "saving": "Salvataggio...",
-      "delete": "Elimina"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "Hai modifiche non salvate. Sei sicuro di voler chiudere?",
       "createSuccess": "Partnership creata con successo",
@@ -189,8 +180,6 @@
       "contacts": "Contatti",
       "meetings": "Riunioni",
       "analytics": "Analisi",
-      "notes": "Note",
-      "topics": "Argomenti",
       "settings": "Impostazioni"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "Inviare l'invito del calendario a tutti i contatti del partner?",
     "inviteQueued": "Invio dell'invito calendario...",
     "columns": {
-      "event": "Evento",
       "type": "Tipo",
       "date": "Data",
       "location": "Luogo",
@@ -265,7 +253,6 @@
       "comingSoon": "Analisi prossimamente disponibili",
       "title": "Dashboard delle presenze",
       "table": {
-        "event": "Evento",
         "date": "Data",
         "yourAttendees": "I tuoi partecipanti",
         "totalAttendees": "Totale partecipanti",

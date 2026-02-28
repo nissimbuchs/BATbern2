@@ -20,11 +20,7 @@
     "silver": "Silber",
     "bronze": "Bronze"
   },
-  "viewMode": {
-    "label": "Ansichtsmodus",
-    "grid": "Rasteransicht",
-    "list": "Listenansicht"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Sortieren nach",
     "engagement": "Engagement-Bewertung",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Dedizierter Account Manager",
       "eventAccess": "Veranstaltungszugang"
     },
-    "actions": {
-      "save": "Speichern",
-      "cancel": "Abbrechen",
-      "saving": "Wird gespeichert...",
-      "delete": "Löschen"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?",
       "createSuccess": "Partnerschaft erfolgreich erstellt",
@@ -189,8 +180,6 @@
       "contacts": "Kontakte",
       "meetings": "Meetings",
       "analytics": "Analysen",
-      "notes": "Notizen",
-      "topics": "Themenvorschläge",
       "settings": "Einstellungen"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "Kalendereinladung an alle Partner-Kontakte senden?",
     "inviteQueued": "Kalendereinladung wird gesendet...",
     "columns": {
-      "event": "Veranstaltung",
       "type": "Typ",
       "date": "Datum",
       "location": "Ort",
@@ -265,7 +253,6 @@
       "comingSoon": "Analysen folgen bald",
       "title": "Teilnahme-Dashboard",
       "table": {
-        "event": "Veranstaltung",
         "date": "Datum",
         "yourAttendees": "Ihre Teilnehmer",
         "totalAttendees": "Gesamtteilnehmer",

@@ -1,27 +1,17 @@
 {
   "title": "Benutzerverwaltung",
   "addUser": "Benutzer hinzufügen",
-  "back": "Zurück",
   "search": {
     "placeholder": "Nach Name oder E-Mail suchen...",
-    "noResults": "Keine Benutzer gefunden",
-    "clearFilters": "Filter löschen"
+    "noResults": "Keine Benutzer gefunden"
   },
-  "viewMode": {
-    "toggle": "Ansichtsmodus umschalten",
-    "grid": "Rasteransicht",
-    "list": "Listenansicht"
-  },
+  "viewMode": {},
   "filters": {
     "title": "Filter",
     "clearAll": "Alle Filter löschen",
     "role": {
       "label": "Rolle",
-      "all": "Alle Rollen",
-      "organizer": "Organisator",
-      "speaker": "Referent",
-      "partner": "Partner",
-      "attendee": "Teilnehmer"
+      "all": "Alle Rollen"
     },
     "company": {
       "label": "Firma",
@@ -29,41 +19,26 @@
       "placeholder": "Firma auswählen..."
     },
     "status": {
-      "label": "Status",
       "active": "Aktiv",
-      "inactive": "Inaktiv",
-      "all": "Alle"
+      "inactive": "Inaktiv"
     }
   },
   "table": {
     "viewUser": "Benutzer {{name}} anzeigen",
     "headers": {
-      "name": "Name",
-      "email": "E-Mail",
-      "company": "Firma",
-      "roles": "Rollen",
-      "status": "Status",
-      "actions": "Aktionen"
+      "roles": "Rollen"
     },
     "showing": "{{count}} Benutzer anzeigen",
     "showingRange": "{{from}}-{{to}} von {{total}} Benutzern",
     "perPage": "pro Seite",
     "empty": "Keine Benutzer gefunden",
     "emptySearch": "Keine Benutzer entsprechen Ihrer Suche. Versuchen Sie, die Filter zu löschen.",
-    "sortBy": "Sortieren nach",
     "ascending": "Aufsteigend",
     "descending": "Absteigend"
   },
   "actions": {
     "view": "Anzeigen",
-    "editRoles": "Rollen bearbeiten",
-    "delete": "Löschen",
-    "retry": "Wiederholen",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "close": "Schließen",
-    "edit": "Bearbeiten",
-    "confirm": "Bestätigen"
+    "editRoles": "Rollen bearbeiten"
   },
   "roles": {
     "organizer": "Organisator",
@@ -118,13 +93,10 @@
       "gdprWarning": "DSGVO-Hinweis: Diese Aktion löscht alle Benutzerdaten dauerhaft und kann nicht rückgängig gemacht werden.",
       "cascadeWarning": "Alle zugehörigen Daten werden ebenfalls gelöscht.",
       "cannotDelete": "Dieser Benutzer kann nicht gelöscht werden",
-      "lastOrganizerWarning": "Sie können den letzten Organisator nicht löschen. Es müssen mindestens {{count}} Organisatoren im System vorhanden sein.",
-      "deleting": "Wird gelöscht..."
+      "lastOrganizerWarning": "Sie können den letzten Organisator nicht löschen. Es müssen mindestens {{count}} Organisatoren im System vorhanden sein."
     }
   },
   "pagination": {
-    "previous": "Zurück",
-    "next": "Weiter",
     "page": "Seite {{page}} von {{total}}",
     "itemsPerPage": "Elemente pro Seite",
     "goToPage": "Gehe zu Seite"
@@ -132,7 +104,6 @@
   "loading": {
     "users": "Benutzer werden geladen...",
     "search": "Suchen...",
-    "delete": "Löschen...",
     "save": "Speichern...",
     "updating": "Wird aktualisiert..."
   },
@@ -201,12 +172,7 @@
     "cancelButton": "Abbrechen",
     "importButton": "{{new}} erstellen / {{update}} aktualisieren",
     "allSkipped": "Keine Änderungen zu importieren",
-    "columns": {
-      "name": "Name",
-      "email": "E-Mail",
-      "company": "Firma",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "Neu",
       "importing": "Importiere...",
@@ -237,12 +203,7 @@
     "startImport": "Import starten",
     "progress": "Importiere: {{current}} / {{total}}",
     "summary": "Import-Zusammenfassung",
-    "columns": {
-      "name": "Name",
-      "email": "E-Mail",
-      "events": "Veranstaltungen",
-      "status": "Status"
-    },
+    "columns": {},
     "status": {
       "pending": "Ausstehend",
       "importing": "Importiere",

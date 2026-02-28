@@ -85,10 +85,10 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      expect(screen.getByText('eventPage.participantTable.headers.name')).toBeInTheDocument();
-      expect(screen.getByText('eventPage.participantTable.headers.email')).toBeInTheDocument();
-      expect(screen.getByText('eventPage.participantTable.headers.company')).toBeInTheDocument();
-      expect(screen.getByText('eventPage.participantTable.headers.status')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.name')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.email')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.company')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.status')).toBeInTheDocument();
       expect(
         screen.getByText('eventPage.participantTable.headers.registrationDate')
       ).toBeInTheDocument();
@@ -156,7 +156,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const nameHeader = screen.getByText('eventPage.participantTable.headers.name');
+      const nameHeader = screen.getByText('common:labels.name');
 
       // Table defaults to name ascending (Bob is already first)
       let rows = screen.getAllByRole('row');
@@ -175,7 +175,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const nameHeader = screen.getByText('eventPage.participantTable.headers.name');
+      const nameHeader = screen.getByText('common:labels.name');
 
       // Default is ascending (Bob first)
       let rows = screen.getAllByRole('row');
@@ -199,7 +199,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const emailHeader = screen.getByText('eventPage.participantTable.headers.email');
+      const emailHeader = screen.getByText('common:labels.email');
       await user.click(emailHeader);
 
       const rows = screen.getAllByRole('row');

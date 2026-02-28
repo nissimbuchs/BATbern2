@@ -44,7 +44,7 @@ const OrganizerAnalyticsPage: React.FC = () => {
         mb={2}
       >
         <Typography variant="h5" component="h1">
-          {t('analytics.title')}
+          {t('common:navigation.analytics')}
         </Typography>
 
         {/* Global time range selector — only shown on time-sensitive tabs */}
@@ -56,7 +56,7 @@ const OrganizerAnalyticsPage: React.FC = () => {
               if (v) setTimeRange(v as TimeRange);
             }}
             size="small"
-            aria-label={t('analytics.title')}
+            aria-label={t('common:navigation.analytics')}
           >
             <ToggleButton value="ALL">{t('analytics.timeRange.all')}</ToggleButton>
             <ToggleButton value="5Y">{t('analytics.timeRange.5y')}</ToggleButton>
@@ -71,9 +71,9 @@ const OrganizerAnalyticsPage: React.FC = () => {
         onChange={(_e, v) => setActiveTab(v as TabIndex)}
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
       >
-        <Tab label={t('analytics.tabs.overview')} />
+        <Tab label={t('common:labels.overview')} />
         <Tab label={t('analytics.tabs.attendance')} />
-        <Tab label={t('analytics.tabs.topics')} />
+        <Tab label={t('common:labels.topics')} />
         <Tab label={t('analytics.tabs.companies')} />
       </Tabs>
 

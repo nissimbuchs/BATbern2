@@ -150,7 +150,7 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>
-          {t('common.cancel', 'Cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button variant="contained" onClick={handleSave} disabled={saving || !name.trim()}>
           {t('common.save', 'Save')}

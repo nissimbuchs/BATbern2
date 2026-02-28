@@ -38,10 +38,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
     string,
     { label: string; color: 'primary' | 'secondary' | 'success' | 'info' }
   > = {
-    ORGANIZER: { label: t('filters.role.organizer'), color: 'primary' },
-    SPEAKER: { label: t('filters.role.speaker'), color: 'secondary' },
-    PARTNER: { label: t('filters.role.partner'), color: 'success' },
-    ATTENDEE: { label: t('filters.role.attendee'), color: 'info' },
+    ORGANIZER: { label: t('common:role.organizer'), color: 'primary' },
+    SPEAKER: { label: t('common:role.speaker'), color: 'secondary' },
+    PARTNER: { label: t('common:role.partner'), color: 'success' },
+    ATTENDEE: { label: t('common:role.attendee'), color: 'info' },
   };
 
   return (
@@ -156,10 +156,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          {t('actions.close')}
+          {t('common:actions.close')}
         </Button>
         <Button variant="contained" color="primary" onClick={() => user && onEdit && onEdit(user)}>
-          {t('actions.edit')}
+          {t('common:actions.edit')}
         </Button>
       </DialogActions>
     </Dialog>

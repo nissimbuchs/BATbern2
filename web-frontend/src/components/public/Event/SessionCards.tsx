@@ -95,13 +95,13 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
   return (
     <div className="py-12">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-light text-zinc-100">{t('public.sessions.title')}</h2>
+        <h2 className="text-3xl font-light text-zinc-100">{t('common:labels.sessions')}</h2>
         <div className="flex gap-2">
           <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('grid')}
-            aria-label={t('public.sessions.gridView')}
+            aria-label={t('common:labels.gridView')}
             className="border-zinc-800"
           >
             <LayoutGrid className="h-4 w-4" />
@@ -110,7 +110,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('list')}
-            aria-label={t('public.sessions.listView')}
+            aria-label={t('common:labels.listView')}
             className="border-zinc-800"
           >
             <List className="h-4 w-4" />
@@ -203,7 +203,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
                 <div className="pt-2 border-t border-zinc-800">
                   {session.speakers && session.speakers.length > 0 ? (
                     <div>
-                      <p className="text-xs text-zinc-500 mb-2">{t('public.sessions.speaker')}:</p>
+                      <p className="text-xs text-zinc-500 mb-2">{t('common:role.speaker')}:</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {session.speakers.map((speaker) => (
                           <SpeakerDisplay

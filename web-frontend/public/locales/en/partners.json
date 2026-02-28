@@ -20,11 +20,7 @@
     "silver": "Silver",
     "bronze": "Bronze"
   },
-  "viewMode": {
-    "label": "View mode",
-    "grid": "Grid view",
-    "list": "List view"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Sort By",
     "engagement": "Engagement Score",
@@ -114,12 +110,6 @@
       "dedicatedManager": "Dedicated account manager",
       "eventAccess": "Event access"
     },
-    "actions": {
-      "save": "Save",
-      "cancel": "Cancel",
-      "saving": "Saving...",
-      "delete": "Delete"
-    },
     "messages": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
       "createSuccess": "Partnership created successfully",
@@ -189,8 +179,6 @@
       "contacts": "Contacts",
       "meetings": "Meetings",
       "analytics": "Analytics",
-      "notes": "Notes",
-      "topics": "Topics",
       "settings": "Settings"
     },
     "overviewTab": {
@@ -236,7 +224,6 @@
     "confirmSendInvite": "Send calendar invite to all partner contacts?",
     "inviteQueued": "Sending calendar invite...",
     "columns": {
-      "event": "Event",
       "type": "Type",
       "date": "Date",
       "location": "Location",
@@ -265,7 +252,6 @@
       "comingSoon": "Analytics coming soon",
       "title": "Attendance Dashboard",
       "table": {
-        "event": "Event",
         "date": "Date",
         "yourAttendees": "Your Attendees",
         "totalAttendees": "Total Attendees",

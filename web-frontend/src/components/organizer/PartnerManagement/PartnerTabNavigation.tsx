@@ -20,12 +20,12 @@ export const PartnerTabNavigation: React.FC<PartnerTabNavigationProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // <640px
 
   const allTabs = [
-    { key: 'overview', label: t('detail.tabs.overview') },
+    { key: 'overview', label: t('common:labels.overview') },
     { key: 'contacts', label: t('detail.tabs.contacts') },
     { key: 'meetings', label: t('detail.tabs.meetings') },
-    { key: 'analytics', label: t('detail.tabs.analytics') },
-    { key: 'notes', label: t('detail.tabs.notes') },
-    { key: 'topics', label: t('detail.tabs.topics') },
+    { key: 'analytics', label: t('common:navigation.analytics') },
+    { key: 'notes', label: t('common:labels.notes') },
+    { key: 'topics', label: t('common:labels.topics') },
     { key: 'settings', label: t('detail.tabs.settings') },
   ];
 

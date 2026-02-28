@@ -229,7 +229,7 @@ const TopicStatusPanel: React.FC = () => {
                     direction={sortKey === 'title' ? sortDir : 'asc'}
                     onClick={() => handleSort('title')}
                   >
-                    {t('portal.topics.organizer.col.title')}
+                    {t('common:labels.title')}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '15%' }}>
@@ -256,17 +256,17 @@ const TopicStatusPanel: React.FC = () => {
                     direction={sortKey === 'createdAt' ? sortDir : 'desc'}
                     onClick={() => handleSort('createdAt')}
                   >
-                    {t('portal.topics.organizer.col.date')}
+                    {t('common:labels.date')}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '14%' }}>
-                  {t('portal.topics.organizer.status')}
+                  {t('common:labels.status')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '16%' }}>
                   {t('portal.topics.organizer.plannedEvent')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '15%' }} align="right">
-                  {t('portal.topics.organizer.col.actions')}
+                  {t('common:labels.actions')}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -348,7 +348,7 @@ const TopicStatusPanel: React.FC = () => {
                           gap: 0.5,
                         }}
                       >
-                        <Tooltip title={t('portal.topics.organizer.save')}>
+                        <Tooltip title={t('common:actions.save')}>
                           <span>
                             <IconButton
                               size="small"
@@ -361,7 +361,7 @@ const TopicStatusPanel: React.FC = () => {
                             </IconButton>
                           </span>
                         </Tooltip>
-                        <Tooltip title={t('portal.topics.edit')}>
+                        <Tooltip title={t('common:actions.edit')}>
                           <IconButton
                             size="small"
                             onClick={() => setEditingTopic(topic)}
@@ -370,7 +370,7 @@ const TopicStatusPanel: React.FC = () => {
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={t('portal.topics.delete')}>
+                        <Tooltip title={t('common:actions.delete')}>
                           <IconButton
                             size="small"
                             color="error"

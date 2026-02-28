@@ -161,12 +161,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
             <Alert severity="error">{t('speakerOutreach.markContactedModal.error.failed')}</Alert>
           )}
 
-          <TextField
-            label={t('speakerOutreach.speakerName')}
-            value={speakerName}
-            disabled
-            fullWidth
-          />
+          <TextField label={t('common:role.speaker')} value={speakerName} disabled fullWidth />
 
           <FormControl fullWidth error={!!errors.contactMethod} required>
             <InputLabel>{t('speakerOutreach.contactMethod')}</InputLabel>
@@ -207,7 +202,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
           />
 
           <TextField
-            label={t('speakerOutreach.notes')}
+            label={t('common:labels.notes')}
             value={formData.notes}
             onChange={(e) => handleNotesChange(e.target.value)}
             multiline
@@ -225,7 +220,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
           disabled={recordOutreachMutation.isPending}
           data-testid="cancel-button"
         >
-          {t('common.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}

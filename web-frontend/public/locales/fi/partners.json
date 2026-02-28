@@ -20,11 +20,7 @@
     "silver": "Hopea",
     "bronze": "Pronssi"
   },
-  "viewMode": {
-    "label": "Näkymätila",
-    "grid": "Ruudukkonäkymä",
-    "list": "Listanäkymä"
-  },
+  "viewMode": {},
   "sort": {
     "label": "Lajittele",
     "engagement": "Sitoutumispisteet",
@@ -114,12 +110,7 @@
       "dedicatedManager": "Omistettu asiakaspäällikkö",
       "eventAccess": "Pääsy tapahtumiin"
     },
-    "actions": {
-      "save": "Tallenna",
-      "cancel": "Peruuta",
-      "saving": "Tallennetaan...",
-      "delete": "Poista"
-    },
+    "actions": {},
     "messages": {
       "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?",
       "createSuccess": "Kumppanuus luotu onnistuneesti",
@@ -189,8 +180,6 @@
       "contacts": "Yhteystiedot",
       "meetings": "Kokoukset",
       "analytics": "Analytiikka",
-      "notes": "Muistiinpanot",
-      "topics": "Aiheet",
       "settings": "Asetukset"
     },
     "overviewTab": {
@@ -236,7 +225,6 @@
     "confirmSendInvite": "Lähetetäänkö kalenterikutsu kaikille kumppanin yhteyshenkilöille?",
     "inviteQueued": "Lähetetään kalenterikutsua...",
     "columns": {
-      "event": "Tapahtuma",
       "type": "Tyyppi",
       "date": "Päivämäärä",
       "location": "Sijainti",
@@ -265,7 +253,6 @@
       "comingSoon": "Analytiikka tulossa pian",
       "title": "Osallistumiskojelauta",
       "table": {
-        "event": "Tapahtuma",
         "date": "Päivämäärä",
         "yourAttendees": "Omat osallistujasi",
         "totalAttendees": "Osallistujia yhteensä",

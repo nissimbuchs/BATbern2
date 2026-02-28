@@ -97,13 +97,13 @@ export const PartnerFilters: React.FC = () => {
 
         {/* Status Filter Dropdown */}
         <FormControl size="small" sx={{ minWidth: { sm: 150 } }}>
-          <InputLabel id="status-filter-label">{t('filters.status')}</InputLabel>
+          <InputLabel id="status-filter-label">{t('common:labels.status')}</InputLabel>
           <Select
             labelId="status-filter-label"
             id="status-filter"
             value={filters.status}
-            label={t('filters.status')}
-            aria-label={t('filters.status')}
+            label={t('common:labels.status')}
+            aria-label={t('common:labels.status')}
             onChange={handleStatusChange}
             data-testid="status-filter-select"
           >

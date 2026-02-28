@@ -375,10 +375,10 @@ export function ParticipantBatchImportModal({
               <Table stickyHeader size="small" aria-label="Participants with import status">
                 <TableHead>
                   <TableRow>
-                    <TableCell>{t('participantImport.columns.name')}</TableCell>
-                    <TableCell>{t('participantImport.columns.email')}</TableCell>
-                    <TableCell align="center">{t('participantImport.columns.events')}</TableCell>
-                    <TableCell align="center">{t('participantImport.columns.status')}</TableCell>
+                    <TableCell>{t('common:labels.name')}</TableCell>
+                    <TableCell>{t('common:labels.email')}</TableCell>
+                    <TableCell align="center">{t('common:navigation.events')}</TableCell>
+                    <TableCell align="center">{t('common:labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -466,7 +466,9 @@ export function ParticipantBatchImportModal({
           aria-label="Close import modal"
           data-testid="participant-import-cancel-button"
         >
-          {candidates.length > 0 && !isImporting ? t('actions.close') : t('actions.cancel')}
+          {candidates.length > 0 && !isImporting
+            ? t('common:actions.close')
+            : t('common:actions.cancel')}
         </Button>
         {previewCandidates.length > 0 && !candidates.length && !parseError && (
           <Button
