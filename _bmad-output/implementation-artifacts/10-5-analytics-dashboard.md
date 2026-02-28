@@ -1,6 +1,6 @@
 # Story 10.5: Analytics Dashboard
 
-Status: review
+Status: done
 
 ## Story
 

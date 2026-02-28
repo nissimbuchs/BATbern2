@@ -19,14 +19,7 @@ export const CHART_COLORS = {
 
 /** Category color mapping (aligned with blob selector clusters from Story 10.4) */
 export const CATEGORY_COLORS: Record<string, string> = {
-  ARCHITECTURE: '#2C5F7C',
   technical: '#2C5F7C',
-  SECURITY: '#E74C3C',
-  DATA: '#27AE60',
-  CLOUD_INFRA: '#4A90B8',
-  AI_ML: '#9B59B6',
-  MOBILE: '#E67E22',
-  BUSINESS_OTHER: '#95A5A6',
   management: '#9B59B6',
   soft_skills: '#27AE60',
   industry_trends: '#E67E22',

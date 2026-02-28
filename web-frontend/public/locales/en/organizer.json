@@ -447,6 +447,7 @@
       "allEvents": "All events",
       "sessions": "sessions",
       "speakers": "speakers",
+      "attendees": "attendees",
       "yourCompany": "Your Company"
     }
   },
