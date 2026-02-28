@@ -6,9 +6,7 @@
  * AC #14: AgendaView with completedSessions — rendered by the page-level AgendaView.
  * This slide renders only the "Agenda" heading; the list is owned by PresentationPage.
  */
-import { type JSX } from 'react';
-
-export function AgendaRecapSlide(): JSX.Element {
+export function AgendaRecapSlide(): null {
   // Heading + list are rendered by the page-level AgendaView (layoutId="agenda-view").
-  return <div />;
+  return null;
 }

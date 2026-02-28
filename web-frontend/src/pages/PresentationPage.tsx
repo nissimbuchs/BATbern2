@@ -202,6 +202,7 @@ export function PresentationPage(): JSX.Element {
   const isSession = currentSection?.type === 'session';
   const isAgendaCenter =
     currentSection?.type === 'agenda-preview' || currentSection?.type === 'agenda-recap';
+  const isBreakSection = currentSection?.type === 'break';
 
   // Current session slug for sidebar highlight (AC #19)
   const currentSessionSlug = isSession
@@ -376,11 +377,13 @@ export function PresentationPage(): JSX.Element {
         isBlankActive={isBlankActive}
       />
 
-      {/* B-key / bottom-zone break overlay — AnimatePresence fade 0.3s (ACs #9, #23-24, #29) */}
+      {/* B-key / bottom-zone break overlay — AnimatePresence fade 0.3s (ACs #9, #23-24, #29)
+          When already on the break section, BreakSlide is rendered by SectionRenderer;
+          omit it here to avoid duplicate animation instances. */}
       <BlankOverlay isActive={isBlankActive} onDismiss={toggleBlank}>
         <div style={{ position: 'fixed', inset: 0, background: '#0a0d14' }}>
           <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
-          <BreakSlide firstPostBreakSession={firstPostBreakSession} />
+          {!isBreakSection && <BreakSlide firstPostBreakSession={firstPostBreakSession} />}
         </div>
       </BlankOverlay>
     </div>

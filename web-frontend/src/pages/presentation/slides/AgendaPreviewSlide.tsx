@@ -6,9 +6,7 @@
  * AC #11: All sessions in chronological order — rendered by the page-level AgendaView.
  * This slide renders only the "Agenda" heading; the list is owned by PresentationPage.
  */
-import { type JSX } from 'react';
-
-export function AgendaPreviewSlide(): JSX.Element {
+export function AgendaPreviewSlide(): null {
   // Heading + list are rendered by the page-level AgendaView (layoutId="agenda-view").
-  return <div />;
+  return null;
 }

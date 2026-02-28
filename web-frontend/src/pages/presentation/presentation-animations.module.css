@@ -2,27 +2,9 @@
  * presentation-animations.module.css
  * Story 10.8b: Shared CSS animations for BreakSlide and AperoSlide
  *
- * BATbern "~" spinner, coffee steam lines, and floating beans.
+ * Coffee steam lines and floating beans.
+ * Spinner (ACs #11, #14): uses <BATbernLoader> SVG component, not CSS here.
  */
-
-/* ---- BATbern "~" spinner (ACs #11, #14) ---- */
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spinner {
-  display: inline-block;
-  animation: spin 3s linear infinite;
-  font-size: 4rem;
-  color: var(--bat-blue, #4f9cf9);
-  user-select: none;
-}
 
 /* ---- Coffee steam lines (AC #12) ---- */
 

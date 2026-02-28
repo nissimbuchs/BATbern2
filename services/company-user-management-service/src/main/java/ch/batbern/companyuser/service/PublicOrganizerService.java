@@ -37,6 +37,7 @@ public class PublicOrganizerService {
         log.info("Found {} organizers", organizers.size());
 
         return organizers.stream()
+                .filter(u -> !"batbern.organizer".equals(u.getUsername()))
                 .map(this::mapToPublicResponse)
                 .collect(Collectors.toList());
     }
