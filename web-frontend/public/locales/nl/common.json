@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "BATbern Evenementenbeheerplatform",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "Mijn bedrijf",
     "myAccount": "Mijn account",
     "analytics": "Analyse",
-    "content": "Inhoud zoeken",
     "profile": "Profiel",
-    "logout": "Uitloggen",
     "myEvents": "Mijn evenementen",
-    "presentationMode": "Presentatiemodus",
     "myContent": "Mijn inhoud",
     "myRegistrations": "Mijn registraties",
     "about": "Over",
@@ -27,8 +23,7 @@
     "partnerTopics": "Partneronderwerpen",
     "partnerMeetings": "Partnervergaderingen",
     "topics": "Onderwerpssuggesties",
-    "openMenu": "Menu openen",
-    "closeMenu": "Menu sluiten"
+    "openMenu": "Menu openen"
   },
   "public": {
     "login": "Inloggen",
@@ -70,11 +65,6 @@
     "cancel": "Annuleren",
     "delete": "Verwijderen",
     "edit": "Bewerken",
-    "create": "Aanmaken",
-    "search": "Zoeken",
-    "filter": "Filteren",
-    "reset": "Herstellen",
-    "submit": "Indienen",
     "close": "Sluiten",
     "sending": "Verzenden...",
     "loading": "Laden...",
@@ -105,12 +95,10 @@
   },
   "menu": {
     "profile": "Profiel",
-    "profileSettings": "Profielinstellingen",
     "settings": "Instellingen",
     "administration": "Beheer",
     "help": "Help",
-    "logout": "Uitloggen",
-    "signOut": "Afmelden"
+    "logout": "Uitloggen"
   },
   "role": {
     "organizer": "Evenementenorganisator",
@@ -136,49 +124,21 @@
       "swissUID": "Zwitsers UID (CHE-XXX.XXX.XXX)",
       "website": "Website",
       "industry": "Branche",
-      "sector": "Sector (optioneel)",
-      "city": "Stad",
-      "canton": "Kanton",
-      "country": "Land",
       "description": "Beschrijving",
       "legalName": "Korte naam: {{name}}",
       "logo": "Bedrijfslogo"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://example.com",
-      "canton": "BE, ZH, GE, enz."
+      "website": "https://example.com"
     },
     "industries": {
-      "selectIndustry": "Branche selecteren",
-      "technology": "Technologie",
-      "cloudComputing": "Cloud computing",
-      "devOps": "DevOps",
-      "financialServices": "Financiële diensten",
-      "healthcare": "Gezondheidszorg",
-      "manufacturing": "Productie",
-      "consulting": "Consultancy",
-      "education": "Onderwijs",
-      "other": "Overig"
-    },
-    "sectors": {
-      "selectSector": "Sector selecteren",
-      "public": "Publiek",
-      "private": "Privaat",
-      "nonprofit": "Non-profit",
-      "government": "Overheid"
+      "selectIndustry": "Branche selecteren"
     },
     "badges": {
-      "partner": "Partner",
       "verified": "Geverifieerd"
     },
-    "stats": {
-      "userCount": "{{count}} gebruiker",
-      "userCount_one": "{{count}} gebruiker",
-      "userCount_other": "{{count}} gebruikers"
-    },
     "filters": {
-      "partnerOnly": "Alleen partnerbedrijven",
       "verifiedOnly": "Alleen geverifieerde bedrijven",
       "industry": "Branche",
       "allIndustries": "Alle branches",
@@ -188,7 +148,6 @@
     "form": {
       "createTitle": "Nieuw bedrijf aanmaken",
       "editTitle": "Bedrijf bewerken",
-      "required": "Verplicht",
       "saveDraft": "Concept opslaan",
       "saveCreate": "Opslaan en aanmaken",
       "saveChanges": "Wijzigingen opslaan",
@@ -198,31 +157,16 @@
         "swissUID": "Optioneel - voor automatische verificatie"
       },
       "errors": {
-        "nameRequired": "Bedrijfsnaam is verplicht",
-        "nameMinLength": "Naam moet minimaal {{min}} tekens bevatten",
-        "nameMaxLength": "Naam mag maximaal {{max}} tekens bevatten",
-        "displayNameMaxLength": "Weergavenaam mag maximaal {{max}} tekens bevatten",
-        "invalidSwissUID": "Ongeldig Zwitsers UID-formaat (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "Ongeldige website-URL",
-        "industryRequired": "Branche is verplicht",
-        "cityRequired": "Stad is verplicht",
-        "cantonRequired": "Kanton is verplicht",
-        "countryRequired": "Land is verplicht",
-        "descriptionMaxLength": "Beschrijving mag maximaal {{max}} tekens bevatten",
         "noPermission": "U heeft geen toestemming om dit bedrijf te bewerken. Sprekers kunnen alleen hun eigen bedrijf bewerken."
       }
     },
     "detail": {
       "tabs": {
-        "users": "Gebruikers",
-        "statistics": "Statistieken",
-        "activity": "Activiteit"
+        "users": "Gebruikers"
       },
-      "overviewText": "In dit overzichtsgedeelte kunnen aanvullende bedrijfsgegevens, recente updates of hoogtepunten worden weergegeven.",
       "noData": "Geen bedrijfsgegevens beschikbaar"
     },
     "errors": {
-      "loadFailed": "Laden van bedrijf mislukt",
       "saveFailed": "Er is een fout opgetreden bij het opslaan van het bedrijf",
       "deleteFailed": "Verwijderen van bedrijf mislukt"
     },
@@ -230,14 +174,11 @@
       "placeholder": "Bedrijven zoeken..."
     },
     "batchImport": {
-      "button": "Batch importeren",
       "title": "Bedrijven importeren uit JSON",
       "dropzone": "Sleep JSON-bestand hierheen of klik om te uploaden",
       "dropzoneActive": "Laat het JSON-bestand hier vallen",
-      "invalidJson": "Ongeldig JSON-bestand. Controleer het formaat.",
       "noCompanies": "Geen bedrijven gevonden in het JSON-bestand.",
       "preview": "Voorbeeld ({{count}} bedrijven)",
-      "importButton": "Alles importeren",
       "cancelButton": "Annuleren",
       "status": {
         "importing": "Importeren...",
@@ -261,8 +202,7 @@
       },
       "errors": {
         "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
-        "parseError": "Parseren van JSON-bestand mislukt: {{error}}",
-        "importFailed": "Importeren van {{name}} mislukt: {{error}}"
+        "parseError": "Parseren van JSON-bestand mislukt: {{error}}"
       }
     },
     "delete": {
@@ -270,8 +210,7 @@
       "message": "Weet u zeker dat u dit bedrijf wilt verwijderen?",
       "dataWarning": "Deze actie verwijdert het bedrijf definitief en kan niet ongedaan worden gemaakt.",
       "cascadeWarning": "Alle gekoppelde gegevens (gebruikers, partnerschappen, sprekers, evenementen) kunnen worden beïnvloed.",
-      "deleting": "Verwijderen...",
-      "success": "Bedrijf succesvol verwijderd"
+      "deleting": "Verwijderen..."
     },
     "pagination": {
       "itemsPerPage": "Items per pagina"
@@ -279,15 +218,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Historische evenementen importeren",
       "title": "Evenementen importeren uit topics.json",
       "dropzone": "Sleep het bestand topics.json hierheen of klik om te uploaden",
       "dropzoneActive": "Laat het JSON-bestand hier vallen",
       "dropzoneHint": "Upload het vooraf verwerkte bestand topics.json (met de velden parsedDate, description en moderator)",
-      "invalidJson": "Ongeldig JSON-bestand. Controleer het formaat.",
       "noEvents": "Geen evenementen gevonden in het JSON-bestand.",
       "preview": "Voorbeeld ({{count}} evenementen)",
-      "importButton": "Alles importeren",
       "cancelButton": "Annuleren",
       "status": {
         "pending": "In behandeling",
@@ -307,8 +243,7 @@
       },
       "errors": {
         "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
-        "parseError": "Parseren van JSON-bestand mislukt: {{error}}",
-        "importFailed": "Importeren van evenement {{number}} mislukt: {{error}}"
+        "parseError": "Parseren van JSON-bestand mislukt: {{error}}"
       },
       "fieldSelection": {
         "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
@@ -359,7 +294,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Sessies importeren",
       "title": "Batch importeren van sessies",
       "dropzone": "Sleep sessions.json hierheen of klik om te uploaden",
       "dropzoneActive": "Laat sessions.json hier vallen",
@@ -433,22 +367,14 @@
       "noMaterials": "Geen materialen"
     },
     "content": {
-      "title": "Uw inhoud indienen",
-      "loading": "Inhoud laden...",
       "invalidLink": "Ongeldige link",
       "invalidLinkMessage": "Deze pagina vereist een geldige inhoudslink. Gebruik de link uit uw uitnodigingsmail.",
-      "linkExpired": "Link is verlopen",
       "linkExpiredMessage": "Deze link is verlopen. Neem contact op met de organisator voor een nieuwe link.",
-      "sessionNotAssigned": "Sessie niet toegewezen",
-      "sessionNotAssignedMessage": "Uw sessie is nog niet toegewezen. Neem contact op met de organisator om uw sessie toe te wijzen voordat u inhoud indient.",
-      "event": "Evenement",
       "presentationTitle": "Presentatietitel",
       "abstract": "Samenvatting",
       "titleRequired": "Titel is verplicht",
       "abstractRequired": "Samenvatting is verplicht",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "Presentatiebestand",
-      "optional": "optioneel",
       "saving": "Opslaan...",
       "lastSaved": "Laatst opgeslagen: {{time}}",
       "unsavedChanges": "Niet-opgeslagen wijzigingen",
@@ -476,21 +402,7 @@
       "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
-      "dragDropTitle": "Presentatie uploaden",
-      "dragDropMessage": "Sleep uw bestand hierheen of klik om te bladeren",
-      "supportedFormats": "Ondersteunde formaten: PPTX, PDF, KEY (max. 50 MB)",
       "uploading": "Uploaden...",
-      "uploadProgress": "{{percent}}% geüpload",
-      "uploadComplete": "Upload voltooid",
-      "removeFile": "Bestand verwijderen",
-      "currentFile": "Huidig bestand",
-      "download": "Downloaden",
-      "replace": "Vervangen",
-      "errors": {
-        "fileTooLarge": "Bestand is te groot. Maximale grootte is 50 MB.",
-        "invalidType": "Ongeldig bestandstype. Alleen PPTX-, PDF- en KEY-bestanden zijn toegestaan.",
-        "uploadFailed": "Upload mislukt. Probeer het opnieuw."
-      },
       "presentationFile": "[MISSING] Presentation file",
       "changeFile": "[MISSING] Change file",
       "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
@@ -619,22 +531,14 @@
       "loadFailed": "Laden van evenementen mislukt"
     },
     "card": {
-      "sessions": "Presentaties",
-      "viewDetails": "Details bekijken",
-      "andMore": "en {{count}} meer"
+      "viewDetails": "Details bekijken"
     },
     "filters": {
       "title": "Filters",
       "search": "Evenementen zoeken...",
       "topics": "Onderwerpen",
       "clearAll": "Alles wissen",
-      "activeCount": "{{count}} actief filter",
-      "activeCount_one": "{{count}} actief filter",
-      "activeCount_other": "{{count}} actieve filters"
-    },
-    "sort": {
-      "newest": "Nieuwste eerst",
-      "oldest": "Oudste eerst"
+      "activeCount": "{{count}} actief filter"
     },
     "detail": {
       "backToArchive": "← Terug naar archief"
@@ -662,7 +566,6 @@
     }
   },
   "emailTemplates": {
-    "title": "E-mailsjablonen",
     "layoutTemplates": "Lay-outsjablonen",
     "layoutTemplatesInfo": "Definieert de BATbern-look & feel voor alle e-mails. Wijzigingen hier beïnvloeden alle sjablonen die deze lay-out gebruiken.",
     "contentTemplates": "E-mailinhoud",
@@ -685,15 +588,12 @@
     "noLayouts": "Geen lay-outsjablonen gevonden.",
     "noTemplates": "Geen sjablonen gevonden voor dit filter.",
     "missingContentPlaceholder": "Tijdelijke aanduiding {{content}} ontbreekt — e-mailtekst is leeg",
-    "cannotDeleteSystem": "Systeemsjablonen kunnen niet worden verwijderd.",
-    "cannotDeleteLayout": "Lay-outsjablonen kunnen niet worden verwijderd.",
     "deleteFailed": "Verwijderen van sjabloon mislukt.",
     "saveFailed": "Opslaan van sjabloon mislukt. Probeer het opnieuw.",
     "validation": {
       "htmlBodyRequired": "HTML-tekst is verplicht.",
       "subjectRequired": "Onderwerp is verplicht voor inhoudssjablonen.",
-      "templateKeyRequired": "Sjabloonsleutel is verplicht.",
-      "allFieldsRequired": "Sjabloonsleutel, onderwerp en HTML-tekst zijn verplicht."
+      "templateKeyRequired": "Sjabloonsleutel is verplicht."
     }
   },
   "presentation": {

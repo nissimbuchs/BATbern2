@@ -165,30 +165,20 @@
       "checkInText": "Esitä henkilöllisyystodistuksesi tapahtuman vastaanotossa kirjautumista varten. Vahvistettu ilmoittautumisesi on tallessa järjestelmässämme.",
       "eventDetails": "Tapahtuman tiedot",
       "eventDetailsText": "Saat tapahtumapäivityksiä ja muistutuksia sähköpostitse.",
-      "backToHome": "Takaisin etusivulle",
       "createAccount": "Luo tili ilmoittautumisten hallintaan"
     },
     "alreadyConfirmed": {
       "title": "Jo vahvistettu",
-      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu",
-      "message": "Ilmoittautumisesi vahvistettiin aiemmin. Mitään lisätoimia ei tarvita.",
-      "backToHome": "Takaisin etusivulle"
+      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu"
     },
     "error": {
       "title": "Vahvistus epäonnistui",
-      "subtitle": "Ilmoittautumistasi ei voitu vahvistaa",
       "whatCanYouDo": "Mitä voit tehdä?",
       "checkLink": "Tarkista, että napsautit oikeaa linkkiä sähköpostistasi",
       "expired": "Vahvistuslinkit vanhenevat 48 tunnin kuluttua - sinun täytyy ehkä ilmoittautua uudelleen",
       "useLatestEmail": "Varmista, että käytät uusinta vahvistussähköpostia",
       "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
-      "backToHome": "Takaisin etusivulle",
-      "registerAgain": "Ilmoittaudu uudelleen",
-      "errors": {
-        "expired": "Vahvistuslinkki on vanhentunut. Ilmoittaudu uudelleen.",
-        "invalid": "Virheellinen vahvistuslinkki. Tarkista sähköpostistasi oikea linkki.",
-        "default": "Ilmoittautumisen vahvistaminen epäonnistui. Yritä uudelleen tai ota yhteyttä tukeen."
-      }
+      "registerAgain": "Ilmoittaudu uudelleen"
     }
   },
   "companySearch": {

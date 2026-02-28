@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partner",
-    "speakerOutreach": "Sprecher-Kontaktierung",
     "topicManagement": "Themenverwaltung"
-  },
-  "dashboard": {
-    "criticalTasks": "Kritische Aufgaben",
-    "noCriticalTasks": "Keine kritischen Aufgaben",
-    "greatJob": "Gute Arbeit!",
-    "taskCount": "{{count}} Aufgabe",
-    "taskCount_plural": "{{count}} Aufgaben",
-    "dueDate": "Fälligkeitsdatum",
-    "assignedTo": "Zugewiesen an {{name}}",
-    "confirmAction": "Aktion bestätigen",
-    "areYouSure": "Sind Sie sicher, dass Sie diese Aktion ausführen möchten?"
   },
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
@@ -180,7 +168,6 @@
       "company": "Unternehmen",
       "expertise": "Fachgebiet",
       "assignOrganizer": "Organisator zuweisen (Optional)",
-      "unassigned": "Nicht zugewiesen",
       "notes": "Notizen (Optional)",
       "addButton": "Zum Pool hinzufügen",
       "adding": "Wird hinzugefügt...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Referenten-Kontaktierung",
-    "subtitle": "Verfolgen Sie Ihre Kontaktversuche mit Referenten und koordinieren Sie mit anderen Organisatoren",
-    "breadcrumbs": {
-      "home": "Startseite",
-      "speakerOutreach": "Referenten-Kontaktierung"
-    },
-    "emptyPool": {
-      "message": "Sie müssen Referenten zum Pool hinzufügen, bevor Sie mit der Kontaktierung beginnen können.",
-      "hint": "Kehren Sie zur Veranstaltungsplanungsphase zurück, um potenzielle Referenten hinzuzufügen.",
-      "addSpeakers": "Referenten zum Pool hinzufügen"
-    },
-    "showBrainstorm": "Referenten hinzufügen",
-    "hideBrainstorm": "Hinzufügen ausblenden",
     "speakerName": "Referent",
     "contactMethod": "Kontaktmethode",
     "contactDate": "Kontaktdatum",
     "markContacted": "Als kontaktiert markieren",
-    "filterByOrganizer": "Nach Organisator filtern",
     "contactHistory": "Kontaktverlauf",
-    "daysSinceAssignment": "Tage seit Zuweisung",
-    "overdue": "Überfällig",
-    "lastContact": "Letzter Kontakt",
     "outreachDetails": "Kontaktdetails",
     "noContactHistory": "Noch kein Kontaktverlauf vorhanden",
     "contactedBy": "Kontaktiert von",
@@ -238,10 +208,6 @@
         "failed": "Fehler beim Aufzeichnen der Kontaktierung",
         "loadHistory": "Fehler beim Laden des Kontaktverlaufs"
       }
-    },
-    "bulkAction": {
-      "title": "Mehrere als kontaktiert markieren",
-      "confirm": "{{count}} Referenten als kontaktiert markieren?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Neuen Sprecher erstellen",
     "form": {
       "username": "Sprecher suchen",
-      "usernameHelp": "Geben Sie den Benutzernamen des Sprechers ein",
       "presentationTitle": "Präsentationstitel",
       "presentationAbstract": "Präsentationszusammenfassung",
       "charactersRemaining": "Zeichen verbleibend"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Einladen",
-    "sendInvite": "Einladung senden",
     "sendInvitation": "Einladung senden",
-    "confirmInvite": "Einladung an diesen Sprecher senden?",
     "noEmailTooltip": "E-Mail hinzufügen zum Einladen",
-    "inviting": "Wird gesendet...",
     "sending": "Wird gesendet...",
     "inviteSent": "Einladung gesendet",
     "invitationSent": "Einladung gesendet an {{email}}",
@@ -439,8 +401,7 @@
       "allEvents": "Alle Veranstaltungen",
       "sessions": "Sessions",
       "speakers": "Speaker",
-      "attendees": "Teilnehmende",
-      "yourCompany": "Ihr Unternehmen"
+      "attendees": "Teilnehmende"
     }
   },
   "blobSelector": {

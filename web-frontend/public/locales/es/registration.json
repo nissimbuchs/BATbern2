@@ -165,30 +165,20 @@
       "checkInText": "Presente su identificación en el mostrador del evento para el registro. Tendremos su inscripción confirmada en el sistema.",
       "eventDetails": "Detalles del evento",
       "eventDetailsText": "Recibirá actualizaciones y recordatorios del evento por correo electrónico.",
-      "backToHome": "Volver al inicio",
       "createAccount": "Crear una cuenta para gestionar inscripciones"
     },
     "alreadyConfirmed": {
       "title": "Ya confirmado",
-      "subtitle": "Esta inscripción ya ha sido confirmada",
-      "message": "Su inscripción fue confirmada anteriormente. No se necesita ninguna acción adicional.",
-      "backToHome": "Volver al inicio"
+      "subtitle": "Esta inscripción ya ha sido confirmada"
     },
     "error": {
       "title": "Error al confirmar",
-      "subtitle": "No se pudo confirmar su inscripción",
       "whatCanYouDo": "¿Qué puede hacer?",
       "checkLink": "Verifique que haya hecho clic en el enlace correcto de su correo electrónico",
       "expired": "Los enlaces de confirmación expiran después de 48 horas - es posible que deba registrarse de nuevo",
       "useLatestEmail": "Asegúrese de estar usando el correo electrónico de confirmación más reciente",
       "contactSupport": "Contacte al soporte si el problema persiste",
-      "backToHome": "Volver al inicio",
-      "registerAgain": "Registrarse de nuevo",
-      "errors": {
-        "expired": "El enlace de confirmación ha expirado. Por favor, regístrese de nuevo.",
-        "invalid": "Enlace de confirmación no válido. Revise su correo electrónico para obtener el enlace correcto.",
-        "default": "No se pudo confirmar la inscripción. Inténtelo de nuevo o contacte al soporte."
-      }
+      "registerAgain": "Registrarse de nuevo"
     }
   },
   "companySearch": {

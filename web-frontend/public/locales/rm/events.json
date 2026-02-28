@@ -1,18 +1,13 @@
 {
   "navigation": {
     "dashboard": "Eveniments",
-    "createEvent": "Crear eveniment",
-    "eventTimeline": "Cronologia",
     "events": "Eveniments",
     "topicManagement": "Gestiun da temas",
     "blobSelector": "Selecziun blob"
   },
   "eventPage": {
     "tabs": {
-      "overview": "Survista",
-      "speakers": "Referents",
       "venue": "Lieu",
-      "team": "Equipa",
       "participants": "Participonts",
       "publishing": "Publicaziun",
       "newsletter": "Newsletter",
@@ -28,18 +23,13 @@
       "speakers": "Referents",
       "confirmed": "confermads",
       "materials": "Materialas",
-      "pending": "en spetga",
       "complete": "cumplet",
       "sessionsComplete": "sessiuns cumplidas",
       "budget": "Budget",
       "selectedTopic": "Tema tschernì",
-      "noTopicSelected": "Nagut tema tschernì enfin ussa",
-      "changeTopic": "Midar tema",
       "quickActions": "Acziuns rumadas",
       "selectTopic": "Tscherner tema",
-      "sendNotification": "Trametter notificaziun",
-      "previewPublic": "Prevista da la pagina publica",
-      "viewTimeline": "Mussar cronologia"
+      "previewPublic": "Prevista da la pagina publica"
     },
     "participantsTab": {
       "title": "Participonts dal eveniment"
@@ -130,15 +120,9 @@
   "dashboard": {
     "title": "Gestiun d'eveniments",
     "activeEvents": "Eveniments actifs",
-    "criticalTasks": "Incumbensas criticas",
-    "teamActivity": "Activitad da l'equipa",
     "quickActions": "Acziuns rumadas",
-    "noEvents": "Naguts eveniments chatschads",
     "noEventsFound": "Naguts eveniments chatschads",
     "tryAdjustingFilters": "Emprova dad adaptar tes filters",
-    "loadingEvents": "Chargiar eveniments...",
-    "eventCount": "{{count}} eveniment",
-    "eventCount_plural": "{{count}} eveniments",
     "eventWord": "eveniment",
     "eventWord_plural": "eveniments",
     "eventType": {
@@ -146,52 +130,19 @@
       "AFTERNOON": "Suentermezdi",
       "EVENING": "Saira"
     },
-    "workflowProgress": "Progress dal workflow",
     "actions": {
-      "viewDetails": "Mussar detagls",
       "edit": "Modifitgar",
       "newEvent": "Nov eveniment",
-      "topics": "Tscherner tema",
       "eventTypes": "Tips d'eveniment",
-      "eventTypesHelp": "Configurar maletgs da tip d'eveniment (Admin)",
-      "manageTopics": "Administrar temas",
-      "analytics": "Analisa",
-      "speakers": "Referents"
-    },
-    "noCriticalTasks": "Naginas incumbensas criticas",
-    "greatJob": "Bravo lavur!",
-    "taskCount": "{{count}} incumbensa",
-    "taskCount_plural": "{{count}} incumbensas",
-    "dueDate": "Data da scadenza",
-    "assignedTo": "Attribuì a {{name}}",
-    "confirmAction": "Confermar acziun",
-    "areYouSure": "Eis ti segir che ti vuls exequir questa acziun?",
-    "activityCount": "{{count}} activitad",
-    "activityCount_plural": "{{count}} activitads",
-    "today": "Oz",
-    "lastUpdated": "Ultima actualisaziun",
-    "viewAll": "Mussar tut",
-    "noRecentActivity": "Nagina activitad recenta",
-    "activityAction": {
-      "speaker_assigned": "referent attribuì",
-      "speaker_invited": "referent invità",
-      "materials_uploaded": "materialas chargidas",
-      "workflow_advanced": "workflow avanzà",
-      "event_created": "eveniment creà",
-      "event_updated": "eveniment actualisà",
-      "task_completed": "incumbensa cumplida",
-      "notification_sent": "notificaziun tramessa",
-      "event_published": "eveniment publicà"
+      "manageTopics": "Administrar temas"
     },
     "searchEvents": "Tschertgar eveniments...",
     "filter": {
-      "status": "Filtrar tenor status",
       "workflowState": "Filtrar tenor status workflow",
       "year": "Filtrar tenor onn",
       "allYears": "Tuts onns",
       "showArchived": "Mussar eveniments archivads",
       "activeFilters": "{{count}} filter activ",
-      "activeFilters_plural": "{{count}} filters actifs",
       "clearAll": "Stizzar tut"
     },
     "errors": {
@@ -273,7 +224,6 @@
     "createEvent": "Crear nov eveniment",
     "editEvent": "Modifitgar eveniment",
     "eventNumber": "Numer d'eveniment",
-    "eventInformation": "Infurmaziuns davart l'eveniment",
     "title": "Titel",
     "eventDate": "Data dal eveniment",
     "eventType": "Tip d'eveniment",
@@ -281,16 +231,11 @@
     "registrationDeadline": "Termin da registraziun",
     "venue": "Num dal lieu",
     "venueAddress": "Adressa dal lieu",
-    "theme": "Tema",
     "status": "Status",
     "save": "Salvar",
-    "saveAndCreate": "Salvar e crear",
     "saveCreate": "Salvar e crear",
     "saveDraft": "Salvar sco bozza",
     "cancel": "Annullar",
-    "delete": "Stizzar",
-    "close": "Serrar",
-    "noVenue": "Nagin lieu tschernì",
     "eventTypes": {
       "fullDay": "Eveniment di cumplain",
       "afternoon": "Eveniment suentermezdi",
@@ -327,41 +272,17 @@
       "failedToLoadEventTypes": "Chargiar tips d'eveniment fallì"
     }
   },
-  "eventTypes": {
-    "FULL_DAY": "Di cumplain",
-    "AFTERNOON": "Suentermezdi",
-    "EVENING": "Saira"
-  },
   "slotPreview": {
     "title": "Prevista {{type}}",
     "slots": "Slots",
-    "duration": "Durada",
     "capacity": "Capacitad",
-    "timing": "Tempistica tipica",
-    "exampleTimeline": "Cronologia d'exempel"
+    "timing": "Tempistica tipica"
   },
   "filters": {
     "status": "Status",
-    "year": "Onn",
-    "eventType": "Tip d'eveniment",
-    "search": "Tschertgar",
-    "searchPlaceholder": "Tschertgar eveniments...",
-    "allStatuses": "Tuts status",
-    "allYears": "Tuts onns",
-    "allTypes": "Tuts tips",
-    "clear": "Stizzar filters",
     "searchAriaLabel": "[MISSING] Search events",
     "clearSearchAriaLabel": "[MISSING] Clear search",
     "clearAllAriaLabel": "[MISSING] Clear all filters"
-  },
-  "sorting": {
-    "sort": "Sortir",
-    "date": "Data",
-    "status": "Status",
-    "workflowProgress": "Progress dal workflow",
-    "title": "Titel",
-    "ascending": "Ascendent",
-    "descending": "Descendent"
   },
   "validation": {
     "eventNumberRequired": "Il numer d'eveniment è obligatori",
@@ -370,19 +291,15 @@
     "titleMinLength": "Il titel sto avair almain 10 caracters",
     "descriptionRequired": "La descripziun è obligatoria",
     "eventDateRequired": "La data dal eveniment è obligatoria",
-    "eventDateFuture": "La data dal eveniment sto esser almain 30 dis en il futur",
     "registrationDeadline": "Il termin da registraziun sto esser il medem u avant la data dal eveniment",
     "capacityRequired": "La capacitad è obligatoria",
     "capacityPositive": "La capacitad sto esser in numer positiv",
-    "venueRequired": "Il lieu è obligatori",
     "venueNameRequired": "Il num dal lieu è obligatori",
     "venueAddressRequired": "L'adressa dal lieu è obligatoria",
     "minSlotsRequired": "Il numer minim da slots è obligatori",
     "maxSlotsRequired": "Il numer maximal da slots è obligatori",
-    "slotDurationRequired": "La durada dal slot è obligatoria",
     "slotDurationMinimum": "La durada dal slot sto esser almain 15 minutas",
     "minSlotsLessThanMax": "Il numer minim da slots sto esser minor u egual al maximal",
-    "defaultCapacityRequired": "La capacitad standard è obligatoria",
     "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv"
   },
   "errors": {
@@ -404,35 +321,16 @@
     "INVALID_FILE_TYPE": "Tip da fichier invalid. Chargia mo maletgs PNG, JPEG u SVG"
   },
   "confirmations": {
-    "deleteTitle": "Stizzar il eveniment?",
-    "deleteMessage": "Eis ti segir che ti vuls stizzar quest eveniment?",
-    "deleteImpact": "{{registrations}} registraziuns, {{speakers}} referents, {{materials}} materialas",
-    "cannotDelete": "Impossible da stizzar l'eveniment - annulla l'eveniment a l'investa",
     "unsavedChanges": "Midadas betg salvadas",
     "unsavedChangesMessage": "Ti has midadas betg salvadas. Vuls ti vair cumtinuar?",
     "confirm": "Confermar",
-    "cancel": "Annullar",
-    "discard": "Scumandar",
-    "keepEditing": "Cuntinuar da modifitgar"
+    "cancel": "Annullar"
   },
   "workflow": {
-    "progress": "Progress",
-    "step": "Pass {{current}} da {{total}}",
     "stepIndicator": "Pass {{current}}/{{total}}",
-    "stepName": "Pass {{number}}: {{name}}",
     "viewDetails": "Mussar detagls dal workflow",
-    "warning": "Avis",
-    "blocker": "Blocatur",
     "blockers": "{{count}} blocatur",
-    "blockers_plural": "{{count}} blocaturs",
-    "completed": "Cumplì",
-    "inProgress": "En cors",
-    "pending": "En spetga",
-    "blocked": "Bloccà",
     "progressBarLabel": "Clicca per mussar ils detagls dal workflow. {{percentage}}% cumplì",
-    "actions": {
-      "selectTopic": "Tscherner tema"
-    },
     "states": {
       "created": "Creà",
       "topic_selection": "Tscherner tema",
@@ -445,29 +343,12 @@
       "archived": "Archivà"
     }
   },
-  "topicSelection": {
-    "success": "Tema tschernì cun success"
-  },
   "autoSave": {
     "saving": "Salvar...",
     "saved": "Ultima salvaziun a las {{time}}",
     "failed": "Salvaziun automatica fallida",
     "conflict": "Midada simultanea detectada. Rechargiar e emprova puspè.",
     "enabled": "Salvaziun automatica activada"
-  },
-  "venue": {
-    "sectionTitle": "Lieu e logistica",
-    "title": "Lieu e logistica",
-    "nameLabel": "Num dal lieu",
-    "addressLabel": "Adressa dal lieu",
-    "capacityLabel": "Capacitad dal lieu",
-    "errors": {
-      "nameRequired": "Il num dal lieu è obligatori",
-      "addressRequired": "L'adressa dal lieu è obligatoria",
-      "capacityPositive": "La capacitad sto esser in numer positiv",
-      "capacityMax": "La capacitad na po betg surpassar 5000",
-      "updateFailed": "Actualisar lieu fallì"
-    }
   },
   "topics": {
     "title": "Temas attribuids",
@@ -494,73 +375,24 @@
     "removeConfirmMessage": "Eis ti segir che ti vuls allontanar quest tema dal eveniment?"
   },
   "speakers": {
-    "title": "Referents e sessiuns",
     "sectionTitle": "Referents e sessiuns ({{count}})",
-    "speakersAndSessions": "Referents e sessiuns",
     "slotTime": "Temp",
-    "slotLabel": "Slot {{number}}",
     "speakerName": "Referent",
-    "company": "Interpresa",
     "sessionTitle": "Titel da sessiun",
     "notAssigned": "Betg attribuì",
     "materials": "Materialas",
     "materialsComplete": "Cumplet",
     "materialsPending": "En spetga",
     "materialsMissing": "Mancant",
-    "viewDetails": "Mussar detagls",
-    "editSlot": "Modifitgar slot",
-    "manageMaterials": "Administrar materialas",
-    "viewFullAgenda": "Mussar agenda cumplaina",
-    "manageSpeakerAssignments": "Administrar attribuziuns da referents",
     "manageSlotAssignments": "Administrar attribuziuns da slots",
     "autoAssignSpeakers": "Attribuziun automatica da referents",
-    "autoAssignConfirmTitle": "Attribuziun automatica da referents",
-    "autoAssignConfirmMessage": "Quai attribuira automaticamain ils referents als slots temporals optimalas tenor expertisa e disponibilitad. Las attribuziuns existentas vegnan surscrittas. Cuntinuar?",
-    "noSpeakers": "Naguts referents attribuids",
     "noSessionsScheduled": "Naginas sessiuns planisadas. Utilisar 'Administrar attribuziuns da referents' per agiuntar referents.",
-    "loadError": "Chargiar sessiuns fallì. Emprova puspè.",
     "deleteSession": "Stizzar",
     "deleteSessionTitle": "Stizzar la sessiun?",
     "deleteSessionMessage": "Eis ti segir che ti vuls stizzar la sessiun '{{title}}'? Questa acziun na po betg vegnir revocada."
   },
-  "team": {
-    "title": "Attribuziuns da l'equipa",
-    "leadOrganizer": "Organizatur principal",
-    "coOrganizers": "Co-organizaturs",
-    "moderator": "Moderatur",
-    "contentReviewer": "Revisur da cuntegn",
-    "manageTeam": "Administrar equipa",
-    "assignRole": "Attribuir rolla"
-  },
   "publishing": {
-    "title": "Publicaziun",
-    "strategy": "Strategia",
-    "progressive": "Progressiva",
-    "immediate": "Immediata",
-    "currentPhase": "Fasa actuala",
-    "timeline": {
-      "phasesPublished": "{{completed}} da {{total}} fasas publicadas ({{percent}}%)",
-      "topic": "Tema",
-      "speakers": "Referents",
-      "agenda": "Agenda",
-      "updates": "Actualisaziuns",
-      "now": "Ussa",
-      "publishedOn": "Publicà ils {{date}}",
-      "scheduled": "Planisà: {{date}}",
-      "autoPublishIn": "Publicaziun automatica en {{days}} dis",
-      "autoPublishScheduled": "Publicaziun automatica planisada",
-      "days": "{{count}} dis"
-    },
-    "qualityChecks": "Controlla da qualitad",
-    "configure": "Configurar publicaziun",
-    "republish": "Publicar puspè",
-    "previewPublicPage": "Prevista da la pagina publica",
-    "tab": {
-      "title": "Controlla da publicaziun (Story 5.7)",
-      "notice": "Ils components da publicaziun èn ussa integrats. L'integraziun d'API backend è en cors. Tschertas funcziuns utiliseschan datas mock temporalas."
-    },
     "controls": {
-      "publish": "Publicar",
       "publishing": "Publicaziun...",
       "publishPhase": "Publicar {{phase}}",
       "published": "{{phase}} publicà",
@@ -568,8 +400,6 @@
       "alreadyPublished": "Gia publicà",
       "publishTopicFirst": "Publitgescha il tema emprima",
       "publishSpeakersFirst": "Publitgescha ils referents emprima",
-      "schedulePublish": "Planischar publicaziun",
-      "previewNewsletter": "Prevista da newsletter",
       "mode": "Modus",
       "modeDraft": "Bozza",
       "modeProgressive": "Progressiv",
@@ -581,22 +411,8 @@
         "speakers": "Referents",
         "agenda": "Agenda"
       },
-      "scheduleDialog": {
-        "title": "Planischar publicaziun",
-        "dateLabel": "Data e temp da planisaziun",
-        "cancel": "Annullar",
-        "confirm": "Confermar planisaziun"
-      },
-      "newsletterDialog": {
-        "title": "Prevista da newsletter",
-        "subject": "Object: Nov {{phase}} publicà per {{eventCode}}",
-        "contentPreview": "Prevista dal cuntegn da newsletter per la fasa {{phase}}...",
-        "close": "Serrar",
-        "sendTest": "Trametter e-mail da tschert"
-      },
       "accessibility": {
         "publishingPhase": "Publicar {{phase}}",
-        "publishingMode": "Modus da publicaziun",
         "notifySubscribers": "Notifitgar abonents a la publicaziun"
       }
     },
@@ -621,26 +437,6 @@
         "sessionTimings": "Validaziun oraris da sessiuns"
       }
     },
-    "preview": {
-      "desktop": "Desktop",
-      "mobile": "Mobile",
-      "print": "Stampar",
-      "refresh": "Actualisar",
-      "refreshing": "Actualisar prevista...",
-      "retry": "Emprova puspè",
-      "loadFailed": "Chargiar prevista fallì. Emprova puspè.",
-      "previewMode": "Modus prevista: {{mode}} | Fasa: {{phase}}",
-      "deviceDimensions": "Apparat: {{device}} ({{width}} x {{height}})",
-      "switchedTo": "Midat a la prevista {{device}}",
-      "accessibility": {
-        "devicePreviewMode": "modus prevista d'apparat",
-        "desktopPreview": "Prevista desktop",
-        "mobilePreview": "Prevista mobile",
-        "printPreview": "Prevista stampa",
-        "refreshPreview": "Actualisar prevista",
-        "eventContentPreview": "Prevista dal cuntegn dal eveniment"
-      }
-    },
     "versionControl": {
       "title": "Istorgia da versiuns",
       "version": "Versiun",
@@ -653,100 +449,17 @@
       "cdnPending": "CDN en spetga",
       "cdnFailed": "CDN fallì",
       "cdnUnknown": "Nunenconuschent",
-      "cdnInvalidationId": "ID d'invalidaziun CDN: {{id}}",
-      "noVersions": "Nagina istorgia da versiuns disponibla",
-      "rollbackDialog": {
-        "title": "Confermar il revenir",
-        "message": "Eis ti segir che ti vuls revegnir a questa versiun?",
-        "versionLabel": "Versiun:",
-        "phaseLabel": "Fasa:",
-        "publishedLabel": "Publicà:",
-        "publisherLabel": "Publitgant:",
-        "warning": "Questa acziun invalidegia il cache CDN CloudFront e po prender tschertas minutas.",
-        "cancel": "Annullar",
-        "confirm": "Confermar il revenir",
-        "confirming": "Revenir en cors..."
-      }
+      "noVersions": "Nagina istorgia da versiuns disponibla"
     }
   },
   "notifications": {
-    "title": "Notificaziuns e memorativs",
-    "activeAutomations": "Automatisaziuns activas",
-    "notificationRules": "Reglas da notificaziun",
-    "manageNotifications": "Administrar notificaziuns",
-    "sendManualNotification": "Trametter notificaziun manuala",
-    "ruleName": "Num da regla",
-    "trigger": "Trigger",
-    "recipients": "Destinataris",
-    "active": "Activ",
-    "inactive": "Inactiv"
-  },
-  "criticalTasks": {
-    "title": "Incumbensas criticas",
-    "priority": "Prioritad",
-    "warning": "Avis",
-    "critical": "Critic",
-    "dueDate": "Data da scadenza",
-    "assignedTo": "Attribuì a",
-    "actions": "Acziuns",
-    "contact": "Contactar",
-    "extendDeadline": "Extender termin",
-    "confirm": "Confermar",
-    "assignToTeam": "Attribuir a l'equipa",
-    "markComplete": "Marcar sco cumplì",
-    "noTasks": "Naginas incumbensas criticas"
-  },
-  "teamActivity": {
-    "title": "Activitad da l'equipa",
-    "recentActivity": "Activitad recenta",
-    "filterByUser": "Filtrar tenor utilisatur",
-    "filterByEvent": "Filtrar tenor eveniment",
-    "filterByAction": "Filtrar tenor acziun",
-    "reload": "Rechargiar",
-    "noActivity": "Nagina activitad disponibla",
-    "activityTypes": {
-      "event_created": "Eveniment creà",
-      "event_updated": "Eveniment actualisà",
-      "speaker_assigned": "Referent attribuì",
-      "speaker_invited": "Referent invità",
-      "materials_uploaded": "Materialas chargidas",
-      "workflow_advanced": "Workflow avanzà",
-      "task_completed": "Incumbensa cumplida",
-      "notification_sent": "Notificaziun tramessa",
-      "event_published": "Eveniment publicà"
-    }
+    "title": "Notificaziuns e memorativs"
   },
   "pagination": {
     "page": "Pagina {{current}} da {{total}}",
-    "itemsPerPage": "Elements per pagina",
-    "showing": "Mussar {{from}}-{{to}} da {{total}} elements"
-  },
-  "actions": {
-    "newEvent": "Nov eveniment",
-    "viewAnalytics": "Mussar analisa",
-    "manageSpeakers": "Administrar referents",
-    "viewTimeline": "Mussar cronologia",
-    "exportData": "Exportar datas",
-    "refresh": "Actualisar",
-    "back": "Enavos",
-    "deleteEvent": "Stizzar eveniment"
-  },
-  "messages": {
-    "draftSaved": "Bozza salvada",
-    "eventCreated": "Eveniment creà",
-    "eventUpdated": "Eveniment actualisà",
-    "eventDeleted": "Eveniment stizzà",
-    "loading": "Chargiar...",
-    "noResults": "Naguns resultats chatschads",
-    "tryAgain": "Emprova puspè"
+    "itemsPerPage": "Elements per pagina"
   },
   "accessibility": {
-    "skipToContent": "Ir al cuntegn",
-    "openMenu": "Avrir menu",
-    "closeMenu": "Serrar menu",
-    "loading": "Chargiar",
-    "error": "Sbagl",
-    "success": "Success",
     "noEventsFound": "[MISSING] No events found",
     "eventList": "[MISSING] Event list"
   },
@@ -755,26 +468,11 @@
     "confirm": "Confermar",
     "save": "Salvar",
     "saveChanges": "Salvar midadas",
-    "saveAndContinue": "Salvar e cuntinuar",
-    "settings": "Parameters",
     "delete": "Stizzar",
     "edit": "Modifitgar",
     "close": "Serrar",
     "back": "Enavos",
-    "loading": "Chargiar...",
-    "error": "Sbagl",
-    "success": "Success"
-  },
-  "metrics": {
-    "speakers": "Referents",
-    "confirmed": "confermads",
-    "topics": "Temas",
-    "assigned": "attribuids",
-    "materials": "Materialas",
-    "pending": "en spetga",
-    "registrations": "Registraziuns",
-    "budget": "Budget",
-    "keyMetrics": "Metricas principals"
+    "loading": "Chargiar..."
   },
   "public": {
     "loadingEventDetails": "[MISSING] Loading event details",
@@ -806,14 +504,12 @@
       "noSessions": "Naginas sessiuns chatschadas per ils temas tschernids",
       "clearFilters": "Stizzar filters",
       "speaker": "Referent",
-      "seats": "{{count}} plazes",
-      "timeTBD": "Temp da confirmar"
+      "seats": "{{count}} plazes"
     },
     "program": {
       "title": "Program dal eveniment",
       "speaker": "Referent",
-      "materials": "Materialas",
-      "downloadError": "Telechargiar material fallì. Emprova puspè."
+      "materials": "Materialas"
     },
     "venue": {
       "title": "Lieu",
@@ -830,15 +526,6 @@
     },
     "upcomingEvents": {
       "title": "Ulteriurs eveniments proxims"
-    },
-    "sessionTypes": {
-      "keynote": "keynote",
-      "presentation": "presentaziun",
-      "workshop": "workshop",
-      "panel_discussion": "discussiun en panel",
-      "networking": "networking",
-      "break": "pausa",
-      "lunch": "miedi"
     }
   },
   "sessionEdit": {
@@ -898,7 +585,6 @@
     },
     "timeline": {
       "title": "Cronologia da sessiuns",
-      "room": "{{room}}",
       "matchPercent": "{{percent}}% concordanza",
       "headerTime": "Temp"
     },
@@ -947,11 +633,7 @@
       },
       "autoAssign": {
         "title": "Attribuziun automatica da sessiuns",
-        "message": "Tscherna l'algoritmus per l'attribuziun automatica:",
-        "algorithms": {
-          "preferenceFirst": "Preferenza emprima",
-          "timeBalance": "Equiliber da temp"
-        }
+        "message": "Tscherna l'algoritmus per l'attribuziun automatica:"
       },
       "clearAll": {
         "title": "Stizzar tut las attribuziuns",
@@ -979,9 +661,7 @@
     },
     "preferences": {
       "title": "Preferenzas da referents",
-      "close": "Serrar",
       "timePreferences": "Preferenzas temporalas",
-      "preferredTime": "Temp preferì dal di",
       "unavailableTimes": "Temps betg disponibels",
       "avRequirements": "Pretensiuns A/V",
       "setupNotes": "Notas da configuraziun da chombra",
@@ -996,12 +676,9 @@
       "equipment": {
         "microphone": "Microfon",
         "projector": "Proiector",
-        "recording": "Registraziun",
-        "whiteboard": "Lavagna"
+        "recording": "Registraziun"
       }
-    },
-    "loading": "Chargiar...",
-    "dragInstructions": "Trainar referents vers slots temporals per attribuir"
+    }
   },
   "newsletter": {
     "widget": {
@@ -1021,10 +698,6 @@
       "success": "Ti es vegnì desabonà cun success.",
       "resubscribeLink": "Abonnar puspè",
       "invalidToken": "Quest link da desabonnaziun è invalid u è vegnì gia utilisà."
-    },
-    "account": {
-      "label": "Abonnar la newsletter BATbern",
-      "description": "Retschaiver annunzis d'eveniments ed actualisaziuns"
     }
   }
 }

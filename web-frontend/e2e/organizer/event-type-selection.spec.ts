@@ -155,7 +155,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await expect(quickActions).toBeVisible();
 
       // Verify Event Types button exists
-      const eventTypesButton = page.locator('button:has-text("Event Types")');
+      const eventTypesButton = page.getByRole('button', { name: /Event Types/i });
       await expect(eventTypesButton).toBeVisible();
     });
 
@@ -163,13 +163,15 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await page.goto(`${BASE_URL}/organizer/events`);
 
       // Click Event Types button
-      await page.click('button:has-text("Event Types")');
+      await page.getByRole('button', { name: /Event Types/i }).click();
 
       // Wait for navigation
       await page.waitForURL(`${BASE_URL}/organizer/event-types`);
 
       // Verify we're on the Event Types configuration page
-      await expect(page.locator('h1')).toContainText('Event Type Configuration');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(
+        'Event Type Configuration'
+      );
     });
   });
 
@@ -228,7 +230,9 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await page.goto(`${BASE_URL}/organizer/event-types`);
 
       // Verify page header
-      await expect(page.locator('h1')).toContainText('Event Type Configuration');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(
+        'Event Type Configuration'
+      );
       await expect(page.locator('text=/ADMIN ONLY/i')).toBeVisible();
 
       // Verify all three event type cards are displayed
@@ -245,7 +249,9 @@ test.describe('Event Type Selection (Story 5.1)', () => {
 
       // Verify edit modal opens
       await expect(page.locator('[role="dialog"]')).toBeVisible();
-      await expect(page.locator('h2')).toContainText('Edit Full Day Event Configuration');
+      await expect(page.locator('[role="dialog"]').getByRole('heading')).toContainText(
+        'Edit Full Day Event Configuration'
+      );
 
       // Verify all fields are editable (values are user-configurable)
       const minSlotsInput = page.locator('input[name="minSlots"]');
@@ -284,11 +290,13 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await page.goto(`${BASE_URL}/organizer/event-types`);
 
       // Click back button
-      await page.click('button:has-text("Back to Dashboard")');
+      await page.getByRole('button', { name: /Back to Dashboard/i }).click();
 
       // Verify navigation back to dashboard
       await page.waitForURL(`${BASE_URL}/organizer/events`);
-      await expect(page.locator('h1')).toContainText('Event Management Dashboard');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(
+        'Event Management Dashboard'
+      );
     });
   });
 });

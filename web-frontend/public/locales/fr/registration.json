@@ -165,30 +165,20 @@
       "checkInText": "Présentez votre pièce d'identité à l'accueil de l'événement. Votre inscription confirmée sera dans notre système.",
       "eventDetails": "Détails de l'événement",
       "eventDetailsText": "Vous recevrez des mises à jour et des rappels concernant l'événement par e-mail.",
-      "backToHome": "Retour à l'accueil",
       "createAccount": "Créer un compte pour gérer vos inscriptions"
     },
     "alreadyConfirmed": {
       "title": "Déjà confirmé",
-      "subtitle": "Cette inscription a déjà été confirmée",
-      "message": "Votre inscription a été confirmée précédemment. Aucune action supplémentaire n'est nécessaire.",
-      "backToHome": "Retour à l'accueil"
+      "subtitle": "Cette inscription a déjà été confirmée"
     },
     "error": {
       "title": "Échec de la confirmation",
-      "subtitle": "Impossible de confirmer votre inscription",
       "whatCanYouDo": "Que pouvez-vous faire ?",
       "checkLink": "Vérifiez que vous avez cliqué sur le bon lien dans votre e-mail",
       "expired": "Les liens de confirmation expirent après 48 heures - vous devrez peut-être vous réinscrire",
       "useLatestEmail": "Assurez-vous d'utiliser le dernier e-mail de confirmation",
       "contactSupport": "Contactez le support si le problème persiste",
-      "backToHome": "Retour à l'accueil",
-      "registerAgain": "S'inscrire à nouveau",
-      "errors": {
-        "expired": "Le lien de confirmation a expiré. Veuillez vous réinscrire.",
-        "invalid": "Lien de confirmation invalide. Veuillez vérifier votre e-mail pour obtenir le lien correct.",
-        "default": "Échec de la confirmation de l'inscription. Veuillez réessayer ou contacter le support."
-      }
+      "registerAgain": "S'inscrire à nouveau"
     }
   },
   "companySearch": {

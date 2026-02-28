@@ -165,30 +165,20 @@
       "checkInText": "Toon uw identiteitsbewijs bij de balie van het evenement voor inchecken. Uw bevestigde registratie staat in ons systeem.",
       "eventDetails": "Evenementdetails",
       "eventDetailsText": "U ontvangt evenementupdates en herinneringen via e-mail.",
-      "backToHome": "Terug naar home",
       "createAccount": "Account aanmaken om registraties te beheren"
     },
     "alreadyConfirmed": {
       "title": "Al bevestigd",
-      "subtitle": "Deze registratie is al bevestigd",
-      "message": "Uw registratie is eerder bevestigd. Er is geen verdere actie nodig.",
-      "backToHome": "Terug naar home"
+      "subtitle": "Deze registratie is al bevestigd"
     },
     "error": {
       "title": "Bevestiging mislukt",
-      "subtitle": "Uw registratie kon niet worden bevestigd",
       "whatCanYouDo": "Wat kunt u doen?",
       "checkLink": "Controleer of u op de juiste link in uw e-mail heeft geklikt",
       "expired": "Bevestigingslinks verlopen na 48 uur - u moet zich mogelijk opnieuw registreren",
       "useLatestEmail": "Zorg ervoor dat u de meest recente bevestigings-e-mail gebruikt",
       "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
-      "backToHome": "Terug naar home",
-      "registerAgain": "Opnieuw registreren",
-      "errors": {
-        "expired": "De bevestigingslink is verlopen. Registreer u opnieuw.",
-        "invalid": "Ongeldige bevestigingslink. Controleer uw e-mail voor de juiste link.",
-        "default": "Het bevestigen van de registratie is mislukt. Probeer het opnieuw of neem contact op met de ondersteuning."
-      }
+      "registerAgain": "Opnieuw registreren"
     }
   },
   "companySearch": {

@@ -333,22 +333,35 @@ export const RegistrationWizard = ({
 
       {/* Navigation Buttons */}
       <div className="mt-8 flex justify-between">
-        <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+        <Button
+          variant="outline"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          data-testid="registration-wizard-cancel-btn"
+        >
           {t('wizard.buttons.cancel')}
         </Button>
         <div className="flex gap-4">
           {currentStep > 1 && (
-            <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={isSubmitting}
+              data-testid="registration-wizard-back-btn"
+            >
               {t('wizard.buttons.back')}
             </Button>
           )}
           {currentStep < 2 ? (
-            <Button onClick={handleNext}>{t('wizard.buttons.next')}</Button>
+            <Button onClick={handleNext} data-testid="registration-wizard-next-btn">
+              {t('wizard.buttons.next')}
+            </Button>
           ) : (
             <Button
               onClick={handleSubmit}
               disabled={!formData.termsAccepted || isSubmitting}
               className="min-w-[200px]"
+              data-testid="registration-wizard-submit-btn"
             >
               {isSubmitting ? (
                 <>

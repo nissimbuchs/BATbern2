@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partner",
-    "speakerOutreach": "Contatto relatori",
     "topicManagement": "Gestione argomenti"
-  },
-  "dashboard": {
-    "criticalTasks": "Attività critiche",
-    "noCriticalTasks": "Nessuna attività critica",
-    "greatJob": "Ottimo lavoro!",
-    "taskCount": "{{count}} attività",
-    "taskCount_plural": "{{count}} attività",
-    "dueDate": "Scadenza",
-    "assignedTo": "Assegnato a {{name}}",
-    "confirmAction": "Conferma azione",
-    "areYouSure": "Sei sicuro di voler eseguire questa azione?"
   },
   "topicBacklog": {
     "pageTitle": "Gestione argomenti",
@@ -180,7 +168,6 @@
       "company": "Azienda",
       "expertise": "Competenza",
       "assignOrganizer": "Assegna a un organizzatore (opzionale)",
-      "unassigned": "Non assegnato",
       "notes": "Note (opzionale)",
       "addButton": "Aggiungi al pool",
       "adding": "Aggiunta in corso...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Contatto relatori",
-    "subtitle": "Tieni traccia delle attività di contatto con i relatori e coordina con gli altri organizzatori",
-    "breadcrumbs": {
-      "home": "Home",
-      "speakerOutreach": "Contatto relatori"
-    },
-    "emptyPool": {
-      "message": "Devi aggiungere relatori al pool prima di iniziare il contatto.",
-      "hint": "Torna alla fase di pianificazione dell'evento per aggiungere relatori potenziali.",
-      "addSpeakers": "Aggiungi relatori al pool"
-    },
-    "showBrainstorm": "Aggiungi relatori",
-    "hideBrainstorm": "Nascondi aggiunta relatori",
     "speakerName": "Relatore",
     "contactMethod": "Metodo di contatto",
     "contactDate": "Data di contatto",
     "markContacted": "Segna come contattato",
-    "filterByOrganizer": "Filtra per organizzatore",
     "contactHistory": "Cronologia contatti",
-    "daysSinceAssignment": "Giorni dall'assegnazione",
-    "overdue": "In ritardo",
-    "lastContact": "Ultimo contatto",
     "outreachDetails": "Dettagli contatto",
     "noContactHistory": "Nessuna cronologia contatti",
     "contactedBy": "Contattato da",
@@ -238,10 +208,6 @@
         "failed": "Registrazione contatto non riuscita",
         "loadHistory": "Caricamento cronologia contatti non riuscito"
       }
-    },
-    "bulkAction": {
-      "title": "Segna più relatori come contattati",
-      "confirm": "Segnare {{count}} relatori come contattati?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Crea nuovo relatore",
     "form": {
       "username": "Cerca relatore",
-      "usernameHelp": "Inserisci il nome utente del relatore",
       "presentationTitle": "Titolo presentazione",
       "presentationAbstract": "Abstract presentazione",
       "charactersRemaining": "caratteri rimanenti"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Invita",
-    "sendInvite": "Invia invito",
     "sendInvitation": "Invia invito",
-    "confirmInvite": "Inviare un invito a questo relatore?",
     "noEmailTooltip": "Aggiungi e-mail per invitare",
-    "inviting": "Invio in corso...",
     "sending": "Invio in corso...",
     "inviteSent": "Invito inviato",
     "invitationSent": "Invito inviato a {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Filtra per evento",
       "allEvents": "Tutti gli eventi",
       "sessions": "sessioni",
-      "speakers": "relatori",
-      "yourCompany": "La tua azienda"
+      "speakers": "relatori"
     }
   },
   "blobSelector": {

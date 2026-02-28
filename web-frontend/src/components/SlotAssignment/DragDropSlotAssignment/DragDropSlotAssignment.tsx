@@ -738,10 +738,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Typography>{t('slotAssignment.modals.clearAll.message')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClearAllModalOpen(false)}>{t('common:actions.cancel')}</Button>
+          <Button onClick={() => setClearAllModalOpen(false)} data-testid="clear-all-cancel">
+            {t('common:actions.cancel')}
+          </Button>
           <Button
             variant="contained"
             color="error"
+            data-testid="clear-all-confirm"
             onClick={async () => {
               try {
                 await clearAllTimings();

@@ -171,30 +171,20 @@
       "checkInText": "Present your ID at the event desk for check-in. We'll have your confirmed registration on file.",
       "eventDetails": "Event Details",
       "eventDetailsText": "You'll receive event updates and reminders via email.",
-      "backToHome": "Back to Home",
       "createAccount": "Create Account to Manage Registrations"
     },
     "alreadyConfirmed": {
       "title": "Already Confirmed",
-      "subtitle": "This registration has already been confirmed",
-      "message": "Your registration was previously confirmed. No further action is needed.",
-      "backToHome": "Back to Home"
+      "subtitle": "This registration has already been confirmed"
     },
     "error": {
       "title": "Confirmation Failed",
-      "subtitle": "Unable to confirm your registration",
       "whatCanYouDo": "What can you do?",
       "checkLink": "Check if you clicked the correct link from your email",
       "expired": "Confirmation links expire after 48 hours - you may need to register again",
       "useLatestEmail": "Make sure you're using the latest confirmation email",
       "contactSupport": "Contact support if the problem persists",
-      "backToHome": "Back to Home",
-      "registerAgain": "Register Again",
-      "errors": {
-        "expired": "Confirmation link has expired. Please register again.",
-        "invalid": "Invalid confirmation link. Please check your email for the correct link.",
-        "default": "Failed to confirm registration. Please try again or contact support."
-      }
+      "registerAgain": "Register Again"
     }
   }
 }

@@ -65,14 +65,14 @@ describe('CreateTopicModal', () => {
   it('renders in create mode with empty fields and create button', () => {
     renderModal();
     expect(screen.getByTestId('create-topic-modal')).toBeInTheDocument();
-    expect(screen.getByText('Create New Topic')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Create New Topic/i })).toBeInTheDocument();
     expect(screen.getByTestId('submit-topic-button')).toHaveTextContent('Create Topic');
     expect(screen.getByTestId('topic-title-input')).toHaveValue('');
   });
 
   it('renders in edit mode with pre-populated title and save button', () => {
     renderModal({ topic: mockTopic });
-    expect(screen.getByText('Edit Topic')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Edit Topic/i })).toBeInTheDocument();
     expect(screen.getByTestId('submit-topic-button')).toHaveTextContent('Save Changes');
     expect(screen.getByTestId('topic-title-input')).toHaveValue('Existing Topic');
   });

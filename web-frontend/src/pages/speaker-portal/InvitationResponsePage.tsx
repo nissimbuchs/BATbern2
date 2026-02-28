@@ -120,7 +120,7 @@ const InvitationResponsePage = () => {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-12 max-w-3xl">
-          <div className="text-center">
+          <div className="text-center" data-testid="invitation-error-invalid">
             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
             <h1 className="text-3xl font-light mb-2 text-zinc-100">
               {t('speakerPortal.invitationResponse.invalidLink')}
@@ -213,6 +213,14 @@ const InvitationResponsePage = () => {
     };
   };
 
+  const getErrorTestId = () => {
+    if (validationError) {
+      const err = validationError as Error & { errorCode?: string };
+      if (err.errorCode === 'EXPIRED') return 'invitation-error-expired';
+    }
+    return 'invitation-error-invalid';
+  };
+
   return (
     <PublicLayout>
       <div className="container mx-auto px-4 py-12 max-w-3xl min-h-screen">
@@ -233,7 +241,7 @@ const InvitationResponsePage = () => {
 
         {/* Error State */}
         {pageState === 'error' && (
-          <div className="text-center">
+          <div className="text-center" data-testid={getErrorTestId()}>
             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
             <h1 className="text-3xl font-light text-zinc-100 mb-2">{getErrorDetails().title}</h1>
             <p className="text-zinc-400 mb-8">{getErrorDetails().message}</p>
@@ -263,7 +271,7 @@ const InvitationResponsePage = () => {
 
         {/* Already Responded State */}
         {pageState === 'already_responded' && invitation && (
-          <div className="text-center">
+          <div className="text-center" data-testid="invitation-already-responded">
             <AlertCircle className="h-16 w-16 text-amber-400 mx-auto mb-4" />
             <h1 className="text-3xl font-light text-zinc-100 mb-2">
               {t('speakerPortal.invitationResponse.alreadyResponded')}
@@ -377,6 +385,7 @@ const InvitationResponsePage = () => {
                   className={`flex-1 h-14 ${selectedResponse === 'ACCEPT' ? 'bg-green-600 hover:bg-green-700 border-green-600' : ''}`}
                   onClick={() => handleResponseSelect('ACCEPT')}
                   disabled={respondMutation.isPending}
+                  data-testid="invitation-response-accept-btn"
                 >
                   <ThumbsUp className="h-5 w-5 mr-2" />
                   {t('speakerPortal.invitationResponse.accept')}
@@ -386,6 +395,7 @@ const InvitationResponsePage = () => {
                   className={`flex-1 h-14 ${selectedResponse === 'DECLINE' ? 'bg-red-600 hover:bg-red-700 border-red-600' : ''}`}
                   onClick={() => handleResponseSelect('DECLINE')}
                   disabled={respondMutation.isPending}
+                  data-testid="invitation-response-decline-btn"
                 >
                   <ThumbsDown className="h-5 w-5 mr-2" />
                   {t('speakerPortal.invitationResponse.decline')}
@@ -447,6 +457,7 @@ const InvitationResponsePage = () => {
                     onClick={handleSubmit}
                     disabled={!isSubmitValid() || respondMutation.isPending}
                     className="w-full h-12"
+                    data-testid="invitation-response-submit-btn"
                   >
                     {respondMutation.isPending ? (
                       <>

@@ -165,30 +165,20 @@
       "checkInText": "Presentescha voss document d'identitad al maletg da l'eveniment per il check-in. Nus avain vossa inscripziun confirmada en noss sistem.",
       "eventDetails": "Detagls da l'eveniment",
       "eventDetailsText": "Vus retschavrais actualisaziuns ed admoniments davart l'eveniment via email.",
-      "backToHome": "Turnar a la pagina principala",
       "createAccount": "Crear in conto per administrar las inscripziuns"
     },
     "alreadyConfirmed": {
       "title": "Gia confirmada",
-      "subtitle": "Questa inscripziun è gia vegnida confirmada",
-      "message": "Vossa inscripziun è vegnida confirmada anteriurmain. Nagina ulteriura acziun è necessaria.",
-      "backToHome": "Turnar a la pagina principala"
+      "subtitle": "Questa inscripziun è gia vegnida confirmada"
     },
     "error": {
       "title": "Confirmaziun betg reussida",
-      "subtitle": "Impussibel da confermar vossa inscripziun",
       "whatCanYouDo": "Tge pudais vus far?",
       "checkLink": "Controllescha sche vus avais clicà sin il link correct da vossa email",
       "expired": "Links da confirmaziun expireschan suenter 48 uras - forsa dovais vus vus inscriver anc ina giada",
       "useLatestEmail": "Assegurais vus dad utilisar l'ultima email da confirmaziun",
       "contactSupport": "Contactescha il support sche il problem persista",
-      "backToHome": "Turnar a la pagina principala",
-      "registerAgain": "Inscriver anc ina giada",
-      "errors": {
-        "expired": "Il link da confirmaziun è expireschaus. Sper plaschair inscrivai vus anc ina giada.",
-        "invalid": "Link da confirmaziun nunvalid. Sper plaschair controllescha vossa email per il link correct.",
-        "default": "Betg reussì da confermar l'inscripziun. Sper plaschair empruvai anc ina giada u contactescha il support."
-      }
+      "registerAgain": "Inscriver anc ina giada"
     }
   },
   "companySearch": {

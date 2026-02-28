@@ -5,18 +5,11 @@
     "placeholder": "Tschertgar per num u e-mail...",
     "noResults": "Nagin utilisader chattà"
   },
-  "viewMode": {},
   "filters": {
-    "title": "Filtros",
     "clearAll": "Stritgar tuts ils filtros",
     "role": {
       "label": "Rolla",
       "all": "Tuttas rollas"
-    },
-    "company": {
-      "label": "Interpresa",
-      "all": "Tuttas interpreschas",
-      "placeholder": "Tscherner interpresa..."
     },
     "status": {
       "active": "Activ",
@@ -28,13 +21,7 @@
     "headers": {
       "roles": "Rollas"
     },
-    "showing": "Visualisaziun da {{count}} utilisaders",
-    "showingRange": "{{from}}-{{to}} da {{total}} utilisaders",
-    "perPage": "per pagina",
-    "empty": "Nagin utilisader chattà",
-    "emptySearch": "Nagin utilisader correspunda a tia tschertga. Prova da stritgar ils filtros.",
-    "ascending": "Ascendent",
-    "descending": "Descendent"
+    "empty": "Nagin utilisader chattà"
   },
   "actions": {
     "view": "Mussar",
@@ -54,17 +41,8 @@
   "modal": {
     "userDetail": {
       "title": "Detagls dal utilisader",
-      "profile": "Profil",
-      "contactInfo": "Infurmaziuns da contact",
-      "rolesAssigned": "Rollas attribuidas",
-      "companyAffiliation": "Affiliaziun a l'interpresa",
-      "activityHistory": "Istorgia d'activitad",
-      "accountCreated": "Conto creà",
       "createdAt": "Creà ils",
-      "updatedAt": "Ultima actualisaziun",
-      "lastLogin": "Ultima s'annunzia",
-      "noCompany": "Nagina interpresa attribuida",
-      "noActivity": "Nagina activitad disponibla"
+      "updatedAt": "Ultima actualisaziun"
     },
     "createUser": {
       "title": "Crear nov utilisader",
@@ -78,22 +56,15 @@
     },
     "editRoles": {
       "title": "Modifitgar rollas",
-      "subtitle": "Administrar las rollas per {{name}}",
       "user": "Utilisader",
       "selectRoles": "Tscherner rollas",
-      "minimumOrganizers": "Ins sto haver almain {{count}} organisaturs en il sistem",
-      "cannotRemove": "Questa rolla na po betg vegnir stritgada",
-      "updating": "Actualisaziun...",
       "saving": "Memorisaziun..."
     },
     "deleteConfirm": {
       "title": "Stritgar utilisader",
       "message": "Vuls ti propi stritgar quest utilisader?",
-      "userName": "Utilisader: {{name}}",
       "gdprWarning": "Avis GDPR: Questa acziun stritga definitivamain tut las datas dal utilisader e na po betg vegnir revocada.",
-      "cascadeWarning": "Tut las datas associadas vegnan er stritgadas.",
-      "cannotDelete": "Quest utilisader na po betg vegnir stritgà",
-      "lastOrganizerWarning": "Ti na pos betg stritgar l'ultim organisatur. Ins sto haver almain {{count}} organisaturs en il sistem."
+      "cascadeWarning": "Tut las datas associadas vegnan er stritgadas."
     },
     "editUser": {
       "uploadPhotoAria": "[MISSING] Upload profile photo",
@@ -102,8 +73,7 @@
   },
   "pagination": {
     "page": "Pagina {{page}} da {{total}}",
-    "itemsPerPage": "Elements per pagina",
-    "goToPage": "Ir a la pagina"
+    "itemsPerPage": "Elements per pagina"
   },
   "loading": {
     "users": "Chargiar utilisaders...",
@@ -114,55 +84,16 @@
   "error": {
     "required": "Quest champ è obligatoric",
     "email": {
-      "invalid": "Adressa d'e-mail nunvalida",
-      "exists": "L'adressa d'e-mail exista gia",
-      "required": "L'e-mail è obligatoric"
-    },
-    "name": {
-      "tooShort": "Il num sto haver almain {{min}} characters",
-      "tooLong": "Il num na sto betg surpassar {{max}} characters"
-    },
-    "roles": {
-      "required": "Almain ina rolla è necessaria",
-      "minOrganizers": "Ins sto haver almain {{count}} organisaturs en il sistem"
+      "invalid": "Adressa d'e-mail nunvalida"
     },
     "minOneRole": "Almain ina rolla sto vegnir tschernida",
     "loadFailed": "Chargiar ils utilisaders ha fallì",
     "createFailed": "Crear l'utilisader ha fallì",
     "updateFailed": "Actualisar l'utilisader ha fallì",
     "deleteFailed": "Stritgar l'utilisader ha fallì",
-    "deleteLastOrganizer": "Impussibel da stritgar l'ultim organisatur",
-    "networkError": "Errur da rait. Verifica tia connexiun.",
-    "unauthorized": "Ti n'ès betg autorisà da far questa acziun",
     "notFound": "Utilisader betg chattà"
   },
-  "success": {
-    "userCreated": "Utilisader creà cun success",
-    "userUpdated": "Utilisader actualisà cun success",
-    "userDeleted": "Utilisader stritgà cun success",
-    "rolesUpdated": "Rollas actualisadas cun success"
-  },
-  "emptyState": {
-    "title": "Nagins utilisaders",
-    "description": "Nagin utilisader è vegnì agiuntat anc.",
-    "action": "Agiuntar il prim utilisader"
-  },
-  "accessibility": {
-    "filterPanel": "Panel da filtros",
-    "userTable": "Tabella da utilisaders",
-    "sortAscending": "Zavrar en urden ascendent",
-    "sortDescending": "Zavrar en urden descendent",
-    "openMenu": "Avrir il menu",
-    "closeModal": "Serrar la fanestra modala",
-    "rowCount": "{{count}} utilisaders en la tabella"
-  },
-  "offline": {
-    "indicator": "Offline",
-    "message": "Ti es offline. Tschertas funcziuns pon na esser betg disponiblas.",
-    "viewingCache": "Visualisaziun da datas en cache"
-  },
   "batchImport": {
-    "button": "Importar referents",
     "title": "Import en bloc da referents",
     "dropzone": "Drizza speakers.json qua u clicca per navigar",
     "dropzoneActive": "Drizza il datoteca qua...",
@@ -176,7 +107,6 @@
     "cancelButton": "Interrumper",
     "importButton": "Crear {{new}} / Actualisar {{update}}",
     "allSkipped": "Naginas midadas per importar",
-    "columns": {},
     "status": {
       "pending": "Nov",
       "importing": "Importaziun...",
@@ -195,7 +125,6 @@
     "noPortrait": "Nagina fotorafia da portret"
   },
   "participantImport": {
-    "button": "Importar participants",
     "title": "Importar participants da CSV",
     "dropzone": "Drizza e laschar il datoteca CSV qua",
     "dropzoneActive": "Laschar il datoteca CSV qua",
@@ -204,10 +133,8 @@
     "preview": "Preview: {{count}} participants pronts per importar",
     "previewLimitation": "Remartga: il preview mussa utilisaders existents mo per correspondenza da num d'utilisader. Durant l'import, utilisaders pon er vegnir abbinads per num (prenum + num) sche unic. Tschertas participants mussads sco 'Nov' pon correspunder ad utilisaders existents per num.",
     "importButton": "Importar {{count}} participants",
-    "startImport": "Entscheiver import",
     "progress": "Importaziun: {{current}} / {{total}}",
     "summary": "Resumé da l'import",
-    "columns": {},
     "status": {
       "pending": "En spetga",
       "importing": "Importaziun",
@@ -227,9 +154,6 @@
       "existing": "[MISSING] Existing",
       "new": "[MISSING] New"
     },
-    "noParticipants": "Quest utilisader n'ha betg participà en nagina occurrenza anc.",
-    "loadingEvents": "Chargiar occurrenzas...",
-    "errorLoadingEvents": "Chargiar las participaziuns a las occurrenzas ha fallì",
     "aria": {
       "statusLabel": "[MISSING] Import status: {{label}}",
       "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
@@ -254,7 +178,6 @@
       "title": "Titel",
       "date": "Data",
       "status": "Status",
-      "loading": "Chargiar occurrenzas...",
       "loadError": "Chargiar l'istorgia da participaziun a las occurrenzas ha fallì",
       "noEvents": "Quest utilisader n'ha betg participà en nagina occurrenza anc",
       "untitledEvent": "Occurrenza senza titel",
@@ -267,8 +190,7 @@
         "CANCELLED": "Annullà",
         "WAITLISTED": "En glista d'spetga"
       }
-    },
-    "bio": "Biografia"
+    }
   },
   "settings": {
     "tabs": {

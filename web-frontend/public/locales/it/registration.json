@@ -165,30 +165,20 @@
       "checkInText": "Presenta il tuo documento d'identità al banco dell'evento per il check-in. La tua registrazione confermata sarà nel nostro sistema.",
       "eventDetails": "Dettagli dell'evento",
       "eventDetailsText": "Riceverai aggiornamenti e promemoria sull'evento via email.",
-      "backToHome": "Torna alla home",
       "createAccount": "Crea un account per gestire le registrazioni"
     },
     "alreadyConfirmed": {
       "title": "Già confermata",
-      "subtitle": "Questa registrazione è già stata confermata",
-      "message": "La tua registrazione è stata confermata in precedenza. Non è necessaria nessuna ulteriore azione.",
-      "backToHome": "Torna alla home"
+      "subtitle": "Questa registrazione è già stata confermata"
     },
     "error": {
       "title": "Conferma non riuscita",
-      "subtitle": "Impossibile confermare la registrazione",
       "whatCanYouDo": "Cosa puoi fare?",
       "checkLink": "Verifica di aver cliccato sul link corretto nella tua email",
       "expired": "I link di conferma scadono dopo 48 ore - potrebbe essere necessario registrarsi di nuovo",
       "useLatestEmail": "Assicurati di utilizzare l'ultima email di conferma",
       "contactSupport": "Contatta il supporto se il problema persiste",
-      "backToHome": "Torna alla home",
-      "registerAgain": "Registrati di nuovo",
-      "errors": {
-        "expired": "Il link di conferma è scaduto. Effettua nuovamente la registrazione.",
-        "invalid": "Link di conferma non valido. Controlla la tua email per il link corretto.",
-        "default": "Impossibile confermare la registrazione. Riprova o contatta il supporto."
-      }
+      "registerAgain": "Registrati di nuovo"
     }
   },
   "companySearch": {

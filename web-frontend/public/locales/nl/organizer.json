@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partners",
-    "speakerOutreach": "Sprekersbenadering",
     "topicManagement": "Onderwerpbeheer"
-  },
-  "dashboard": {
-    "criticalTasks": "Kritieke taken",
-    "noCriticalTasks": "Geen kritieke taken",
-    "greatJob": "Goed gedaan!",
-    "taskCount": "{{count}} taak",
-    "taskCount_plural": "{{count}} taken",
-    "dueDate": "Vervaldatum",
-    "assignedTo": "Toegewezen aan {{name}}",
-    "confirmAction": "Actie bevestigen",
-    "areYouSure": "Weet je zeker dat je deze actie wilt uitvoeren?"
   },
   "topicBacklog": {
     "pageTitle": "Onderwerpbeheer",
@@ -180,7 +168,6 @@
       "company": "Bedrijf",
       "expertise": "Expertise",
       "assignOrganizer": "Toewijzen aan organisator (optioneel)",
-      "unassigned": "Niet toegewezen",
       "notes": "Notities (optioneel)",
       "addButton": "Aan pool toevoegen",
       "adding": "Toevoegen...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Sprekersbenadering",
-    "subtitle": "Volg je benaderingsactiviteiten voor sprekers en coördineer met andere organisatoren",
-    "breadcrumbs": {
-      "home": "Home",
-      "speakerOutreach": "Sprekersbenadering"
-    },
-    "emptyPool": {
-      "message": "Je moet sprekers aan de pool toevoegen voordat je begint met benaderen.",
-      "hint": "Ga terug naar de planningsfase van het evenement om potentiële sprekers toe te voegen.",
-      "addSpeakers": "Sprekers aan pool toevoegen"
-    },
-    "showBrainstorm": "Sprekers toevoegen",
-    "hideBrainstorm": "Sprekers toevoegen verbergen",
     "speakerName": "Spreker",
     "contactMethod": "Contactmethode",
     "contactDate": "Contactdatum",
     "markContacted": "Markeren als gecontacteerd",
-    "filterByOrganizer": "Filteren op organisator",
     "contactHistory": "Contactgeschiedenis",
-    "daysSinceAssignment": "Dagen sinds toewijzing",
-    "overdue": "Achterstallig",
-    "lastContact": "Laatste contact",
     "outreachDetails": "Benaderingsdetails",
     "noContactHistory": "Geen contactgeschiedenis",
     "contactedBy": "Gecontacteerd door",
@@ -238,10 +208,6 @@
         "failed": "Vastleggen van benadering mislukt",
         "loadHistory": "Laden van contactgeschiedenis mislukt"
       }
-    },
-    "bulkAction": {
-      "title": "Meerdere als gecontacteerd markeren",
-      "confirm": "{{count}} sprekers als gecontacteerd markeren?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Nieuwe spreker aanmaken",
     "form": {
       "username": "Spreker zoeken",
-      "usernameHelp": "Voer de gebruikersnaam van de spreker in",
       "presentationTitle": "Presentatietitel",
       "presentationAbstract": "Presentatiesamenvatting",
       "charactersRemaining": "tekens resterend"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Uitnodigen",
-    "sendInvite": "Uitnodiging versturen",
     "sendInvitation": "Uitnodiging versturen",
-    "confirmInvite": "Uitnodiging naar deze spreker sturen?",
     "noEmailTooltip": "Voeg e-mail toe om uit te nodigen",
-    "inviting": "Verzenden...",
     "sending": "Verzenden...",
     "inviteSent": "Uitnodiging verzonden",
     "invitationSent": "Uitnodiging verzonden naar {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Filteren op evenement",
       "allEvents": "Alle evenementen",
       "sessions": "sessies",
-      "speakers": "sprekers",
-      "yourCompany": "Jouw bedrijf"
+      "speakers": "sprekers"
     }
   },
   "blobSelector": {

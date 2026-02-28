@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "Piattaforma di gestione eventi BATbern",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "La mia azienda",
     "myAccount": "Il mio account",
     "analytics": "Analisi",
-    "content": "Ricerca contenuti",
     "profile": "Profilo",
-    "logout": "Disconnessione",
     "myEvents": "I miei eventi",
-    "presentationMode": "Modalità presentazione",
     "myContent": "I miei contenuti",
     "myRegistrations": "Le mie iscrizioni",
     "about": "Chi siamo",
@@ -27,8 +23,7 @@
     "partnerTopics": "Argomenti partner",
     "partnerMeetings": "Incontri partner",
     "topics": "Suggerimenti di argomenti",
-    "openMenu": "Apri menu",
-    "closeMenu": "Chiudi menu"
+    "openMenu": "Apri menu"
   },
   "public": {
     "login": "Accedi",
@@ -70,11 +65,6 @@
     "cancel": "Annulla",
     "delete": "Elimina",
     "edit": "Modifica",
-    "create": "Crea",
-    "search": "Cerca",
-    "filter": "Filtra",
-    "reset": "Reimposta",
-    "submit": "Invia",
     "close": "Chiudi",
     "sending": "Invio...",
     "loading": "Caricamento...",
@@ -105,12 +95,10 @@
   },
   "menu": {
     "profile": "Profilo",
-    "profileSettings": "Impostazioni profilo",
     "settings": "Impostazioni",
     "administration": "Amministrazione",
     "help": "Aiuto",
-    "logout": "Disconnessione",
-    "signOut": "Esci"
+    "logout": "Disconnessione"
   },
   "role": {
     "organizer": "Organizzatore eventi",
@@ -136,49 +124,21 @@
       "swissUID": "UID svizzero (CHE-XXX.XXX.XXX)",
       "website": "Sito web",
       "industry": "Settore",
-      "sector": "Settore (opzionale)",
-      "city": "Città",
-      "canton": "Cantone",
-      "country": "Paese",
       "description": "Descrizione",
       "legalName": "Nome breve: {{name}}",
       "logo": "Logo aziendale"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://example.com",
-      "canton": "BE, ZH, GE, ecc."
+      "website": "https://example.com"
     },
     "industries": {
-      "selectIndustry": "Seleziona settore",
-      "technology": "Tecnologia",
-      "cloudComputing": "Cloud computing",
-      "devOps": "DevOps",
-      "financialServices": "Servizi finanziari",
-      "healthcare": "Sanità",
-      "manufacturing": "Produzione",
-      "consulting": "Consulenza",
-      "education": "Istruzione",
-      "other": "Altro"
-    },
-    "sectors": {
-      "selectSector": "Seleziona settore",
-      "public": "Pubblico",
-      "private": "Privato",
-      "nonprofit": "Non profit",
-      "government": "Governo"
+      "selectIndustry": "Seleziona settore"
     },
     "badges": {
-      "partner": "Partner",
       "verified": "Verificato"
     },
-    "stats": {
-      "userCount": "{{count}} utente",
-      "userCount_one": "{{count}} utente",
-      "userCount_other": "{{count}} utenti"
-    },
     "filters": {
-      "partnerOnly": "Solo aziende partner",
       "verifiedOnly": "Solo aziende verificate",
       "industry": "Settore",
       "allIndustries": "Tutti i settori",
@@ -188,7 +148,6 @@
     "form": {
       "createTitle": "Crea nuova azienda",
       "editTitle": "Modifica azienda",
-      "required": "Obbligatorio",
       "saveDraft": "Salva bozza",
       "saveCreate": "Salva e crea",
       "saveChanges": "Salva modifiche",
@@ -198,31 +157,16 @@
         "swissUID": "Opzionale - per la verifica automatica"
       },
       "errors": {
-        "nameRequired": "Il nome dell'azienda è obbligatorio",
-        "nameMinLength": "Il nome deve contenere almeno {{min}} caratteri",
-        "nameMaxLength": "Il nome deve contenere al massimo {{max}} caratteri",
-        "displayNameMaxLength": "Il nome visualizzato deve contenere al massimo {{max}} caratteri",
-        "invalidSwissUID": "Formato UID svizzero non valido (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "URL del sito web non valido",
-        "industryRequired": "Il settore è obbligatorio",
-        "cityRequired": "La città è obbligatoria",
-        "cantonRequired": "Il cantone è obbligatorio",
-        "countryRequired": "Il paese è obbligatorio",
-        "descriptionMaxLength": "La descrizione deve contenere al massimo {{max}} caratteri",
         "noPermission": "Non hai il permesso di modificare questa azienda. I relatori possono modificare solo la propria azienda."
       }
     },
     "detail": {
       "tabs": {
-        "users": "Utenti",
-        "statistics": "Statistiche",
-        "activity": "Attività"
+        "users": "Utenti"
       },
-      "overviewText": "Questa sezione panoramica può visualizzare informazioni aggiuntive sull'azienda, aggiornamenti recenti o punti salienti.",
       "noData": "Nessun dato aziendale disponibile"
     },
     "errors": {
-      "loadFailed": "Caricamento dell'azienda non riuscito",
       "saveFailed": "Si è verificato un errore durante il salvataggio dell'azienda",
       "deleteFailed": "Eliminazione dell'azienda non riuscita"
     },
@@ -230,14 +174,11 @@
       "placeholder": "Cerca aziende..."
     },
     "batchImport": {
-      "button": "Importazione in blocco",
       "title": "Importa aziende da JSON",
       "dropzone": "Trascina il file JSON qui o clicca per caricare",
       "dropzoneActive": "Trascina il file JSON qui",
-      "invalidJson": "File JSON non valido. Controlla il formato.",
       "noCompanies": "Nessuna azienda trovata nel file JSON.",
       "preview": "Anteprima ({{count}} aziende)",
-      "importButton": "Importa tutto",
       "cancelButton": "Annulla",
       "status": {
         "importing": "Importazione...",
@@ -261,8 +202,7 @@
       },
       "errors": {
         "invalidFile": "Tipo di file non valido. Carica un file JSON.",
-        "parseError": "Analisi del file JSON non riuscita: {{error}}",
-        "importFailed": "Importazione di {{name}} non riuscita: {{error}}"
+        "parseError": "Analisi del file JSON non riuscita: {{error}}"
       }
     },
     "delete": {
@@ -270,8 +210,7 @@
       "message": "Sei sicuro di voler eliminare questa azienda?",
       "dataWarning": "Questa azione eliminerà definitivamente l'azienda e non può essere annullata.",
       "cascadeWarning": "Tutti i dati associati (utenti, partnership, relatori, eventi) potrebbero essere interessati.",
-      "deleting": "Eliminazione...",
-      "success": "Azienda eliminata con successo"
+      "deleting": "Eliminazione..."
     },
     "pagination": {
       "itemsPerPage": "Elementi per pagina"
@@ -279,15 +218,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Importa eventi storici",
       "title": "Importa eventi da topics.json",
       "dropzone": "Trascina il file topics.json qui o clicca per caricare",
       "dropzoneActive": "Trascina il file JSON qui",
       "dropzoneHint": "Carica il file topics.json pre-elaborato (con i campi parsedDate, description e moderator)",
-      "invalidJson": "File JSON non valido. Controlla il formato.",
       "noEvents": "Nessun evento trovato nel file JSON.",
       "preview": "Anteprima ({{count}} eventi)",
-      "importButton": "Importa tutto",
       "cancelButton": "Annulla",
       "status": {
         "pending": "In attesa",
@@ -307,8 +243,7 @@
       },
       "errors": {
         "invalidFile": "Tipo di file non valido. Carica un file JSON.",
-        "parseError": "Analisi del file JSON non riuscita: {{error}}",
-        "importFailed": "Importazione dell'evento {{number}} non riuscita: {{error}}"
+        "parseError": "Analisi del file JSON non riuscita: {{error}}"
       },
       "fieldSelection": {
         "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
@@ -359,7 +294,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Importa sessioni",
       "title": "Importazione in blocco sessioni",
       "dropzone": "Trascina sessions.json qui o clicca per caricare",
       "dropzoneActive": "Trascina sessions.json qui",
@@ -433,22 +367,14 @@
       "noMaterials": "Nessun materiale"
     },
     "content": {
-      "title": "Invia il tuo contenuto",
-      "loading": "Caricamento contenuto...",
       "invalidLink": "Link non valido",
       "invalidLinkMessage": "Questa pagina richiede un link contenuto valido. Usa il link dell'email di invito.",
-      "linkExpired": "Il link è scaduto",
       "linkExpiredMessage": "Questo link è scaduto. Contatta l'organizzatore per un nuovo link.",
-      "sessionNotAssigned": "Sessione non assegnata",
-      "sessionNotAssignedMessage": "La tua sessione non è ancora stata assegnata. Contatta l'organizzatore per far assegnare la tua sessione prima di inviare il contenuto.",
-      "event": "Evento",
       "presentationTitle": "Titolo della presentazione",
       "abstract": "Abstract",
       "titleRequired": "Il titolo è obbligatorio",
       "abstractRequired": "L'abstract è obbligatorio",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "File di presentazione",
-      "optional": "opzionale",
       "saving": "Salvataggio...",
       "lastSaved": "Ultimo salvataggio: {{time}}",
       "unsavedChanges": "Modifiche non salvate",
@@ -476,21 +402,7 @@
       "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
-      "dragDropTitle": "Carica presentazione",
-      "dragDropMessage": "Trascina e rilascia il tuo file qui, o clicca per sfogliare",
-      "supportedFormats": "Formati supportati: PPTX, PDF, KEY (max 50 MB)",
       "uploading": "Caricamento...",
-      "uploadProgress": "{{percent}}% caricato",
-      "uploadComplete": "Caricamento completato",
-      "removeFile": "Rimuovi file",
-      "currentFile": "File attuale",
-      "download": "Scarica",
-      "replace": "Sostituisci",
-      "errors": {
-        "fileTooLarge": "Il file è troppo grande. La dimensione massima è 50 MB.",
-        "invalidType": "Tipo di file non valido. Sono consentiti solo file PPTX, PDF e KEY.",
-        "uploadFailed": "Caricamento non riuscito. Riprova."
-      },
       "presentationFile": "[MISSING] Presentation file",
       "changeFile": "[MISSING] Change file",
       "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
@@ -619,22 +531,14 @@
       "loadFailed": "Caricamento degli eventi non riuscito"
     },
     "card": {
-      "sessions": "Presentazioni",
-      "viewDetails": "Visualizza dettagli",
-      "andMore": "e altri {{count}}"
+      "viewDetails": "Visualizza dettagli"
     },
     "filters": {
       "title": "Filtri",
       "search": "Cerca eventi...",
       "topics": "Argomenti",
       "clearAll": "Cancella tutto",
-      "activeCount": "{{count}} filtro attivo",
-      "activeCount_one": "{{count}} filtro attivo",
-      "activeCount_other": "{{count}} filtri attivi"
-    },
-    "sort": {
-      "newest": "Più recenti",
-      "oldest": "Più vecchi"
+      "activeCount": "{{count}} filtro attivo"
     },
     "detail": {
       "backToArchive": "← Torna all'archivio"
@@ -662,7 +566,6 @@
     }
   },
   "emailTemplates": {
-    "title": "Modelli email",
     "layoutTemplates": "Modelli di layout",
     "layoutTemplatesInfo": "Definisce l'aspetto BATbern per tutte le email. Le modifiche qui influenzano tutti i modelli che utilizzano questo layout.",
     "contentTemplates": "Contenuto email",
@@ -685,15 +588,12 @@
     "noLayouts": "Nessun modello di layout trovato.",
     "noTemplates": "Nessun modello trovato per questo filtro.",
     "missingContentPlaceholder": "Segnaposto {{content}} mancante — il corpo dell'email sarà vuoto",
-    "cannotDeleteSystem": "I modelli di sistema non possono essere eliminati.",
-    "cannotDeleteLayout": "I modelli di layout non possono essere eliminati.",
     "deleteFailed": "Eliminazione del modello non riuscita.",
     "saveFailed": "Salvataggio del modello non riuscito. Riprova.",
     "validation": {
       "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
       "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
-      "templateKeyRequired": "La chiave del modello è obbligatoria.",
-      "allFieldsRequired": "La chiave del modello, l'oggetto e il corpo HTML sono obbligatori."
+      "templateKeyRequired": "La chiave del modello è obbligatoria."
     }
   },
   "presentation": {

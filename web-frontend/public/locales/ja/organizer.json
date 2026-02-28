@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "パートナー",
-    "speakerOutreach": "登壇者への働きかけ",
     "topicManagement": "トピック管理"
-  },
-  "dashboard": {
-    "criticalTasks": "重要タスク",
-    "noCriticalTasks": "重要タスクなし",
-    "greatJob": "すばらしい仕事です！",
-    "taskCount": "{{count}}件のタスク",
-    "taskCount_plural": "{{count}}件のタスク",
-    "dueDate": "期日",
-    "assignedTo": "{{name}}に割り当て済み",
-    "confirmAction": "アクションの確認",
-    "areYouSure": "本当にこの操作を実行しますか？"
   },
   "topicBacklog": {
     "pageTitle": "トピック管理",
@@ -180,7 +168,6 @@
       "company": "会社",
       "expertise": "専門分野",
       "assignOrganizer": "主催者に割り当て（任意）",
-      "unassigned": "未割り当て",
       "notes": "メモ（任意）",
       "addButton": "プールに追加",
       "adding": "追加中...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "登壇者への働きかけ",
-    "subtitle": "登壇者へのアウトリーチ活動を追跡し、他の主催者と調整します",
-    "breadcrumbs": {
-      "home": "ホーム",
-      "speakerOutreach": "登壇者への働きかけ"
-    },
-    "emptyPool": {
-      "message": "アウトリーチを開始する前に、プールに登壇者を追加する必要があります。",
-      "hint": "イベント計画段階に戻って潜在的な登壇者を追加してください。",
-      "addSpeakers": "プールに登壇者を追加"
-    },
-    "showBrainstorm": "登壇者を追加",
-    "hideBrainstorm": "登壇者追加を非表示",
     "speakerName": "登壇者",
     "contactMethod": "連絡方法",
     "contactDate": "連絡日",
     "markContacted": "連絡済みとしてマーク",
-    "filterByOrganizer": "主催者でフィルター",
     "contactHistory": "連絡履歴",
-    "daysSinceAssignment": "割り当てからの日数",
-    "overdue": "期限超過",
-    "lastContact": "最終連絡",
     "outreachDetails": "アウトリーチの詳細",
     "noContactHistory": "連絡履歴なし",
     "contactedBy": "連絡者",
@@ -238,10 +208,6 @@
         "failed": "アウトリーチの記録に失敗しました",
         "loadHistory": "連絡履歴の読み込みに失敗しました"
       }
-    },
-    "bulkAction": {
-      "title": "複数を連絡済みとしてマーク",
-      "confirm": "{{count}}人の登壇者を連絡済みとしてマークしますか？"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "新しい登壇者を作成",
     "form": {
       "username": "登壇者を検索",
-      "usernameHelp": "登壇者のユーザー名を入力してください",
       "presentationTitle": "プレゼンテーションタイトル",
       "presentationAbstract": "プレゼンテーション概要",
       "charactersRemaining": "文字残り"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "招待",
-    "sendInvite": "招待を送信",
     "sendInvitation": "招待状を送信",
-    "confirmInvite": "この登壇者に招待状を送りますか？",
     "noEmailTooltip": "招待するにはメールアドレスを追加してください",
-    "inviting": "送信中...",
     "sending": "送信中...",
     "inviteSent": "招待状を送信しました",
     "invitationSent": "{{email}}に招待状を送信しました",
@@ -438,8 +400,7 @@
       "filterByEvent": "イベントでフィルター",
       "allEvents": "すべてのイベント",
       "sessions": "セッション",
-      "speakers": "登壇者",
-      "yourCompany": "あなたの会社"
+      "speakers": "登壇者"
     }
   },
   "blobSelector": {

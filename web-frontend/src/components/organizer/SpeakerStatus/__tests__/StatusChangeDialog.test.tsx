@@ -91,8 +91,8 @@ describe('StatusChangeDialog', () => {
     it('should display confirm and cancel buttons', () => {
       render(<StatusChangeDialog {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: 'Change Status' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Change Status/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
     });
   });
 
@@ -128,7 +128,7 @@ describe('StatusChangeDialog', () => {
       const reasonInput = screen.getByLabelText(
         'Reason for status change (optional)'
       ) as HTMLTextAreaElement;
-      const confirmButton = screen.getByRole('button', { name: 'Change Status' });
+      const confirmButton = screen.getByRole('button', { name: /Change Status/i });
 
       expect(confirmButton).not.toBeDisabled();
 
@@ -174,7 +174,7 @@ describe('StatusChangeDialog', () => {
       const reasonInput = screen.getByLabelText('Reason for status change (optional)');
       await user.type(reasonInput, 'Speaker confirmed via email');
 
-      const confirmButton = screen.getByRole('button', { name: 'Change Status' });
+      const confirmButton = screen.getByRole('button', { name: /Change Status/i });
       await user.click(confirmButton);
 
       expect(mockOnConfirm).toHaveBeenCalledWith('Speaker confirmed via email');
@@ -185,7 +185,7 @@ describe('StatusChangeDialog', () => {
       const user = userEvent.setup();
       render(<StatusChangeDialog {...defaultProps} />);
 
-      const confirmButton = screen.getByRole('button', { name: 'Change Status' });
+      const confirmButton = screen.getByRole('button', { name: /Change Status/i });
       await user.click(confirmButton);
 
       expect(mockOnConfirm).toHaveBeenCalledWith(undefined);
@@ -198,7 +198,7 @@ describe('StatusChangeDialog', () => {
       const reasonInput = screen.getByLabelText('Reason for status change (optional)');
       await user.type(reasonInput, '  Speaker confirmed  ');
 
-      const confirmButton = screen.getByRole('button', { name: 'Change Status' });
+      const confirmButton = screen.getByRole('button', { name: /Change Status/i });
       await user.click(confirmButton);
 
       expect(mockOnConfirm).toHaveBeenCalledWith('Speaker confirmed');
@@ -211,7 +211,7 @@ describe('StatusChangeDialog', () => {
       const reasonInput = screen.getByLabelText('Reason for status change (optional)');
       await user.type(reasonInput, 'Test reason');
 
-      const confirmButton = screen.getByRole('button', { name: 'Change Status' });
+      const confirmButton = screen.getByRole('button', { name: /Change Status/i });
       await user.click(confirmButton);
 
       // Reopen dialog
@@ -228,7 +228,7 @@ describe('StatusChangeDialog', () => {
       const user = userEvent.setup();
       render(<StatusChangeDialog {...defaultProps} />);
 
-      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
       await user.click(cancelButton);
 
       expect(mockOnCancel).toHaveBeenCalledTimes(1);
@@ -242,7 +242,7 @@ describe('StatusChangeDialog', () => {
       const reasonInput = screen.getByLabelText('Reason for status change (optional)');
       await user.type(reasonInput, 'Test reason');
 
-      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
       await user.click(cancelButton);
 
       // Reopen dialog
@@ -267,7 +267,7 @@ describe('StatusChangeDialog', () => {
         expect(screen.getByText(/Reason is too long/)).toBeInTheDocument();
       });
 
-      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
       await user.click(cancelButton);
 
       // Reopen dialog

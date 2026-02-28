@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "Plateforme de gestion d'événements BATbern",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "Mon entreprise",
     "myAccount": "Mon compte",
     "analytics": "Analytique",
-    "content": "Recherche de contenu",
     "profile": "Profil",
-    "logout": "Déconnexion",
     "myEvents": "Mes événements",
-    "presentationMode": "Mode présentation",
     "myContent": "Mon contenu",
     "myRegistrations": "Mes inscriptions",
     "about": "À propos",
@@ -27,8 +23,7 @@
     "partnerTopics": "Sujets partenaires",
     "partnerMeetings": "Réunions partenaires",
     "topics": "Suggestions de sujets",
-    "openMenu": "Ouvrir le menu",
-    "closeMenu": "Fermer le menu"
+    "openMenu": "Ouvrir le menu"
   },
   "public": {
     "login": "Connexion",
@@ -70,11 +65,6 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
-    "create": "Créer",
-    "search": "Rechercher",
-    "filter": "Filtrer",
-    "reset": "Réinitialiser",
-    "submit": "Soumettre",
     "close": "Fermer",
     "sending": "Envoi...",
     "loading": "Chargement...",
@@ -105,12 +95,10 @@
   },
   "menu": {
     "profile": "Profil",
-    "profileSettings": "Paramètres du profil",
     "settings": "Paramètres",
     "administration": "Administration",
     "help": "Aide",
-    "logout": "Déconnexion",
-    "signOut": "Se déconnecter"
+    "logout": "Déconnexion"
   },
   "role": {
     "organizer": "Organisateur d'événements",
@@ -136,49 +124,21 @@
       "swissUID": "UID suisse (CHE-XXX.XXX.XXX)",
       "website": "Site web",
       "industry": "Secteur d'activité",
-      "sector": "Secteur (optionnel)",
-      "city": "Ville",
-      "canton": "Canton",
-      "country": "Pays",
       "description": "Description",
       "legalName": "Nom abrégé : {{name}}",
       "logo": "Logo de l'entreprise"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://example.com",
-      "canton": "BE, ZH, GE, etc."
+      "website": "https://example.com"
     },
     "industries": {
-      "selectIndustry": "Sélectionner un secteur",
-      "technology": "Technologie",
-      "cloudComputing": "Informatique en nuage",
-      "devOps": "DevOps",
-      "financialServices": "Services financiers",
-      "healthcare": "Santé",
-      "manufacturing": "Industrie manufacturière",
-      "consulting": "Conseil",
-      "education": "Éducation",
-      "other": "Autre"
-    },
-    "sectors": {
-      "selectSector": "Sélectionner un secteur",
-      "public": "Public",
-      "private": "Privé",
-      "nonprofit": "À but non lucratif",
-      "government": "Gouvernement"
+      "selectIndustry": "Sélectionner un secteur"
     },
     "badges": {
-      "partner": "Partenaire",
       "verified": "Vérifié"
     },
-    "stats": {
-      "userCount": "{{count}} utilisateur",
-      "userCount_one": "{{count}} utilisateur",
-      "userCount_other": "{{count}} utilisateurs"
-    },
     "filters": {
-      "partnerOnly": "Entreprises partenaires uniquement",
       "verifiedOnly": "Entreprises vérifiées uniquement",
       "industry": "Secteur d'activité",
       "allIndustries": "Tous les secteurs",
@@ -188,7 +148,6 @@
     "form": {
       "createTitle": "Créer une nouvelle entreprise",
       "editTitle": "Modifier l'entreprise",
-      "required": "Obligatoire",
       "saveDraft": "Enregistrer le brouillon",
       "saveCreate": "Enregistrer et créer",
       "saveChanges": "Enregistrer les modifications",
@@ -198,31 +157,16 @@
         "swissUID": "Optionnel - pour la vérification automatique"
       },
       "errors": {
-        "nameRequired": "Le nom de l'entreprise est obligatoire",
-        "nameMinLength": "Le nom doit comporter au moins {{min}} caractères",
-        "nameMaxLength": "Le nom doit comporter au maximum {{max}} caractères",
-        "displayNameMaxLength": "Le nom d'affichage doit comporter au maximum {{max}} caractères",
-        "invalidSwissUID": "Format UID suisse invalide (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "URL du site web invalide",
-        "industryRequired": "Le secteur d'activité est obligatoire",
-        "cityRequired": "La ville est obligatoire",
-        "cantonRequired": "Le canton est obligatoire",
-        "countryRequired": "Le pays est obligatoire",
-        "descriptionMaxLength": "La description doit comporter au maximum {{max}} caractères",
         "noPermission": "Vous n'avez pas la permission de modifier cette entreprise. Les intervenants ne peuvent modifier que leur propre entreprise."
       }
     },
     "detail": {
       "tabs": {
-        "users": "Utilisateurs",
-        "statistics": "Statistiques",
-        "activity": "Activité"
+        "users": "Utilisateurs"
       },
-      "overviewText": "Cette section d'aperçu peut afficher des informations supplémentaires sur l'entreprise, des mises à jour récentes ou des points forts.",
       "noData": "Aucune donnée d'entreprise disponible"
     },
     "errors": {
-      "loadFailed": "Échec du chargement de l'entreprise",
       "saveFailed": "Une erreur s'est produite lors de l'enregistrement de l'entreprise",
       "deleteFailed": "Échec de la suppression de l'entreprise"
     },
@@ -230,14 +174,11 @@
       "placeholder": "Rechercher des entreprises..."
     },
     "batchImport": {
-      "button": "Importation par lot",
       "title": "Importer des entreprises depuis JSON",
       "dropzone": "Déposez le fichier JSON ici ou cliquez pour télécharger",
       "dropzoneActive": "Déposez le fichier JSON ici",
-      "invalidJson": "Fichier JSON invalide. Veuillez vérifier le format.",
       "noCompanies": "Aucune entreprise trouvée dans le fichier JSON.",
       "preview": "Aperçu ({{count}} entreprises)",
-      "importButton": "Tout importer",
       "cancelButton": "Annuler",
       "status": {
         "importing": "Importation...",
@@ -261,8 +202,7 @@
       },
       "errors": {
         "invalidFile": "Type de fichier invalide. Veuillez télécharger un fichier JSON.",
-        "parseError": "Échec de l'analyse du fichier JSON : {{error}}",
-        "importFailed": "Échec de l'importation de {{name}} : {{error}}"
+        "parseError": "Échec de l'analyse du fichier JSON : {{error}}"
       }
     },
     "delete": {
@@ -270,8 +210,7 @@
       "message": "Êtes-vous sûr de vouloir supprimer cette entreprise ?",
       "dataWarning": "Cette action supprimera définitivement l'entreprise et ne peut pas être annulée.",
       "cascadeWarning": "Toutes les données associées (utilisateurs, partenariats, intervenants, événements) peuvent être affectées.",
-      "deleting": "Suppression...",
-      "success": "Entreprise supprimée avec succès"
+      "deleting": "Suppression..."
     },
     "pagination": {
       "itemsPerPage": "Éléments par page"
@@ -279,15 +218,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Importer des événements historiques",
       "title": "Importer des événements depuis topics.json",
       "dropzone": "Déposez le fichier topics.json ici ou cliquez pour télécharger",
       "dropzoneActive": "Déposez le fichier JSON ici",
       "dropzoneHint": "Téléchargez le fichier topics.json pré-traité (avec les champs parsedDate, description et moderator)",
-      "invalidJson": "Fichier JSON invalide. Veuillez vérifier le format.",
       "noEvents": "Aucun événement trouvé dans le fichier JSON.",
       "preview": "Aperçu ({{count}} événements)",
-      "importButton": "Tout importer",
       "cancelButton": "Annuler",
       "status": {
         "pending": "En attente",
@@ -307,8 +243,7 @@
       },
       "errors": {
         "invalidFile": "Type de fichier invalide. Veuillez télécharger un fichier JSON.",
-        "parseError": "Échec de l'analyse du fichier JSON : {{error}}",
-        "importFailed": "Échec de l'importation de l'événement {{number}} : {{error}}"
+        "parseError": "Échec de l'analyse du fichier JSON : {{error}}"
       },
       "fieldSelection": {
         "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
@@ -359,7 +294,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Importer des sessions",
       "title": "Importation par lot de sessions",
       "dropzone": "Déposez sessions.json ici ou cliquez pour télécharger",
       "dropzoneActive": "Déposez sessions.json ici",
@@ -433,22 +367,14 @@
       "noMaterials": "Aucun matériel"
     },
     "content": {
-      "title": "Soumettre votre contenu",
-      "loading": "Chargement du contenu...",
       "invalidLink": "Lien invalide",
       "invalidLinkMessage": "Cette page nécessite un lien de contenu valide. Veuillez utiliser le lien de votre e-mail d'invitation.",
-      "linkExpired": "Le lien a expiré",
       "linkExpiredMessage": "Ce lien a expiré. Veuillez contacter l'organisateur pour obtenir un nouveau lien.",
-      "sessionNotAssigned": "Session non attribuée",
-      "sessionNotAssignedMessage": "Votre session n'a pas encore été attribuée. Veuillez contacter l'organisateur pour faire attribuer votre session avant de soumettre du contenu.",
-      "event": "Événement",
       "presentationTitle": "Titre de la présentation",
       "abstract": "Résumé",
       "titleRequired": "Le titre est obligatoire",
       "abstractRequired": "Le résumé est obligatoire",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "Fichier de présentation",
-      "optional": "optionnel",
       "saving": "Enregistrement...",
       "lastSaved": "Dernière sauvegarde : {{time}}",
       "unsavedChanges": "Modifications non enregistrées",
@@ -476,21 +402,7 @@
       "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
-      "dragDropTitle": "Télécharger la présentation",
-      "dragDropMessage": "Glissez-déposez votre fichier ici, ou cliquez pour parcourir",
-      "supportedFormats": "Formats pris en charge : PPTX, PDF, KEY (max 50 Mo)",
       "uploading": "Téléchargement...",
-      "uploadProgress": "{{percent}}% téléchargé",
-      "uploadComplete": "Téléchargement terminé",
-      "removeFile": "Supprimer le fichier",
-      "currentFile": "Fichier actuel",
-      "download": "Télécharger",
-      "replace": "Remplacer",
-      "errors": {
-        "fileTooLarge": "Le fichier est trop volumineux. La taille maximale est de 50 Mo.",
-        "invalidType": "Type de fichier invalide. Seuls les fichiers PPTX, PDF et KEY sont autorisés.",
-        "uploadFailed": "Échec du téléchargement. Veuillez réessayer."
-      },
       "presentationFile": "[MISSING] Presentation file",
       "changeFile": "[MISSING] Change file",
       "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
@@ -619,22 +531,14 @@
       "loadFailed": "Échec du chargement des événements"
     },
     "card": {
-      "sessions": "Présentations",
-      "viewDetails": "Voir les détails",
-      "andMore": "et {{count}} de plus"
+      "viewDetails": "Voir les détails"
     },
     "filters": {
       "title": "Filtres",
       "search": "Rechercher des événements...",
       "topics": "Sujets",
       "clearAll": "Tout effacer",
-      "activeCount": "{{count}} filtre actif",
-      "activeCount_one": "{{count}} filtre actif",
-      "activeCount_other": "{{count}} filtres actifs"
-    },
-    "sort": {
-      "newest": "Les plus récents",
-      "oldest": "Les plus anciens"
+      "activeCount": "{{count}} filtre actif"
     },
     "detail": {
       "backToArchive": "← Retour aux archives"
@@ -662,7 +566,6 @@
     }
   },
   "emailTemplates": {
-    "title": "Modèles d'e-mail",
     "layoutTemplates": "Modèles de mise en page",
     "layoutTemplatesInfo": "Définit l'aspect et la convivialité BATbern pour tous les e-mails. Les modifications ici affectent tous les modèles utilisant cette mise en page.",
     "contentTemplates": "Contenu des e-mails",
@@ -685,15 +588,12 @@
     "noLayouts": "Aucun modèle de mise en page trouvé.",
     "noTemplates": "Aucun modèle trouvé pour ce filtre.",
     "missingContentPlaceholder": "Espace réservé {{content}} manquant — le corps de l'e-mail sera vide",
-    "cannotDeleteSystem": "Les modèles système ne peuvent pas être supprimés.",
-    "cannotDeleteLayout": "Les modèles de mise en page ne peuvent pas être supprimés.",
     "deleteFailed": "Échec de la suppression du modèle.",
     "saveFailed": "Échec de l'enregistrement du modèle. Veuillez réessayer.",
     "validation": {
       "htmlBodyRequired": "Le corps HTML est obligatoire.",
       "subjectRequired": "L'objet est obligatoire pour les modèles de contenu.",
-      "templateKeyRequired": "La clé du modèle est obligatoire.",
-      "allFieldsRequired": "La clé du modèle, l'objet et le corps HTML sont obligatoires."
+      "templateKeyRequired": "La clé du modèle est obligatoire."
     }
   },
   "presentation": {

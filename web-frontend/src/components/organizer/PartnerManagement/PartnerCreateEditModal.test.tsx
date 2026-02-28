@@ -77,7 +77,7 @@ describe('PartnerCreateEditModal', () => {
     it('should_displayCreateTitle_when_createModeActive', () => {
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Create Partnership')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Create Partnership/i })).toBeInTheDocument();
     });
 
     it('should_displayEmptyForm_when_createModalOpened', () => {
@@ -134,7 +134,7 @@ describe('PartnerCreateEditModal', () => {
     it('should_displayEditTitle_when_editModeActive', () => {
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Edit Partnership')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Edit Partnership/i })).toBeInTheDocument();
     });
 
     it('should_prefillForm_when_editModalOpened', () => {

@@ -358,7 +358,7 @@ describe('HeroSection Component', () => {
     test('should_renderClickButton_when_eventCodeProvided', () => {
       renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
 
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       expect(button).toBeInTheDocument();
       expect(button).not.toHaveAttribute('href');
     });
@@ -370,7 +370,7 @@ describe('HeroSection Component', () => {
       expect(screen.queryByTestId('registration-wizard')).not.toBeInTheDocument();
 
       // Click register button
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       fireEvent.click(button);
 
       // Registration wizard should now be visible
@@ -382,7 +382,7 @@ describe('HeroSection Component', () => {
     test('should_passCorrectProps_when_wizardRendered', async () => {
       renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
 
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       fireEvent.click(button);
 
       await waitFor(() => {
@@ -395,7 +395,7 @@ describe('HeroSection Component', () => {
       renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
 
       // Expand wizard
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       fireEvent.click(button);
 
       await waitFor(() => {
@@ -415,7 +415,7 @@ describe('HeroSection Component', () => {
     test('should_disableRegisterButton_when_wizardExpanded', async () => {
       renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
 
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       expect(button).not.toBeDisabled();
 
       fireEvent.click(button);
@@ -429,7 +429,7 @@ describe('HeroSection Component', () => {
       const { container } = renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
 
       // Click register button
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       fireEvent.click(button);
 
       // Overlay should appear - check for the overlay in the registration wizard section
@@ -446,7 +446,7 @@ describe('HeroSection Component', () => {
       expect(section).toHaveClass('min-h-screen');
 
       // Click register button
-      const button = screen.getByRole('button', { name: 'Register Now' });
+      const button = screen.getByRole('button', { name: /Register Now/i });
       fireEvent.click(button);
 
       // Verify wizard is expanded

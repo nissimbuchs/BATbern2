@@ -5,18 +5,11 @@
     "placeholder": "Zoeken op naam of e-mail...",
     "noResults": "Geen gebruikers gevonden"
   },
-  "viewMode": {},
   "filters": {
-    "title": "Filters",
     "clearAll": "Alle filters wissen",
     "role": {
       "label": "Rol",
       "all": "Alle rollen"
-    },
-    "company": {
-      "label": "Bedrijf",
-      "all": "Alle bedrijven",
-      "placeholder": "Selecteer bedrijf..."
     },
     "status": {
       "active": "Actief",
@@ -28,13 +21,7 @@
     "headers": {
       "roles": "Rollen"
     },
-    "showing": "{{count}} gebruikers weergegeven",
-    "showingRange": "{{from}}-{{to}} van {{total}} gebruikers",
-    "perPage": "per pagina",
-    "empty": "Geen gebruikers gevonden",
-    "emptySearch": "Geen gebruikers komen overeen met uw zoekopdracht. Probeer de filters te wissen.",
-    "ascending": "Oplopend",
-    "descending": "Aflopend"
+    "empty": "Geen gebruikers gevonden"
   },
   "actions": {
     "view": "Bekijken",
@@ -54,17 +41,8 @@
   "modal": {
     "userDetail": {
       "title": "Gebruikersdetails",
-      "profile": "Profiel",
-      "contactInfo": "Contactgegevens",
-      "rolesAssigned": "Toegewezen rollen",
-      "companyAffiliation": "Bedrijfsaffiliatie",
-      "activityHistory": "Activiteitsgeschiedenis",
-      "accountCreated": "Account aangemaakt",
       "createdAt": "Aangemaakt op",
-      "updatedAt": "Laatst bijgewerkt",
-      "lastLogin": "Laatste aanmelding",
-      "noCompany": "Geen bedrijf toegewezen",
-      "noActivity": "Geen activiteit beschikbaar"
+      "updatedAt": "Laatst bijgewerkt"
     },
     "createUser": {
       "title": "Nieuwe gebruiker aanmaken",
@@ -78,22 +56,15 @@
     },
     "editRoles": {
       "title": "Rollen bewerken",
-      "subtitle": "Rollen beheren voor {{name}}",
       "user": "Gebruiker",
       "selectRoles": "Rollen selecteren",
-      "minimumOrganizers": "Er moeten minimaal {{count}} organisatoren in het systeem zijn",
-      "cannotRemove": "Deze rol kan niet worden verwijderd",
-      "updating": "Bijwerken...",
       "saving": "Opslaan..."
     },
     "deleteConfirm": {
       "title": "Gebruiker verwijderen",
       "message": "Weet u zeker dat u deze gebruiker wilt verwijderen?",
-      "userName": "Gebruiker: {{name}}",
       "gdprWarning": "AVG-kennisgeving: Deze actie verwijdert alle gebruikersgegevens permanent en kan niet ongedaan worden gemaakt.",
-      "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd.",
-      "cannotDelete": "Deze gebruiker kan niet worden verwijderd",
-      "lastOrganizerWarning": "U kunt de laatste organisator niet verwijderen. Er moeten minimaal {{count}} organisatoren in het systeem zijn."
+      "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd."
     },
     "editUser": {
       "uploadPhotoAria": "[MISSING] Upload profile photo",
@@ -102,8 +73,7 @@
   },
   "pagination": {
     "page": "Pagina {{page}} van {{total}}",
-    "itemsPerPage": "Items per pagina",
-    "goToPage": "Ga naar pagina"
+    "itemsPerPage": "Items per pagina"
   },
   "loading": {
     "users": "Gebruikers laden...",
@@ -114,55 +84,16 @@
   "error": {
     "required": "Dit veld is verplicht",
     "email": {
-      "invalid": "Ongeldig e-mailadres",
-      "exists": "E-mailadres bestaat al",
-      "required": "E-mail is verplicht"
-    },
-    "name": {
-      "tooShort": "Naam moet minimaal {{min}} tekens bevatten",
-      "tooLong": "Naam mag niet meer dan {{max}} tekens bevatten"
-    },
-    "roles": {
-      "required": "Minimaal één rol is vereist",
-      "minOrganizers": "Er moeten minimaal {{count}} organisatoren in het systeem zijn"
+      "invalid": "Ongeldig e-mailadres"
     },
     "minOneRole": "Er moet minimaal één rol worden geselecteerd",
     "loadFailed": "Laden van gebruikers mislukt",
     "createFailed": "Aanmaken van gebruiker mislukt",
     "updateFailed": "Bijwerken van gebruiker mislukt",
     "deleteFailed": "Verwijderen van gebruiker mislukt",
-    "deleteLastOrganizer": "Kan de laatste organisator niet verwijderen",
-    "networkError": "Netwerkfout. Controleer uw verbinding.",
-    "unauthorized": "U bent niet gemachtigd om deze actie uit te voeren",
     "notFound": "Gebruiker niet gevonden"
   },
-  "success": {
-    "userCreated": "Gebruiker succesvol aangemaakt",
-    "userUpdated": "Gebruiker succesvol bijgewerkt",
-    "userDeleted": "Gebruiker succesvol verwijderd",
-    "rolesUpdated": "Rollen succesvol bijgewerkt"
-  },
-  "emptyState": {
-    "title": "Geen gebruikers",
-    "description": "Er zijn nog geen gebruikers toegevoegd.",
-    "action": "Eerste gebruiker toevoegen"
-  },
-  "accessibility": {
-    "filterPanel": "Filterpaneel",
-    "userTable": "Gebruikerstabel",
-    "sortAscending": "Oplopend sorteren",
-    "sortDescending": "Aflopend sorteren",
-    "openMenu": "Menu openen",
-    "closeModal": "Modaalvenster sluiten",
-    "rowCount": "{{count}} gebruikers in tabel"
-  },
-  "offline": {
-    "indicator": "Offline",
-    "message": "U bent offline. Sommige functies zijn mogelijk niet beschikbaar.",
-    "viewingCache": "Gecachede gegevens bekijken"
-  },
   "batchImport": {
-    "button": "Sprekers importeren",
     "title": "Sprekers bulkimport",
     "dropzone": "Zet speakers.json hier neer of klik om te bladeren",
     "dropzoneActive": "Zet het bestand hier neer...",
@@ -176,7 +107,6 @@
     "cancelButton": "Annuleren",
     "importButton": "{{new}} aanmaken / {{update}} bijwerken",
     "allSkipped": "Geen wijzigingen te importeren",
-    "columns": {},
     "status": {
       "pending": "Nieuw",
       "importing": "Importeren...",
@@ -195,7 +125,6 @@
     "noPortrait": "Geen portretafbeelding"
   },
   "participantImport": {
-    "button": "Deelnemers importeren",
     "title": "Deelnemers importeren vanuit CSV",
     "dropzone": "Sleep CSV-bestand hier naartoe",
     "dropzoneActive": "Laat CSV-bestand hier vallen",
@@ -204,10 +133,8 @@
     "preview": "Voorbeeld: {{count}} deelnemers klaar om te importeren",
     "previewLimitation": "Let op: Voorbeeld toont bestaande gebruikers alleen op basis van gebruikersnaam. Tijdens het importeren kunnen gebruikers ook worden gekoppeld op naam (voor- + achternaam) als dat ondubbelzinnig is. Sommige deelnemers die als 'Nieuw' worden weergegeven, kunnen overeenkomen met bestaande gebruikers op naam.",
     "importButton": "{{count}} deelnemers importeren",
-    "startImport": "Import starten",
     "progress": "Importeren: {{current}} / {{total}}",
     "summary": "Importoverzicht",
-    "columns": {},
     "status": {
       "pending": "In behandeling",
       "importing": "Importeren",
@@ -227,9 +154,6 @@
       "existing": "[MISSING] Existing",
       "new": "[MISSING] New"
     },
-    "noParticipants": "Deze gebruiker heeft nog niet deelgenomen aan evenementen.",
-    "loadingEvents": "Evenementen laden...",
-    "errorLoadingEvents": "Laden van evenementdeelnames mislukt",
     "aria": {
       "statusLabel": "[MISSING] Import status: {{label}}",
       "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
@@ -254,7 +178,6 @@
       "title": "Titel",
       "date": "Datum",
       "status": "Status",
-      "loading": "Evenementen laden...",
       "loadError": "Laden van evenementdeelnamegeschiedenis mislukt",
       "noEvents": "Deze gebruiker heeft nog niet deelgenomen aan evenementen",
       "untitledEvent": "Naamloos evenement",
@@ -267,8 +190,7 @@
         "CANCELLED": "Geannuleerd",
         "WAITLISTED": "Op wachtlijst"
       }
-    },
-    "bio": "Biografie"
+    }
   },
   "settings": {
     "tabs": {

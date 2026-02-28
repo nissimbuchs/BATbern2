@@ -37,15 +37,13 @@ const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const ONBOARDING_TOKEN = process.env.E2E_SPEAKER_ONBOARDING_TOKEN;
 
 // Helper to check if we're on the login page (indicates invalid token - 401 redirect)
+// Selectors are translation-independent (role/testid) per BAT-10.9 Phase 3C.
 async function isOnLoginPage(page: Page): Promise<boolean> {
   // Check for login page indicators - use longer timeout for page navigation
   const loginIndicators = [
-    page.locator('h1').filter({ hasText: /Welcome back|Willkommen zurück/i }),
-    page.locator('text=/Melden Sie sich an/i'),
-    page.locator('input[placeholder*="email"]'),
-    page.locator('input[placeholder*="ihre.email"]'),
-    page.locator('button:has-text("Login")'),
-    page.locator('button:has-text("Anmelden")'),
+    page.getByRole('heading', { level: 1, name: /welcome back|willkommen/i }),
+    page.getByRole('button', { name: /login|anmelden/i }),
+    page.locator('input[type="email"]'),
   ];
 
   for (const indicator of loginIndicators) {
@@ -94,14 +92,14 @@ test.describe('Speaker Onboarding Complete Flow', () => {
         timeout: 15000,
       });
 
-      // Verify response buttons are available
-      await expect(page.locator('button').filter({ hasText: /Accept/i })).toBeVisible();
+      // Verify response buttons are available (testid — language-independent)
+      await expect(page.getByTestId('invitation-response-accept-btn')).toBeVisible();
     });
 
     // Step 2: Accept invitation
     await test.step('Accept invitation', async () => {
-      // Click Accept button
-      const acceptButton = page.locator('button').filter({ hasText: /Accept/i });
+      // Click Accept button via testid (language-independent)
+      const acceptButton = page.getByTestId('invitation-response-accept-btn');
       await acceptButton.click();
 
       // Fill optional preferences if shown
@@ -110,8 +108,8 @@ test.describe('Speaker Onboarding Complete Flow', () => {
         await timeSlotSelect.selectOption({ index: 1 });
       }
 
-      // Submit response
-      const submitButton = page.locator('button').filter({ hasText: /Submit Response/i });
+      // Submit response via testid
+      const submitButton = page.getByTestId('invitation-response-submit-btn');
       await expect(submitButton).toBeEnabled();
       await submitButton.click();
 
@@ -146,8 +144,10 @@ test.describe('Speaker Onboarding Complete Flow', () => {
 
       await page.waitForLoadState('networkidle');
 
-      // Verify profile page loaded
-      await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+      // Verify profile page loaded via heading role (language-independent)
+      await expect(page.getByRole('heading', { name: /speaker profile/i })).toBeVisible({
+        timeout: 15000,
+      });
     });
 
     // Step 4: Update profile
@@ -175,9 +175,10 @@ test.describe('Speaker Onboarding Complete Flow', () => {
         const existingTag = page.getByText(new RegExp(`^${expertise}×$`)).first();
         const alreadyExists = await existingTag.isVisible().catch(() => false);
         if (!alreadyExists) {
-          const expertiseInput = page.locator('input[placeholder*="Add expertise"]');
+          // Use getByRole textbox with label name (language-independent)
+          const expertiseInput = page.getByRole('textbox', { name: /expertise/i });
           await expertiseInput.fill(expertise);
-          await page.locator('button').filter({ hasText: /^Add$/ }).first().click();
+          await page.getByRole('button', { name: /^add$/i }).first().click();
         }
         // Wait for tag to appear
         await expect(existingTag).toBeVisible();
@@ -188,9 +189,10 @@ test.describe('Speaker Onboarding Complete Flow', () => {
         const existingTag = page.getByText(new RegExp(`^${topic}×$`)).first();
         const alreadyExists = await existingTag.isVisible().catch(() => false);
         if (!alreadyExists) {
-          const topicInput = page.locator('input[placeholder*="Add speaking topic"]');
+          // Use getByRole textbox with label name (language-independent)
+          const topicInput = page.getByRole('textbox', { name: /speaking topic/i });
           await topicInput.fill(topic);
-          await page.locator('button').filter({ hasText: /^Add$/ }).nth(1).click();
+          await page.getByRole('button', { name: /^add$/i }).nth(1).click();
         }
         // Wait for tag to appear
         await expect(existingTag).toBeVisible();
@@ -213,8 +215,8 @@ test.describe('Speaker Onboarding Complete Flow', () => {
       await linkedInInput.clear();
       await linkedInInput.fill(TEST_PROFILE.linkedIn);
 
-      // Save profile
-      const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+      // Save profile via role (language-independent)
+      const saveButton = page.getByRole('button', { name: /save changes/i });
       await expect(saveButton).toBeEnabled();
       await saveButton.click();
 
@@ -236,7 +238,9 @@ test.describe('Speaker Onboarding Complete Flow', () => {
         // If session is assigned, navigate to content page
         await contentLink.click();
         await page.waitForLoadState('networkidle');
-        await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('heading', { name: /submit.*content/i })).toBeVisible({
+          timeout: 15000,
+        });
       } else {
         // Without a session, verify we see the "no session assigned" state or just complete profile
         // This is the expected flow for newly accepted speakers
@@ -279,7 +283,9 @@ test.describe('Speaker Profile Update Flow (Isolated)', () => {
     }
 
     // Wait for form
-    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /speaker profile/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Verify form fields are present
     await expect(page.locator('#firstName')).toBeVisible();
@@ -287,7 +293,7 @@ test.describe('Speaker Profile Update Flow (Isolated)', () => {
     await expect(page.locator('#bio')).toBeVisible();
     await expect(page.locator('#linkedIn')).toBeVisible();
 
-    // Verify profile completeness indicator
+    // Verify profile completeness indicator (data label, keep text match)
     await expect(page.locator('text=/Profile Completeness/i')).toBeVisible();
   });
 
@@ -324,7 +330,7 @@ test.describe('Speaker Profile Update Flow (Isolated)', () => {
     const currentBio = await bioField.inputValue();
     await bioField.fill(currentBio + ' ');
 
-    const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+    const saveButton = page.getByRole('button', { name: /save changes/i });
     await saveButton.click();
 
     // Verify validation error
@@ -357,7 +363,9 @@ test.describe('Speaker Profile Update Flow (Isolated)', () => {
       return;
     }
 
-    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /speaker profile/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Check if content submission link is visible (only shown when session assigned)
     const contentLink = page.locator('a[href*="/speaker-portal/content"]');
@@ -376,9 +384,11 @@ test.describe('Speaker Profile Update Flow (Isolated)', () => {
         return;
       }
 
-      await expect(page.locator('text=/Submit Your Content|Session Not Assigned/i')).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(
+        page
+          .getByRole('heading', { name: /submit.*content/i })
+          .or(page.locator('text=/Session Not Assigned/i'))
+      ).toBeVisible({ timeout: 10000 });
     } else {
       // No session assigned - verify content submission card is not shown
       await expect(contentLink).not.toBeVisible();
@@ -438,11 +448,13 @@ test.describe('Content Submission Flow (Isolated)', () => {
       return;
     }
 
-    // Verify form elements
-    await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+    // Verify form elements (heading via role, button via role — language-independent)
+    await expect(page.getByRole('heading', { name: /submit.*content/i })).toBeVisible({
+      timeout: 15000,
+    });
     await expect(page.locator('#title')).toBeVisible();
     await expect(page.locator('#abstract')).toBeVisible();
-    await expect(page.locator('button').filter({ hasText: /Submit Content/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /submit content/i })).toBeVisible();
   });
 
   test('should validate required fields before submission', async ({ page }) => {
@@ -472,7 +484,7 @@ test.describe('Content Submission Flow (Isolated)', () => {
     await page.locator('#title').clear();
     await page.locator('#abstract').clear();
 
-    const submitButton = page.locator('button').filter({ hasText: /Submit Content/i });
+    const submitButton = page.getByRole('button', { name: /submit content/i });
     await submitButton.click();
 
     // Verify validation errors
@@ -501,7 +513,9 @@ test.describe('Content Submission Flow (Isolated)', () => {
       return;
     }
 
-    await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /submit.*content/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Click Edit Profile link (AC10)
     const editProfileLink = page.locator('a').filter({ hasText: /Edit Profile/i });
@@ -511,7 +525,9 @@ test.describe('Content Submission Flow (Isolated)', () => {
     await page.waitForLoadState('networkidle');
 
     // Should be on profile page
-    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /speaker profile/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -586,12 +602,14 @@ test.describe('Mobile Responsiveness', () => {
     }
 
     // Verify elements are visible and accessible on mobile
-    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /speaker profile/i })).toBeVisible({
+      timeout: 15000,
+    });
     await expect(page.locator('#firstName')).toBeVisible();
     await expect(page.locator('#bio')).toBeVisible();
 
-    // Save button should be accessible
-    const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+    // Save button should be accessible (role-based, language-independent)
+    const saveButton = page.getByRole('button', { name: /save changes/i });
     await expect(saveButton).toBeVisible();
 
     // Verify adequate tap target size (ideal is 44px per Apple HIG, minimum 24px for usability)
@@ -630,7 +648,7 @@ test.describe('Accessibility', () => {
     }
 
     // Should have main heading
-    await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15000 });
 
     // Should have section headings
     const headings = page.locator('h1, h2, h3');

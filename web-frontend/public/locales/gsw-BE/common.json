@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "BATbern Veranstautigsplattform",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "Miin Betrieb",
     "myAccount": "Mii Konto",
     "analytics": "Statistike",
-    "content": "Inhauts-Suechi",
     "profile": "Profil",
-    "logout": "Abmälde",
     "myEvents": "Miin Veranstaltigen",
-    "presentationMode": "Präsentationsmodus",
     "myContent": "Miin Inhaut",
     "myRegistrations": "Mini Amäldigä",
     "about": "Über üs",
@@ -27,8 +23,7 @@
     "partnerTopics": "Partner-Theme",
     "partnerMeetings": "Partner-Treffe",
     "topics": "Themenvorschläg",
-    "openMenu": "Menü ufmache",
-    "closeMenu": "Menü zuetuä"
+    "openMenu": "Menü ufmache"
   },
   "public": {
     "login": "Ämälde",
@@ -70,11 +65,6 @@
     "cancel": "Abbräche",
     "delete": "Lösche",
     "edit": "Bearbeite",
-    "create": "Erstelle",
-    "search": "Sueche",
-    "filter": "Filter",
-    "reset": "Zruggsetze",
-    "submit": "Abschicke",
     "close": "Zuetuä",
     "sending": "Wird gschickt...",
     "loading": "Lade...",
@@ -124,12 +114,10 @@
   },
   "menu": {
     "profile": "Profil",
-    "profileSettings": "Profileinstellige",
     "settings": "Istellige",
     "administration": "Verwautig",
     "help": "Hilf",
-    "logout": "Abmälde",
-    "signOut": "Abmälde"
+    "logout": "Abmälde"
   },
   "role": {
     "organizer": "Veranstautigsorganisator",
@@ -155,49 +143,21 @@
       "swissUID": "Schweizer UID (CHE-XXX.XXX.XXX)",
       "website": "Website",
       "industry": "Branche",
-      "sector": "Sektor (optional)",
-      "city": "Stadt",
-      "canton": "Kanton",
-      "country": "Land",
       "description": "Beschribig",
       "legalName": "Churzname: {{name}}",
       "logo": "Firmalogo"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://beispiel.com",
-      "canton": "BE, ZH, GE, usw."
+      "website": "https://beispiel.com"
     },
     "industries": {
-      "selectIndustry": "Branche uswähle",
-      "technology": "Technologie",
-      "cloudComputing": "Cloud Computing",
-      "devOps": "DevOps",
-      "financialServices": "Finanzdienstlaistige",
-      "healthcare": "Gsundheitswäse",
-      "manufacturing": "Fertigig",
-      "consulting": "Beratig",
-      "education": "Bildigs",
-      "other": "Anderi"
-    },
-    "sectors": {
-      "selectSector": "Sektor uswähle",
-      "public": "Öffentlich",
-      "private": "Privat",
-      "nonprofit": "Gemeinnützig",
-      "government": "Regierig"
+      "selectIndustry": "Branche uswähle"
     },
     "badges": {
-      "partner": "Partner",
       "verified": "Verifiziert"
     },
-    "stats": {
-      "userCount": "{{count}} Benutzer",
-      "userCount_one": "{{count}} Benutzer",
-      "userCount_other": "{{count}} Benutzer"
-    },
     "filters": {
-      "partnerOnly": "Nur Partnerfirma",
       "verifiedOnly": "Nur verifizierti Firma",
       "industry": "Branche",
       "allIndustries": "Alli Branche",
@@ -207,7 +167,6 @@
     "form": {
       "createTitle": "Neui Firma erstelle",
       "editTitle": "Firma bearbeite",
-      "required": "Pflichtfäud",
       "saveDraft": "Entwurf spychere",
       "saveCreate": "Spychere und erstelle",
       "saveChanges": "Änderige spychere",
@@ -217,31 +176,16 @@
         "swissUID": "Optional – für automatischi Verifizierig"
       },
       "errors": {
-        "nameRequired": "Firmaname isch Pflicht",
-        "nameMinLength": "Name mues mindestens {{min}} Zeiche lang si",
-        "nameMaxLength": "Name darf höchstens {{max}} Zeiche lang si",
-        "displayNameMaxLength": "Anzeigename darf höchstens {{max}} Zeiche lang si",
-        "invalidSwissUID": "Ungültiges Schweizer UID-Format (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "Ungültige Website-URL",
-        "industryRequired": "Branche isch Pflicht",
-        "cityRequired": "Stadt isch Pflicht",
-        "cantonRequired": "Kanton isch Pflicht",
-        "countryRequired": "Land isch Pflicht",
-        "descriptionMaxLength": "Beschribig darf höchstens {{max}} Zeiche lang si",
         "noPermission": "Du hesch kei Bärechtigig zum Bearbeite vo dere Firma. Redneri chöne nur iri eigeni Firma bearbeite."
       }
     },
     "detail": {
       "tabs": {
-        "users": "Benutzer",
-        "statistics": "Statistike",
-        "activity": "Aktivitäte"
+        "users": "Benutzer"
       },
-      "overviewText": "Dä Übersichtsabschnitt cha zusätzligi Firmainfos, neui Updates oder Highlights zeige.",
       "noData": "Kei Firmadaten verfügbar"
     },
     "errors": {
-      "loadFailed": "Firma chöne nid gglade werde",
       "saveFailed": "Es isch es Fähler bim Spychere dr Firma passiert",
       "deleteFailed": "Firma chöne nid glöscht werde"
     },
@@ -249,14 +193,11 @@
       "placeholder": "Firma sueche..."
     },
     "batchImport": {
-      "button": "Massenimport",
       "title": "Firma us JSON importiere",
       "dropzone": "JSON-Datei da ablegge oder klicke zum Ufelade",
       "dropzoneActive": "JSON-Datei da ablegge",
-      "invalidJson": "Ungültige JSON-Datei. Bitte s'Format prüefe.",
       "noCompanies": "Kei Firma in dr JSON-Datei gfunde.",
       "preview": "Vorschau ({{count}} Firma)",
-      "importButton": "Alles importiere",
       "cancelButton": "Abbräche",
       "status": {
         "importing": "Wird importiert...",
@@ -280,8 +221,7 @@
       },
       "errors": {
         "invalidFile": "Ungültige Dateityp. Bitte e JSON-Datei ufelade.",
-        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}",
-        "importFailed": "{{name}} chöne nid importiert werde: {{error}}"
+        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}"
       }
     },
     "delete": {
@@ -289,8 +229,7 @@
       "message": "Bisch sicher, dass du die Firma lösche wötsch?",
       "dataWarning": "Die Aktion löscht d'Firma permanänt und cha nid rückgängig gmacht werde.",
       "cascadeWarning": "Alli zuegörigi Date (Benutzer, Partnerschafte, Redneri, Veranstaltigen) chönte beeinflusst werde.",
-      "deleting": "Wird glöscht...",
-      "success": "Firma erfolgriich glöscht"
+      "deleting": "Wird glöscht..."
     },
     "pagination": {
       "itemsPerPage": "Elemente pro Syte"
@@ -298,15 +237,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Historischi Veranstaltigen importiere",
       "title": "Veranstaltigen us topics.json importiere",
       "dropzone": "topics.json-Datei da ablegge oder klicke zum Ufelade",
       "dropzoneActive": "JSON-Datei da ablegge",
       "dropzoneHint": "D'vorverarbeiteti topics.json-Datei ufelade (mit parsedDate, description und moderator-Fäuder)",
-      "invalidJson": "Ungültige JSON-Datei. Bitte s'Format prüefe.",
       "noEvents": "Kei Veranstaltigen in dr JSON-Datei gfunde.",
       "preview": "Vorschau ({{count}} Veranstaltigen)",
-      "importButton": "Alles importiere",
       "cancelButton": "Abbräche",
       "status": {
         "pending": "Hangend",
@@ -325,8 +261,7 @@
       },
       "errors": {
         "invalidFile": "Ungültige Dateityp. Bitte e JSON-Datei ufelade.",
-        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}",
-        "importFailed": "Veranstatig {{number}} chöne nid importiert werde: {{error}}"
+        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}"
       }
     }
   },
@@ -366,7 +301,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Sessione importiere",
       "title": "Sessione-Massenimport",
       "dropzone": "sessions.json da ablegge oder klicke zum Ufelade",
       "dropzoneActive": "sessions.json da ablegge",
@@ -440,22 +374,14 @@
       "noMaterials": "Kei Materialien"
     },
     "content": {
-      "title": "Din Inhaut iischicke",
-      "loading": "Inhaut wird gglade...",
       "invalidLink": "Ungültige Link",
       "invalidLinkMessage": "Die Syte bruucht en gültige Inhaut-Link. Bitte dr Link us diner Iiladeigs-E-Mail verwände.",
-      "linkExpired": "Link abgloffe",
       "linkExpiredMessage": "Dä Link isch abgloffe. Bitte kontaktier dr Organisator für en neue Link.",
-      "sessionNotAssigned": "Session no nid zuegwiise",
-      "sessionNotAssignedMessage": "Dini Session isch no nid zuegwiise worde. Bitte kontaktier dr Organisator, damit dini Session zuegwiise wird, bevor du Inhaut iischlicke chasch.",
-      "event": "Veranstatig",
       "presentationTitle": "Präsentationstitel",
       "abstract": "Abstract",
       "titleRequired": "Titel isch Pflicht",
       "abstractRequired": "Abstract isch Pflicht",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "Präsentationsdatei",
-      "optional": "optional",
       "saving": "Wird gspycheret...",
       "lastSaved": "Zuletzt gspycheret: {{time}}",
       "unsavedChanges": "Ungspycherte Änderige",
@@ -471,21 +397,7 @@
       "on": "am"
     },
     "upload": {
-      "dragDropTitle": "Präsentation ufelade",
-      "dragDropMessage": "Datei da ablegge oder klicke zum Sueche",
-      "supportedFormats": "Unterstützti Formate: PPTX, PDF, KEY (max 50MB)",
       "uploading": "Wird ufeglade...",
-      "uploadProgress": "{{percent}}% ufeglade",
-      "uploadComplete": "Upload abgschlosse",
-      "removeFile": "Datei entferne",
-      "currentFile": "Aktuelli Datei",
-      "download": "Abelade",
-      "replace": "Ersetze",
-      "errors": {
-        "fileTooLarge": "Datei z'gross. Maximali Grösse isch 50MB.",
-        "invalidType": "Ungültige Dateityp. Nur PPTX, PDF und KEY-Dateie si erlaubt.",
-        "uploadFailed": "Upload fehlgschlage. Bitte nomol versuche."
-      },
       "uploadAria": "[MISSING] Upload presentation file"
     },
     "photo": {
@@ -508,22 +420,14 @@
       "loadFailed": "Veranstaltigen chöne nid gglade werde"
     },
     "card": {
-      "sessions": "Vorträg",
-      "viewDetails": "Details aluege",
-      "andMore": "und {{count}} meh"
+      "viewDetails": "Details aluege"
     },
     "filters": {
       "title": "Filter",
       "search": "Veranstaltigen sueche...",
       "topics": "Theme",
       "clearAll": "Alli lösche",
-      "activeCount": "{{count}} aktive Filter",
-      "activeCount_one": "{{count}} aktive Filter",
-      "activeCount_other": "{{count}} aktive Filter"
-    },
-    "sort": {
-      "newest": "Nöischte zuerscht",
-      "oldest": "Ältschte zuerscht"
+      "activeCount": "{{count}} aktive Filter"
     },
     "detail": {
       "backToArchive": "← Zrugg zum Archiv"
@@ -550,7 +454,6 @@
     }
   },
   "emailTemplates": {
-    "title": "E-Mail-Vorlagen",
     "layoutTemplates": "Layout-Vorlagen",
     "layoutTemplatesInfo": "Definiert s'BATbern-Usseh für alli E-Mails. Änderige da beeinflusse alli Vorlagen, wo dises Layout verwände.",
     "contentTemplates": "E-Mail-Inhaut",
@@ -573,15 +476,12 @@
     "noLayouts": "Kei Layout-Vorlagen gfunde.",
     "noTemplates": "Kei Vorlagen für disen Filter gfunde.",
     "missingContentPlaceholder": "{{content}}-Platzhalter fählt — E-Mail-Inhaut wird leer si",
-    "cannotDeleteSystem": "Systemvorlagen chöne nid glöscht werde.",
-    "cannotDeleteLayout": "Layout-Vorlagen chöne nid glöscht werde.",
     "deleteFailed": "Vorlage chöne nid glöscht werde.",
     "saveFailed": "Vorlage chöne nid gspycheret werde. Bitte nomol versuche.",
     "validation": {
       "htmlBodyRequired": "HTML-Inhaut isch Pflicht.",
       "subjectRequired": "Betreff isch Pflicht für Inhautvorlagen.",
-      "templateKeyRequired": "Vorlagenschlüssel isch Pflicht.",
-      "allFieldsRequired": "Vorlagenschlüssel, Betreff und HTML-Inhaut si Pflicht."
+      "templateKeyRequired": "Vorlagenschlüssel isch Pflicht."
     }
   },
   "presentation": {

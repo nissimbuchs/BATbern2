@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Kumppanit",
-    "speakerOutreach": "Puhujien hankinta",
     "topicManagement": "Aiheiden hallinta"
-  },
-  "dashboard": {
-    "criticalTasks": "Kriittiset tehtävät",
-    "noCriticalTasks": "Ei kriittisiä tehtäviä",
-    "greatJob": "Hienoa työtä!",
-    "taskCount": "{{count}} tehtävä",
-    "taskCount_plural": "{{count}} tehtävää",
-    "dueDate": "Eräpäivä",
-    "assignedTo": "Osoitettu henkilölle {{name}}",
-    "confirmAction": "Vahvista toiminto",
-    "areYouSure": "Haluatko varmasti suorittaa tämän toiminnon?"
   },
   "topicBacklog": {
     "pageTitle": "Aiheiden hallinta",
@@ -180,7 +168,6 @@
       "company": "Yritys",
       "expertise": "Asiantuntemus",
       "assignOrganizer": "Osoita järjestäjälle (valinnainen)",
-      "unassigned": "Ei osoitettu",
       "notes": "Huomiot (valinnainen)",
       "addButton": "Lisää ryhmään",
       "adding": "Lisätään...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Puhujien hankinta",
-    "subtitle": "Seuraa puhujien hankintaaktiviteetteja ja koordinoi muiden järjestäjien kanssa",
-    "breadcrumbs": {
-      "home": "Etusivu",
-      "speakerOutreach": "Puhujien hankinta"
-    },
-    "emptyPool": {
-      "message": "Sinun täytyy lisätä puhujia ryhmään ennen hankinnan aloittamista.",
-      "hint": "Palaa tapahtuman suunnitteluvaiheeseen lisätäksesi potentiaalisia puhujia.",
-      "addSpeakers": "Lisää puhujia ryhmään"
-    },
-    "showBrainstorm": "Lisää puhujia",
-    "hideBrainstorm": "Piilota puhujien lisäys",
     "speakerName": "Puhuja",
     "contactMethod": "Yhteydenottotapa",
     "contactDate": "Yhteydenottopäivä",
     "markContacted": "Merkitse kontaktoiduksi",
-    "filterByOrganizer": "Suodata järjestäjän mukaan",
     "contactHistory": "Yhteydenottohistoria",
-    "daysSinceAssignment": "Päiviä osoittamisesta",
-    "overdue": "Myöhässä",
-    "lastContact": "Viimeisin yhteydenotto",
     "outreachDetails": "Hankinnan tiedot",
     "noContactHistory": "Ei yhteydenottohistoriaa",
     "contactedBy": "Kontaktoinut",
@@ -238,10 +208,6 @@
         "failed": "Yhteydenoton tallentaminen epäonnistui",
         "loadHistory": "Yhteydenottohistorian lataaminen epäonnistui"
       }
-    },
-    "bulkAction": {
-      "title": "Merkitse useita kontaktoiduiksi",
-      "confirm": "Merkitäänkö {{count}} puhujaa kontaktoiduiksi?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Luo uusi puhuja",
     "form": {
       "username": "Hae puhujaa",
-      "usernameHelp": "Anna puhujan käyttäjänimi",
       "presentationTitle": "Esityksen otsikko",
       "presentationAbstract": "Esityksen tiivistelmä",
       "charactersRemaining": "merkkiä jäljellä"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Kutsu",
-    "sendInvite": "Lähetä kutsu",
     "sendInvitation": "Lähetä kutsu",
-    "confirmInvite": "Lähetetäänkö kutsu tälle puhujalle?",
     "noEmailTooltip": "Lisää sähköposti kutsua varten",
-    "inviting": "Lähetetään...",
     "sending": "Lähetetään...",
     "inviteSent": "Kutsu lähetetty",
     "invitationSent": "Kutsu lähetetty osoitteeseen {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Suodata tapahtuman mukaan",
       "allEvents": "Kaikki tapahtumat",
       "sessions": "sessioita",
-      "speakers": "puhujia",
-      "yourCompany": "Yrityksesi"
+      "speakers": "puhujia"
     }
   },
   "blobSelector": {

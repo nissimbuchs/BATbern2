@@ -169,6 +169,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
               hover
               onClick={() => onRowClick(user)}
               sx={{ cursor: 'pointer' }}
+              data-testid="user-table-row"
             >
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -1,18 +1,13 @@
 {
   "navigation": {
     "dashboard": "Evenementen",
-    "createEvent": "Evenement aanmaken",
-    "eventTimeline": "Tijdlijn",
     "events": "Evenementen",
     "topicManagement": "Onderwerpbeheer",
     "blobSelector": "Blob-selector"
   },
   "eventPage": {
     "tabs": {
-      "overview": "Overzicht",
-      "speakers": "Sprekers",
       "venue": "Locatie",
-      "team": "Team",
       "participants": "Deelnemers",
       "publishing": "Publicatie",
       "newsletter": "Nieuwsbrief",
@@ -28,18 +23,13 @@
       "speakers": "Sprekers",
       "confirmed": "bevestigd",
       "materials": "Materialen",
-      "pending": "in behandeling",
       "complete": "voltooid",
       "sessionsComplete": "sessies voltooid",
       "budget": "Budget",
       "selectedTopic": "Geselecteerd onderwerp",
-      "noTopicSelected": "Nog geen onderwerp geselecteerd",
-      "changeTopic": "Onderwerp wijzigen",
       "quickActions": "Snelle acties",
       "selectTopic": "Onderwerp selecteren",
-      "sendNotification": "Melding verzenden",
-      "previewPublic": "Openbare pagina bekijken",
-      "viewTimeline": "Tijdlijn bekijken"
+      "previewPublic": "Openbare pagina bekijken"
     },
     "participantsTab": {
       "title": "Evenementdeelnemers"
@@ -130,15 +120,9 @@
   "dashboard": {
     "title": "Evenementbeheer",
     "activeEvents": "Actieve evenementen",
-    "criticalTasks": "Kritieke taken",
-    "teamActivity": "Teamactiviteit",
     "quickActions": "Snelle acties",
-    "noEvents": "Geen evenementen gevonden",
     "noEventsFound": "Geen evenementen gevonden",
     "tryAdjustingFilters": "Probeer uw filters aan te passen",
-    "loadingEvents": "Evenementen laden...",
-    "eventCount": "{{count}} evenement",
-    "eventCount_plural": "{{count}} evenementen",
     "eventWord": "evenement",
     "eventWord_plural": "evenementen",
     "eventType": {
@@ -146,52 +130,19 @@
       "AFTERNOON": "Middag",
       "EVENING": "Avond"
     },
-    "workflowProgress": "Workflowvoortgang",
     "actions": {
-      "viewDetails": "Details bekijken",
       "edit": "Bewerken",
       "newEvent": "Nieuw evenement",
-      "topics": "Onderwerpkeuze",
       "eventTypes": "Evenementtypen",
-      "eventTypesHelp": "Evenementtype-sjablonen configureren (Admin)",
-      "manageTopics": "Onderwerpen beheren",
-      "analytics": "Analyses",
-      "speakers": "Sprekers"
-    },
-    "noCriticalTasks": "Geen kritieke taken",
-    "greatJob": "Goed gedaan!",
-    "taskCount": "{{count}} taak",
-    "taskCount_plural": "{{count}} taken",
-    "dueDate": "Vervaldatum",
-    "assignedTo": "Toegewezen aan {{name}}",
-    "confirmAction": "Actie bevestigen",
-    "areYouSure": "Weet u zeker dat u deze actie wilt uitvoeren?",
-    "activityCount": "{{count}} activiteit",
-    "activityCount_plural": "{{count}} activiteiten",
-    "today": "Vandaag",
-    "lastUpdated": "Laatste update",
-    "viewAll": "Alles bekijken",
-    "noRecentActivity": "Geen recente activiteit",
-    "activityAction": {
-      "speaker_assigned": "spreker toegewezen",
-      "speaker_invited": "spreker uitgenodigd",
-      "materials_uploaded": "materialen geüpload",
-      "workflow_advanced": "workflow gevorderd",
-      "event_created": "evenement aangemaakt",
-      "event_updated": "evenement bijgewerkt",
-      "task_completed": "taak voltooid",
-      "notification_sent": "melding verzonden",
-      "event_published": "evenement gepubliceerd"
+      "manageTopics": "Onderwerpen beheren"
     },
     "searchEvents": "Evenementen zoeken...",
     "filter": {
-      "status": "Filteren op status",
       "workflowState": "Filteren op workflowstatus",
       "year": "Filteren op jaar",
       "allYears": "Alle jaren",
       "showArchived": "Gearchiveerde evenementen tonen",
       "activeFilters": "{{count}} filter actief",
-      "activeFilters_plural": "{{count}} filters actief",
       "clearAll": "Alles wissen"
     },
     "errors": {
@@ -273,7 +224,6 @@
     "createEvent": "Nieuw evenement aanmaken",
     "editEvent": "Evenement bewerken",
     "eventNumber": "Evenementnummer",
-    "eventInformation": "Evenementinformatie",
     "title": "Titel",
     "eventDate": "Evenementdatum",
     "eventType": "Evenementtype",
@@ -281,16 +231,11 @@
     "registrationDeadline": "Registratiedeadline",
     "venue": "Locatienaam",
     "venueAddress": "Locatieadres",
-    "theme": "Thema",
     "status": "Status",
     "save": "Opslaan",
-    "saveAndCreate": "Opslaan en aanmaken",
     "saveCreate": "Opslaan en aanmaken",
     "saveDraft": "Opslaan als concept",
     "cancel": "Annuleren",
-    "delete": "Verwijderen",
-    "close": "Sluiten",
-    "noVenue": "Geen locatie geselecteerd",
     "eventTypes": {
       "fullDay": "Hele dag evenement",
       "afternoon": "Middagevenement",
@@ -327,41 +272,17 @@
       "failedToLoadEventTypes": "Laden van evenementtypen mislukt"
     }
   },
-  "eventTypes": {
-    "FULL_DAY": "Hele dag",
-    "AFTERNOON": "Middag",
-    "EVENING": "Avond"
-  },
   "slotPreview": {
     "title": "{{type}}-voorbeeld",
     "slots": "Slots",
-    "duration": "Duur",
     "capacity": "Capaciteit",
-    "timing": "Typische timing",
-    "exampleTimeline": "Voorbeeldtijdlijn"
+    "timing": "Typische timing"
   },
   "filters": {
     "status": "Status",
-    "year": "Jaar",
-    "eventType": "Evenementtype",
-    "search": "Zoeken",
-    "searchPlaceholder": "Evenementen zoeken...",
-    "allStatuses": "Alle statussen",
-    "allYears": "Alle jaren",
-    "allTypes": "Alle typen",
-    "clear": "Filters wissen",
     "searchAriaLabel": "[MISSING] Search events",
     "clearSearchAriaLabel": "[MISSING] Clear search",
     "clearAllAriaLabel": "[MISSING] Clear all filters"
-  },
-  "sorting": {
-    "sort": "Sorteren",
-    "date": "Datum",
-    "status": "Status",
-    "workflowProgress": "Workflowvoortgang",
-    "title": "Titel",
-    "ascending": "Oplopend",
-    "descending": "Aflopend"
   },
   "validation": {
     "eventNumberRequired": "Evenementnummer is verplicht",
@@ -370,19 +291,15 @@
     "titleMinLength": "Titel moet minimaal 10 tekens lang zijn",
     "descriptionRequired": "Beschrijving is verplicht",
     "eventDateRequired": "Evenementdatum is verplicht",
-    "eventDateFuture": "Evenementdatum moet minimaal 30 dagen in de toekomst zijn",
     "registrationDeadline": "Registratiedeadline moet op of vóór de evenementdatum liggen",
     "capacityRequired": "Capaciteit is verplicht",
     "capacityPositive": "Capaciteit moet een positief getal zijn",
-    "venueRequired": "Locatie is verplicht",
     "venueNameRequired": "Locatienaam is verplicht",
     "venueAddressRequired": "Locatieadres is verplicht",
     "minSlotsRequired": "Minimum aantal slots is verplicht",
     "maxSlotsRequired": "Maximum aantal slots is verplicht",
-    "slotDurationRequired": "Slotduur is verplicht",
     "slotDurationMinimum": "Slotduur moet minimaal 15 minuten zijn",
     "minSlotsLessThanMax": "Minimum slots moet kleiner of gelijk zijn aan maximum slots",
-    "defaultCapacityRequired": "Standaardcapaciteit is verplicht",
     "defaultCapacityPositive": "Standaardcapaciteit moet een positief getal zijn"
   },
   "errors": {
@@ -404,35 +321,16 @@
     "INVALID_FILE_TYPE": "Ongeldig bestandstype. Upload alleen PNG-, JPEG- of SVG-afbeeldingen"
   },
   "confirmations": {
-    "deleteTitle": "Evenement verwijderen?",
-    "deleteMessage": "Weet u zeker dat u dit evenement wilt verwijderen?",
-    "deleteImpact": "{{registrations}} registraties, {{speakers}} sprekers, {{materials}} materialen",
-    "cannotDelete": "Evenement kan niet worden verwijderd - annuleer het evenement in plaats daarvan",
     "unsavedChanges": "Niet-opgeslagen wijzigingen",
     "unsavedChangesMessage": "U heeft niet-opgeslagen wijzigingen. Wilt u echt doorgaan?",
     "confirm": "Bevestigen",
-    "cancel": "Annuleren",
-    "discard": "Verwijderen",
-    "keepEditing": "Doorgaan met bewerken"
+    "cancel": "Annuleren"
   },
   "workflow": {
-    "progress": "Voortgang",
-    "step": "Stap {{current}} van {{total}}",
     "stepIndicator": "Stap {{current}}/{{total}}",
-    "stepName": "Stap {{number}}: {{name}}",
     "viewDetails": "Workflowdetails bekijken",
-    "warning": "Waarschuwing",
-    "blocker": "Blokker",
     "blockers": "{{count}} blokker",
-    "blockers_plural": "{{count}} blokkers",
-    "completed": "Voltooid",
-    "inProgress": "Bezig",
-    "pending": "In behandeling",
-    "blocked": "Geblokkeerd",
     "progressBarLabel": "Klik om workflowdetails te bekijken. {{percentage}}% voltooid",
-    "actions": {
-      "selectTopic": "Onderwerp selecteren"
-    },
     "states": {
       "created": "Aangemaakt",
       "topic_selection": "Onderwerpkeuze",
@@ -445,29 +343,12 @@
       "archived": "Gearchiveerd"
     }
   },
-  "topicSelection": {
-    "success": "Onderwerp succesvol geselecteerd"
-  },
   "autoSave": {
     "saving": "Opslaan...",
     "saved": "Laatst opgeslagen om {{time}}",
     "failed": "Automatisch opslaan mislukt",
     "conflict": "Gelijktijdige bewerking gedetecteerd. Laad opnieuw en probeer opnieuw.",
     "enabled": "Automatisch opslaan ingeschakeld"
-  },
-  "venue": {
-    "sectionTitle": "Locatie en logistiek",
-    "title": "Locatie en logistiek",
-    "nameLabel": "Locatienaam",
-    "addressLabel": "Locatieadres",
-    "capacityLabel": "Locatiecapaciteit",
-    "errors": {
-      "nameRequired": "Locatienaam is verplicht",
-      "addressRequired": "Locatieadres is verplicht",
-      "capacityPositive": "Capaciteit moet een positief getal zijn",
-      "capacityMax": "Capaciteit mag niet groter zijn dan 5000",
-      "updateFailed": "Bijwerken van locatie mislukt"
-    }
   },
   "topics": {
     "title": "Toegewezen onderwerpen",
@@ -494,73 +375,24 @@
     "removeConfirmMessage": "Weet u zeker dat u dit onderwerp uit het evenement wilt verwijderen?"
   },
   "speakers": {
-    "title": "Sprekers en sessies",
     "sectionTitle": "Sprekers en sessies ({{count}})",
-    "speakersAndSessions": "Sprekers en sessies",
     "slotTime": "Tijd",
-    "slotLabel": "Slot {{number}}",
     "speakerName": "Spreker",
-    "company": "Bedrijf",
     "sessionTitle": "Sessietitel",
     "notAssigned": "Niet toegewezen",
     "materials": "Materialen",
     "materialsComplete": "Voltooid",
     "materialsPending": "In behandeling",
     "materialsMissing": "Ontbreekt",
-    "viewDetails": "Details bekijken",
-    "editSlot": "Slot bewerken",
-    "manageMaterials": "Materialen beheren",
-    "viewFullAgenda": "Volledige agenda bekijken",
-    "manageSpeakerAssignments": "Sprekerstoewijzingen beheren",
     "manageSlotAssignments": "Slottoewijzingen beheren",
     "autoAssignSpeakers": "Automatisch sprekers toewijzen",
-    "autoAssignConfirmTitle": "Automatisch sprekers toewijzen",
-    "autoAssignConfirmMessage": "Dit wijst automatisch sprekers toe aan optimale tijdslots op basis van vakkennis en beschikbaarheid. Bestaande toewijzingen worden overschreven. Doorgaan?",
-    "noSpeakers": "Geen sprekers toegewezen",
     "noSessionsScheduled": "Nog geen sessies gepland. Gebruik 'Sprekerstoewijzingen beheren' om sprekers toe te voegen.",
-    "loadError": "Laden van sessies mislukt. Probeer opnieuw.",
     "deleteSession": "Verwijderen",
     "deleteSessionTitle": "Sessie verwijderen?",
     "deleteSessionMessage": "Weet u zeker dat u de sessie '{{title}}' wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
   },
-  "team": {
-    "title": "Teamtoewijzingen",
-    "leadOrganizer": "Hoofdorganisator",
-    "coOrganizers": "Co-organisatoren",
-    "moderator": "Moderator",
-    "contentReviewer": "Inhoudsbeoordelaar",
-    "manageTeam": "Team beheren",
-    "assignRole": "Rol toewijzen"
-  },
   "publishing": {
-    "title": "Publicatie",
-    "strategy": "Strategie",
-    "progressive": "Progressief",
-    "immediate": "Onmiddellijk",
-    "currentPhase": "Huidige fase",
-    "timeline": {
-      "phasesPublished": "{{completed}} van {{total}} fasen gepubliceerd ({{percent}}%)",
-      "topic": "Onderwerp",
-      "speakers": "Sprekers",
-      "agenda": "Agenda",
-      "updates": "Updates",
-      "now": "Nu",
-      "publishedOn": "Gepubliceerd op {{date}}",
-      "scheduled": "Gepland: {{date}}",
-      "autoPublishIn": "Automatisch publiceren in {{days}} dagen",
-      "autoPublishScheduled": "Automatische publicatie gepland",
-      "days": "{{count}} dagen"
-    },
-    "qualityChecks": "Kwaliteitscontroles",
-    "configure": "Publicatie configureren",
-    "republish": "Opnieuw publiceren",
-    "previewPublicPage": "Openbare pagina bekijken",
-    "tab": {
-      "title": "Publicatiecontroles (Story 5.7)",
-      "notice": "De publicatiecomponenten zijn nu geïntegreerd. Backend-API-integratie is bezig. Sommige functies gebruiken tijdelijke nep-data."
-    },
     "controls": {
-      "publish": "Publiceren",
       "publishing": "Publiceren...",
       "publishPhase": "{{phase}} publiceren",
       "published": "{{phase}} gepubliceerd",
@@ -568,8 +400,6 @@
       "alreadyPublished": "Al gepubliceerd",
       "publishTopicFirst": "Publiceer eerst het onderwerp",
       "publishSpeakersFirst": "Publiceer eerst de sprekers",
-      "schedulePublish": "Publicatie plannen",
-      "previewNewsletter": "Nieuwsbrief bekijken",
       "mode": "Modus",
       "modeDraft": "Concept",
       "modeProgressive": "Progressief",
@@ -581,22 +411,8 @@
         "speakers": "Sprekers",
         "agenda": "Agenda"
       },
-      "scheduleDialog": {
-        "title": "Publicatie plannen",
-        "dateLabel": "Plannningsdatum en -tijd",
-        "cancel": "Annuleren",
-        "confirm": "Planning bevestigen"
-      },
-      "newsletterDialog": {
-        "title": "Nieuwsbrief bekijken",
-        "subject": "Onderwerp: Nieuw {{phase}} gepubliceerd voor {{eventCode}}",
-        "contentPreview": "Voorvertoning nieuwsbriefinhoud voor fase {{phase}}...",
-        "close": "Sluiten",
-        "sendTest": "Test-e-mail verzenden"
-      },
       "accessibility": {
         "publishingPhase": "{{phase}} publiceren",
-        "publishingMode": "Publicatiemodus",
         "notifySubscribers": "Abonnees informeren bij publicatie"
       }
     },
@@ -621,26 +437,6 @@
         "sessionTimings": "Sessietijden valideren"
       }
     },
-    "preview": {
-      "desktop": "Desktop",
-      "mobile": "Mobiel",
-      "print": "Afdrukken",
-      "refresh": "Vernieuwen",
-      "refreshing": "Voorbeeld vernieuwen...",
-      "retry": "Opnieuw proberen",
-      "loadFailed": "Laden van voorbeeld mislukt. Probeer opnieuw.",
-      "previewMode": "Voorbeeldmodus: {{mode}} | Fase: {{phase}}",
-      "deviceDimensions": "Apparaat: {{device}} ({{width}} x {{height}})",
-      "switchedTo": "Overgeschakeld naar {{device}}-voorbeeld",
-      "accessibility": {
-        "devicePreviewMode": "apparaatvoorbeeldmodus",
-        "desktopPreview": "Desktopvoorbeeld",
-        "mobilePreview": "Mobiel voorbeeld",
-        "printPreview": "Afdrukvoorbeeld",
-        "refreshPreview": "Voorbeeld vernieuwen",
-        "eventContentPreview": "Voorbeeld evenementinhoud"
-      }
-    },
     "versionControl": {
       "title": "Versiegeschiedenis",
       "version": "Versie",
@@ -653,100 +449,17 @@
       "cdnPending": "CDN in behandeling",
       "cdnFailed": "CDN mislukt",
       "cdnUnknown": "Onbekend",
-      "cdnInvalidationId": "CDN-invalidatie-ID: {{id}}",
-      "noVersions": "Geen versiegeschiedenis beschikbaar",
-      "rollbackDialog": {
-        "title": "Terugdraaien bevestigen",
-        "message": "Weet u zeker dat u naar deze versie wilt terugdraaien?",
-        "versionLabel": "Versie:",
-        "phaseLabel": "Fase:",
-        "publishedLabel": "Gepubliceerd:",
-        "publisherLabel": "Uitgever:",
-        "warning": "Deze actie maakt de CloudFront CDN-cache ongeldig en kan enkele minuten duren.",
-        "cancel": "Annuleren",
-        "confirm": "Terugdraaien bevestigen",
-        "confirming": "Terugdraaien..."
-      }
+      "noVersions": "Geen versiegeschiedenis beschikbaar"
     }
   },
   "notifications": {
-    "title": "Meldingen en herinneringen",
-    "activeAutomations": "Actieve automatiseringen",
-    "notificationRules": "Meldingsregels",
-    "manageNotifications": "Meldingen beheren",
-    "sendManualNotification": "Handmatige melding verzenden",
-    "ruleName": "Regelnaam",
-    "trigger": "Trigger",
-    "recipients": "Ontvangers",
-    "active": "Actief",
-    "inactive": "Inactief"
-  },
-  "criticalTasks": {
-    "title": "Kritieke taken",
-    "priority": "Prioriteit",
-    "warning": "Waarschuwing",
-    "critical": "Kritiek",
-    "dueDate": "Vervaldatum",
-    "assignedTo": "Toegewezen aan",
-    "actions": "Acties",
-    "contact": "Contact opnemen",
-    "extendDeadline": "Deadline verlengen",
-    "confirm": "Bevestigen",
-    "assignToTeam": "Aan team toewijzen",
-    "markComplete": "Als voltooid markeren",
-    "noTasks": "Geen kritieke taken"
-  },
-  "teamActivity": {
-    "title": "Teamactiviteit",
-    "recentActivity": "Recente activiteit",
-    "filterByUser": "Filteren op gebruiker",
-    "filterByEvent": "Filteren op evenement",
-    "filterByAction": "Filteren op actie",
-    "reload": "Opnieuw laden",
-    "noActivity": "Geen activiteit beschikbaar",
-    "activityTypes": {
-      "event_created": "Evenement aangemaakt",
-      "event_updated": "Evenement bijgewerkt",
-      "speaker_assigned": "Spreker toegewezen",
-      "speaker_invited": "Spreker uitgenodigd",
-      "materials_uploaded": "Materialen geüpload",
-      "workflow_advanced": "Workflow gevorderd",
-      "task_completed": "Taak voltooid",
-      "notification_sent": "Melding verzonden",
-      "event_published": "Evenement gepubliceerd"
-    }
+    "title": "Meldingen en herinneringen"
   },
   "pagination": {
     "page": "Pagina {{current}} van {{total}}",
-    "itemsPerPage": "Items per pagina",
-    "showing": "{{from}}-{{to}} van {{total}} items weergeven"
-  },
-  "actions": {
-    "newEvent": "Nieuw evenement",
-    "viewAnalytics": "Analyses bekijken",
-    "manageSpeakers": "Sprekers beheren",
-    "viewTimeline": "Tijdlijn bekijken",
-    "exportData": "Gegevens exporteren",
-    "refresh": "Vernieuwen",
-    "back": "Terug",
-    "deleteEvent": "Evenement verwijderen"
-  },
-  "messages": {
-    "draftSaved": "Concept opgeslagen",
-    "eventCreated": "Evenement aangemaakt",
-    "eventUpdated": "Evenement bijgewerkt",
-    "eventDeleted": "Evenement verwijderd",
-    "loading": "Laden...",
-    "noResults": "Geen resultaten gevonden",
-    "tryAgain": "Opnieuw proberen"
+    "itemsPerPage": "Items per pagina"
   },
   "accessibility": {
-    "skipToContent": "Naar inhoud gaan",
-    "openMenu": "Menu openen",
-    "closeMenu": "Menu sluiten",
-    "loading": "Laden",
-    "error": "Fout",
-    "success": "Geslaagd",
     "noEventsFound": "[MISSING] No events found",
     "eventList": "[MISSING] Event list"
   },
@@ -755,26 +468,11 @@
     "confirm": "Bevestigen",
     "save": "Opslaan",
     "saveChanges": "Wijzigingen opslaan",
-    "saveAndContinue": "Opslaan en doorgaan",
-    "settings": "Instellingen",
     "delete": "Verwijderen",
     "edit": "Bewerken",
     "close": "Sluiten",
     "back": "Terug",
-    "loading": "Laden...",
-    "error": "Fout",
-    "success": "Geslaagd"
-  },
-  "metrics": {
-    "speakers": "Sprekers",
-    "confirmed": "bevestigd",
-    "topics": "Onderwerpen",
-    "assigned": "toegewezen",
-    "materials": "Materialen",
-    "pending": "in behandeling",
-    "registrations": "Registraties",
-    "budget": "Budget",
-    "keyMetrics": "Kernstatistieken"
+    "loading": "Laden..."
   },
   "public": {
     "loadingEventDetails": "[MISSING] Loading event details",
@@ -806,14 +504,12 @@
       "noSessions": "Geen sessies gevonden voor geselecteerde onderwerpen",
       "clearFilters": "Filters wissen",
       "speaker": "Spreker",
-      "seats": "{{count}} plaatsen",
-      "timeTBD": "Tijd wordt bekendgemaakt"
+      "seats": "{{count}} plaatsen"
     },
     "program": {
       "title": "Evenementprogramma",
       "speaker": "Spreker",
-      "materials": "Materialen",
-      "downloadError": "Downloaden van materiaal mislukt. Probeer opnieuw."
+      "materials": "Materialen"
     },
     "venue": {
       "title": "Locatie",
@@ -830,15 +526,6 @@
     },
     "upcomingEvents": {
       "title": "Meer aankomende evenementen"
-    },
-    "sessionTypes": {
-      "keynote": "keynote",
-      "presentation": "presentatie",
-      "workshop": "workshop",
-      "panel_discussion": "paneldiscussie",
-      "networking": "netwerken",
-      "break": "pauze",
-      "lunch": "lunch"
     }
   },
   "sessionEdit": {
@@ -898,7 +585,6 @@
     },
     "timeline": {
       "title": "Sessietijdlijn",
-      "room": "{{room}}",
       "matchPercent": "{{percent}}% match",
       "headerTime": "Tijd"
     },
@@ -947,11 +633,7 @@
       },
       "autoAssign": {
         "title": "Sessies automatisch toewijzen",
-        "message": "Selecteer algoritme voor automatische toewijzing:",
-        "algorithms": {
-          "preferenceFirst": "Voorkeur eerst",
-          "timeBalance": "Tijdsbalans"
-        }
+        "message": "Selecteer algoritme voor automatische toewijzing:"
       },
       "clearAll": {
         "title": "Alle toewijzingen wissen",
@@ -979,9 +661,7 @@
     },
     "preferences": {
       "title": "Sprekersvoorkeuren",
-      "close": "Sluiten",
       "timePreferences": "Tijdvoorkeuren",
-      "preferredTime": "Gewenst moment van de dag",
       "unavailableTimes": "Niet-beschikbare tijden",
       "avRequirements": "A/V-vereisten",
       "setupNotes": "Zaalopstellingsnotities",
@@ -996,12 +676,9 @@
       "equipment": {
         "microphone": "Microfoon",
         "projector": "Projector",
-        "recording": "Opname",
-        "whiteboard": "Whiteboard"
+        "recording": "Opname"
       }
-    },
-    "loading": "Laden...",
-    "dragInstructions": "Sleep sprekers naar tijdslots om toe te wijzen"
+    }
   },
   "newsletter": {
     "widget": {
@@ -1021,10 +698,6 @@
       "success": "U bent succesvol afgemeld.",
       "resubscribeLink": "Opnieuw abonneren",
       "invalidToken": "Deze afmeldlink is ongeldig of is al gebruikt."
-    },
-    "account": {
-      "label": "Abonneren op BATbern-nieuwsbrief",
-      "description": "Ontvang evenementaankondigingen en updates"
     }
   }
 }

@@ -20,7 +20,6 @@
     "silver": "Silver",
     "bronze": "Bronze"
   },
-  "viewMode": {},
   "sort": {
     "label": "Sort By",
     "engagement": "Engagement Score",
@@ -28,26 +27,7 @@
     "tier": "Partnership Tier",
     "lastEvent": "Last Event"
   },
-  "statistics": {
-    "totalPartners": "Total Partners",
-    "activePartners": "Active Partners",
-    "engagedPartners": "Engaged Partners",
-    "engagedComingSoon": "Coming Soon - Epic 8",
-    "tierDistribution": "Tier Distribution"
-  },
   "card": {
-    "industry": "Industry",
-    "contact": "Primary Contact",
-    "lastEvent": "Last Event",
-    "topicVotes": "Topic Votes",
-    "nextMeeting": "Next Meeting",
-    "meetingPending": "Pending",
-    "engagement": "Engagement",
-    "engagementComingSoon": "Coming Soon (Epic 8)",
-    "viewDetails": "View Details",
-    "sendEmail": "Send Email",
-    "scheduleMeeting": "Schedule Meeting",
-    "analytics": "Analytics",
     "comingSoon": "Coming Soon - Epic 8"
   },
   "pagination": {
@@ -61,18 +41,15 @@
     "partners_other": "{{count}} partners"
   },
   "empty": {
-    "noPartners": "No partners found",
-    "tryAdjustingFilters": "Try adjusting your search or filters"
+    "noPartners": "No partners found"
   },
   "loading": "Loading partners...",
   "error": {
     "failedToLoad": "Failed to load partners",
-    "tryAgain": "Please try again later",
     "correlationId": "Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partner found",
-    "searchResults_plural": "{{count}} partners found",
     "filterUpdate": "Filters updated",
     "loading": "Loading partners"
   },
@@ -81,79 +58,20 @@
     "editTitle": "Edit Partnership",
     "fields": {
       "company": "Company",
-      "companyPlaceholder": "Search for company...",
-      "partnershipTier": "Partnership Tier",
       "startDate": "Start Date",
-      "endDate": "End Date",
       "endDateOptional": "End Date (Optional)"
     },
-    "tiers": {
-      "STRATEGIC": "Strategic",
-      "PLATINUM": "Platinum",
-      "GOLD": "Gold",
-      "SILVER": "Silver",
-      "BRONZE": "Bronze"
-    },
-    "tierDescriptions": {
-      "STRATEGIC": "Highest partnership tier with full access and dedicated support",
-      "PLATINUM": "Premium partnership with enhanced benefits",
-      "GOLD": "High-value partnership with major benefits",
-      "SILVER": "Standard partnership with essential benefits",
-      "BRONZE": "Entry-level partnership with basic benefits"
-    },
-    "benefits": {
-      "title": "Tier Benefits",
-      "logoPlacement": "Logo placement on website",
-      "newsletterMentions": "Newsletter mentions",
-      "priorityAccess": "Priority event access",
-      "quarterlyMeetings": "Quarterly strategic meetings",
-      "roiAnalytics": "ROI analytics dashboard",
-      "dedicatedManager": "Dedicated account manager",
-      "eventAccess": "Event access"
-    },
     "messages": {
-      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
-      "createSuccess": "Partnership created successfully",
-      "updateSuccess": "Partnership updated successfully",
-      "createError": "Failed to create partnership. Correlation ID: {{correlationId}}",
-      "updateError": "Failed to update partnership. Correlation ID: {{correlationId}}"
-    },
-    "companySearch": {
-      "searching": "Searching companies...",
-      "noResults": "No companies found",
-      "error": "Error searching companies",
-      "minChars": "Type at least 2 characters to search"
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?"
     }
   },
   "validation": {
     "companyRequired": "Company is required",
     "tierRequired": "Partnership tier is required",
     "startDateRequired": "Start date is required",
-    "startDateFuture": "Start date cannot be in the future",
     "endDateBeforeStart": "End date must be after start date"
   },
   "detail": {
-    "header": {
-      "exportData": "Export Data",
-      "scheduleMeeting": "Schedule Meeting",
-      "sendEmail": "Send Email",
-      "comingSoon": "Coming in Epic 8"
-    },
-    "quickStats": {
-      "partnerSince": "Partner Since",
-      "eventsAttended": "Events Attended",
-      "activeVotes": "Active Votes",
-      "votesSubtitle": "(topics)",
-      "meetings": "Meetings",
-      "meetingsSubtitle": "(seasonal)",
-      "noEventsYet": "No events yet",
-      "lastEvent": "last: {{event}}"
-    },
-    "activityTab": {
-      "title": "Activity",
-      "filterLabel": "Filter by Activity Type",
-      "noActivity": "No activity to display"
-    },
     "meetingsTab": {
       "title": "Meetings",
       "addMeeting": "Schedule Meeting"
@@ -217,14 +135,12 @@
   "meetings": {
     "title": "Partner Meetings",
     "create": "Create Meeting",
-    "edit": "Edit Meeting",
     "fields": {
       "agenda": "Agenda",
       "notes": "Meeting Notes",
       "location": "Location",
       "eventCode": "BATbern Event Code",
       "eventCodeHint": "e.g. BATbern57",
-      "date": "Date",
       "startTime": "Start Time",
       "endTime": "End Time",
       "type": {
@@ -246,33 +162,13 @@
       "inviteStatus": "Invite",
       "actions": "Actions"
     },
-    "loading": "Loading meetings...",
     "error": "Could not load meetings",
-    "createSuccess": "Meeting created successfully",
-    "updateSuccess": "Meeting updated successfully",
     "inviteSuccess": "Calendar invite is being sent"
   },
-  "comingSoon": {
-    "epic8": "Coming Soon - Epic 8",
-    "story283": "Coming Soon - Story 2.8.3"
-  },
   "portal": {
-    "nav": {
-      "myCompany": "My Company",
-      "analytics": "Analytics",
-      "topics": "Topics"
-    },
     "noCompanyLinked": "Your account is not linked to a company",
     "noCompanyLinked.detail": "Please contact your organizer",
     "analytics": {
-      "comingSoon": "Analytics coming soon",
-      "title": "Attendance Dashboard",
-      "table": {
-        "date": "Date",
-        "yourAttendees": "Your Attendees",
-        "totalAttendees": "Total Attendees",
-        "percentage": "Percentage (%)"
-      },
       "kpi": {
         "costPerAttendee": "Cost Per Attendee",
         "attendanceRate": "Avg. Attendance Rate",
@@ -287,11 +183,9 @@
         "loading": "Exporting..."
       },
       "noData": "No attendance data found for the selected period",
-      "loading": "Loading data...",
       "error": "Failed to load attendance data"
     },
     "topics": {
-      "comingSoon": "Topic voting coming soon",
       "title": "Topic Suggestions",
       "suggest": "Suggest a Topic",
       "vote": "Vote",
@@ -332,10 +226,8 @@
         },
         "status": "Status",
         "plannedEvent": "Planned Event",
-        "save": "Save",
-        "saving": "Saving..."
+        "save": "Save"
       },
-      "loading": "Loading topics...",
       "error": "Failed to load topics"
     }
   }

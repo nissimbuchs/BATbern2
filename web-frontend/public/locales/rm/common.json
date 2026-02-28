@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "Plattafurma da gestiun d'events BATbern",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "Mia empresa",
     "myAccount": "Miu conto",
     "analytics": "Analitica",
-    "content": "Tscherca da cuntegn",
     "profile": "Profil",
-    "logout": "Sortir",
     "myEvents": "Mes events",
-    "presentationMode": "Modus da presentaziun",
     "myContent": "Miu cuntegn",
     "myRegistrations": "Mias inscripziuns",
     "about": "Davart",
@@ -27,8 +23,7 @@
     "partnerTopics": "Temas da partners",
     "partnerMeetings": "Inscunters da partners",
     "topics": "Propostas da temas",
-    "openMenu": "Avrir il menu",
-    "closeMenu": "Serrar il menu"
+    "openMenu": "Avrir il menu"
   },
   "public": {
     "login": "Annunziar",
@@ -70,11 +65,6 @@
     "cancel": "Interrumper",
     "delete": "Stizzar",
     "edit": "Modifitgar",
-    "create": "Crear",
-    "search": "Tschertgar",
-    "filter": "Filtrar",
-    "reset": "Reinicializar",
-    "submit": "Trametter",
     "close": "Serrar",
     "sending": "Trametter...",
     "loading": "Chargiar...",
@@ -105,12 +95,10 @@
   },
   "menu": {
     "profile": "Profil",
-    "profileSettings": "Parameters dal profil",
     "settings": "Parameters",
     "administration": "Administraziun",
     "help": "Agid",
-    "logout": "Sortir",
-    "signOut": "Sortir dal sistem"
+    "logout": "Sortir"
   },
   "role": {
     "organizer": "Organisader d'events",
@@ -136,49 +124,21 @@
       "swissUID": "UID svizzer (CHE-XXX.XXX.XXX)",
       "website": "Lieu web",
       "industry": "Sectur",
-      "sector": "Sectur (opziunal)",
-      "city": "Citad",
-      "canton": "Chantun",
-      "country": "Pajais",
       "description": "Descripziun",
       "legalName": "Num curt: {{name}}",
       "logo": "Logo d'empresa"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://example.com",
-      "canton": "BE, ZH, GE, etc."
+      "website": "https://example.com"
     },
     "industries": {
-      "selectIndustry": "Tscherner sectur",
-      "technology": "Tecnologia",
-      "cloudComputing": "Calculaziun en il niv",
-      "devOps": "DevOps",
-      "financialServices": "Servetschs finanzials",
-      "healthcare": "Sanadad",
-      "manufacturing": "Producziun",
-      "consulting": "Consultaziun",
-      "education": "Educaziun",
-      "other": "Auter"
-    },
-    "sectors": {
-      "selectSector": "Tscherner sectur",
-      "public": "Public",
-      "private": "Privat",
-      "nonprofit": "Senza profit",
-      "government": "Regenza"
+      "selectIndustry": "Tscherner sectur"
     },
     "badges": {
-      "partner": "Partner",
       "verified": "Verificà"
     },
-    "stats": {
-      "userCount": "{{count}} utilisader",
-      "userCount_one": "{{count}} utilisader",
-      "userCount_other": "{{count}} utilisaders"
-    },
     "filters": {
-      "partnerOnly": "Mo empresas partner",
       "verifiedOnly": "Mo empresas verificadas",
       "industry": "Sectur",
       "allIndustries": "Tuts secturs",
@@ -188,7 +148,6 @@
     "form": {
       "createTitle": "Crear nova empresa",
       "editTitle": "Modifitgar empresa",
-      "required": "Obligatori",
       "saveDraft": "Guardar schi",
       "saveCreate": "Guardar e crear",
       "saveChanges": "Guardar midadas",
@@ -198,31 +157,16 @@
         "swissUID": "Opziunal - per la verificaziun automatica"
       },
       "errors": {
-        "nameRequired": "Il num d'empresa è obligatori",
-        "nameMinLength": "Il num sto avair almain {{min}} characters",
-        "nameMaxLength": "Il num sto avair al maximum {{max}} characters",
-        "displayNameMaxLength": "Il num da visualisaziun sto avair al maximum {{max}} characters",
-        "invalidSwissUID": "Format UID svizzer nunvalid (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "URL dal lieu web nunvalida",
-        "industryRequired": "Il sectur è obligatori",
-        "cityRequired": "La citad è obligatoria",
-        "cantonRequired": "Il chantun è obligatori",
-        "countryRequired": "Il pajais è obligatori",
-        "descriptionMaxLength": "La descripziun sto avair al maximum {{max}} characters",
         "noPermission": "Vus n'avais betg la permissiun da modifitgar questa empresa. Referents pon mo modifitgar lur atgna empresa."
       }
     },
     "detail": {
       "tabs": {
-        "users": "Utilisaders",
-        "statistics": "Statisticas",
-        "activity": "Activitad"
+        "users": "Utilisaders"
       },
-      "overviewText": "Questa secziun da survista po visualisar infurmaziuns supplementaras davart l'empresa, actualisaziuns recentas u puncts da relief.",
       "noData": "Nagins datas d'empresa disponiblas"
     },
     "errors": {
-      "loadFailed": "Chargiar l'empresa n'è betg reussì",
       "saveFailed": "In'errur è accudida durant il guardar l'empresa",
       "deleteFailed": "Stizzar l'empresa n'è betg reussì"
     },
@@ -230,14 +174,11 @@
       "placeholder": "Tschertgar empresas..."
     },
     "batchImport": {
-      "button": "Import en gruppa",
       "title": "Importar empresas da JSON",
       "dropzone": "Draggiar il file JSON qua u cliccar per chargiar",
       "dropzoneActive": "Draggiar il file JSON qua",
-      "invalidJson": "File JSON nunvalid. Controllai il format.",
       "noCompanies": "Naginas empresas chattadas en il file JSON.",
       "preview": "Anteprimaziun ({{count}} empresas)",
-      "importButton": "Importar tut",
       "cancelButton": "Interrumper",
       "status": {
         "importing": "Importaziun...",
@@ -261,8 +202,7 @@
       },
       "errors": {
         "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
-        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}",
-        "importFailed": "Importar {{name}} n'è betg reussì: {{error}}"
+        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}"
       }
     },
     "delete": {
@@ -270,8 +210,7 @@
       "message": "Essas vus segirs da volair stizzar questa empresa?",
       "dataWarning": "Questa acziun stizza l'empresa definitivamain e na po betg vegnir revocada.",
       "cascadeWarning": "Tut ils datas associads (utilisaders, partnerships, referents, events) pon vegnir pertutgads.",
-      "deleting": "Stizzar...",
-      "success": "Empresa stizzada cun success"
+      "deleting": "Stizzar..."
     },
     "pagination": {
       "itemsPerPage": "Elements per pagina"
@@ -279,15 +218,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Importar events istorics",
       "title": "Importar events da topics.json",
       "dropzone": "Draggiar il file topics.json qua u cliccar per chargiar",
       "dropzoneActive": "Draggiar il file JSON qua",
       "dropzoneHint": "Chargiai il file topics.json pre-processà (cun ils champs parsedDate, description e moderator)",
-      "invalidJson": "File JSON nunvalid. Controllai il format.",
       "noEvents": "Nagins events chattads en il file JSON.",
       "preview": "Anteprimaziun ({{count}} events)",
-      "importButton": "Importar tut",
       "cancelButton": "Interrumper",
       "status": {
         "pending": "En speta",
@@ -307,8 +243,7 @@
       },
       "errors": {
         "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
-        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}",
-        "importFailed": "Importar l'event {{number}} n'è betg reussì: {{error}}"
+        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}"
       },
       "fieldSelection": {
         "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
@@ -359,7 +294,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Importar sessiuns",
       "title": "Import en gruppa da sessiuns",
       "dropzone": "Draggiar sessions.json qua u cliccar per chargiar",
       "dropzoneActive": "Draggiar sessions.json qua",
@@ -433,22 +367,14 @@
       "noMaterials": "Nagin material"
     },
     "content": {
-      "title": "Trametter voss cuntegn",
-      "loading": "Chargiar cuntegn...",
       "invalidLink": "Link nunvalid",
       "invalidLinkMessage": "Questa pagina basegna in link da cuntegn valid. Utilisai il link da vossa e-mail d'invitaziun.",
-      "linkExpired": "Il link è scadì",
       "linkExpiredMessage": "Quest link è scadì. Contactai l'organisader per in nov link.",
-      "sessionNotAssigned": "Sessiun betg attribuida",
-      "sessionNotAssignedMessage": "Vossa sessiun n'è anc betg vegnida attribuida. Contactai l'organisader per far attribuir vossa sessiun avant da trametter cuntegn.",
-      "event": "Event",
       "presentationTitle": "Titel da la presentaziun",
       "abstract": "Abstract",
       "titleRequired": "Il titel è obligatori",
       "abstractRequired": "L'abstract è obligatori",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "File da presentaziun",
-      "optional": "opziunal",
       "saving": "Guardar...",
       "lastSaved": "Ultimamain guardà: {{time}}",
       "unsavedChanges": "Midadas betg guardadas",
@@ -476,21 +402,7 @@
       "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
-      "dragDropTitle": "Chargiar presentaziun",
-      "dragDropMessage": "Draggiar e slider voss file qua, u cliccar per navigar",
-      "supportedFormats": "Formats sustegnids: PPTX, PDF, KEY (max 50 MB)",
       "uploading": "Chargiar...",
-      "uploadProgress": "{{percent}}% chargià",
-      "uploadComplete": "Chargiamaint cumplet",
-      "removeFile": "Allontanar file",
-      "currentFile": "File actual",
-      "download": "Telechargiar",
-      "replace": "Substituir",
-      "errors": {
-        "fileTooLarge": "Il file è memia grond. La grondezza maximala è 50 MB.",
-        "invalidType": "Tip da file nunvalid. Mo files PPTX, PDF e KEY èn permess.",
-        "uploadFailed": "Chargiamaint fallì. Empruvai danovamain."
-      },
       "presentationFile": "[MISSING] Presentation file",
       "changeFile": "[MISSING] Change file",
       "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
@@ -619,22 +531,14 @@
       "loadFailed": "Chargiar events n'è betg reussì"
     },
     "card": {
-      "sessions": "Presentaziuns",
-      "viewDetails": "Vesair detagls",
-      "andMore": "ed {{count}} ulteriurs"
+      "viewDetails": "Vesair detagls"
     },
     "filters": {
       "title": "Filtels",
       "search": "Tschertgar events...",
       "topics": "Temas",
       "clearAll": "Stizzar tut",
-      "activeCount": "{{count}} filtel activ",
-      "activeCount_one": "{{count}} filtel activ",
-      "activeCount_other": "{{count}} filtels activi"
-    },
-    "sort": {
-      "newest": "Il pli nov",
-      "oldest": "Il pli vegl"
+      "activeCount": "{{count}} filtel activ"
     },
     "detail": {
       "backToArchive": "← Enavos a l'archiv"
@@ -662,7 +566,6 @@
     }
   },
   "emailTemplates": {
-    "title": "Moduls d'e-mail",
     "layoutTemplates": "Moduls da layout",
     "layoutTemplatesInfo": "Definescha l'aspect BATbern per tutas e-mails. Midadas qua pertutgan tuts moduls ch'utiliseschan quest layout.",
     "contentTemplates": "Cuntegn d'e-mail",
@@ -685,15 +588,12 @@
     "noLayouts": "Nagins moduls da layout chattads.",
     "noTemplates": "Nagins moduls chattads per quest filtel.",
     "missingContentPlaceholder": "Spazi rezervà {{content}} mancant — il corp da l'e-mail vegn ad esser vid",
-    "cannotDeleteSystem": "Moduls da sistem na pon betg vegnir stizzads.",
-    "cannotDeleteLayout": "Moduls da layout na pon betg vegnir stizzads.",
     "deleteFailed": "Stizzar il modul n'è betg reussì.",
     "saveFailed": "Guardar il modul n'è betg reussì. Empruvai danovamain.",
     "validation": {
       "htmlBodyRequired": "Il corp HTML è obligatori.",
       "subjectRequired": "L'object è obligatori per moduls da cuntegn.",
-      "templateKeyRequired": "La clav dal modul è obligatoria.",
-      "allFieldsRequired": "La clav dal modul, l'object ed il corp HTML èn obligatoris."
+      "templateKeyRequired": "La clav dal modul è obligatoria."
     }
   },
   "presentation": {

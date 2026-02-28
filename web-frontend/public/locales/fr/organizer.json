@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partenaires",
-    "speakerOutreach": "Démarchage des intervenants",
     "topicManagement": "Gestion des sujets"
-  },
-  "dashboard": {
-    "criticalTasks": "Tâches critiques",
-    "noCriticalTasks": "Aucune tâche critique",
-    "greatJob": "Excellent travail !",
-    "taskCount": "{{count}} tâche",
-    "taskCount_plural": "{{count}} tâches",
-    "dueDate": "Date d'échéance",
-    "assignedTo": "Assigné à {{name}}",
-    "confirmAction": "Confirmer l'action",
-    "areYouSure": "Êtes-vous sûr de vouloir effectuer cette action ?"
   },
   "topicBacklog": {
     "pageTitle": "Gestion des sujets",
@@ -180,7 +168,6 @@
       "company": "Entreprise",
       "expertise": "Domaine d'expertise",
       "assignOrganizer": "Assigner à un organisateur (facultatif)",
-      "unassigned": "Non assigné",
       "notes": "Notes (facultatif)",
       "addButton": "Ajouter au pool",
       "adding": "Ajout en cours...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Démarchage des intervenants",
-    "subtitle": "Suivez vos activités de démarchage des intervenants et coordonnez-vous avec les autres organisateurs",
-    "breadcrumbs": {
-      "home": "Accueil",
-      "speakerOutreach": "Démarchage des intervenants"
-    },
-    "emptyPool": {
-      "message": "Vous devez ajouter des intervenants au pool avant de commencer le démarchage.",
-      "hint": "Retournez à l'étape de planification de l'événement pour ajouter des intervenants potentiels.",
-      "addSpeakers": "Ajouter des intervenants au pool"
-    },
-    "showBrainstorm": "Ajouter des intervenants",
-    "hideBrainstorm": "Masquer l'ajout d'intervenants",
     "speakerName": "Intervenant",
     "contactMethod": "Méthode de contact",
     "contactDate": "Date de contact",
     "markContacted": "Marquer comme contacté",
-    "filterByOrganizer": "Filtrer par organisateur",
     "contactHistory": "Historique des contacts",
-    "daysSinceAssignment": "Jours depuis l'assignation",
-    "overdue": "En retard",
-    "lastContact": "Dernier contact",
     "outreachDetails": "Détails du démarchage",
     "noContactHistory": "Aucun historique de contact",
     "contactedBy": "Contacté par",
@@ -238,10 +208,6 @@
         "failed": "Échec de l'enregistrement du démarchage",
         "loadHistory": "Échec du chargement de l'historique des contacts"
       }
-    },
-    "bulkAction": {
-      "title": "Marquer plusieurs comme contactés",
-      "confirm": "Marquer {{count}} intervenants comme contactés ?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Créer un nouvel intervenant",
     "form": {
       "username": "Rechercher un intervenant",
-      "usernameHelp": "Entrez le nom d'utilisateur de l'intervenant",
       "presentationTitle": "Titre de la présentation",
       "presentationAbstract": "Résumé de la présentation",
       "charactersRemaining": "caractères restants"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Inviter",
-    "sendInvite": "Envoyer l'invitation",
     "sendInvitation": "Envoyer l'invitation",
-    "confirmInvite": "Envoyer une invitation à cet intervenant ?",
     "noEmailTooltip": "Ajoutez un e-mail pour inviter",
-    "inviting": "Envoi en cours...",
     "sending": "Envoi en cours...",
     "inviteSent": "Invitation envoyée",
     "invitationSent": "Invitation envoyée à {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Filtrer par événement",
       "allEvents": "Tous les événements",
       "sessions": "sessions",
-      "speakers": "intervenants",
-      "yourCompany": "Votre entreprise"
+      "speakers": "intervenants"
     }
   },
   "blobSelector": {

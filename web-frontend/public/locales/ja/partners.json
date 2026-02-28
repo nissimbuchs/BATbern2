@@ -20,7 +20,6 @@
     "silver": "シルバー",
     "bronze": "ブロンズ"
   },
-  "viewMode": {},
   "sort": {
     "label": "並び替え",
     "engagement": "エンゲージメントスコア",
@@ -28,26 +27,7 @@
     "tier": "パートナーシップ段階",
     "lastEvent": "最終イベント"
   },
-  "statistics": {
-    "totalPartners": "パートナー総数",
-    "activePartners": "アクティブなパートナー",
-    "engagedPartners": "エンゲージしているパートナー",
-    "engagedComingSoon": "近日公開 - Epic 8",
-    "tierDistribution": "段階別分布"
-  },
   "card": {
-    "industry": "業界",
-    "contact": "主要連絡先",
-    "lastEvent": "最終イベント",
-    "topicVotes": "トピック投票",
-    "nextMeeting": "次回ミーティング",
-    "meetingPending": "保留中",
-    "engagement": "エンゲージメント",
-    "engagementComingSoon": "近日公開 (Epic 8)",
-    "viewDetails": "詳細を表示",
-    "sendEmail": "メールを送信",
-    "scheduleMeeting": "ミーティングをスケジュール",
-    "analytics": "分析",
     "comingSoon": "近日公開 - Epic 8"
   },
   "pagination": {
@@ -61,18 +41,15 @@
     "partners_other": "{{count}}社のパートナー"
   },
   "empty": {
-    "noPartners": "パートナーが見つかりません",
-    "tryAdjustingFilters": "検索またはフィルターを調整してください"
+    "noPartners": "パートナーが見つかりません"
   },
   "loading": "パートナーを読み込み中...",
   "error": {
     "failedToLoad": "パートナーの読み込みに失敗しました",
-    "tryAgain": "後でもう一度お試しください",
     "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}}社のパートナーが見つかりました",
-    "searchResults_plural": "{{count}}社のパートナーが見つかりました",
     "filterUpdate": "フィルターが更新されました",
     "loading": "パートナーを読み込み中"
   },
@@ -81,80 +58,20 @@
     "editTitle": "パートナーシップを編集",
     "fields": {
       "company": "会社",
-      "companyPlaceholder": "会社を検索...",
-      "partnershipTier": "パートナーシップ段階",
       "startDate": "開始日",
-      "endDate": "終了日",
       "endDateOptional": "終了日（任意）"
     },
-    "tiers": {
-      "STRATEGIC": "戦略的",
-      "PLATINUM": "プラチナ",
-      "GOLD": "ゴールド",
-      "SILVER": "シルバー",
-      "BRONZE": "ブロンズ"
-    },
-    "tierDescriptions": {
-      "STRATEGIC": "完全なアクセスと専用サポートを提供する最高のパートナーシップ段階",
-      "PLATINUM": "強化されたベネフィットを持つプレミアムパートナーシップ",
-      "GOLD": "主要なベネフィットを持つ高価値パートナーシップ",
-      "SILVER": "必須のベネフィットを持つ標準パートナーシップ",
-      "BRONZE": "基本的なベネフィットを持つエントリーレベルのパートナーシップ"
-    },
-    "benefits": {
-      "title": "段階のベネフィット",
-      "logoPlacement": "ウェブサイトへのロゴ掲載",
-      "newsletterMentions": "ニュースレターでの言及",
-      "priorityAccess": "イベントへの優先アクセス",
-      "quarterlyMeetings": "四半期ごとの戦略的ミーティング",
-      "roiAnalytics": "ROI分析ダッシュボード",
-      "dedicatedManager": "専任アカウントマネージャー",
-      "eventAccess": "イベントへのアクセス"
-    },
-    "actions": {},
     "messages": {
-      "unsavedChanges": "保存されていない変更があります。閉じてもよろしいですか？",
-      "createSuccess": "パートナーシップが正常に作成されました",
-      "updateSuccess": "パートナーシップが正常に更新されました",
-      "createError": "パートナーシップの作成に失敗しました。相関ID：{{correlationId}}",
-      "updateError": "パートナーシップの更新に失敗しました。相関ID：{{correlationId}}"
-    },
-    "companySearch": {
-      "searching": "会社を検索中...",
-      "noResults": "会社が見つかりません",
-      "error": "会社の検索中にエラーが発生しました",
-      "minChars": "検索するには少なくとも2文字を入力してください"
+      "unsavedChanges": "保存されていない変更があります。閉じてもよろしいですか？"
     }
   },
   "validation": {
     "companyRequired": "会社は必須です",
     "tierRequired": "パートナーシップ段階は必須です",
     "startDateRequired": "開始日は必須です",
-    "startDateFuture": "開始日は将来の日付にすることはできません",
     "endDateBeforeStart": "終了日は開始日より後でなければなりません"
   },
   "detail": {
-    "header": {
-      "exportData": "データをエクスポート",
-      "scheduleMeeting": "ミーティングをスケジュール",
-      "sendEmail": "メールを送信",
-      "comingSoon": "Epic 8で提供予定"
-    },
-    "quickStats": {
-      "partnerSince": "パートナー開始日",
-      "eventsAttended": "参加イベント数",
-      "activeVotes": "アクティブな投票",
-      "votesSubtitle": "（トピック）",
-      "meetings": "ミーティング",
-      "meetingsSubtitle": "（季節ごと）",
-      "noEventsYet": "まだイベントがありません",
-      "lastEvent": "最終：{{event}}"
-    },
-    "activityTab": {
-      "title": "アクティビティ",
-      "filterLabel": "アクティビティタイプでフィルター",
-      "noActivity": "表示するアクティビティがありません"
-    },
     "meetingsTab": {
       "title": "ミーティング",
       "addMeeting": "ミーティングをスケジュール"
@@ -218,14 +135,12 @@
   "meetings": {
     "title": "パートナーミーティング",
     "create": "ミーティングを作成",
-    "edit": "ミーティングを編集",
     "fields": {
       "agenda": "アジェンダ",
       "notes": "ミーティングメモ",
       "location": "場所",
       "eventCode": "BATbernイベントコード",
       "eventCodeHint": "例：BATbern57",
-      "date": "日付",
       "startTime": "開始時刻",
       "endTime": "終了時刻",
       "type": {
@@ -247,33 +162,13 @@
       "inviteStatus": "招待",
       "actions": "操作"
     },
-    "loading": "ミーティングを読み込み中...",
     "error": "ミーティングを読み込めませんでした",
-    "createSuccess": "ミーティングが正常に作成されました",
-    "updateSuccess": "ミーティングが正常に更新されました",
     "inviteSuccess": "カレンダー招待を送信中です"
   },
-  "comingSoon": {
-    "epic8": "近日公開 - Epic 8",
-    "story283": "近日公開 - Story 2.8.3"
-  },
   "portal": {
-    "nav": {
-      "myCompany": "マイカンパニー",
-      "analytics": "分析",
-      "topics": "トピック"
-    },
     "noCompanyLinked": "あなたのアカウントは会社に紐付けられていません",
     "noCompanyLinked.detail": "主催者にお問い合わせください",
     "analytics": {
-      "comingSoon": "分析は近日公開予定",
-      "title": "出席ダッシュボード",
-      "table": {
-        "date": "日付",
-        "yourAttendees": "あなたの参加者",
-        "totalAttendees": "総参加者数",
-        "percentage": "割合（%）"
-      },
       "kpi": {
         "costPerAttendee": "参加者1人あたりのコスト",
         "attendanceRate": "平均出席率",
@@ -288,11 +183,9 @@
         "loading": "エクスポート中..."
       },
       "noData": "選択した期間の出席データが見つかりません",
-      "loading": "データを読み込み中...",
       "error": "出席データの読み込みに失敗しました"
     },
     "topics": {
-      "comingSoon": "トピック投票は近日公開予定",
       "title": "トピックの提案",
       "suggest": "トピックを提案",
       "vote": "投票する",
@@ -333,10 +226,8 @@
         },
         "status": "ステータス",
         "plannedEvent": "予定イベント",
-        "save": "保存",
-        "saving": "保存中..."
+        "save": "保存"
       },
-      "loading": "トピックを読み込み中...",
       "error": "トピックの読み込みに失敗しました"
     }
   }

@@ -62,10 +62,10 @@ describe('InvitationResponsePage Component', () => {
     test('should_showInvalidLinkError_when_noTokenProvided', () => {
       renderWithProviders(); // No token
 
-      expect(screen.getByText('Invalid Link')).toBeInTheDocument();
-      expect(
-        screen.getByText('This page requires a valid invitation link from your email.')
-      ).toBeInTheDocument();
+      expect(screen.getByTestId('invitation-error-invalid')).toBeInTheDocument();
+      expect(screen.getByTestId('invitation-error-invalid')).toHaveTextContent(
+        /valid invitation link/i
+      );
     });
 
     test('should_showLoadingState_when_validatingToken', async () => {
@@ -75,8 +75,8 @@ describe('InvitationResponsePage Component', () => {
 
       renderWithProviders('valid-token');
 
-      expect(screen.getByText('Loading Invitation...')).toBeInTheDocument();
-      expect(screen.getByText('Please wait while we verify your link.')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent(/Please wait/i);
     });
 
     test('should_showExpiredError_when_tokenExpired', async () => {
@@ -87,11 +87,9 @@ describe('InvitationResponsePage Component', () => {
       renderWithProviders('expired-token');
 
       await waitFor(() => {
-        expect(screen.getByText('Link Expired')).toBeInTheDocument();
+        expect(screen.getByTestId('invitation-error-expired')).toBeInTheDocument();
       });
-      expect(
-        screen.getByText('This invitation link has expired. Please contact the event organizers.')
-      ).toBeInTheDocument();
+      expect(screen.getByTestId('invitation-error-expired')).toHaveTextContent(/expired/i);
     });
 
     test('should_showUsedError_when_tokenAlreadyUsed', async () => {
@@ -102,7 +100,7 @@ describe('InvitationResponsePage Component', () => {
       renderWithProviders('used-token');
 
       await waitFor(() => {
-        expect(screen.getByText('Link Already Used')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Link Already Used/i })).toBeInTheDocument();
       });
     });
 
@@ -114,7 +112,7 @@ describe('InvitationResponsePage Component', () => {
       renderWithProviders('invalid-token');
 
       await waitFor(() => {
-        expect(screen.getByText('Invalid Link')).toBeInTheDocument();
+        expect(screen.getByTestId('invitation-error-invalid')).toBeInTheDocument();
       });
     });
 
@@ -133,7 +131,7 @@ describe('InvitationResponsePage Component', () => {
       renderWithProviders('responded-token');
 
       await waitFor(() => {
-        expect(screen.getByText('Already Responded')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Already Responded/i })).toBeInTheDocument();
       });
       expect(screen.getByText(/Accepted/i)).toBeInTheDocument();
     });
@@ -226,7 +224,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Accept/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Message to Organizers/i)).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: /Message to Organizers/i })).toBeInTheDocument();
       });
     });
 
@@ -295,7 +293,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Accept/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Message to Organizers/i)).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: /Message to Organizers/i })).toBeInTheDocument();
       });
 
       const messageTextarea = screen.getByPlaceholderText(/Any questions or comments/i);
@@ -341,7 +339,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Decline/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Reason for declining/i)).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: /Reason for declining/i })).toBeInTheDocument();
       });
     });
 
@@ -355,7 +353,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Decline/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/A reason is required to decline/i)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toBeInTheDocument();
       });
 
       const submitButton = screen.getByRole('button', { name: /Submit Response/i });
@@ -446,7 +444,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Submit Response/i }));
 
       await waitFor(() => {
-        expect(screen.getByText('Response Submitted!')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Response Submitted/i })).toBeInTheDocument();
       });
       expect(screen.getByText(/Thank you, Jane Smith/i)).toBeInTheDocument();
     });
@@ -569,7 +567,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Submit Response/i }));
 
       await waitFor(() => {
-        expect(screen.getByText('Submitting...')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Submitting/i })).toBeInTheDocument();
       });
     });
   });

@@ -103,11 +103,12 @@ export function FilterSidebar({
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-testid="search-input"
         />
       </div>
 
       {/* Topics */}
-      <div>
+      <div data-testid="topic-filter">
         <h3 className="text-sm font-medium text-gray-900 mb-2">{t('archive.filters.topics')}</h3>
         <div className="space-y-2">
           {loading ? (

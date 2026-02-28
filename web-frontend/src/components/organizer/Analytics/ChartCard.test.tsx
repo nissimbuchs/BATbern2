@@ -89,7 +89,7 @@ describe('ChartCard', () => {
         <div>chart content</div>
       </ChartCard>
     );
-    expect(screen.getByText('Show data table')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Show data table/i })).toBeInTheDocument();
   });
 
   it('expands and collapses the data table on toggle click', async () => {
@@ -106,12 +106,12 @@ describe('ChartCard', () => {
     expect(screen.queryByTestId('data-table-content')).not.toBeInTheDocument();
 
     // Click to expand
-    fireEvent.click(screen.getByText('Show data table'));
+    fireEvent.click(screen.getByRole('button', { name: /Show data table/i }));
     expect(screen.getByTestId('data-table-content')).toBeInTheDocument();
-    expect(screen.getByText('Hide data table')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Hide data table/i })).toBeInTheDocument();
 
     // Click to collapse — MUI Collapse transition needs waitFor
-    fireEvent.click(screen.getByText('Hide data table'));
+    fireEvent.click(screen.getByRole('button', { name: /Hide data table/i }));
     await waitFor(() => {
       expect(screen.queryByTestId('data-table-content')).not.toBeInTheDocument();
     });

@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partners",
-    "speakerOutreach": "Speaker Outreach",
     "topicManagement": "Topic Management"
-  },
-  "dashboard": {
-    "criticalTasks": "Critical Tasks",
-    "noCriticalTasks": "No critical tasks",
-    "greatJob": "Great job!",
-    "taskCount": "{{count}} task",
-    "taskCount_plural": "{{count}} tasks",
-    "dueDate": "Due Date",
-    "assignedTo": "Assigned to {{name}}",
-    "confirmAction": "Confirm Action",
-    "areYouSure": "Are you sure you want to perform this action?"
   },
   "topicBacklog": {
     "pageTitle": "Topic Management",
@@ -180,7 +168,6 @@
       "company": "Company",
       "expertise": "Expertise",
       "assignOrganizer": "Assign to Organizer (Optional)",
-      "unassigned": "Unassigned",
       "notes": "Notes (Optional)",
       "addButton": "Add to Pool",
       "adding": "Adding...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Speaker Outreach",
-    "subtitle": "Track your speaker outreach activities and coordinate with other organizers",
-    "breadcrumbs": {
-      "home": "Home",
-      "speakerOutreach": "Speaker Outreach"
-    },
-    "emptyPool": {
-      "message": "You need to add speakers to the pool before starting outreach.",
-      "hint": "Go back to the event planning stage to add potential speakers.",
-      "addSpeakers": "Add Speakers to Pool"
-    },
-    "showBrainstorm": "Add Speakers",
-    "hideBrainstorm": "Hide Add Speakers",
     "speakerName": "Speaker",
     "contactMethod": "Contact Method",
     "contactDate": "Contact Date",
     "markContacted": "Mark as Contacted",
-    "filterByOrganizer": "Filter by Organizer",
     "contactHistory": "Contact History",
-    "daysSinceAssignment": "Days Since Assignment",
-    "overdue": "Overdue",
-    "lastContact": "Last Contact",
     "outreachDetails": "Outreach Details",
     "noContactHistory": "No contact history yet",
     "contactedBy": "Contacted by",
@@ -238,10 +208,6 @@
         "failed": "Failed to record outreach",
         "loadHistory": "Failed to load contact history"
       }
-    },
-    "bulkAction": {
-      "title": "Mark Multiple as Contacted",
-      "confirm": "Mark {{count}} speakers as contacted?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Create New Speaker",
     "form": {
       "username": "Search Speaker",
-      "usernameHelp": "Enter the username of the speaker",
       "presentationTitle": "Presentation Title",
       "presentationAbstract": "Presentation Abstract",
       "charactersRemaining": "characters remaining"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Invite",
-    "sendInvite": "Send Invite",
     "sendInvitation": "Send Invitation",
-    "confirmInvite": "Send invitation to this speaker?",
     "noEmailTooltip": "Add email to invite",
-    "inviting": "Sending...",
     "sending": "Sending...",
     "inviteSent": "Invitation sent",
     "invitationSent": "Invitation sent to {{email}}",
@@ -439,8 +401,7 @@
       "allEvents": "All events",
       "sessions": "sessions",
       "speakers": "speakers",
-      "attendees": "attendees",
-      "yourCompany": "Your Company"
+      "attendees": "attendees"
     }
   },
   "blobSelector": {

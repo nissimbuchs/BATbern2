@@ -20,7 +20,6 @@
     "silver": "Hopea",
     "bronze": "Pronssi"
   },
-  "viewMode": {},
   "sort": {
     "label": "Lajittele",
     "engagement": "Sitoutumispisteet",
@@ -28,26 +27,7 @@
     "tier": "Kumppanuustaso",
     "lastEvent": "Viimeisin tapahtuma"
   },
-  "statistics": {
-    "totalPartners": "Kumppaneita yhteensä",
-    "activePartners": "Aktiiviset kumppanit",
-    "engagedPartners": "Sitoutuneet kumppanit",
-    "engagedComingSoon": "Tulossa pian - Epic 8",
-    "tierDistribution": "Tasojakauma"
-  },
   "card": {
-    "industry": "Toimiala",
-    "contact": "Ensisijainen yhteyshenkilö",
-    "lastEvent": "Viimeisin tapahtuma",
-    "topicVotes": "Aiheäänestykset",
-    "nextMeeting": "Seuraava kokous",
-    "meetingPending": "Odottaa",
-    "engagement": "Sitoutuminen",
-    "engagementComingSoon": "Tulossa pian (Epic 8)",
-    "viewDetails": "Näytä tiedot",
-    "sendEmail": "Lähetä sähköposti",
-    "scheduleMeeting": "Aikatauluta kokous",
-    "analytics": "Analytiikka",
     "comingSoon": "Tulossa pian - Epic 8"
   },
   "pagination": {
@@ -61,18 +41,15 @@
     "partners_other": "{{count}} kumppania"
   },
   "empty": {
-    "noPartners": "Kumppaneita ei löydetty",
-    "tryAdjustingFilters": "Kokeile muuttaa hakua tai suodattimia"
+    "noPartners": "Kumppaneita ei löydetty"
   },
   "loading": "Ladataan kumppaneita...",
   "error": {
     "failedToLoad": "Kumppaneiden lataaminen epäonnistui",
-    "tryAgain": "Yritä uudelleen myöhemmin",
     "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} kumppani löydetty",
-    "searchResults_plural": "{{count}} kumppania löydetty",
     "filterUpdate": "Suodattimet päivitetty",
     "loading": "Ladataan kumppaneita"
   },
@@ -81,80 +58,20 @@
     "editTitle": "Muokkaa kumppanuutta",
     "fields": {
       "company": "Yritys",
-      "companyPlaceholder": "Hae yritystä...",
-      "partnershipTier": "Kumppanuustaso",
       "startDate": "Alkamispäivä",
-      "endDate": "Päättymispäivä",
       "endDateOptional": "Päättymispäivä (valinnainen)"
     },
-    "tiers": {
-      "STRATEGIC": "Strateginen",
-      "PLATINUM": "Platina",
-      "GOLD": "Kulta",
-      "SILVER": "Hopea",
-      "BRONZE": "Pronssi"
-    },
-    "tierDescriptions": {
-      "STRATEGIC": "Korkein kumppanuustaso täydellä pääsyllä ja omistetulla tuella",
-      "PLATINUM": "Premium-kumppanuus parannetuilla eduilla",
-      "GOLD": "Korkean arvon kumppanuus merkittävillä eduilla",
-      "SILVER": "Vakiokumppanuus olennaisilla eduilla",
-      "BRONZE": "Aloitustason kumppanuus peruseduilla"
-    },
-    "benefits": {
-      "title": "Tason edut",
-      "logoPlacement": "Logon sijoittaminen verkkosivustolle",
-      "newsletterMentions": "Maininnat uutiskirjeissä",
-      "priorityAccess": "Prioriteettipääsy tapahtumiin",
-      "quarterlyMeetings": "Neljännesvuosittaiset strategiset kokoukset",
-      "roiAnalytics": "ROI-analytiikkakojelauta",
-      "dedicatedManager": "Omistettu asiakaspäällikkö",
-      "eventAccess": "Pääsy tapahtumiin"
-    },
-    "actions": {},
     "messages": {
-      "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?",
-      "createSuccess": "Kumppanuus luotu onnistuneesti",
-      "updateSuccess": "Kumppanuus päivitetty onnistuneesti",
-      "createError": "Kumppanuuden luominen epäonnistui. Korrelaatiotunnus: {{correlationId}}",
-      "updateError": "Kumppanuuden päivittäminen epäonnistui. Korrelaatiotunnus: {{correlationId}}"
-    },
-    "companySearch": {
-      "searching": "Haetaan yrityksiä...",
-      "noResults": "Yrityksiä ei löydetty",
-      "error": "Virhe yrityksiä haettaessa",
-      "minChars": "Kirjoita vähintään 2 merkkiä hakeaksesi"
+      "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?"
     }
   },
   "validation": {
     "companyRequired": "Yritys on pakollinen",
     "tierRequired": "Kumppanuustaso on pakollinen",
     "startDateRequired": "Alkamispäivä on pakollinen",
-    "startDateFuture": "Alkamispäivä ei voi olla tulevaisuudessa",
     "endDateBeforeStart": "Päättymispäivän on oltava alkamispäivän jälkeen"
   },
   "detail": {
-    "header": {
-      "exportData": "Vie tiedot",
-      "scheduleMeeting": "Aikatauluta kokous",
-      "sendEmail": "Lähetä sähköposti",
-      "comingSoon": "Tulossa Epic 8:ssa"
-    },
-    "quickStats": {
-      "partnerSince": "Kumppani alkaen",
-      "eventsAttended": "Osallistutut tapahtumat",
-      "activeVotes": "Aktiiviset äänestykset",
-      "votesSubtitle": "(aiheet)",
-      "meetings": "Kokoukset",
-      "meetingsSubtitle": "(kausiluonteiset)",
-      "noEventsYet": "Ei tapahtumia vielä",
-      "lastEvent": "viimeisin: {{event}}"
-    },
-    "activityTab": {
-      "title": "Toiminta",
-      "filterLabel": "Suodata toimintatyypin mukaan",
-      "noActivity": "Ei näytettävää toimintaa"
-    },
     "meetingsTab": {
       "title": "Kokoukset",
       "addMeeting": "Aikatauluta kokous"
@@ -218,14 +135,12 @@
   "meetings": {
     "title": "Kumppanikokoukset",
     "create": "Luo kokous",
-    "edit": "Muokkaa kokousta",
     "fields": {
       "agenda": "Esityslista",
       "notes": "Kokousmuistiinpanot",
       "location": "Sijainti",
       "eventCode": "BATbern-tapahtumakoodi",
       "eventCodeHint": "esim. BATbern57",
-      "date": "Päivämäärä",
       "startTime": "Alkamisaika",
       "endTime": "Päättymisaika",
       "type": {
@@ -247,33 +162,13 @@
       "inviteStatus": "Kutsu",
       "actions": "Toiminnot"
     },
-    "loading": "Ladataan kokouksia...",
     "error": "Kokouksia ei voitu ladata",
-    "createSuccess": "Kokous luotu onnistuneesti",
-    "updateSuccess": "Kokous päivitetty onnistuneesti",
     "inviteSuccess": "Kalenterikutsua lähetetään"
   },
-  "comingSoon": {
-    "epic8": "Tulossa pian - Epic 8",
-    "story283": "Tulossa pian - Story 2.8.3"
-  },
   "portal": {
-    "nav": {
-      "myCompany": "Oma yritys",
-      "analytics": "Analytiikka",
-      "topics": "Aiheet"
-    },
     "noCompanyLinked": "Tiliäsi ei ole yhdistetty yritykseen",
     "noCompanyLinked.detail": "Ota yhteyttä järjestäjääsi",
     "analytics": {
-      "comingSoon": "Analytiikka tulossa pian",
-      "title": "Osallistumiskojelauta",
-      "table": {
-        "date": "Päivämäärä",
-        "yourAttendees": "Omat osallistujasi",
-        "totalAttendees": "Osallistujia yhteensä",
-        "percentage": "Prosentti (%)"
-      },
       "kpi": {
         "costPerAttendee": "Kustannus per osallistuja",
         "attendanceRate": "Keskim. osallistumisaste",
@@ -288,11 +183,9 @@
         "loading": "Viedään..."
       },
       "noData": "Valitulle ajanjaksolle ei löydetty osallistumistietoja",
-      "loading": "Ladataan tietoja...",
       "error": "Osallistumistietojen lataaminen epäonnistui"
     },
     "topics": {
-      "comingSoon": "Aiheäänestys tulossa pian",
       "title": "Aihe-ehdotukset",
       "suggest": "Ehdota aihetta",
       "vote": "Äänestä",
@@ -333,10 +226,8 @@
         },
         "status": "Tila",
         "plannedEvent": "Suunniteltu tapahtuma",
-        "save": "Tallenna",
-        "saving": "Tallennetaan..."
+        "save": "Tallenna"
       },
-      "loading": "Ladataan aiheita...",
       "error": "Aiheiden lataaminen epäonnistui"
     }
   }

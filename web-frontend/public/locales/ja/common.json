@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "BATbern イベント管理プラットフォーム",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "自分の会社",
     "myAccount": "マイアカウント",
     "analytics": "分析",
-    "content": "コンテンツ検索",
     "profile": "プロフィール",
-    "logout": "ログアウト",
     "myEvents": "マイイベント",
-    "presentationMode": "プレゼンテーションモード",
     "myContent": "マイコンテンツ",
     "myRegistrations": "マイ登録",
     "about": "概要",
@@ -27,8 +23,7 @@
     "partnerTopics": "パートナートピック",
     "partnerMeetings": "パートナーミーティング",
     "topics": "トピック提案",
-    "openMenu": "メニューを開く",
-    "closeMenu": "メニューを閉じる"
+    "openMenu": "メニューを開く"
   },
   "public": {
     "login": "ログイン",
@@ -70,11 +65,6 @@
     "cancel": "キャンセル",
     "delete": "削除",
     "edit": "編集",
-    "create": "作成",
-    "search": "検索",
-    "filter": "フィルター",
-    "reset": "リセット",
-    "submit": "送信",
     "close": "閉じる",
     "sending": "送信中...",
     "loading": "読み込み中...",
@@ -105,12 +95,10 @@
   },
   "menu": {
     "profile": "プロフィール",
-    "profileSettings": "プロフィール設定",
     "settings": "設定",
     "administration": "管理",
     "help": "ヘルプ",
-    "logout": "ログアウト",
-    "signOut": "サインアウト"
+    "logout": "ログアウト"
   },
   "role": {
     "organizer": "イベント主催者",
@@ -136,49 +124,21 @@
       "swissUID": "スイスUID (CHE-XXX.XXX.XXX)",
       "website": "ウェブサイト",
       "industry": "業種",
-      "sector": "セクター（任意）",
-      "city": "都市",
-      "canton": "カントン",
-      "country": "国",
       "description": "説明",
       "legalName": "略称: {{name}}",
       "logo": "企業ロゴ"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://example.com",
-      "canton": "BE, ZH, GE, など"
+      "website": "https://example.com"
     },
     "industries": {
-      "selectIndustry": "業種を選択",
-      "technology": "テクノロジー",
-      "cloudComputing": "クラウドコンピューティング",
-      "devOps": "DevOps",
-      "financialServices": "金融サービス",
-      "healthcare": "医療・ヘルスケア",
-      "manufacturing": "製造業",
-      "consulting": "コンサルティング",
-      "education": "教育",
-      "other": "その他"
-    },
-    "sectors": {
-      "selectSector": "セクターを選択",
-      "public": "公共",
-      "private": "民間",
-      "nonprofit": "非営利",
-      "government": "政府"
+      "selectIndustry": "業種を選択"
     },
     "badges": {
-      "partner": "パートナー",
       "verified": "認証済み"
     },
-    "stats": {
-      "userCount": "{{count}}人のユーザー",
-      "userCount_one": "{{count}}人のユーザー",
-      "userCount_other": "{{count}}人のユーザー"
-    },
     "filters": {
-      "partnerOnly": "パートナー企業のみ",
       "verifiedOnly": "認証済み企業のみ",
       "industry": "業種",
       "allIndustries": "すべての業種",
@@ -188,7 +148,6 @@
     "form": {
       "createTitle": "新規企業を作成",
       "editTitle": "企業を編集",
-      "required": "必須",
       "saveDraft": "下書きを保存",
       "saveCreate": "保存して作成",
       "saveChanges": "変更を保存",
@@ -198,31 +157,16 @@
         "swissUID": "任意 - 自動検証用"
       },
       "errors": {
-        "nameRequired": "会社名は必須です",
-        "nameMinLength": "名前は{{min}}文字以上である必要があります",
-        "nameMaxLength": "名前は{{max}}文字以下である必要があります",
-        "displayNameMaxLength": "表示名は{{max}}文字以下である必要があります",
-        "invalidSwissUID": "スイスUID形式が無効です (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "ウェブサイトURLが無効です",
-        "industryRequired": "業種は必須です",
-        "cityRequired": "都市は必須です",
-        "cantonRequired": "カントンは必須です",
-        "countryRequired": "国は必須です",
-        "descriptionMaxLength": "説明は{{max}}文字以下である必要があります",
         "noPermission": "この企業を編集する権限がありません。スピーカーは自分の会社のみ編集できます。"
       }
     },
     "detail": {
       "tabs": {
-        "users": "ユーザー",
-        "statistics": "統計",
-        "activity": "アクティビティ"
+        "users": "ユーザー"
       },
-      "overviewText": "この概要セクションでは、企業の追加情報、最近の更新、またはハイライトを表示できます。",
       "noData": "企業データがありません"
     },
     "errors": {
-      "loadFailed": "企業の読み込みに失敗しました",
       "saveFailed": "企業の保存中にエラーが発生しました",
       "deleteFailed": "企業の削除に失敗しました"
     },
@@ -230,14 +174,11 @@
       "placeholder": "企業を検索..."
     },
     "batchImport": {
-      "button": "一括インポート",
       "title": "JSONから企業をインポート",
       "dropzone": "JSONファイルをここにドロップするかクリックしてアップロード",
       "dropzoneActive": "JSONファイルをここにドロップ",
-      "invalidJson": "無効なJSONファイルです。形式を確認してください。",
       "noCompanies": "JSONファイルに企業が見つかりません。",
       "preview": "プレビュー（{{count}}社）",
-      "importButton": "すべてインポート",
       "cancelButton": "キャンセル",
       "status": {
         "importing": "インポート中...",
@@ -261,8 +202,7 @@
       },
       "errors": {
         "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
-        "parseError": "JSONファイルの解析に失敗しました: {{error}}",
-        "importFailed": "{{name}}のインポートに失敗しました: {{error}}"
+        "parseError": "JSONファイルの解析に失敗しました: {{error}}"
       }
     },
     "delete": {
@@ -270,8 +210,7 @@
       "message": "この企業を削除してもよろしいですか？",
       "dataWarning": "この操作により企業が完全に削除され、元に戻すことはできません。",
       "cascadeWarning": "関連するすべてのデータ（ユーザー、パートナーシップ、スピーカー、イベント）が影響を受ける可能性があります。",
-      "deleting": "削除中...",
-      "success": "企業が正常に削除されました"
+      "deleting": "削除中..."
     },
     "pagination": {
       "itemsPerPage": "1ページあたりの件数"
@@ -279,15 +218,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "過去のイベントをインポート",
       "title": "topics.jsonからイベントをインポート",
       "dropzone": "topics.jsonファイルをここにドロップするかクリックしてアップロード",
       "dropzoneActive": "JSONファイルをここにドロップ",
       "dropzoneHint": "前処理済みのtopics.jsonファイルをアップロードしてください（parsedDate、description、moderatorフィールド付き）",
-      "invalidJson": "無効なJSONファイルです。形式を確認してください。",
       "noEvents": "JSONファイルにイベントが見つかりません。",
       "preview": "プレビュー（{{count}}件のイベント）",
-      "importButton": "すべてインポート",
       "cancelButton": "キャンセル",
       "status": {
         "pending": "保留中",
@@ -307,8 +243,7 @@
       },
       "errors": {
         "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
-        "parseError": "JSONファイルの解析に失敗しました: {{error}}",
-        "importFailed": "イベント{{number}}のインポートに失敗しました: {{error}}"
+        "parseError": "JSONファイルの解析に失敗しました: {{error}}"
       },
       "fieldSelection": {
         "legend": "[MISSING] Field Selection (Import = create if new, update if exists | Ignore = skip field)",
@@ -359,7 +294,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "セッションをインポート",
       "title": "セッション一括インポート",
       "dropzone": "sessions.jsonをここにドロップするかクリックしてアップロード",
       "dropzoneActive": "sessions.jsonをここにドロップ",
@@ -433,22 +367,14 @@
       "noMaterials": "資料なし"
     },
     "content": {
-      "title": "コンテンツを提出",
-      "loading": "コンテンツを読み込み中...",
       "invalidLink": "無効なリンク",
       "invalidLinkMessage": "このページには有効なコンテンツリンクが必要です。招待メールのリンクを使用してください。",
-      "linkExpired": "リンクが期限切れです",
       "linkExpiredMessage": "このリンクは期限切れです。新しいリンクについては主催者にお問い合わせください。",
-      "sessionNotAssigned": "セッション未割り当て",
-      "sessionNotAssignedMessage": "セッションがまだ割り当てられていません。コンテンツを提出する前に、主催者に連絡してセッションを割り当ててもらってください。",
-      "event": "イベント",
       "presentationTitle": "プレゼンテーションタイトル",
       "abstract": "要旨",
       "titleRequired": "タイトルは必須です",
       "abstractRequired": "要旨は必須です",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "プレゼンテーションファイル",
-      "optional": "任意",
       "saving": "保存中...",
       "lastSaved": "最終保存: {{time}}",
       "unsavedChanges": "未保存の変更があります",
@@ -476,21 +402,7 @@
       "enableFileUploads": "[MISSING] Submit your title and abstract first to enable file uploads."
     },
     "upload": {
-      "dragDropTitle": "プレゼンテーションをアップロード",
-      "dragDropMessage": "ファイルをここにドラッグ＆ドロップするか、クリックして参照",
-      "supportedFormats": "対応形式: PPTX、PDF、KEY（最大50MB）",
       "uploading": "アップロード中...",
-      "uploadProgress": "{{percent}}%アップロード済み",
-      "uploadComplete": "アップロード完了",
-      "removeFile": "ファイルを削除",
-      "currentFile": "現在のファイル",
-      "download": "ダウンロード",
-      "replace": "置き換え",
-      "errors": {
-        "fileTooLarge": "ファイルが大きすぎます。最大サイズは50MBです。",
-        "invalidType": "無効なファイル形式です。PPTX、PDF、KEYファイルのみ使用できます。",
-        "uploadFailed": "アップロードに失敗しました。再試行してください。"
-      },
       "presentationFile": "[MISSING] Presentation file",
       "changeFile": "[MISSING] Change file",
       "dragDropPresentation": "[MISSING] Drag and drop your presentation here",
@@ -619,22 +531,14 @@
       "loadFailed": "イベントの読み込みに失敗しました"
     },
     "card": {
-      "sessions": "プレゼンテーション",
-      "viewDetails": "詳細を見る",
-      "andMore": "他{{count}}件"
+      "viewDetails": "詳細を見る"
     },
     "filters": {
       "title": "フィルター",
       "search": "イベントを検索...",
       "topics": "トピック",
       "clearAll": "すべてクリア",
-      "activeCount": "{{count}}件のアクティブなフィルター",
-      "activeCount_one": "{{count}}件のアクティブなフィルター",
-      "activeCount_other": "{{count}}件のアクティブなフィルター"
-    },
-    "sort": {
-      "newest": "新しい順",
-      "oldest": "古い順"
+      "activeCount": "{{count}}件のアクティブなフィルター"
     },
     "detail": {
       "backToArchive": "← アーカイブに戻る"
@@ -662,7 +566,6 @@
     }
   },
   "emailTemplates": {
-    "title": "メールテンプレート",
     "layoutTemplates": "レイアウトテンプレート",
     "layoutTemplatesInfo": "すべてのメールのBATbernの外観を定義します。ここでの変更はこのレイアウトを使用するすべてのテンプレートに影響します。",
     "contentTemplates": "メールコンテンツ",
@@ -685,15 +588,12 @@
     "noLayouts": "レイアウトテンプレートが見つかりません。",
     "noTemplates": "このフィルターに該当するテンプレートが見つかりません。",
     "missingContentPlaceholder": "{{content}}プレースホルダーが不足しています — メール本文が空になります",
-    "cannotDeleteSystem": "システムテンプレートは削除できません。",
-    "cannotDeleteLayout": "レイアウトテンプレートは削除できません。",
     "deleteFailed": "テンプレートの削除に失敗しました。",
     "saveFailed": "テンプレートの保存に失敗しました。再試行してください。",
     "validation": {
       "htmlBodyRequired": "HTML本文は必須です。",
       "subjectRequired": "コンテンツテンプレートには件名が必須です。",
-      "templateKeyRequired": "テンプレートキーは必須です。",
-      "allFieldsRequired": "テンプレートキー、件名、HTML本文はすべて必須です。"
+      "templateKeyRequired": "テンプレートキーは必須です。"
     }
   },
   "presentation": {

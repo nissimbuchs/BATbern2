@@ -20,7 +20,6 @@
     "silver": "Argient",
     "bronze": "Bronze"
   },
-  "viewMode": {},
   "sort": {
     "label": "Zavrar tenor",
     "engagement": "Scor d'engaschi",
@@ -28,26 +27,7 @@
     "tier": "Nivel da partnerada",
     "lastEvent": "Ultima occurrenza"
   },
-  "statistics": {
-    "totalPartners": "Totals partenaris",
-    "activePartners": "Partenaris activi",
-    "engagedPartners": "Partenaris engaschads",
-    "engagedComingSoon": "Preschent bainpreschent - Epic 8",
-    "tierDistribution": "Distribuziun da nivels"
-  },
   "card": {
-    "industry": "Industria",
-    "contact": "Contact principal",
-    "lastEvent": "Ultima occurrenza",
-    "topicVotes": "Votaziuns da temas",
-    "nextMeeting": "Proxim inscunter",
-    "meetingPending": "En spetga",
-    "engagement": "Engaschi",
-    "engagementComingSoon": "Preschent bainpreschent (Epic 8)",
-    "viewDetails": "Vesair detagls",
-    "sendEmail": "Trametter e-mail",
-    "scheduleMeeting": "Planischar inscunter",
-    "analytics": "Analiticas",
     "comingSoon": "Preschent bainpreschent - Epic 8"
   },
   "pagination": {
@@ -61,18 +41,15 @@
     "partners_other": "{{count}} partenaris"
   },
   "empty": {
-    "noPartners": "Nagins partenaris chattads",
-    "tryAdjustingFilters": "Emprova da modifitgar la tschertgada u las filtras"
+    "noPartners": "Nagins partenaris chattads"
   },
   "loading": "Chargiar partenaris...",
   "error": {
     "failedToLoad": "Impussibel da chargiare partenaris",
-    "tryAgain": "Emprova puspè pli tard",
     "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} partenari chattà",
-    "searchResults_plural": "{{count}} partenaris chattads",
     "filterUpdate": "Filtras actualisadas",
     "loading": "Chargiar partenaris"
   },
@@ -81,80 +58,20 @@
     "editTitle": "Modifitgar partnerada",
     "fields": {
       "company": "Interpresa",
-      "companyPlaceholder": "Tschertgar interpresa...",
-      "partnershipTier": "Nivel da partnerada",
       "startDate": "Data d'entschatta",
-      "endDate": "Data da fin",
       "endDateOptional": "Data da fin (facultativ)"
     },
-    "tiers": {
-      "STRATEGIC": "Strategic",
-      "PLATINUM": "Platin",
-      "GOLD": "Aur",
-      "SILVER": "Argient",
-      "BRONZE": "Bronze"
-    },
-    "tierDescriptions": {
-      "STRATEGIC": "Nivel da partnerada pli aut cun access cumplain e sustegn dedicà",
-      "PLATINUM": "Partnerada premium cun avantatgs augmentads",
-      "GOLD": "Partnerada da valur auta cun avantatgs principals",
-      "SILVER": "Partnerada standard cun avantatgs essenzials",
-      "BRONZE": "Partnerada d'entrada cun avantatgs basics"
-    },
-    "benefits": {
-      "title": "Avantatgs dal nivel",
-      "logoPlacement": "Plaschair dal logo sin il website",
-      "newsletterMentions": "Menziuns en la newsletter",
-      "priorityAccess": "Access prioritari ad occurrenzas",
-      "quarterlyMeetings": "Inscunters strategics trimestrals",
-      "roiAnalytics": "Dashboard d'analitica dal ROI",
-      "dedicatedManager": "Manaschi da conto dedicà",
-      "eventAccess": "Access ad occurrenzas"
-    },
-    "actions": {},
     "messages": {
-      "unsavedChanges": "Hai midadas betg memorizadas. Es ti segir da voler serrar?",
-      "createSuccess": "Partnerada creada cun success",
-      "updateSuccess": "Partnerada actualisada cun success",
-      "createError": "Impussibel da crear la partnerada. ID da correlaziun: {{correlationId}}",
-      "updateError": "Impussibel d'actualisar la partnerada. ID da correlaziun: {{correlationId}}"
-    },
-    "companySearch": {
-      "searching": "Tschertgar interpresas...",
-      "noResults": "Naginas interpresas chattadas",
-      "error": "Errur en la tschertgada d'interpresas",
-      "minChars": "Tippa almain 2 characters per tschertgar"
+      "unsavedChanges": "Hai midadas betg memorizadas. Es ti segir da voler serrar?"
     }
   },
   "validation": {
     "companyRequired": "L'interpresa è necessaria",
     "tierRequired": "Il nivel da partnerada è necessari",
     "startDateRequired": "La data d'entschatta è necessaria",
-    "startDateFuture": "La data d'entschatta na po betg esser en il futur",
     "endDateBeforeStart": "La data da fin sto esser suenter la data d'entschatta"
   },
   "detail": {
-    "header": {
-      "exportData": "Exportar datas",
-      "scheduleMeeting": "Planischar inscunter",
-      "sendEmail": "Trametter e-mail",
-      "comingSoon": "Preschent en Epic 8"
-    },
-    "quickStats": {
-      "partnerSince": "Partenari dapi",
-      "eventsAttended": "Occurrenzas participadas",
-      "activeVotes": "Votaziuns activas",
-      "votesSubtitle": "(temas)",
-      "meetings": "Inscunters",
-      "meetingsSubtitle": "(staschunals)",
-      "noEventsYet": "Naginas occurrenzas anc",
-      "lastEvent": "ultima: {{event}}"
-    },
-    "activityTab": {
-      "title": "Activitad",
-      "filterLabel": "Filtrar tenor tip d'activitad",
-      "noActivity": "Nagina activitad da visualisar"
-    },
     "meetingsTab": {
       "title": "Inscunters",
       "addMeeting": "Planischar inscunter"
@@ -218,14 +135,12 @@
   "meetings": {
     "title": "Inscunters da partenaris",
     "create": "Crear inscunter",
-    "edit": "Modifitgar inscunter",
     "fields": {
       "agenda": "Agenda",
       "notes": "Notas dal inscunter",
       "location": "Lieu",
       "eventCode": "Codiez d'occurrenza BATbern",
       "eventCodeHint": "p.ex. BATbern57",
-      "date": "Data",
       "startTime": "Ora d'entschatta",
       "endTime": "Ora da fin",
       "type": {
@@ -247,33 +162,13 @@
       "inviteStatus": "Invitaziun",
       "actions": "Acziuns"
     },
-    "loading": "Chargiar inscunters...",
     "error": "Impussibel da chargiare inscunters",
-    "createSuccess": "Inscunter creà cun success",
-    "updateSuccess": "Inscunter actualisà cun success",
     "inviteSuccess": "L'invitaziun dal chalender vegn tramessa"
   },
-  "comingSoon": {
-    "epic8": "Preschent bainpreschent - Epic 8",
-    "story283": "Preschent bainpreschent - Story 2.8.3"
-  },
   "portal": {
-    "nav": {
-      "myCompany": "Mia interpresa",
-      "analytics": "Analiticas",
-      "topics": "Temas"
-    },
     "noCompanyLinked": "Tes conto n'è betg collià cun ina interpresa",
     "noCompanyLinked.detail": "Contacta tes organisatur",
     "analytics": {
-      "comingSoon": "Analiticas bainpreschent disponiblas",
-      "title": "Dashboard da participaziun",
-      "table": {
-        "date": "Data",
-        "yourAttendees": "Tes participants",
-        "totalAttendees": "Total participants",
-        "percentage": "Percentual (%)"
-      },
       "kpi": {
         "costPerAttendee": "Custs per participant",
         "attendanceRate": "Quota media da participaziun",
@@ -288,11 +183,9 @@
         "loading": "Exportar..."
       },
       "noData": "Naginas datas da participaziun chattadas per il periodi tschernì",
-      "loading": "Chargiar datas...",
       "error": "Impussibel da chargiare datas da participaziun"
     },
     "topics": {
-      "comingSoon": "Votaziun sin temas bainpreschent disponibla",
       "title": "Propostas da temas",
       "suggest": "Proponer in tema",
       "vote": "Votar",
@@ -333,10 +226,8 @@
         },
         "status": "Status",
         "plannedEvent": "Occurrenza planisada",
-        "save": "Memorisar",
-        "saving": "Memorisar..."
+        "save": "Memorisar"
       },
-      "loading": "Chargiar temas...",
       "error": "Impussibel da chargiare temas"
     }
   }

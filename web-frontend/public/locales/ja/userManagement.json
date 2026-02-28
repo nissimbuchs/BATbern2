@@ -5,18 +5,11 @@
     "placeholder": "名前またはメールで検索...",
     "noResults": "ユーザーが見つかりません"
   },
-  "viewMode": {},
   "filters": {
-    "title": "フィルター",
     "clearAll": "すべてのフィルターをクリア",
     "role": {
       "label": "役割",
       "all": "すべての役割"
-    },
-    "company": {
-      "label": "会社",
-      "all": "すべての会社",
-      "placeholder": "会社を選択..."
     },
     "status": {
       "active": "アクティブ",
@@ -28,13 +21,7 @@
     "headers": {
       "roles": "役割"
     },
-    "showing": "{{count}} 人のユーザーを表示中",
-    "showingRange": "{{total}} 人中 {{from}}-{{to}}",
-    "perPage": "ページあたり",
-    "empty": "ユーザーが見つかりません",
-    "emptySearch": "検索条件に一致するユーザーがいません。フィルターをクリアしてみてください。",
-    "ascending": "昇順",
-    "descending": "降順"
+    "empty": "ユーザーが見つかりません"
   },
   "actions": {
     "view": "表示",
@@ -54,17 +41,8 @@
   "modal": {
     "userDetail": {
       "title": "ユーザー詳細",
-      "profile": "プロフィール",
-      "contactInfo": "連絡先情報",
-      "rolesAssigned": "割り当てられた役割",
-      "companyAffiliation": "所属会社",
-      "activityHistory": "アクティビティ履歴",
-      "accountCreated": "アカウント作成日",
       "createdAt": "作成日時",
-      "updatedAt": "最終更新日時",
-      "lastLogin": "最終ログイン",
-      "noCompany": "会社が割り当てられていません",
-      "noActivity": "アクティビティがありません"
+      "updatedAt": "最終更新日時"
     },
     "createUser": {
       "title": "新しいユーザーを作成",
@@ -78,22 +56,15 @@
     },
     "editRoles": {
       "title": "役割を編集",
-      "subtitle": "{{name}} の役割を管理",
       "user": "ユーザー",
       "selectRoles": "役割を選択",
-      "minimumOrganizers": "システムには少なくとも {{count}} 人のオーガナイザーが必要です",
-      "cannotRemove": "この役割は削除できません",
-      "updating": "更新中...",
       "saving": "保存中..."
     },
     "deleteConfirm": {
       "title": "ユーザーを削除",
       "message": "このユーザーを削除してもよろしいですか？",
-      "userName": "ユーザー：{{name}}",
       "gdprWarning": "GDPRに関する注意：このアクションはすべてのユーザーデータを完全に削除し、元に戻すことはできません。",
-      "cascadeWarning": "関連するすべてのデータも削除されます。",
-      "cannotDelete": "このユーザーは削除できません",
-      "lastOrganizerWarning": "最後のオーガナイザーを削除することはできません。システムには少なくとも {{count}} 人のオーガナイザーが必要です。"
+      "cascadeWarning": "関連するすべてのデータも削除されます。"
     },
     "editUser": {
       "uploadPhotoAria": "[MISSING] Upload profile photo",
@@ -102,8 +73,7 @@
   },
   "pagination": {
     "page": "{{total}} ページ中 {{page}} ページ",
-    "itemsPerPage": "1ページあたりの件数",
-    "goToPage": "ページへ移動"
+    "itemsPerPage": "1ページあたりの件数"
   },
   "loading": {
     "users": "ユーザーを読み込み中...",
@@ -114,55 +84,16 @@
   "error": {
     "required": "このフィールドは必須です",
     "email": {
-      "invalid": "メールアドレスが無効です",
-      "exists": "メールアドレスはすでに存在します",
-      "required": "メールは必須です"
-    },
-    "name": {
-      "tooShort": "名前は {{min}} 文字以上である必要があります",
-      "tooLong": "名前は {{max}} 文字を超えてはいけません"
-    },
-    "roles": {
-      "required": "少なくとも1つの役割が必要です",
-      "minOrganizers": "システムには少なくとも {{count}} 人のオーガナイザーが必要です"
+      "invalid": "メールアドレスが無効です"
     },
     "minOneRole": "少なくとも1つの役割を選択する必要があります",
     "loadFailed": "ユーザーの読み込みに失敗しました",
     "createFailed": "ユーザーの作成に失敗しました",
     "updateFailed": "ユーザーの更新に失敗しました",
     "deleteFailed": "ユーザーの削除に失敗しました",
-    "deleteLastOrganizer": "最後のオーガナイザーは削除できません",
-    "networkError": "ネットワークエラーです。接続を確認してください。",
-    "unauthorized": "このアクションを実行する権限がありません",
     "notFound": "ユーザーが見つかりません"
   },
-  "success": {
-    "userCreated": "ユーザーが正常に作成されました",
-    "userUpdated": "ユーザーが正常に更新されました",
-    "userDeleted": "ユーザーが正常に削除されました",
-    "rolesUpdated": "役割が正常に更新されました"
-  },
-  "emptyState": {
-    "title": "ユーザーなし",
-    "description": "まだユーザーが追加されていません。",
-    "action": "最初のユーザーを追加"
-  },
-  "accessibility": {
-    "filterPanel": "フィルターパネル",
-    "userTable": "ユーザーテーブル",
-    "sortAscending": "昇順で並び替え",
-    "sortDescending": "降順で並び替え",
-    "openMenu": "メニューを開く",
-    "closeModal": "モーダルを閉じる",
-    "rowCount": "テーブル内に {{count}} 人のユーザー"
-  },
-  "offline": {
-    "indicator": "オフライン",
-    "message": "オフラインです。一部の機能が利用できない場合があります。",
-    "viewingCache": "キャッシュデータを表示中"
-  },
   "batchImport": {
-    "button": "スピーカーをインポート",
     "title": "スピーカーの一括インポート",
     "dropzone": "speakers.json をここにドロップするか、クリックして参照",
     "dropzoneActive": "ここにファイルをドロップ...",
@@ -176,7 +107,6 @@
     "cancelButton": "キャンセル",
     "importButton": "{{new}} 件作成 / {{update}} 件更新",
     "allSkipped": "インポートする変更はありません",
-    "columns": {},
     "status": {
       "pending": "新規",
       "importing": "インポート中...",
@@ -195,7 +125,6 @@
     "noPortrait": "プロフィール画像なし"
   },
   "participantImport": {
-    "button": "参加者をインポート",
     "title": "CSVから参加者をインポート",
     "dropzone": "CSVファイルをここにドラッグ＆ドロップ",
     "dropzoneActive": "CSVファイルをここにドロップ",
@@ -204,10 +133,8 @@
     "preview": "プレビュー：{{count}} 人の参加者をインポート準備完了",
     "previewLimitation": "注意：プレビューはユーザー名の一致のみで既存ユーザーを表示します。インポート時には、名前（名＋姓）が一意な場合にも一致する可能性があります。「新規」として表示されている参加者の一部が、名前で既存ユーザーに一致する場合があります。",
     "importButton": "{{count}} 人の参加者をインポート",
-    "startImport": "インポートを開始",
     "progress": "インポート中：{{current}} / {{total}}",
     "summary": "インポートサマリー",
-    "columns": {},
     "status": {
       "pending": "保留中",
       "importing": "インポート中",
@@ -227,9 +154,6 @@
       "existing": "[MISSING] Existing",
       "new": "[MISSING] New"
     },
-    "noParticipants": "このユーザーはまだどのイベントにも参加していません。",
-    "loadingEvents": "イベントを読み込み中...",
-    "errorLoadingEvents": "イベント参加履歴の読み込みに失敗しました",
     "aria": {
       "statusLabel": "[MISSING] Import status: {{label}}",
       "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
@@ -254,7 +178,6 @@
       "title": "タイトル",
       "date": "日付",
       "status": "ステータス",
-      "loading": "イベントを読み込み中...",
       "loadError": "イベント参加履歴の読み込みに失敗しました",
       "noEvents": "このユーザーはまだどのイベントにも参加していません",
       "untitledEvent": "無題のイベント",
@@ -267,8 +190,7 @@
         "CANCELLED": "キャンセル済み",
         "WAITLISTED": "キャンセル待ち"
       }
-    },
-    "bio": "自己紹介"
+    }
   },
   "settings": {
     "tabs": {

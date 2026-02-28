@@ -1,18 +1,13 @@
 {
   "navigation": {
     "dashboard": "Tapahtumat",
-    "createEvent": "Luo tapahtuma",
-    "eventTimeline": "Aikajana",
     "events": "Tapahtumat",
     "topicManagement": "Aiheiden hallinta",
     "blobSelector": "Blob-valitsin"
   },
   "eventPage": {
     "tabs": {
-      "overview": "Yleiskatsaus",
-      "speakers": "Puhujat",
       "venue": "Paikka",
-      "team": "Tiimi",
       "participants": "Osallistujat",
       "publishing": "Julkaisu",
       "newsletter": "Uutiskirje",
@@ -28,18 +23,13 @@
       "speakers": "Puhujat",
       "confirmed": "vahvistettu",
       "materials": "Materiaalit",
-      "pending": "odottaa",
       "complete": "valmis",
       "sessionsComplete": "istuntoa valmis",
       "budget": "Budjetti",
       "selectedTopic": "Valittu aihe",
-      "noTopicSelected": "Aihetta ei valittu vielä",
-      "changeTopic": "Vaihda aihe",
       "quickActions": "Pikavalikko",
       "selectTopic": "Valitse aihe",
-      "sendNotification": "Lähetä ilmoitus",
-      "previewPublic": "Esikatsele julkista sivua",
-      "viewTimeline": "Näytä aikajana"
+      "previewPublic": "Esikatsele julkista sivua"
     },
     "participantsTab": {
       "title": "Tapahtuman osallistujat"
@@ -130,15 +120,9 @@
   "dashboard": {
     "title": "Tapahtumien hallinta",
     "activeEvents": "Aktiiviset tapahtumat",
-    "criticalTasks": "Kriittiset tehtävät",
-    "teamActivity": "Tiimin toiminta",
     "quickActions": "Pikavalikko",
-    "noEvents": "Tapahtumia ei löydetty",
     "noEventsFound": "Tapahtumia ei löydetty",
     "tryAdjustingFilters": "Kokeile muuttaa suodattimia",
-    "loadingEvents": "Ladataan tapahtumia...",
-    "eventCount": "{{count}} tapahtuma",
-    "eventCount_plural": "{{count}} tapahtumaa",
     "eventWord": "tapahtuma",
     "eventWord_plural": "tapahtumaa",
     "eventType": {
@@ -146,52 +130,19 @@
       "AFTERNOON": "Iltapäivä",
       "EVENING": "Ilta"
     },
-    "workflowProgress": "Työnkulun edistyminen",
     "actions": {
-      "viewDetails": "Näytä tiedot",
       "edit": "Muokkaa",
       "newEvent": "Uusi tapahtuma",
-      "topics": "Aiheen valinta",
       "eventTypes": "Tapahtuman tyypit",
-      "eventTypesHelp": "Määritä tapahtumatyyppimallit (Admin)",
-      "manageTopics": "Hallinnoi aiheita",
-      "analytics": "Analytiikka",
-      "speakers": "Puhujat"
-    },
-    "noCriticalTasks": "Ei kriittisiä tehtäviä",
-    "greatJob": "Hyvää työtä!",
-    "taskCount": "{{count}} tehtävä",
-    "taskCount_plural": "{{count}} tehtävää",
-    "dueDate": "Eräpäivä",
-    "assignedTo": "Osoitettu {{name}}:lle",
-    "confirmAction": "Vahvista toiminto",
-    "areYouSure": "Haluatko varmasti suorittaa tämän toiminnon?",
-    "activityCount": "{{count}} aktiviteetti",
-    "activityCount_plural": "{{count}} aktiviteettia",
-    "today": "Tänään",
-    "lastUpdated": "Viimeksi päivitetty",
-    "viewAll": "Näytä kaikki",
-    "noRecentActivity": "Ei viimeaikaista toimintaa",
-    "activityAction": {
-      "speaker_assigned": "puhujan osoitus",
-      "speaker_invited": "puhujan kutsu",
-      "materials_uploaded": "materiaalit ladattu",
-      "workflow_advanced": "työnkulku edennyt",
-      "event_created": "tapahtuma luotu",
-      "event_updated": "tapahtuma päivitetty",
-      "task_completed": "tehtävä suoritettu",
-      "notification_sent": "ilmoitus lähetetty",
-      "event_published": "tapahtuma julkaistu"
+      "manageTopics": "Hallinnoi aiheita"
     },
     "searchEvents": "Hae tapahtumia...",
     "filter": {
-      "status": "Suodata tilan mukaan",
       "workflowState": "Suodata työnkulun tilan mukaan",
       "year": "Suodata vuoden mukaan",
       "allYears": "Kaikki vuodet",
       "showArchived": "Näytä arkistoidut tapahtumat",
       "activeFilters": "{{count}} suodatin aktiivinen",
-      "activeFilters_plural": "{{count}} suodatinta aktiivista",
       "clearAll": "Tyhjennä kaikki"
     },
     "errors": {
@@ -273,7 +224,6 @@
     "createEvent": "Luo uusi tapahtuma",
     "editEvent": "Muokkaa tapahtumaa",
     "eventNumber": "Tapahtuman numero",
-    "eventInformation": "Tapahtuman tiedot",
     "title": "Otsikko",
     "eventDate": "Tapahtuman päivämäärä",
     "eventType": "Tapahtuman tyyppi",
@@ -281,16 +231,11 @@
     "registrationDeadline": "Ilmoittautumisen takaraja",
     "venue": "Paikan nimi",
     "venueAddress": "Paikan osoite",
-    "theme": "Teema",
     "status": "Tila",
     "save": "Tallenna",
-    "saveAndCreate": "Tallenna ja luo",
     "saveCreate": "Tallenna ja luo",
     "saveDraft": "Tallenna luonnoksena",
     "cancel": "Peruuta",
-    "delete": "Poista",
-    "close": "Sulje",
-    "noVenue": "Paikkaa ei valittu",
     "eventTypes": {
       "fullDay": "Koko päivän tapahtuma",
       "afternoon": "Iltapäivätapahtuma",
@@ -327,41 +272,17 @@
       "failedToLoadEventTypes": "Tapahtumatyyppien lataaminen epäonnistui"
     }
   },
-  "eventTypes": {
-    "FULL_DAY": "Koko päivä",
-    "AFTERNOON": "Iltapäivä",
-    "EVENING": "Ilta"
-  },
   "slotPreview": {
     "title": "{{type}}-esikatselu",
     "slots": "Paikat",
-    "duration": "Kesto",
     "capacity": "Kapasiteetti",
-    "timing": "Tyypillinen ajoitus",
-    "exampleTimeline": "Esimerkkiaikajana"
+    "timing": "Tyypillinen ajoitus"
   },
   "filters": {
     "status": "Tila",
-    "year": "Vuosi",
-    "eventType": "Tapahtuman tyyppi",
-    "search": "Haku",
-    "searchPlaceholder": "Hae tapahtumia...",
-    "allStatuses": "Kaikki tilat",
-    "allYears": "Kaikki vuodet",
-    "allTypes": "Kaikki tyypit",
-    "clear": "Tyhjennä suodattimet",
     "searchAriaLabel": "[MISSING] Search events",
     "clearSearchAriaLabel": "[MISSING] Clear search",
     "clearAllAriaLabel": "[MISSING] Clear all filters"
-  },
-  "sorting": {
-    "sort": "Järjestä",
-    "date": "Päivämäärä",
-    "status": "Tila",
-    "workflowProgress": "Työnkulun edistyminen",
-    "title": "Otsikko",
-    "ascending": "Nouseva",
-    "descending": "Laskeva"
   },
   "validation": {
     "eventNumberRequired": "Tapahtuman numero on pakollinen",
@@ -370,19 +291,15 @@
     "titleMinLength": "Otsikon on oltava vähintään 10 merkkiä pitkä",
     "descriptionRequired": "Kuvaus on pakollinen",
     "eventDateRequired": "Tapahtuman päivämäärä on pakollinen",
-    "eventDateFuture": "Tapahtuman päivämäärän on oltava vähintään 30 päivää tulevaisuudessa",
     "registrationDeadline": "Ilmoittautumisen takarajan on oltava sama tai ennen tapahtuman päivämäärää",
     "capacityRequired": "Kapasiteetti on pakollinen",
     "capacityPositive": "Kapasiteetin on oltava positiivinen luku",
-    "venueRequired": "Paikka on pakollinen",
     "venueNameRequired": "Paikan nimi on pakollinen",
     "venueAddressRequired": "Paikan osoite on pakollinen",
     "minSlotsRequired": "Vähimmäispaikkamäärä on pakollinen",
     "maxSlotsRequired": "Enimmäispaikkamäärä on pakollinen",
-    "slotDurationRequired": "Paikan kesto on pakollinen",
     "slotDurationMinimum": "Paikan keston on oltava vähintään 15 minuuttia",
     "minSlotsLessThanMax": "Vähimmäispaikkamäärän on oltava pienempi tai yhtä suuri kuin enimmäismäärä",
-    "defaultCapacityRequired": "Oletuskapasiteetti on pakollinen",
     "defaultCapacityPositive": "Oletuskapasiteetin on oltava positiivinen luku"
   },
   "errors": {
@@ -404,35 +321,16 @@
     "INVALID_FILE_TYPE": "Virheellinen tiedostotyyppi. Lataa vain PNG, JPEG tai SVG -kuvia"
   },
   "confirmations": {
-    "deleteTitle": "Poistetaanko tapahtuma?",
-    "deleteMessage": "Haluatko varmasti poistaa tämän tapahtuman?",
-    "deleteImpact": "{{registrations}} rekisteröintiä, {{speakers}} puhujaa, {{materials}} materiaalia",
-    "cannotDelete": "Tapahtumaa ei voi poistaa - peruuta tapahtuma sen sijaan",
     "unsavedChanges": "Tallentamattomat muutokset",
     "unsavedChangesMessage": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti jatkaa?",
     "confirm": "Vahvista",
-    "cancel": "Peruuta",
-    "discard": "Hylkää",
-    "keepEditing": "Jatka muokkaamista"
+    "cancel": "Peruuta"
   },
   "workflow": {
-    "progress": "Edistyminen",
-    "step": "Vaihe {{current}} / {{total}}",
     "stepIndicator": "Vaihe {{current}}/{{total}}",
-    "stepName": "Vaihe {{number}}: {{name}}",
     "viewDetails": "Näytä työnkulun tiedot",
-    "warning": "Varoitus",
-    "blocker": "Estäjä",
     "blockers": "{{count}} estäjä",
-    "blockers_plural": "{{count}} estäjää",
-    "completed": "Valmis",
-    "inProgress": "Käynnissä",
-    "pending": "Odottaa",
-    "blocked": "Estetty",
     "progressBarLabel": "Napsauta nähdäksesi työnkulun tiedot. {{percentage}}% valmis",
-    "actions": {
-      "selectTopic": "Valitse aihe"
-    },
     "states": {
       "created": "Luotu",
       "topic_selection": "Aiheen valinta",
@@ -445,29 +343,12 @@
       "archived": "Arkistoitu"
     }
   },
-  "topicSelection": {
-    "success": "Aihe valittu onnistuneesti"
-  },
   "autoSave": {
     "saving": "Tallennetaan...",
     "saved": "Viimeksi tallennettu {{time}}",
     "failed": "Automaattinen tallennus epäonnistui",
     "conflict": "Samanaikainen muokkaus havaittu. Lataa uudelleen ja yritä uudelleen.",
     "enabled": "Automaattinen tallennus käytössä"
-  },
-  "venue": {
-    "sectionTitle": "Paikka ja logistiikka",
-    "title": "Paikka ja logistiikka",
-    "nameLabel": "Paikan nimi",
-    "addressLabel": "Paikan osoite",
-    "capacityLabel": "Paikan kapasiteetti",
-    "errors": {
-      "nameRequired": "Paikan nimi on pakollinen",
-      "addressRequired": "Paikan osoite on pakollinen",
-      "capacityPositive": "Kapasiteetin on oltava positiivinen luku",
-      "capacityMax": "Kapasiteetti ei voi ylittää 5000",
-      "updateFailed": "Paikan päivittäminen epäonnistui"
-    }
   },
   "topics": {
     "title": "Osoitetut aiheet",
@@ -494,73 +375,24 @@
     "removeConfirmMessage": "Haluatko varmasti poistaa tämän aiheen tapahtumasta?"
   },
   "speakers": {
-    "title": "Puhujat ja istunnot",
     "sectionTitle": "Puhujat ja istunnot ({{count}})",
-    "speakersAndSessions": "Puhujat ja istunnot",
     "slotTime": "Aika",
-    "slotLabel": "Paikka {{number}}",
     "speakerName": "Puhuja",
-    "company": "Yritys",
     "sessionTitle": "Istunnon otsikko",
     "notAssigned": "Ei osoitettu",
     "materials": "Materiaalit",
     "materialsComplete": "Valmis",
     "materialsPending": "Odottaa",
     "materialsMissing": "Puuttuu",
-    "viewDetails": "Näytä tiedot",
-    "editSlot": "Muokkaa paikkaa",
-    "manageMaterials": "Hallinnoi materiaaleja",
-    "viewFullAgenda": "Näytä koko ohjelma",
-    "manageSpeakerAssignments": "Hallinnoi puhujamäärityksiä",
     "manageSlotAssignments": "Hallinnoi paikkamäärityksiä",
     "autoAssignSpeakers": "Automaattinen puhujien osoitus",
-    "autoAssignConfirmTitle": "Automaattinen puhujien osoitus",
-    "autoAssignConfirmMessage": "Tämä osoittaa automaattisesti puhujat optimaalisiin aikapaikkoihin aiheen asiantuntemuksen ja saatavuuden perusteella. Olemassa olevat osoitukset korvataan. Jatketaanko?",
-    "noSpeakers": "Ei osoitettuja puhujia",
     "noSessionsScheduled": "Ei aikataulutettuja istuntoja. Käytä 'Hallinnoi puhujamäärityksiä' lisätäksesi puhujia.",
-    "loadError": "Istuntojen lataaminen epäonnistui. Yritä uudelleen.",
     "deleteSession": "Poista",
     "deleteSessionTitle": "Poistetaanko istunto?",
     "deleteSessionMessage": "Haluatko varmasti poistaa istunnon '{{title}}'? Tätä toimintoa ei voi kumota."
   },
-  "team": {
-    "title": "Tiimin osoitukset",
-    "leadOrganizer": "Pääjärjestäjä",
-    "coOrganizers": "Apujärjestäjät",
-    "moderator": "Moderaattori",
-    "contentReviewer": "Sisältöarvioija",
-    "manageTeam": "Hallinnoi tiimiä",
-    "assignRole": "Osoita rooli"
-  },
   "publishing": {
-    "title": "Julkaisu",
-    "strategy": "Strategia",
-    "progressive": "Progressiivinen",
-    "immediate": "Välitön",
-    "currentPhase": "Nykyinen vaihe",
-    "timeline": {
-      "phasesPublished": "{{completed}} / {{total}} vaihetta julkaistu ({{percent}}%)",
-      "topic": "Aihe",
-      "speakers": "Puhujat",
-      "agenda": "Ohjelma",
-      "updates": "Päivitykset",
-      "now": "Nyt",
-      "publishedOn": "Julkaistu {{date}}",
-      "scheduled": "Aikataulutettu: {{date}}",
-      "autoPublishIn": "Automaattinen julkaisu {{days}} päivässä",
-      "autoPublishScheduled": "Automaattinen julkaisu aikataulutettu",
-      "days": "{{count}} päivää"
-    },
-    "qualityChecks": "Laaduntarkistukset",
-    "configure": "Määritä julkaisu",
-    "republish": "Julkaise uudelleen",
-    "previewPublicPage": "Esikatsele julkista sivua",
-    "tab": {
-      "title": "Julkaisun hallintapaneelit (Story 5.7)",
-      "notice": "Julkaisukomponentit on nyt integroitu. Backend-API-integraatio on käynnissä. Jotkin toiminnot käyttävät väliaikaisia mockitietoja."
-    },
     "controls": {
-      "publish": "Julkaise",
       "publishing": "Julkaistaan...",
       "publishPhase": "Julkaise {{phase}}",
       "published": "{{phase}} julkaistu",
@@ -568,8 +400,6 @@
       "alreadyPublished": "Jo julkaistu",
       "publishTopicFirst": "Julkaise aihe ensin",
       "publishSpeakersFirst": "Julkaise puhujat ensin",
-      "schedulePublish": "Aikatauluta julkaisu",
-      "previewNewsletter": "Esikatsele uutiskirjettä",
       "mode": "Tila",
       "modeDraft": "Luonnos",
       "modeProgressive": "Progressiivinen",
@@ -581,22 +411,8 @@
         "speakers": "Puhujat",
         "agenda": "Ohjelma"
       },
-      "scheduleDialog": {
-        "title": "Aikatauluta julkaisu",
-        "dateLabel": "Aikataulun päivämäärä ja aika",
-        "cancel": "Peruuta",
-        "confirm": "Vahvista aikataulu"
-      },
-      "newsletterDialog": {
-        "title": "Uutiskirjeen esikatselu",
-        "subject": "Aihe: Uusi {{phase}} julkaistu tapahtumalle {{eventCode}}",
-        "contentPreview": "Uutiskirjeen sisällön esikatselu vaihetta {{phase}} varten...",
-        "close": "Sulje",
-        "sendTest": "Lähetä testisähköposti"
-      },
       "accessibility": {
         "publishingPhase": "Julkaistaan {{phase}}",
-        "publishingMode": "Julkaisutila",
         "notifySubscribers": "Ilmoita tilaajille julkaisun yhteydessä"
       }
     },
@@ -621,26 +437,6 @@
         "sessionTimings": "Istuntojen ajoitusten vahvistus"
       }
     },
-    "preview": {
-      "desktop": "Työpöytä",
-      "mobile": "Mobiili",
-      "print": "Tulosta",
-      "refresh": "Päivitä",
-      "refreshing": "Päivitetään esikatselua...",
-      "retry": "Yritä uudelleen",
-      "loadFailed": "Esikatselun lataaminen epäonnistui. Yritä uudelleen.",
-      "previewMode": "Esikatselutila: {{mode}} | Vaihe: {{phase}}",
-      "deviceDimensions": "Laite: {{device}} ({{width}} x {{height}})",
-      "switchedTo": "Vaihdettu {{device}}-esikatseluun",
-      "accessibility": {
-        "devicePreviewMode": "laitteen esikatselutila",
-        "desktopPreview": "Työpöytäesikatselu",
-        "mobilePreview": "Mobiiliesikatselu",
-        "printPreview": "Tulostusesikatselu",
-        "refreshPreview": "Päivitä esikatselu",
-        "eventContentPreview": "Tapahtuman sisällön esikatselu"
-      }
-    },
     "versionControl": {
       "title": "Versiohistoria",
       "version": "Versio",
@@ -653,100 +449,17 @@
       "cdnPending": "CDN odottaa",
       "cdnFailed": "CDN epäonnistui",
       "cdnUnknown": "Tuntematon",
-      "cdnInvalidationId": "CDN-mitätöintitunnus: {{id}}",
-      "noVersions": "Versiohistoriaa ei ole saatavilla",
-      "rollbackDialog": {
-        "title": "Vahvista palautus",
-        "message": "Haluatko varmasti palauttaa tämän version?",
-        "versionLabel": "Versio:",
-        "phaseLabel": "Vaihe:",
-        "publishedLabel": "Julkaistu:",
-        "publisherLabel": "Julkaisija:",
-        "warning": "Tämä toiminto mitätöi CloudFront CDN -välimuistin ja saattaa kestää muutaman minuutin.",
-        "cancel": "Peruuta",
-        "confirm": "Vahvista palautus",
-        "confirming": "Palautetaan..."
-      }
+      "noVersions": "Versiohistoriaa ei ole saatavilla"
     }
   },
   "notifications": {
-    "title": "Ilmoitukset ja muistutukset",
-    "activeAutomations": "Aktiiviset automaatiot",
-    "notificationRules": "Ilmoitussäännöt",
-    "manageNotifications": "Hallinnoi ilmoituksia",
-    "sendManualNotification": "Lähetä manuaalinen ilmoitus",
-    "ruleName": "Säännön nimi",
-    "trigger": "Laukaisin",
-    "recipients": "Vastaanottajat",
-    "active": "Aktiivinen",
-    "inactive": "Ei aktiivinen"
-  },
-  "criticalTasks": {
-    "title": "Kriittiset tehtävät",
-    "priority": "Prioriteetti",
-    "warning": "Varoitus",
-    "critical": "Kriittinen",
-    "dueDate": "Eräpäivä",
-    "assignedTo": "Osoitettu",
-    "actions": "Toiminnot",
-    "contact": "Ota yhteyttä",
-    "extendDeadline": "Pidennä määräaikaa",
-    "confirm": "Vahvista",
-    "assignToTeam": "Osoita tiimille",
-    "markComplete": "Merkitse valmiiksi",
-    "noTasks": "Ei kriittisiä tehtäviä"
-  },
-  "teamActivity": {
-    "title": "Tiimin toiminta",
-    "recentActivity": "Viimeaikainen toiminta",
-    "filterByUser": "Suodata käyttäjän mukaan",
-    "filterByEvent": "Suodata tapahtuman mukaan",
-    "filterByAction": "Suodata toiminnon mukaan",
-    "reload": "Lataa uudelleen",
-    "noActivity": "Ei toimintaa saatavilla",
-    "activityTypes": {
-      "event_created": "Tapahtuma luotu",
-      "event_updated": "Tapahtuma päivitetty",
-      "speaker_assigned": "Puhuja osoitettu",
-      "speaker_invited": "Puhuja kutsuttu",
-      "materials_uploaded": "Materiaalit ladattu",
-      "workflow_advanced": "Työnkulku edennyt",
-      "task_completed": "Tehtävä suoritettu",
-      "notification_sent": "Ilmoitus lähetetty",
-      "event_published": "Tapahtuma julkaistu"
-    }
+    "title": "Ilmoitukset ja muistutukset"
   },
   "pagination": {
     "page": "Sivu {{current}} / {{total}}",
-    "itemsPerPage": "Kohteita per sivu",
-    "showing": "Näytetään {{from}}-{{to}} / {{total}} kohteesta"
-  },
-  "actions": {
-    "newEvent": "Uusi tapahtuma",
-    "viewAnalytics": "Näytä analytiikka",
-    "manageSpeakers": "Hallinnoi puhujia",
-    "viewTimeline": "Näytä aikajana",
-    "exportData": "Vie tiedot",
-    "refresh": "Päivitä",
-    "back": "Takaisin",
-    "deleteEvent": "Poista tapahtuma"
-  },
-  "messages": {
-    "draftSaved": "Luonnos tallennettu",
-    "eventCreated": "Tapahtuma luotu",
-    "eventUpdated": "Tapahtuma päivitetty",
-    "eventDeleted": "Tapahtuma poistettu",
-    "loading": "Ladataan...",
-    "noResults": "Tuloksia ei löydetty",
-    "tryAgain": "Yritä uudelleen"
+    "itemsPerPage": "Kohteita per sivu"
   },
   "accessibility": {
-    "skipToContent": "Siirry sisältöön",
-    "openMenu": "Avaa valikko",
-    "closeMenu": "Sulje valikko",
-    "loading": "Ladataan",
-    "error": "Virhe",
-    "success": "Onnistui",
     "noEventsFound": "[MISSING] No events found",
     "eventList": "[MISSING] Event list"
   },
@@ -755,26 +468,11 @@
     "confirm": "Vahvista",
     "save": "Tallenna",
     "saveChanges": "Tallenna muutokset",
-    "saveAndContinue": "Tallenna ja jatka",
-    "settings": "Asetukset",
     "delete": "Poista",
     "edit": "Muokkaa",
     "close": "Sulje",
     "back": "Takaisin",
-    "loading": "Ladataan...",
-    "error": "Virhe",
-    "success": "Onnistui"
-  },
-  "metrics": {
-    "speakers": "Puhujat",
-    "confirmed": "vahvistettu",
-    "topics": "Aiheet",
-    "assigned": "osoitettu",
-    "materials": "Materiaalit",
-    "pending": "odottaa",
-    "registrations": "Rekisteröinnit",
-    "budget": "Budjetti",
-    "keyMetrics": "Keskeiset mittarit"
+    "loading": "Ladataan..."
   },
   "public": {
     "loadingEventDetails": "[MISSING] Loading event details",
@@ -806,14 +504,12 @@
       "noSessions": "Valituille aiheille ei löydy istuntoja",
       "clearFilters": "Tyhjennä suodattimet",
       "speaker": "Puhuja",
-      "seats": "{{count}} paikkaa",
-      "timeTBD": "Aika vahvistetaan myöhemmin"
+      "seats": "{{count}} paikkaa"
     },
     "program": {
       "title": "Tapahtuman ohjelma",
       "speaker": "Puhuja",
-      "materials": "Materiaalit",
-      "downloadError": "Materiaalin lataaminen epäonnistui. Yritä uudelleen."
+      "materials": "Materiaalit"
     },
     "venue": {
       "title": "Paikka",
@@ -830,15 +526,6 @@
     },
     "upcomingEvents": {
       "title": "Lisää tulevia tapahtumia"
-    },
-    "sessionTypes": {
-      "keynote": "keynote",
-      "presentation": "esitys",
-      "workshop": "työpaja",
-      "panel_discussion": "panelikeskustelu",
-      "networking": "verkostoituminen",
-      "break": "tauko",
-      "lunch": "lounas"
     }
   },
   "sessionEdit": {
@@ -898,7 +585,6 @@
     },
     "timeline": {
       "title": "Istuntojen aikajana",
-      "room": "{{room}}",
       "matchPercent": "{{percent}}% vastaavuus",
       "headerTime": "Aika"
     },
@@ -947,11 +633,7 @@
       },
       "autoAssign": {
         "title": "Automaattinen istuntojen osoitus",
-        "message": "Valitse algoritmi automaattiseen osoitukseen:",
-        "algorithms": {
-          "preferenceFirst": "Preferenssi ensin",
-          "timeBalance": "Aikatasa-paino"
-        }
+        "message": "Valitse algoritmi automaattiseen osoitukseen:"
       },
       "clearAll": {
         "title": "Tyhjennä kaikki osoitukset",
@@ -979,9 +661,7 @@
     },
     "preferences": {
       "title": "Puhujien preferenssit",
-      "close": "Sulje",
       "timePreferences": "Aikapreferenssit",
-      "preferredTime": "Suosittu vuorokaudenaika",
       "unavailableTimes": "Ei-saatavilla olevat ajat",
       "avRequirements": "A/V-vaatimukset",
       "setupNotes": "Huoneen asetusmuistiinpanot",
@@ -996,12 +676,9 @@
       "equipment": {
         "microphone": "Mikrofoni",
         "projector": "Projektori",
-        "recording": "Nauhoitus",
-        "whiteboard": "Valkotaulu"
+        "recording": "Nauhoitus"
       }
-    },
-    "loading": "Ladataan...",
-    "dragInstructions": "Vedä puhujat aikapaikkoihin osoittaaksesi"
+    }
   },
   "newsletter": {
     "widget": {
@@ -1021,10 +698,6 @@
       "success": "Tilauksesi on peruutettu onnistuneesti.",
       "resubscribeLink": "Tilaa uudelleen",
       "invalidToken": "Tämä tilauksen peruutuslinkki on virheellinen tai sitä on jo käytetty."
-    },
-    "account": {
-      "label": "Tilaa BATbern-uutiskirje",
-      "description": "Vastaanota tapahtumailmoituksia ja päivityksiä"
     }
   }
 }

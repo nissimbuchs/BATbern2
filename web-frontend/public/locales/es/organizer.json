@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Socios",
-    "speakerOutreach": "Contacto con ponentes",
     "topicManagement": "Gestión de temas"
-  },
-  "dashboard": {
-    "criticalTasks": "Tareas críticas",
-    "noCriticalTasks": "Sin tareas críticas",
-    "greatJob": "¡Excelente trabajo!",
-    "taskCount": "{{count}} tarea",
-    "taskCount_plural": "{{count}} tareas",
-    "dueDate": "Fecha de vencimiento",
-    "assignedTo": "Asignado a {{name}}",
-    "confirmAction": "Confirmar acción",
-    "areYouSure": "¿Estás seguro de que deseas realizar esta acción?"
   },
   "topicBacklog": {
     "pageTitle": "Gestión de temas",
@@ -180,7 +168,6 @@
       "company": "Empresa",
       "expertise": "Área de especialización",
       "assignOrganizer": "Asignar a organizador (opcional)",
-      "unassigned": "Sin asignar",
       "notes": "Notas (opcional)",
       "addButton": "Agregar al grupo",
       "adding": "Agregando...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Contacto con ponentes",
-    "subtitle": "Realiza un seguimiento de tus actividades de contacto con ponentes y coordínate con otros organizadores",
-    "breadcrumbs": {
-      "home": "Inicio",
-      "speakerOutreach": "Contacto con ponentes"
-    },
-    "emptyPool": {
-      "message": "Debes agregar ponentes al grupo antes de comenzar el contacto.",
-      "hint": "Vuelve a la etapa de planificación del evento para agregar ponentes potenciales.",
-      "addSpeakers": "Agregar ponentes al grupo"
-    },
-    "showBrainstorm": "Agregar ponentes",
-    "hideBrainstorm": "Ocultar agregar ponentes",
     "speakerName": "Ponente",
     "contactMethod": "Método de contacto",
     "contactDate": "Fecha de contacto",
     "markContacted": "Marcar como contactado",
-    "filterByOrganizer": "Filtrar por organizador",
     "contactHistory": "Historial de contactos",
-    "daysSinceAssignment": "Días desde la asignación",
-    "overdue": "Atrasado",
-    "lastContact": "Último contacto",
     "outreachDetails": "Detalles del contacto",
     "noContactHistory": "Sin historial de contactos",
     "contactedBy": "Contactado por",
@@ -238,10 +208,6 @@
         "failed": "Error al registrar el contacto",
         "loadHistory": "Error al cargar el historial de contactos"
       }
-    },
-    "bulkAction": {
-      "title": "Marcar varios como contactados",
-      "confirm": "¿Marcar {{count}} ponentes como contactados?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Crear nuevo ponente",
     "form": {
       "username": "Buscar ponente",
-      "usernameHelp": "Introduce el nombre de usuario del ponente",
       "presentationTitle": "Título de la presentación",
       "presentationAbstract": "Resumen de la presentación",
       "charactersRemaining": "caracteres restantes"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Invitar",
-    "sendInvite": "Enviar invitación",
     "sendInvitation": "Enviar invitación",
-    "confirmInvite": "¿Enviar invitación a este ponente?",
     "noEmailTooltip": "Agrega correo electrónico para invitar",
-    "inviting": "Enviando...",
     "sending": "Enviando...",
     "inviteSent": "Invitación enviada",
     "invitationSent": "Invitación enviada a {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Filtrar por evento",
       "allEvents": "Todos los eventos",
       "sessions": "sesiones",
-      "speakers": "ponentes",
-      "yourCompany": "Tu empresa"
+      "speakers": "ponentes"
     }
   },
   "blobSelector": {

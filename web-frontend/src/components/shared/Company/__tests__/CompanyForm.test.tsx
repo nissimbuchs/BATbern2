@@ -54,7 +54,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Create New Company')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Create New Company/i })).toBeInTheDocument();
     });
 
     it('should_displayAllFormFields_when_modalOpened', () => {
@@ -344,7 +344,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       );
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Edit Company')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Edit Company/i })).toBeInTheDocument();
 
       // Verify fields are pre-filled (only fields that exist in backend schema)
       expect(screen.getByDisplayValue('Acme Corporation')).toBeInTheDocument();

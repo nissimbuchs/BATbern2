@@ -20,7 +20,6 @@
     "silver": "Silber",
     "bronze": "Bronze"
   },
-  "viewMode": {},
   "sort": {
     "label": "Sortieren nach",
     "engagement": "Engagement-Bewertung",
@@ -28,26 +27,7 @@
     "tier": "Partnerschaftsstufe",
     "lastEvent": "Letzte Veranstaltung"
   },
-  "statistics": {
-    "totalPartners": "Gesamtzahl Partner",
-    "activePartners": "Aktive Partner",
-    "engagedPartners": "Engagierte Partner",
-    "engagedComingSoon": "Demnächst verfügbar - Epic 8",
-    "tierDistribution": "Verteilung nach Stufen"
-  },
   "card": {
-    "industry": "Branche",
-    "contact": "Hauptansprechpartner",
-    "lastEvent": "Letzte Veranstaltung",
-    "topicVotes": "Themen-Abstimmungen",
-    "nextMeeting": "Nächstes Treffen",
-    "meetingPending": "Ausstehend",
-    "engagement": "Engagement",
-    "engagementComingSoon": "Demnächst verfügbar (Epic 8)",
-    "viewDetails": "Details anzeigen",
-    "sendEmail": "E-Mail senden",
-    "scheduleMeeting": "Treffen planen",
-    "analytics": "Analysen",
     "comingSoon": "Demnächst verfügbar - Epic 8"
   },
   "pagination": {
@@ -61,18 +41,15 @@
     "partners_other": "{{count}} Partner"
   },
   "empty": {
-    "noPartners": "Keine Partner gefunden",
-    "tryAdjustingFilters": "Versuchen Sie, Ihre Suche oder Filter anzupassen"
+    "noPartners": "Keine Partner gefunden"
   },
   "loading": "Partner werden geladen...",
   "error": {
     "failedToLoad": "Partner konnten nicht geladen werden",
-    "tryAgain": "Bitte versuchen Sie es später erneut",
     "correlationId": "[MISSING] Correlation ID"
   },
   "screenReader": {
     "searchResults": "{{count}} Partner gefunden",
-    "searchResults_plural": "{{count}} Partner gefunden",
     "filterUpdate": "Filter aktualisiert",
     "loading": "Partner werden geladen"
   },
@@ -81,80 +58,20 @@
     "editTitle": "Partnerschaft bearbeiten",
     "fields": {
       "company": "Unternehmen",
-      "companyPlaceholder": "Unternehmen suchen...",
-      "partnershipTier": "Partnership-Stufe",
       "startDate": "Startdatum",
-      "endDate": "Enddatum",
       "endDateOptional": "Enddatum (Optional)"
     },
-    "tiers": {
-      "STRATEGIC": "Strategisch",
-      "PLATINUM": "Platin",
-      "GOLD": "Gold",
-      "SILVER": "Silber",
-      "BRONZE": "Bronze"
-    },
-    "tierDescriptions": {
-      "STRATEGIC": "Höchste Partnerschaftsstufe mit vollständigem Zugriff und dediziertem Support",
-      "PLATINUM": "Premium-Partnerschaft mit erweiterten Vorteilen",
-      "GOLD": "Hochwertige Partnerschaft mit wichtigen Vorteilen",
-      "SILVER": "Standard-Partnerschaft mit wesentlichen Vorteilen",
-      "BRONZE": "Einstiegs-Partnerschaft mit grundlegenden Vorteilen"
-    },
-    "benefits": {
-      "title": "Vorteile der Stufe",
-      "logoPlacement": "Logo-Platzierung auf der Website",
-      "newsletterMentions": "Newsletter-Erwähnungen",
-      "priorityAccess": "Prioritätszugang zu Veranstaltungen",
-      "quarterlyMeetings": "Vierteljährliche strategische Besprechungen",
-      "roiAnalytics": "ROI-Analytik-Dashboard",
-      "dedicatedManager": "Dedizierter Account Manager",
-      "eventAccess": "Veranstaltungszugang"
-    },
-    "actions": {},
     "messages": {
-      "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?",
-      "createSuccess": "Partnerschaft erfolgreich erstellt",
-      "updateSuccess": "Partnerschaft erfolgreich aktualisiert",
-      "createError": "Fehler beim Erstellen der Partnerschaft. Korrelations-ID: {{correlationId}}",
-      "updateError": "Fehler beim Aktualisieren der Partnerschaft. Korrelations-ID: {{correlationId}}"
-    },
-    "companySearch": {
-      "searching": "Unternehmen werden gesucht...",
-      "noResults": "Keine Unternehmen gefunden",
-      "error": "Fehler beim Suchen von Unternehmen",
-      "minChars": "Mindestens 2 Zeichen für die Suche eingeben"
+      "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?"
     }
   },
   "validation": {
     "companyRequired": "Unternehmen ist erforderlich",
     "tierRequired": "Partnership-Stufe ist erforderlich",
     "startDateRequired": "Startdatum ist erforderlich",
-    "startDateFuture": "Startdatum darf nicht in der Zukunft liegen",
     "endDateBeforeStart": "Enddatum muss nach dem Startdatum liegen"
   },
   "detail": {
-    "header": {
-      "exportData": "Daten exportieren",
-      "scheduleMeeting": "Meeting planen",
-      "sendEmail": "E-Mail senden",
-      "comingSoon": "Kommt in Epic 8"
-    },
-    "quickStats": {
-      "partnerSince": "Partner seit",
-      "eventsAttended": "Teilgenommene Events",
-      "activeVotes": "Aktive Abstimmungen",
-      "votesSubtitle": "(Themen)",
-      "meetings": "Meetings",
-      "meetingsSubtitle": "(saisonal)",
-      "noEventsYet": "Noch keine Events",
-      "lastEvent": "letztes: {{event}}"
-    },
-    "activityTab": {
-      "title": "Aktivität",
-      "filterLabel": "Nach Aktivitätstyp filtern",
-      "noActivity": "Keine Aktivität anzuzeigen"
-    },
     "meetingsTab": {
       "title": "Meetings",
       "addMeeting": "Meeting planen"
@@ -218,14 +135,12 @@
   "meetings": {
     "title": "Partner-Meetings",
     "create": "Meeting erstellen",
-    "edit": "Meeting bearbeiten",
     "fields": {
       "agenda": "Tagesordnung",
       "notes": "Besprechungsnotizen",
       "location": "Ort",
       "eventCode": "BATbern Veranstaltungscode",
       "eventCodeHint": "z.B. BATbern57",
-      "date": "Datum",
       "startTime": "Startzeit",
       "endTime": "Endzeit",
       "type": {
@@ -247,33 +162,13 @@
       "inviteStatus": "Einladung",
       "actions": "Aktionen"
     },
-    "loading": "Meetings werden geladen...",
     "error": "Meetings konnten nicht geladen werden",
-    "createSuccess": "Meeting erfolgreich erstellt",
-    "updateSuccess": "Meeting erfolgreich aktualisiert",
     "inviteSuccess": "Kalendereinladung wird versendet"
   },
-  "comingSoon": {
-    "epic8": "Kommt bald - Epic 8",
-    "story283": "Kommt bald - Story 2.8.3"
-  },
   "portal": {
-    "nav": {
-      "myCompany": "Mein Unternehmen",
-      "analytics": "Analysen",
-      "topics": "Themen"
-    },
     "noCompanyLinked": "Ihr Konto ist keinem Unternehmen zugeordnet",
     "noCompanyLinked.detail": "Bitte wenden Sie sich an Ihren Organisator",
     "analytics": {
-      "comingSoon": "Analysen folgen bald",
-      "title": "Teilnahme-Dashboard",
-      "table": {
-        "date": "Datum",
-        "yourAttendees": "Ihre Teilnehmer",
-        "totalAttendees": "Gesamtteilnehmer",
-        "percentage": "Anteil (%)"
-      },
       "kpi": {
         "costPerAttendee": "Kosten pro Teilnehmer",
         "attendanceRate": "Durchschnittliche Teilnahmequote",
@@ -288,11 +183,9 @@
         "loading": "Wird exportiert..."
       },
       "noData": "Keine Teilnahmedaten für den gewählten Zeitraum gefunden",
-      "loading": "Daten werden geladen...",
       "error": "Daten konnten nicht geladen werden"
     },
     "topics": {
-      "comingSoon": "Themenabstimmung folgt bald",
       "title": "Themenvorschläge",
       "suggest": "Thema vorschlagen",
       "vote": "Abstimmen",
@@ -333,10 +226,8 @@
         },
         "status": "Status",
         "plannedEvent": "Geplante Veranstaltung",
-        "save": "Speichern",
-        "saving": "Wird gespeichert..."
+        "save": "Speichern"
       },
-      "loading": "Themen werden geladen...",
       "error": "Themen konnten nicht geladen werden"
     }
   }

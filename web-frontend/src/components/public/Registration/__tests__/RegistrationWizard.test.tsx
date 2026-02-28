@@ -141,7 +141,7 @@ describe('RegistrationWizard Component', () => {
     test('should_renderStep1Initially_when_mounted', () => {
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
 
-      expect(screen.getByText('Step 1: Your Details')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Step 1: Your Details/i })).toBeInTheDocument();
     });
 
     test('should_renderProgressIndicator_when_mounted', () => {
@@ -163,13 +163,13 @@ describe('RegistrationWizard Component', () => {
     test('should_renderNextButton_when_onStep1', () => {
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
 
-      expect(screen.getByText('Next →')).toBeInTheDocument();
+      expect(screen.getByTestId('registration-wizard-next-btn')).toBeInTheDocument();
     });
 
     test('should_renderCancelButton_when_mounted', () => {
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
 
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      expect(screen.getByTestId('registration-wizard-cancel-btn')).toBeInTheDocument();
     });
   });
 
@@ -191,11 +191,13 @@ describe('RegistrationWizard Component', () => {
       });
 
       // Click next
-      const nextButton = screen.getByText('Next →');
+      const nextButton = screen.getByTestId('registration-wizard-next-btn');
       fireEvent.click(nextButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Step 2: Confirm Registration')).toBeInTheDocument();
+        expect(
+          screen.getByRole('heading', { name: /Step 2: Confirm Registration/i })
+        ).toBeInTheDocument();
       });
     });
 
@@ -214,10 +216,10 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
-        expect(screen.getByText('← Back')).toBeInTheDocument();
+        expect(screen.getByTestId('registration-wizard-back-btn')).toBeInTheDocument();
       });
     });
 
@@ -236,17 +238,17 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
-        expect(screen.getByText('← Back')).toBeInTheDocument();
+        expect(screen.getByTestId('registration-wizard-back-btn')).toBeInTheDocument();
       });
 
       // Click back
-      fireEvent.click(screen.getByText('← Back'));
+      fireEvent.click(screen.getByTestId('registration-wizard-back-btn'));
 
       await waitFor(() => {
-        expect(screen.getByText('Next →')).toBeInTheDocument();
+        expect(screen.getByTestId('registration-wizard-next-btn')).toBeInTheDocument();
       });
     });
 
@@ -269,7 +271,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
         progressBar = container.querySelector('.bg-blue-400');
@@ -294,10 +296,10 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
-        const submitButton = screen.getByText('Complete Registration');
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
         expect(submitButton).toBeDisabled();
       });
     });
@@ -317,11 +319,11 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       // Wait for step 2 and try to submit (button will be disabled, but test the logic)
       await waitFor(() => {
-        expect(screen.getByText('Complete Registration')).toBeDisabled();
+        expect(screen.getByTestId('registration-wizard-submit-btn')).toBeDisabled();
       });
     });
   });
@@ -351,7 +353,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       // Accept terms on step 2
       await waitFor(() => {
@@ -361,11 +363,11 @@ describe('RegistrationWizard Component', () => {
 
       // Submit
       await waitFor(() => {
-        const submitButton = screen.getByText('Complete Registration');
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
         expect(submitButton).not.toBeDisabled();
       });
 
-      const submitButton = screen.getByText('Complete Registration');
+      const submitButton = screen.getByTestId('registration-wizard-submit-btn');
       fireEvent.click(submitButton);
 
       await waitFor(() => {
@@ -407,7 +409,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
         const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
@@ -415,7 +417,7 @@ describe('RegistrationWizard Component', () => {
       });
 
       await waitFor(() => {
-        const submitButton = screen.getByText('Complete Registration');
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
         fireEvent.click(submitButton);
       });
 
@@ -444,7 +446,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
         const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
@@ -452,7 +454,7 @@ describe('RegistrationWizard Component', () => {
       });
 
       await waitFor(() => {
-        const submitButton = screen.getByText('Complete Registration');
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
         fireEvent.click(submitButton);
       });
 
@@ -481,18 +483,20 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
         target: { value: 'Developer' },
       });
-      fireEvent.click(screen.getByText('Next →'));
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
 
       await waitFor(() => {
         const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
         fireEvent.click(termsCheckbox);
       });
 
-      const submitButton = screen.getByText('Complete Registration');
+      const submitButton = screen.getByTestId('registration-wizard-submit-btn');
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Submitting...')).toBeInTheDocument();
+        expect(screen.getByTestId('registration-wizard-submit-btn')).toHaveTextContent(
+          /Submitting/i
+        );
       });
     });
   });
@@ -506,7 +510,7 @@ describe('RegistrationWizard Component', () => {
         <RegistrationWizard eventCode="BAT2025" inline={true} onCancel={mockOnCancel} />
       );
 
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByTestId('registration-wizard-cancel-btn'));
 
       expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to cancel registration?');
       expect(mockOnCancel).toHaveBeenCalled();
@@ -517,7 +521,7 @@ describe('RegistrationWizard Component', () => {
 
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" inline={false} />);
 
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByTestId('registration-wizard-cancel-btn'));
 
       expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to cancel registration?');
       expect(mockNavigate).toHaveBeenCalledWith('/');
@@ -531,7 +535,7 @@ describe('RegistrationWizard Component', () => {
         <RegistrationWizard eventCode="BAT2025" inline={true} onCancel={mockOnCancel} />
       );
 
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByTestId('registration-wizard-cancel-btn'));
 
       expect(mockOnCancel).not.toHaveBeenCalled();
     });

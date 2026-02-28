@@ -165,30 +165,20 @@
       "checkInText": "Zeigen Sie Ihren Ausweis am Veranstaltungsschalter vor. Wir haben Ihre bestätigte Registrierung hinterlegt.",
       "eventDetails": "Veranstaltungsdetails",
       "eventDetailsText": "Sie erhalten Veranstaltungsaktualisierungen und Erinnerungen per E-Mail.",
-      "backToHome": "Zurück zur Startseite",
       "createAccount": "Konto erstellen, um Registrierungen zu verwalten"
     },
     "alreadyConfirmed": {
       "title": "Bereits bestätigt",
-      "subtitle": "Diese Registrierung wurde bereits bestätigt",
-      "message": "Ihre Registrierung wurde zuvor bestätigt. Es ist keine weitere Aktion erforderlich.",
-      "backToHome": "Zurück zur Startseite"
+      "subtitle": "Diese Registrierung wurde bereits bestätigt"
     },
     "error": {
       "title": "Bestätigung fehlgeschlagen",
-      "subtitle": "Ihre Registrierung konnte nicht bestätigt werden",
       "whatCanYouDo": "Was können Sie tun?",
       "checkLink": "Überprüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail angeklickt haben",
       "expired": "Bestätigungslinks sind 48 Stunden gültig - möglicherweise müssen Sie sich erneut registrieren",
       "useLatestEmail": "Stellen Sie sicher, dass Sie die neueste Bestätigungs-E-Mail verwenden",
       "contactSupport": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht",
-      "backToHome": "Zurück zur Startseite",
-      "registerAgain": "Erneut registrieren",
-      "errors": {
-        "expired": "Der Bestätigungslink ist abgelaufen. Bitte registrieren Sie sich erneut.",
-        "invalid": "Ungültiger Bestätigungslink. Bitte überprüfen Sie Ihre E-Mail auf den richtigen Link.",
-        "default": "Die Bestätigung der Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support."
-      }
+      "registerAgain": "Erneut registrieren"
     }
   },
   "companySearch": {

@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partners",
-    "speakerOutreach": "Contactar referents",
     "topicManagement": "Gestiun da temas"
-  },
-  "dashboard": {
-    "criticalTasks": "Activitads critticas",
-    "noCriticalTasks": "Naginas activitads critticas",
-    "greatJob": "Bun lavur!",
-    "taskCount": "{{count}} activitad",
-    "taskCount_plural": "{{count}} activitads",
-    "dueDate": "Data da scadenza",
-    "assignedTo": "Assignà a {{name}}",
-    "confirmAction": "Confermar acziun",
-    "areYouSure": "Èst ti segir da vulair exequir questa acziun?"
   },
   "topicBacklog": {
     "pageTitle": "Gestiun da temas",
@@ -180,7 +168,6 @@
       "company": "Interpresa",
       "expertise": "Cumpetenza",
       "assignOrganizer": "Assignar ad organisatur (facultativ)",
-      "unassigned": "Betg assignà",
       "notes": "Notas (facultativ)",
       "addButton": "Agiuntar al pool",
       "adding": "Agiuntament...",
@@ -199,28 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Contactar referents",
-    "subtitle": "Tractar activitads da contact cun referents e coordinar cun auters organisaturs",
-    "breadcrumbs": {
-      "home": "Pagina principala",
-      "speakerOutreach": "Contactar referents"
-    },
-    "emptyPool": {
-      "message": "Ti stos agiuntar referents al pool avant da cumenzar il contact.",
-      "hint": "Turna a la fasa da planisaziun da l'occurrenza per agiuntar referents potenzials.",
-      "addSpeakers": "Agiuntar referents al pool"
-    },
-    "showBrainstorm": "Agiuntar referents",
-    "hideBrainstorm": "Zuppentar agiuntament da referents",
     "speakerName": "Referent",
     "contactMethod": "Metoda da contact",
     "contactDate": "Data da contact",
     "markContacted": "Marcar sco contactà",
-    "filterByOrganizer": "Filtrar tenor organisatur",
     "contactHistory": "Istorgia da contacts",
-    "daysSinceAssignment": "Dis dapi assignaziun",
-    "overdue": "En retard",
-    "lastContact": "Davos contact",
     "outreachDetails": "Detagls dal contact",
     "noContactHistory": "Nagina istorgia da contacts",
     "contactedBy": "Contactà da",
@@ -238,10 +208,6 @@
         "failed": "Documentar contact ha fallì",
         "loadHistory": "Chargiar istorgia da contacts ha fallì"
       }
-    },
-    "bulkAction": {
-      "title": "Marcar plirs sco contactads",
-      "confirm": "Marcar {{count}} referents sco contactads?"
     }
   },
   "speakerStatus": {
@@ -285,7 +251,6 @@
     "createNewSpeaker": "Crear nov referent",
     "form": {
       "username": "Tschertgar referent",
-      "usernameHelp": "Endatescha il num d'utilisader dal referent",
       "presentationTitle": "Titel da presentaziun",
       "presentationAbstract": "Abstract da presentaziun",
       "charactersRemaining": "caracters restants"
@@ -330,11 +295,8 @@
   },
   "speakers": {
     "invite": "Invitar",
-    "sendInvite": "Trametter invitaziun",
     "sendInvitation": "Trametter invitaziun",
-    "confirmInvite": "Trametter ina invitaziun a quest referent?",
     "noEmailTooltip": "Agiuntar e-mail per invitar",
-    "inviting": "Trasmissiun...",
     "sending": "Trasmissiun...",
     "inviteSent": "Invitaziun tramessa",
     "invitationSent": "Invitaziun tramessa a {{email}}",
@@ -438,8 +400,7 @@
       "filterByEvent": "Filtrar per occurrenza",
       "allEvents": "Tut las occurrenzas",
       "sessions": "sessiuns",
-      "speakers": "referents",
-      "yourCompany": "Tia interpresa"
+      "speakers": "referents"
     }
   },
   "blobSelector": {

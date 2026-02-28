@@ -5,18 +5,11 @@
     "placeholder": "Cerca per nome o e-mail...",
     "noResults": "Nessun utente trovato"
   },
-  "viewMode": {},
   "filters": {
-    "title": "Filtri",
     "clearAll": "Cancella tutti i filtri",
     "role": {
       "label": "Ruolo",
       "all": "Tutti i ruoli"
-    },
-    "company": {
-      "label": "Azienda",
-      "all": "Tutte le aziende",
-      "placeholder": "Seleziona azienda..."
     },
     "status": {
       "active": "Attivo",
@@ -28,13 +21,7 @@
     "headers": {
       "roles": "Ruoli"
     },
-    "showing": "Visualizzazione di {{count}} utenti",
-    "showingRange": "{{from}}-{{to}} di {{total}} utenti",
-    "perPage": "per pagina",
-    "empty": "Nessun utente trovato",
-    "emptySearch": "Nessun utente corrisponde alla tua ricerca. Prova a cancellare i filtri.",
-    "ascending": "Crescente",
-    "descending": "Decrescente"
+    "empty": "Nessun utente trovato"
   },
   "actions": {
     "view": "Visualizza",
@@ -54,17 +41,8 @@
   "modal": {
     "userDetail": {
       "title": "Dettagli utente",
-      "profile": "Profilo",
-      "contactInfo": "Informazioni di contatto",
-      "rolesAssigned": "Ruoli assegnati",
-      "companyAffiliation": "Affiliazione aziendale",
-      "activityHistory": "Cronologia attività",
-      "accountCreated": "Account creato",
       "createdAt": "Creato il",
-      "updatedAt": "Ultimo aggiornamento",
-      "lastLogin": "Ultimo accesso",
-      "noCompany": "Nessuna azienda assegnata",
-      "noActivity": "Nessuna attività disponibile"
+      "updatedAt": "Ultimo aggiornamento"
     },
     "createUser": {
       "title": "Crea nuovo utente",
@@ -78,22 +56,15 @@
     },
     "editRoles": {
       "title": "Modifica ruoli",
-      "subtitle": "Gestisci i ruoli per {{name}}",
       "user": "Utente",
       "selectRoles": "Seleziona ruoli",
-      "minimumOrganizers": "Nel sistema devono esserci almeno {{count}} organizzatori",
-      "cannotRemove": "Questo ruolo non può essere rimosso",
-      "updating": "Aggiornamento...",
       "saving": "Salvataggio..."
     },
     "deleteConfirm": {
       "title": "Elimina utente",
       "message": "Sei sicuro di voler eliminare questo utente?",
-      "userName": "Utente: {{name}}",
       "gdprWarning": "Avviso GDPR: questa azione eliminerà definitivamente tutti i dati dell'utente e non potrà essere annullata.",
-      "cascadeWarning": "Verranno eliminati anche tutti i dati associati.",
-      "cannotDelete": "Questo utente non può essere eliminato",
-      "lastOrganizerWarning": "Non puoi eliminare l'ultimo organizzatore. Nel sistema devono esserci almeno {{count}} organizzatori."
+      "cascadeWarning": "Verranno eliminati anche tutti i dati associati."
     },
     "editUser": {
       "uploadPhotoAria": "[MISSING] Upload profile photo",
@@ -102,8 +73,7 @@
   },
   "pagination": {
     "page": "Pagina {{page}} di {{total}}",
-    "itemsPerPage": "Elementi per pagina",
-    "goToPage": "Vai alla pagina"
+    "itemsPerPage": "Elementi per pagina"
   },
   "loading": {
     "users": "Caricamento utenti...",
@@ -114,55 +84,16 @@
   "error": {
     "required": "Questo campo è obbligatorio",
     "email": {
-      "invalid": "Indirizzo e-mail non valido",
-      "exists": "L'indirizzo e-mail esiste già",
-      "required": "L'e-mail è obbligatoria"
-    },
-    "name": {
-      "tooShort": "Il nome deve contenere almeno {{min}} caratteri",
-      "tooLong": "Il nome non deve superare {{max}} caratteri"
-    },
-    "roles": {
-      "required": "È richiesto almeno un ruolo",
-      "minOrganizers": "Nel sistema devono esserci almeno {{count}} organizzatori"
+      "invalid": "Indirizzo e-mail non valido"
     },
     "minOneRole": "Deve essere selezionato almeno un ruolo",
     "loadFailed": "Impossibile caricare gli utenti",
     "createFailed": "Impossibile creare l'utente",
     "updateFailed": "Impossibile aggiornare l'utente",
     "deleteFailed": "Impossibile eliminare l'utente",
-    "deleteLastOrganizer": "Impossibile eliminare l'ultimo organizzatore",
-    "networkError": "Errore di rete. Controlla la tua connessione.",
-    "unauthorized": "Non sei autorizzato a eseguire questa azione",
     "notFound": "Utente non trovato"
   },
-  "success": {
-    "userCreated": "Utente creato con successo",
-    "userUpdated": "Utente aggiornato con successo",
-    "userDeleted": "Utente eliminato con successo",
-    "rolesUpdated": "Ruoli aggiornati con successo"
-  },
-  "emptyState": {
-    "title": "Nessun utente",
-    "description": "Non è ancora stato aggiunto nessun utente.",
-    "action": "Aggiungi il primo utente"
-  },
-  "accessibility": {
-    "filterPanel": "Pannello filtri",
-    "userTable": "Tabella utenti",
-    "sortAscending": "Ordina in modo crescente",
-    "sortDescending": "Ordina in modo decrescente",
-    "openMenu": "Apri menu",
-    "closeModal": "Chiudi finestra modale",
-    "rowCount": "{{count}} utenti nella tabella"
-  },
-  "offline": {
-    "indicator": "Non in linea",
-    "message": "Sei offline. Alcune funzionalità potrebbero non essere disponibili.",
-    "viewingCache": "Visualizzazione dei dati memorizzati nella cache"
-  },
   "batchImport": {
-    "button": "Importa relatori",
     "title": "Importazione in blocco dei relatori",
     "dropzone": "Trascina qui speakers.json o fai clic per sfogliare",
     "dropzoneActive": "Trascina il file qui...",
@@ -176,7 +107,6 @@
     "cancelButton": "Annulla",
     "importButton": "Crea {{new}} / Aggiorna {{update}}",
     "allSkipped": "Nessuna modifica da importare",
-    "columns": {},
     "status": {
       "pending": "Nuovo",
       "importing": "Importazione...",
@@ -195,7 +125,6 @@
     "noPortrait": "Nessuna immagine del ritratto"
   },
   "participantImport": {
-    "button": "Importa partecipanti",
     "title": "Importa partecipanti da CSV",
     "dropzone": "Trascina e rilascia il file CSV qui",
     "dropzoneActive": "Rilascia il file CSV qui",
@@ -204,10 +133,8 @@
     "preview": "Anteprima: {{count}} partecipanti pronti per l'importazione",
     "previewLimitation": "Nota: l'anteprima mostra gli utenti esistenti solo per corrispondenza di nome utente. Durante l'importazione, gli utenti possono anche essere abbinati per nome (nome + cognome) se non ambiguo. Alcuni partecipanti mostrati come 'Nuovo' potrebbero corrispondere a utenti esistenti per nome.",
     "importButton": "Importa {{count}} partecipanti",
-    "startImport": "Avvia importazione",
     "progress": "Importazione: {{current}} / {{total}}",
     "summary": "Riepilogo importazione",
-    "columns": {},
     "status": {
       "pending": "In attesa",
       "importing": "Importazione",
@@ -227,9 +154,6 @@
       "existing": "[MISSING] Existing",
       "new": "[MISSING] New"
     },
-    "noParticipants": "Questo utente non ha ancora partecipato a nessun evento.",
-    "loadingEvents": "Caricamento eventi...",
-    "errorLoadingEvents": "Impossibile caricare le partecipazioni agli eventi",
     "aria": {
       "statusLabel": "[MISSING] Import status: {{label}}",
       "dropzone": "[MISSING] CSV file upload dropzone. Drag and drop a CSV file or click to select",
@@ -254,7 +178,6 @@
       "title": "Titolo",
       "date": "Data",
       "status": "Stato",
-      "loading": "Caricamento eventi...",
       "loadError": "Impossibile caricare la cronologia delle partecipazioni agli eventi",
       "noEvents": "Questo utente non ha ancora partecipato a nessun evento",
       "untitledEvent": "Evento senza titolo",
@@ -267,8 +190,7 @@
         "CANCELLED": "Annullato",
         "WAITLISTED": "In lista d'attesa"
       }
-    },
-    "bio": "Biografia"
+    }
   },
   "settings": {
     "tabs": {
