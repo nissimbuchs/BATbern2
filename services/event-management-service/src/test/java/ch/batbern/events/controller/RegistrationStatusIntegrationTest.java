@@ -2,11 +2,14 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +17,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +27,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -58,6 +67,9 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private RegistrationRepository registrationRepository;
 
+    @MockitoBean
+    private UserApiClient userApiClient;
+
     private static final String EVENT_CODE = "BATbern999";
     private static final String USERNAME = "alice.test";
     private static final String OTHER_USERNAME = "bob.other";
@@ -70,6 +82,18 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         registrationRepository.deleteAll();
         eventRepository.deleteAll();
+
+        // Mock UserApiClient for re-registration tests (T4.6.2) — returns deterministic user
+        GetOrCreateUserResponse mockUserResponse = new GetOrCreateUserResponse()
+                .username("alice.test")
+                .created(false)
+                .user(new UserResponse()
+                        .id("alice.test")
+                        .firstName("Alice")
+                        .lastName("Test")
+                        .email("alice.test@example.com")
+                        .companyId("TestCo"));
+        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(mockUserResponse);
 
         testEvent = eventRepository.save(Event.builder()
                 .eventCode(EVENT_CODE)
@@ -179,25 +203,37 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── T4.6.2: Re-registration allowed for CANCELLED users ───────────────────
+    // ── T4.6.2: POST /registrations succeeds (201) when existing status is CANCELLED ──
 
     @Test
-    @DisplayName("should allow re-registration when existing status is CANCELLED")
-    @WithMockUser(username = USERNAME)
-    void should_allowReRegistration_when_existingStatusIsCancelled() throws Exception {
-        // The backend allows re-registration for cancelled users (T4.6).
-        // We test that POST /registrations succeeds (201) when a cancelled registration exists.
-        // This is a service-level test via RegistrationService — we test the outcome via GET
-        // my-registration after the cancelled record is deleted and a new one created.
-        // Note: This integration test validates the repository query for cancelled status.
+    @DisplayName("should return 201 Created when POST /registrations and existing registration is CANCELLED (T4.6.2)")
+    void should_return201_when_reRegisteringAfterCancellation() throws Exception {
+        // Arrange: existing CANCELLED registration for alice.test
         saveRegistration(testEvent, USERNAME, "cancelled");
+        assertThat(registrationRepository.count()).isEqualTo(1);
 
-        // After T4.6 implementation: the old cancelled registration is deleted and a new one created.
-        // Here we just verify the GET returns CANCELLED for the existing cancelled registration
-        // (the actual re-registration creation test requires the full service layer).
-        mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("CANCELLED")));
+        String requestJson = """
+                {
+                    "firstName": "Alice",
+                    "lastName": "Test",
+                    "email": "alice.test@example.com",
+                    "termsAccepted": true
+                }
+                """;
+
+        // Act: POST /registrations — backend (T4.6) deletes cancelled record and creates new one
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Registration submitted successfully")))
+                .andExpect(jsonPath("$.email").value("alice.test@example.com"));
+
+        // Assert: exactly one registration in DB (cancelled deleted, new created)
+        assertThat(registrationRepository.count()).isEqualTo(1);
+        Registration newReg = registrationRepository.findAll().get(0);
+        assertThat(newReg.getStatus()).isEqualTo("registered"); // new registration starts as 'registered'
+        assertThat(newReg.getAttendeeUsername()).isEqualTo(USERNAME);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

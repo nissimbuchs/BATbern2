@@ -38,7 +38,11 @@ export const useMyRegistration = (eventCode: string | undefined): UseMyRegistrat
     queryFn: () => getMyRegistration(eventCode!),
     enabled: !!eventCode && isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes (AC7)
-    retry: false, // Don't retry 404s
+    // Don't retry 404s (not registered), but allow retry on transient errors (5xx, network)
+    retry: (_failureCount, error: unknown) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      return status !== 404;
+    },
   });
 
   // AC8: Return undefined immediately for unauthenticated users

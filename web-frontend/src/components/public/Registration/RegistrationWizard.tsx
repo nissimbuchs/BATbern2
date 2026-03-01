@@ -242,9 +242,11 @@ export const RegistrationWizard = ({
             // once the query is invalidated after successful submission.
             <Button
               onClick={() => {
-                // Navigate through the wizard by "resetting" the guard state.
-                // We do this by invalidating the cache so the query returns null next time.
-                queryClient.removeQueries({ queryKey: ['my-registration', eventCode] });
+                // Optimistically mark as not-registered so the wizard shows immediately.
+                // setQueryData (not removeQueries) avoids a re-fetch that would re-populate
+                // the guard before the user submits. The cache is properly invalidated on
+                // successful submission via queryClient.invalidateQueries in the success block.
+                queryClient.setQueryData(['my-registration', eventCode], null);
               }}
               data-testid="registration-guard-register-again-btn"
             >

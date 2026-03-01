@@ -106,13 +106,14 @@ describe('RegistrationStatusBanner', () => {
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
   });
 
-  test('renders error (CANCELLED) banner with "register again" link', () => {
+  test('renders grey (CANCELLED) banner with "register again" link', () => {
     render(
       <RegistrationStatusBanner status="CANCELLED" eventCode="BATbern999" isLoading={false} />
     );
 
     const banner = screen.getByTestId('registration-status-banner');
-    expect(banner.className).toMatch(/error/i);
+    // AC2: CANCELLED → grey custom div, not a MUI Alert severity element
+    expect(banner).toHaveAttribute('data-status', 'CANCELLED');
     expect(screen.getByText('registrationStatusBanner.cancelled')).toBeInTheDocument();
 
     // AC3: CANCELLED shows "Register again" (not "Manage Registration")

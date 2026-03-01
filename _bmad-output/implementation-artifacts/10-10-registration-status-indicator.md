@@ -1,6 +1,6 @@
 # Story 10.10: Registration Status Indicator for Logged-in Users
 
-Status: review
+Status: done
 
 ## Story
 
@@ -243,13 +243,13 @@ String username = authentication.getName(); // Cognito sub or username
 ### New Files
 
 ```
-services/event-management-service/src/test/java/.../RegistrationStatusIntegrationTest.java
+services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java
 web-frontend/src/hooks/useMyRegistration.ts
 web-frontend/src/hooks/useMyRegistration.test.ts
 web-frontend/src/components/public/RegistrationStatusBanner.tsx
-web-frontend/src/components/public/RegistrationStatusBanner.test.tsx
-web-frontend/src/components/public/RegistrationStatusGuard.tsx   (small inline component for wizard guard)
+web-frontend/src/components/public/__tests__/RegistrationStatusBanner.test.tsx
 ```
+**Note:** `RegistrationStatusGuard` is inlined in `RegistrationWizard.tsx` (no separate file) for simplicity. The guard JSX lives at `RegistrationWizard.tsx:212-265`.
 
 ### Registration Status Values
 
@@ -336,3 +336,30 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+| File | Change |
+|------|--------|
+| `docs/api/events-api.openapi.yml` | Added `GET /events/{eventCode}/my-registration` + `MyRegistrationResponse` schema |
+| `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` | Added `findByEventCodeAndAttendeeUsername` JPQL query |
+| `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` | Added `getMyRegistration()`; updated `createRegistration()` for CANCELLED re-registration (T4.6) |
+| `services/event-management-service/src/main/java/ch/batbern/events/controller/EventController.java` | Added `getMyRegistration` endpoint with `@PreAuthorize("isAuthenticated()")` |
+| `services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java` | New — 7 GET status tests + T4.6.2 POST re-registration test |
+| `web-frontend/src/hooks/useMyRegistration.ts` | New hook (AC1, AC7, AC8) |
+| `web-frontend/src/hooks/useMyRegistration.test.ts` | New unit tests |
+| `web-frontend/src/services/registrationService.ts` | Added `getMyRegistration()` service function |
+| `web-frontend/src/components/public/RegistrationStatusBanner.tsx` | New component (AC2, AC3, AC4) |
+| `web-frontend/src/components/public/__tests__/RegistrationStatusBanner.test.tsx` | New tests |
+| `web-frontend/src/components/public/Registration/RegistrationWizard.tsx` | Guard screen inline (AC6/T11); cache invalidation (AC7/T6.8) |
+| `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx` | Guard tests added (Story 10.10) |
+| `web-frontend/src/components/public/EventCard.tsx` | Added `myRegistrationStatus` prop + status chip (AC5) |
+| `web-frontend/src/components/public/UpcomingEventsSection.tsx` | `UpcomingEventCardWithStatus` wrapper per-event hook |
+| `web-frontend/src/pages/public/HomePage.tsx` | Integrated `RegistrationStatusBanner` (AC2, AC4) |
+| `web-frontend/src/pages/public/ArchivePage.tsx` | `ArchiveEventCardWithStatus` with 12-month filter (AC5/T10.5) |
+| `web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx` | Updated |
+| `web-frontend/src/types/generated/events-api.types.ts` | Regenerated (MyRegistrationResponse schema) |
+| `web-frontend/public/locales/en/registration.json` | Added `registrationStatusBanner.*` + `registrationStatusGuard.*` keys |
+| `web-frontend/public/locales/de/registration.json` | German translations |
+| `web-frontend/public/locales/en/events.json` | Added `eventCard.statusChip.*` keys |
+| `web-frontend/public/locales/de/events.json` | German translations |
+| `web-frontend/public/locales/{es,fi,fr,it,ja,nl,rm,gsw-BE}/registration.json` | `[MISSING]` placeholders |
+| `web-frontend/public/locales/{es,fi,fr,it,ja,nl,rm,gsw-BE}/events.json` | `[MISSING]` placeholders |

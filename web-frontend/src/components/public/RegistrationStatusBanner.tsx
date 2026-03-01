@@ -59,10 +59,40 @@ export function RegistrationStatusBanner({
 
   const manageLink = `/register/${eventCode}`;
 
+  // AC2: CANCELLED = grey banner. MUI Alert defaults severity to 'success' when omitted,
+  // so render a custom div for CANCELLED to avoid severity-class pollution.
+  if (status === 'CANCELLED') {
+    return (
+      <div
+        data-testid="registration-status-banner"
+        data-status="CANCELLED"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: 'rgba(113,113,122,0.15)',
+          color: 'rgb(161,161,170)',
+          borderRadius: 4,
+          padding: '10px 16px',
+          margin: '16px 0',
+        }}
+      >
+        <CancelIcon fontSize="small" style={{ color: 'rgb(113,113,122)', flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>{t('registrationStatusBanner.cancelled')}</span>
+        <Link
+          to={manageLink}
+          style={{ color: 'inherit', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+        >
+          {t('registrationStatusBanner.registerAgain')}
+        </Link>
+      </div>
+    );
+  }
+
   const config: Record<
-    RegistrationStatus,
+    Exclude<RegistrationStatus, 'CANCELLED'>,
     {
-      severity: 'success' | 'warning' | 'info' | 'error';
+      severity: 'success' | 'warning' | 'info';
       icon: React.ReactElement;
       textKey: string;
       linkKey: string;
@@ -85,12 +115,6 @@ export function RegistrationStatusBanner({
       icon: <QueueIcon fontSize="small" />,
       textKey: 'registrationStatusBanner.waitlist',
       linkKey: 'registrationStatusBanner.manageLink',
-    },
-    CANCELLED: {
-      severity: 'error',
-      icon: <CancelIcon fontSize="small" />,
-      textKey: 'registrationStatusBanner.cancelled',
-      linkKey: 'registrationStatusBanner.registerAgain',
     },
   };
 
