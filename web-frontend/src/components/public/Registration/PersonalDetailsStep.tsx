@@ -36,6 +36,10 @@ export interface PersonalDetailsStepProps {
 
 export interface PersonalDetailsStepRef {
   validateAndSync: () => Promise<boolean>;
+  /** Pre-fill fields with provided values (e.g. from authenticated user profile) */
+  prefill: (
+    values: Partial<Pick<CreateRegistrationRequest, 'firstName' | 'lastName' | 'email'>>
+  ) => void;
 }
 
 /**
@@ -72,7 +76,7 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
       },
     });
 
-    // Expose validation function to parent
+    // Expose validation and prefill functions to parent
     useImperativeHandle(ref, () => ({
       validateAndSync: async () => {
         const isValid = await form.trigger();
@@ -81,6 +85,17 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
           setFormData((prev) => ({ ...prev, ...values }));
         }
         return isValid;
+      },
+      prefill: (values) => {
+        if (values.firstName) form.setValue('firstName', values.firstName);
+        if (values.lastName) form.setValue('lastName', values.lastName);
+        if (values.email) form.setValue('email', values.email);
+        setFormData((prev) => ({
+          ...prev,
+          ...(values.firstName ? { firstName: values.firstName } : {}),
+          ...(values.lastName ? { lastName: values.lastName } : {}),
+          ...(values.email ? { email: values.email } : {}),
+        }));
       },
     }));
 

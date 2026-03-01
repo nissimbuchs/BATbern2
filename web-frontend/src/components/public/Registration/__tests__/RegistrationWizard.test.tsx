@@ -24,6 +24,14 @@ vi.mock('@/hooks/useMyRegistration');
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 const mockUseMyRegistration = vi.mocked(useMyRegistration);
 
+// Mock useAuth + useUserProfile for prefill tests
+vi.mock('@/hooks/useAuth/useAuth');
+vi.mock('@/hooks/useUserProfile/useUserProfile');
+import { useAuth } from '@/hooks/useAuth/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
+const mockUseAuth = vi.mocked(useAuth);
+const mockUseUserProfile = vi.mocked(useUserProfile);
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -142,6 +150,11 @@ describe('RegistrationWizard Component', () => {
     vi.clearAllMocks();
     // Default: not registered → guard doesn't show, wizard renders normally
     mockUseMyRegistration.mockReturnValue({ data: null, isLoading: false });
+    // Default: anonymous user, no profile
+    mockUseAuth.mockReturnValue({ isAuthenticated: false } as ReturnType<typeof useAuth>);
+    mockUseUserProfile.mockReturnValue({ userProfile: undefined } as ReturnType<
+      typeof useUserProfile
+    >);
   });
 
   describe('Initial Rendering', () => {
@@ -652,6 +665,25 @@ describe('RegistrationWizard Component', () => {
 
       expect(screen.queryByTestId('registration-status-guard')).not.toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /Step 1: Your Details/i })).toBeInTheDocument();
+    });
+
+    test('should_prefillFormFields_when_userProfileLoads', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true } as ReturnType<typeof useAuth>);
+      mockUseUserProfile.mockReturnValue({
+        userProfile: {
+          firstName: 'Alice',
+          lastName: 'Tester',
+          email: 'alice@example.com',
+        },
+      } as ReturnType<typeof useUserProfile>);
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Alice')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Tester')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('alice@example.com')).toBeInTheDocument();
+      });
     });
 
     test('should_callSetQueryData_with_null_when_registerAgainClicked', () => {

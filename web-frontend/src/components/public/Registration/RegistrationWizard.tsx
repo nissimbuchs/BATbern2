@@ -22,6 +22,8 @@ import { RegistrationAccordion } from './RegistrationAccordion';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { useAuth } from '@/hooks/useAuth/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 
@@ -55,6 +57,10 @@ export const RegistrationWizard = ({
   // AC6: Check if authenticated user already has a registration (Story 10.10, T11)
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(eventCode);
 
+  // Pre-fill form from user profile when authenticated
+  const { isAuthenticated } = useAuth();
+  const { userProfile } = useUserProfile({ enabled: isAuthenticated });
+
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +82,16 @@ export const RegistrationWizard = ({
     },
     specialRequests: '',
   });
+
+  // Pre-fill form fields from user profile once resolved (only fills still-empty fields)
+  useEffect(() => {
+    if (!userProfile || !step1Ref.current) return;
+    step1Ref.current.prefill({
+      firstName: userProfile.firstName,
+      lastName: userProfile.lastName,
+      email: userProfile.email,
+    });
+  }, [userProfile]);
 
   // Navigation handlers (Task 7)
   const handleNext = async () => {
