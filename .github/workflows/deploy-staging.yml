@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0  # Fetch full history to enable git diff between commits
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -253,7 +253,7 @@ jobs:
           echo "   This is the standard pattern for microservices architecture"
 
       - name: Re-authenticate with AWS before deployment
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -518,7 +518,7 @@ jobs:
 
       - name: Re-authenticate after Layer 0
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -535,7 +535,7 @@ jobs:
 
       - name: Re-authenticate after Layer 1
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -552,7 +552,7 @@ jobs:
 
       - name: Re-authenticate after Layer 2
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -569,7 +569,7 @@ jobs:
 
       - name: Re-authenticate after Layer 3
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -586,7 +586,7 @@ jobs:
 
       - name: Re-authenticate after Company Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -603,7 +603,7 @@ jobs:
 
       - name: Re-authenticate after Event Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -620,7 +620,7 @@ jobs:
 
       - name: Re-authenticate after Speaker Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -637,7 +637,7 @@ jobs:
 
       - name: Re-authenticate after Partner Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -654,7 +654,7 @@ jobs:
 
       - name: Re-authenticate after Attendee Experience
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -671,7 +671,7 @@ jobs:
 
       - name: Re-authenticate after Layer 4
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -698,7 +698,7 @@ jobs:
 
       - name: Re-authenticate after Company Management (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -715,7 +715,7 @@ jobs:
 
       - name: Re-authenticate after Event Management (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -731,7 +731,7 @@ jobs:
 
       - name: Re-authenticate after Speaker Coordination (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -747,7 +747,7 @@ jobs:
 
       - name: Re-authenticate after Partner Coordination (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -763,7 +763,7 @@ jobs:
 
       - name: Re-authenticate after Attendee Experience (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -779,7 +779,7 @@ jobs:
 
       - name: Re-authenticate after API Gateway Service (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -795,7 +795,7 @@ jobs:
 
       - name: Re-authenticate after API Gateway (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -811,7 +811,7 @@ jobs:
 
       - name: Re-authenticate before ECS stabilization
         if: steps.deployment-strategy.outputs.code_only != 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
