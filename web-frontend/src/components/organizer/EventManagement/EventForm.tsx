@@ -609,7 +609,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           <Alert severity="error">{t('errors.unauthorized')}</Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>{t('form.cancel')}</Button>
+          <Button onClick={onClose}>{t('common:actions.cancel')}</Button>
         </DialogActions>
       </Dialog>
     );
@@ -663,7 +663,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     {t('autoSave.enabled')}
                   </Typography>
                   {autoSaveStatus === 'saving' && (
-                    <Chip label={t('autoSave.saving')} size="small" color="info" />
+                    <Chip label={t('common:actions.saving')} size="small" color="info" />
                   )}
                   {autoSaveStatus === 'saved' && lastSavedAt && (
                     <Chip
@@ -704,7 +704,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label={t('form.title')}
+                      label={t('common:labels.title')}
                       fullWidth
                       required
                       error={!!errors.title}
@@ -722,7 +722,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={t('form.description')}
+                    label={t('common:labels.description')}
                     fullWidth
                     multiline
                     rows={4}
@@ -813,8 +813,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
-                    <InputLabel>{t('form.status')}</InputLabel>
-                    <Select {...field} label={t('form.status')} data-testid="event-status-select">
+                    <InputLabel>{t('common:labels.status')}</InputLabel>
+                    <Select
+                      {...field}
+                      label={t('common:labels.status')}
+                      data-testid="event-status-select"
+                    >
                       <MenuItem value="CREATED" data-testid="status-option-CREATED">
                         {t('workflow.states.created')}
                       </MenuItem>
@@ -905,7 +909,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     label={t('form.venue')}
                     fullWidth
                     margin="normal"
-                    placeholder="e.g., Kornhausforum Bern"
+                    placeholder={t('eventForm.venue.namePlaceholder')}
                     data-testid="venue-name-field"
                   />
                 )}
@@ -920,7 +924,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     label={t('form.venueAddress')}
                     fullWidth
                     margin="normal"
-                    placeholder="e.g., Kornhausplatz 18, 3011 Bern"
+                    placeholder={t('eventForm.venue.addressPlaceholder')}
                     data-testid="venue-address-field"
                   />
                 )}
@@ -986,7 +990,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         </DialogContent>
         <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, pb: 2 }}>
           <Button onClick={handleCloseClick} data-testid="close-edit-modal-button">
-            {t('form.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           {mode === 'create' && (
             <Button
@@ -1003,7 +1007,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             color="primary"
             data-testid={mode === 'create' ? 'save-create-event-button' : 'save-event-button'}
           >
-            {mode === 'create' ? t('form.saveCreate') : t('form.save')}
+            {mode === 'create' ? t('form.saveCreate') : t('common:actions.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1020,7 +1024,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelClose} data-testid="keep-editing-button">
-            {t('confirmations.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleConfirmClose}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Snackbar, Alert, AlertColor, Box, Typography, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useTranslation } from 'react-i18next';
 import { useErrorToast } from '@/hooks/useErrorToast';
 
 interface ErrorToastProps {
@@ -31,6 +32,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
   autoHideDuration = 6000,
   anchorOrigin = { vertical: 'top', horizontal: 'center' },
 }) => {
+  const { t } = useTranslation();
   const { error, clearError } = useErrorToast();
   const [isPaused, setIsPaused] = useState(false);
 
@@ -130,7 +132,12 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
           maxWidth: '600px',
         }}
         action={
-          <IconButton size="small" aria-label="close" color="inherit" onClick={handleClose}>
+          <IconButton
+            size="small"
+            aria-label={t('actions.close')}
+            color="inherit"
+            onClick={handleClose}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         }
@@ -141,7 +148,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
           </Typography>
           {error.correlationId && (
             <Typography variant="caption" component="div" sx={{ marginTop: 1, opacity: 0.8 }}>
-              Correlation ID: {error.correlationId}
+              {t('userAccount.errors.correlationId', { id: error.correlationId })}
             </Typography>
           )}
         </Box>

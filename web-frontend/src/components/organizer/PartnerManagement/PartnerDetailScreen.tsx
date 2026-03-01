@@ -52,6 +52,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   companyName,
   isMobile,
 }) => {
+  const { t: tPartners } = useTranslation('partners');
   const navigate = useNavigate();
   const location = useLocation();
   const [page, setPage] = useState(1);
@@ -63,7 +64,8 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   });
 
   if (isLoading) return <Skeleton variant="rectangular" height={300} />;
-  if (isError) return <Alert severity="error">Failed to load contacts.</Alert>;
+  if (isError)
+    return <Alert severity="error">{tPartners('detail.errors.failedToLoadContacts')}</Alert>;
 
   const users = data?.data ?? [];
   const paginationData = data?.pagination;
@@ -71,7 +73,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   if (users.length === 0) {
     return (
       <Alert severity="info" sx={{ mt: 2 }}>
-        No partner users are assigned to this company yet.
+        {tPartners('detail.errors.noContactsAssigned')}
       </Alert>
     );
   }
@@ -172,7 +174,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
       {
-        label: t('navigation.partners', 'Partners'),
+        label: t('common:navigation.partners'),
         path: currentUser.role === 'PARTNER' ? '/partners' : '/organizer/partners',
       },
       { label: partner?.companyName || resolvedCompanyName || t('common.loading', 'Loading...') },
@@ -206,8 +208,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">
-          <AlertTitle>Partner Not Found</AlertTitle>
-          The partner &quot;{resolvedCompanyName}&quot; could not be found.
+          <AlertTitle>{tPartners('detail.errors.notFound')}</AlertTitle>
+          {tPartners('detail.errors.notFoundMessage', { name: resolvedCompanyName })}
         </Alert>
       </Container>
     );
@@ -218,8 +220,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">
-          <AlertTitle>Error Loading Partner</AlertTitle>
-          An error occurred while loading the partner details. Please try again later.
+          <AlertTitle>{tPartners('detail.errors.loading')}</AlertTitle>
+          {tPartners('detail.errors.loadingMessage')}
         </Alert>
       </Container>
     );
@@ -230,8 +232,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="warning">
-          <AlertTitle>No Data</AlertTitle>
-          No partner data available.
+          <AlertTitle>{tPartners('detail.errors.noData')}</AlertTitle>
+          {tPartners('detail.errors.noDataMessage')}
         </Alert>
       </Container>
     );
@@ -244,7 +246,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     { key: 'overview', label: tPartners('detail.tabs.overview'), icon: <OverviewIcon /> },
     { key: 'contacts', label: tPartners('detail.tabs.contacts'), icon: <ContactsIcon /> },
     { key: 'meetings', label: tPartners('detail.tabs.meetings'), icon: <MeetingsIcon /> },
-    { key: 'analytics', label: tPartners('detail.tabs.analytics'), icon: <AnalyticsIcon /> },
+    { key: 'analytics', label: tPartners('common:navigation.analytics'), icon: <AnalyticsIcon /> },
     { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
     { key: 'topics', label: tPartners('detail.tabs.topics'), icon: <TopicsIcon /> },
     { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },

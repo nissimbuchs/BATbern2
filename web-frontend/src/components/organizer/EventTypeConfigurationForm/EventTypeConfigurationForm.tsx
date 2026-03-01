@@ -304,10 +304,10 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
 
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button onClick={onCancel} disabled={isSubmitting}>
-            {t('form.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {t('form.save')}
+            {t('common:actions.save')}
           </Button>
         </Stack>
       </Stack>

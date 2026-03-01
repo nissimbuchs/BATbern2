@@ -354,7 +354,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancelDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={() => setCancelDialogOpen(false)}>{t('common:actions.cancel')}</Button>
           <Button onClick={handleCancelEvent} color="warning" variant="contained">
             {t('eventPage.settings.confirmCancelBtn', 'Yes, Cancel Event')}
           </Button>
@@ -387,7 +387,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             onClick={() => setDeleteDialogOpen(false)}
             disabled={deleteEventMutation.isPending}
           >
-            {t('common.cancel', 'Cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleDeleteEvent}

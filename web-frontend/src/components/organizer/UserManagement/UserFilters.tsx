@@ -38,17 +38,17 @@ const UserFilters: React.FC = () => {
 
   // Role options
   const roleOptions: { value: Role; label: string }[] = [
-    { value: 'ORGANIZER', label: t('filters.role.organizer') },
-    { value: 'SPEAKER', label: t('filters.role.speaker') },
-    { value: 'PARTNER', label: t('filters.role.partner') },
-    { value: 'ATTENDEE', label: t('filters.role.attendee') },
+    { value: 'ORGANIZER', label: t('common:role.organizer') },
+    { value: 'SPEAKER', label: t('common:role.speaker') },
+    { value: 'PARTNER', label: t('common:role.partner') },
+    { value: 'ATTENDEE', label: t('common:role.attendee') },
   ];
 
   // Status options
   const statusOptions = [
-    { value: 'all', label: t('filters.status.all') },
-    { value: 'active', label: t('filters.status.active') },
-    { value: 'inactive', label: t('filters.status.inactive') },
+    { value: 'all', label: t('common:filters.status.all') },
+    { value: 'active', label: t('common:filters.status.active') },
+    { value: 'inactive', label: t('common:filters.status.inactive') },
   ];
 
   const handleRoleChange = (
@@ -108,7 +108,7 @@ const UserFilters: React.FC = () => {
 
         {/* Status Filter */}
         <FormControl component="fieldset">
-          <FormLabel component="legend">{t('filters.status.label')}</FormLabel>
+          <FormLabel component="legend">{t('common:labels.status')}</FormLabel>
           <RadioGroup row value={filters.status || 'all'} onChange={handleStatusChange}>
             {statusOptions.map((option) => (
               <FormControlLabel

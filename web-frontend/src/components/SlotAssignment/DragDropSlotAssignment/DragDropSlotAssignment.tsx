@@ -673,7 +673,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
               setGenerateStructuralError(null);
             }}
           >
-            {t('slotAssignment.actions.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           {structuralAlreadyExist ? (
             <Button
@@ -708,7 +708,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAutoAssignModalOpen(false)} data-testid="auto-assign-cancel">
-            {t('slotAssignment.actions.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -738,12 +738,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Typography>{t('slotAssignment.modals.clearAll.message')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClearAllModalOpen(false)}>
-            {t('slotAssignment.actions.cancel')}
+          <Button onClick={() => setClearAllModalOpen(false)} data-testid="clear-all-cancel">
+            {t('common:actions.cancel')}
           </Button>
           <Button
             variant="contained"
             color="error"
+            data-testid="clear-all-confirm"
             onClick={async () => {
               try {
                 await clearAllTimings();

@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "BATbern Event Management Platform",
     "name": "BATbern"
   },
   "navigation": {
@@ -14,11 +13,8 @@
     "myCompany": "Mein Unternehmen",
     "myAccount": "Mein Konto",
     "analytics": "Analytik",
-    "content": "Inhaltssuche",
     "profile": "Profil",
-    "logout": "Abmelden",
     "myEvents": "Meine Veranstaltungen",
-    "presentationMode": "Präsentationsmodus",
     "myContent": "Meine Inhalte",
     "myRegistrations": "Meine Anmeldungen",
     "about": "Über uns",
@@ -28,7 +24,12 @@
     "partnerMeetings": "Partner-Meetings",
     "topics": "Themenvorschläge",
     "openMenu": "Menü öffnen",
-    "closeMenu": "Menü schließen"
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
   },
   "public": {
     "login": "Anmelden",
@@ -70,19 +71,29 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "create": "Erstellen",
-    "search": "Suchen",
-    "filter": "Filtern",
-    "reset": "Zurücksetzen",
-    "submit": "Absenden",
     "close": "Schliessen",
     "sending": "Wird gesendet...",
-    "loading": "Wird geladen..."
+    "loading": "Wird geladen...",
+    "retry": "Wiederholen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "clearFilters": "Filter löschen",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
   },
   "language": {
     "select": "Sprache wählen",
     "de": "Deutsch",
-    "en": "English"
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Warten Sie {{seconds}} Sekunden",
@@ -90,12 +101,10 @@
   },
   "menu": {
     "profile": "Profil",
-    "profileSettings": "Profileinstellungen",
     "settings": "Einstellungen",
     "administration": "Verwaltung",
     "help": "Hilfe",
-    "logout": "Abmelden",
-    "signOut": "Abmelden"
+    "logout": "Abmelden"
   },
   "role": {
     "organizer": "Veranstalter",
@@ -110,7 +119,6 @@
     "viewDetails": "Details anzeigen für {{name}}",
     "noCompaniesFound": "Keine Unternehmen gefunden",
     "adjustFilters": "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen",
-    "backToList": "Zurück",
     "viewMode": {
       "grid": "Rasteransicht",
       "list": "Listenansicht",
@@ -122,49 +130,21 @@
       "swissUID": "Schweizer UID (CHE-XXX.XXX.XXX)",
       "website": "Website",
       "industry": "Branche",
-      "sector": "Sektor (Optional)",
-      "city": "Stadt",
-      "canton": "Kanton",
-      "country": "Land",
       "description": "Beschreibung",
       "legalName": "Kurzform: {{name}}",
       "logo": "Firmenlogo"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
-      "website": "https://beispiel.ch",
-      "canton": "BE, ZH, GE, etc."
+      "website": "https://beispiel.ch"
     },
     "industries": {
-      "selectIndustry": "Branche auswählen",
-      "technology": "Technologie",
-      "cloudComputing": "Cloud Computing",
-      "devOps": "DevOps",
-      "financialServices": "Finanzdienstleistungen",
-      "healthcare": "Gesundheitswesen",
-      "manufacturing": "Fertigung",
-      "consulting": "Beratung",
-      "education": "Bildung",
-      "other": "Andere"
-    },
-    "sectors": {
-      "selectSector": "Sektor auswählen",
-      "public": "Öffentlich",
-      "private": "Privat",
-      "nonprofit": "Gemeinnützig",
-      "government": "Regierung"
+      "selectIndustry": "Branche auswählen"
     },
     "badges": {
-      "partner": "Partner",
       "verified": "Verifiziert"
     },
-    "stats": {
-      "userCount": "{{count}} Benutzer",
-      "userCount_one": "{{count}} Benutzer",
-      "userCount_other": "{{count}} Benutzer"
-    },
     "filters": {
-      "partnerOnly": "Nur Partner-Unternehmen",
       "verifiedOnly": "Nur verifizierte Unternehmen",
       "industry": "Branche",
       "allIndustries": "Alle Branchen",
@@ -174,7 +154,6 @@
     "form": {
       "createTitle": "Neues Unternehmen erstellen",
       "editTitle": "Unternehmen bearbeiten",
-      "required": "Erforderlich",
       "saveDraft": "Entwurf speichern",
       "saveCreate": "Speichern & Erstellen",
       "saveChanges": "Änderungen speichern",
@@ -184,56 +163,35 @@
         "swissUID": "Optional - für automatische Verifizierung"
       },
       "errors": {
-        "nameRequired": "Unternehmensname ist erforderlich",
-        "nameMinLength": "Name muss mindestens {{min}} Zeichen lang sein",
-        "nameMaxLength": "Name darf höchstens {{max}} Zeichen lang sein",
-        "displayNameMaxLength": "Anzeigename darf höchstens {{max}} Zeichen lang sein",
-        "invalidSwissUID": "Ungültiges Schweizer UID-Format (CHE-XXX.XXX.XXX)",
-        "invalidWebsite": "Ungültige Website-URL",
-        "industryRequired": "Branche ist erforderlich",
-        "cityRequired": "Stadt ist erforderlich",
-        "cantonRequired": "Kanton ist erforderlich",
-        "countryRequired": "Land ist erforderlich",
-        "descriptionMaxLength": "Beschreibung darf höchstens {{max}} Zeichen lang sein",
         "noPermission": "Sie haben keine Berechtigung, dieses Unternehmen zu bearbeiten. Sprecher können nur ihr eigenes Unternehmen bearbeiten."
       }
     },
     "detail": {
       "tabs": {
-        "overview": "Übersicht",
         "users": "Benutzer",
-        "statistics": "Statistiken",
-        "activity": "Aktivität"
+        "ariaLabel": "Company detail tabs"
       },
-      "overviewText": "Dieser Übersichtsbereich kann zusätzliche Unternehmensinformationen, aktuelle Updates oder Highlights anzeigen.",
       "noData": "Keine Unternehmensdaten verfügbar"
     },
     "errors": {
-      "loadFailed": "Fehler beim Laden des Unternehmens",
       "saveFailed": "Fehler beim Speichern des Unternehmens",
-      "deleteFailed": "Fehler beim Löschen des Unternehmens",
-      "retry": "Wiederholen"
+      "deleteFailed": "Fehler beim Löschen des Unternehmens"
     },
     "search": {
       "placeholder": "Unternehmen suchen..."
     },
     "batchImport": {
-      "button": "Batch-Import",
       "title": "Unternehmen aus JSON importieren",
       "dropzone": "JSON-Datei hier ablegen oder klicken zum Hochladen",
       "dropzoneActive": "JSON-Datei hier ablegen",
-      "invalidJson": "Ungültige JSON-Datei. Bitte überprüfen Sie das Format.",
       "noCompanies": "Keine Unternehmen in der JSON-Datei gefunden.",
       "preview": "Vorschau ({{count}} Unternehmen)",
-      "importButton": "Alle importieren",
       "cancelButton": "Abbrechen",
       "status": {
-        "pending": "Ausstehend",
         "importing": "Wird importiert...",
         "success": "Importiert",
         "updated": "Aktualisiert",
         "willUpdate": "Wird aktualisiert",
-        "error": "Fehler",
         "skipped": "Übersprungen (existiert)"
       },
       "progress": "Importiere {{current}} von {{total}}...",
@@ -247,13 +205,11 @@
         "displayName": "Anzeigename",
         "name": "API-Name",
         "industry": "Branche",
-        "website": "Website",
-        "status": "Status"
+        "website": "Website"
       },
       "errors": {
         "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
-        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
-        "importFailed": "Import von {{name}} fehlgeschlagen: {{error}}"
+        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}"
       }
     },
     "delete": {
@@ -261,8 +217,7 @@
       "message": "Sind Sie sicher, dass Sie dieses Unternehmen löschen möchten?",
       "dataWarning": "Diese Aktion löscht das Unternehmen dauerhaft und kann nicht rückgängig gemacht werden.",
       "cascadeWarning": "Alle zugehörigen Daten (Benutzer, Partnerschaften, Sprecher, Veranstaltungen) können betroffen sein.",
-      "deleting": "Wird gelöscht...",
-      "success": "Unternehmen erfolgreich gelöscht"
+      "deleting": "Wird gelöscht..."
     },
     "pagination": {
       "itemsPerPage": "Einträge pro Seite"
@@ -270,15 +225,12 @@
   },
   "event": {
     "batchImport": {
-      "button": "Historische Events importieren",
       "title": "Events aus topics.json importieren",
       "dropzone": "topics.json-Datei hier ablegen oder klicken zum Hochladen",
       "dropzoneActive": "JSON-Datei hier ablegen",
       "dropzoneHint": "Die vorverarbeitete topics.json-Datei hochladen (mit parsedDate, description und moderator Feldern)",
-      "invalidJson": "Ungültige JSON-Datei. Bitte überprüfen Sie das Format.",
       "noEvents": "Keine Events in der JSON-Datei gefunden.",
       "preview": "Vorschau ({{count}} Events)",
-      "importButton": "Alle importieren",
       "cancelButton": "Abbrechen",
       "status": {
         "pending": "Ausstehend",
@@ -293,15 +245,23 @@
       "importButtonWithCount": "{{count}} Events importieren",
       "columns": {
         "eventNumber": "Nr.",
-        "title": "Titel",
-        "date": "Datum",
         "organizer": "Organisator",
-        "status": "Status"
+        "category": "Kategorie"
       },
       "errors": {
         "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
-        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
-        "importFailed": "Import von Event {{number}} fehlgeschlagen: {{error}}"
+        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "Feldauswahl (Importieren = neu erstellen oder aktualisieren | Ignorieren = Feld überspringen)",
+        "import": "Importieren",
+        "ignore": "Ignorieren",
+        "fieldTitle": "Titel:",
+        "fieldDescription": "Beschreibung:",
+        "fieldTopic": "Thema/Kategorie:",
+        "fieldDate": "Datum:",
+        "fieldVenue": "Veranstaltungsort:",
+        "fieldOrganizer": "Organisator:"
       }
     }
   },
@@ -341,7 +301,6 @@
   },
   "session": {
     "batchImport": {
-      "button": "Sitzungen importieren",
       "title": "Sitzungen-Batch-Import",
       "dropzone": "sessions.json hier ablegen oder klicken",
       "dropzoneActive": "sessions.json hier ablegen",
@@ -370,7 +329,9 @@
         "invalidFile": "Ungültige Datei. Nur sessions.json ist erlaubt.",
         "parseError": "Fehler beim Parsen: {{error}}"
       }
-    }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
   },
   "organizer": {
     "select": "Organisator auswählen",
@@ -411,28 +372,21 @@
       "urgent": "Dringend",
       "soon": "Bald fällig",
       "onTime": "Pünktlich",
-      "actions": "Aktionen",
       "pastEvent": "Vergangene Veranstaltung",
       "materialAvailable": "Material verfügbar",
-      "noMaterials": "Kein Material"
+      "noMaterials": "Kein Material",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
     },
     "content": {
-      "title": "Inhalt einreichen",
-      "loading": "Inhalt wird geladen...",
       "invalidLink": "Ungültiger Link",
       "invalidLinkMessage": "Diese Seite erfordert einen gültigen Inhaltslink. Bitte verwenden Sie den Link aus Ihrer Einladungs-E-Mail.",
-      "linkExpired": "Link abgelaufen",
       "linkExpiredMessage": "Dieser Link ist abgelaufen. Bitte kontaktieren Sie den Organisator für einen neuen Link.",
-      "sessionNotAssigned": "Session nicht zugewiesen",
-      "sessionNotAssignedMessage": "Ihre Session wurde noch nicht zugewiesen. Bitte kontaktieren Sie den Organisator, damit Ihre Session zugewiesen wird, bevor Sie Inhalte einreichen können.",
-      "event": "Veranstaltung",
       "presentationTitle": "Präsentationstitel",
       "abstract": "Zusammenfassung",
       "titleRequired": "Titel ist erforderlich",
       "abstractRequired": "Zusammenfassung ist erforderlich",
-      "characterCount": "{{current}} / {{max}}",
       "presentationFile": "Präsentationsdatei",
-      "optional": "optional",
       "saving": "Wird gespeichert...",
       "lastSaved": "Zuletzt gespeichert: {{time}}",
       "unsavedChanges": "Nicht gespeicherte Änderungen",
@@ -445,24 +399,132 @@
       "nextStepsInfo": "Der Organisator wird Ihre Einreichung prüfen und Sie kontaktieren, falls Änderungen erforderlich sind.",
       "revisionRequested": "Überarbeitung erforderlich",
       "reviewedBy": "Überprüft von",
-      "on": "am"
+      "on": "am",
+      "loadingContent": "Inhalt wird geladen...",
+      "linkHasExpired": "Link abgelaufen",
+      "invalidLinkNotValidMessage": "Dieser Link ist ungültig. Bitte prüfen Sie Ihre E-Mail für den korrekten Link.",
+      "cannotSubmit": "Inhalt kann nicht eingereicht werden",
+      "cannotSubmitMessage": "Sie können derzeit keinen Inhalt einreichen. Bitte akzeptieren Sie zuerst die Einladung oder kontaktieren Sie den Organisator.",
+      "goToDashboard": "Zum Sprecher-Dashboard",
+      "submitYourContent": "Inhalt einreichen",
+      "dashboard": "Dashboard",
+      "editProfile": "Profil bearbeiten",
+      "titlePlaceholder": "Titel Ihrer Präsentation eingeben",
+      "abstractPlaceholder": "Beschreiben Sie, was Ihre Präsentation behandeln wird...",
+      "enableFileUploads": "Bitte reichen Sie zuerst Titel und Abstract ein, um Datei-Uploads zu aktivieren."
     },
     "upload": {
-      "dragDropTitle": "Präsentation hochladen",
-      "dragDropMessage": "Datei hierher ziehen oder klicken zum Durchsuchen",
-      "supportedFormats": "Unterstützte Formate: PPTX, PDF, KEY (max. 50MB)",
       "uploading": "Wird hochgeladen...",
-      "uploadProgress": "{{percent}}% hochgeladen",
-      "uploadComplete": "Upload abgeschlossen",
-      "removeFile": "Datei entfernen",
-      "currentFile": "Aktuelle Datei",
-      "download": "Herunterladen",
-      "replace": "Ersetzen",
-      "errors": {
-        "fileTooLarge": "Datei ist zu gross. Maximale Grösse ist 50MB.",
-        "invalidType": "Ungültiger Dateityp. Nur PPTX, PDF und KEY Dateien sind erlaubt.",
-        "uploadFailed": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
-      }
+      "presentationFile": "Präsentationsdatei",
+      "changeFile": "Datei ändern",
+      "dragDropPresentation": "Präsentation hier ablegen",
+      "orClickBrowse": "oder klicken zum Durchsuchen",
+      "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: PPTX, PDF, KEY",
+      "fileTooLarge": "Dateigrösse muss kleiner als 50 MB sein",
+      "acceptedFormats": "Akzeptierte Formate: PPTX, PDF, KEY (max. 50 MB)",
+      "uploadAria": "Präsentationsdatei hochladen"
+    },
+    "invitationResponse": {
+      "invalidLink": "Ungültiger Link",
+      "invalidLinkMessage": "Diese Seite erfordert einen gültigen Einladungslink aus Ihrer E-Mail.",
+      "loading": "Einladung wird geladen...",
+      "loadingMessage": "Bitte warten Sie, während wir Ihren Link überprüfen.",
+      "loadingAria": "Einladung wird geladen",
+      "needHelp": "Hilfe benötigt?",
+      "checkEmail": "Prüfen Sie Ihre E-Mail auf einen neueren Einladungslink",
+      "requestNew": "Einen neuen Einladungslink bei den Organisatoren anfordern",
+      "alreadyResponded": "Bereits geantwortet",
+      "yourResponse": "Ihre Antwort",
+      "commentsPlaceholder": "Fragen oder Kommentare für die Organisatoren...",
+      "declinePlaceholder": "Bitte teilen Sie uns mit, warum Sie nicht teilnehmen können...",
+      "submit": "Antwort senden",
+      "submitted": "Antwort gesendet!",
+      "whatsNext": "Was kommt als Nächstes?",
+      "completeProfile": "Profil vervollständigen",
+      "linkNotValid": "Dieser Einladungslink ist ungültig.",
+      "backToHome": "Zur Startseite",
+      "linkExpired": "Link abgelaufen",
+      "linkExpiredMessage": "Dieser Einladungslink ist abgelaufen. Bitte kontaktieren Sie die Veranstaltungsorganisatoren.",
+      "linkAlreadyUsed": "Link bereits verwendet",
+      "linkAlreadyUsedMessage": "Dieser Einladungslink wurde bereits verwendet.",
+      "genericError": "Fehler",
+      "genericErrorMessage": "Beim Überprüfen Ihrer Einladung ist ein Fehler aufgetreten.",
+      "unexpectedErrorMessage": "Ein unerwarteter Fehler ist aufgetreten.",
+      "contactOrganizersAt": "Kontaktieren Sie die Veranstaltungsorganisatoren unter",
+      "alreadyRespondedOn": "Sie haben bereits am {{date}} auf diese Einladung geantwortet.",
+      "yourResponseWas": "Ihre Antwort:",
+      "accepted": "Akzeptiert",
+      "declined": "Abgelehnt",
+      "tentative": "Vorläufig",
+      "manageProfileText": "Sie können Ihr Sprecher-Profil und Ihre Inhaltseinreichungen über Ihr Sprecher-Dashboard verwalten.",
+      "reconsiderText": "Falls Sie Ihre Meinung ändern möchten, kontaktieren Sie bitte die Veranstaltungsorganisatoren direkt.",
+      "invitedToSpeak": "Sie sind eingeladen, zu sprechen bei",
+      "respondBy": "Antwort bis",
+      "dear": "Sehr geehrte/r",
+      "invitationBody": "Wir würden uns sehr freuen, Sie als Referenten bei dieser Veranstaltung begrüssen zu dürfen. Bitte teilen Sie uns mit, ob Sie teilnehmen können.",
+      "accept": "Akzeptieren",
+      "decline": "Ablehnen",
+      "messageToOrganizers": "Nachricht an die Organisatoren (optional)",
+      "reasonForDeclining": "Grund der Ablehnung",
+      "reasonRequired": "Ein Grund ist erforderlich, um abzulehnen",
+      "submitting": "Wird gesendet...",
+      "failedToSubmit": "Antwort konnte nicht gesendet werden",
+      "thankYouResponse": "Vielen Dank, {{name}}, für Ihre Antwort.",
+      "contentDeadline": "Frist für die Inhaltseinreichung:"
+    },
+    "profile": {
+      "invalidLink": "Ungültiger Link",
+      "invalidLinkMessage": "Diese Seite erfordert einen gültigen Profillink aus Ihrer E-Mail.",
+      "backToHome": "Zur Startseite",
+      "loadingAria": "Profil wird geladen",
+      "loading": "Profil wird geladen...",
+      "loadingMessage": "Bitte warten Sie, während wir Ihr Profil laden.",
+      "linkExpired": "Link abgelaufen",
+      "linkExpiredMessage": "Dieser Profillink ist abgelaufen. Bitte kontaktieren Sie die Veranstaltungsorganisatoren.",
+      "invalidLinkNotValid": "Dieser Profillink ist ungültig.",
+      "genericError": "Fehler",
+      "genericErrorMessage": "Beim Laden Ihres Profils ist ein Fehler aufgetreten.",
+      "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten.",
+      "pageTitle": "Ihr Sprecher-Profil",
+      "pageSubtitle": "Aktualisieren Sie Ihre Angaben für Veranstaltungsmaterialien",
+      "profileCompleteness": "Profilvollständigkeit",
+      "completeProfileHint": "Vervollständigen Sie Ihr Profil für mehr Sichtbarkeit",
+      "missing": "Fehlend:",
+      "basicInfo": "Grundinformationen",
+      "emailReadOnly": "E-Mail (schreibgeschützt)",
+      "bio": "Biografie",
+      "bioPlaceholder": "Erzählen Sie uns über sich...",
+      "bioExceeds": "Biografie darf 500 Zeichen nicht überschreiten",
+      "maxExpertiseAreas": "Maximal 10 Fachgebiete erlaubt",
+      "maxSpeakingTopics": "Maximal 10 Vortragsthemen erlaubt",
+      "socialLinks": "Social-Media-Links",
+      "linkedInUrl": "LinkedIn-URL",
+      "invalidLinkedIn": "Muss eine gültige LinkedIn-URL sein",
+      "contentSubmissionSection": "Inhaltseinreichung",
+      "assignedTo": "Sie sind zugewiesen zu:",
+      "contentSubmitDescription": "Reichen Sie Ihren Präsentationstitel, Abstract und Materialien zur Überprüfung ein.",
+      "submitContent": "Inhalt einreichen",
+      "saving": "Wird gespeichert...",
+      "saveChanges": "Änderungen speichern",
+      "savedSuccessfully": "Profil erfolgreich aktualisiert!",
+      "saveFailed": "Profil konnte nicht gespeichert werden"
+    },
+    "photo": {
+      "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: JPEG, PNG, WebP",
+      "fileTooLarge": "Dateigrösse muss kleiner als 5 MB sein",
+      "changePhoto": "Foto ändern",
+      "dragDropHere": "Foto hier ablegen",
+      "orClickBrowse": "oder klicken zum Durchsuchen",
+      "supportedFormats": "JPEG, PNG, WebP (max. 5 MB)",
+      "uploading": "Wird hochgeladen...",
+      "cancel": "Abbrechen",
+      "uploadAria": "Profilfoto hochladen"
+    },
+    "magicLogin": {
+      "processing": "Anmeldung wird verarbeitet...",
+      "redirecting": "Weiterleitung zum Dashboard...",
+      "invalidLinkTitle": "Link ungültig",
+      "defaultError": "Dieser Link ist nicht mehr gültig. Bitte kontaktieren Sie den Organisator."
     }
   },
   "archive": {
@@ -481,23 +543,14 @@
       "loadFailed": "Fehler beim Laden der Veranstaltungen"
     },
     "card": {
-      "sessions": "Präsentationen",
-      "viewDetails": "Details anzeigen",
-      "andMore": "und {{count}} weitere"
+      "viewDetails": "Details anzeigen"
     },
     "filters": {
       "title": "Filter",
       "search": "Veranstaltungen suchen...",
       "topics": "Themen",
       "clearAll": "Alle löschen",
-      "activeCount": "{{count}} aktiver Filter",
-      "activeCount_one": "{{count}} aktiver Filter",
-      "activeCount_other": "{{count}} aktive Filter"
-    },
-    "sort": {
-      "label": "Sortieren nach",
-      "newest": "Neueste zuerst",
-      "oldest": "Älteste zuerst"
+      "activeCount": "{{count}} aktiver Filter"
     },
     "detail": {
       "backToArchive": "← Zurück zum Archiv"
@@ -517,10 +570,17 @@
     "deleteConfirmation": {
       "title": "Benachrichtigung löschen",
       "message": "Möchten Sie diese Benachrichtigung wirklich löschen?"
-    }
+    },
+    "notificationFeed": "Benachrichtigungsfeed",
+    "priority": {
+      "urgent": "DRINGEND",
+      "high": "HOCH"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
   },
   "emailTemplates": {
-    "title": "E-Mail-Vorlagen",
     "layoutTemplates": "Layout-Vorlagen",
     "layoutTemplatesInfo": "Definiert das Look & Feel für alle BATbern-E-Mails. Änderungen hier wirken sich auf alle Vorlagen aus, die dieses Layout verwenden.",
     "contentTemplates": "E-Mail-Inhalte",
@@ -543,21 +603,23 @@
     "noLayouts": "Keine Layout-Vorlagen gefunden.",
     "noTemplates": "Keine Vorlagen für diesen Filter gefunden.",
     "missingContentPlaceholder": "{{content}}-Platzhalter fehlt — E-Mail-Inhalt wird leer sein",
-    "cannotDeleteSystem": "System-Vorlagen können nicht gelöscht werden.",
-    "cannotDeleteLayout": "Layout-Vorlagen können nicht gelöscht werden.",
     "deleteFailed": "Löschen fehlgeschlagen.",
     "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "validation": {
       "htmlBodyRequired": "HTML-Inhalt ist erforderlich.",
       "subjectRequired": "Betreff ist für Inhaltsvorlagen erforderlich.",
-      "templateKeyRequired": "Vorlageschlüssel ist erforderlich.",
-      "allFieldsRequired": "Vorlageschlüssel, Betreff und HTML-Inhalt sind erforderlich."
-    }
+      "templateKeyRequired": "Vorlageschlüssel ist erforderlich."
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
   },
   "presentation": {
     "errorTitle": "Event konnte nicht geladen werden",
     "errorMessage": "Bitte überprüfe die Netzwerkverbindung und versuche es erneut.",
-    "retryButton": "Erneut versuchen"
+    "retryButton": "Erneut versuchen",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
   },
   "admin": {
     "tabs": {
@@ -587,5 +649,77 @@
       "confirmDelete": "Vorlage löschen?",
       "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
     }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Titel",
+    "date": "Datum",
+    "overview": "Übersicht",
+    "sortBy": "Sortieren nach",
+    "actions": "Aktionen",
+    "company": "Unternehmen",
+    "email": "E-Mail",
+    "dueDate": "Fälligkeitsdatum",
+    "emailAddress": "E-Mail-Adresse",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics",
+    "firstName": "Vorname",
+    "lastName": "Nachname"
+  },
+  "filters": {
+    "status": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "pending": "Ausstehend",
+      "confirmed": "Bestätigt",
+      "error": "Fehler"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "companySearch": {
+    "noOptions": "Keine Unternehmen gefunden",
+    "searchAriaLabel": "Unternehmen suchen",
+    "clearSearchAriaLabel": "Suche löschen"
+  },
+  "countdown": {
+    "nextEvent": "Nächste Veranstaltung",
+    "today": "Heute!",
+    "tomorrow": "Morgen!",
+    "daysUntil": "Noch {{count}} Tage bis zur Veranstaltung"
+  },
+  "errors": {
+    "somethingWentWrong": "Etwas ist schiefgelaufen",
+    "tryAgain": "Erneut versuchen",
+    "unexpectedError": "Es tut uns leid. Ein unerwarteter Fehler ist aufgetreten.",
+    "devDetails": "Fehlerdetails (nur für Entwickler):",
+    "refreshPage": "Seite aktualisieren",
+    "goHome": "Zur Startseite"
+  },
+  "bootstrap": {
+    "loading": "BATbern wird geladen...",
+    "configFailed": "Konfiguration konnte nicht geladen werden",
+    "reloadPage": "Seite neu laden"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
   }
 }

@@ -1,0 +1,271 @@
+{
+  "title": "Käyttäjähallinta",
+  "addUser": "Lisää käyttäjä",
+  "search": {
+    "placeholder": "Hae nimellä tai sähköpostilla...",
+    "noResults": "Käyttäjiä ei löydy"
+  },
+  "filters": {
+    "clearAll": "Tyhjennä kaikki suodattimet",
+    "role": {
+      "label": "Rooli",
+      "all": "Kaikki roolit"
+    },
+    "status": {
+      "active": "Aktiivinen",
+      "inactive": "Ei aktiivinen"
+    }
+  },
+  "table": {
+    "viewUser": "Näytä käyttäjä {{name}}",
+    "headers": {
+      "roles": "Roolit"
+    },
+    "empty": "Käyttäjiä ei löydy"
+  },
+  "actions": {
+    "view": "Näytä",
+    "editRoles": "Muokkaa rooleja"
+  },
+  "roles": {
+    "organizer": "Järjestäjä",
+    "speaker": "Puhuja",
+    "partner": "Kumppani",
+    "attendee": "Osallistuja",
+    "multiple": "{{count}} roolia"
+  },
+  "status": {
+    "active": "Aktiivinen",
+    "inactive": "Ei aktiivinen"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Käyttäjän tiedot",
+      "createdAt": "Luotu",
+      "updatedAt": "Viimeksi päivitetty"
+    },
+    "createUser": {
+      "title": "Luo uusi käyttäjä",
+      "firstName": "Etunimi",
+      "lastName": "Sukunimi",
+      "email": "Sähköposti",
+      "company": "Yritys (valinnainen)",
+      "roles": "Roolit",
+      "selectRoles": "Valitse vähintään yksi rooli",
+      "creating": "Luodaan..."
+    },
+    "editRoles": {
+      "title": "Muokkaa rooleja",
+      "user": "Käyttäjä",
+      "selectRoles": "Valitse roolit",
+      "saving": "Tallennetaan..."
+    },
+    "deleteConfirm": {
+      "title": "Poista käyttäjä",
+      "message": "Haluatko varmasti poistaa tämän käyttäjän?",
+      "gdprWarning": "GDPR-huomio: Tämä toiminto poistaa pysyvästi kaikki käyttäjätiedot, eikä sitä voi kumota.",
+      "cascadeWarning": "Kaikki liittyvät tiedot poistetaan myös."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Lataa profiilikuva",
+      "removePhotoAria": "Poista profiilikuva"
+    }
+  },
+  "pagination": {
+    "page": "Sivu {{page}} / {{total}}",
+    "itemsPerPage": "Kohteita per sivu"
+  },
+  "loading": {
+    "users": "Ladataan käyttäjiä...",
+    "search": "Haetaan...",
+    "save": "Tallennetaan...",
+    "updating": "Päivitetään..."
+  },
+  "error": {
+    "required": "Tämä kenttä on pakollinen",
+    "email": {
+      "invalid": "Virheellinen sähköpostiosoite"
+    },
+    "minOneRole": "Vähintään yksi rooli on valittava",
+    "loadFailed": "Käyttäjien lataaminen epäonnistui",
+    "createFailed": "Käyttäjän luominen epäonnistui",
+    "updateFailed": "Käyttäjän päivittäminen epäonnistui",
+    "deleteFailed": "Käyttäjän poistaminen epäonnistui",
+    "notFound": "Käyttäjää ei löydy"
+  },
+  "batchImport": {
+    "title": "Puhujien erätuonti",
+    "dropzone": "Pudota speakers.json tähän tai napsauta selataksesi",
+    "dropzoneActive": "Pudota tiedosto tähän...",
+    "dropzoneHint": "Lataa speakers.json poluista apps/BATspa-old/src/api/",
+    "preview": "{{count}} puhujaa tuotavaksi",
+    "progress": "Tuodaan puhuja {{current}} / {{total}}...",
+    "complete": "Tuonti valmis: {{success}} luotu, {{updated}} päivitetty, {{failed}} epäonnistunut, {{skipped}} ohitettu",
+    "noSpeakers": "Tiedostosta ei löydy puhujia",
+    "checkingExisting": "Tarkistetaan olemassa olevia käyttäjiä...",
+    "summary": "{{total}} puhujaa: {{new}} uutta, {{update}} päivitettävää, {{skip}} muuttumatonta",
+    "cancelButton": "Peruuta",
+    "importButton": "Luo {{new}} / Päivitä {{update}}",
+    "allSkipped": "Ei muutoksia tuotavaksi",
+    "status": {
+      "pending": "Uusi",
+      "importing": "Tuodaan...",
+      "success": "Luotu",
+      "updated": "Päivitetty",
+      "error": "Virhe",
+      "skipped": "Ohitettu",
+      "noChanges": "Ei muutoksia",
+      "willUpdate": "Päivitetään: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Virheellinen tiedosto. Lataa JSON-tiedosto.",
+      "parseError": "Tiedoston jäsennys epäonnistui: {{error}}"
+    },
+    "hasPortrait": "Muotokuva on olemassa",
+    "noPortrait": "Ei muotokuvaa"
+  },
+  "participantImport": {
+    "title": "Tuo osallistujia CSV-tiedostosta",
+    "dropzone": "Vedä ja pudota CSV-tiedosto tähän",
+    "dropzoneActive": "Pudota CSV-tiedosto tähän",
+    "dropzoneHint": "tai napsauta valitaksesi tiedoston",
+    "fileLoaded": "Tiedosto ladattu: {{name}} ({{size}} kt)",
+    "preview": "Esikatselu: {{count}} osallistujaa valmiina tuotavaksi",
+    "previewLimitation": "Huomio: Esikatselu näyttää olemassa olevat käyttäjät vain käyttäjänimen perusteella. Tuonnin aikana käyttäjät voidaan myös yhdistää nimen perusteella (etu- + sukunimi), jos se ei ole moniselitteinen. Jotkut 'Uusi'-merkityt osallistujat saattavat vastata olemassa olevia käyttäjiä nimen perusteella.",
+    "importButton": "Tuo {{count}} osallistujaa",
+    "progress": "Tuodaan: {{current}} / {{total}}",
+    "summary": "Tuonnin yhteenveto",
+    "status": {
+      "pending": "Odottaa",
+      "importing": "Tuodaan",
+      "success": "Onnistui",
+      "error": "Epäonnistui",
+      "skipped": "Ohitettu"
+    },
+    "stats": {
+      "total": "Yhteensä: {{count}}",
+      "success": "Onnistuneet: {{count}}",
+      "failed": "Epäonnistuneet: {{count}}",
+      "pending": "Odottavat: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synteettinen",
+      "eventsCount": "{{count}} tapahtumaa",
+      "existing": "Olemassa oleva",
+      "new": "Uusi"
+    },
+    "aria": {
+      "statusLabel": "Tuonnin tila: {{label}}",
+      "dropzone": "CSV-tiedoston latausalue. Vedä ja pudota CSV-tiedosto tai napsauta valitaksesi",
+      "fileInput": "Tiedostosyöte CSV-tuontia varten",
+      "previewTable": "Osallistujien tuonnin esikatselutaulukko",
+      "participantTable": "Osallistujat ja tuonnin tila",
+      "importProgress": "Tuonnin edistyminen",
+      "closeModal": "Sulje tuonti-ikkuna",
+      "startImport": "Aloita osallistujien tuonti CSV-tiedostosta",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "CSV-tiedoston jäsennys epäonnistui",
+    "importFailed": "Tuonti epäonnistui"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Yleiskatsaus",
+      "eventsParticipated": "Osallistutut tapahtumat",
+      "ariaLabel": "User detail tabs"
+    },
+    "overviewText": "Käyttäjäprofiilin yleiskatsaus. Lisätietoja voidaan lisätä tähän.",
+    "eventsTable": {
+      "eventCode": "Tapahtumakoodi",
+      "title": "Otsikko",
+      "date": "Päivämäärä",
+      "status": "Tila",
+      "loadError": "Tapahtumaosallistumishistorian lataaminen epäonnistui",
+      "noEvents": "Tämä käyttäjä ei ole vielä osallistunut mihinkään tapahtumaan",
+      "untitledEvent": "Nimetön tapahtuma",
+      "dateTBD": "Vahvistetaan myöhemmin",
+      "ariaLabel": "Taulukko tapahtumista, joihin käyttäjä on osallistunut",
+      "statusValues": {
+        "REGISTERED": "Rekisteröity",
+        "CONFIRMED": "Vahvistettu",
+        "ATTENDED": "Osallistunut",
+        "CANCELLED": "Peruutettu",
+        "WAITLISTED": "Jonossa"
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "Tili",
+      "notifications": "Ilmoitukset",
+      "privacy": "Tietosuoja"
+    },
+    "account": {
+      "title": "Tiliasetukset",
+      "emailStatus": "Sähköpostiosoitetta ei voi muuttaa",
+      "changePassword": "Vaihda salasana",
+      "theme": "Teema",
+      "themeLight": "Vaalea",
+      "themeDark": "Tumma",
+      "themeAuto": "Automaattinen (seuraa järjestelmää)",
+      "timezone": "Aikavyöhyke",
+      "save": "Tallenna tiliasetukset"
+    },
+    "notifications": {
+      "title": "Ilmoitusasetukset",
+      "epic7Notice": "Edistyneet ilmoitusasetukset tulevat tulevassa päivityksessä.",
+      "channels": "Ilmoituskanavat",
+      "channelEmail": "Sähköposti-ilmoitukset",
+      "channelInApp": "Sovelluksen sisäiset ilmoitukset",
+      "channelPush": "Push-ilmoitukset",
+      "frequency": "Ilmoitustiheys",
+      "frequencyImmediate": "Välitön",
+      "frequencyDaily": "Päivittäinen kooste",
+      "frequencyWeekly": "Viikoittainen kooste",
+      "save": "Tallenna ilmoitusasetukset"
+    },
+    "newsletter": {
+      "title": "Uutiskirje",
+      "subscribe": "Tilaa uutiskirje",
+      "description": "Vastaanota kuukausittaiset päivitykset BATbern-tapahtumista"
+    },
+    "privacy": {
+      "title": "Tietosuoja-asetukset",
+      "visibility": "Profiilin näkyvyys",
+      "visibilityPublic": "Julkinen",
+      "visibilityMembersOnly": "Vain jäsenille",
+      "visibilityPrivate": "Yksityinen",
+      "infoDisplay": "Tietojen näyttäminen",
+      "showEmail": "Näytä sähköpostiosoite",
+      "showCompany": "Näytä yritysliitos",
+      "showActivity": "Näytä toimintahistoria",
+      "communication": "Viestintä",
+      "allowMessaging": "Salli suorat viestit muilta käyttäjiltä",
+      "viewPolicy": "Katso tietosuojakäytäntö",
+      "save": "Tallenna tietosuoja-asetukset"
+    }
+  },
+  "profile": {
+    "personalInfo": "Henkilökohtaiset tiedot",
+    "editProfile": "Muokkaa profiilia",
+    "firstName": "Etunimi",
+    "lastName": "Sukunimi",
+    "bio": "Bio",
+    "bioValidation": "Bion on oltava {{max}} merkkiä tai vähemmän",
+    "saveChanges": "Tallenna muutokset",
+    "removePhotoConfirm": "Haluatko varmasti poistaa profiilikuvasi?",
+    "labelName": "Nimi:",
+    "labelEmail": "Sähköposti:",
+    "labelCompany": "Yritys:",
+    "labelBio": "Bio:",
+    "recentActivity": "Viimeaikainen toiminta",
+    "noActivity": "Ei viimeaikaista toimintaa",
+    "viewAll": "Näytä kaikki →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Lataa kuva",
+    "removeTooltip": "Poista kuva",
+    "verified": "Vahvistettu",
+    "memberSince": "Jäsen {{date}} lähtien"
+  }
+}

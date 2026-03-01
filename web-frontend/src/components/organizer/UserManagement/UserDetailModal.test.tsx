@@ -114,7 +114,7 @@ describe('UserDetailModal Component', () => {
     renderComponent(mockUser, true);
 
     // Click close button (the outlined button in the footer)
-    const closeButton = screen.getByRole('button', { name: 'Close' });
+    const closeButton = screen.getByRole('button', { name: /^Close$/ });
     fireEvent.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);

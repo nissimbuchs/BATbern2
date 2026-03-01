@@ -56,8 +56,8 @@ import { EventForm } from '@/components/organizer/EventManagement';
 
 // Tab configuration
 const TABS = [
-  { id: 'overview', labelKey: 'eventPage.tabs.overview', icon: <OverviewIcon /> },
-  { id: 'speakers', labelKey: 'eventPage.tabs.speakers', icon: <SpeakersIcon /> },
+  { id: 'overview', labelKey: 'common:labels.overview', icon: <OverviewIcon /> },
+  { id: 'speakers', labelKey: 'common:navigation.speakers', icon: <SpeakersIcon /> },
   { id: 'venue', labelKey: 'eventPage.tabs.venue', icon: <VenueIcon /> },
   { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
@@ -93,7 +93,7 @@ export const EventPage: React.FC = () => {
   // Build breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
-      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('common:navigation.events'), path: '/organizer/events' },
       { label: event?.title || t('common.loading', 'Loading...') },
     ],
     [event?.title, t]
@@ -147,7 +147,7 @@ export const EventPage: React.FC = () => {
           {error.message || t('errors.loadFailed', 'Failed to load event')}
         </Alert>
         <Button startIcon={<ArrowBackIcon />} onClick={handleBack}>
-          {t('common.back', 'Back to Events')}
+          {t('common:actions.back')}
         </Button>
       </Container>
     );
@@ -159,7 +159,7 @@ export const EventPage: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="warning">{t('errors.notFound', 'Event not found')}</Alert>
         <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mt: 2 }}>
-          {t('common.back', 'Back to Events')}
+          {t('common:actions.back')}
         </Button>
       </Container>
     );

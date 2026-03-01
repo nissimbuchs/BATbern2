@@ -1,0 +1,246 @@
+{
+  "title": "Kumppanihakemisto",
+  "addPartner": "Lisää kumppani",
+  "searchPlaceholder": "Hae kumppanin nimellä...",
+  "searchAriaLabel": "Hae kumppaneita",
+  "clearSearch": "Tyhjennä haku",
+  "filters": {
+    "tier": "Kumppanuustaso",
+    "tierAll": "Kaikki tasot",
+    "status": "Tila",
+    "statusAll": "Kaikki",
+    "statusActive": "Aktiivinen",
+    "statusInactive": "Ei-aktiivinen",
+    "reset": "Nollaa suodattimet"
+  },
+  "tiers": {
+    "strategic": "Strateginen",
+    "platinum": "Platina",
+    "gold": "Kulta",
+    "silver": "Hopea",
+    "bronze": "Pronssi"
+  },
+  "sort": {
+    "label": "Lajittele",
+    "engagement": "Sitoutumispisteet",
+    "name": "Yrityksen nimi",
+    "tier": "Kumppanuustaso",
+    "lastEvent": "Viimeisin tapahtuma"
+  },
+  "card": {
+    "comingSoon": "Tulossa pian - Epic 8"
+  },
+  "pagination": {
+    "page": "Sivu {{current}} / {{total}}",
+    "firstPage": "Ensimmäinen sivu",
+    "previousPage": "Edellinen sivu",
+    "nextPage": "Seuraava sivu",
+    "lastPage": "Viimeinen sivu",
+    "ariaLabel": "Kumppaniluettelon sivutus",
+    "partners_one": "{{count}} kumppani",
+    "partners_other": "{{count}} kumppania"
+  },
+  "empty": {
+    "noPartners": "Kumppaneita ei löydetty"
+  },
+  "loading": "Ladataan kumppaneita...",
+  "error": {
+    "failedToLoad": "Kumppaneiden lataaminen epäonnistui",
+    "correlationId": "Korrelaatiotunnus"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} kumppani löydetty",
+    "filterUpdate": "Suodattimet päivitetty",
+    "loading": "Ladataan kumppaneita"
+  },
+  "modal": {
+    "createTitle": "Luo kumppanuus",
+    "editTitle": "Muokkaa kumppanuutta",
+    "fields": {
+      "company": "Yritys",
+      "startDate": "Alkamispäivä",
+      "endDateOptional": "Päättymispäivä (valinnainen)"
+    },
+    "messages": {
+      "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?"
+    }
+  },
+  "validation": {
+    "companyRequired": "Yritys on pakollinen",
+    "tierRequired": "Kumppanuustaso on pakollinen",
+    "startDateRequired": "Alkamispäivä on pakollinen",
+    "endDateBeforeStart": "Päättymispäivän on oltava alkamispäivän jälkeen"
+  },
+  "detail": {
+    "meetingsTab": {
+      "title": "Kokoukset",
+      "addMeeting": "Aikatauluta kokous"
+    },
+    "notesTab": {
+      "title": "Muistiinpanot",
+      "addNote": "Lisää muistiinpano",
+      "editNote": "Muokkaa muistiinpanoa",
+      "deleteNoteConfirmTitle": "Poista muistiinpano",
+      "deleteNoteConfirmMessage": "Haluatko varmasti poistaa \"{{title}}\"?",
+      "titleLabel": "Otsikko",
+      "contentLabel": "Sisältö",
+      "htmlSupported": "HTML-muotoilu on tuettu",
+      "noNotes": "Ei muistiinpanoja vielä",
+      "failedToLoadNotes": "Muistiinpanojen lataaminen epäonnistui",
+      "deleteNote": "Poista muistiinpano"
+    },
+    "settingsTab": {
+      "title": "Asetukset",
+      "activePartnership": "Aktiivinen kumppanuus",
+      "exportData": "Vie kumppanin tiedot",
+      "deletePartner": "Poista kumppanin tiedot",
+      "accessDenied": "Pääsy kielletty",
+      "accessDeniedMessage": "Tähän osioon pääsevät vain järjestäjät.",
+      "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "overview": "Yleiskatsaus",
+      "contacts": "Yhteystiedot",
+      "meetings": "Kokoukset",
+      "analytics": "Analytiikka",
+      "settings": "Asetukset",
+      "partnerDetailTabs": "Kumppanin tietovälilehdet"
+    },
+    "overviewTab": {
+      "title": "Kumppanuuden tiedot",
+      "tier": "Kumppanuustaso",
+      "startDate": "Kumppanuuden alkamispäivä",
+      "benefits": "Edut",
+      "changeTier": "Vaihda taso",
+      "tierBenefits": {
+        "logoPlacement": "Logon sijoittaminen verkkosivustolle",
+        "newsletterMentions": "Maininnat uutiskirjeissä",
+        "priorityAccess": "Prioriteettipääsy tapahtumiin",
+        "quarterlyMeetings": "Neljännesvuosittaiset strategiset kokoukset",
+        "roiAnalytics": "ROI-analytiikkakojelauta",
+        "accountManager": "Omistettu asiakaspäällikkö",
+        "eventAccess": "Pääsy tapahtumiin"
+      }
+    },
+    "errors": {
+      "failedToLoadContacts": "Yhteystietojen lataaminen epäonnistui.",
+      "noContactsAssigned": "Tälle yritykselle ei ole vielä määritetty kumppanin käyttäjiä.",
+      "notFound": "Kumppania ei löydy",
+      "notFoundMessage": "Kumppania \"{{name}}\" ei löydy.",
+      "loading": "Virhe kumppanin lataamisessa",
+      "loadingMessage": "Kumppanin tietojen lataamisessa tapahtui virhe. Yritä myöhemmin uudelleen.",
+      "noData": "Ei tietoja",
+      "noDataMessage": "Kumppanin tietoja ei ole saatavilla."
+    }
+  },
+  "meetings": {
+    "title": "Kumppanikokoukset",
+    "create": "Luo kokous",
+    "fields": {
+      "agenda": "Esityslista",
+      "notes": "Kokousmuistiinpanot",
+      "location": "Sijainti",
+      "eventCode": "BATbern-tapahtumakoodi",
+      "eventCodeHint": "esim. BATbern57",
+      "startTime": "Alkamisaika",
+      "endTime": "Päättymisaika",
+      "type": {
+        "spring": "Kevätkokoous",
+        "autumn": "Syyskokoous"
+      },
+      "eventCodePlaceholder": "BATbern57"
+    },
+    "sendInvite": "Lähetä kalenterikutsu",
+    "inviteSent": "Kutsu lähetetty",
+    "inviteNotSent": "Kutsua ei lähetetty",
+    "inviteSentOn": "Kutsu lähetetty {{date}}",
+    "noMeetings": "Kumppanikokouksia ei löydetty",
+    "confirmSendInvite": "Lähetetäänkö kalenterikutsu kaikille kumppanin yhteyshenkilöille?",
+    "inviteQueued": "Lähetetään kalenterikutsua...",
+    "columns": {
+      "type": "Tyyppi",
+      "date": "Päivämäärä",
+      "location": "Sijainti",
+      "inviteStatus": "Kutsu",
+      "actions": "Toiminnot"
+    },
+    "error": "Kokouksia ei voitu ladata",
+    "inviteSuccess": "Kalenterikutsua lähetetään"
+  },
+  "portal": {
+    "noCompanyLinked": "Tiliäsi ei ole yhdistetty yritykseen",
+    "noCompanyLinked.detail": "Ota yhteyttä järjestäjääsi",
+    "analytics": {
+      "kpi": {
+        "costPerAttendee": "Kustannus per osallistuja",
+        "attendanceRate": "Keskim. osallistumisaste",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Viimeiset 5 vuotta",
+        "allHistory": "Koko historia"
+      },
+      "export": {
+        "button": "Vie Exceliin",
+        "loading": "Viedään..."
+      },
+      "noData": "Valitulle ajanjaksolle ei löydetty osallistumistietoja",
+      "error": "Osallistumistietojen lataaminen epäonnistui",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    },
+    "topics": {
+      "title": "Aihe-ehdotukset",
+      "suggest": "Ehdota aihetta",
+      "vote": "Äänestä",
+      "unvote": "Poista ääni",
+      "edit": "Muokkaa",
+      "delete": "Poista",
+      "col": {
+        "topic": "Aihe",
+        "company": "Yritys",
+        "date": "Päivämäärä",
+        "actions": "Toiminnot"
+      },
+      "status": {
+        "proposed": "Ehdotettu",
+        "selected": "Valittu",
+        "declined": "Hylätty"
+      },
+      "plannedFor": "Suunniteltu",
+      "empty": "Ei aihe-ehdotuksia vielä",
+      "form": {
+        "title": "Otsikko",
+        "description": "Kuvaus",
+        "submit": "Lähetä",
+        "titleRequired": "Otsikko on pakollinen (vähintään 5 merkkiä)",
+        "descriptionHint": "Valinnainen, enintään 500 merkkiä",
+        "dialogTitle": "Ehdota uutta aihetta",
+        "editDialogTitle": "Muokkaa aihetta",
+        "update": "Päivitä"
+      },
+      "organizer": {
+        "title": "Kumppanien aihe-ehdotukset",
+        "col": {
+          "title": "Otsikko",
+          "company": "Yritys",
+          "votes": "Äänet",
+          "date": "Päivämäärä",
+          "actions": "Toiminnot"
+        },
+        "status": "Tila",
+        "plannedEvent": "Suunniteltu tapahtuma",
+        "save": "Tallenna",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "error": "Aiheiden lataaminen epäonnistui"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

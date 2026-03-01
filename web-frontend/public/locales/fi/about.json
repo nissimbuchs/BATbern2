@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "title": "Tietoja BATbernistä",
+    "subtitle": "Teknologian vaihto IT-asiantuntijoiden kesken"
+  },
+  "association": {
+    "title": "Berner-Architekten-Treffen-yhdistys",
+    "history": "Berner Architekten-Treffen -tapahtumaa on järjestänyt Berner-Architekten-Treffen-yhdistys 23. tammikuuta 2009 lähtien.",
+    "mission": "Berner Architekten-Treffen on ollut arkkitehtuuriaiheista kiinnostuneiden IT-ammattilaisten kohtaamispaikka vuodesta 2005.",
+    "platform": "Käytännönläheisten esitysten, ajankohtaisten asioiden syvällisen käsittelyn ja eri toimialojen yritysten välisten suorien yhteyksien kautta Berner Architekten Treffen tarjoaa erinomaisen alustan ideoiden ja kokemusten vaihtoon.",
+    "statuten": "Yhdistyksen säännöt (PDF)"
+  },
+  "organizers": {
+    "title": "Järjestelytoimikunta",
+    "description": "Berner-Architekten-Treffen -tapahtumaa tukee sisällöllisesti ja organisatorisesti omistautunut järjestelytoimikunta:",
+    "noOrganizers": "Järjestäjiä ei löydy"
+  },
+  "partners": {
+    "title": "Kumppanimme",
+    "description": "Berner Architekten-Treffen on mahdollinen maksuttomana tapahtumana seuraavien yritysten ja organisaatioiden anteliaan tuen ansiosta:"
+  },
+  "contact": {
+    "title": "Yhteystiedot",
+    "description": "Kysymyksiä, ehdotuksia ja kommentteja varten voitte ottaa yhteyttä suoraan johonkin jäsenistä tai kirjoittaa meille:"
+  }
+}

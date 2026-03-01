@@ -141,7 +141,7 @@ describe('EventNewsletterTab', () => {
 
     renderTab();
 
-    fireEvent.click(screen.getByText('Send Newsletter'));
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Confirm Send')).toBeInTheDocument();
@@ -164,13 +164,13 @@ describe('EventNewsletterTab', () => {
 
     renderTab();
 
-    fireEvent.click(screen.getByText('Send Newsletter'));
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Confirm Send')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Confirm Send/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Confirm'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
 
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ isReminder: false }),

@@ -258,7 +258,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelRemove} color="inherit">
-            {t('common.cancel', 'Cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={handleConfirmRemove} color="error" autoFocus>
             {t('common.confirm', 'Confirm')}

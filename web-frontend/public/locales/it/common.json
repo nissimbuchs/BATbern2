@@ -1,0 +1,724 @@
+{
+  "app": {
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "events": "Eventi",
+    "speakers": "Relatori",
+    "partners": "Partner",
+    "companies": "Aziende",
+    "users": "Utenti",
+    "myCompany": "La mia azienda",
+    "myAccount": "Il mio account",
+    "analytics": "Analisi",
+    "profile": "Profilo",
+    "myEvents": "I miei eventi",
+    "myContent": "I miei contenuti",
+    "myRegistrations": "Le mie iscrizioni",
+    "about": "Chi siamo",
+    "pastEvents": "Eventi passati",
+    "publicSite": "Sito pubblico",
+    "partnerTopics": "Argomenti partner",
+    "partnerMeetings": "Incontri partner",
+    "topics": "Suggerimenti di argomenti",
+    "openMenu": "Apri menu",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
+  },
+  "public": {
+    "login": "Accedi",
+    "joinUp": "Registrati",
+    "register": "Iscriviti",
+    "goToPortal": "Vai al portale",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Sei già iscritto a questo evento."
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "Benvenuto su BATbern!",
+      "titleWithName": "Benvenuto, {{name}}!",
+      "subtitle": "Il tuo account è pronto. Sfoglia i nostri prossimi eventi e gli archivi.",
+      "dashboardSoon": "Il tuo pannello personale è in arrivo — ti avviseremo quando sarà disponibile.",
+      "browseEvents": "Sfoglia gli eventi",
+      "viewArchive": "Visualizza archivio",
+      "canDoTitle": "Cosa puoi fare adesso",
+      "canDo1": "Sfogliare e iscriverti ai prossimi eventi BATbern",
+      "canDo2": "Esplorare i talk passati e i materiali dei relatori nell'archivio",
+      "canDo3": "Gestire il tuo account e le preferenze di notifica"
+    }
+  },
+  "footer": {
+    "tagline": "Scambio tecnologico tra esperti IT",
+    "quickLinks": "Link rapidi",
+    "currentEvent": "Evento attuale",
+    "legal": "Note legali",
+    "privacyPolicy": "Informativa sulla privacy",
+    "support": "Supporto",
+    "copyright": "© {{year}} Berner Architekten Treffen. Tutti i diritti riservati."
+  },
+  "actions": {
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "close": "Chiudi",
+    "sending": "Invio...",
+    "loading": "Caricamento...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
+  },
+  "language": {
+    "select": "Seleziona lingua",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
+  },
+  "status": {
+    "wait": "Attendi {{seconds}} secondi",
+    "didntReceive": "Non hai ricevuto l'email?"
+  },
+  "menu": {
+    "profile": "Profilo",
+    "settings": "Impostazioni",
+    "administration": "Amministrazione",
+    "help": "Aiuto",
+    "logout": "Disconnessione"
+  },
+  "role": {
+    "organizer": "Organizzatore eventi",
+    "speaker": "Relatore",
+    "partner": "Partner",
+    "attendee": "Partecipante"
+  },
+  "company": {
+    "title": "Gestione aziende",
+    "createCompany": "Crea azienda",
+    "editCompany": "Modifica azienda",
+    "viewDetails": "Visualizza dettagli per {{name}}",
+    "noCompaniesFound": "Nessuna azienda trovata",
+    "adjustFilters": "Prova a modificare la ricerca o i filtri",
+    "viewMode": {
+      "grid": "Vista griglia",
+      "list": "Vista elenco",
+      "toggleCurrent": "Cambia modalità di visualizzazione. Attuale: {{mode}}"
+    },
+    "fields": {
+      "name": "Nome azienda",
+      "displayName": "Nome visualizzato (se diverso dal nome legale)",
+      "swissUID": "UID svizzero (CHE-XXX.XXX.XXX)",
+      "website": "Sito web",
+      "industry": "Settore",
+      "description": "Descrizione",
+      "legalName": "Nome breve: {{name}}",
+      "logo": "Logo aziendale"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com"
+    },
+    "industries": {
+      "selectIndustry": "Seleziona settore"
+    },
+    "badges": {
+      "verified": "Verificato"
+    },
+    "filters": {
+      "verifiedOnly": "Solo aziende verificate",
+      "industry": "Settore",
+      "allIndustries": "Tutti i settori",
+      "clearAll": "Cancella tutti i filtri",
+      "filters": "Filtri"
+    },
+    "form": {
+      "createTitle": "Crea nuova azienda",
+      "editTitle": "Modifica azienda",
+      "saveDraft": "Salva bozza",
+      "saveCreate": "Salva e crea",
+      "saveChanges": "Salva modifiche",
+      "unsavedChanges": "Hai modifiche non salvate. Sei sicuro di voler chiudere?",
+      "characterCount": "{{count}}/{{max}} caratteri",
+      "helpText": {
+        "swissUID": "Opzionale - per la verifica automatica"
+      },
+      "errors": {
+        "noPermission": "Non hai il permesso di modificare questa azienda. I relatori possono modificare solo la propria azienda."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "users": "Utenti",
+        "ariaLabel": "Company detail tabs"
+      },
+      "noData": "Nessun dato aziendale disponibile"
+    },
+    "errors": {
+      "saveFailed": "Si è verificato un errore durante il salvataggio dell'azienda",
+      "deleteFailed": "Eliminazione dell'azienda non riuscita"
+    },
+    "search": {
+      "placeholder": "Cerca aziende..."
+    },
+    "batchImport": {
+      "title": "Importa aziende da JSON",
+      "dropzone": "Trascina il file JSON qui o clicca per caricare",
+      "dropzoneActive": "Trascina il file JSON qui",
+      "noCompanies": "Nessuna azienda trovata nel file JSON.",
+      "preview": "Anteprima ({{count}} aziende)",
+      "cancelButton": "Annulla",
+      "status": {
+        "importing": "Importazione...",
+        "success": "Importato",
+        "updated": "Aggiornato",
+        "willUpdate": "Verrà aggiornato",
+        "skipped": "Ignorato (esiste)"
+      },
+      "progress": "Importazione {{current}} di {{total}}...",
+      "complete": "Importazione completata: {{success}} create, {{updated}} aggiornate, {{failed}} fallite, {{skipped}} ignorate",
+      "checkingExisting": "Verifica delle aziende esistenti...",
+      "existingFound": "{{count}} di {{total}} aziende esistono già e verranno aggiornate.",
+      "allSkipped": "Tutto ignorato",
+      "importButtonWithCount": "Importa {{count}} aziende",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Nome visualizzato",
+        "name": "Nome API",
+        "industry": "Settore",
+        "website": "Sito web"
+      },
+      "errors": {
+        "invalidFile": "Tipo di file non valido. Carica un file JSON.",
+        "parseError": "Analisi del file JSON non riuscita: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Elimina azienda",
+      "message": "Sei sicuro di voler eliminare questa azienda?",
+      "dataWarning": "Questa azione eliminerà definitivamente l'azienda e non può essere annullata.",
+      "cascadeWarning": "Tutti i dati associati (utenti, partnership, relatori, eventi) potrebbero essere interessati.",
+      "deleting": "Eliminazione..."
+    },
+    "pagination": {
+      "itemsPerPage": "Elementi per pagina"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "title": "Importa eventi da topics.json",
+      "dropzone": "Trascina il file topics.json qui o clicca per caricare",
+      "dropzoneActive": "Trascina il file JSON qui",
+      "dropzoneHint": "Carica il file topics.json pre-elaborato (con i campi parsedDate, description e moderator)",
+      "noEvents": "Nessun evento trovato nel file JSON.",
+      "preview": "Anteprima ({{count}} eventi)",
+      "cancelButton": "Annulla",
+      "status": {
+        "pending": "In attesa",
+        "importing": "Importazione...",
+        "success": "Importato",
+        "error": "Errore",
+        "skipped": "Ignorato (esiste)"
+      },
+      "progress": "Importazione {{current}} di {{total}}...",
+      "complete": "Importazione completata: {{success}} riuscite, {{failed}} fallite, {{skipped}} ignorate",
+      "allSkipped": "Tutto ignorato",
+      "importButtonWithCount": "Importa {{count}} eventi",
+      "columns": {
+        "eventNumber": "#",
+        "organizer": "Organizzatore",
+        "category": "Categoria"
+      },
+      "errors": {
+        "invalidFile": "Tipo di file non valido. Carica un file JSON.",
+        "parseError": "Analisi del file JSON non riuscita: {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "Selezione campi (Importa = crea se nuovo, aggiorna se esistente | Ignora = salta campo)",
+        "import": "Importa",
+        "ignore": "Ignora",
+        "fieldTitle": "Titolo:",
+        "fieldDescription": "Descrizione:",
+        "fieldTopic": "Argomento/Categoria:",
+        "fieldDate": "Data:",
+        "fieldVenue": "Sede:",
+        "fieldOrganizer": "Organizzatore:"
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Trascina e rilascia un file qui, o clicca per selezionare",
+    "dragDropMultiple": "Trascina e rilascia i file qui, o clicca per selezionare",
+    "dragActive": "Rilascia il file qui",
+    "acceptedFormats": "Formati accettati: PNG, JPEG, SVG (max {{maxSize}} MB)",
+    "acceptedFormatsMultiple": "Formati accettati: Più tipi di file (max {{maxSize}} MB per file)",
+    "uploading": "Caricamento... {{progress}}%",
+    "removeFile": "Rimuovi file",
+    "altText": "Anteprima del file caricato",
+    "errors": {
+      "multipleFiles": "È possibile caricare un solo file alla volta"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "Iscrizione inviata!",
+      "subtitle": "Controlla la tua email per confermare l'iscrizione",
+      "emailSent": "Email di conferma inviata",
+      "emailSentTo": "Abbiamo inviato un'email di conferma a",
+      "clickLink": "Clicca sul link di conferma nell'email per completare l'iscrizione. Il link è valido per",
+      "validFor": "48 ore",
+      "valid": "",
+      "didntReceive": "Non hai ricevuto l'email?",
+      "checkSpam": "Controlla la cartella spam/posta indesiderata",
+      "checkEmail": "Assicurati di aver inserito l'indirizzo email corretto",
+      "waitMinutes": "Attendi qualche minuto e ricontrolla",
+      "close": "Chiudi"
+    },
+    "alreadyRegistered": {
+      "title": "Sei iscritto!",
+      "pending": "Iscrizione in attesa per",
+      "checkEmail": "Controlla la tua email per confermare"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "title": "Importazione in blocco sessioni",
+      "dropzone": "Trascina sessions.json qui o clicca per caricare",
+      "dropzoneActive": "Trascina sessions.json qui",
+      "dropzoneHint": "Sono accettati solo file sessions.json",
+      "preview": "{{count}} sessioni da importare",
+      "progress": "{{current}} di {{total}} importate",
+      "complete": "Importazione completata: {{success}} riuscite, {{skipped}} ignorate, {{failed}} fallite",
+      "noSessions": "Nessuna sessione trovata nel file",
+      "importButtonWithCount": "Importa {{count}} sessioni",
+      "cancelButton": "Annulla",
+      "columns": {
+        "event": "Evento",
+        "title": "Titolo",
+        "speakers": "Relatori",
+        "status": "Stato"
+      },
+      "status": {
+        "pending": "In attesa",
+        "importing": "Importazione...",
+        "success": "Successo",
+        "skipped": "Ignorato",
+        "error": "Errore"
+      },
+      "errors": {
+        "invalidFile": "File non valido. Sono consentiti solo file sessions.json.",
+        "parseError": "Errore di analisi: {{error}}"
+      }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
+  },
+  "organizer": {
+    "select": "Seleziona organizzatore",
+    "all": "Tutti gli organizzatori",
+    "unassigned": "Non assegnato"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "Caricamento del tuo dashboard...",
+      "invalidLink": "Link non valido",
+      "invalidLinkMessage": "Questa pagina richiede un link dashboard valido. Usa il link dell'email di invito.",
+      "linkExpired": "Il link è scaduto",
+      "linkExpiredMessage": "Il tuo link è scaduto. Contatta l'organizzatore dell'evento per un nuovo link.",
+      "error": "Qualcosa è andato storto",
+      "errorMessage": "Non è stato possibile caricare il tuo dashboard. Riprova più tardi.",
+      "welcome": "Benvenuto, {{name}}",
+      "profileComplete": "Profilo completato al {{percent}}%",
+      "upcomingEvents": "Prossimi eventi",
+      "pastEvents": "Eventi passati",
+      "noUpcomingEvents": "Non hai prossimi impegni come relatore",
+      "noPastEvents": "Nessun impegno passato come relatore ancora",
+      "session": "Sessione",
+      "titleStatus": "Titolo",
+      "abstractStatus": "Abstract",
+      "materialStatus": "Materiale",
+      "revisionRequested": "Revisione richiesta",
+      "responseBy": "Rispondi entro",
+      "contentBy": "Contenuto entro",
+      "organizer": "Organizzatore",
+      "contact": "Contatto",
+      "respond": "Rispondi",
+      "updateProfile": "Aggiorna profilo",
+      "submitContent": "Invia contenuto",
+      "speakerStatus": "Stato relatore",
+      "contentStatus": "Stato contenuto",
+      "materialProgress": "Avanzamento invio materiale",
+      "deadlines": "Scadenze",
+      "urgent": "Urgente",
+      "soon": "In scadenza",
+      "onTime": "Nei tempi",
+      "pastEvent": "Evento passato",
+      "materialAvailable": "Materiale disponibile",
+      "noMaterials": "Nessun materiale",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
+    },
+    "content": {
+      "invalidLink": "Link non valido",
+      "invalidLinkMessage": "Questa pagina richiede un link contenuto valido. Usa il link dell'email di invito.",
+      "linkExpiredMessage": "Questo link è scaduto. Contatta l'organizzatore per un nuovo link.",
+      "presentationTitle": "Titolo della presentazione",
+      "abstract": "Abstract",
+      "titleRequired": "Il titolo è obbligatorio",
+      "abstractRequired": "L'abstract è obbligatorio",
+      "presentationFile": "File di presentazione",
+      "saving": "Salvataggio...",
+      "lastSaved": "Ultimo salvataggio: {{time}}",
+      "unsavedChanges": "Modifiche non salvate",
+      "submitting": "Invio...",
+      "submitContent": "Invia contenuto",
+      "submittedSuccessfully": "Contenuto inviato con successo!",
+      "submittedMessage": "Il tuo contenuto per \"{{sessionTitle}}\" è stato inviato per la revisione.",
+      "version": "Versione",
+      "status": "Stato",
+      "nextStepsInfo": "L'organizzatore esaminerà la tua richiesta e ti contatterà se sono necessarie modifiche.",
+      "revisionRequested": "Revisione richiesta",
+      "reviewedBy": "Revisionato da",
+      "on": "il",
+      "loadingContent": "Caricamento contenuto...",
+      "linkHasExpired": "Link scaduto",
+      "invalidLinkNotValidMessage": "Questo link non è valido. Controlla la tua email per il link corretto.",
+      "cannotSubmit": "Impossibile inviare il contenuto",
+      "cannotSubmitMessage": "Al momento non puoi inviare contenuto. Accetta prima l'invito o contatta l'organizzatore.",
+      "goToDashboard": "Vai alla dashboard",
+      "submitYourContent": "Invia il tuo contenuto",
+      "dashboard": "Dashboard",
+      "editProfile": "Modifica profilo",
+      "titlePlaceholder": "Inserisci il titolo della presentazione",
+      "abstractPlaceholder": "Descrivi cosa tratterà la tua presentazione...",
+      "enableFileUploads": "Invia prima titolo e abstract per abilitare il caricamento file."
+    },
+    "upload": {
+      "uploading": "Caricamento...",
+      "presentationFile": "File presentazione",
+      "changeFile": "Cambia file",
+      "dragDropPresentation": "Trascina qui la presentazione",
+      "orClickBrowse": "o clicca per sfogliare",
+      "invalidFileType": "Tipo file non valido. Formati accettati: PPTX, PDF, KEY",
+      "fileTooLarge": "Il file deve essere inferiore a 50 MB",
+      "acceptedFormats": "Formati accettati: PPTX, PDF, KEY (max 50 MB)",
+      "uploadAria": "Carica file presentazione"
+    },
+    "invitationResponse": {
+      "invalidLink": "Link non valido",
+      "invalidLinkMessage": "Questa pagina richiede un link d'invito valido dalla tua email.",
+      "loading": "Caricamento invito...",
+      "loadingMessage": "Attendi mentre verifichiamo il tuo link.",
+      "loadingAria": "Caricamento invito",
+      "needHelp": "Hai bisogno di aiuto?",
+      "checkEmail": "Controlla l'email per un link d'invito più recente",
+      "requestNew": "Richiedi un nuovo invito agli organizzatori",
+      "alreadyResponded": "Già risposto",
+      "yourResponse": "La tua risposta",
+      "commentsPlaceholder": "Domande o commenti per gli organizzatori...",
+      "declinePlaceholder": "Comunicaci perché non puoi partecipare...",
+      "submit": "Invia risposta",
+      "submitted": "Risposta inviata!",
+      "whatsNext": "Cosa succede dopo?",
+      "completeProfile": "Completa il tuo profilo",
+      "linkNotValid": "Questo link d'invito non è valido.",
+      "backToHome": "Torna alla home",
+      "linkExpired": "Link scaduto",
+      "linkExpiredMessage": "Questo link d'invito è scaduto. Contatta gli organizzatori.",
+      "linkAlreadyUsed": "Link già utilizzato",
+      "linkAlreadyUsedMessage": "Questo link d'invito è già stato utilizzato.",
+      "genericError": "Errore",
+      "genericErrorMessage": "Si è verificato un errore durante la convalida dell'invito.",
+      "unexpectedErrorMessage": "Si è verificato un errore imprevisto.",
+      "contactOrganizersAt": "Contatta gli organizzatori a",
+      "alreadyRespondedOn": "Hai già risposto a questo invito il {{date}}.",
+      "yourResponseWas": "La tua risposta:",
+      "accepted": "Accettato",
+      "declined": "Rifiutato",
+      "tentative": "Provvisorio",
+      "manageProfileText": "Puoi gestire il profilo e le presentazioni dalla dashboard.",
+      "reconsiderText": "Se desideri riconsiderare, contatta direttamente gli organizzatori.",
+      "invitedToSpeak": "Sei invitato/a a parlare a",
+      "respondBy": "Rispondi entro",
+      "dear": "Gentile",
+      "invitationBody": "Saremmo onorati di averti come relatore/relatrice a questo evento. Facci sapere se puoi partecipare.",
+      "accept": "Accetta",
+      "decline": "Rifiuta",
+      "messageToOrganizers": "Messaggio agli organizzatori (opzionale)",
+      "reasonForDeclining": "Motivo del rifiuto",
+      "reasonRequired": "È necessario un motivo per rifiutare",
+      "submitting": "Invio in corso...",
+      "failedToSubmit": "Invio della risposta non riuscito",
+      "thankYouResponse": "Grazie, {{name}}, per la tua risposta.",
+      "contentDeadline": "Scadenza invio contenuto:"
+    },
+    "profile": {
+      "invalidLink": "Link non valido",
+      "invalidLinkMessage": "Questa pagina richiede un link profilo valido dalla tua email.",
+      "backToHome": "Torna alla home",
+      "loadingAria": "Caricamento profilo",
+      "loading": "Caricamento profilo...",
+      "loadingMessage": "Attendi mentre carichiamo il tuo profilo.",
+      "linkExpired": "Link scaduto",
+      "linkExpiredMessage": "Questo link profilo è scaduto. Contatta gli organizzatori.",
+      "invalidLinkNotValid": "Questo link profilo non è valido.",
+      "genericError": "Errore",
+      "genericErrorMessage": "Si è verificato un errore durante il caricamento del profilo.",
+      "unexpectedError": "Si è verificato un errore imprevisto.",
+      "pageTitle": "Il tuo profilo relatore",
+      "pageSubtitle": "Aggiorna le tue informazioni per i materiali dell'evento",
+      "profileCompleteness": "Completezza del profilo",
+      "completeProfileHint": "Completa il profilo per maggiore visibilità",
+      "missing": "Mancante:",
+      "basicInfo": "Informazioni di base",
+      "emailReadOnly": "Email (sola lettura)",
+      "bio": "Biografia",
+      "bioPlaceholder": "Raccontaci di te...",
+      "bioExceeds": "La biografia non deve superare 500 caratteri",
+      "maxExpertiseAreas": "Massimo 10 aree di competenza consentite",
+      "maxSpeakingTopics": "Massimo 10 argomenti di presentazione consentiti",
+      "socialLinks": "Link social",
+      "linkedInUrl": "URL LinkedIn",
+      "invalidLinkedIn": "Deve essere un URL LinkedIn valido",
+      "contentSubmissionSection": "Invio contenuto",
+      "assignedTo": "Sei assegnato/a a:",
+      "contentSubmitDescription": "Invia titolo, abstract e materiali per la revisione.",
+      "submitContent": "Invia il tuo contenuto",
+      "saving": "Salvataggio...",
+      "saveChanges": "Salva modifiche",
+      "savedSuccessfully": "Profilo aggiornato con successo!",
+      "saveFailed": "Salvataggio profilo non riuscito"
+    },
+    "photo": {
+      "invalidFileType": "Tipo file non valido. Formati accettati: JPEG, PNG, WebP",
+      "fileTooLarge": "Il file deve essere inferiore a 5 MB",
+      "changePhoto": "Cambia foto",
+      "dragDropHere": "Trascina qui una foto",
+      "orClickBrowse": "o clicca per sfogliare",
+      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "uploading": "Caricamento...",
+      "cancel": "Annulla",
+      "uploadAria": "Carica foto profilo"
+    },
+    "magicLogin": {
+      "processing": "Elaborazione accesso...",
+      "redirecting": "Reindirizzamento alla dashboard...",
+      "invalidLinkTitle": "Link non valido",
+      "defaultError": "Questo link non è più valido. Contatta l'organizzatore."
+    }
+  },
+  "archive": {
+    "title": "Eventi passati",
+    "description": "Sfoglia oltre 20 anni di eventi BATbern con presentazioni e relatori",
+    "viewToggle": {
+      "grid": "Griglia",
+      "list": "Elenco"
+    },
+    "loading": "Caricamento eventi...",
+    "loadingMore": "Caricamento di altri eventi...",
+    "loadingTopics": "Caricamento argomenti...",
+    "noTopicsAvailable": "Nessun argomento disponibile",
+    "noResults": "Nessun evento trovato",
+    "errors": {
+      "loadFailed": "Caricamento degli eventi non riuscito"
+    },
+    "card": {
+      "viewDetails": "Visualizza dettagli"
+    },
+    "filters": {
+      "title": "Filtri",
+      "search": "Cerca eventi...",
+      "topics": "Argomenti",
+      "clearAll": "Cancella tutto",
+      "activeCount": "{{count}} filtro attivo"
+    },
+    "detail": {
+      "backToArchive": "← Torna all'archivio"
+    }
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "markAllAsRead": "Segna tutto come letto",
+    "markAsRead": "Segna come letto",
+    "delete": "Elimina",
+    "reload": "Ricarica",
+    "viewAll": "Visualizza tutto",
+    "hideRead": "Nascondi lette",
+    "empty": "Nessuna notifica",
+    "noNotifications": "Nessuna notifica ancora",
+    "lastUpdated": "Ultimo aggiornamento",
+    "deleteConfirmation": {
+      "title": "Elimina notifica",
+      "message": "Sei sicuro di voler eliminare questa notifica?"
+    },
+    "notificationFeed": "Feed notifiche",
+    "priority": {
+      "urgent": "URGENTE",
+      "high": "ALTO"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
+  },
+  "emailTemplates": {
+    "layoutTemplates": "Modelli di layout",
+    "layoutTemplatesInfo": "Definisce l'aspetto BATbern per tutte le email. Le modifiche qui influenzano tutti i modelli che utilizzano questo layout.",
+    "contentTemplates": "Contenuto email",
+    "categories": {
+      "SPEAKER": "Relatori",
+      "REGISTRATION": "Iscrizione",
+      "TASK_REMINDER": "Promemoria attività",
+      "NEWSLETTER": "Newsletter"
+    },
+    "layoutKey": "Layout",
+    "standalone": "Nessuno (autonomo)",
+    "systemTemplate": "Modello di sistema",
+    "subject": "Oggetto",
+    "htmlBody": "Contenuto HTML",
+    "variables": "Variabili disponibili",
+    "preview": "Anteprima",
+    "editTitle": "Modifica modello",
+    "createTitle": "Nuovo modello",
+    "newTemplate": "+ Nuovo modello",
+    "noLayouts": "Nessun modello di layout trovato.",
+    "noTemplates": "Nessun modello trovato per questo filtro.",
+    "missingContentPlaceholder": "Segnaposto {{content}} mancante — il corpo dell'email sarà vuoto",
+    "deleteFailed": "Eliminazione del modello non riuscita.",
+    "saveFailed": "Salvataggio del modello non riuscito. Riprova.",
+    "validation": {
+      "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
+      "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
+      "templateKeyRequired": "La chiave del modello è obbligatoria."
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
+  },
+  "presentation": {
+    "errorTitle": "Impossibile caricare l'evento",
+    "errorMessage": "Controlla la connessione di rete e riprova.",
+    "retryButton": "Riprova",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Tipi di eventi",
+      "importData": "Importa dati",
+      "taskTemplates": "Modelli attività",
+      "emailTemplates": "Modelli email",
+      "presentationSettings": "Presentazione"
+    },
+    "accessDenied": "Accesso negato",
+    "organizerOnly": "Questa pagina è riservata agli organizzatori.",
+    "presentationSettings": {
+      "title": "Impostazioni presentazione",
+      "subtitle": "Questi valori appaiono nella pagina di presentazione del moderatore (/present/:eventCode).",
+      "aboutText": "Testo Chi siamo",
+      "partnerCount": "Numero di partner",
+      "save": "Salva",
+      "saved": "Impostazioni salvate.",
+      "saveFailed": "Salvataggio non riuscito. Riprova."
+    },
+    "taskTemplates": {
+      "defaultSection": "Modelli predefiniti",
+      "customSection": "Modelli personalizzati",
+      "addTemplate": "+ Aggiungi modello",
+      "noDefaults": "Nessun modello predefinito.",
+      "noCustom": "Nessun modello personalizzato ancora.",
+      "confirmDelete": "Eliminare il modello?",
+      "deleteFailed": "Eliminazione del modello non riuscita. Riprova."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics",
+    "firstName": "Nome",
+    "lastName": "Cognome"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "companySearch": {
+    "noOptions": "Nessuna azienda trovata",
+    "searchAriaLabel": "Cerca aziende",
+    "clearSearchAriaLabel": "Cancella ricerca"
+  },
+  "countdown": {
+    "nextEvent": "Prossimo evento",
+    "today": "Oggi!",
+    "tomorrow": "Domani!",
+    "daysUntil": "{{count}} giorni all'evento"
+  },
+  "errors": {
+    "somethingWentWrong": "Qualcosa è andato storto",
+    "tryAgain": "Riprova",
+    "unexpectedError": "Ci scusiamo per il disagio. Si è verificato un errore imprevisto.",
+    "devDetails": "Dettagli errore (solo sviluppatori):",
+    "refreshPage": "Aggiorna pagina",
+    "goHome": "Vai alla home"
+  },
+  "bootstrap": {
+    "loading": "Caricamento BATbern...",
+    "configFailed": "Caricamento configurazione fallito",
+    "reloadPage": "Ricarica pagina"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
+  }
+}

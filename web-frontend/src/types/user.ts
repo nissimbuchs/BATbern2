@@ -6,7 +6,7 @@
 import { UserRole } from './auth';
 
 export interface UserPreferencesData {
-  language: 'de' | 'en';
+  language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
   notifications: {
     emailEnabled: boolean;
     inAppEnabled: boolean;
@@ -39,7 +39,7 @@ export interface UserProfileResponse {
 }
 
 export interface UpdatePreferencesRequest {
-  language?: 'de' | 'en';
+  language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
   notifications?: {
     emailEnabled?: boolean;
     inAppEnabled?: boolean;

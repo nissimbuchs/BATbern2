@@ -39,7 +39,7 @@ vi.mock('react-i18next', () => ({
         'company.batchImport.columns.name': 'API Name',
         'company.batchImport.columns.industry': 'Industry',
         'company.batchImport.columns.website': 'Website',
-        'company.batchImport.columns.status': 'Status',
+        'labels.status': 'Status',
         'company.batchImport.errors.invalidFile': 'Invalid file type. Please upload a JSON file.',
         'company.batchImport.errors.parseError': `Failed to parse JSON file: ${params?.error || ''}`,
         'actions.close': 'Close',
@@ -142,7 +142,9 @@ describe('CompanyBatchImportModal', () => {
       wrapper: createWrapper(),
     });
 
-    expect(screen.getByText('Import Companies from JSON')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Import Companies from JSON/i })
+    ).toBeInTheDocument();
   });
 
   it('should_showDropzone_when_noFileUploaded', () => {
@@ -167,7 +169,7 @@ describe('CompanyBatchImportModal', () => {
       wrapper: createWrapper(),
     });
 
-    await userEvent.click(screen.getByText('Cancel'));
+    await userEvent.click(screen.getByRole('button', { name: /Cancel/i }));
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -244,7 +246,7 @@ describe('CompanyBatchImportModal', () => {
 
     await waitFor(() => {
       // Now shows count: "Import 2 Companies"
-      expect(screen.getByText('Import 2 Companies')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Import \d+ Companies/i })).toBeInTheDocument();
     });
   });
 
@@ -293,10 +295,10 @@ describe('CompanyBatchImportModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Import 2 Companies')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Import \d+ Companies/i })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Import 2 Companies'));
+    await userEvent.click(screen.getByRole('button', { name: /Import \d+ Companies/i }));
 
     await waitFor(() => {
       expect(companyApiClient.createCompany).toHaveBeenCalledTimes(2);
@@ -317,10 +319,10 @@ describe('CompanyBatchImportModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Import 2 Companies')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Import \d+ Companies/i })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Import 2 Companies'));
+    await userEvent.click(screen.getByRole('button', { name: /Import \d+ Companies/i }));
 
     await waitFor(() => {
       expect(
@@ -377,10 +379,10 @@ describe('CompanyBatchImportModal', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Import 1 Companies')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Import \d+ Companies/i })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Import 1 Companies'));
+    await userEvent.click(screen.getByRole('button', { name: /Import \d+ Companies/i }));
 
     await waitFor(() => {
       expect(
@@ -430,7 +432,7 @@ describe('CompanyBatchImportModal', () => {
 
     // Should show 2 companies to import (sbb will be updated, mobiliar will be created)
     await waitFor(() => {
-      expect(screen.getByText('Import 2 Companies')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Import \d+ Companies/i })).toBeInTheDocument();
     });
 
     // Should show existing companies alert
@@ -482,7 +484,7 @@ describe('CompanyBatchImportModal', () => {
 
     // Button should show "Import 2 Companies" (all will be updated)
     await waitFor(() => {
-      const button = screen.getByText('Import 2 Companies');
+      const button = screen.getByRole('button', { name: /Import \d+ Companies/i });
       expect(button).toBeInTheDocument();
       expect(button.closest('button')).not.toBeDisabled();
     });

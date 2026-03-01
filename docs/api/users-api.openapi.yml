@@ -1597,7 +1597,7 @@ components:
           default: auto
         language:
           type: string
-          enum: [de, en, fr, it]
+          enum: [de, en, fr, it, rm, es, fi, nl, ja]
           default: de
         emailNotifications:
           type: boolean

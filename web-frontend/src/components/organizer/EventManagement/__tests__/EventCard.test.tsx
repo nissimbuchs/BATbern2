@@ -48,6 +48,12 @@ vi.mock('react-i18next', () => ({
       if (key === 'workflow.stepIndicator' && params) {
         return `Step ${params.current}/${params.total}`;
       }
+      if (key === 'dashboard.eventCard.ariaLabel' && params) {
+        return `Event card for ${params.title}`;
+      }
+      if (key === 'dashboard.eventCard.progressAriaLabel' && params) {
+        return `Workflow progress ${params.progress}%`;
+      }
 
       return translations[key] || key;
     },

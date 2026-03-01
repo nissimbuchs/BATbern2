@@ -62,7 +62,7 @@ const DeleteCompanyDialog: React.FC<DeleteCompanyDialogProps> = ({
             <WarningIcon color="error" />
             <Typography variant="h6">{t('company.delete.title')}</Typography>
           </Box>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton edge="end" color="inherit" onClick={onClose} aria-label={t('actions.close')}>
             <CloseIcon />
           </IconButton>
         </Box>

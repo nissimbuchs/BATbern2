@@ -1,0 +1,724 @@
+{
+  "app": {
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "Pagina principala",
+    "dashboard": "Tablau da controlla",
+    "events": "Events",
+    "speakers": "Referents",
+    "partners": "Partners",
+    "companies": "Empresas",
+    "users": "Utilisaders",
+    "myCompany": "Mia empresa",
+    "myAccount": "Miu conto",
+    "analytics": "Analitica",
+    "profile": "Profil",
+    "myEvents": "Mes events",
+    "myContent": "Miu cuntegn",
+    "myRegistrations": "Mias inscripziuns",
+    "about": "Davart",
+    "pastEvents": "Events passads",
+    "publicSite": "Lieu public",
+    "partnerTopics": "Temas da partners",
+    "partnerMeetings": "Inscunters da partners",
+    "topics": "Propostas da temas",
+    "openMenu": "Avrir il menu",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
+  },
+  "public": {
+    "login": "Annunziar",
+    "joinUp": "Registrar",
+    "register": "Inscriver",
+    "goToPortal": "Ir al portal",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Vus essas gia inscrit per quest event."
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "Bainvegni tar BATbern!",
+      "titleWithName": "Bainvegni, {{name}}!",
+      "subtitle": "Voss conto è pront. Navighai tschertgar ils proxims events ed archivis.",
+      "dashboardSoon": "Voss tablau da controlla personal è en via — nus vus infurmain cur ch'el è live.",
+      "browseEvents": "Navigar events",
+      "viewArchive": "Vesair l'archiv",
+      "canDoTitle": "Tge che vus pudais far ussa",
+      "canDo1": "Navigar e s'inscriver per proxims events BATbern",
+      "canDo2": "Explorar temas passads e material da referents en l'archiv",
+      "canDo3": "Administrar voss conto e preferenzas da notificaziuns"
+    }
+  },
+  "footer": {
+    "tagline": "Exchang tecnologic tranter experts IT",
+    "quickLinks": "Links rapid",
+    "currentEvent": "Event actual",
+    "legal": "Legal",
+    "privacyPolicy": "Politica da protecziun da datas",
+    "support": "Agid",
+    "copyright": "© {{year}} Berner Architekten Treffen. Tuts dretgs reservads."
+  },
+  "actions": {
+    "save": "Guardar",
+    "saving": "Guardar...",
+    "cancel": "Interrumper",
+    "delete": "Stizzar",
+    "edit": "Modifitgar",
+    "close": "Serrar",
+    "sending": "Trametter...",
+    "loading": "Chargiar...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
+  },
+  "language": {
+    "select": "Tscherner lingua",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
+  },
+  "status": {
+    "wait": "Spetgai {{seconds}} secundas",
+    "didntReceive": "N'avais betg retschavì l'e-mail?"
+  },
+  "menu": {
+    "profile": "Profil",
+    "settings": "Parameters",
+    "administration": "Administraziun",
+    "help": "Agid",
+    "logout": "Sortir"
+  },
+  "role": {
+    "organizer": "Organisader d'events",
+    "speaker": "Referent",
+    "partner": "Partner",
+    "attendee": "Participà"
+  },
+  "company": {
+    "title": "Gestiun d'empresas",
+    "createCompany": "Crear empresa",
+    "editCompany": "Modifitgar empresa",
+    "viewDetails": "Vesair detagls per {{name}}",
+    "noCompaniesFound": "Naginas empresas chattadas",
+    "adjustFilters": "Empruvai dad adaptar la tscherca u ils filtels",
+    "viewMode": {
+      "grid": "Vista da grella",
+      "list": "Vista da glista",
+      "toggleCurrent": "Midar il modus da visualisaziun. Actual: {{mode}}"
+    },
+    "fields": {
+      "name": "Num d'empresa",
+      "displayName": "Num da visualisaziun (sch'el è different dal num legal)",
+      "swissUID": "UID svizzer (CHE-XXX.XXX.XXX)",
+      "website": "Lieu web",
+      "industry": "Sectur",
+      "description": "Descripziun",
+      "legalName": "Num curt: {{name}}",
+      "logo": "Logo d'empresa"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com"
+    },
+    "industries": {
+      "selectIndustry": "Tscherner sectur"
+    },
+    "badges": {
+      "verified": "Verificà"
+    },
+    "filters": {
+      "verifiedOnly": "Mo empresas verificadas",
+      "industry": "Sectur",
+      "allIndustries": "Tuts secturs",
+      "clearAll": "Stizzar tuts filtels",
+      "filters": "Filtels"
+    },
+    "form": {
+      "createTitle": "Crear nova empresa",
+      "editTitle": "Modifitgar empresa",
+      "saveDraft": "Guardar schi",
+      "saveCreate": "Guardar e crear",
+      "saveChanges": "Guardar midadas",
+      "unsavedChanges": "Avais midadas betg guardadas. Essas vus segirs da volair serrar?",
+      "characterCount": "{{count}}/{{max}} characters",
+      "helpText": {
+        "swissUID": "Opziunal - per la verificaziun automatica"
+      },
+      "errors": {
+        "noPermission": "Vus n'avais betg la permissiun da modifitgar questa empresa. Referents pon mo modifitgar lur atgna empresa."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "users": "Utilisaders",
+        "ariaLabel": "Company detail tabs"
+      },
+      "noData": "Nagins datas d'empresa disponiblas"
+    },
+    "errors": {
+      "saveFailed": "In'errur è accudida durant il guardar l'empresa",
+      "deleteFailed": "Stizzar l'empresa n'è betg reussì"
+    },
+    "search": {
+      "placeholder": "Tschertgar empresas..."
+    },
+    "batchImport": {
+      "title": "Importar empresas da JSON",
+      "dropzone": "Draggiar il file JSON qua u cliccar per chargiar",
+      "dropzoneActive": "Draggiar il file JSON qua",
+      "noCompanies": "Naginas empresas chattadas en il file JSON.",
+      "preview": "Anteprimaziun ({{count}} empresas)",
+      "cancelButton": "Interrumper",
+      "status": {
+        "importing": "Importaziun...",
+        "success": "Importà",
+        "updated": "Actualisà",
+        "willUpdate": "Vegn actualisà",
+        "skipped": "Surpassà (exista)"
+      },
+      "progress": "Importaziun {{current}} da {{total}}...",
+      "complete": "Importaziun terminada: {{success}} creat, {{updated}} actualisà, {{failed}} fallì, {{skipped}} surpassà",
+      "checkingExisting": "Controllar empresas existentas...",
+      "existingFound": "{{count}} da {{total}} empresas existan gia ed vegnan actualisadas.",
+      "allSkipped": "Tut surpassà",
+      "importButtonWithCount": "Importar {{count}} empresas",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Num da visualisaziun",
+        "name": "Num API",
+        "industry": "Sectur",
+        "website": "Lieu web"
+      },
+      "errors": {
+        "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
+        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Stizzar empresa",
+      "message": "Essas vus segirs da volair stizzar questa empresa?",
+      "dataWarning": "Questa acziun stizza l'empresa definitivamain e na po betg vegnir revocada.",
+      "cascadeWarning": "Tut ils datas associads (utilisaders, partnerships, referents, events) pon vegnir pertutgads.",
+      "deleting": "Stizzar..."
+    },
+    "pagination": {
+      "itemsPerPage": "Elements per pagina"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "title": "Importar events da topics.json",
+      "dropzone": "Draggiar il file topics.json qua u cliccar per chargiar",
+      "dropzoneActive": "Draggiar il file JSON qua",
+      "dropzoneHint": "Chargiai il file topics.json pre-processà (cun ils champs parsedDate, description e moderator)",
+      "noEvents": "Nagins events chattads en il file JSON.",
+      "preview": "Anteprimaziun ({{count}} events)",
+      "cancelButton": "Interrumper",
+      "status": {
+        "pending": "En speta",
+        "importing": "Importaziun...",
+        "success": "Importà",
+        "error": "Errur",
+        "skipped": "Surpassà (exista)"
+      },
+      "progress": "Importaziun {{current}} da {{total}}...",
+      "complete": "Importaziun terminada: {{success}} reussì, {{failed}} fallì, {{skipped}} surpassà",
+      "allSkipped": "Tut surpassà",
+      "importButtonWithCount": "Importar {{count}} events",
+      "columns": {
+        "eventNumber": "#",
+        "organizer": "Organisader",
+        "category": "Categoria"
+      },
+      "errors": {
+        "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
+        "parseError": "Analysar il file JSON n'è betg reussì: {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "Tscherna da champs (Importar = crear sche nov, actualisar sche existent | Ignorar = sursiglir champ)",
+        "import": "Importar",
+        "ignore": "Ignorar",
+        "fieldTitle": "Titel:",
+        "fieldDescription": "Descripziun:",
+        "fieldTopic": "Tema/Categoria:",
+        "fieldDate": "Data:",
+        "fieldVenue": "Lieu:",
+        "fieldOrganizer": "Organisatur:"
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Draggiar e slider in file qua, u cliccar per selecziunar",
+    "dragDropMultiple": "Draggiar e slider files qua, u cliccar per selecziunar",
+    "dragActive": "Slider il file qua",
+    "acceptedFormats": "Formats acceptads: PNG, JPEG, SVG (max {{maxSize}} MB)",
+    "acceptedFormatsMultiple": "Formats acceptads: Plirs tips da files (max {{maxSize}} MB per file)",
+    "uploading": "Chargiar... {{progress}}%",
+    "removeFile": "Allontanar file",
+    "altText": "Anteprimaziun dal file chargià",
+    "errors": {
+      "multipleFiles": "Mo in file po vegnir chargià per gada"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "Inscripziun tramessa!",
+      "subtitle": "Controllai vossa e-mail per confermar vossa inscripziun",
+      "emailSent": "E-mail da conferma tramessa",
+      "emailSentTo": "Nus avain tramess ina e-mail da conferma a",
+      "clickLink": "Cliccar il link da conferma en l'e-mail per cumplettar vossa inscripziun. Il link è valid per",
+      "validFor": "48 uras",
+      "valid": "",
+      "didntReceive": "N'avais betg retschavì l'e-mail?",
+      "checkSpam": "Controllai vossa dossier spam/indesirada",
+      "checkEmail": "Guarantid che avais endatà l'adressa d'e-mail correcta",
+      "waitMinutes": "Spetgai in pèr minutas e controllai danovamain",
+      "close": "Serrar"
+    },
+    "alreadyRegistered": {
+      "title": "Vus essas inscrit!",
+      "pending": "Inscripziun en speta per",
+      "checkEmail": "Controllai vossa e-mail per confermar"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "title": "Import en gruppa da sessiuns",
+      "dropzone": "Draggiar sessions.json qua u cliccar per chargiar",
+      "dropzoneActive": "Draggiar sessions.json qua",
+      "dropzoneHint": "Mo sessions.json è acceptà",
+      "preview": "{{count}} sessiuns per importar",
+      "progress": "{{current}} da {{total}} importadas",
+      "complete": "Importaziun terminada: {{success}} reussidas, {{skipped}} surpassadas, {{failed}} fallidas",
+      "noSessions": "Naginas sessiuns chattadas en il file",
+      "importButtonWithCount": "Importar {{count}} sessiuns",
+      "cancelButton": "Interrumper",
+      "columns": {
+        "event": "Event",
+        "title": "Titel",
+        "speakers": "Referents",
+        "status": "Status"
+      },
+      "status": {
+        "pending": "En speta",
+        "importing": "Importaziun...",
+        "success": "Reussì",
+        "skipped": "Surpassà",
+        "error": "Errur"
+      },
+      "errors": {
+        "invalidFile": "File nunvalid. Mo sessions.json è permess.",
+        "parseError": "Errur d'analisa: {{error}}"
+      }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
+  },
+  "organizer": {
+    "select": "Tscherner organisader",
+    "all": "Tuts organisaders",
+    "unassigned": "Betg attribuì"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "Chargiar voss tablau da controlla...",
+      "invalidLink": "Link nunvalid",
+      "invalidLinkMessage": "Questa pagina basegna in link da tablau da controlla valid. Utilisai il link da vossa e-mail d'invitaziun.",
+      "linkExpired": "Il link è scadì",
+      "linkExpiredMessage": "Voss link è scadì. Contactai l'organisader d'event per in nov link.",
+      "error": "Insatge è ì naira",
+      "errorMessage": "Nus n'avain betg pudì chargiar voss tablau da controlla. Empruvai pli tard.",
+      "welcome": "Bainvegni, {{name}}",
+      "profileComplete": "Profil {{percent}}% cumplet",
+      "upcomingEvents": "Proxims events",
+      "pastEvents": "Events passads",
+      "noUpcomingEvents": "Vus n'avais nagins proxims engaschaments sco referent",
+      "noPastEvents": "Nagins engaschaments passads sco referent fin uss",
+      "session": "Sessiun",
+      "titleStatus": "Titel",
+      "abstractStatus": "Abstract",
+      "materialStatus": "Material",
+      "revisionRequested": "Revisiun dumandada",
+      "responseBy": "Respunder fin",
+      "contentBy": "Cuntegn fin",
+      "organizer": "Organisader",
+      "contact": "Contact",
+      "respond": "Respunder",
+      "updateProfile": "Actualisar profil",
+      "submitContent": "Trametter cuntegn",
+      "speakerStatus": "Status da referent",
+      "contentStatus": "Status dal cuntegn",
+      "materialProgress": "Progress da tramessa da material",
+      "deadlines": "Termins",
+      "urgent": "Urgent",
+      "soon": "Bainbaud",
+      "onTime": "En temp",
+      "pastEvent": "Event passà",
+      "materialAvailable": "Material disponibel",
+      "noMaterials": "Nagin material",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
+    },
+    "content": {
+      "invalidLink": "Link nunvalid",
+      "invalidLinkMessage": "Questa pagina basegna in link da cuntegn valid. Utilisai il link da vossa e-mail d'invitaziun.",
+      "linkExpiredMessage": "Quest link è scadì. Contactai l'organisader per in nov link.",
+      "presentationTitle": "Titel da la presentaziun",
+      "abstract": "Abstract",
+      "titleRequired": "Il titel è obligatori",
+      "abstractRequired": "L'abstract è obligatori",
+      "presentationFile": "File da presentaziun",
+      "saving": "Guardar...",
+      "lastSaved": "Ultimamain guardà: {{time}}",
+      "unsavedChanges": "Midadas betg guardadas",
+      "submitting": "Trametter...",
+      "submitContent": "Trametter cuntegn",
+      "submittedSuccessfully": "Cuntegn tramess cun success!",
+      "submittedMessage": "Voss cuntegn per \"{{sessionTitle}}\" è vegnì tramess per revisiun.",
+      "version": "Versiun",
+      "status": "Status",
+      "nextStepsInfo": "L'organisader reviderà vossa tramessa e vus contacterà sch'èn necessarias midadas.",
+      "revisionRequested": "Revisiun dumandada",
+      "reviewedBy": "Revedì da",
+      "on": "ils",
+      "loadingContent": "Cargament dal cuntegn...",
+      "linkHasExpired": "Link scadì",
+      "invalidLinkNotValidMessage": "Quest link n'è betg valid. Controllai vossa e-mail per il link correct.",
+      "cannotSubmit": "Impossibel trametter il cuntegn",
+      "cannotSubmitMessage": "Vus na pudais betg trametter cuntegn en quest mument. Acceptai avant l'invitaziun u contactai l'organisatur.",
+      "goToDashboard": "Al tableau de bord",
+      "submitYourContent": "Trametter voss cuntegn",
+      "dashboard": "Tableau de bord",
+      "editProfile": "Modifitgar il profil",
+      "titlePlaceholder": "Inserir il titel da vostra presentaziun",
+      "abstractPlaceholder": "Descrivai tge che vostra presentaziun tractarà...",
+      "enableFileUploads": "Tramettei avant titel ed abstract per activar il chargament da files."
+    },
+    "upload": {
+      "uploading": "Chargiar...",
+      "presentationFile": "File da presentaziun",
+      "changeFile": "Midar il file",
+      "dragDropPresentation": "Drizzar la presentaziun qua",
+      "orClickBrowse": "u cliccar per tschertgar",
+      "invalidFileType": "Tip da file nunvalid. Formats acceptads: PPTX, PDF, KEY",
+      "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 50 MB",
+      "acceptedFormats": "Formats acceptads: PPTX, PDF, KEY (max 50 MB)",
+      "uploadAria": "Chargiar il file da presentaziun"
+    },
+    "invitationResponse": {
+      "invalidLink": "Link nunvalid",
+      "invalidLinkMessage": "Questa pagina doventa in link d'invitaziun valid da vostra e-mail.",
+      "loading": "Cargament da l'invitaziun...",
+      "loadingMessage": "Spetgai mentras che nus verifitgeschan voss link.",
+      "loadingAria": "Cargament da l'invitaziun",
+      "needHelp": "Agid necessari?",
+      "checkEmail": "Controllai vostra e-mail per in link d'invitaziun pli recent",
+      "requestNew": "Dumandar in nov link d'invitaziun als organisaturs",
+      "alreadyResponded": "Gia respondì",
+      "yourResponse": "Vostra resposta",
+      "commentsPlaceholder": "Dumondas u commentaris per ils organisaturs...",
+      "declinePlaceholder": "Communitgai nus perquai che vus na pudais betg participar...",
+      "submit": "Trametter la resposta",
+      "submitted": "Resposta tramessa!",
+      "whatsNext": "Tge succeda pli tard?",
+      "completeProfile": "Cumplettar voss profil",
+      "linkNotValid": "Quest link d'invitaziun n'è betg valid.",
+      "backToHome": "Turnar a chasa",
+      "linkExpired": "Link scadì",
+      "linkExpiredMessage": "Quest link d'invitaziun è scadì. Contactai ils organisaturs.",
+      "linkAlreadyUsed": "Link gia utilisà",
+      "linkAlreadyUsedMessage": "Quest link d'invitaziun è gia stà utilisà.",
+      "genericError": "Errur",
+      "genericErrorMessage": "Igl è sa producì in-a errur durant la validaziun da vostra invitaziun.",
+      "unexpectedErrorMessage": "Igl è sa producì in-a errur imprevista.",
+      "contactOrganizersAt": "Contactai ils organisaturs a",
+      "alreadyRespondedOn": "Vus avais gia respondì a questa invitaziun ils {{date}}.",
+      "yourResponseWas": "Vostra resposta:",
+      "accepted": "Acceptà",
+      "declined": "Refusà",
+      "tentative": "Provisoric",
+      "manageProfileText": "Vus pudais administrar voss profil ed ils cuntegns dal voss tableau de bord.",
+      "reconsiderText": "Sch'vus vudais sa ravisar, contactai directamain ils organisaturs.",
+      "invitedToSpeak": "Vus essas invitads da tegnair in discurs a",
+      "respondBy": "Responder fin ils",
+      "dear": "Chara/Char",
+      "invitationBody": "Nus fussian honorads d'avair vus sco referent/a a quest eveniment. Communitgai nus sch'vus pudais participar.",
+      "accept": "Acceptar",
+      "decline": "Refusar",
+      "messageToOrganizers": "Messadi als organisaturs (opziunal)",
+      "reasonForDeclining": "Motivaziun per refusar",
+      "reasonRequired": "Ina motivaziun è necessaria per refusar",
+      "submitting": "Tramissura...",
+      "failedToSubmit": "La tramissura da la resposta ha fallì",
+      "thankYouResponse": "Grazia, {{name}}, per vostra resposta.",
+      "contentDeadline": "Termin per trametter il cuntegn:"
+    },
+    "profile": {
+      "invalidLink": "Link nunvalid",
+      "invalidLinkMessage": "Questa pagina doventa in link da profil valid da vostra e-mail.",
+      "backToHome": "Turnar a chasa",
+      "loadingAria": "Cargament dal profil",
+      "loading": "Cargament dal profil...",
+      "loadingMessage": "Spetgai mentras che nus chargian voss profil.",
+      "linkExpired": "Link scadì",
+      "linkExpiredMessage": "Quest link da profil è scadì. Contactai ils organisaturs.",
+      "invalidLinkNotValid": "Quest link da profil n'è betg valid.",
+      "genericError": "Errur",
+      "genericErrorMessage": "Igl è sa producì in-a errur durant il cargament dal voss profil.",
+      "unexpectedError": "Igl è sa producì in-a errur imprevista.",
+      "pageTitle": "Voss profil da referent",
+      "pageSubtitle": "Actualisai vossas infurmaziuns per ils materials da l'eveniment",
+      "profileCompleteness": "Cumpletezza dal profil",
+      "completeProfileHint": "Cumplettar il profil per ina meglra visibilitad",
+      "missing": "Mancant:",
+      "basicInfo": "Infurmaziuns fundamentalas",
+      "emailReadOnly": "E-mail (mo da legger)",
+      "bio": "Biografia",
+      "bioPlaceholder": "Cuntar nos da vus...",
+      "bioExceeds": "La biografia na sto betg surpassar 500 segns",
+      "maxExpertiseAreas": "Maximalmain 10 domenis da cumpetenza permess",
+      "maxSpeakingTopics": "Maximalmain 10 temas da presentaziun permess",
+      "socialLinks": "Links sozials",
+      "linkedInUrl": "URL LinkedIn",
+      "invalidLinkedIn": "Sto esser in URL LinkedIn valid",
+      "contentSubmissionSection": "Tramissura dal cuntegn",
+      "assignedTo": "Vus essas attribuids a:",
+      "contentSubmitDescription": "Tramettei titel, abstract e materials per la revedita.",
+      "submitContent": "Trametter voss cuntegn",
+      "saving": "Memorisaziun...",
+      "saveChanges": "Memorisar las midadas",
+      "savedSuccessfully": "Profil actualisà cun success!",
+      "saveFailed": "La memorisaziun dal profil ha fallì"
+    },
+    "photo": {
+      "invalidFileType": "Tip da file nunvalid. Formats acceptads: JPEG, PNG, WebP",
+      "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 5 MB",
+      "changePhoto": "Midar la foto",
+      "dragDropHere": "Drizzar ina foto qua",
+      "orClickBrowse": "u cliccar per tschertgar",
+      "supportedFormats": "JPEG, PNG, WebP (max 5 MB)",
+      "uploading": "Chargament...",
+      "cancel": "Interrumper",
+      "uploadAria": "Chargiar la foto da profil"
+    },
+    "magicLogin": {
+      "processing": "Elavuraziun dal login...",
+      "redirecting": "Redirecziun al tableau de bord...",
+      "invalidLinkTitle": "Link nunvalid",
+      "defaultError": "Quest link n'è betg pli valid. Contactai l'organisatur."
+    }
+  },
+  "archive": {
+    "title": "Events passads",
+    "description": "Navigar sur 20 onns d'events BATbern cun presentaziuns e referents",
+    "viewToggle": {
+      "grid": "Grella",
+      "list": "Glista"
+    },
+    "loading": "Chargiar events...",
+    "loadingMore": "Chargiar ulteriurs events...",
+    "loadingTopics": "Chargiar temas...",
+    "noTopicsAvailable": "Nagins temas disponibels",
+    "noResults": "Nagins events chattads",
+    "errors": {
+      "loadFailed": "Chargiar events n'è betg reussì"
+    },
+    "card": {
+      "viewDetails": "Vesair detagls"
+    },
+    "filters": {
+      "title": "Filtels",
+      "search": "Tschertgar events...",
+      "topics": "Temas",
+      "clearAll": "Stizzar tut",
+      "activeCount": "{{count}} filtel activ"
+    },
+    "detail": {
+      "backToArchive": "← Enavos a l'archiv"
+    }
+  },
+  "notifications": {
+    "title": "Notificaziuns",
+    "markAllAsRead": "Marcar tut sco legì",
+    "markAsRead": "Marcar sco legì",
+    "delete": "Stizzar",
+    "reload": "Rechargiar",
+    "viewAll": "Vesair tut",
+    "hideRead": "Zuppentar legids",
+    "empty": "Naginas notificaziuns",
+    "noNotifications": "Naginas notificaziuns fin uss",
+    "lastUpdated": "Ultima actualisaziun",
+    "deleteConfirmation": {
+      "title": "Stizzar notificaziun",
+      "message": "Essas vus segirs da volair stizzar questa notificaziun?"
+    },
+    "notificationFeed": "Feed da notificaziuns",
+    "priority": {
+      "urgent": "URGENT",
+      "high": "AULT"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
+  },
+  "emailTemplates": {
+    "layoutTemplates": "Moduls da layout",
+    "layoutTemplatesInfo": "Definescha l'aspect BATbern per tutas e-mails. Midadas qua pertutgan tuts moduls ch'utiliseschan quest layout.",
+    "contentTemplates": "Cuntegn d'e-mail",
+    "categories": {
+      "SPEAKER": "Referents",
+      "REGISTRATION": "Inscripziun",
+      "TASK_REMINDER": "Memorials da incumbensas",
+      "NEWSLETTER": "Newsletter"
+    },
+    "layoutKey": "Layout",
+    "standalone": "Nagin (independent)",
+    "systemTemplate": "Modul da sistem",
+    "subject": "Object",
+    "htmlBody": "Cuntegn HTML",
+    "variables": "Variablas disponiblas",
+    "preview": "Anteprimaziun",
+    "editTitle": "Modifitgar modul",
+    "createTitle": "Nov modul",
+    "newTemplate": "+ Nov modul",
+    "noLayouts": "Nagins moduls da layout chattads.",
+    "noTemplates": "Nagins moduls chattads per quest filtel.",
+    "missingContentPlaceholder": "Spazi rezervà {{content}} mancant — il corp da l'e-mail vegn ad esser vid",
+    "deleteFailed": "Stizzar il modul n'è betg reussì.",
+    "saveFailed": "Guardar il modul n'è betg reussì. Empruvai danovamain.",
+    "validation": {
+      "htmlBodyRequired": "Il corp HTML è obligatori.",
+      "subjectRequired": "L'object è obligatori per moduls da cuntegn.",
+      "templateKeyRequired": "La clav dal modul è obligatoria."
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
+  },
+  "presentation": {
+    "errorTitle": "L'event n'ha betg pudì vegnir chargià",
+    "errorMessage": "Controllai vossa connexiun da rait ed empruvai danovamain.",
+    "retryButton": "Reempruvar",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Tips d'events",
+      "importData": "Importar datas",
+      "taskTemplates": "Moduls d'incumbensas",
+      "emailTemplates": "Moduls d'e-mail",
+      "presentationSettings": "Presentaziun"
+    },
+    "accessDenied": "Access refusà",
+    "organizerOnly": "Questa pagina è mo per organisaders.",
+    "presentationSettings": {
+      "title": "Parameters da presentaziun",
+      "subtitle": "Quests valurs parivan sin la pagina da presentaziun dal moderatur (/present/:eventCode).",
+      "aboutText": "Text davart",
+      "partnerCount": "Dumber da partners",
+      "save": "Guardar",
+      "saved": "Parameters guardads.",
+      "saveFailed": "Guardar n'è betg reussì. Empruvai danovamain."
+    },
+    "taskTemplates": {
+      "defaultSection": "Moduls da standard",
+      "customSection": "Moduls persunalisads",
+      "addTemplate": "+ Agiuntar modul",
+      "noDefaults": "Nagins moduls da standard.",
+      "noCustom": "Nagins moduls persunalisads fin uss.",
+      "confirmDelete": "Stizzar il modul?",
+      "deleteFailed": "Stizzar il modul n'è betg reussì. Empruvai danovamain."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics",
+    "firstName": "Prenum",
+    "lastName": "Num"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "companySearch": {
+    "noOptions": "Naginas cumpagnias chattadas",
+    "searchAriaLabel": "Tschertgar cumpagnias",
+    "clearSearchAriaLabel": "Stizzar la tschertga"
+  },
+  "countdown": {
+    "nextEvent": "Proxim eveniment",
+    "today": "Oz!",
+    "tomorrow": "Damaun!",
+    "daysUntil": "{{count}} dis enfin l'eveniment"
+  },
+  "errors": {
+    "somethingWentWrong": "Insatge è gì mal",
+    "tryAgain": "Turnar a provar",
+    "unexpectedError": "Nus s'excusan per l'engraziaivel. Igl è sa producì in-a errur imprevista.",
+    "devDetails": "Detagls da l'errur (mo per sviluppaders):",
+    "refreshPage": "Actualisar la pagina",
+    "goHome": "A la pagina principala"
+  },
+  "bootstrap": {
+    "loading": "Cargament da BATbern...",
+    "configFailed": "Cargament da la configuraziun ha fallì",
+    "reloadPage": "Recargiar la pagina"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
+  }
+}

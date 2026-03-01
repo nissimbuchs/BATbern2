@@ -101,6 +101,8 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
   onImportComplete,
 }) => {
   const { t } = useTranslation('common');
+  const importLabel = t('event.batchImport.fieldSelection.import');
+  const ignoreLabel = t('event.batchImport.fieldSelection.ignore');
   const [parseError, setParseError] = useState<string | null>(null);
   const [importCandidates, setImportCandidates] = useState<EventImportCandidate[]>([]);
   const [importResult, setImportResult] = useState<EventBatchImportResult | null>(null);
@@ -301,12 +303,14 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
           <Box sx={{ mb: 3 }}>
             <FormControl component="fieldset">
               <FormLabel component="legend" sx={{ mb: 2 }}>
-                Field Selection (Import = create if new, update if exists | Ignore = skip field)
+                {t('event.batchImport.fieldSelection.legend')}
               </FormLabel>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {/* Title Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Title:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldTitle')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.title ? 'import' : 'ignore'}
@@ -320,19 +324,21 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
 
                 {/* Description Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Description:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldDescription')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.description ? 'import' : 'ignore'}
@@ -346,19 +352,21 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
 
                 {/* Topic Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Topic/Category:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldTopic')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.topic ? 'import' : 'ignore'}
@@ -372,19 +380,21 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
 
                 {/* Date Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Date:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldDate')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.date ? 'import' : 'ignore'}
@@ -398,19 +408,21 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
 
                 {/* Venue Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Venue:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldVenue')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.venue ? 'import' : 'ignore'}
@@ -424,19 +436,21 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
 
                 {/* Organizer Field */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ width: 120, fontWeight: 500 }}>Organizer:</Typography>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>
+                    {t('event.batchImport.fieldSelection.fieldOrganizer')}
+                  </Typography>
                   <RadioGroup
                     row
                     value={fieldSelection.organizer ? 'import' : 'ignore'}
@@ -450,12 +464,12 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                     <FormControlLabel
                       value="import"
                       control={<Radio size="small" />}
-                      label="Import"
+                      label={importLabel}
                     />
                     <FormControlLabel
                       value="ignore"
                       control={<Radio size="small" />}
-                      label="Ignore"
+                      label={ignoreLabel}
                     />
                   </RadioGroup>
                 </Box>
@@ -478,11 +492,11 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                 <TableHead>
                   <TableRow>
                     <TableCell width={80}>{t('event.batchImport.columns.eventNumber')}</TableCell>
-                    <TableCell>{t('event.batchImport.columns.title')}</TableCell>
-                    <TableCell width={180}>Category</TableCell>
-                    <TableCell>{t('event.batchImport.columns.date')}</TableCell>
+                    <TableCell>{t('labels.title')}</TableCell>
+                    <TableCell width={180}>{t('event.batchImport.columns.category')}</TableCell>
+                    <TableCell>{t('labels.date')}</TableCell>
                     <TableCell>{t('event.batchImport.columns.organizer')}</TableCell>
-                    <TableCell width={150}>{t('event.batchImport.columns.status')}</TableCell>
+                    <TableCell width={150}>{t('labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

@@ -80,7 +80,7 @@ export const TopicSuggestionForm: React.FC<Props> = ({
           autoFocus
           required
           fullWidth
-          label={t('portal.topics.form.title')}
+          label={t('common:labels.title')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           error={!!titleError}
@@ -103,7 +103,7 @@ export const TopicSuggestionForm: React.FC<Props> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={submitting}>
-          {t('modal.actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           variant="contained"

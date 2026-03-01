@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Loader2, AlertCircle, Mail } from 'lucide-react';
@@ -25,14 +26,13 @@ import { speakerAuthService } from '@/services/speakerAuthService';
 type PageState = 'loading' | 'redirecting' | 'error';
 
 const SpeakerMagicLoginPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const jwt = searchParams.get('jwt');
 
   const [pageState, setPageState] = useState<PageState>('loading');
-  const [errorMessage, setErrorMessage] = useState<string>(
-    'Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator.'
-  );
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     if (!jwt) {
@@ -48,8 +48,7 @@ const SpeakerMagicLoginPage = () => {
       })
       .catch((error) => {
         const message =
-          error?.response?.data?.message ||
-          'Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator.';
+          error?.response?.data?.message || t('speakerPortal.magicLogin.defaultError');
         setErrorMessage(message);
         setPageState('error');
       });
@@ -64,16 +63,20 @@ const SpeakerMagicLoginPage = () => {
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
               <p className="text-gray-600">
                 {pageState === 'loading'
-                  ? 'Anmeldung wird verarbeitet...'
-                  : 'Weiterleitung zum Dashboard...'}
+                  ? t('speakerPortal.magicLogin.processing')
+                  : t('speakerPortal.magicLogin.redirecting')}
               </p>
             </div>
           )}
           {pageState === 'error' && (
             <div>
               <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Link ungültig</h2>
-              <p className="text-gray-600 mb-6">{errorMessage}</p>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                {t('speakerPortal.magicLogin.invalidLinkTitle')}
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {errorMessage || t('speakerPortal.magicLogin.defaultError')}
+              </p>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <Mail className="h-4 w-4" />
                 <a href="mailto:events@batbern.ch" className="text-blue-600 hover:underline">

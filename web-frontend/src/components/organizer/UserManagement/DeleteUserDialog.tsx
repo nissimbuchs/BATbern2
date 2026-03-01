@@ -55,7 +55,12 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
             <WarningIcon color="error" />
             <Typography variant="h6">{t('modal.deleteConfirm.title')}</Typography>
           </Box>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -98,16 +103,17 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
-          {t('actions.cancel')}
+        <Button onClick={onClose} variant="outlined" data-testid="delete-user-cancel">
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleDelete}
           variant="contained"
           color="error"
           disabled={deleteUserMutation.isPending}
+          data-testid="delete-user-confirm"
         >
-          {deleteUserMutation.isPending ? t('modal.deleteConfirm.deleting') : t('actions.delete')}
+          {deleteUserMutation.isPending ? t('common:actions.deleting') : t('common:actions.delete')}
         </Button>
       </DialogActions>
     </Dialog>

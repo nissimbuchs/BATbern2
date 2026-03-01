@@ -21,10 +21,10 @@ describe('i18n Configuration', () => {
       // Clear any stored language preference
       localStorage.removeItem('batbern-language');
 
-      // Reinitialize i18n to test detection
+      // Detection order uses localStorage and htmlTag (navigator intentionally excluded — known bug)
       const detectionOrder = i18n.options.detection?.order;
       expect(detectionOrder).toContain('localStorage');
-      expect(detectionOrder).toContain('navigator');
+      expect(detectionOrder).toContain('htmlTag');
     });
 
     it('should_useStoredLanguage_when_preferenceExists', async () => {

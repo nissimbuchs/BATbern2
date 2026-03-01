@@ -268,7 +268,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
                           <>
                             <br />
                             <Typography component="span" variant="body2" color="text.secondary">
-                              {t('speakerBrainstorm.pool.notes', 'Notes')}: {speaker.notes}
+                              {t('common:labels.notes')}: {speaker.notes}
                             </Typography>
                           </>
                         )}

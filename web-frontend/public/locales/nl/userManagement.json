@@ -1,0 +1,271 @@
+{
+  "title": "Gebruikersbeheer",
+  "addUser": "Gebruiker toevoegen",
+  "search": {
+    "placeholder": "Zoeken op naam of e-mail...",
+    "noResults": "Geen gebruikers gevonden"
+  },
+  "filters": {
+    "clearAll": "Alle filters wissen",
+    "role": {
+      "label": "Rol",
+      "all": "Alle rollen"
+    },
+    "status": {
+      "active": "Actief",
+      "inactive": "Inactief"
+    }
+  },
+  "table": {
+    "viewUser": "Gebruiker {{name}} bekijken",
+    "headers": {
+      "roles": "Rollen"
+    },
+    "empty": "Geen gebruikers gevonden"
+  },
+  "actions": {
+    "view": "Bekijken",
+    "editRoles": "Rollen bewerken"
+  },
+  "roles": {
+    "organizer": "Organisator",
+    "speaker": "Spreker",
+    "partner": "Partner",
+    "attendee": "Deelnemer",
+    "multiple": "{{count}} rollen"
+  },
+  "status": {
+    "active": "Actief",
+    "inactive": "Inactief"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Gebruikersdetails",
+      "createdAt": "Aangemaakt op",
+      "updatedAt": "Laatst bijgewerkt"
+    },
+    "createUser": {
+      "title": "Nieuwe gebruiker aanmaken",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "email": "E-mail",
+      "company": "Bedrijf (optioneel)",
+      "roles": "Rollen",
+      "selectRoles": "Selecteer minimaal één rol",
+      "creating": "Aanmaken..."
+    },
+    "editRoles": {
+      "title": "Rollen bewerken",
+      "user": "Gebruiker",
+      "selectRoles": "Rollen selecteren",
+      "saving": "Opslaan..."
+    },
+    "deleteConfirm": {
+      "title": "Gebruiker verwijderen",
+      "message": "Weet u zeker dat u deze gebruiker wilt verwijderen?",
+      "gdprWarning": "AVG-kennisgeving: Deze actie verwijdert alle gebruikersgegevens permanent en kan niet ongedaan worden gemaakt.",
+      "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Profielfoto uploaden",
+      "removePhotoAria": "Profielfoto verwijderen"
+    }
+  },
+  "pagination": {
+    "page": "Pagina {{page}} van {{total}}",
+    "itemsPerPage": "Items per pagina"
+  },
+  "loading": {
+    "users": "Gebruikers laden...",
+    "search": "Zoeken...",
+    "save": "Opslaan...",
+    "updating": "Bijwerken..."
+  },
+  "error": {
+    "required": "Dit veld is verplicht",
+    "email": {
+      "invalid": "Ongeldig e-mailadres"
+    },
+    "minOneRole": "Er moet minimaal één rol worden geselecteerd",
+    "loadFailed": "Laden van gebruikers mislukt",
+    "createFailed": "Aanmaken van gebruiker mislukt",
+    "updateFailed": "Bijwerken van gebruiker mislukt",
+    "deleteFailed": "Verwijderen van gebruiker mislukt",
+    "notFound": "Gebruiker niet gevonden"
+  },
+  "batchImport": {
+    "title": "Sprekers bulkimport",
+    "dropzone": "Zet speakers.json hier neer of klik om te bladeren",
+    "dropzoneActive": "Zet het bestand hier neer...",
+    "dropzoneHint": "Upload speakers.json vanuit apps/BATspa-old/src/api/",
+    "preview": "{{count}} sprekers te importeren",
+    "progress": "Spreker {{current}} van {{total}} importeren...",
+    "complete": "Import voltooid: {{success}} aangemaakt, {{updated}} bijgewerkt, {{failed}} mislukt, {{skipped}} overgeslagen",
+    "noSpeakers": "Geen sprekers gevonden in het bestand",
+    "checkingExisting": "Bestaande gebruikers controleren...",
+    "summary": "{{total}} sprekers: {{new}} nieuw, {{update}} bij te werken, {{skip}} ongewijzigd",
+    "cancelButton": "Annuleren",
+    "importButton": "{{new}} aanmaken / {{update}} bijwerken",
+    "allSkipped": "Geen wijzigingen te importeren",
+    "status": {
+      "pending": "Nieuw",
+      "importing": "Importeren...",
+      "success": "Aangemaakt",
+      "updated": "Bijgewerkt",
+      "error": "Fout",
+      "skipped": "Overgeslagen",
+      "noChanges": "Geen wijzigingen",
+      "willUpdate": "Wordt bijgewerkt: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Ongeldig bestand. Upload een JSON-bestand.",
+      "parseError": "Bestand kon niet worden geparseerd: {{error}}"
+    },
+    "hasPortrait": "Heeft portretafbeelding",
+    "noPortrait": "Geen portretafbeelding"
+  },
+  "participantImport": {
+    "title": "Deelnemers importeren vanuit CSV",
+    "dropzone": "Sleep CSV-bestand hier naartoe",
+    "dropzoneActive": "Laat CSV-bestand hier vallen",
+    "dropzoneHint": "of klik om bestand te selecteren",
+    "fileLoaded": "Bestand geladen: {{name}} ({{size}} KB)",
+    "preview": "Voorbeeld: {{count}} deelnemers klaar om te importeren",
+    "previewLimitation": "Let op: Voorbeeld toont bestaande gebruikers alleen op basis van gebruikersnaam. Tijdens het importeren kunnen gebruikers ook worden gekoppeld op naam (voor- + achternaam) als dat ondubbelzinnig is. Sommige deelnemers die als 'Nieuw' worden weergegeven, kunnen overeenkomen met bestaande gebruikers op naam.",
+    "importButton": "{{count}} deelnemers importeren",
+    "progress": "Importeren: {{current}} / {{total}}",
+    "summary": "Importoverzicht",
+    "status": {
+      "pending": "In behandeling",
+      "importing": "Importeren",
+      "success": "Geslaagd",
+      "error": "Mislukt",
+      "skipped": "Overgeslagen"
+    },
+    "stats": {
+      "total": "Totaal: {{count}}",
+      "success": "Geslaagd: {{count}}",
+      "failed": "Mislukt: {{count}}",
+      "pending": "In behandeling: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthetisch",
+      "eventsCount": "{{count}} evenementen",
+      "existing": "Bestaand",
+      "new": "Nieuw"
+    },
+    "aria": {
+      "statusLabel": "Importstatus: {{label}}",
+      "dropzone": "CSV-bestand uploadzone. Sleep een CSV-bestand of klik om te selecteren",
+      "fileInput": "Bestandsinvoer voor CSV-import",
+      "previewTable": "Voorbeeldtabel deelnemersimport",
+      "participantTable": "Deelnemers met importstatus",
+      "importProgress": "Importvoortgang",
+      "closeModal": "Importvenster sluiten",
+      "startImport": "Deelnemers importeren uit CSV-bestand starten",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "CSV verwerken mislukt",
+    "importFailed": "Import mislukt"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Overzicht",
+      "eventsParticipated": "Bijgewoonde evenementen",
+      "ariaLabel": "User detail tabs"
+    },
+    "overviewText": "Overzicht van gebruikersprofiel. Hier kan aanvullende informatie worden toegevoegd.",
+    "eventsTable": {
+      "eventCode": "Evenementcode",
+      "title": "Titel",
+      "date": "Datum",
+      "status": "Status",
+      "loadError": "Laden van evenementdeelnamegeschiedenis mislukt",
+      "noEvents": "Deze gebruiker heeft nog niet deelgenomen aan evenementen",
+      "untitledEvent": "Naamloos evenement",
+      "dateTBD": "Nader te bepalen",
+      "ariaLabel": "Tabel van evenementen waaraan de gebruiker heeft deelgenomen",
+      "statusValues": {
+        "REGISTERED": "Geregistreerd",
+        "CONFIRMED": "Bevestigd",
+        "ATTENDED": "Bijgewoond",
+        "CANCELLED": "Geannuleerd",
+        "WAITLISTED": "Op wachtlijst"
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "Account",
+      "notifications": "Meldingen",
+      "privacy": "Privacy"
+    },
+    "account": {
+      "title": "Accountinstellingen",
+      "emailStatus": "E-mailadres kan niet worden gewijzigd",
+      "changePassword": "Wachtwoord wijzigen",
+      "theme": "Thema",
+      "themeLight": "Licht",
+      "themeDark": "Donker",
+      "themeAuto": "Automatisch (systeeminstelling volgen)",
+      "timezone": "Tijdzone",
+      "save": "Accountinstellingen opslaan"
+    },
+    "notifications": {
+      "title": "Meldingsvoorkeuren",
+      "epic7Notice": "Geavanceerde meldingsinstellingen komen in een toekomstige update.",
+      "channels": "Meldingskanalen",
+      "channelEmail": "E-mailmeldingen",
+      "channelInApp": "In-app meldingen",
+      "channelPush": "Push-meldingen",
+      "frequency": "Meldingsfrequentie",
+      "frequencyImmediate": "Onmiddellijk",
+      "frequencyDaily": "Dagelijkse samenvatting",
+      "frequencyWeekly": "Wekelijkse samenvatting",
+      "save": "Meldingsinstellingen opslaan"
+    },
+    "newsletter": {
+      "title": "Nieuwsbrief",
+      "subscribe": "Abonneren op nieuwsbrief",
+      "description": "Maandelijkse updates over BATbern evenementen ontvangen"
+    },
+    "privacy": {
+      "title": "Privacy-instellingen",
+      "visibility": "Profielzichtbaarheid",
+      "visibilityPublic": "Openbaar",
+      "visibilityMembersOnly": "Alleen leden",
+      "visibilityPrivate": "Privé",
+      "infoDisplay": "Informatie weergave",
+      "showEmail": "E-mailadres tonen",
+      "showCompany": "Bedrijfsaansluiting tonen",
+      "showActivity": "Activiteitsgeschiedenis tonen",
+      "communication": "Communicatie",
+      "allowMessaging": "Directe berichten van andere gebruikers toestaan",
+      "viewPolicy": "Privacybeleid bekijken",
+      "save": "Privacy-instellingen opslaan"
+    }
+  },
+  "profile": {
+    "personalInfo": "Persoonlijke informatie",
+    "editProfile": "Profiel bewerken",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "bio": "Bio",
+    "bioValidation": "Bio moet {{max}} tekens of minder zijn",
+    "saveChanges": "Wijzigingen opslaan",
+    "removePhotoConfirm": "Weet u zeker dat u uw profielfoto wilt verwijderen?",
+    "labelName": "Naam:",
+    "labelEmail": "E-mail:",
+    "labelCompany": "Bedrijf:",
+    "labelBio": "Bio:",
+    "recentActivity": "Recente activiteit",
+    "noActivity": "Geen recente activiteit",
+    "viewAll": "Alles bekijken →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Foto uploaden",
+    "removeTooltip": "Foto verwijderen",
+    "verified": "Geverifieerd",
+    "memberSince": "Lid sinds {{date}}"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "title": "BATbernについて",
+    "subtitle": "IT専門家によるテクノロジー交流"
+  },
+  "association": {
+    "title": "Berner-Architekten-Treffen協会",
+    "history": "2009年1月23日以来、Berner Architekten-TreffenはBerner-Architekten-Treffen協会によって開催されています。",
+    "mission": "Berner Architekten-Treffenは、2005年からアーキテクチャテーマに関心を持つITプロフェッショナルのための交流プラットフォームです。",
+    "platform": "実践的なプレゼンテーションや現在の課題についての深い議論の機会、さらには異なる業界の企業間の直接的な交流を通じて、Berner Architekten Treffenはアイデアや経験を共有するための優れたプラットフォームを提供しています。",
+    "statuten": "協会規約（PDF）"
+  },
+  "organizers": {
+    "title": "運営委員会",
+    "description": "Berner-Architekten-Treffenは、献身的な運営委員会によってコンテンツと組織の両面でサポートされています：",
+    "noOrganizers": "主催者が見つかりません"
+  },
+  "partners": {
+    "title": "パートナー",
+    "description": "Berner Architekten-Treffenは、以下の企業・団体の寛大なご支援により、無料イベントとして開催することができています："
+  },
+  "contact": {
+    "title": "お問い合わせ",
+    "description": "ご質問、ご提案、ご意見は、メンバーに直接ご連絡いただくか、以下からお問い合わせください："
+  }
+}

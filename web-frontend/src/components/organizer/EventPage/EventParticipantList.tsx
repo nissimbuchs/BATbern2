@@ -64,7 +64,7 @@ const EventParticipantList: React.FC<EventParticipantListProps> = ({ eventCode }
           {t('eventPage.participantList.error.loadFailed')}
         </Alert>
         <Button variant="contained" onClick={() => refetch()}>
-          {t('eventPage.participantList.actions.retry')}
+          {t('common:actions.retry')}
         </Button>
       </Box>
     );

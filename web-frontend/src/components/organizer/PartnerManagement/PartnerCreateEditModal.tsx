@@ -252,7 +252,7 @@ export const PartnerCreateEditModal: React.FC = () => {
 
         <DialogActions>
           <Button onClick={handleClose} disabled={isPending} data-testid="cancel-partner-button">
-            {t('modal.actions.cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit(onSubmit)}
@@ -261,7 +261,7 @@ export const PartnerCreateEditModal: React.FC = () => {
             startIcon={isPending ? <CircularProgress size={20} role="progressbar" /> : null}
             data-testid="save-partner-button"
           >
-            {isPending ? t('modal.actions.saving') : t('modal.actions.save')}
+            {isPending ? t('common:actions.saving') : t('common:actions.save')}
           </Button>
         </DialogActions>
       </Dialog>

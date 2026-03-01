@@ -10,13 +10,31 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// Mutable state for i18n mock (must use vi.hoisted to be accessible in vi.mock factory)
+const mockI18nState = vi.hoisted(() => ({ language: 'de' }));
+
 // Mock i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'language.de': 'Deutsch',
+        'language.en': 'English',
+        'language.select': 'Language selector',
+      };
+      return translations[key] ?? key;
+    },
     i18n: {
-      language: 'de',
+      get language() {
+        return mockI18nState.language;
+      },
       changeLanguage: vi.fn().mockResolvedValue(undefined),
+      options: {
+        resources: {
+          de: {},
+          en: {},
+        },
+      },
     },
   }),
 }));
@@ -64,6 +82,7 @@ describe('UserMenuDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
+    mockI18nState.language = 'de'; // Reset to default language
     // Create a mock anchor element for the Menu
     anchorEl = document.createElement('div');
   });
@@ -345,7 +364,7 @@ describe('UserMenuDropdown', () => {
       fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
 
       // Wait for the option to appear in the portal
-      const englishOption = await screen.findByRole('option', { name: 'English' });
+      const englishOption = await screen.findByRole('option', { name: 'EN — English' });
       fireEvent.click(englishOption);
 
       await waitFor(() => {
@@ -354,6 +373,9 @@ describe('UserMenuDropdown', () => {
     });
 
     it('should_changeLanguageToGerman_when_userSelectsGerman', async () => {
+      // Start from English so switching to German is a real value change
+      mockI18nState.language = 'en';
+
       const userWithEnglish = {
         ...mockUser,
         preferences: {
@@ -379,7 +401,7 @@ describe('UserMenuDropdown', () => {
       fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
 
       // Wait for the option to appear in the portal
-      const germanOption = await screen.findByRole('option', { name: 'Deutsch' });
+      const germanOption = await screen.findByRole('option', { name: 'DE — Deutsch' });
       fireEvent.click(germanOption);
 
       await waitFor(() => {

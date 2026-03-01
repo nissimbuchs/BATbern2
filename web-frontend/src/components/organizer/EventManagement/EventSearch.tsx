@@ -167,7 +167,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
               placeholder={t('dashboard.searchEvents')}
               value={searchQuery}
               onChange={handleSearchChange}
-              aria-label="Search events"
+              aria-label={t('filters.searchAriaLabel')}
               inputProps={{
                 'data-testid': 'event-search-input',
               }}
@@ -179,7 +179,11 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
                 ),
                 endAdornment: searchQuery && (
                   <InputAdornment position="end">
-                    <IconButton onClick={handleClearSearch} size="small" aria-label="Clear search">
+                    <IconButton
+                      onClick={handleClearSearch}
+                      size="small"
+                      aria-label={t('filters.clearSearchAriaLabel')}
+                    >
                       <ClearIcon />
                     </IconButton>
                   </InputAdornment>
@@ -214,7 +218,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
                   ))}
                 </Box>
               )}
-              aria-label="Filter by workflow state"
+              aria-label={t('dashboard.filter.workflowState')}
             >
               {WORKFLOW_STATE_OPTIONS.map((workflowState) => (
                 <MenuItem key={workflowState} value={workflowState}>
@@ -269,13 +273,13 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
             label={t('dashboard.filter.activeFilters', { count: activeFilterCount })}
             size="small"
             variant="outlined"
-            aria-label={`${activeFilterCount} filters active`}
+            aria-label={t('dashboard.filter.filtersActiveAriaLabel', { count: activeFilterCount })}
           />
           <Button
             size="small"
             onClick={handleClearAll}
             startIcon={<ClearIcon />}
-            aria-label="Clear all filters"
+            aria-label={t('filters.clearAllAriaLabel')}
           >
             {t('dashboard.filter.clearAll')}
           </Button>

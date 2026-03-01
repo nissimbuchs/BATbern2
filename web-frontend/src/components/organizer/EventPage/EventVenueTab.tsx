@@ -138,16 +138,25 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
             <Stack direction="row" spacing={1} flexWrap="wrap">
               {eventUI.catering.dietaryRequirements?.vegetarian && (
                 <Chip
-                  label={`${eventUI.catering.dietaryRequirements.vegetarian} Vegetarian`}
+                  label={t('eventPage.venue.vegetarianCount', {
+                    count: eventUI.catering.dietaryRequirements.vegetarian,
+                  })}
                   size="small"
                 />
               )}
               {eventUI.catering.dietaryRequirements?.vegan && (
-                <Chip label={`${eventUI.catering.dietaryRequirements.vegan} Vegan`} size="small" />
+                <Chip
+                  label={t('eventPage.venue.veganCount', {
+                    count: eventUI.catering.dietaryRequirements.vegan,
+                  })}
+                  size="small"
+                />
               )}
               {eventUI.catering.dietaryRequirements?.glutenFree && (
                 <Chip
-                  label={`${eventUI.catering.dietaryRequirements.glutenFree} Gluten-free`}
+                  label={t('eventPage.venue.glutenFreeCount', {
+                    count: eventUI.catering.dietaryRequirements.glutenFree,
+                  })}
                   size="small"
                 />
               )}

@@ -89,7 +89,7 @@ const AppHeader = React.memo(function AppHeader({
     navigate('/login', { replace: true });
   };
 
-  const handleLanguageChange = (language: 'de' | 'en') => {
+  const handleLanguageChange = (language: string) => {
     // Language change is handled inside UserMenuDropdown
     console.log('[AppHeader] Language changed to:', language);
   };
@@ -122,7 +122,7 @@ const AppHeader = React.memo(function AppHeader({
             <IconButton
               edge="start"
               color="inherit"
-              aria-label="menu"
+              aria-label={t('navigation.openMenu')}
               onClick={handleMobileMenuToggle}
               sx={{ mr: 2 }}
             >
@@ -158,7 +158,7 @@ const AppHeader = React.memo(function AppHeader({
             {/* Notifications */}
             <IconButton
               color="inherit"
-              aria-label="notifications"
+              aria-label={t('navigation.notifications')}
               aria-describedby={unreadCount > 0 ? 'notification-badge-description' : undefined}
               onClick={handleNotificationClick}
             >
@@ -182,17 +182,17 @@ const AppHeader = React.memo(function AppHeader({
                     border: 0,
                   }}
                 >
-                  {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                  {t('notifications.unreadCount', { count: unreadCount })}
                 </Box>
               )}
             </IconButton>
 
             {/* Tasks - Only show for organizers */}
             {currentRole === 'organizer' && (
-              <Tooltip title={t('navigation.tasks', 'Tasks')}>
+              <Tooltip title={t('navigation.tasks')}>
                 <IconButton
                   color="inherit"
-                  aria-label="tasks"
+                  aria-label={t('navigation.tasks')}
                   onClick={handleTasksClick}
                   data-testid="tasks-button"
                 >
@@ -205,7 +205,7 @@ const AppHeader = React.memo(function AppHeader({
             <IconButton
               onClick={handleUserMenuClick}
               sx={{ ml: 1 }}
-              aria-label="user menu"
+              aria-label={t('navigation.userMenu')}
               aria-expanded={userMenuOpen}
               aria-haspopup="true"
               data-testid="user-menu-button"

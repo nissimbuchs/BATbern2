@@ -64,7 +64,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   onEditTopic,
   onTopicDeleted,
 }) => {
-  const { t } = useTranslation('organizer');
+  const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [showSimilarDialog, setShowSimilarDialog] = useState(false);
@@ -344,9 +344,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowSimilarDialog(false)}>
-            {t('topicBacklog.dialogs.similar.cancel', 'Cancel')}
-          </Button>
+          <Button onClick={() => setShowSimilarDialog(false)}>{t('common:actions.cancel')}</Button>
           <Button onClick={confirmTopicSelection} color="primary" variant="contained">
             {t('topicBacklog.dialogs.similar.confirm', 'Select Anyway')}
           </Button>
@@ -387,9 +385,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowOverrideDialog(false)}>
-            {t('topicBacklog.dialogs.override.cancel', 'Cancel')}
-          </Button>
+          <Button onClick={() => setShowOverrideDialog(false)}>{t('common:actions.cancel')}</Button>
           <Button
             onClick={confirmTopicSelection}
             color="primary"
@@ -428,7 +424,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
             onClick={() => setShowDeleteDialog(false)}
             disabled={deleteTopicMutation.isPending}
           >
-            {t('topicBacklog.dialogs.delete.cancel', 'Cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={() => deleteTopicMutation.mutate(topic.topicCode)}
@@ -437,7 +433,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
             disabled={deleteTopicMutation.isPending}
           >
             {deleteTopicMutation.isPending
-              ? t('topicBacklog.dialogs.delete.deleting', 'Deleting...')
+              ? t('common:actions.deleting')
               : t('topicBacklog.dialogs.delete.confirm', 'Delete Topic')}
           </Button>
         </DialogActions>

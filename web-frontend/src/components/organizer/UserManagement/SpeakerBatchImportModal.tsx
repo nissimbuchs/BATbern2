@@ -288,7 +288,7 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
           <IconButton
             onClick={handleClose}
             disabled={isImporting}
-            aria-label={t('actions.close')}
+            aria-label={t('common:actions.close')}
             size="small"
           >
             <CloseIcon />
@@ -397,10 +397,10 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
-                    <TableCell>{t('batchImport.columns.name')}</TableCell>
-                    <TableCell>{t('batchImport.columns.email')}</TableCell>
-                    <TableCell>{t('batchImport.columns.company')}</TableCell>
-                    <TableCell width={150}>{t('batchImport.columns.status')}</TableCell>
+                    <TableCell>{t('common:labels.name')}</TableCell>
+                    <TableCell>{t('common:labels.email')}</TableCell>
+                    <TableCell>{t('common:labels.company')}</TableCell>
+                    <TableCell width={150}>{t('common:labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -492,7 +492,7 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
 
       <DialogActions>
         <Button onClick={handleClose} disabled={isImporting}>
-          {importResult ? t('actions.close') : t('batchImport.cancelButton')}
+          {importResult ? t('common:actions.close') : t('common:actions.cancel')}
         </Button>
         {!importResult && displayCandidates.length > 0 && (
           <Button

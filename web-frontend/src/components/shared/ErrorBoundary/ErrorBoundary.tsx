@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import i18next from 'i18next';
 import { Alert, Button, Box } from '@mui/material';
 
 /**
@@ -121,14 +122,18 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             }}
           >
             <Box>
-              <strong>Something went wrong</strong>
+              <strong>{i18next.t('common:errors.somethingWentWrong')}</strong>
               {error.message && (
                 <Box sx={{ marginTop: 1 }}>{sanitizeErrorMessage(error.message)}</Box>
               )}
             </Box>
           </Alert>
-          <Button variant="contained" onClick={this.resetError} aria-label="Try again">
-            Try Again
+          <Button
+            variant="contained"
+            onClick={this.resetError}
+            aria-label={i18next.t('common:errors.tryAgain')}
+          >
+            {i18next.t('common:errors.tryAgain')}
           </Button>
         </Box>
       );

@@ -290,10 +290,10 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
   };
 
   const roleOptions: { value: Role; label: string }[] = [
-    { value: 'ORGANIZER', label: t('filters.role.organizer') },
-    { value: 'SPEAKER', label: t('filters.role.speaker') },
-    { value: 'PARTNER', label: t('filters.role.partner') },
-    { value: 'ATTENDEE', label: t('filters.role.attendee') },
+    { value: 'ORGANIZER', label: t('common:role.organizer') },
+    { value: 'SPEAKER', label: t('common:role.speaker') },
+    { value: 'PARTNER', label: t('common:role.partner') },
+    { value: 'ATTENDEE', label: t('common:role.attendee') },
   ];
 
   const mutation = isEditMode ? updateUserMutation : createUserMutation;
@@ -312,7 +312,12 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
           <Typography variant="h6">
             {isEditMode ? t('modal.editUser.title', 'Edit User') : t('modal.createUser.title')}
           </Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -341,7 +346,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                       <label htmlFor="modal-profile-photo-upload">
                         <Tooltip title={t('modal.editUser.uploadPhoto', 'Upload Photo')}>
                           <IconButton
-                            aria-label="Upload profile photo"
+                            aria-label={t('modal.editUser.uploadPhotoAria')}
                             component="span"
                             size="small"
                             disabled={isUploadingPhoto}
@@ -375,7 +380,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                 {profilePictureUrl && (
                   <Tooltip title={t('modal.editUser.removePhoto', 'Remove Photo')}>
                     <IconButton
-                      aria-label="Remove profile photo"
+                      aria-label={t('modal.editUser.removePhotoAria')}
                       size="small"
                       onClick={handlePhotoRemove}
                       disabled={isUploadingPhoto}
@@ -512,7 +517,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined" data-testid="user-create-cancel">
-          {t('actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
@@ -526,7 +531,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
               ? t('modal.editUser.saving', 'Saving...')
               : t('modal.createUser.creating')
             : isEditMode
-              ? t('actions.save')
+              ? t('common:actions.save')
               : t('modal.createUser.title')}
         </Button>
       </DialogActions>

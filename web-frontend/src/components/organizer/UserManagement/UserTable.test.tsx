@@ -73,12 +73,12 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      expect(screen.getByText('table.headers.name')).toBeInTheDocument();
-      expect(screen.getByText('table.headers.email')).toBeInTheDocument();
-      expect(screen.getByText('table.headers.company')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.name')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.email')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.company')).toBeInTheDocument();
       expect(screen.getByText('table.headers.roles')).toBeInTheDocument();
-      expect(screen.getByText('table.headers.status')).toBeInTheDocument();
-      expect(screen.getByText('table.headers.actions')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.status')).toBeInTheDocument();
+      expect(screen.getByText('common:labels.actions')).toBeInTheDocument();
     });
 
     it('should_renderUserRows_when_usersProvided', () => {
@@ -110,9 +110,9 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      expect(screen.getByText('filters.role.organizer')).toBeInTheDocument();
-      expect(screen.getByText('filters.role.speaker')).toBeInTheDocument();
-      expect(screen.getByText('filters.role.partner')).toBeInTheDocument();
+      expect(screen.getByText('common:role.organizer')).toBeInTheDocument();
+      expect(screen.getByText('common:role.speaker')).toBeInTheDocument();
+      expect(screen.getByText('common:role.partner')).toBeInTheDocument();
     });
 
     it('should_displayActiveStatus_when_userIsActive', () => {
@@ -160,7 +160,7 @@ describe('UserTable Component', () => {
 
       expect(screen.getByText('actions.view')).toBeInTheDocument();
       expect(screen.getByText('actions.editRoles')).toBeInTheDocument();
-      expect(screen.getByText('actions.delete')).toBeInTheDocument();
+      expect(screen.getByText('common:actions.delete')).toBeInTheDocument();
     });
 
     it('should_callOnAction_when_menuItemClicked', async () => {
@@ -199,7 +199,7 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      const nameHeader = screen.getByText('table.headers.name');
+      const nameHeader = screen.getByText('common:labels.name');
       await user.click(nameHeader);
 
       // Verify both users are still rendered after sort
@@ -216,7 +216,7 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      const emailHeader = screen.getByText('table.headers.email');
+      const emailHeader = screen.getByText('common:labels.email');
       await user.click(emailHeader);
 
       // Sorting should be applied
@@ -232,7 +232,7 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      const nameHeader = screen.getByText('table.headers.name');
+      const nameHeader = screen.getByText('common:labels.name');
       await user.click(nameHeader);
       await user.click(nameHeader);
 

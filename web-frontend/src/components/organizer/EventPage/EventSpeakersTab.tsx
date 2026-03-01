@@ -341,7 +341,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               data-testid="sessions-view-toggle"
             >
               <SessionsIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.sessions', 'Sessions')}
+              {t('common:labels.sessions')}
             </ToggleButton>
           </ToggleButtonGroup>
         </Stack>

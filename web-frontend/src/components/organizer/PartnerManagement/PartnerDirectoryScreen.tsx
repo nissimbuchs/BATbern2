@@ -138,12 +138,12 @@ export const PartnerDirectoryScreen: React.FC = () => {
                   size="small"
                   sx={{ minWidth: { sm: 200 }, flex: { xs: 1, sm: 'none' } }}
                 >
-                  <InputLabel id="sort-select-label">{t('sort.label')}</InputLabel>
+                  <InputLabel id="sort-select-label">{t('common:labels.sortBy')}</InputLabel>
                   <Select
                     labelId="sort-select-label"
                     id="sort-select"
                     value={sortBy}
-                    label={t('sort.label')}
+                    label={t('common:labels.sortBy')}
                     onChange={handleSortChange}
                     data-testid="partner-sort-select"
                   >
@@ -168,14 +168,14 @@ export const PartnerDirectoryScreen: React.FC = () => {
                     value={effectiveViewMode}
                     exclusive
                     onChange={handleViewModeChange}
-                    aria-label={t('viewMode.label')}
+                    aria-label={t('common:labels.viewMode')}
                     size="small"
                     data-testid="view-mode-toggle"
                   >
-                    <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
+                    <ToggleButton value="grid" aria-label={t('common:labels.gridView')}>
                       <GridViewIcon />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label={t('viewMode.list')}>
+                    <ToggleButton value="list" aria-label={t('common:labels.listView')}>
                       <ListViewIcon />
                     </ToggleButton>
                   </ToggleButtonGroup>

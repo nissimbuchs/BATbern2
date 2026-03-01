@@ -1,0 +1,246 @@
+{
+  "title": "パートナーディレクトリ",
+  "addPartner": "パートナーを追加",
+  "searchPlaceholder": "パートナー名で検索...",
+  "searchAriaLabel": "パートナーを検索",
+  "clearSearch": "検索をクリア",
+  "filters": {
+    "tier": "パートナーシップ段階",
+    "tierAll": "すべての段階",
+    "status": "ステータス",
+    "statusAll": "すべて",
+    "statusActive": "アクティブ",
+    "statusInactive": "非アクティブ",
+    "reset": "フィルターをリセット"
+  },
+  "tiers": {
+    "strategic": "戦略的",
+    "platinum": "プラチナ",
+    "gold": "ゴールド",
+    "silver": "シルバー",
+    "bronze": "ブロンズ"
+  },
+  "sort": {
+    "label": "並び替え",
+    "engagement": "エンゲージメントスコア",
+    "name": "会社名",
+    "tier": "パートナーシップ段階",
+    "lastEvent": "最終イベント"
+  },
+  "card": {
+    "comingSoon": "近日公開 - Epic 8"
+  },
+  "pagination": {
+    "page": "{{total}}ページ中 {{current}}ページ",
+    "firstPage": "最初のページ",
+    "previousPage": "前のページ",
+    "nextPage": "次のページ",
+    "lastPage": "最後のページ",
+    "ariaLabel": "パートナーリストのページネーション",
+    "partners_one": "{{count}}社のパートナー",
+    "partners_other": "{{count}}社のパートナー"
+  },
+  "empty": {
+    "noPartners": "パートナーが見つかりません"
+  },
+  "loading": "パートナーを読み込み中...",
+  "error": {
+    "failedToLoad": "パートナーの読み込みに失敗しました",
+    "correlationId": "相関ID"
+  },
+  "screenReader": {
+    "searchResults": "{{count}}社のパートナーが見つかりました",
+    "filterUpdate": "フィルターが更新されました",
+    "loading": "パートナーを読み込み中"
+  },
+  "modal": {
+    "createTitle": "パートナーシップを作成",
+    "editTitle": "パートナーシップを編集",
+    "fields": {
+      "company": "会社",
+      "startDate": "開始日",
+      "endDateOptional": "終了日（任意）"
+    },
+    "messages": {
+      "unsavedChanges": "保存されていない変更があります。閉じてもよろしいですか？"
+    }
+  },
+  "validation": {
+    "companyRequired": "会社は必須です",
+    "tierRequired": "パートナーシップ段階は必須です",
+    "startDateRequired": "開始日は必須です",
+    "endDateBeforeStart": "終了日は開始日より後でなければなりません"
+  },
+  "detail": {
+    "meetingsTab": {
+      "title": "ミーティング",
+      "addMeeting": "ミーティングをスケジュール"
+    },
+    "notesTab": {
+      "title": "メモ",
+      "addNote": "メモを追加",
+      "editNote": "メモを編集",
+      "deleteNoteConfirmTitle": "メモを削除",
+      "deleteNoteConfirmMessage": "「{{title}}」を削除してもよろしいですか？",
+      "titleLabel": "タイトル",
+      "contentLabel": "内容",
+      "htmlSupported": "HTMLフォーマットがサポートされています",
+      "noNotes": "まだメモがありません",
+      "failedToLoadNotes": "ノートの読み込みに失敗しました",
+      "deleteNote": "ノートを削除"
+    },
+    "settingsTab": {
+      "title": "設定",
+      "activePartnership": "アクティブなパートナーシップ",
+      "exportData": "パートナーデータをエクスポート",
+      "deletePartner": "パートナーデータを削除",
+      "accessDenied": "アクセス拒否",
+      "accessDeniedMessage": "このセクションは主催者のみがアクセスできます。",
+      "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "overview": "概要",
+      "contacts": "連絡先",
+      "meetings": "ミーティング",
+      "analytics": "分析",
+      "settings": "設定",
+      "partnerDetailTabs": "パートナー詳細タブ"
+    },
+    "overviewTab": {
+      "title": "パートナーシップの詳細",
+      "tier": "パートナーシップ段階",
+      "startDate": "パートナーシップ開始日",
+      "benefits": "ベネフィット",
+      "changeTier": "段階を変更",
+      "tierBenefits": {
+        "logoPlacement": "ウェブサイトへのロゴ掲載",
+        "newsletterMentions": "ニュースレターでの言及",
+        "priorityAccess": "イベントへの優先アクセス",
+        "quarterlyMeetings": "四半期ごとの戦略的ミーティング",
+        "roiAnalytics": "ROI分析ダッシュボード",
+        "accountManager": "専任アカウントマネージャー",
+        "eventAccess": "イベントへのアクセス"
+      }
+    },
+    "errors": {
+      "failedToLoadContacts": "連絡先の読み込みに失敗しました。",
+      "noContactsAssigned": "この企業にはまだパートナーユーザーが割り当てられていません。",
+      "notFound": "パートナーが見つかりません",
+      "notFoundMessage": "パートナー「{{name}}」が見つかりません。",
+      "loading": "パートナーの読み込みエラー",
+      "loadingMessage": "パートナー詳細の読み込み中にエラーが発生しました。後でもう一度お試しください。",
+      "noData": "データなし",
+      "noDataMessage": "パートナーデータがありません。"
+    }
+  },
+  "meetings": {
+    "title": "パートナーミーティング",
+    "create": "ミーティングを作成",
+    "fields": {
+      "agenda": "アジェンダ",
+      "notes": "ミーティングメモ",
+      "location": "場所",
+      "eventCode": "BATbernイベントコード",
+      "eventCodeHint": "例：BATbern57",
+      "startTime": "開始時刻",
+      "endTime": "終了時刻",
+      "type": {
+        "spring": "春季ミーティング",
+        "autumn": "秋季ミーティング"
+      },
+      "eventCodePlaceholder": "BATbern57"
+    },
+    "sendInvite": "カレンダー招待を送信",
+    "inviteSent": "招待を送信済み",
+    "inviteNotSent": "招待は送信されていません",
+    "inviteSentOn": "{{date}}に招待を送信しました",
+    "noMeetings": "パートナーミーティングが見つかりません",
+    "confirmSendInvite": "すべてのパートナー連絡先にカレンダー招待を送信しますか？",
+    "inviteQueued": "カレンダー招待を送信中...",
+    "columns": {
+      "type": "タイプ",
+      "date": "日付",
+      "location": "場所",
+      "inviteStatus": "招待",
+      "actions": "操作"
+    },
+    "error": "ミーティングを読み込めませんでした",
+    "inviteSuccess": "カレンダー招待を送信中です"
+  },
+  "portal": {
+    "noCompanyLinked": "あなたのアカウントは会社に紐付けられていません",
+    "noCompanyLinked.detail": "主催者にお問い合わせください",
+    "analytics": {
+      "kpi": {
+        "costPerAttendee": "参加者1人あたりのコスト",
+        "attendanceRate": "平均出席率",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "過去5年間",
+        "allHistory": "全履歴"
+      },
+      "export": {
+        "button": "Excelをエクスポート",
+        "loading": "エクスポート中..."
+      },
+      "noData": "選択した期間の出席データが見つかりません",
+      "error": "出席データの読み込みに失敗しました",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    },
+    "topics": {
+      "title": "トピックの提案",
+      "suggest": "トピックを提案",
+      "vote": "投票する",
+      "unvote": "投票を取り消す",
+      "edit": "編集",
+      "delete": "削除",
+      "col": {
+        "topic": "トピック",
+        "company": "会社",
+        "date": "日付",
+        "actions": "操作"
+      },
+      "status": {
+        "proposed": "提案済み",
+        "selected": "選択済み",
+        "declined": "却下"
+      },
+      "plannedFor": "予定：",
+      "empty": "まだトピックの提案がありません",
+      "form": {
+        "title": "タイトル",
+        "description": "説明",
+        "submit": "送信",
+        "titleRequired": "タイトルは必須です（少なくとも5文字）",
+        "descriptionHint": "任意、最大500文字",
+        "dialogTitle": "新しいトピックを提案",
+        "editDialogTitle": "トピックを編集",
+        "update": "更新"
+      },
+      "organizer": {
+        "title": "パートナーのトピック提案",
+        "col": {
+          "title": "タイトル",
+          "company": "会社",
+          "votes": "投票数",
+          "date": "日付",
+          "actions": "操作"
+        },
+        "status": "ステータス",
+        "plannedEvent": "予定イベント",
+        "save": "保存",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "error": "トピックの読み込みに失敗しました"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "personalDetails": {
+    "placeholders": {
+      "firstName": "Hansruedi",
+      "lastName": "Müller",
+      "email": "hansruedi.mueller@firma.ch",
+      "company": "Firma sueche...",
+      "role": "Senior Entwickler"
+    }
+  }
+}

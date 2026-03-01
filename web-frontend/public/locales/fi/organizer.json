@@ -1,0 +1,444 @@
+{
+  "navigation": {
+    "partners": "Kumppanit",
+    "topicManagement": "Aiheiden hallinta"
+  },
+  "topicBacklog": {
+    "pageTitle": "Aiheiden hallinta",
+    "pageDescription": "Hallinnoi backlogin aiheita, valitse aiheita tapahtumiin ja analysoi käyttömalleja",
+    "title": "Aiheiden backlog-hallinta",
+    "subtitle": "Valitse aiheita backlogista älykkäiden ehdotusten ja vanhenemisen tunnistuksen avulla",
+    "selectPrompt": "Valitse aihe nähdäksesi tiedot",
+    "noTopics": "Suodattimiasi vastaavia aiheita ei löytynyt",
+    "lastUsed": "Viimeksi käytetty",
+    "usageCount": "Käytetty {{count}} kertaa",
+    "createNew": "Luo uusi aihe",
+    "breadcrumbs": {
+      "home": "Etusivu",
+      "events": "Tapahtumat",
+      "topicSelection": "Aiheen valinta",
+      "manageTopics": "Hallinnoi aiheita"
+    },
+    "error": {
+      "loadFailed": "Aiheiden lataaminen epäonnistui"
+    },
+    "createModal": {
+      "title": "Luo uusi aihe",
+      "fields": {
+        "title": "Otsikko",
+        "description": "Kuvaus",
+        "category": "Kategoria",
+        "categoryHint": "esim. tekninen, liiketoiminta, suunnittelu"
+      },
+      "errors": {
+        "titleRequired": "Otsikko on pakollinen",
+        "titleTooLong": "Otsikossa saa olla enintään 255 merkkiä",
+        "descriptionRequired": "Kuvaus on pakollinen",
+        "categoryRequired": "Kategoria on pakollinen",
+        "createFailed": "Aiheen luominen epäonnistui. Yritä uudelleen."
+      },
+      "create": "Luo aihe",
+      "creating": "Luodaan..."
+    },
+    "editModal": {
+      "title": "Muokkaa aihetta",
+      "fields": {
+        "title": "Otsikko",
+        "description": "Kuvaus",
+        "category": "Kategoria"
+      },
+      "errors": {
+        "titleRequired": "Otsikko on pakollinen",
+        "titleTooLong": "Otsikossa saa olla enintään 255 merkkiä",
+        "categoryRequired": "Kategoria on pakollinen",
+        "updateFailed": "Aiheen päivittäminen epäonnistui. Yritä uudelleen."
+      },
+      "save": "Tallenna muutokset",
+      "saving": "Tallennetaan..."
+    },
+    "filters": {
+      "title": "Suodattimet",
+      "category": "Kategoria",
+      "status": "Tila",
+      "sort": "Lajittele",
+      "all": "Kaikki kategoriat",
+      "allStatuses": "Kaikki tilat",
+      "categories": {
+        "technical": "Tekninen",
+        "management": "Johtaminen",
+        "softSkills": "Pehmeät taidot",
+        "industryTrends": "Alan trendit",
+        "toolsPlatforms": "Työkalut ja alustat"
+      },
+      "statuses": {
+        "available": "Saatavilla (vihreä)",
+        "caution": "Käytä varoen (keltainen)",
+        "unavailable": "Liian tuore (punainen)"
+      },
+      "sortOptions": {
+        "safestFirst": "Turvallisin ensin (vanheneminen ↓)",
+        "recentFirst": "Tuorein ensin (vanheneminen ↑)",
+        "titleAZ": "Otsikko (A-Ö)",
+        "mostUsed": "Eniten käytetty"
+      }
+    },
+    "details": {
+      "metrics": "Mittarit",
+      "lastUsed": "Viimeksi käytetty",
+      "usageCount": "Käyttömäärä",
+      "editButton": "Muokkaa aihetta",
+      "deleteButton": "Poista aihe",
+      "selectButton": "Valitse tapahtumaan",
+      "selecting": "Valitaan...",
+      "overrideButton": "Ohita varoitus",
+      "statusGreen": "Turvallinen uudelleenkäyttöön - viimeksi käytetty yli 20 kuukautta sitten",
+      "statusYellow": "Käytä varoen - viimeksi käytetty 12–20 kuukautta sitten",
+      "statusRed": "Liian tuore - viimeksi käytetty viimeisen 12 kuukauden aikana, korkea kopiointivaara",
+      "similarityWarning": "{{count}} samanlaista aihetta havaittu (samankaltaisuus > 70 %)"
+    },
+    "viewMode": {
+      "label": "Näkymätila",
+      "heatMap": "Lämpökartta",
+      "list": "Lista",
+      "board": "Taulu",
+      "boardComingSoon": "Taulunäkymä tulossa pian..."
+    },
+    "heatMap": {
+      "title": "Aiheiden käytön lämpökartta",
+      "subtitle": "Tummemmat värit tarkoittavat enemmän käyttöä. Napsauta aihetta nähdäksesi tiedot.",
+      "description": "Aiheiden käyttötiheys viimeisen 24 kuukauden aikana (ryhmitelty neljännesvuosittain)",
+      "quarter": "Neljännesvuosi",
+      "spring": "Kevät",
+      "summer": "Kesä",
+      "autumn": "Syksy",
+      "usageCount": "Käyttömäärä",
+      "totalAttendance": "Osallistujia yhteensä",
+      "avgEngagement": "Keskimääräinen sitoutuminen",
+      "events": "Tapahtumat",
+      "noData": "Tälle aiheelle ei ole käyttöhistoriaa saatavilla.",
+      "noTopics": "Ei aiheita näytettäväksi.",
+      "tooltip": "Napsauta neljännesvuotta nähdäksesi tiedot tätä aihetta käyttäneistä tapahtumista",
+      "hint": "Vie hiiri datapisteiden päälle saadaksesi lisätietoja",
+      "stale": "Vanhentunut - ei käytetty äskettäin",
+      "trending": "Trendikäs - käytetty äskettäin",
+      "legend": {
+        "noUsage": "Ei käyttöä",
+        "low": "Vähäinen käyttö",
+        "medium": "Kohtalainen käyttö",
+        "high": "Runsas käyttö",
+        "stale": "Vanhentunut",
+        "trending": "Trendikäs"
+      },
+      "navigation": {
+        "previous": "Edelliset vuodet",
+        "next": "Seuraavat vuodet",
+        "atCurrent": "Kuluva vuosi"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Samankaltaisia aiheita havaittu",
+        "message": "Seuraavilla aiheilla on suuri samankaltaisuus (> 70 %) valitsemasi aiheen kanssa. Haluatko varmasti jatkaa?",
+        "similarity": "Samankaltaisuus",
+        "justification": "Perustelu (valinnainen)",
+        "confirm": "Valitse silti"
+      },
+      "override": {
+        "title": "Ohita vanhenemisvaroitus",
+        "message": "Tätä aihetta on käytetty äskettäin (vanhenemisPisteet: {{score}} %). Anna perustelu sen uudelleenkäytölle.",
+        "justification": "Perustelu",
+        "helper": "Selitä, miksi tätä aihetta tulisi käyttää uudelleen tuoreudesta huolimatta",
+        "confirm": "Ohita ja valitse"
+      },
+      "delete": {
+        "title": "Poista aihe",
+        "message": "Haluatko varmasti poistaa \"{{title}}\"? Tätä toimintoa ei voi kumota.",
+        "cannotDelete": "Tätä aihetta ei voi poistaa, koska sitä on käytetty {{count}} tapahtumassa.",
+        "confirm": "Poista aihe",
+        "success": "Aihe poistettu onnistuneesti",
+        "error": "Aiheen poistaminen epäonnistui. Yritä uudelleen."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Puhujien ideointi",
+    "subtitle": "Lisää potentiaalisia puhujia tapahtuman ryhmään ja osoita heidät järjestäjille hankintaa varten",
+    "form": {
+      "speakerName": "Puhujan nimi",
+      "company": "Yritys",
+      "expertise": "Asiantuntemus",
+      "assignOrganizer": "Osoita järjestäjälle (valinnainen)",
+      "notes": "Huomiot (valinnainen)",
+      "addButton": "Lisää ryhmään",
+      "adding": "Lisätään...",
+      "error": "Puhujan lisääminen epäonnistui"
+    },
+    "pool": {
+      "title": "Puhujaryhmä",
+      "empty": "Ryhmässä ei ole vielä puhujia. Lisää niitä yllä!",
+      "expertise": "Asiantuntemus",
+      "assigned": "Osoitettu henkilölle",
+      "error": "Puhujaryhmän lataaminen epäonnistui"
+    },
+    "actions": {
+      "skipForNow": "Ohita toistaiseksi",
+      "continue": "Jatka hankintaan"
+    }
+  },
+  "speakerOutreach": {
+    "speakerName": "Puhuja",
+    "contactMethod": "Yhteydenottotapa",
+    "contactDate": "Yhteydenottopäivä",
+    "markContacted": "Merkitse kontaktoiduksi",
+    "contactHistory": "Yhteydenottohistoria",
+    "outreachDetails": "Hankinnan tiedot",
+    "noContactHistory": "Ei yhteydenottohistoriaa",
+    "contactedBy": "Kontaktoinut",
+    "markContactedModal": {
+      "title": "Merkitse puhuja kontaktoiduksi",
+      "method": {
+        "email": "Sähköposti",
+        "phone": "Puhelin",
+        "inPerson": "Kasvotusten"
+      },
+      "notesPlaceholder": "Huomioita keskustelusta...",
+      "error": {
+        "methodRequired": "Yhteydenottotapa on pakollinen",
+        "dateRequired": "Yhteydenottopäivä on pakollinen",
+        "failed": "Yhteydenoton tallentaminen epäonnistui",
+        "loadHistory": "Yhteydenottohistorian lataaminen epäonnistui"
+      }
+    },
+    "emailPlaceholder": "speaker@example.com"
+  },
+  "speakerStatus": {
+    "title": "Puhujien tila",
+    "statusSummary": "Tilayhteenveto",
+    "lanes": "Tilakaisteet",
+    "IDENTIFIED": "Tunnistettu",
+    "INVITED": "Kutsuttu",
+    "CONTACTED": "Kontaktoitu",
+    "READY": "Valmis",
+    "ACCEPTED": "Hyväksytty",
+    "CONTENT_SUBMITTED": "Sisältö lähetetty",
+    "QUALITY_REVIEWED": "Laatu tarkistettu",
+    "CONFIRMED": "Vahvistettu",
+    "DECLINED": "Kieltäytynyt",
+    "changeStatus": "Vaihda tila",
+    "changeReason": "Tilanvaihdon syy (valinnainen)",
+    "confirmChange": "Vaihda tila",
+    "statusChanged": "Tila vaihdettu onnistuneesti",
+    "invalidTransition": "Virheellinen tilasiirtymä tilasta {{from}} tilaan {{to}}",
+    "historyTitle": "Tilahistoria",
+    "changedBy": "Vaihtanut",
+    "noHistory": "Tilahistoriaa ei ole saatavilla",
+    "acceptanceRate": "Hyväksymisprosentti: {{rate}} %",
+    "progress": "{{accepted}} / {{required}} puhujaa hyväksytty",
+    "thresholdMet": "Vähimmäisraja saavutettu ✓",
+    "thresholdNotMet": "Vähimmäisrajaa ei saavutettu ({{count}} / {{required}})",
+    "overflowDetected": "Ylivuoto havaittu ({{count}} > {{max}})",
+    "dragToChange": "Vedä puhujia vaihtaaksesi tilaa",
+    "confirmChangeMessage": "Vaihdetaanko {{speaker}}:n tila tilasta {{from}} tilaan {{to}}?",
+    "reasonHelperText": "Valinnainen (enintään {{max}} merkkiä)",
+    "reasonPlaceholder": "esim. Puhuja vahvistettu sähköpostitse",
+    "reasonTooLong": "Syy on liian pitkä ({{current}}/{{max}} merkkiä)"
+  },
+  "speakerContent": {
+    "submitContent": "Lähetä puhujan sisältö",
+    "presentationDetails": "Esityksen tiedot",
+    "speakerInformation": "Puhujan tiedot",
+    "submitting": "Lähetetään...",
+    "editSpeakerProfile": "Muokkaa puhujan profiilia",
+    "createNewSpeaker": "Luo uusi puhuja",
+    "form": {
+      "username": "Hae puhujaa",
+      "presentationTitle": "Esityksen otsikko",
+      "presentationAbstract": "Esityksen tiivistelmä",
+      "charactersRemaining": "merkkiä jäljellä"
+    },
+    "errors": {
+      "usernameRequired": "Puhuja on pakollinen",
+      "titleRequired": "Esityksen otsikko on pakollinen",
+      "abstractRequired": "Esityksen tiivistelmä on pakollinen",
+      "abstractTooLong": "Tiivistelmässä saa olla enintään {{max}} merkkiä",
+      "submitFailed": "Sisällön lähettäminen epäonnistui. Yritä uudelleen."
+    }
+  },
+  "qualityReview": {
+    "title": "Laaduntarkistus",
+    "speaker": "Puhuja",
+    "presentationTitle": "Esityksen otsikko",
+    "abstract": "Tiivistelmä",
+    "qualityCriteria": "Laatukriteerit",
+    "characters": "merkkiä",
+    "detected": "Havaittu",
+    "notDetected": "Ei havaittu",
+    "passed": "Hyväksytty",
+    "promotionDetected": "Mainonta havaittu",
+    "approve": "Hyväksy",
+    "reject": "Hylkää",
+    "approving": "Hyväksytään...",
+    "submitting": "Lähetetään...",
+    "confirmReject": "Vahvista hylkääminen",
+    "rejectInstructions": "Anna palautetta siitä, miksi sisältö hylätään.",
+    "feedbackLabel": "Palaute",
+    "feedbackPlaceholder": "Selitä, mitä tulee parantaa...",
+    "noContent": "Sisältöä ei ole saatavilla",
+    "criteria": {
+      "abstractLength": "Tiivistelmän pituus",
+      "lessonsLearned": "Sisältää \"Opitut asiat\"",
+      "noPromotion": "Ei tuotemainontaa"
+    },
+    "errors": {
+      "feedbackRequired": "Palaute on pakollinen",
+      "unknown": "Tapahtui tuntematon virhe"
+    }
+  },
+  "speakers": {
+    "invite": "Kutsu",
+    "sendInvitation": "Lähetä kutsu",
+    "noEmailTooltip": "Lisää sähköposti kutsua varten",
+    "sending": "Lähetetään...",
+    "inviteSent": "Kutsu lähetetty",
+    "invitationSent": "Kutsu lähetetty osoitteeseen {{email}}",
+    "inviteFailed": "Lähetys epäonnistui",
+    "invitationFailed": "Kutsun lähettäminen epäonnistui",
+    "email": "Sähköpostiosoite",
+    "emailRequired": "Sähköposti on pakollinen kutsun lähettämiseksi",
+    "invalidEmail": "Anna kelvollinen sähköpostiosoite",
+    "saveEmail": "Tallenna sähköposti",
+    "emailSaved": "Sähköposti tallennettu",
+    "tentative": "Alustava",
+    "responseDetails": "Vastauksen tiedot",
+    "acceptedAt": "Hyväksytty",
+    "preferredTimeSlot": "Toivottu aikaväli",
+    "travelRequirements": "Matkatarpeet",
+    "technicalRequirements": "Tekniset vaatimukset",
+    "initialTitle": "Esityksen otsikko",
+    "comments": "Kommentit",
+    "declineDetails": "Kieltäytymisen tiedot",
+    "declinedAt": "Kieltäytynyt",
+    "declineReason": "Syy",
+    "tentativeDetails": "Alustavat tiedot",
+    "tentativeReason": "Syy",
+    "sendReminder": "Lähetä muistutus",
+    "sendingReminder": "Lähetetään...",
+    "reminderSent": "Muistutus lähetetty osoitteeseen {{email}}",
+    "reminderFailed": "Muistutuksen lähettäminen epäonnistui"
+  },
+  "tasks": {
+    "taskBoard": "Tehtävätaulu",
+    "filter": "Suodata",
+    "myTasks": "Omat tehtäväni",
+    "allTasks": "Kaikki tehtävät",
+    "sortBy": "Lajittele",
+    "dueDate": "Eräpäivä",
+    "createdDate": "Luontipäivä",
+    "addCustomTask": "Lisää mukautettu tehtävä",
+    "errorLoadingTasks": "Tehtävien lataaminen epäonnistui",
+    "pending": "Odottaa",
+    "pendingDescription": "Odottaa käynnistystilaa",
+    "toDo": "Tehtävä",
+    "todoDescription": "Valmis aloitettavaksi",
+    "inProgress": "Käynnissä",
+    "inProgressDescription": "Parhaillaan työn alla",
+    "completed": "Valmis",
+    "completedDescription": "Valmiit tehtävät",
+    "completeTask": "Merkitse valmiiksi",
+    "completionNotes": "Valmistumisohjeet (valinnainen)",
+    "markComplete": "Merkitse valmiiksi",
+    "due": "Eräpäivä",
+    "assignedTo": "Osoitettu",
+    "completedOn": "Valmistui",
+    "completedBy": "Suorittanut",
+    "noTasks": "Ei tehtäviä"
+  },
+  "analytics": {
+    "title": "Analytiikka",
+    "timeRange": {
+      "all": "Koko aika",
+      "5y": "Viimeiset 5 vuotta",
+      "2y": "Viimeiset 2 vuotta"
+    },
+    "tabs": {
+      "overview": "Yleiskatsaus",
+      "attendance": "Osallistuminen",
+      "companies": "Yritykset"
+    },
+    "kpi": {
+      "totalEvents": "Tapahtumia yhteensä",
+      "totalAttendees": "Osallistujia yhteensä",
+      "companiesRepresented": "Yritykset",
+      "totalSessions": "Sessioita yhteensä",
+      "totalSpeakers": "Puhujia yhteensä"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Tapahtumahistoria",
+      "attendeesPerEvent": "Osallistujat per tapahtuma",
+      "returningVsNew": "Palaavat vs. uudet osallistujat",
+      "eventsPerCategory": "Tapahtumat kategorioittain",
+      "topicPopularity": "Aiheiden suosio",
+      "attendanceOverTime": "Osallistuminen yrityksittäin ajan myötä",
+      "sessionsPerCompany": "Sessiot yrityksittäin",
+      "attendeeDistribution": "Osallistujien jakautuminen yrityksittäin"
+    },
+    "labels": {
+      "returning": "Palaavat",
+      "new": "Uudet",
+      "showDataTable": "Näytä datataulu",
+      "hideDataTable": "Piilota datataulu",
+      "noData": "Tähän ajanjaksoon ei ole dataa saatavilla",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Kaikki"
+      },
+      "labelToggle": {
+        "title": "Otsikko",
+        "category": "Kategoria",
+        "both": "Molemmat"
+      },
+      "filterByEvent": "Suodata tapahtuman mukaan",
+      "allEvents": "Kaikki tapahtumat",
+      "sessions": "sessioita",
+      "speakers": "puhujia"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Kirjoita aihe ja paina Enter...",
+    "fitAll": "Sovita kaikki",
+    "snapToActive": "Keskitä aktiiviseen",
+    "backButton": "← Takaisin aiheiden listaan",
+    "unsavedWarning": "Tallentamaton istunto — kaikki muutokset menetetään. Palataan?",
+    "accept": {
+      "title": "Valitse aihe: {{topic}}",
+      "partnerAlignment": "{{count}}/9 kumppania linjattu",
+      "lastCovered": "Viimeksi käsitelty: BATbern #{{num}} ({{count}} tapahtumaa sitten)",
+      "overrideReason": "Miksi palata tähän aiheeseen? (valinnainen)",
+      "confirm": "Valitse tämä aihe",
+      "cancel": "Jatka tutkimista",
+      "saveError": "Aiheen valinnan tallentaminen epäonnistui. Yritä uudelleen."
+    },
+    "noEventCode": "Tapahtumatunnusta ei annettu"
+  },
+  "livePreview": {
+    "devicePreviewMode": "laitteen esikatselutila",
+    "desktopPreview": "Työpöydän esikatselu",
+    "mobilePreview": "Mobiiliesikatselu",
+    "printPreview": "Tulostuksen esikatselu",
+    "desktop": "Työpöytä",
+    "mobile": "Mobiili",
+    "print": "Tulosta",
+    "refreshPreview": "Päivitä esikatselu",
+    "switchedTo": "Vaihdettu {{device}}-esikatseluun",
+    "refreshingPreview": "Päivitetään esikatselua...",
+    "failedToLoad": "Esikatselun lataaminen epäonnistui. Yritä uudelleen.",
+    "iframeTitle": "Tapahtuman esikatselu",
+    "iframeAriaLabel": "Tapahtuman sisällön esikatselu",
+    "previewModeCaption": "Esikatselutila: {{mode}} | Vaihe: {{phase}}",
+    "deviceCaption": "Laite: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
+  }
+}

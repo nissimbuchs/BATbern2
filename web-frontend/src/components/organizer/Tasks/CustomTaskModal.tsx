@@ -412,7 +412,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
 
       <DialogActions>
         <Button onClick={handleClose} disabled={isLoading}>
-          {t('common.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
           {isLoading ? <CircularProgress size={20} /> : submitLabel}

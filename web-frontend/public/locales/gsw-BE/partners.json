@@ -1,0 +1,31 @@
+{
+  "pagination": {},
+  "detail": {
+    "settingsTab": {
+      "autoRenewal": "Auto-Renewal"
+    }
+  },
+  "portal": {
+    "topics": {
+      "organizer": {
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      }
+    },
+    "analytics": {
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    }
+  },
+  "meetings": {
+    "fields": {
+      "eventCodePlaceholder": "BATbern57"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

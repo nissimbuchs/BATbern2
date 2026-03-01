@@ -744,7 +744,7 @@ export interface components {
        * @default de
        * @enum {string}
        */
-      language: 'de' | 'en' | 'fr' | 'it';
+      language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
       /** @default true */
       emailNotifications: boolean;
       /** @default true */

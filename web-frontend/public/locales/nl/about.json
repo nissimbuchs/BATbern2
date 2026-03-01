@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "title": "Over BATbern",
+    "subtitle": "Technologische uitwisseling tussen IT-experts"
+  },
+  "association": {
+    "title": "Berner-Architekten-Treffen Vereniging",
+    "history": "Sinds 23 januari 2009 wordt het Berner Architekten-Treffen georganiseerd door de Berner-Architekten-Treffen vereniging.",
+    "mission": "Het Berner Architekten-Treffen is al sinds 2005 een ontmoetingsplatform voor IT-professionals die geïnteresseerd zijn in architectuuronderwerpen.",
+    "platform": "Door middel van praktische presentaties, mogelijkheden voor diepgaande discussies over actuele kwesties en directe contacten tussen bedrijven uit verschillende sectoren, biedt het Berner Architekten Treffen een uitstekend platform voor de uitwisseling van ideeën en ervaringen.",
+    "statuten": "Verenigingsstatuten (PDF)"
+  },
+  "organizers": {
+    "title": "Organisatiecomité",
+    "description": "Het Berner-Architekten-Treffen wordt inhoudelijk en organisatorisch ondersteund door een toegewijd organisatiecomité:",
+    "noOrganizers": "Geen organisatoren gevonden"
+  },
+  "partners": {
+    "title": "Onze partners",
+    "description": "Het Berner Architekten-Treffen is als gratis evenement mogelijk dankzij de royale steun van de volgende bedrijven en organisaties:"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Voor vragen, suggesties en opmerkingen kunt u elk lid rechtstreeks contacteren of ons bereiken:"
+  }
+}

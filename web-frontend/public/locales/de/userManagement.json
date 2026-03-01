@@ -1,69 +1,31 @@
 {
   "title": "Benutzerverwaltung",
   "addUser": "Benutzer hinzufügen",
-  "back": "Zurück",
   "search": {
     "placeholder": "Nach Name oder E-Mail suchen...",
-    "noResults": "Keine Benutzer gefunden",
-    "clearFilters": "Filter löschen"
-  },
-  "viewMode": {
-    "toggle": "Ansichtsmodus umschalten",
-    "grid": "Rasteransicht",
-    "list": "Listenansicht"
+    "noResults": "Keine Benutzer gefunden"
   },
   "filters": {
-    "title": "Filter",
     "clearAll": "Alle Filter löschen",
     "role": {
       "label": "Rolle",
-      "all": "Alle Rollen",
-      "organizer": "Organisator",
-      "speaker": "Referent",
-      "partner": "Partner",
-      "attendee": "Teilnehmer"
-    },
-    "company": {
-      "label": "Firma",
-      "all": "Alle Firmen",
-      "placeholder": "Firma auswählen..."
+      "all": "Alle Rollen"
     },
     "status": {
-      "label": "Status",
       "active": "Aktiv",
-      "inactive": "Inaktiv",
-      "all": "Alle"
+      "inactive": "Inaktiv"
     }
   },
   "table": {
     "viewUser": "Benutzer {{name}} anzeigen",
     "headers": {
-      "name": "Name",
-      "email": "E-Mail",
-      "company": "Firma",
-      "roles": "Rollen",
-      "status": "Status",
-      "actions": "Aktionen"
+      "roles": "Rollen"
     },
-    "showing": "{{count}} Benutzer anzeigen",
-    "showingRange": "{{from}}-{{to}} von {{total}} Benutzern",
-    "perPage": "pro Seite",
-    "empty": "Keine Benutzer gefunden",
-    "emptySearch": "Keine Benutzer entsprechen Ihrer Suche. Versuchen Sie, die Filter zu löschen.",
-    "sortBy": "Sortieren nach",
-    "ascending": "Aufsteigend",
-    "descending": "Absteigend"
+    "empty": "Keine Benutzer gefunden"
   },
   "actions": {
     "view": "Anzeigen",
-    "editRoles": "Rollen bearbeiten",
-    "delete": "Löschen",
-    "retry": "Wiederholen",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "close": "Schließen",
-    "edit": "Bearbeiten",
-    "confirm": "Bestätigen"
+    "editRoles": "Rollen bearbeiten"
   },
   "roles": {
     "organizer": "Organisator",
@@ -79,17 +41,8 @@
   "modal": {
     "userDetail": {
       "title": "Benutzerdetails",
-      "profile": "Profil",
-      "contactInfo": "Kontaktinformationen",
-      "rolesAssigned": "Zugewiesene Rollen",
-      "companyAffiliation": "Firmenzugehörigkeit",
-      "activityHistory": "Aktivitätsverlauf",
-      "accountCreated": "Konto erstellt",
       "createdAt": "Erstellt am",
-      "updatedAt": "Zuletzt aktualisiert",
-      "lastLogin": "Letzte Anmeldung",
-      "noCompany": "Keine Firma zugewiesen",
-      "noActivity": "Keine Aktivitäten vorhanden"
+      "updatedAt": "Zuletzt aktualisiert"
     },
     "createUser": {
       "title": "Neuen Benutzer erstellen",
@@ -103,91 +56,44 @@
     },
     "editRoles": {
       "title": "Rollen bearbeiten",
-      "subtitle": "Rollen für {{name}} verwalten",
       "user": "Benutzer",
       "selectRoles": "Rollen auswählen",
-      "minimumOrganizers": "Es müssen mindestens {{count}} Organisatoren im System vorhanden sein",
-      "cannotRemove": "Diese Rolle kann nicht entfernt werden",
-      "updating": "Wird aktualisiert...",
       "saving": "Wird gespeichert..."
     },
     "deleteConfirm": {
       "title": "Benutzer löschen",
       "message": "Möchten Sie diesen Benutzer wirklich löschen?",
-      "userName": "Benutzer: {{name}}",
       "gdprWarning": "DSGVO-Hinweis: Diese Aktion löscht alle Benutzerdaten dauerhaft und kann nicht rückgängig gemacht werden.",
-      "cascadeWarning": "Alle zugehörigen Daten werden ebenfalls gelöscht.",
-      "cannotDelete": "Dieser Benutzer kann nicht gelöscht werden",
-      "lastOrganizerWarning": "Sie können den letzten Organisator nicht löschen. Es müssen mindestens {{count}} Organisatoren im System vorhanden sein.",
-      "deleting": "Wird gelöscht..."
+      "cascadeWarning": "Alle zugehörigen Daten werden ebenfalls gelöscht."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Profilfoto hochladen",
+      "removePhotoAria": "Profilfoto entfernen"
     }
   },
   "pagination": {
-    "previous": "Zurück",
-    "next": "Weiter",
     "page": "Seite {{page}} von {{total}}",
-    "itemsPerPage": "Elemente pro Seite",
-    "goToPage": "Gehe zu Seite"
+    "itemsPerPage": "Elemente pro Seite"
   },
   "loading": {
     "users": "Benutzer werden geladen...",
     "search": "Suchen...",
-    "delete": "Löschen...",
     "save": "Speichern...",
     "updating": "Wird aktualisiert..."
   },
   "error": {
     "required": "Dieses Feld ist erforderlich",
     "email": {
-      "invalid": "Ungültige E-Mail-Adresse",
-      "exists": "E-Mail-Adresse existiert bereits",
-      "required": "E-Mail ist erforderlich"
-    },
-    "name": {
-      "tooShort": "Name muss mindestens {{min}} Zeichen lang sein",
-      "tooLong": "Name darf maximal {{max}} Zeichen lang sein"
-    },
-    "roles": {
-      "required": "Mindestens eine Rolle ist erforderlich",
-      "minOrganizers": "Es müssen mindestens {{count}} Organisatoren im System vorhanden sein"
+      "invalid": "Ungültige E-Mail-Adresse"
     },
     "minOneRole": "Mindestens eine Rolle muss ausgewählt werden",
     "loadFailed": "Fehler beim Laden der Benutzer",
     "createFailed": "Fehler beim Erstellen des Benutzers",
     "updateFailed": "Fehler beim Aktualisieren des Benutzers",
     "deleteFailed": "Fehler beim Löschen des Benutzers",
-    "deleteLastOrganizer": "Sie können den letzten Organisator nicht löschen",
-    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
-    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen",
     "notFound": "Benutzer nicht gefunden"
   },
-  "success": {
-    "userCreated": "Benutzer erfolgreich erstellt",
-    "userUpdated": "Benutzer erfolgreich aktualisiert",
-    "userDeleted": "Benutzer erfolgreich gelöscht",
-    "rolesUpdated": "Rollen erfolgreich aktualisiert"
-  },
-  "emptyState": {
-    "title": "Keine Benutzer",
-    "description": "Es wurden noch keine Benutzer hinzugefügt.",
-    "action": "Ersten Benutzer hinzufügen"
-  },
-  "accessibility": {
-    "filterPanel": "Filter-Panel",
-    "userTable": "Benutzertabelle",
-    "sortAscending": "Aufsteigend sortieren",
-    "sortDescending": "Absteigend sortieren",
-    "openMenu": "Menü öffnen",
-    "closeModal": "Modal schließen",
-    "rowCount": "{{count}} Benutzer in der Tabelle"
-  },
-  "offline": {
-    "indicator": "Offline",
-    "message": "Sie sind offline. Einige Funktionen sind möglicherweise nicht verfügbar.",
-    "viewingCache": "Zwischengespeicherte Daten werden angezeigt"
-  },
   "batchImport": {
-    "button": "Referenten importieren",
     "title": "Referenten Massenimport",
     "dropzone": "speakers.json hier ablegen oder klicken zum Durchsuchen",
     "dropzoneActive": "Datei hier ablegen...",
@@ -201,12 +107,6 @@
     "cancelButton": "Abbrechen",
     "importButton": "{{new}} erstellen / {{update}} aktualisieren",
     "allSkipped": "Keine Änderungen zu importieren",
-    "columns": {
-      "name": "Name",
-      "email": "E-Mail",
-      "company": "Firma",
-      "status": "Status"
-    },
     "status": {
       "pending": "Neu",
       "importing": "Importiere...",
@@ -225,7 +125,6 @@
     "noPortrait": "Kein Portrait-Bild"
   },
   "participantImport": {
-    "button": "Teilnehmer importieren",
     "title": "Teilnehmer aus CSV importieren",
     "dropzone": "CSV-Datei hier ablegen",
     "dropzoneActive": "CSV-Datei hier ablegen",
@@ -234,15 +133,8 @@
     "preview": "Vorschau: {{count}} Teilnehmer zum Importieren bereit",
     "previewLimitation": "Hinweis: Die Vorschau zeigt nur bestehende Benutzer anhand des Benutzernamens. Beim Import können Benutzer auch anhand des Namens (Vor- + Nachname) abgeglichen werden, wenn eindeutig. Einige als 'Neu' angezeigte Teilnehmer können mit bestehenden Benutzern anhand des Namens übereinstimmen.",
     "importButton": "{{count}} Teilnehmer importieren",
-    "startImport": "Import starten",
     "progress": "Importiere: {{current}} / {{total}}",
     "summary": "Import-Zusammenfassung",
-    "columns": {
-      "name": "Name",
-      "email": "E-Mail",
-      "events": "Veranstaltungen",
-      "status": "Status"
-    },
     "status": {
       "pending": "Ausstehend",
       "importing": "Importiere",
@@ -258,16 +150,29 @@
     },
     "badges": {
       "synthetic": "Synthetisch",
-      "eventsCount": "{{count}} Veranstaltungen"
+      "eventsCount": "{{count}} Veranstaltungen",
+      "existing": "Vorhanden",
+      "new": "Neu"
     },
-    "noParticipants": "Dieser Benutzer hat noch an keinen Veranstaltungen teilgenommen.",
-    "loadingEvents": "Lade Veranstaltungen...",
-    "errorLoadingEvents": "Fehler beim Laden der Teilnahmen"
+    "aria": {
+      "statusLabel": "Importstatus: {{label}}",
+      "dropzone": "Dateiupload-Bereich für CSV. CSV-Datei hierher ziehen oder klicken zum Auswählen",
+      "fileInput": "Dateieingabe für CSV-Upload",
+      "previewTable": "Vorschautabelle für Teilnehmerimport",
+      "participantTable": "Teilnehmer mit Importstatus",
+      "importProgress": "Importfortschritt",
+      "closeModal": "Importdialog schliessen",
+      "startImport": "Teilnehmer aus CSV-Datei importieren",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "CSV konnte nicht geparst werden",
+    "importFailed": "Import fehlgeschlagen"
   },
   "userDetail": {
     "tabs": {
       "overview": "Übersicht",
-      "eventsParticipated": "Teilgenommene Veranstaltungen"
+      "eventsParticipated": "Teilgenommene Veranstaltungen",
+      "ariaLabel": "User detail tabs"
     },
     "overviewText": "Benutzerprofil-Übersicht. Weitere Informationen können hier hinzugefügt werden.",
     "eventsTable": {
@@ -275,7 +180,6 @@
       "title": "Titel",
       "date": "Datum",
       "status": "Status",
-      "loading": "Veranstaltungen werden geladen...",
       "loadError": "Fehler beim Laden der Veranstaltungs-Teilnahme-Historie",
       "noEvents": "Dieser Benutzer hat noch an keinen Veranstaltungen teilgenommen",
       "untitledEvent": "Unbenannte Veranstaltung",
@@ -288,7 +192,80 @@
         "CANCELLED": "Abgesagt",
         "WAITLISTED": "Warteliste"
       }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "Konto",
+      "notifications": "Benachrichtigungen",
+      "privacy": "Datenschutz"
     },
-    "bio": "Biografie"
+    "account": {
+      "title": "Kontoeinstellungen",
+      "emailStatus": "E-Mail-Adresse kann nicht geändert werden",
+      "changePassword": "Passwort ändern",
+      "theme": "Darstellung",
+      "themeLight": "Hell",
+      "themeDark": "Dunkel",
+      "themeAuto": "Automatisch (Systemeinstellung)",
+      "timezone": "Zeitzone",
+      "save": "Kontoeinstellungen speichern"
+    },
+    "notifications": {
+      "title": "Benachrichtigungseinstellungen",
+      "epic7Notice": "Erweiterte Benachrichtigungseinstellungen kommen in einem zukünftigen Update.",
+      "channels": "Benachrichtigungskanäle",
+      "channelEmail": "E-Mail-Benachrichtigungen",
+      "channelInApp": "In-App-Benachrichtigungen",
+      "channelPush": "Push-Benachrichtigungen",
+      "frequency": "Benachrichtigungshäufigkeit",
+      "frequencyImmediate": "Sofort",
+      "frequencyDaily": "Tägliche Zusammenfassung",
+      "frequencyWeekly": "Wöchentliche Zusammenfassung",
+      "save": "Benachrichtigungseinstellungen speichern"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscribe": "Newsletter abonnieren",
+      "description": "Monatliche Updates zu BATbern-Veranstaltungen erhalten"
+    },
+    "privacy": {
+      "title": "Datenschutzeinstellungen",
+      "visibility": "Profil-Sichtbarkeit",
+      "visibilityPublic": "Öffentlich",
+      "visibilityMembersOnly": "Nur für Mitglieder",
+      "visibilityPrivate": "Privat",
+      "infoDisplay": "Informationsanzeige",
+      "showEmail": "E-Mail-Adresse anzeigen",
+      "showCompany": "Unternehmenszugehörigkeit anzeigen",
+      "showActivity": "Aktivitätsverlauf anzeigen",
+      "communication": "Kommunikation",
+      "allowMessaging": "Direktnachrichten von anderen Benutzern erlauben",
+      "viewPolicy": "Datenschutzerklärung anzeigen",
+      "save": "Datenschutzeinstellungen speichern"
+    }
+  },
+  "profile": {
+    "personalInfo": "Persönliche Informationen",
+    "editProfile": "Profil bearbeiten",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "bio": "Biografie",
+    "bioValidation": "Biografie darf maximal {{max}} Zeichen lang sein",
+    "saveChanges": "Änderungen speichern",
+    "removePhotoConfirm": "Möchten Sie Ihr Profilfoto wirklich entfernen?",
+    "labelName": "Name:",
+    "labelEmail": "E-Mail:",
+    "labelCompany": "Unternehmen:",
+    "labelBio": "Biografie:",
+    "recentActivity": "Letzte Aktivitäten",
+    "noActivity": "Keine letzten Aktivitäten",
+    "viewAll": "Alle anzeigen →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Foto hochladen",
+    "removeTooltip": "Foto entfernen",
+    "verified": "Verifiziert",
+    "memberSince": "Mitglied seit {{date}}"
   }
 }

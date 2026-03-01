@@ -128,7 +128,7 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
             {(data.avgEngagement * 100).toFixed(1)}%
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-            {t('topicBacklog.heatMap.events', 'Events')}: {data.events.length}
+            {t('common:navigation.events')}: {data.events.length}
           </Typography>
         </CardContent>
       </Card>

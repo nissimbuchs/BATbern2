@@ -1,0 +1,246 @@
+{
+  "title": "Directorio de socios",
+  "addPartner": "Agregar socio",
+  "searchPlaceholder": "Buscar por nombre de socio...",
+  "searchAriaLabel": "Buscar socios",
+  "clearSearch": "Borrar búsqueda",
+  "filters": {
+    "tier": "Nivel de asociación",
+    "tierAll": "Todos los niveles",
+    "status": "Estado",
+    "statusAll": "Todos",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "reset": "Restablecer filtros"
+  },
+  "tiers": {
+    "strategic": "Estratégico",
+    "platinum": "Platino",
+    "gold": "Oro",
+    "silver": "Plata",
+    "bronze": "Bronce"
+  },
+  "sort": {
+    "label": "Ordenar por",
+    "engagement": "Puntuación de participación",
+    "name": "Nombre de la empresa",
+    "tier": "Nivel de asociación",
+    "lastEvent": "Último evento"
+  },
+  "card": {
+    "comingSoon": "Próximamente - Epic 8"
+  },
+  "pagination": {
+    "page": "Página {{current}} de {{total}}",
+    "firstPage": "Primera página",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "lastPage": "Última página",
+    "ariaLabel": "Paginación de la lista de socios",
+    "partners_one": "{{count}} socio",
+    "partners_other": "{{count}} socios"
+  },
+  "empty": {
+    "noPartners": "No se encontraron socios"
+  },
+  "loading": "Cargando socios...",
+  "error": {
+    "failedToLoad": "Error al cargar los socios",
+    "correlationId": "ID de correlación"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} socio encontrado",
+    "filterUpdate": "Filtros actualizados",
+    "loading": "Cargando socios"
+  },
+  "modal": {
+    "createTitle": "Crear asociación",
+    "editTitle": "Editar asociación",
+    "fields": {
+      "company": "Empresa",
+      "startDate": "Fecha de inicio",
+      "endDateOptional": "Fecha de fin (opcional)"
+    },
+    "messages": {
+      "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea cerrar?"
+    }
+  },
+  "validation": {
+    "companyRequired": "La empresa es obligatoria",
+    "tierRequired": "El nivel de asociación es obligatorio",
+    "startDateRequired": "La fecha de inicio es obligatoria",
+    "endDateBeforeStart": "La fecha de fin debe ser posterior a la fecha de inicio"
+  },
+  "detail": {
+    "meetingsTab": {
+      "title": "Reuniones",
+      "addMeeting": "Programar reunión"
+    },
+    "notesTab": {
+      "title": "Notas",
+      "addNote": "Agregar nota",
+      "editNote": "Editar nota",
+      "deleteNoteConfirmTitle": "Eliminar nota",
+      "deleteNoteConfirmMessage": "¿Está seguro de que desea eliminar \"{{title}}\"?",
+      "titleLabel": "Título",
+      "contentLabel": "Contenido",
+      "htmlSupported": "El formato HTML es compatible",
+      "noNotes": "Aún no hay notas",
+      "failedToLoadNotes": "Error al cargar las notas",
+      "deleteNote": "Eliminar nota"
+    },
+    "settingsTab": {
+      "title": "Configuración",
+      "activePartnership": "Asociación activa",
+      "exportData": "Exportar datos del socio",
+      "deletePartner": "Eliminar datos del socio",
+      "accessDenied": "Acceso denegado",
+      "accessDeniedMessage": "Esta sección solo es accesible para organizadores.",
+      "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "contacts": "Contactos",
+      "meetings": "Reuniones",
+      "analytics": "Análisis",
+      "settings": "Configuración",
+      "partnerDetailTabs": "Pestañas de detalles del socio"
+    },
+    "overviewTab": {
+      "title": "Detalles de la asociación",
+      "tier": "Nivel de asociación",
+      "startDate": "Fecha de inicio de la asociación",
+      "benefits": "Beneficios",
+      "changeTier": "Cambiar nivel",
+      "tierBenefits": {
+        "logoPlacement": "Colocación del logotipo en el sitio web",
+        "newsletterMentions": "Menciones en el boletín",
+        "priorityAccess": "Acceso prioritario a eventos",
+        "quarterlyMeetings": "Reuniones estratégicas trimestrales",
+        "roiAnalytics": "Panel de análisis de ROI",
+        "accountManager": "Gestor de cuenta dedicado",
+        "eventAccess": "Acceso a eventos"
+      }
+    },
+    "errors": {
+      "failedToLoadContacts": "Error al cargar los contactos.",
+      "noContactsAssigned": "No hay usuarios socios asignados a esta empresa.",
+      "notFound": "Socio no encontrado",
+      "notFoundMessage": "No se encontró el socio \"{{name}}\".",
+      "loading": "Error al cargar el socio",
+      "loadingMessage": "Se produjo un error al cargar los detalles del socio. Inténtalo más tarde.",
+      "noData": "Sin datos",
+      "noDataMessage": "No hay datos de socio disponibles."
+    }
+  },
+  "meetings": {
+    "title": "Reuniones de socios",
+    "create": "Crear reunión",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Notas de la reunión",
+      "location": "Ubicación",
+      "eventCode": "Código de evento BATbern",
+      "eventCodeHint": "ej. BATbern57",
+      "startTime": "Hora de inicio",
+      "endTime": "Hora de fin",
+      "type": {
+        "spring": "Reunión de primavera",
+        "autumn": "Reunión de otoño"
+      },
+      "eventCodePlaceholder": "BATbern57"
+    },
+    "sendInvite": "Enviar invitación de calendario",
+    "inviteSent": "Invitación enviada",
+    "inviteNotSent": "Invitación no enviada",
+    "inviteSentOn": "Invitación enviada el {{date}}",
+    "noMeetings": "No se encontraron reuniones de socios",
+    "confirmSendInvite": "¿Enviar invitación de calendario a todos los contactos del socio?",
+    "inviteQueued": "Enviando invitación de calendario...",
+    "columns": {
+      "type": "Tipo",
+      "date": "Fecha",
+      "location": "Ubicación",
+      "inviteStatus": "Invitación",
+      "actions": "Acciones"
+    },
+    "error": "No se pudieron cargar las reuniones",
+    "inviteSuccess": "La invitación de calendario está siendo enviada"
+  },
+  "portal": {
+    "noCompanyLinked": "Su cuenta no está vinculada a una empresa",
+    "noCompanyLinked.detail": "Por favor, contacte a su organizador",
+    "analytics": {
+      "kpi": {
+        "costPerAttendee": "Costo por asistente",
+        "attendanceRate": "Tasa de asistencia promedio",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Últimos 5 años",
+        "allHistory": "Todo el historial"
+      },
+      "export": {
+        "button": "Exportar Excel",
+        "loading": "Exportando..."
+      },
+      "noData": "No se encontraron datos de asistencia para el período seleccionado",
+      "error": "Error al cargar los datos de asistencia",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    },
+    "topics": {
+      "title": "Sugerencias de temas",
+      "suggest": "Sugerir un tema",
+      "vote": "Votar",
+      "unvote": "Quitar voto",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "col": {
+        "topic": "Tema",
+        "company": "Empresa",
+        "date": "Fecha",
+        "actions": "Acciones"
+      },
+      "status": {
+        "proposed": "Propuesto",
+        "selected": "Seleccionado",
+        "declined": "Rechazado"
+      },
+      "plannedFor": "Planificado para",
+      "empty": "Aún no hay sugerencias de temas",
+      "form": {
+        "title": "Título",
+        "description": "Descripción",
+        "submit": "Enviar",
+        "titleRequired": "El título es obligatorio (al menos 5 caracteres)",
+        "descriptionHint": "Opcional, máximo 500 caracteres",
+        "dialogTitle": "Sugerir un nuevo tema",
+        "editDialogTitle": "Editar tema",
+        "update": "Actualizar"
+      },
+      "organizer": {
+        "title": "Sugerencias de temas de socios",
+        "col": {
+          "title": "Título",
+          "company": "Empresa",
+          "votes": "Votos",
+          "date": "Fecha",
+          "actions": "Acciones"
+        },
+        "status": "Estado",
+        "plannedEvent": "Evento planificado",
+        "save": "Guardar",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "error": "Error al cargar los temas"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

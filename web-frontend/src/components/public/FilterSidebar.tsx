@@ -72,7 +72,7 @@ export function FilterSidebar({
     <aside
       className="space-y-6"
       role="complementary"
-      aria-label="Event filters"
+      aria-label={t('filters.ariaLabel')}
       data-testid="filter-sidebar"
     >
       {/* Header */}
@@ -103,11 +103,12 @@ export function FilterSidebar({
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-testid="search-input"
         />
       </div>
 
       {/* Topics */}
-      <div>
+      <div data-testid="topic-filter">
         <h3 className="text-sm font-medium text-gray-900 mb-2">{t('archive.filters.topics')}</h3>
         <div className="space-y-2">
           {loading ? (
@@ -140,14 +141,14 @@ export function FilterSidebar({
       {/* Sort */}
       <div>
         <label htmlFor="sort-select" className="block text-sm font-medium text-gray-900 mb-2">
-          {t('archive.sort.label')}
+          {t('labels.sortBy')}
         </label>
         <select
           id="sort-select"
           data-testid="sort-select"
           value={currentSort}
           onChange={(e) => onSortChange(e.target.value)}
-          aria-label="Sort By"
+          aria-label={t('labels.sortBy')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {SORT_OPTIONS.map((option) => (

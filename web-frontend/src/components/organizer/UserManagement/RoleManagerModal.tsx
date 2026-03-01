@@ -80,10 +80,10 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
   };
 
   const roleOptions: { value: Role; label: string }[] = [
-    { value: 'ORGANIZER', label: t('filters.role.organizer') },
-    { value: 'SPEAKER', label: t('filters.role.speaker') },
-    { value: 'PARTNER', label: t('filters.role.partner') },
-    { value: 'ATTENDEE', label: t('filters.role.attendee') },
+    { value: 'ORGANIZER', label: t('common:role.organizer') },
+    { value: 'SPEAKER', label: t('common:role.speaker') },
+    { value: 'PARTNER', label: t('common:role.partner') },
+    { value: 'ATTENDEE', label: t('common:role.attendee') },
   ];
 
   if (!user) return null;
@@ -99,7 +99,12 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
       <DialogTitle id="role-manager-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">{t('modal.editRoles.title')}</Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label={t('common:actions.close')}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -156,7 +161,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined" data-testid="role-manager-cancel">
-          {t('actions.cancel')}
+          {t('common:actions.cancel')}
         </Button>
         <Button
           onClick={handleSave}
@@ -165,7 +170,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
           disabled={updateRolesMutation.isPending}
           data-testid="role-manager-save"
         >
-          {updateRolesMutation.isPending ? t('modal.editRoles.saving') : t('actions.save')}
+          {updateRolesMutation.isPending ? t('common:actions.saving') : t('common:actions.save')}
         </Button>
       </DialogActions>
     </Dialog>

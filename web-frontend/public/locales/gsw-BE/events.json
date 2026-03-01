@@ -1,0 +1,747 @@
+{
+  "navigation": {
+    "dashboard": "Veranstaltigen",
+    "events": "Veranstaltigen",
+    "topicManagement": "Themenverwautig",
+    "blobSelector": "Blob-Uswau"
+  },
+  "eventPage": {
+    "tabs": {
+      "venue": "Veranstautigsort",
+      "participants": "Teilnähmer",
+      "publishing": "Veröffentlichig",
+      "newsletter": "Newsletter",
+      "settings": "Istellige"
+    },
+    "tabsAriaLabel": "Veranstautigsnavigation",
+    "overview": {
+      "step": "Schritt",
+      "eventDetails": "Veranstautigsdetails",
+      "keyMetrics": "Schlüsselmässige",
+      "registered": "amäldet",
+      "filled": "belegt",
+      "speakers": "Redneri",
+      "confirmed": "bestätigt",
+      "materials": "Materialien",
+      "complete": "abgschlosse",
+      "sessionsComplete": "Sessione abgschlosse",
+      "budget": "Budget",
+      "selectedTopic": "Gwäuts Thema",
+      "quickActions": "Schnällaktione",
+      "selectTopic": "Thema uswähle",
+      "previewPublic": "Öffentligi Syte vorschau"
+    },
+    "participantsTab": {
+      "title": "Veranstautigsteilnähmer"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Name",
+        "email": "E-Mail",
+        "company": "Firma",
+        "status": "Status",
+        "registrationDate": "Amäldigsdatum",
+        "actions": "Aktione"
+      },
+      "empty": "No kei Teilnähmer amäldet",
+      "actions": {
+        "cancel": "Amäldig storniere",
+        "delete": "Amäldig lösche"
+      },
+      "deleteDialog": {
+        "title": "Amäldig lösche",
+        "message": "Bisch sicher, dass du d'Amäldig vo {{name}} permanent lösche wötsch? Die Aktion cha nid rückgängig gmacht werde.",
+        "cancel": "Abbräche",
+        "confirm": "Lösche"
+      }
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Teilnähmer sueche",
+        "placeholder": "Nach Name oder E-Mail sueche..."
+      },
+      "status": {
+        "label": "Amäldigsstatus",
+        "all": "Alli Status",
+        "confirmed": "Bestätigt",
+        "registered": "Amäldet",
+        "attended": "Teilgnoh",
+        "cancelled": "Storniert",
+        "waitlisted": "Wartelischte"
+      },
+      "clearAll": "Filter lösche"
+    },
+    "participantList": {
+      "loading": "Teilnähmer wärde gglade...",
+      "error": {
+        "loadFailed": "Teilnähmer chöne nid gglade werde. Bitte nomol versuche."
+      },
+      "actions": {
+        "retry": "Nomol versuche"
+      }
+    },
+    "settings": {
+      "moderator": "Veranstautigsmoderator",
+      "moderatorDesc": "Dr Organisator, wo für d'Moderierig vo dere Veranstatig zuständig isch.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator erfolgriich aktualisiert",
+      "moderatorUpdateError": "Moderator chöne nid aktualisiert werde."
+    },
+    "speakers": {
+      "progress": "Fortschritt",
+      "confirmed": "bestätigt",
+      "thresholdMet": "Schwellenwärt erreicht",
+      "needMore": "Meh Redneri nötig",
+      "acceptanceRate": "Akzeptanzrate",
+      "viewMode": "Ansichtsmodus",
+      "kanban": "Kanban",
+      "sessions": "Sessione",
+      "addSpeakers": "Redneri hinzuefüege",
+      "addToPool": "Redneri zum Pool hinzuefüege",
+      "kanbanView": "Kanban-Ansicht",
+      "sessionsView": "Sessione-Ansicht"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} aktivi Abonnente",
+      "sendHistory": "Versandverlauf",
+      "noHistory": "No kei Newsletter für die Veranstatig verschickt.",
+      "composeTitle": "Erstelle und versände",
+      "locale": "Sprach",
+      "preview": "Vorschau",
+      "sendNewsletter": "Newsletter versände",
+      "sendReminder": "Erinnerig schicke",
+      "confirmSendTitle": "Versand bestätige",
+      "confirmSendBody": "{{type}} an {{count}} Abonnente für d'Veranstatig «{{eventTitle}}» schicke?",
+      "sendSuccess": "Newsletter an {{count}} Empfänger gschickt.",
+      "sendError": "Versand fehlgschlage. Bitte nomol versuche.",
+      "historyDate": "Datum",
+      "historyType": "Typ",
+      "historyRecipients": "Empfänger",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Erinnerig",
+      "previewTitle": "E-Mail-Vorschau"
+    },
+    "venue": {
+      "vegetarianCount": "{{count}} Vegetarian",
+      "veganCount": "{{count}} Vegan",
+      "glutenFreeCount": "{{count}} Gluten-free"
+    }
+  },
+  "dashboard": {
+    "title": "Veranstautigsverwautig",
+    "activeEvents": "Aktivi Veranstaltigen",
+    "quickActions": "Schnällaktione",
+    "noEventsFound": "Kei Veranstaltigen gfunde",
+    "tryAdjustingFilters": "Versueche d'Filter azpasse",
+    "eventWord": "Veranstatig",
+    "eventWord_plural": "Veranstaltigen",
+    "eventType": {
+      "FULL_DAY": "Ganztag",
+      "AFTERNOON": "Namittag",
+      "EVENING": "Abig"
+    },
+    "actions": {
+      "edit": "Bearbeite",
+      "newEvent": "Neui Veranstatig",
+      "eventTypes": "Veranstautigstype",
+      "manageTopics": "Theme verwauté"
+    },
+    "searchEvents": "Veranstaltigen sueche...",
+    "filter": {
+      "workflowState": "Nach Workflow-Status filtre",
+      "year": "Nach Jahr filtre",
+      "allYears": "Alli Jahr",
+      "showArchived": "Archivierti Veranstaltigen zeige",
+      "activeFilters": "{{count}} Filter aktiv",
+      "clearAll": "Alli lösche",
+      "filtersActiveAriaLabel": "{{count}} filters active"
+    },
+    "errors": {
+      "failedToLoadEvents": "Veranstaltigen chöne nid gglade werde"
+    },
+    "eventCard": {
+      "ariaLabel": "Event card for {{title}}",
+      "progressAriaLabel": "Workflow progress {{progress}}%",
+      "selectTopicAriaLabel": "Select topic for {{title}}",
+      "editAriaLabel": "Edit {{title}}"
+    }
+  },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Ufgabe"
+  },
+  "tasks": {
+    "criticalTasks": "Kritischi Ufgabe",
+    "noCriticalTasks": "Kei kritischi Ufgabe",
+    "greatJob": "Gueti Arbet!",
+    "errorLoadingTasks": "Ufgabe chöne nid gglade werde",
+    "viewAllTasks": "Alli Ufgabe aluege",
+    "eventTasksDescription": "Ufgabe konfiguriere, wo automatisch erstellt und aktiviert wärde, wenn d'Veranstatig dur d'Workflow-Status gaat.",
+    "defaultTemplates": "Standard-Ufgabevorlagen",
+    "defaultTemplatesDescription": "Das si d'Standard-Veranstautigsplaniggsufgabe. Alli si vorousgwäut und wärde erstellt, wenn du d'Veranstatig spychersch.",
+    "taskExists": "Ufgab existiert scho",
+    "assignTo": "Zuewise a",
+    "triggerState": "Auslöser",
+    "dueDate": "Fällig",
+    "immediate": "Sofort",
+    "days": "Tag",
+    "customTemplates": "Eigeni Ufgabevorlagen",
+    "customTemplatesDescription": "Die Vorlagen si vom Team erstellt worde. Uswähle, weli für die Veranstatig iibeglosse wärde söue.",
+    "customTasks": "Eigeni Ufgabe",
+    "addCustomTask": "Eigeni Ufgab hinzuefüege",
+    "noCustomTasks": "No kei eigeni Ufgabe. Klick uf \"Eigeni Ufgab hinzuefüege\" zum Erstelle.",
+    "trigger": "Auslöser",
+    "assignedTo": "Zuegwiise a",
+    "unassigned": "Nid zuegwiise",
+    "editTask": "Ufgab bearbeite",
+    "deleteTask": "Ufgab lösche",
+    "taskName": "Ufgabename",
+    "taskNamePlaceholder": "z.B. Veranstautigsort-Bestätigigs-E-Mail schicke",
+    "selectEvent": "Veranstatig (optional)",
+    "selectEventHelp": "E Veranstatig uswähle zum Ufgab erstelle, oder als Vorlage spychere",
+    "noEvent": "Kei Veranstatig (als Vorlage spychere)",
+    "triggerStateHelp": "Dr Veranstautigsstatus, wo die Ufgab aktiviert",
+    "workflowStates": {
+      "topic_selection": "Themenauswau",
+      "speaker_brainstorming": "Redner-Ideessammlig",
+      "speaker_outreach": "Rednerkontakt",
+      "agenda_published": "Agenda veröffentlicht",
+      "agenda_finalized": "Agenda finalisiert",
+      "event_live": "Veranstatig läuft",
+      "post_event_wrap_up": "Nachbearbeitung",
+      "archived": "Archiviert"
+    },
+    "dueDateType": "Fälligkeitsdatumtyp",
+    "dueDateTypes": {
+      "immediate": "Sofort (jetzt)",
+      "relative_to_event": "Relativ zum Veranstautigsdatum",
+      "absolute": "Absoluts Datum"
+    },
+    "offsetDays": "Versatz-Tag",
+    "offsetDaysHelp": "Negativ = vor dr Veranstatig, Positiv = nach dr Veranstatig",
+    "absoluteDueDate": "Fälligkeitsdatum",
+    "assignedOrganizer": "Zuegwiesener Organisator",
+    "notes": "Notize (optional)",
+    "notesPlaceholder": "Istruktiore oder Kontext hinzuefüege...",
+    "saveAsTemplate": "Als wiederverwendbari Vorlage spychere",
+    "createTemplate": "Vorlage erstelle",
+    "createTask": "Ufgab erstelle",
+    "errors": {
+      "loadTemplatesFailed": "Ufgabevorlagen chöne nid gglade werde",
+      "taskNameRequired": "Ufgabename isch Pflicht",
+      "triggerStateRequired": "Auslöserstatus isch Pflicht",
+      "offsetDaysRequired": "Versatz-Tag isch Pflicht",
+      "eventRequired": "Bitte e Veranstatig uswähle oder als Vorlage spychere",
+      "updateTaskFailed": "Ufgab chöne nid aktualisiert werde",
+      "createTaskFailed": "Ufgab chöne nid erstellt werde"
+    },
+    "task": "task",
+    "tasks": "tasks",
+    "activeAriaLabel": "{{count}} active {{taskLabel}}"
+  },
+  "form": {
+    "createEvent": "Neui Veranstatig erstelle",
+    "editEvent": "Veranstatig bearbeite",
+    "eventNumber": "Veranstautigsnummer",
+    "title": "Titel",
+    "description": "Beschribig",
+    "eventDate": "Veranstautigsdatum",
+    "eventType": "Veranstautigstyp",
+    "capacity": "Kapazität",
+    "registrationDeadline": "Amäldigsfrist",
+    "venue": "Veranstautigsortname",
+    "venueAddress": "Veranstautigsortadress",
+    "status": "Status",
+    "save": "Spychere",
+    "saveCreate": "Spychere und erstelle",
+    "saveDraft": "Als Entwurf spychere",
+    "cancel": "Abbräche",
+    "eventTypes": {
+      "fullDay": "Ganztags-Veranstatig",
+      "afternoon": "Namittags-Veranstatig",
+      "evening": "Abigs-Veranstatig"
+    },
+    "eventTypeConfig": {
+      "title": "Veranstautigstyp-Konfiguration",
+      "description": "Slot-Afordrige und Zeitvorlagen für jeden Veranstautigstyp konfiguriere",
+      "minSlots": "Mindestslots",
+      "maxSlots": "Maximalslots",
+      "slotDuration": "Slotdauer (Minute)",
+      "theoreticalSlotsAM": "Theoretischi Slots am Morge",
+      "breakSlots": "Pause-Slots",
+      "lunchSlots": "Mittagesse-Slots",
+      "defaultCapacity": "Standardkapazität",
+      "structuralDurations": "Strukturelli Daure (Minute)",
+      "moderationStartDuration": "Moderationsbeginn (Min)",
+      "moderationEndDuration": "Moderationsend (Min)",
+      "breakDuration": "Pausendauer (Min)",
+      "lunchDuration": "Mittagessedauer (Min)",
+      "saveFailed": "Konfiguration chöne nid gspycheret werde",
+      "accessDenied": "Zuegriff verweigeret",
+      "organizerOnly": "Nur Organisatore chöne uf die Syte zuegriffe"
+    },
+    "themeImage": "Veranstautigsthemenbild",
+    "themeImageHelp": "Es Themenbild für die Veranstatig ufelade (PNG, JPEG oder SVG, max 5MB). Empfohleui Grösse: 1920x400px.",
+    "themeImageAlt": "Themenbild für d'Veranstatig",
+    "removeThemeImage": "Themenbild entferne",
+    "overrideValidation": "Workflow-Validierig überschribe (ermöglicht beliebigi Statusübergäng)",
+    "overrideReason": "Überschribigsgrand (optional)",
+    "overrideReasonPlaceholder": "Warum überschribsch du d'Workflow-Validierig?",
+    "overrideReasonHelp": "Das wird für Prüefzweck protokolliert",
+    "errors": {
+      "failedToLoadEventTypes": "Veranstautigstype chöne nid gglade werde"
+    }
+  },
+  "slotPreview": {
+    "title": "{{type}}-Vorschau",
+    "slots": "Slots",
+    "capacity": "Kapazität",
+    "timing": "Typischis Timing"
+  },
+  "filters": {
+    "status": "Status"
+  },
+  "validation": {
+    "eventNumberRequired": "Veranstautigsnummer isch Pflicht",
+    "eventNumberPositive": "Veranstautigsnummer mues e positivi Zahl si",
+    "titleRequired": "Titel isch Pflicht",
+    "titleMinLength": "Titel mues mindestens 10 Zeiche lang si",
+    "descriptionRequired": "Beschribig isch Pflicht",
+    "eventDateRequired": "Veranstautigsdatum isch Pflicht",
+    "registrationDeadline": "Amäldigsfrist mues am oder vor em Veranstautigsdatum si",
+    "capacityRequired": "Kapazität isch Pflicht",
+    "capacityPositive": "Kapazität mues e positivi Zahl si",
+    "venueNameRequired": "Veranstautigsortname isch Pflicht",
+    "venueAddressRequired": "Veranstautigsortadress isch Pflicht",
+    "minSlotsRequired": "Mindestslots isch Pflicht",
+    "maxSlotsRequired": "Maximalslots isch Pflicht",
+    "slotDurationMinimum": "Slotdauer mues mindestens 15 Minute si",
+    "minSlotsLessThanMax": "Mindestslots mues chliiner oder gliich wie Maximalslots si",
+    "defaultCapacityPositive": "Standardkapazität mues e positivi Zahl si"
+  },
+  "errors": {
+    "loadFailed": "Veranstaltigen chöne nid gglade werde",
+    "saveFailed": "Veranstatig chöne nid gspycheret werde",
+    "deleteFailed": "Veranstatig chöne nid glöscht werde",
+    "notFound": "Veranstatig nid gfunde",
+    "unauthorized": "Du hesch kei Bärechtigig für die Veranstatig",
+    "validationError": "Ungültige Iigab. Bitte d'Daten prüefe.",
+    "serviceError": "Es unerwarteter Fähler isch passiert. Bitte nomol versuche.",
+    "networkError": "Netzwerkfähler. Bitte d'Verbindig prüefe.",
+    "correlationId": "Korrelations-ID",
+    "retry": "Nomol versuche",
+    "imageUploadFailed": "Themenbild chöne nid ufeglade werde",
+    "imageTooBig": "Bilddatei z'gross (max 5MB)",
+    "imageInvalidType": "Ungültige Bildtyp (PNG, JPEG oder SVG verwände)",
+    "MULTIPLE_FILES": "Bitte nur es Datei gleichzytig ufelade",
+    "FILE_TOO_LARGE": "Dateigrösse übersteigt d'5MB-Limite",
+    "INVALID_FILE_TYPE": "Ungültige Dateityp. Bitte nur PNG, JPEG oder SVG-Bilder ufelade"
+  },
+  "confirmations": {
+    "unsavedChanges": "Ungspycherte Änderige",
+    "unsavedChangesMessage": "Du hesch ungspycherte Änderige. Wotsch wirklich wytermache?",
+    "confirm": "Bestätige",
+    "cancel": "Abbräche"
+  },
+  "workflow": {
+    "stepIndicator": "Schritt {{current}}/{{total}}",
+    "viewDetails": "Workflow-Details aluege",
+    "blockers": "{{count}} Blockader",
+    "progressBarLabel": "Klicke zum Workflow-Details aluege. {{percentage}}% abgschlosse",
+    "states": {
+      "created": "Erstellt",
+      "topic_selection": "Themenauswau",
+      "speaker_identification": "Redneridentifikation",
+      "slot_assignment": "Slot-Zuwiisig",
+      "agenda_published": "Agenda veröffentlicht",
+      "agenda_finalized": "Agenda finalisiert",
+      "event_live": "Veranstatig läuft",
+      "event_completed": "Veranstatig abgschlosse",
+      "archived": "Archiviert"
+    }
+  },
+  "autoSave": {
+    "saving": "Wird gspycheret...",
+    "saved": "Zuletzt gspycheret um {{time}}",
+    "failed": "Auto-Spychere fehlgschlage",
+    "conflict": "Gleichzytige Bearbeitig erkannt. Bitte neu lade und nomol versuche.",
+    "enabled": "Auto-Spychere aktiviert"
+  },
+  "topics": {
+    "title": "Zuegwieseni Theme",
+    "sectionTitle": "ZUEGWIESENI THEME ({{count}})",
+    "sectionLabel": "Zuegwieseni Theme ({{count}})",
+    "addTopic": "Thema us em Backlog hinzuefüege",
+    "addFromBacklog": "Thema us em Backlog hinzuefüege",
+    "removeTopic": "Thema entferne",
+    "viewTopic": "Thema aluege",
+    "view": "Aluege",
+    "remove": "Entferne",
+    "viewButton": "{{title}} aluege",
+    "removeButton": "{{title}} entferne",
+    "lastUsed": "{{event}} ({{year}})",
+    "lastUsedLabel": "Zuletzt verwendet",
+    "neverUsed": "Nie",
+    "partnerVotes": "Partner-Stimme",
+    "noTopics": "Kei Theme zuegwiise",
+    "noTopic": "Kei Thema gwäut",
+    "emptyState": "No kei Theme zuegwiise",
+    "loadError": "Theme chöne nid gglade werde",
+    "change": "Thema wächsle",
+    "removeConfirmTitle": "Thema entferne?",
+    "removeConfirmMessage": "Bisch sicher, dass du das Thema vo dr Veranstatig entferne wötsch?"
+  },
+  "speakers": {
+    "sectionTitle": "Redneri und Sessione ({{count}})",
+    "slotTime": "Zyt",
+    "speakerName": "Redner",
+    "sessionTitle": "Sessionstitel",
+    "notAssigned": "Nid zuegwiise",
+    "materials": "Materialien",
+    "materialsComplete": "Vollständig",
+    "materialsPending": "Hangend",
+    "materialsMissing": "Fählt",
+    "manageSlotAssignments": "Slot-Zuwiisige verwauté",
+    "autoAssignSpeakers": "Redneri automatisch zuweise",
+    "noSessionsScheduled": "No kei Sessione geplant. «Rednerzuwiisige verwauté» zum Redneri hinzuefüege verwände.",
+    "deleteSession": "Lösche",
+    "deleteSessionTitle": "Session lösche?",
+    "deleteSessionMessage": "Bisch sicher, dass du d'Session '{{title}}' lösche wötsch? Die Aktion cha nid rückgängig gmacht werde."
+  },
+  "publishing": {
+    "controls": {
+      "publishing": "Wird veröffentlicht...",
+      "publishPhase": "{{phase}} veröffentliche",
+      "published": "{{phase}} veröffentlicht",
+      "publishPhases": "Phasen veröffentliche",
+      "alreadyPublished": "Scho veröffentlicht",
+      "publishTopicFirst": "Bitte zerscht s'Thema veröffentliche",
+      "publishSpeakersFirst": "Bitte zerscht d'Redneri veröffentliche",
+      "mode": "Modus",
+      "modeDraft": "Entwurf",
+      "modeProgressive": "Progressiv",
+      "modeComplete": "Vollständig",
+      "notifySubscribers": "Abonnente benarichtige",
+      "validationErrors": "Validierigsfähler:",
+      "phase": {
+        "topic": "Thema",
+        "speakers": "Redneri",
+        "agenda": "Agenda"
+      },
+      "accessibility": {
+        "publishingPhase": "{{phase}} veröffentliche",
+        "notifySubscribers": "Abonnente bim Veröffentliche benarichtige"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Beriit zum Veröffentliche",
+      "notReadyToPublish": "No nid beriit zum Veröffentliche",
+      "eventTopic": "Veranstautigsthema",
+      "speakerLineup": "Rednerlischt",
+      "sessionTimings": "Session-Timings",
+      "complete": "Vollständig",
+      "incomplete": "Unvollständig ({{assigned}}/{{total}} Sessione zuegwiise)",
+      "ready": "Beriit ({{assigned}}/{{total}} Sessione zuegwiise)",
+      "notRequired": "Nid erforderlich",
+      "assignTimings": "Timings zuweise",
+      "expandUnassigned": "Nid zuegwieseni Sessione ufklape",
+      "collapseUnassigned": "Nid zuegwieseni Sessione zueche",
+      "accessibility": {
+        "readyToPublish": "Beriit zum Veröffentliche",
+        "notReadyToPublish": "No nid beriit zum Veröffentliche",
+        "eventTopic": "Veranstautigsthema-Validierig",
+        "speakerLineup": "Rednerlischt-Validierig",
+        "sessionTimings": "Session-Timings-Validierig"
+      }
+    },
+    "versionControl": {
+      "title": "Versionsverlauf",
+      "version": "Version",
+      "published": "Veröffentlicht",
+      "phase": "Phase",
+      "publisher": "Veröffentlicher",
+      "status": "Status",
+      "actions": "Aktione",
+      "rollback": "Rückgängig mache",
+      "current": "Aktuell",
+      "cdnCleared": "CDN geleert",
+      "cdnPending": "CDN hangend",
+      "cdnFailed": "CDN fehlgschlage",
+      "cdnUnknown": "Unbekannt",
+      "noVersions": "Kei Versionsverlauf verfügbar"
+    },
+    "autoPublishInDays": "Auto-publish in {{days}} days",
+    "autoPublishScheduled": "Auto-publish scheduled",
+    "phases": {
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates"
+    }
+  },
+  "notifications": {
+    "title": "Benarichtigige und Erinnerige"
+  },
+  "pagination": {
+    "page": "Syte {{current}} vo {{total}}",
+    "itemsPerPage": "Elemente pro Syte"
+  },
+  "common": {
+    "cancel": "Abbräche",
+    "confirm": "Bestätige",
+    "save": "Spychere",
+    "saveChanges": "Änderige spychere",
+    "delete": "Lösche",
+    "edit": "Bearbeite",
+    "close": "Zuetuä",
+    "back": "Zrugg",
+    "loading": "Lade..."
+  },
+  "public": {
+    "comingSoon": "Chunnt bald...",
+    "preview": {
+      "title": "Vorschaumodus",
+      "phase": "Phase",
+      "mode": "Modus",
+      "description": "Unveröffentlichti Änderige wärde azeigt – so wird d'Veranstatig nach dr Veröffentlichig usgsähe"
+    },
+    "logistics": {
+      "title": "Veranstautigsdetails",
+      "date": "Datum",
+      "time": "Zyt",
+      "location": "Ort",
+      "capacity": "Kapazität"
+    },
+    "errors": {
+      "loadFailed": "Veranstatig chöne nid gglade werde",
+      "noEvent": "Kei aktuelli Veranstatig verfügbar",
+      "checkBackLater": "Bitte später nomol für komendi Veranstaltigen luege."
+    },
+    "speakers": {
+      "title": "Redneri",
+      "speakerTBA": "Redner wird bkanntgäh"
+    },
+    "sessions": {
+      "title": "Sessione",
+      "gridView": "Rasteransicht",
+      "listView": "Listenansicht",
+      "noSessions": "Kei Sessione für gwäuti Theme gfunde",
+      "clearFilters": "Filter lösche",
+      "speaker": "Redner",
+      "seats": "{{count}} Plätze"
+    },
+    "program": {
+      "title": "Veranstautigsprogramm",
+      "speaker": "Redner",
+      "materials": "Materialien"
+    },
+    "venue": {
+      "title": "Veranstautigsort",
+      "mapNotAvailable": "Karta nid verfügbar",
+      "getDirections": "Route azeige"
+    },
+    "social": {
+      "title": "Die Veranstatig täile",
+      "description": "Täil d'Veranstatig mit diim Netzwerk",
+      "shareLinkedIn": "Uf LinkedIn täile",
+      "shareTwitter": "Uf X täile",
+      "shareEmail": "Per E-Mail täile",
+      "shareText": "Chum mit mir zu {{title}}!"
+    },
+    "upcomingEvents": {
+      "title": "Wytere komendi Veranstaltigen"
+    }
+  },
+  "sessionEdit": {
+    "title": "Session bearbeite",
+    "titleLabel": "Sessionstitel",
+    "abstractLabel": "Session-Abstract",
+    "charactersRemaining": "{{count}} Zeiche übrig",
+    "durationLabel": "Dauer (Minute)",
+    "tabs": {
+      "details": "Details",
+      "materials": "Materialien",
+      "speakers": "Redneri",
+      "ariaLabel": "Session edit tabs"
+    },
+    "speakers": {
+      "title": "Session-Redneri",
+      "noSpeakers": "No kei Redneri zuegwiise",
+      "addSpeaker": "Redner hinzuefüege",
+      "searchUser": "Benutzer sueche",
+      "createNewUser": "+ Neue Benutzer erstelle",
+      "roleLabel": "Rednerrolle",
+      "setPrimary": "Als Hauptredner festlege",
+      "remove": "Entferne",
+      "confirmed": "Bestätigt",
+      "userRequired": "Bitte en Benutzer uswähle",
+      "addError": "Redner chöne nid hinzuefüegt werde",
+      "removeError": "Redner chöne nid entfernt werde",
+      "setPrimaryError": "Hauptredner chöne nid festglägt werde",
+      "roles": {
+        "PRIMARY_SPEAKER": "Hauptredner",
+        "CO_SPEAKER": "Mit-Redner",
+        "MODERATOR": "Moderator",
+        "PANELIST": "Panelist"
+      }
+    },
+    "materials": {
+      "uploadTitle": "Session-Materialien ufelade",
+      "uploadDescription": "Präsentatione, Dokumänt oder Videos ufelade (max 100MB pro Datei, bis zu 10 Dateie)",
+      "existingTitle": "Bestehendi Materialien",
+      "downloadError": "Material chöne nid abelade werde"
+    },
+    "errors": {
+      "titleRequired": "Titel isch Pflicht",
+      "abstractTooLong": "Abstract darf höchstens {{max}} Zeiche lang si",
+      "invalidDuration": "Dauer mues zwüsche 1 und 480 Minute si",
+      "saveFailed": "Session chöne nid gspycheret werde"
+    }
+  },
+  "slotAssignment": {
+    "title": "Slot-Zuwiisig",
+    "pageTitle": "Redneri Zytslots zuweise",
+    "pageDescription": "Bestätigt Redneri per Drag-and-Drop verfügbare Zytslots zuweise zum Veranstautigszytplan erstelle",
+    "backToEvent": "Zrugg zur Veranstatig",
+    "returnToEventOverview": "Zur Veranstautigsübersicht zrugg",
+    "helpBanner": {
+      "title": "So funktioniert's:",
+      "description": "Rednerkarte us em linke Pane zu Zytslots rechts ziehe. S'System zeigt Präferenzübereinstimmige und warnt bi Konflikte. Sobau alli Redneri zuegwiise si, wird dr Zytplan automatisch gspycheret."
+    },
+    "timeline": {
+      "title": "Session-Zytstrau",
+      "matchPercent": "{{percent}}% Übereinstimmig",
+      "headerTime": "Zyt"
+    },
+    "structuralSessions": {
+      "moderation": "Moderierig",
+      "break": "Pause",
+      "lunch": "Mittagesse"
+    },
+    "speakerPool": {
+      "title": "Rednerpool",
+      "assigned": "{{count}} vo {{total}} zuegwiise ({{percent}}%)",
+      "remaining": "{{count}} übrig",
+      "filters": {
+        "all": "Alli",
+        "assigned": "Zuegwiise",
+        "unassigned": "Nid zuegwiise"
+      },
+      "emptyState": {
+        "title": "Alli Sessione zuegwiise!",
+        "message": "Gueti Arbet! Alli Redneri si Zytslots zuegwiise worde."
+      },
+      "viewPreferences": "Präferenzen"
+    },
+    "quickActions": {
+      "title": "Schnällaktione",
+      "total": "{{count}} Sessione total",
+      "assigned": "{{count}} zuegwiise",
+      "pending": "{{count}} hangend",
+      "allAssigned": "Alli Timings zuegwiise!",
+      "goToPublishing": "Zum Veröffentlichigs-Tab",
+      "sessionsAssignedAnnouncement": "{{count}} Sessione erfolgriich zuegwiise"
+    },
+    "actions": {
+      "autoAssign": "Automatisch zuweise",
+      "clearAll": "Alles lösche",
+      "cancel": "Abbräche",
+      "confirm": "Bestätige",
+      "generateStructure": "Zeitplanstruktur generiere"
+    },
+    "modals": {
+      "generateStructure": {
+        "title": "Zeitplanstruktur generiere",
+        "message": "Erstellt Moderierigs-, Pause- und Mittagessblöck basierend uf dr Veranstautigstyp-Konfiguration.",
+        "alreadyExist": "Moderierig-, Pause- und Mittagessblöck existiere scho. Wotsch si überschribe?",
+        "overwrite": "Überschribe"
+      },
+      "autoAssign": {
+        "title": "Sessione automatisch zuweise",
+        "message": "Algorithmus für automatischi Zuwiisig uswähle:"
+      },
+      "clearAll": {
+        "title": "Alli Zuwiisige lösche",
+        "message": "Bisch sicher, dass du alli Timing-Zuwiisige lösche wötsch?"
+      }
+    },
+    "conflicts": {
+      "title": "Timing-Konflikt erkannt",
+      "types": {
+        "room_overlap": "Raumüberschneidig",
+        "speaker_double_booked": "Redner doppelt gebucht",
+        "speaker_unavailable": "Redner nid verfügbar"
+      },
+      "severity": {
+        "error": "FÄHLER",
+        "warning": "WARNIG"
+      },
+      "timeRange": "Konfliktzytberiich",
+      "start": "Start",
+      "end": "End",
+      "conflictingSession": "Konfliktierende Session",
+      "resolutionOptions": "Lösigsmöglighkeite",
+      "resolutionMessage": "En andere Zytslot oder Raum uswähle zum Konflikt löse.",
+      "chooseDifferentSlot": "Andere Slot uswähle"
+    },
+    "preferences": {
+      "title": "Rednerpräferenzen",
+      "timePreferences": "Zytpräferenzen",
+      "unavailableTimes": "Nid verfügbari Zyte",
+      "avRequirements": "AV-Afordrige",
+      "setupNotes": "Raumufbaunotize",
+      "slotMatchScore": "Slot-Übereinstimmigspunktezau",
+      "matchPercent": "{{percent}}% Übereinstimmig",
+      "times": {
+        "morning": "Morge",
+        "afternoon": "Namittag",
+        "evening": "Abig",
+        "any": "Beliebig"
+      },
+      "equipment": {
+        "microphone": "Mikrofon",
+        "projector": "Beamer",
+        "recording": "Ufnahm"
+      }
+    }
+  },
+  "newsletter": {
+    "widget": {
+      "title": "Bliibt uf em Laufende mit BATbern",
+      "placeholder": "dini@email.com",
+      "button": "Abonniere",
+      "success": "Merci! Du bisch jetzt abonniert.",
+      "alreadySubscribed": "Du bisch scho abonniert.",
+      "error": "Öppis isch schief gloffe. Bitte nomol versuche.",
+      "emailInvalid": "Bitte e gültige E-Mail-Adress iigebbe."
+    },
+    "unsubscribe": {
+      "title": "Vom BATbern-Newsletter abmälde",
+      "loading": "Lade…",
+      "confirmMessage": "Du bisch im Begriff, {{email}} vo de BATbern-Newsletter abzmälde.",
+      "confirmButton": "Abmäldig bestätige",
+      "success": "Du bisch erfolgriich abgmäldet worde.",
+      "resubscribeLink": "Nomol abonniere",
+      "invalidToken": "Dä Abmäldigslink isch ungültig oder scho verwändet worde."
+    }
+  },
+  "speakersTable": {
+    "ariaLabel": "Speakers and sessions table"
+  },
+  "teamActivity": {
+    "totalCountAriaLabel": "{{count}} total notifications"
+  },
+  "materials": {
+    "downloadAriaLabel": "Download {{fileName}}"
+  },
+  "eventForm": {
+    "venue": {
+      "namePlaceholder": "e.g., Kornhausforum Bern",
+      "addressPlaceholder": "e.g., Kornhausplatz 18, 3011 Bern"
+    }
+  },
+  "speakerOutreach": {
+    "emailPlaceholder": "speaker@example.com"
+  }
+}

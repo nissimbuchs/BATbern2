@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,6 +20,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { UserContext } from '../../../types/auth';
 import { updateUserPreferences } from '../../../services/api/userApi';
+import type { UpdatePreferencesRequest } from '../../../types/user';
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -27,7 +28,7 @@ interface UserMenuDropdownProps {
   open: boolean;
   onClose: () => void;
   onLogout: () => void;
-  onLanguageChange: (language: 'de' | 'en') => void;
+  onLanguageChange: (language: string) => void;
 }
 
 const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
@@ -40,11 +41,6 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState<'de' | 'en'>(
-    (user.preferences.language === 'de' || user.preferences.language === 'en'
-      ? user.preferences.language
-      : 'de') as 'de' | 'en'
-  );
 
   const handleProfileClick = () => {
     console.log('[UserMenuDropdown] Profile clicked, navigating to /account');
@@ -87,8 +83,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   };
 
   const handleLanguageChange = async (event: SelectChangeEvent<string>) => {
-    const newLang = event.target.value as 'de' | 'en';
-    setCurrentLanguage(newLang);
+    const newLang = event.target.value;
 
     // Update i18n
     await i18n.changeLanguage(newLang);
@@ -97,7 +92,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 
     // Persist to API (backend is ready, Story 2.6)
     try {
-      await updateUserPreferences({ language: newLang });
+      await updateUserPreferences({ language: newLang as UpdatePreferencesRequest['language'] });
       console.log('[UserMenuDropdown] Language preference persisted to backend:', newLang);
     } catch (error) {
       console.error('[UserMenuDropdown] Failed to persist language preference:', error);
@@ -114,7 +109,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
       open={open}
       onClose={onClose}
       role="menu"
-      aria-label="User menu"
+      aria-label={t('navigation.userMenu')}
       MenuListProps={{
         'aria-labelledby': 'user-menu-button',
       }}
@@ -166,14 +161,17 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LanguageIcon fontSize="small" />
           <Select
-            value={currentLanguage}
+            value={i18n.language}
             onChange={handleLanguageChange}
             size="small"
-            sx={{ minWidth: 100 }}
-            aria-label="Language selector"
+            sx={{ minWidth: 160 }}
+            aria-label={t('language.select')}
           >
-            <MenuItem value="de">Deutsch</MenuItem>
-            <MenuItem value="en">English</MenuItem>
+            {Object.keys(i18n.options?.resources ?? {}).map((code) => (
+              <MenuItem key={code} value={code}>
+                {code.toUpperCase()} — {t(`language.${code}`)}
+              </MenuItem>
+            ))}
           </Select>
         </Box>
       </Box>

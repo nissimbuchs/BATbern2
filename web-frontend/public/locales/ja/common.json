@@ -1,0 +1,724 @@
+{
+  "app": {
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "dashboard": "ダッシュボード",
+    "events": "イベント",
+    "speakers": "スピーカー",
+    "partners": "パートナー",
+    "companies": "企業",
+    "users": "ユーザー",
+    "myCompany": "自分の会社",
+    "myAccount": "マイアカウント",
+    "analytics": "分析",
+    "profile": "プロフィール",
+    "myEvents": "マイイベント",
+    "myContent": "マイコンテンツ",
+    "myRegistrations": "マイ登録",
+    "about": "概要",
+    "pastEvents": "過去のイベント",
+    "publicSite": "公開サイト",
+    "partnerTopics": "パートナートピック",
+    "partnerMeetings": "パートナーミーティング",
+    "topics": "トピック提案",
+    "openMenu": "メニューを開く",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
+  },
+  "public": {
+    "login": "ログイン",
+    "joinUp": "サインアップ",
+    "register": "登録",
+    "goToPortal": "ポータルへ",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "このイベントにはすでに登録済みです。"
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "BATbernへようこそ！",
+      "titleWithName": "ようこそ、{{name}}さん！",
+      "subtitle": "アカウントの準備ができました。今後のイベントやアーカイブをご覧ください。",
+      "dashboardSoon": "パーソナルダッシュボードは準備中です — 公開時にお知らせします。",
+      "browseEvents": "イベントを閲覧",
+      "viewArchive": "アーカイブを見る",
+      "canDoTitle": "今すぐできること",
+      "canDo1": "今後のBATbernイベントを閲覧して登録する",
+      "canDo2": "アーカイブで過去のトークやスピーカーの資料を探索する",
+      "canDo3": "アカウントと通知設定を管理する"
+    }
+  },
+  "footer": {
+    "tagline": "IT専門家同士の技術交流",
+    "quickLinks": "クイックリンク",
+    "currentEvent": "現在のイベント",
+    "legal": "法的情報",
+    "privacyPolicy": "プライバシーポリシー",
+    "support": "サポート",
+    "copyright": "© {{year}} Berner Architekten Treffen. All rights reserved."
+  },
+  "actions": {
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "sending": "送信中...",
+    "loading": "読み込み中...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
+  },
+  "language": {
+    "select": "言語を選択",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
+  },
+  "status": {
+    "wait": "{{seconds}}秒お待ちください",
+    "didntReceive": "メールが届きませんでしたか？"
+  },
+  "menu": {
+    "profile": "プロフィール",
+    "settings": "設定",
+    "administration": "管理",
+    "help": "ヘルプ",
+    "logout": "ログアウト"
+  },
+  "role": {
+    "organizer": "イベント主催者",
+    "speaker": "スピーカー",
+    "partner": "パートナー",
+    "attendee": "参加者"
+  },
+  "company": {
+    "title": "企業管理",
+    "createCompany": "企業を作成",
+    "editCompany": "企業を編集",
+    "viewDetails": "{{name}}の詳細を見る",
+    "noCompaniesFound": "企業が見つかりません",
+    "adjustFilters": "検索条件やフィルターを調整してみてください",
+    "viewMode": {
+      "grid": "グリッド表示",
+      "list": "リスト表示",
+      "toggleCurrent": "表示モードを切り替え。現在: {{mode}}"
+    },
+    "fields": {
+      "name": "会社名",
+      "displayName": "表示名（法人名と異なる場合）",
+      "swissUID": "スイスUID (CHE-XXX.XXX.XXX)",
+      "website": "ウェブサイト",
+      "industry": "業種",
+      "description": "説明",
+      "legalName": "略称: {{name}}",
+      "logo": "企業ロゴ"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com"
+    },
+    "industries": {
+      "selectIndustry": "業種を選択"
+    },
+    "badges": {
+      "verified": "認証済み"
+    },
+    "filters": {
+      "verifiedOnly": "認証済み企業のみ",
+      "industry": "業種",
+      "allIndustries": "すべての業種",
+      "clearAll": "すべてのフィルターをクリア",
+      "filters": "フィルター"
+    },
+    "form": {
+      "createTitle": "新規企業を作成",
+      "editTitle": "企業を編集",
+      "saveDraft": "下書きを保存",
+      "saveCreate": "保存して作成",
+      "saveChanges": "変更を保存",
+      "unsavedChanges": "保存されていない変更があります。本当に閉じますか？",
+      "characterCount": "{{count}}/{{max}}文字",
+      "helpText": {
+        "swissUID": "任意 - 自動検証用"
+      },
+      "errors": {
+        "noPermission": "この企業を編集する権限がありません。スピーカーは自分の会社のみ編集できます。"
+      }
+    },
+    "detail": {
+      "tabs": {
+        "users": "ユーザー",
+        "ariaLabel": "Company detail tabs"
+      },
+      "noData": "企業データがありません"
+    },
+    "errors": {
+      "saveFailed": "企業の保存中にエラーが発生しました",
+      "deleteFailed": "企業の削除に失敗しました"
+    },
+    "search": {
+      "placeholder": "企業を検索..."
+    },
+    "batchImport": {
+      "title": "JSONから企業をインポート",
+      "dropzone": "JSONファイルをここにドロップするかクリックしてアップロード",
+      "dropzoneActive": "JSONファイルをここにドロップ",
+      "noCompanies": "JSONファイルに企業が見つかりません。",
+      "preview": "プレビュー（{{count}}社）",
+      "cancelButton": "キャンセル",
+      "status": {
+        "importing": "インポート中...",
+        "success": "インポート済み",
+        "updated": "更新済み",
+        "willUpdate": "更新予定",
+        "skipped": "スキップ済み（既存）"
+      },
+      "progress": "{{total}}件中{{current}}件をインポート中...",
+      "complete": "インポート完了: {{success}}件作成、{{updated}}件更新、{{failed}}件失敗、{{skipped}}件スキップ",
+      "checkingExisting": "既存の企業を確認中...",
+      "existingFound": "{{total}}件中{{count}}件の企業がすでに存在し、更新されます。",
+      "allSkipped": "すべてスキップ",
+      "importButtonWithCount": "{{count}}社をインポート",
+      "columns": {
+        "logo": "ロゴ",
+        "displayName": "表示名",
+        "name": "API名",
+        "industry": "業種",
+        "website": "ウェブサイト"
+      },
+      "errors": {
+        "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
+        "parseError": "JSONファイルの解析に失敗しました: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "企業を削除",
+      "message": "この企業を削除してもよろしいですか？",
+      "dataWarning": "この操作により企業が完全に削除され、元に戻すことはできません。",
+      "cascadeWarning": "関連するすべてのデータ（ユーザー、パートナーシップ、スピーカー、イベント）が影響を受ける可能性があります。",
+      "deleting": "削除中..."
+    },
+    "pagination": {
+      "itemsPerPage": "1ページあたりの件数"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "title": "topics.jsonからイベントをインポート",
+      "dropzone": "topics.jsonファイルをここにドロップするかクリックしてアップロード",
+      "dropzoneActive": "JSONファイルをここにドロップ",
+      "dropzoneHint": "前処理済みのtopics.jsonファイルをアップロードしてください（parsedDate、description、moderatorフィールド付き）",
+      "noEvents": "JSONファイルにイベントが見つかりません。",
+      "preview": "プレビュー（{{count}}件のイベント）",
+      "cancelButton": "キャンセル",
+      "status": {
+        "pending": "保留中",
+        "importing": "インポート中...",
+        "success": "インポート済み",
+        "error": "エラー",
+        "skipped": "スキップ済み（既存）"
+      },
+      "progress": "{{total}}件中{{current}}件をインポート中...",
+      "complete": "インポート完了: {{success}}件成功、{{failed}}件失敗、{{skipped}}件スキップ",
+      "allSkipped": "すべてスキップ",
+      "importButtonWithCount": "{{count}}件のイベントをインポート",
+      "columns": {
+        "eventNumber": "#",
+        "organizer": "主催者",
+        "category": "カテゴリ"
+      },
+      "errors": {
+        "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
+        "parseError": "JSONファイルの解析に失敗しました: {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "フィールド選択（インポート = 新規なら作成、既存なら更新 | 無視 = フィールドをスキップ）",
+        "import": "インポート",
+        "ignore": "無視",
+        "fieldTitle": "タイトル：",
+        "fieldDescription": "説明：",
+        "fieldTopic": "トピック/カテゴリ：",
+        "fieldDate": "日付：",
+        "fieldVenue": "会場：",
+        "fieldOrganizer": "主催者："
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "ファイルをここにドラッグ＆ドロップするか、クリックして選択",
+    "dragDropMultiple": "ファイルをここにドラッグ＆ドロップするか、クリックして選択",
+    "dragActive": "ファイルをここにドロップ",
+    "acceptedFormats": "対応形式: PNG、JPEG、SVG（最大{{maxSize}}MB）",
+    "acceptedFormatsMultiple": "対応形式: 複数のファイル形式（ファイルあたり最大{{maxSize}}MB）",
+    "uploading": "アップロード中... {{progress}}%",
+    "removeFile": "ファイルを削除",
+    "altText": "アップロードされたファイルのプレビュー",
+    "errors": {
+      "multipleFiles": "一度にアップロードできるファイルは1つだけです"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "登録が送信されました！",
+      "subtitle": "メールを確認して登録を確定してください",
+      "emailSent": "確認メールを送信しました",
+      "emailSentTo": "確認メールを以下に送信しました",
+      "clickLink": "メール内の確認リンクをクリックして登録を完了してください。リンクの有効期限は",
+      "validFor": "48時間",
+      "valid": "",
+      "didntReceive": "メールが届きませんでしたか？",
+      "checkSpam": "迷惑メールフォルダを確認してください",
+      "checkEmail": "正しいメールアドレスを入力したか確認してください",
+      "waitMinutes": "数分待ってから再度確認してください",
+      "close": "閉じる"
+    },
+    "alreadyRegistered": {
+      "title": "登録済みです！",
+      "pending": "登録保留中",
+      "checkEmail": "メールを確認して確定してください"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "title": "セッション一括インポート",
+      "dropzone": "sessions.jsonをここにドロップするかクリックしてアップロード",
+      "dropzoneActive": "sessions.jsonをここにドロップ",
+      "dropzoneHint": "sessions.jsonのみ受け付けます",
+      "preview": "{{count}}件のセッションをインポート",
+      "progress": "{{total}}件中{{current}}件インポート済み",
+      "complete": "インポート完了: {{success}}件成功、{{skipped}}件スキップ、{{failed}}件失敗",
+      "noSessions": "ファイルにセッションが見つかりません",
+      "importButtonWithCount": "{{count}}件のセッションをインポート",
+      "cancelButton": "キャンセル",
+      "columns": {
+        "event": "イベント",
+        "title": "タイトル",
+        "speakers": "スピーカー",
+        "status": "ステータス"
+      },
+      "status": {
+        "pending": "保留中",
+        "importing": "インポート中...",
+        "success": "成功",
+        "skipped": "スキップ済み",
+        "error": "エラー"
+      },
+      "errors": {
+        "invalidFile": "無効なファイルです。sessions.jsonのみ使用できます。",
+        "parseError": "解析エラー: {{error}}"
+      }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
+  },
+  "organizer": {
+    "select": "主催者を選択",
+    "all": "すべての主催者",
+    "unassigned": "未割り当て"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "ダッシュボードを読み込み中...",
+      "invalidLink": "無効なリンク",
+      "invalidLinkMessage": "このページには有効なダッシュボードリンクが必要です。招待メールのリンクを使用してください。",
+      "linkExpired": "リンクが期限切れです",
+      "linkExpiredMessage": "リンクの有効期限が切れています。新しいリンクについてはイベント主催者にお問い合わせください。",
+      "error": "エラーが発生しました",
+      "errorMessage": "ダッシュボードを読み込めませんでした。後ほど再度お試しください。",
+      "welcome": "ようこそ、{{name}}さん",
+      "profileComplete": "プロフィール{{percent}}%完了",
+      "upcomingEvents": "今後のイベント",
+      "pastEvents": "過去のイベント",
+      "noUpcomingEvents": "今後のスピーキングの予定はありません",
+      "noPastEvents": "過去のスピーキングの実績はまだありません",
+      "session": "セッション",
+      "titleStatus": "タイトル",
+      "abstractStatus": "要旨",
+      "materialStatus": "資料",
+      "revisionRequested": "修正依頼",
+      "responseBy": "回答期限",
+      "contentBy": "コンテンツ提出期限",
+      "organizer": "主催者",
+      "contact": "連絡先",
+      "respond": "回答する",
+      "updateProfile": "プロフィールを更新",
+      "submitContent": "コンテンツを提出",
+      "speakerStatus": "スピーカーステータス",
+      "contentStatus": "コンテンツステータス",
+      "materialProgress": "資料提出の進捗",
+      "deadlines": "期限",
+      "urgent": "緊急",
+      "soon": "まもなく期限",
+      "onTime": "期限内",
+      "pastEvent": "過去のイベント",
+      "materialAvailable": "資料あり",
+      "noMaterials": "資料なし",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
+    },
+    "content": {
+      "invalidLink": "無効なリンク",
+      "invalidLinkMessage": "このページには有効なコンテンツリンクが必要です。招待メールのリンクを使用してください。",
+      "linkExpiredMessage": "このリンクは期限切れです。新しいリンクについては主催者にお問い合わせください。",
+      "presentationTitle": "プレゼンテーションタイトル",
+      "abstract": "要旨",
+      "titleRequired": "タイトルは必須です",
+      "abstractRequired": "要旨は必須です",
+      "presentationFile": "プレゼンテーションファイル",
+      "saving": "保存中...",
+      "lastSaved": "最終保存: {{time}}",
+      "unsavedChanges": "未保存の変更があります",
+      "submitting": "提出中...",
+      "submitContent": "コンテンツを提出",
+      "submittedSuccessfully": "コンテンツが正常に提出されました！",
+      "submittedMessage": "「{{sessionTitle}}」のコンテンツが審査のために提出されました。",
+      "version": "バージョン",
+      "status": "ステータス",
+      "nextStepsInfo": "主催者が提出内容を確認し、変更が必要な場合はご連絡します。",
+      "revisionRequested": "修正依頼",
+      "reviewedBy": "審査者",
+      "on": "",
+      "loadingContent": "コンテンツを読み込み中...",
+      "linkHasExpired": "リンクの有効期限が切れました",
+      "invalidLinkNotValidMessage": "このリンクは無効です。正しいリンクはメールをご確認ください。",
+      "cannotSubmit": "コンテンツを送信できません",
+      "cannotSubmitMessage": "現在コンテンツを送信できません。まず招待を受け入れるか、主催者にお問い合わせください。",
+      "goToDashboard": "登壇者ダッシュボードへ",
+      "submitYourContent": "コンテンツを送信",
+      "dashboard": "ダッシュボード",
+      "editProfile": "プロフィールを編集",
+      "titlePlaceholder": "プレゼンテーションのタイトルを入力してください",
+      "abstractPlaceholder": "プレゼンテーションの内容を説明してください...",
+      "enableFileUploads": "ファイルのアップロードを有効にするには、まずタイトルとアブストラクトを送信してください。"
+    },
+    "upload": {
+      "uploading": "アップロード中...",
+      "presentationFile": "プレゼンテーションファイル",
+      "changeFile": "ファイルを変更",
+      "dragDropPresentation": "プレゼンテーションをここにドラッグ＆ドロップ",
+      "orClickBrowse": "またはクリックして参照",
+      "invalidFileType": "無効なファイル形式です。対応形式：PPTX、PDF、KEY",
+      "fileTooLarge": "ファイルサイズは50MB未満にしてください",
+      "acceptedFormats": "対応形式：PPTX、PDF、KEY（最大50MB）",
+      "uploadAria": "プレゼンテーションファイルをアップロード"
+    },
+    "invitationResponse": {
+      "invalidLink": "無効なリンク",
+      "invalidLinkMessage": "このページにはメールに記載された有効な招待リンクが必要です。",
+      "loading": "招待を読み込み中...",
+      "loadingMessage": "リンクを確認中です。しばらくお待ちください。",
+      "loadingAria": "招待を読み込み中",
+      "needHelp": "お困りですか？",
+      "checkEmail": "最新の招待リンクをメールでご確認ください",
+      "requestNew": "主催者に新しい招待を依頼する",
+      "alreadyResponded": "回答済み",
+      "yourResponse": "あなたの回答",
+      "commentsPlaceholder": "主催者への質問やコメント...",
+      "declinePlaceholder": "参加できない理由をお知らせください...",
+      "submit": "回答を送信",
+      "submitted": "回答を送信しました！",
+      "whatsNext": "次のステップは？",
+      "completeProfile": "プロフィールを完成させる",
+      "linkNotValid": "この招待リンクは有効ではありません。",
+      "backToHome": "ホームに戻る",
+      "linkExpired": "リンクの有効期限切れ",
+      "linkExpiredMessage": "この招待リンクは有効期限が切れています。イベント主催者にお問い合わせください。",
+      "linkAlreadyUsed": "リンクは使用済みです",
+      "linkAlreadyUsedMessage": "この招待リンクはすでに使用されています。",
+      "genericError": "エラー",
+      "genericErrorMessage": "招待の確認中にエラーが発生しました。",
+      "unexpectedErrorMessage": "予期しないエラーが発生しました。",
+      "contactOrganizersAt": "イベント主催者へのお問い合わせ先：",
+      "alreadyRespondedOn": "{{date}}にすでにこの招待に回答しています。",
+      "yourResponseWas": "あなたの回答：",
+      "accepted": "承諾",
+      "declined": "辞退",
+      "tentative": "仮承諾",
+      "manageProfileText": "登壇者ダッシュボードからプロフィールとコンテンツ送信を管理できます。",
+      "reconsiderText": "再考したい場合は、主催者に直接ご連絡ください。",
+      "invitedToSpeak": "あなたをスピーカーとしてご招待します：",
+      "respondBy": "回答期限：",
+      "dear": "拝啓",
+      "invitationBody": "このイベントの登壇者としてお招きできれば光栄です。ご参加いただけるかどうかお知らせください。",
+      "accept": "承諾する",
+      "decline": "辞退する",
+      "messageToOrganizers": "主催者へのメッセージ（任意）",
+      "reasonForDeclining": "辞退の理由",
+      "reasonRequired": "辞退するには理由が必要です",
+      "submitting": "送信中...",
+      "failedToSubmit": "回答の送信に失敗しました",
+      "thankYouResponse": "{{name}}様、ご回答ありがとうございます。",
+      "contentDeadline": "コンテンツ提出期限："
+    },
+    "profile": {
+      "invalidLink": "無効なリンク",
+      "invalidLinkMessage": "このページにはメールに記載された有効なプロフィールリンクが必要です。",
+      "backToHome": "ホームに戻る",
+      "loadingAria": "プロフィールを読み込み中",
+      "loading": "プロフィールを読み込み中...",
+      "loadingMessage": "プロフィールを読み込んでいます。しばらくお待ちください。",
+      "linkExpired": "リンクの有効期限切れ",
+      "linkExpiredMessage": "このプロフィールリンクは有効期限が切れています。主催者にお問い合わせください。",
+      "invalidLinkNotValid": "このプロフィールリンクは有効ではありません。",
+      "genericError": "エラー",
+      "genericErrorMessage": "プロフィールの読み込み中にエラーが発生しました。",
+      "unexpectedError": "予期しないエラーが発生しました。",
+      "pageTitle": "あなたの登壇者プロフィール",
+      "pageSubtitle": "イベント資料のために情報を更新してください",
+      "profileCompleteness": "プロフィール完成度",
+      "completeProfileHint": "より多くの認知を得るためにプロフィールを完成させてください",
+      "missing": "未入力：",
+      "basicInfo": "基本情報",
+      "emailReadOnly": "メールアドレス（読み取り専用）",
+      "bio": "自己紹介",
+      "bioPlaceholder": "自己紹介を入力してください...",
+      "bioExceeds": "自己紹介は500文字以内にしてください",
+      "maxExpertiseAreas": "専門分野は最大10件まで",
+      "maxSpeakingTopics": "発表トピックは最大10件まで",
+      "socialLinks": "ソーシャルメディアリンク",
+      "linkedInUrl": "LinkedIn URL",
+      "invalidLinkedIn": "有効なLinkedIn URLを入力してください",
+      "contentSubmissionSection": "コンテンツ提出",
+      "assignedTo": "あなたの担当：",
+      "contentSubmitDescription": "審査のためにプレゼンテーションのタイトル、アブストラクト、資料を提出してください。",
+      "submitContent": "コンテンツを送信",
+      "saving": "保存中...",
+      "saveChanges": "変更を保存",
+      "savedSuccessfully": "プロフィールを更新しました！",
+      "saveFailed": "プロフィールの保存に失敗しました"
+    },
+    "photo": {
+      "invalidFileType": "無効なファイル形式です。対応形式：JPEG、PNG、WebP",
+      "fileTooLarge": "ファイルサイズは5MB未満にしてください",
+      "changePhoto": "写真を変更",
+      "dragDropHere": "写真をここにドラッグ＆ドロップ",
+      "orClickBrowse": "またはクリックして参照",
+      "supportedFormats": "JPEG、PNG、WebP（最大5MB）",
+      "uploading": "アップロード中...",
+      "cancel": "キャンセル",
+      "uploadAria": "プロフィール写真をアップロード"
+    },
+    "magicLogin": {
+      "processing": "ログイン処理中...",
+      "redirecting": "ダッシュボードにリダイレクト中...",
+      "invalidLinkTitle": "リンクが無効です",
+      "defaultError": "このリンクはもう有効ではありません。主催者にお問い合わせください。"
+    }
+  },
+  "archive": {
+    "title": "過去のイベント",
+    "description": "20年以上にわたるBATbernのイベント、プレゼンテーション、スピーカーを閲覧",
+    "viewToggle": {
+      "grid": "グリッド",
+      "list": "リスト"
+    },
+    "loading": "イベントを読み込み中...",
+    "loadingMore": "さらにイベントを読み込み中...",
+    "loadingTopics": "トピックを読み込み中...",
+    "noTopicsAvailable": "トピックがありません",
+    "noResults": "イベントが見つかりません",
+    "errors": {
+      "loadFailed": "イベントの読み込みに失敗しました"
+    },
+    "card": {
+      "viewDetails": "詳細を見る"
+    },
+    "filters": {
+      "title": "フィルター",
+      "search": "イベントを検索...",
+      "topics": "トピック",
+      "clearAll": "すべてクリア",
+      "activeCount": "{{count}}件のアクティブなフィルター"
+    },
+    "detail": {
+      "backToArchive": "← アーカイブに戻る"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllAsRead": "すべて既読にする",
+    "markAsRead": "既読にする",
+    "delete": "削除",
+    "reload": "再読み込み",
+    "viewAll": "すべて見る",
+    "hideRead": "既読を非表示",
+    "empty": "通知はありません",
+    "noNotifications": "まだ通知はありません",
+    "lastUpdated": "最終更新",
+    "deleteConfirmation": {
+      "title": "通知を削除",
+      "message": "この通知を削除してもよろしいですか？"
+    },
+    "notificationFeed": "通知フィード",
+    "priority": {
+      "urgent": "緊急",
+      "high": "高"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
+  },
+  "emailTemplates": {
+    "layoutTemplates": "レイアウトテンプレート",
+    "layoutTemplatesInfo": "すべてのメールのBATbernの外観を定義します。ここでの変更はこのレイアウトを使用するすべてのテンプレートに影響します。",
+    "contentTemplates": "メールコンテンツ",
+    "categories": {
+      "SPEAKER": "スピーカー",
+      "REGISTRATION": "登録",
+      "TASK_REMINDER": "タスクリマインダー",
+      "NEWSLETTER": "ニュースレター"
+    },
+    "layoutKey": "レイアウト",
+    "standalone": "なし（スタンドアロン）",
+    "systemTemplate": "システムテンプレート",
+    "subject": "件名",
+    "htmlBody": "HTMLコンテンツ",
+    "variables": "使用可能な変数",
+    "preview": "プレビュー",
+    "editTitle": "テンプレートを編集",
+    "createTitle": "新規テンプレート",
+    "newTemplate": "+ 新規テンプレート",
+    "noLayouts": "レイアウトテンプレートが見つかりません。",
+    "noTemplates": "このフィルターに該当するテンプレートが見つかりません。",
+    "missingContentPlaceholder": "{{content}}プレースホルダーが不足しています — メール本文が空になります",
+    "deleteFailed": "テンプレートの削除に失敗しました。",
+    "saveFailed": "テンプレートの保存に失敗しました。再試行してください。",
+    "validation": {
+      "htmlBodyRequired": "HTML本文は必須です。",
+      "subjectRequired": "コンテンツテンプレートには件名が必須です。",
+      "templateKeyRequired": "テンプレートキーは必須です。"
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
+  },
+  "presentation": {
+    "errorTitle": "イベントを読み込めませんでした",
+    "errorMessage": "ネットワーク接続を確認して再試行してください。",
+    "retryButton": "再試行",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "イベントタイプ",
+      "importData": "データをインポート",
+      "taskTemplates": "タスクテンプレート",
+      "emailTemplates": "メールテンプレート",
+      "presentationSettings": "プレゼンテーション"
+    },
+    "accessDenied": "アクセス拒否",
+    "organizerOnly": "このページは主催者専用です。",
+    "presentationSettings": {
+      "title": "プレゼンテーション設定",
+      "subtitle": "これらの値はモデレーターのプレゼンテーションページ（/present/:eventCode）に表示されます。",
+      "aboutText": "概要テキスト",
+      "partnerCount": "パートナー数",
+      "save": "保存",
+      "saved": "設定が保存されました。",
+      "saveFailed": "保存に失敗しました。再試行してください。"
+    },
+    "taskTemplates": {
+      "defaultSection": "デフォルトテンプレート",
+      "customSection": "カスタムテンプレート",
+      "addTemplate": "+ テンプレートを追加",
+      "noDefaults": "デフォルトテンプレートはありません。",
+      "noCustom": "カスタムテンプレートはまだありません。",
+      "confirmDelete": "テンプレートを削除しますか？",
+      "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。"
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics",
+    "firstName": "名",
+    "lastName": "姓"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "companySearch": {
+    "noOptions": "企業が見つかりません",
+    "searchAriaLabel": "企業を検索",
+    "clearSearchAriaLabel": "検索をクリア"
+  },
+  "countdown": {
+    "nextEvent": "次のイベント",
+    "today": "今日！",
+    "tomorrow": "明日！",
+    "daysUntil": "イベントまであと{{count}}日"
+  },
+  "errors": {
+    "somethingWentWrong": "エラーが発生しました",
+    "tryAgain": "もう一度試す",
+    "unexpectedError": "申し訳ありません。予期しないエラーが発生しました。",
+    "devDetails": "エラー詳細（開発者のみ）：",
+    "refreshPage": "ページを更新",
+    "goHome": "ホームに戻る"
+  },
+  "bootstrap": {
+    "loading": "BATbernを読み込み中...",
+    "configFailed": "設定の読み込みに失敗しました",
+    "reloadPage": "ページを再読み込み"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
+  }
+}

@@ -367,7 +367,7 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
                     <TableCell>{t('company.batchImport.columns.name')}</TableCell>
                     <TableCell>{t('company.batchImport.columns.industry')}</TableCell>
                     <TableCell>{t('company.batchImport.columns.website')}</TableCell>
-                    <TableCell width={150}>{t('company.batchImport.columns.status')}</TableCell>
+                    <TableCell width={150}>{t('labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

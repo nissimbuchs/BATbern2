@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Peruutetaan ilmoittautumistasi...",
+      "message": "Odota, kun käsittelemme peruutustasi."
+    },
+    "success": {
+      "title": "Ilmoittautuminen peruutettu",
+      "subtitle": "Ilmoittautumisesi on peruutettu onnistuneesti",
+      "whatHappened": "Mitä tapahtui?",
+      "permanentDeletion": "Pysyvä poisto",
+      "permanentDeletionText": "Ilmoittautumisesi on poistettu pysyvästi järjestelmästämme.",
+      "noFurtherAction": "Ei lisätoimia",
+      "noFurtherActionText": "Et saa enää viestejä tästä tapahtumasta.",
+      "registerAgain": "Ilmoittaudu uudelleen",
+      "registerAgainText": "Jos muutat mieltäsi, voit ilmoittautua uudelleen milloin tahansa ennen tapahtumaa.",
+      "backToHome": "Takaisin etusivulle",
+      "registerForAnother": "Ilmoittaudu toiseen tapahtumaan"
+    },
+    "error": {
+      "title": "Peruutus epäonnistui",
+      "subtitle": "Ilmoittautumistasi ei voitu peruuttaa",
+      "whatCanYouDo": "Mitä voit tehdä?",
+      "checkLink": "Tarkista, että napsautit oikeaa linkkiä sähköpostistasi",
+      "expired": "Peruutuslinkit vanhenevat 48 tunnin kuluttua",
+      "alreadyCancelled": "Ilmoittautuminen on ehkä jo peruutettu",
+      "useLatestEmail": "Varmista, että käytät uusinta sähköpostia",
+      "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
+      "errors": {
+        "expired": "Peruutuslinkki on vanhentunut (voimassa 48 tuntia).",
+        "invalid": "Virheellinen peruutuslinkki. Tarkista sähköpostistasi oikea linkki.",
+        "notFound": "Ilmoittautumista ei löydy tai se on jo peruutettu.",
+        "default": "Ilmoittautumisen peruuttaminen epäonnistui. Yritä uudelleen tai ota yhteyttä tukeen."
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "Ladataan vahvistusta...",
+    "notFound": {
+      "title": "Rekisteröintiä ei löydy",
+      "message": "Tarkista vahvistuskoodisi ja yritä uudelleen."
+    },
+    "copyCode": "Kopioi vahvistuskoodi",
+    "qrCodeAlt": "Rekisteröinnin QR-koodi",
+    "qrCodeTitle": "Check-in QR-koodisi",
+    "detailsTitle": "Rekisteröinnin tiedot",
+    "shareLabel": "Jaa verkostosi kanssa:",
+    "registerAnother": "Rekisteröi toinen henkilö",
+    "viewEventDetails": "Näytä tapahtuman tiedot"
+  },
+  "successPage": {
+    "pendingTitle": "Rekisteröinti odottaa",
+    "pendingMessage": "Jos lähetit rekisteröinnin, tarkista sähköpostisi vahvistuslinkin saamiseksi.",
+    "pendingLinkValidity": "Vahvistuslinkki on voimassa 48 tuntia.",
+    "title": "Rekisteröinti lähetetty!",
+    "subtitle": "Tarkista sähköpostisi vahvistaaksesi rekisteröintisi",
+    "emailSentTitle": "Vahvistussähköposti lähetetty",
+    "noEmailTitle": "Etkö saanut sähköpostia?",
+    "noEmailCheck1": "Tarkista roskapostikansio",
+    "noEmailCheck2": "Varmista, että syötit oikean sähköpostiosoitteen",
+    "noEmailCheck3": "Odota muutama minuutti ja tarkista uudelleen",
+    "createAccountTitle": "Luo tili hallinnoidaksesi rekisteröintejäsi",
+    "createAccountText": "Sähköpostin kautta vahvistuksen jälkeen voit luoda tilin hallinnoidaksesi kaikkia rekisteröintejäsi."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Tietosi",
+      "step2Progress": "2. Vahvista rekisteröinti",
+      "step1Title": "Vaihe 1: Tietosi",
+      "step2Title": "Vaihe 2: Vahvista rekisteröinti"
+    },
+    "buttons": {
+      "edit": "Muokkaa",
+      "cancel": "Peruuta",
+      "back": "← Takaisin",
+      "next": "Seuraava →",
+      "complete": "Viimeistele rekisteröinti",
+      "submitting": "Lähetetään..."
+    },
+    "errors": {
+      "fillRequired": "Täytä kaikki pakollisset kentät oikein.",
+      "acceptTerms": "Sinun täytyy hyväksyä käyttöehdot rekisteröityäksesi.",
+      "failed": "Rekisteröinti epäonnistui. Yritä uudelleen."
+    },
+    "cancelConfirm": "Haluatko varmasti peruuttaa rekisteröinnin?"
+  },
+  "personalDetails": {
+    "title": "Henkilökohtaiset tiedot",
+    "subtitle": "Syötä tietosi rekisteröityäksesi tapahtumaan.",
+    "fields": {
+      "firstName": "Etunimi *",
+      "lastName": "Sukunimi *",
+      "emailAddress": "Sähköpostiosoite *",
+      "emailHelper": "Lähetämme lippusi ja tapahtumatiedotteet tähän",
+      "company": "Yritys *",
+      "role": "Rooli *"
+    },
+    "validation": {
+      "firstNameRequired": "Etunimi on pakollinen",
+      "lastNameRequired": "Sukunimi on pakollinen",
+      "invalidEmail": "Virheellinen sähköpostiosoite",
+      "companyRequired": "Yritys on pakollinen",
+      "roleRequired": "Rooli on pakollinen"
+    },
+    "placeholders": {
+      "firstName": "Matti",
+      "lastName": "Virtanen",
+      "email": "matti.virtanen@yritys.fi",
+      "company": "Etsi yritystäsi...",
+      "role": "Ohjelmistokehittäjä"
+    }
+  },
+  "confirmStep": {
+    "title": "Tarkista ja vahvista",
+    "subtitle": "Tarkista tietosi ja viimeistele rekisteröinti.",
+    "personalInfo": "Henkilökohtaiset tiedot",
+    "commPref": {
+      "title": "Viestintäasetukset",
+      "reminders": "Lähetä minulle muistutuksia (1 viikko ja 1 päivä ennen)",
+      "newsletter": "Tilaa BATbern-uutiskirje (kuukausittaiset päivitykset)"
+    },
+    "specialRequests": {
+      "label": "Erityistoiveet",
+      "optional": "(Valinnainen)",
+      "placeholder": "Ruokavaliovaatimukset, esteettömyystarpeet jne.",
+      "helper": "Kerro meille, jos sinulla on ruokavaliovaatimuksia tai esteettömyystarpeita."
+    },
+    "terms": {
+      "prefix": "Hyväksyn",
+      "termsLink": "käyttöehdot",
+      "separator": "ja",
+      "privacyLink": "tietosuojakäytännön",
+      "required": "*",
+      "error": "Sinun täytyy hyväksyä käyttöehdot viimeistelläksesi rekisteröinnin."
+    },
+    "account": {
+      "title": "Haluatko hallita kaikkia rekisteröintejäsi yhdessä paikassa?",
+      "message": "Rekisteröinnin jälkeen voit luoda ilmaisen tilin rekisteröintihistoriasi hallinnoimiseksi."
+    }
+  },
+  "success": {
+    "title": "Rekisteröinti lähetetty!",
+    "subtitle": "Tarkista sähköpostisi vahvistaaksesi rekisteröintisi",
+    "emailSent": "Vahvistussähköposti lähetetty",
+    "emailSentTo": "Lähetimme vahvistussähköpostin osoitteeseen",
+    "clickLink": "Napsauta sähköpostin linkkiä vahvistaaksesi rekisteröintisi.",
+    "validFor": "Tämä linkki on voimassa",
+    "valid": "24 tuntia",
+    "didntReceive": "Etkö saanut sähköpostia?",
+    "checkSpam": "Tarkista roskapostikansio",
+    "checkEmail": "Tarkista, että sähköpostiosoite on oikein",
+    "waitMinutes": "Odota muutama minuutti ja yritä uudelleen",
+    "close": "Sulje"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Vahvistetaan ilmoittautumistasi...",
+      "message": "Odota, kun käsittelemme vahvistustasi."
+    },
+    "success": {
+      "title": "Ilmoittautuminen vahvistettu!",
+      "subtitle": "Olet valmis tapahtumaan",
+      "whatsNext": "Mitä seuraavaksi?",
+      "checkIn": "Kirjautuminen tapahtumaan",
+      "checkInText": "Esitä henkilöllisyystodistuksesi tapahtuman vastaanotossa kirjautumista varten. Vahvistettu ilmoittautumisesi on tallessa järjestelmässämme.",
+      "eventDetails": "Tapahtuman tiedot",
+      "eventDetailsText": "Saat tapahtumapäivityksiä ja muistutuksia sähköpostitse.",
+      "createAccount": "Luo tili ilmoittautumisten hallintaan"
+    },
+    "alreadyConfirmed": {
+      "title": "Jo vahvistettu",
+      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu"
+    },
+    "error": {
+      "title": "Vahvistus epäonnistui",
+      "whatCanYouDo": "Mitä voit tehdä?",
+      "checkLink": "Tarkista, että napsautit oikeaa linkkiä sähköpostistasi",
+      "expired": "Vahvistuslinkit vanhenevat 48 tunnin kuluttua - sinun täytyy ehkä ilmoittautua uudelleen",
+      "useLatestEmail": "Varmista, että käytät uusinta vahvistussähköpostia",
+      "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
+      "registerAgain": "Ilmoittaudu uudelleen"
+    }
+  },
+  "companySearch": {
+    "error": "Virhe yritysten lataamisessa",
+    "noResults": "Olemassa olevaa yritystä ei löydy",
+    "createNew": "Voit jatkaa \"{{value}}\" uutena yrityksenä",
+    "minChars": "Kirjoita vähintään 2 merkkiä hakua varten"
+  }
+}

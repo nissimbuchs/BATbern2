@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Uw registratie wordt geannuleerd...",
+      "message": "Een moment geduld terwijl we uw annulering verwerken."
+    },
+    "success": {
+      "title": "Registratie geannuleerd",
+      "subtitle": "Uw registratie is succesvol geannuleerd",
+      "whatHappened": "Wat is er gebeurd?",
+      "permanentDeletion": "Permanente verwijdering",
+      "permanentDeletionText": "Uw registratie is permanent verwijderd uit ons systeem.",
+      "noFurtherAction": "Geen verdere actie",
+      "noFurtherActionText": "U ontvangt geen verdere communicatie over dit evenement.",
+      "registerAgain": "Opnieuw registreren",
+      "registerAgainText": "Als u van gedachten verandert, kunt u zich op elk moment vóór het evenement opnieuw registreren.",
+      "backToHome": "Terug naar home",
+      "registerForAnother": "Registreren voor een ander evenement"
+    },
+    "error": {
+      "title": "Annulering mislukt",
+      "subtitle": "Uw registratie kon niet worden geannuleerd",
+      "whatCanYouDo": "Wat kunt u doen?",
+      "checkLink": "Controleer of u op de juiste link in uw e-mail heeft geklikt",
+      "expired": "Annuleringslinks verlopen na 48 uur",
+      "alreadyCancelled": "De registratie is mogelijk al geannuleerd",
+      "useLatestEmail": "Zorg ervoor dat u de meest recente e-mail gebruikt",
+      "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
+      "errors": {
+        "expired": "De annuleringslink is verlopen (geldig gedurende 48 uur).",
+        "invalid": "Ongeldige annuleringslink. Controleer uw e-mail voor de juiste link.",
+        "notFound": "Registratie niet gevonden of al geannuleerd.",
+        "default": "Het annuleren van de registratie is mislukt. Probeer het opnieuw of neem contact op met de ondersteuning."
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "Bevestiging laden...",
+    "notFound": {
+      "title": "Registratie niet gevonden",
+      "message": "Controleer uw bevestigingscode en probeer opnieuw."
+    },
+    "copyCode": "Bevestigingscode kopiëren",
+    "qrCodeAlt": "Registratie QR-code",
+    "qrCodeTitle": "Uw check-in QR-code",
+    "detailsTitle": "Registratiedetails",
+    "shareLabel": "Delen met uw netwerk:",
+    "registerAnother": "Nog iemand registreren",
+    "viewEventDetails": "Evenementdetails bekijken"
+  },
+  "successPage": {
+    "pendingTitle": "Registratie in afwachting",
+    "pendingMessage": "Als u een registratie heeft ingediend, controleer dan uw e-mail voor de bevestigingslink.",
+    "pendingLinkValidity": "De bevestigingslink is 48 uur geldig.",
+    "title": "Registratie ingediend!",
+    "subtitle": "Controleer uw e-mail om uw registratie te bevestigen",
+    "emailSentTitle": "Bevestigings-e-mail verzonden",
+    "noEmailTitle": "Geen e-mail ontvangen?",
+    "noEmailCheck1": "Controleer uw spammap",
+    "noEmailCheck2": "Zorg ervoor dat u het juiste e-mailadres heeft ingevoerd",
+    "noEmailCheck3": "Wacht een paar minuten en controleer opnieuw",
+    "createAccountTitle": "Maak een account aan om uw registraties te beheren",
+    "createAccountText": "Na bevestiging via e-mail kunt u een account aanmaken om al uw registraties te beheren."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Uw gegevens",
+      "step2Progress": "2. Registratie bevestigen",
+      "step1Title": "Stap 1: Uw gegevens",
+      "step2Title": "Stap 2: Registratie bevestigen"
+    },
+    "buttons": {
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "back": "← Terug",
+      "next": "Volgende →",
+      "complete": "Registratie voltooien",
+      "submitting": "Verzenden..."
+    },
+    "errors": {
+      "fillRequired": "Vul alle verplichte velden correct in.",
+      "acceptTerms": "U moet akkoord gaan met de algemene voorwaarden om te registreren.",
+      "failed": "Registratie mislukt. Probeer opnieuw."
+    },
+    "cancelConfirm": "Weet u zeker dat u de registratie wilt annuleren?"
+  },
+  "personalDetails": {
+    "title": "Persoonlijke informatie",
+    "subtitle": "Vul uw gegevens in om te registreren voor het evenement.",
+    "fields": {
+      "firstName": "Voornaam *",
+      "lastName": "Achternaam *",
+      "emailAddress": "E-mailadres *",
+      "emailHelper": "We sturen uw ticket en evenementupdates hierheen",
+      "company": "Bedrijf *",
+      "role": "Functie *"
+    },
+    "validation": {
+      "firstNameRequired": "Voornaam is verplicht",
+      "lastNameRequired": "Achternaam is verplicht",
+      "invalidEmail": "Ongeldig e-mailadres",
+      "companyRequired": "Bedrijf is verplicht",
+      "roleRequired": "Functie is verplicht"
+    },
+    "placeholders": {
+      "firstName": "Jan",
+      "lastName": "de Vries",
+      "email": "jan.devries@bedrijf.nl",
+      "company": "Zoek uw bedrijf...",
+      "role": "Senior ontwikkelaar"
+    }
+  },
+  "confirmStep": {
+    "title": "Controleren en bevestigen",
+    "subtitle": "Controleer uw gegevens en voltooi uw registratie.",
+    "personalInfo": "Persoonlijke informatie",
+    "commPref": {
+      "title": "Communicatievoorkeuren",
+      "reminders": "Stuur mij herinneringen (1 week en 1 dag van tevoren)",
+      "newsletter": "Abonneer op BATbern nieuwsbrief (maandelijkse updates)"
+    },
+    "specialRequests": {
+      "label": "Speciale verzoeken",
+      "optional": "(Optioneel)",
+      "placeholder": "Dieetvereisten, toegankelijkheidsbehoeften, enz.",
+      "helper": "Laat ons weten of u dieetvereisten of toegankelijkheidsbehoeften heeft."
+    },
+    "terms": {
+      "prefix": "Ik ga akkoord met de",
+      "termsLink": "algemene voorwaarden",
+      "separator": "en het",
+      "privacyLink": "privacybeleid",
+      "required": "*",
+      "error": "U moet akkoord gaan met de algemene voorwaarden om de registratie te voltooien."
+    },
+    "account": {
+      "title": "Wilt u al uw registraties op één plek beheren?",
+      "message": "Na registratie kunt u een gratis account aanmaken om al uw registraties te beheren."
+    }
+  },
+  "success": {
+    "title": "Registratie ingediend!",
+    "subtitle": "Controleer uw e-mail om uw registratie te bevestigen",
+    "emailSent": "Bevestigings-e-mail verzonden",
+    "emailSentTo": "We hebben een bevestigings-e-mail verzonden naar",
+    "clickLink": "Klik op de link in de e-mail om uw registratie te bevestigen.",
+    "validFor": "Deze link is geldig voor",
+    "valid": "24 uur",
+    "didntReceive": "Geen e-mail ontvangen?",
+    "checkSpam": "Controleer uw spammap",
+    "checkEmail": "Controleer of het e-mailadres correct is",
+    "waitMinutes": "Wacht een paar minuten en probeer opnieuw",
+    "close": "Sluiten"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Uw registratie wordt bevestigd...",
+      "message": "Een moment geduld terwijl we uw bevestiging verwerken."
+    },
+    "success": {
+      "title": "Registratie bevestigd!",
+      "subtitle": "U bent helemaal klaar voor het evenement",
+      "whatsNext": "Wat nu?",
+      "checkIn": "Inchecken bij het evenement",
+      "checkInText": "Toon uw identiteitsbewijs bij de balie van het evenement voor inchecken. Uw bevestigde registratie staat in ons systeem.",
+      "eventDetails": "Evenementdetails",
+      "eventDetailsText": "U ontvangt evenementupdates en herinneringen via e-mail.",
+      "createAccount": "Account aanmaken om registraties te beheren"
+    },
+    "alreadyConfirmed": {
+      "title": "Al bevestigd",
+      "subtitle": "Deze registratie is al bevestigd"
+    },
+    "error": {
+      "title": "Bevestiging mislukt",
+      "whatCanYouDo": "Wat kunt u doen?",
+      "checkLink": "Controleer of u op de juiste link in uw e-mail heeft geklikt",
+      "expired": "Bevestigingslinks verlopen na 48 uur - u moet zich mogelijk opnieuw registreren",
+      "useLatestEmail": "Zorg ervoor dat u de meest recente bevestigings-e-mail gebruikt",
+      "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
+      "registerAgain": "Opnieuw registreren"
+    }
+  },
+  "companySearch": {
+    "error": "Fout bij laden bedrijven",
+    "noResults": "Geen bestaand bedrijf gevonden",
+    "createNew": "U kunt doorgaan met \"{{value}}\" als nieuw bedrijf",
+    "minChars": "Typ minstens 2 tekens om te zoeken"
+  }
+}

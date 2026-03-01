@@ -117,7 +117,7 @@ export function ParticipantBatchImportModal({
         // Trigger user list fetch to check for existing users
         setShouldCheckUsers(true);
       } catch (error) {
-        setParseError(error instanceof Error ? error.message : 'Failed to parse CSV');
+        setParseError(error instanceof Error ? error.message : t('participantImport.parseError'));
       }
     };
     reader.readAsText(file);
@@ -171,7 +171,7 @@ export function ParticipantBatchImportModal({
 
         onImportComplete?.(result);
       } catch (error) {
-        setParseError(error instanceof Error ? error.message : 'Import failed');
+        setParseError(error instanceof Error ? error.message : t('participantImport.importFailed'));
       }
     };
     reader.readAsText(csvFile);
@@ -238,7 +238,7 @@ export function ParticipantBatchImportModal({
         label={label}
         color={color}
         size="small"
-        aria-label={`Import status: ${label}`}
+        aria-label={t('participantImport.aria.statusLabel', { label })}
       />
     );
   };
@@ -258,7 +258,7 @@ export function ParticipantBatchImportModal({
           <Box
             {...getRootProps()}
             role="button"
-            aria-label="CSV file upload dropzone. Drag and drop a CSV file or click to select"
+            aria-label={t('participantImport.aria.dropzone')}
             tabIndex={0}
             sx={{
               border: '2px dashed',
@@ -277,7 +277,7 @@ export function ParticipantBatchImportModal({
           >
             <input
               {...getInputProps()}
-              aria-label="File input for CSV upload"
+              aria-label={t('participantImport.aria.fileInput')}
               data-testid="csv-file-input"
             />
             <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
@@ -311,11 +311,18 @@ export function ParticipantBatchImportModal({
 
         {/* Progress Bar */}
         {isImporting && (
-          <Box sx={{ mt: 2 }} role="status" aria-live="polite" aria-label="Import progress">
+          <Box
+            sx={{ mt: 2 }}
+            role="status"
+            aria-live="polite"
+            aria-label={t('participantImport.aria.importProgress')}
+          >
             <LinearProgress
               variant="determinate"
               value={progress}
-              aria-label={`Import progress: ${Math.round(progress)}% complete`}
+              aria-label={t('participantImport.aria.progressBar', {
+                percent: Math.round(progress),
+              })}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
               {t('participantImport.progress', {
@@ -370,15 +377,19 @@ export function ParticipantBatchImportModal({
               component={Paper}
               sx={{ maxHeight: 400 }}
               role="region"
-              aria-label="Participant import preview table"
+              aria-label={t('participantImport.aria.previewTable')}
             >
-              <Table stickyHeader size="small" aria-label="Participants with import status">
+              <Table
+                stickyHeader
+                size="small"
+                aria-label={t('participantImport.aria.participantTable')}
+              >
                 <TableHead>
                   <TableRow>
-                    <TableCell>{t('participantImport.columns.name')}</TableCell>
-                    <TableCell>{t('participantImport.columns.email')}</TableCell>
-                    <TableCell align="center">{t('participantImport.columns.events')}</TableCell>
-                    <TableCell align="center">{t('participantImport.columns.status')}</TableCell>
+                    <TableCell>{t('common:labels.name')}</TableCell>
+                    <TableCell>{t('common:labels.email')}</TableCell>
+                    <TableCell align="center">{t('common:navigation.events')}</TableCell>
+                    <TableCell align="center">{t('common:labels.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -392,10 +403,20 @@ export function ParticipantBatchImportModal({
                               {candidate.firstName} {candidate.lastName}
                             </Typography>
                             {candidate.isExisting && (
-                              <Chip label="Existing" size="small" color="info" variant="outlined" />
+                              <Chip
+                                label={t('participantImport.badges.existing')}
+                                size="small"
+                                color="info"
+                                variant="outlined"
+                              />
                             )}
                             {candidate.isExisting === false && (
-                              <Chip label="New" size="small" color="success" variant="outlined" />
+                              <Chip
+                                label={t('participantImport.badges.new')}
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                              />
                             )}
                           </Box>
                           <Typography variant="caption" color="text.secondary">
@@ -463,17 +484,19 @@ export function ParticipantBatchImportModal({
         <Button
           onClick={handleClose}
           disabled={isImporting}
-          aria-label="Close import modal"
+          aria-label={t('participantImport.aria.closeModal')}
           data-testid="participant-import-cancel-button"
         >
-          {candidates.length > 0 && !isImporting ? t('actions.close') : t('actions.cancel')}
+          {candidates.length > 0 && !isImporting
+            ? t('common:actions.close')
+            : t('common:actions.cancel')}
         </Button>
         {previewCandidates.length > 0 && !candidates.length && !parseError && (
           <Button
             variant="contained"
             onClick={handleImport}
             disabled={isImporting}
-            aria-label="Start importing participants from CSV file"
+            aria-label={t('participantImport.aria.startImport')}
             data-testid="participant-import-start-button"
           >
             {t('participantImport.importButton', { count: previewCandidates.length })}

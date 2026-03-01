@@ -278,11 +278,11 @@ const TopicListPage: React.FC = () => {
                     direction={sortKey === 'createdAt' ? sortDir : 'desc'}
                     onClick={() => handleSort('createdAt')}
                   >
-                    {t('portal.topics.col.date')}
+                    {t('common:labels.date')}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '20%' }} align="right">
-                  {t('portal.topics.col.actions')}
+                  {t('common:labels.actions')}
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -350,7 +350,7 @@ const TopicListPage: React.FC = () => {
                         {/* Edit / Delete — own company only */}
                         {isOwn && (
                           <>
-                            <Tooltip title={t('portal.topics.edit')}>
+                            <Tooltip title={t('common:actions.edit')}>
                               <IconButton
                                 size="small"
                                 onClick={() => setEditingTopic(topic)}
@@ -359,7 +359,7 @@ const TopicListPage: React.FC = () => {
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title={t('portal.topics.delete')}>
+                            <Tooltip title={t('common:actions.delete')}>
                               <IconButton
                                 size="small"
                                 color="error"

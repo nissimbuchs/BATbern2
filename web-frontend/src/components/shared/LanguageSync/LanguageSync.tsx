@@ -18,11 +18,16 @@ export const LanguageSync: React.FC = () => {
   const hasSynced = useRef(false);
 
   useEffect(() => {
-    // Reset so the next login re-syncs.
-    if (!isAuthenticated || isLoading) {
+    // Reset only on logout so the next login re-syncs.
+    // Do NOT reset on transient isLoading states (e.g. token refresh on route change) —
+    // that would cause a re-sync that could revert an in-flight language change.
+    if (!isAuthenticated) {
       hasSynced.current = false;
       return;
     }
+
+    // Wait until auth is ready, but don't reset hasSynced while loading.
+    if (isLoading) return;
 
     // Already synced for this session — don't interfere with user's active language choice.
     if (hasSynced.current) return;

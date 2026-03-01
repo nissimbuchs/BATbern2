@@ -4,12 +4,14 @@
  */
 
 import { differenceInDays } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface CountdownTimerProps {
   eventDate: Date;
 }
 
 export const CountdownTimer = ({ eventDate }: CountdownTimerProps) => {
+  const { t } = useTranslation('common');
   const daysUntil = differenceInDays(eventDate, new Date());
 
   // Only show if event is within 30 days and in the future
@@ -27,14 +29,14 @@ export const CountdownTimer = ({ eventDate }: CountdownTimerProps) => {
 
       {/* Badge */}
       <div className="text-sm font-light text-zinc-300">
-        <span className="text-primary font-medium">Next Event</span>
+        <span className="text-primary font-medium">{t('countdown.nextEvent')}</span>
         {' • '}
         {daysUntil === 0 ? (
-          <span className="text-green-400 font-medium">Today!</span>
+          <span className="text-green-400 font-medium">{t('countdown.today')}</span>
         ) : daysUntil === 1 ? (
-          <span className="text-orange-400 font-medium">Tomorrow!</span>
+          <span className="text-orange-400 font-medium">{t('countdown.tomorrow')}</span>
         ) : (
-          <span>{daysUntil} days until event</span>
+          <span>{t('countdown.daysUntil', { count: daysUntil })}</span>
         )}
       </div>
     </div>

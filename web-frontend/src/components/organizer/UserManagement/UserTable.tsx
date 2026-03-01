@@ -136,7 +136,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                 direction={sortField === 'name' ? sortDirection : 'asc'}
                 onClick={() => handleSort('name')}
               >
-                {t('table.headers.name')}
+                {t('common:labels.name')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -145,7 +145,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                 direction={sortField === 'email' ? sortDirection : 'asc'}
                 onClick={() => handleSort('email')}
               >
-                {t('table.headers.email')}
+                {t('common:labels.email')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -154,12 +154,12 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                 direction={sortField === 'company' ? sortDirection : 'asc'}
                 onClick={() => handleSort('company')}
               >
-                {t('table.headers.company')}
+                {t('common:labels.company')}
               </TableSortLabel>
             </TableCell>
             <TableCell>{t('table.headers.roles')}</TableCell>
-            <TableCell>{t('table.headers.status')}</TableCell>
-            <TableCell align="right">{t('table.headers.actions')}</TableCell>
+            <TableCell>{t('common:labels.status')}</TableCell>
+            <TableCell align="right">{t('common:labels.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -169,6 +169,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
               hover
               onClick={() => onRowClick(user)}
               sx={{ cursor: 'pointer' }}
+              data-testid="user-table-row"
             >
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -198,7 +199,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                   {user.roles.map((role) => (
                     <Chip
                       key={role}
-                      label={t(`filters.role.${role.toLowerCase()}`)}
+                      label={t(`common:role.${role.toLowerCase()}`)}
                       size="small"
                       color={getRoleBadgeColor(role as Role)}
                       icon={<span>{ROLE_ICONS[role as Role]}</span>}
@@ -235,7 +236,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
           {t('actions.editRoles')}
         </MenuItem>
         <MenuItem onClick={() => handleAction('delete')} data-testid="user-action-delete">
-          {t('actions.delete')}
+          {t('common:actions.delete')}
         </MenuItem>
       </Menu>
     </TableContainer>

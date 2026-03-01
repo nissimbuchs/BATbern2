@@ -159,7 +159,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
     await expect(page.locator('[data-testid="notify-subscribers-checkbox"]')).toBeChecked(); // Default true
 
     // Confirm publish
-    await page.click('button:has-text("Confirm Publish")');
+    await page.getByRole('button', { name: /confirm publish/i }).click();
 
     // Wait for publishing to complete
     await expect(page.locator('[data-testid="publishing-in-progress"]')).toBeVisible();
@@ -286,7 +286,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
 
     // Modify auto-publish schedule
     await page.fill('[data-testid="auto-publish-agenda-days"]', '21'); // 3 weeks instead of 2
-    await page.click('button:has-text("Save Configuration")');
+    await page.getByRole('button', { name: /save configuration/i }).click();
 
     // Verify schedule updated
     await expect(page.locator('[data-testid="auto-publish-schedule"]')).toContainText(
@@ -300,7 +300,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
 
     // Publish Phase 3 (Agenda) to create version 1
     await page.click('[data-testid="publish-agenda-button"]');
-    await page.click('button:has-text("Confirm Publish")');
+    await page.getByRole('button', { name: /confirm publish/i }).click();
     await expect(page.locator('[data-testid="publish-success-toast"]')).toBeVisible({
       timeout: 10000,
     });
@@ -312,11 +312,11 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
       '[data-testid="session-description"]',
       'Updated description for testing rollback'
     );
-    await page.click('button:has-text("Save")');
+    await page.getByRole('button', { name: /^save$/i }).click();
 
     await page.goto(`${BASE_URL}/organizer/events/${eventCode}/publishing`);
     await page.click('[data-testid="publish-agenda-button"]');
-    await page.click('button:has-text("Confirm Publish")');
+    await page.getByRole('button', { name: /confirm publish/i }).click();
     await expect(page.locator('[data-testid="publish-success-toast"]')).toBeVisible({
       timeout: 10000,
     });
@@ -331,7 +331,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
     await page
       .locator('[data-testid="version-row"]')
       .nth(1)
-      .locator('button:has-text("Rollback")')
+      .getByRole('button', { name: /^rollback$/i })
       .click();
 
     // Rollback confirmation modal
@@ -340,7 +340,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
       '[data-testid="rollback-reason"]',
       'Testing rollback functionality - incorrect session description in v2'
     );
-    await page.click('button:has-text("Confirm Rollback")');
+    await page.getByRole('button', { name: /confirm rollback/i }).click();
 
     // Wait for rollback to complete
     await expect(page.locator('[data-testid="rollback-success-toast"]')).toBeVisible({
@@ -377,7 +377,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
 
     // Publish Phase 3 (Agenda)
     await page.click('[data-testid="publish-agenda-button"]');
-    await page.click('button:has-text("Confirm Publish")');
+    await page.getByRole('button', { name: /confirm publish/i }).click();
     await expect(page.locator('[data-testid="publish-success-toast"]')).toBeVisible({
       timeout: 10000,
     });
@@ -386,7 +386,7 @@ test.describe.skip('Progressive Publishing Workflow (Story BAT-11)', () => {
     await page.goto(`${BASE_URL}/organizer/events/${eventCode}/sessions`);
     await page.locator('[data-testid="session-card"]').first().click();
     await page.fill('[data-testid="session-title"]', 'Updated Session Title');
-    await page.click('button:has-text("Save")');
+    await page.getByRole('button', { name: /^save$/i }).click();
 
     // Navigate to change log
     await page.goto(`${BASE_URL}/organizer/events/${eventCode}/publishing`);

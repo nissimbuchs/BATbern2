@@ -1,0 +1,15 @@
+{
+  "participantImport": {
+    "aria": {
+      "importProgress": "Importfortschritt",
+      "closeModal": "Importdialog schliesse",
+      "startImport": "Teilnehmer us dr CSV-Datei importiere",
+      "progressBar": "Import progress: {{percent}}% complete"
+    }
+  },
+  "userDetail": {
+    "tabs": {
+      "ariaLabel": "User detail tabs"
+    }
+  }
+}

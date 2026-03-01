@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "登録をキャンセル中...",
+      "message": "キャンセルを処理中です。しばらくお待ちください。"
+    },
+    "success": {
+      "title": "登録がキャンセルされました",
+      "subtitle": "登録は正常にキャンセルされました",
+      "whatHappened": "何が起きましたか？",
+      "permanentDeletion": "完全削除",
+      "permanentDeletionText": "ご登録はシステムから完全に削除されました。",
+      "noFurtherAction": "追加の対応は不要です",
+      "noFurtherActionText": "このイベントに関する連絡は今後一切届きません。",
+      "registerAgain": "再度登録する",
+      "registerAgainText": "ご意向が変わった場合は、イベント開始前であればいつでも再登録できます。",
+      "backToHome": "ホームに戻る",
+      "registerForAnother": "別のイベントに登録する"
+    },
+    "error": {
+      "title": "キャンセルに失敗しました",
+      "subtitle": "登録をキャンセルできませんでした",
+      "whatCanYouDo": "どうすればよいですか？",
+      "checkLink": "メールに記載された正しいリンクをクリックしたかご確認ください",
+      "expired": "キャンセルリンクは48時間後に失効します",
+      "alreadyCancelled": "登録はすでにキャンセルされている可能性があります",
+      "useLatestEmail": "最新のメールを使用していることをご確認ください",
+      "contactSupport": "問題が解決しない場合はサポートにお問い合わせください",
+      "errors": {
+        "expired": "キャンセルリンクの有効期限が切れています（有効期間：48時間）。",
+        "invalid": "無効なキャンセルリンクです。メールで正しいリンクをご確認ください。",
+        "notFound": "登録が見つからないか、すでにキャンセルされています。",
+        "default": "登録のキャンセルに失敗しました。再度お試しいただくか、サポートにお問い合わせください。"
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "確認を読み込み中...",
+    "notFound": {
+      "title": "登録が見つかりません",
+      "message": "確認コードを確認して、もう一度お試しください。"
+    },
+    "copyCode": "確認コードをコピー",
+    "qrCodeAlt": "登録QRコード",
+    "qrCodeTitle": "チェックインQRコード",
+    "detailsTitle": "登録詳細",
+    "shareLabel": "ネットワークで共有：",
+    "registerAnother": "別の人を登録",
+    "viewEventDetails": "イベント詳細を見る"
+  },
+  "successPage": {
+    "pendingTitle": "登録保留中",
+    "pendingMessage": "登録を送信した場合は、確認リンクのメールをご確認ください。",
+    "pendingLinkValidity": "確認リンクは48時間有効です。",
+    "title": "登録を送信しました！",
+    "subtitle": "メールで登録を確認してください",
+    "emailSentTitle": "確認メールを送信しました",
+    "noEmailTitle": "メールが届きませんか？",
+    "noEmailCheck1": "迷惑メールフォルダを確認してください",
+    "noEmailCheck2": "正しいメールアドレスを入力したか確認してください",
+    "noEmailCheck3": "数分待ってからもう一度確認してください",
+    "createAccountTitle": "アカウントを作成して登録を管理しましょう",
+    "createAccountText": "メールで登録を確認後、アカウントを作成してすべての登録を一元管理できます。"
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. あなたの情報",
+      "step2Progress": "2. 登録を確認",
+      "step1Title": "ステップ1：あなたの情報",
+      "step2Title": "ステップ2：登録を確認"
+    },
+    "buttons": {
+      "edit": "編集",
+      "cancel": "キャンセル",
+      "back": "← 戻る",
+      "next": "次へ →",
+      "complete": "登録を完了",
+      "submitting": "送信中..."
+    },
+    "errors": {
+      "fillRequired": "必須項目をすべて正しく入力してください。",
+      "acceptTerms": "登録するには利用規約に同意する必要があります。",
+      "failed": "登録に失敗しました。もう一度お試しください。"
+    },
+    "cancelConfirm": "登録をキャンセルしてよろしいですか？"
+  },
+  "personalDetails": {
+    "title": "個人情報",
+    "subtitle": "イベントに登録するために情報を入力してください。",
+    "fields": {
+      "firstName": "名 *",
+      "lastName": "姓 *",
+      "emailAddress": "メールアドレス *",
+      "emailHelper": "チケットとイベント情報をこちらに送信します",
+      "company": "会社 *",
+      "role": "役職 *"
+    },
+    "validation": {
+      "firstNameRequired": "名は必須です",
+      "lastNameRequired": "姓は必須です",
+      "invalidEmail": "無効なメールアドレスです",
+      "companyRequired": "会社は必須です",
+      "roleRequired": "役職は必須です"
+    },
+    "placeholders": {
+      "firstName": "太郎",
+      "lastName": "山田",
+      "email": "taro.yamada@kaisha.co.jp",
+      "company": "会社を検索...",
+      "role": "シニアエンジニア"
+    }
+  },
+  "confirmStep": {
+    "title": "確認と登録",
+    "subtitle": "情報を確認して登録を完了してください。",
+    "personalInfo": "個人情報",
+    "commPref": {
+      "title": "コミュニケーション設定",
+      "reminders": "リマインダーを送信（1週間前と前日）",
+      "newsletter": "BATbernニュースレターを購読（毎月の更新）"
+    },
+    "specialRequests": {
+      "label": "特別なリクエスト",
+      "optional": "（任意）",
+      "placeholder": "食事の制限、アクセシビリティのニーズなど",
+      "helper": "食事制限やアクセシビリティのニーズがあればお知らせください。"
+    },
+    "terms": {
+      "prefix": "私は",
+      "termsLink": "利用規約",
+      "separator": "と",
+      "privacyLink": "プライバシーポリシー",
+      "required": "*",
+      "error": "登録を完了するには利用規約に同意する必要があります。"
+    },
+    "account": {
+      "title": "すべての登録を一か所で管理しませんか？",
+      "message": "登録後、無料アカウントを作成して登録履歴の管理ができます。"
+    }
+  },
+  "success": {
+    "title": "登録を送信しました！",
+    "subtitle": "メールで登録を確認してください",
+    "emailSent": "確認メールを送信しました",
+    "emailSentTo": "確認メールを送信しました：",
+    "clickLink": "メールのリンクをクリックして登録を確認してください。",
+    "validFor": "このリンクの有効期限は",
+    "valid": "24時間",
+    "didntReceive": "メールが届きませんか？",
+    "checkSpam": "迷惑メールフォルダを確認してください",
+    "checkEmail": "メールアドレスが正しいか確認してください",
+    "waitMinutes": "数分待ってからもう一度お試しください",
+    "close": "閉じる"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "登録を確認中...",
+      "message": "確認を処理中です。しばらくお待ちください。"
+    },
+    "success": {
+      "title": "登録が確定しました！",
+      "subtitle": "イベントの準備が整いました",
+      "whatsNext": "次のステップ",
+      "checkIn": "イベントでのチェックイン",
+      "checkInText": "チェックインのため、イベント受付にて身分証明書をご提示ください。確定済みの登録情報はシステムに保存されています。",
+      "eventDetails": "イベント詳細",
+      "eventDetailsText": "イベントの最新情報やリマインダーがメールで届きます。",
+      "createAccount": "アカウントを作成して登録を管理する"
+    },
+    "alreadyConfirmed": {
+      "title": "確認済み",
+      "subtitle": "この登録はすでに確認されています"
+    },
+    "error": {
+      "title": "確認に失敗しました",
+      "whatCanYouDo": "どうすればよいですか？",
+      "checkLink": "メールに記載された正しいリンクをクリックしたかご確認ください",
+      "expired": "確認リンクは48時間後に失効します。再登録が必要な場合があります",
+      "useLatestEmail": "最新の確認メールを使用していることをご確認ください",
+      "contactSupport": "問題が解決しない場合はサポートにお問い合わせください",
+      "registerAgain": "再度登録する"
+    }
+  },
+  "companySearch": {
+    "error": "企業の読み込みエラー",
+    "noResults": "既存の企業が見つかりません",
+    "createNew": "「{{value}}」を新しい企業として続行できます",
+    "minChars": "検索するには2文字以上入力してください"
+  }
+}

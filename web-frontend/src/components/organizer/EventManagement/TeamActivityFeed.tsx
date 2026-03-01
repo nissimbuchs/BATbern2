@@ -215,7 +215,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   }
 
   return (
-    <Box aria-label="Notification feed">
+    <Box aria-label={t('notifications.notificationFeed')}>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" spacing={1} alignItems="center">
@@ -224,7 +224,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
             <Chip
               label={totalCount}
               size="small"
-              aria-label={`${totalCount} total notifications`}
+              aria-label={t('notifications.totalCountAriaLabel', { count: totalCount })}
             />
           </Badge>
         </Stack>
@@ -330,10 +330,10 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
                       <Chip label={notification.eventCode} size="small" variant="outlined" />
                     )}
                     {notification.priority === 'URGENT' && (
-                      <Chip label="URGENT" size="small" color="error" />
+                      <Chip label={t('notifications.priority.urgent')} size="small" color="error" />
                     )}
                     {notification.priority === 'HIGH' && (
-                      <Chip label="HIGH" size="small" color="warning" />
+                      <Chip label={t('notifications.priority.high')} size="small" color="warning" />
                     )}
                   </Stack>
                 }

@@ -132,7 +132,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>{t('eventPage.newsletter.historyDate', 'Date')}</TableCell>
+                  <TableCell>{t('common:labels.date')}</TableCell>
                   <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
                   <TableCell align="right">
                     {t('eventPage.newsletter.historyRecipients', 'Recipients')}
@@ -256,7 +256,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)} disabled={sendMutation.isPending}>
-            {t('common.cancel', 'Cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleConfirmSend}

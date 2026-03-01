@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Cancelando su inscripción...",
+      "message": "Por favor, espere mientras procesamos su cancelación."
+    },
+    "success": {
+      "title": "Inscripción cancelada",
+      "subtitle": "Su inscripción ha sido cancelada exitosamente",
+      "whatHappened": "¿Qué ocurrió?",
+      "permanentDeletion": "Eliminación permanente",
+      "permanentDeletionText": "Su inscripción ha sido eliminada permanentemente de nuestro sistema.",
+      "noFurtherAction": "Sin acciones adicionales",
+      "noFurtherActionText": "No recibirá más comunicaciones sobre este evento.",
+      "registerAgain": "Registrarse de nuevo",
+      "registerAgainText": "Si cambia de opinión, puede registrarse de nuevo en cualquier momento antes del evento.",
+      "backToHome": "Volver al inicio",
+      "registerForAnother": "Registrarse en otro evento"
+    },
+    "error": {
+      "title": "Error al cancelar",
+      "subtitle": "No se pudo cancelar su inscripción",
+      "whatCanYouDo": "¿Qué puede hacer?",
+      "checkLink": "Verifique que haya hecho clic en el enlace correcto de su correo electrónico",
+      "expired": "Los enlaces de cancelación expiran después de 48 horas",
+      "alreadyCancelled": "Es posible que la inscripción ya haya sido cancelada",
+      "useLatestEmail": "Asegúrese de estar usando el correo electrónico más reciente",
+      "contactSupport": "Contacte al soporte si el problema persiste",
+      "errors": {
+        "expired": "El enlace de cancelación ha expirado (válido durante 48 horas).",
+        "invalid": "Enlace de cancelación no válido. Revise su correo electrónico para obtener el enlace correcto.",
+        "notFound": "Inscripción no encontrada o ya cancelada.",
+        "default": "No se pudo cancelar la inscripción. Inténtelo de nuevo o contacte al soporte."
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "Cargando confirmación...",
+    "notFound": {
+      "title": "Registro no encontrado",
+      "message": "Verifica tu código de confirmación e inténtalo de nuevo."
+    },
+    "copyCode": "Copiar código de confirmación",
+    "qrCodeAlt": "Código QR de registro",
+    "qrCodeTitle": "Tu código QR de check-in",
+    "detailsTitle": "Detalles del registro",
+    "shareLabel": "Compartir con tu red:",
+    "registerAnother": "Registrar otra persona",
+    "viewEventDetails": "Ver detalles del evento"
+  },
+  "successPage": {
+    "pendingTitle": "Registro pendiente",
+    "pendingMessage": "Si enviaste un registro, revisa tu correo para el enlace de confirmación.",
+    "pendingLinkValidity": "El enlace de confirmación es válido por 48 horas.",
+    "title": "¡Registro enviado!",
+    "subtitle": "Revisa tu correo para confirmar tu registro",
+    "emailSentTitle": "Correo de confirmación enviado",
+    "noEmailTitle": "¿No recibiste el correo?",
+    "noEmailCheck1": "Revisa tu carpeta de spam",
+    "noEmailCheck2": "Asegúrate de haber ingresado el correo correcto",
+    "noEmailCheck3": "Espera unos minutos y vuelve a revisar",
+    "createAccountTitle": "Crea una cuenta para gestionar tus registros",
+    "createAccountText": "Después de confirmar tu registro por correo, puedes crear una cuenta para gestionar todos tus registros."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Tus datos",
+      "step2Progress": "2. Confirmar registro",
+      "step1Title": "Paso 1: Tus datos",
+      "step2Title": "Paso 2: Confirmar registro"
+    },
+    "buttons": {
+      "edit": "Editar",
+      "cancel": "Cancelar",
+      "back": "← Atrás",
+      "next": "Siguiente →",
+      "complete": "Completar registro",
+      "submitting": "Enviando..."
+    },
+    "errors": {
+      "fillRequired": "Completa todos los campos obligatorios correctamente.",
+      "acceptTerms": "Debes aceptar los términos y condiciones para registrarte.",
+      "failed": "Registro fallido. Inténtalo de nuevo."
+    },
+    "cancelConfirm": "¿Estás seguro/a de que quieres cancelar el registro?"
+  },
+  "personalDetails": {
+    "title": "Información personal",
+    "subtitle": "Proporciona tus datos para registrarte en el evento.",
+    "fields": {
+      "firstName": "Nombre *",
+      "lastName": "Apellido *",
+      "emailAddress": "Dirección de correo electrónico *",
+      "emailHelper": "Te enviaremos tu entrada y actualizaciones aquí",
+      "company": "Empresa *",
+      "role": "Cargo *"
+    },
+    "validation": {
+      "firstNameRequired": "El nombre es obligatorio",
+      "lastNameRequired": "El apellido es obligatorio",
+      "invalidEmail": "Dirección de correo no válida",
+      "companyRequired": "La empresa es obligatoria",
+      "roleRequired": "El cargo es obligatorio"
+    },
+    "placeholders": {
+      "firstName": "Juan",
+      "lastName": "García",
+      "email": "juan.garcia@empresa.ch",
+      "company": "Busca tu empresa...",
+      "role": "Desarrollador senior"
+    }
+  },
+  "confirmStep": {
+    "title": "Revisar y confirmar",
+    "subtitle": "Revisa tu información y completa el registro.",
+    "personalInfo": "Información personal",
+    "commPref": {
+      "title": "Preferencias de comunicación",
+      "reminders": "Enviarme recordatorios (1 semana y 1 día antes)",
+      "newsletter": "Suscribirme al boletín de BATbern (actualizaciones mensuales)"
+    },
+    "specialRequests": {
+      "label": "Solicitudes especiales",
+      "optional": "(Opcional)",
+      "placeholder": "Requisitos dietéticos, necesidades de accesibilidad, etc.",
+      "helper": "Indícanos si tienes requisitos dietéticos o necesidades de accesibilidad."
+    },
+    "terms": {
+      "prefix": "Acepto los",
+      "termsLink": "términos y condiciones",
+      "separator": "y la",
+      "privacyLink": "política de privacidad",
+      "required": "*",
+      "error": "Debes aceptar los términos y condiciones para completar el registro."
+    },
+    "account": {
+      "title": "¿Quieres gestionar todos tus registros en un solo lugar?",
+      "message": "Después de registrarte, puedes crear una cuenta gratuita para gestionar tus registros."
+    }
+  },
+  "success": {
+    "title": "¡Registro enviado!",
+    "subtitle": "Revisa tu correo para confirmar tu registro",
+    "emailSent": "Correo de confirmación enviado",
+    "emailSentTo": "Hemos enviado un correo de confirmación a",
+    "clickLink": "Haz clic en el enlace del correo para confirmar tu registro.",
+    "validFor": "Este enlace es válido por",
+    "valid": "24 horas",
+    "didntReceive": "¿No recibiste el correo?",
+    "checkSpam": "Revisa tu carpeta de spam",
+    "checkEmail": "Verifica que la dirección de correo sea correcta",
+    "waitMinutes": "Espera unos minutos y vuelve a intentar",
+    "close": "Cerrar"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirmando su inscripción...",
+      "message": "Por favor, espere mientras procesamos su confirmación."
+    },
+    "success": {
+      "title": "¡Inscripción confirmada!",
+      "subtitle": "Está listo para el evento",
+      "whatsNext": "¿Qué sigue?",
+      "checkIn": "Registro en el evento",
+      "checkInText": "Presente su identificación en el mostrador del evento para el registro. Tendremos su inscripción confirmada en el sistema.",
+      "eventDetails": "Detalles del evento",
+      "eventDetailsText": "Recibirá actualizaciones y recordatorios del evento por correo electrónico.",
+      "createAccount": "Crear una cuenta para gestionar inscripciones"
+    },
+    "alreadyConfirmed": {
+      "title": "Ya confirmado",
+      "subtitle": "Esta inscripción ya ha sido confirmada"
+    },
+    "error": {
+      "title": "Error al confirmar",
+      "whatCanYouDo": "¿Qué puede hacer?",
+      "checkLink": "Verifique que haya hecho clic en el enlace correcto de su correo electrónico",
+      "expired": "Los enlaces de confirmación expiran después de 48 horas - es posible que deba registrarse de nuevo",
+      "useLatestEmail": "Asegúrese de estar usando el correo electrónico de confirmación más reciente",
+      "contactSupport": "Contacte al soporte si el problema persiste",
+      "registerAgain": "Registrarse de nuevo"
+    }
+  },
+  "companySearch": {
+    "error": "Error al cargar las empresas",
+    "noResults": "No se encontró ninguna empresa existente",
+    "createNew": "Puedes continuar con \"{{value}}\" como nueva empresa",
+    "minChars": "Escribe al menos 2 caracteres para buscar"
+  }
+}

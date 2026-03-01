@@ -124,7 +124,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       await page.goto(`${BASE_URL}/organizer/events/${eventCode}/speakers/outreach`);
 
       // Verify dashboard displays speakers
-      await expect(page.locator('h2')).toContainText('Speaker Outreach');
+      await expect(page.getByRole('heading', { name: /speaker outreach/i })).toBeVisible();
       await expect(page.locator('[data-testid="speaker-outreach-dashboard"]')).toBeVisible();
 
       // Verify both speakers appear
@@ -158,12 +158,12 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Click Mark as Contacted button
       await page
         .locator('[data-testid="speaker-row"]:has-text("Thomas Müller")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
 
       // Verify modal opens
       await expect(page.locator('[data-testid="mark-contacted-modal"]')).toBeVisible();
-      await expect(page.locator('h2')).toContainText('Mark Speaker as Contacted');
+      await expect(page.getByRole('heading', { name: /mark speaker as contacted/i })).toBeVisible();
     });
 
     test('should record outreach with contact method and notes', async ({ page }) => {
@@ -175,7 +175,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Open mark contacted modal
       await page
         .locator('[data-testid="speaker-row"]:has-text("Sarah Weber")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
 
       // Fill contact details
@@ -207,7 +207,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Open modal
       await page
         .locator('[data-testid="speaker-row"]:has-text("Hans Fischer")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
 
       // Try to submit without date (clear default)
@@ -229,7 +229,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Record first outreach
       await page
         .locator('[data-testid="speaker-row"]:has-text("Maria Garcia")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
       await page.selectOption('[data-testid="contact-method-select"]', 'email');
       await page.fill('[data-testid="contact-notes"]', 'Initial email sent');
@@ -238,7 +238,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Record second outreach
       await page
         .locator('[data-testid="speaker-row"]:has-text("Maria Garcia")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
       await page.selectOption('[data-testid="contact-method-select"]', 'phone');
       await page.fill('[data-testid="contact-notes"]', 'Follow-up call - confirmed interest');
@@ -247,7 +247,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Click to view timeline
       await page
         .locator('[data-testid="speaker-row"]:has-text("Maria Garcia")')
-        .locator('button:has-text("View History")')
+        .getByRole('button', { name: /view history/i })
         .click();
 
       // Verify timeline shows both attempts
@@ -267,7 +267,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Record multiple contacts
       await page
         .locator('[data-testid="speaker-row"]:has-text("Peter Klein")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
       await page.fill('[data-testid="contact-notes"]', 'First contact');
       await page.click('[data-testid="save-button"]');
@@ -276,7 +276,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
 
       await page
         .locator('[data-testid="speaker-row"]:has-text("Peter Klein")')
-        .locator('button:has-text("Mark as Contacted")')
+        .getByRole('button', { name: /mark as contacted/i })
         .click();
       await page.fill('[data-testid="contact-notes"]', 'Second contact');
       await page.click('[data-testid="save-button"]');
@@ -284,7 +284,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // View timeline
       await page
         .locator('[data-testid="speaker-row"]:has-text("Peter Klein")')
-        .locator('button:has-text("View History")')
+        .getByRole('button', { name: /view history/i })
         .click();
 
       // Verify order: most recent first
@@ -337,7 +337,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         .check();
 
       // Click bulk action button
-      await page.click('button:has-text("Mark Selected as Contacted")');
+      await page.getByRole('button', { name: /mark selected as contacted/i }).click();
 
       // Fill bulk contact details
       await page.selectOption('[data-testid="bulk-contact-method"]', 'email');
@@ -347,7 +347,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
 
       // Confirm
-      await page.click('button:has-text("Confirm")');
+      await page.getByRole('button', { name: /^confirm$/i }).click();
 
       // Verify both speakers are now marked as CONTACTED
       await expect(
@@ -415,7 +415,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
 
       // Record outreach
-      await speakerRow.locator('button:has-text("Mark as Contacted")').click();
+      await speakerRow.getByRole('button', { name: /mark as contacted/i }).click();
       await page.fill('[data-testid="contact-notes"]', 'Test workflow transition');
       await page.click('[data-testid="save-button"]');
 
@@ -442,7 +442,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
 
       // Perform outreach via UI (which calls API)
       const speakerRow = page.locator('[data-testid="speaker-row"]:has-text("API Test Speaker")');
-      await speakerRow.locator('button:has-text("Mark as Contacted")').click();
+      await speakerRow.getByRole('button', { name: /mark as contacted/i }).click();
       await page.selectOption('[data-testid="contact-method-select"]', 'phone');
       await page.fill('[data-testid="contact-notes"]', 'API test outreach');
 
@@ -471,7 +471,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       const speakerRow = page.locator(
         '[data-testid="speaker-row"]:has-text("History Test Speaker")'
       );
-      await speakerRow.locator('button:has-text("Mark as Contacted")').click();
+      await speakerRow.getByRole('button', { name: /mark as contacted/i }).click();
       await page.fill('[data-testid="contact-notes"]', 'First outreach');
       await page.click('[data-testid="save-button"]');
 
@@ -480,7 +480,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         (response) => response.url().includes('/outreach') && response.request().method() === 'GET'
       );
 
-      await speakerRow.locator('button:has-text("View History")').click();
+      await speakerRow.getByRole('button', { name: /view history/i }).click();
 
       const response = await responsePromise;
       expect(response.status()).toBe(200);
@@ -504,7 +504,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
 
       // Try to mark as contacted
       const speakerRow = page.locator('[data-testid="speaker-row"]:has-text("Error Test Speaker")');
-      await speakerRow.locator('button:has-text("Mark as Contacted")').click();
+      await speakerRow.getByRole('button', { name: /mark as contacted/i }).click();
       await page.fill('[data-testid="contact-notes"]', 'This should fail');
       await page.click('[data-testid="save-button"]');
 

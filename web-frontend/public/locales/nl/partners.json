@@ -1,0 +1,246 @@
+{
+  "title": "Partnerdirectory",
+  "addPartner": "Partner toevoegen",
+  "searchPlaceholder": "Zoeken op partnernaam...",
+  "searchAriaLabel": "Partners zoeken",
+  "clearSearch": "Zoekopdracht wissen",
+  "filters": {
+    "tier": "Partnerschapsniveau",
+    "tierAll": "Alle niveaus",
+    "status": "Status",
+    "statusAll": "Alle",
+    "statusActive": "Actief",
+    "statusInactive": "Inactief",
+    "reset": "Filters resetten"
+  },
+  "tiers": {
+    "strategic": "Strategisch",
+    "platinum": "Platina",
+    "gold": "Goud",
+    "silver": "Zilver",
+    "bronze": "Brons"
+  },
+  "sort": {
+    "label": "Sorteren op",
+    "engagement": "Betrokkenheidsscore",
+    "name": "Bedrijfsnaam",
+    "tier": "Partnerschapsniveau",
+    "lastEvent": "Laatste evenement"
+  },
+  "card": {
+    "comingSoon": "Binnenkort beschikbaar - Epic 8"
+  },
+  "pagination": {
+    "page": "Pagina {{current}} van {{total}}",
+    "firstPage": "Eerste pagina",
+    "previousPage": "Vorige pagina",
+    "nextPage": "Volgende pagina",
+    "lastPage": "Laatste pagina",
+    "ariaLabel": "Paginering van partnerlijst",
+    "partners_one": "{{count}} partner",
+    "partners_other": "{{count}} partners"
+  },
+  "empty": {
+    "noPartners": "Geen partners gevonden"
+  },
+  "loading": "Partners laden...",
+  "error": {
+    "failedToLoad": "Laden van partners mislukt",
+    "correlationId": "Correlatie-ID"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partner gevonden",
+    "filterUpdate": "Filters bijgewerkt",
+    "loading": "Partners laden"
+  },
+  "modal": {
+    "createTitle": "Partnerschap aanmaken",
+    "editTitle": "Partnerschap bewerken",
+    "fields": {
+      "company": "Bedrijf",
+      "startDate": "Startdatum",
+      "endDateOptional": "Einddatum (optioneel)"
+    },
+    "messages": {
+      "unsavedChanges": "U heeft niet-opgeslagen wijzigingen. Weet u zeker dat u wilt sluiten?"
+    }
+  },
+  "validation": {
+    "companyRequired": "Bedrijf is verplicht",
+    "tierRequired": "Partnerschapsniveau is verplicht",
+    "startDateRequired": "Startdatum is verplicht",
+    "endDateBeforeStart": "Einddatum moet na de startdatum liggen"
+  },
+  "detail": {
+    "meetingsTab": {
+      "title": "Vergaderingen",
+      "addMeeting": "Vergadering plannen"
+    },
+    "notesTab": {
+      "title": "Notities",
+      "addNote": "Notitie toevoegen",
+      "editNote": "Notitie bewerken",
+      "deleteNoteConfirmTitle": "Notitie verwijderen",
+      "deleteNoteConfirmMessage": "Weet u zeker dat u \"{{title}}\" wilt verwijderen?",
+      "titleLabel": "Titel",
+      "contentLabel": "Inhoud",
+      "htmlSupported": "HTML-opmaak wordt ondersteund",
+      "noNotes": "Nog geen notities",
+      "failedToLoadNotes": "Notities laden mislukt",
+      "deleteNote": "Notitie verwijderen"
+    },
+    "settingsTab": {
+      "title": "Instellingen",
+      "activePartnership": "Actief partnerschap",
+      "exportData": "Partnergegevens exporteren",
+      "deletePartner": "Partnergegevens verwijderen",
+      "accessDenied": "Toegang geweigerd",
+      "accessDeniedMessage": "Dit gedeelte is alleen toegankelijk voor organisatoren.",
+      "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "contacts": "Contacten",
+      "meetings": "Vergaderingen",
+      "analytics": "Analyses",
+      "settings": "Instellingen",
+      "partnerDetailTabs": "Partnerdetailtabbladen"
+    },
+    "overviewTab": {
+      "title": "Partnerschapsdetails",
+      "tier": "Partnerschapsniveau",
+      "startDate": "Startdatum partnerschap",
+      "benefits": "Voordelen",
+      "changeTier": "Niveau wijzigen",
+      "tierBenefits": {
+        "logoPlacement": "Logoplacement op de website",
+        "newsletterMentions": "Vermeldingen in nieuwsbrief",
+        "priorityAccess": "Prioriteitstoegang tot evenementen",
+        "quarterlyMeetings": "Kwartaalstrategische vergaderingen",
+        "roiAnalytics": "ROI-analysedashboard",
+        "accountManager": "Toegewijde accountmanager",
+        "eventAccess": "Toegang tot evenementen"
+      }
+    },
+    "errors": {
+      "failedToLoadContacts": "Contacten laden mislukt.",
+      "noContactsAssigned": "Er zijn nog geen partnergebruikers toegewezen aan dit bedrijf.",
+      "notFound": "Partner niet gevonden",
+      "notFoundMessage": "De partner \"{{name}}\" is niet gevonden.",
+      "loading": "Fout bij laden partner",
+      "loadingMessage": "Er is een fout opgetreden bij het laden van de partnergegevens. Probeer het later opnieuw.",
+      "noData": "Geen gegevens",
+      "noDataMessage": "Geen partnergegevens beschikbaar."
+    }
+  },
+  "meetings": {
+    "title": "Partnervergaderingen",
+    "create": "Vergadering aanmaken",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Vergadernotities",
+      "location": "Locatie",
+      "eventCode": "BATbern-evenementcode",
+      "eventCodeHint": "bijv. BATbern57",
+      "startTime": "Begintijd",
+      "endTime": "Eindtijd",
+      "type": {
+        "spring": "Voorjaarsvergadering",
+        "autumn": "Herfstvergadering"
+      },
+      "eventCodePlaceholder": "BATbern57"
+    },
+    "sendInvite": "Kalenderuitnodiging versturen",
+    "inviteSent": "Uitnodiging verzonden",
+    "inviteNotSent": "Uitnodiging niet verzonden",
+    "inviteSentOn": "Uitnodiging verzonden op {{date}}",
+    "noMeetings": "Geen partnervergaderingen gevonden",
+    "confirmSendInvite": "Kalenderuitnodiging sturen naar alle partnercontacten?",
+    "inviteQueued": "Kalenderuitnodiging wordt verstuurd...",
+    "columns": {
+      "type": "Type",
+      "date": "Datum",
+      "location": "Locatie",
+      "inviteStatus": "Uitnodiging",
+      "actions": "Acties"
+    },
+    "error": "Vergaderingen konden niet worden geladen",
+    "inviteSuccess": "Kalenderuitnodiging wordt verstuurd"
+  },
+  "portal": {
+    "noCompanyLinked": "Uw account is niet gekoppeld aan een bedrijf",
+    "noCompanyLinked.detail": "Neem contact op met uw organisator",
+    "analytics": {
+      "kpi": {
+        "costPerAttendee": "Kosten per deelnemer",
+        "attendanceRate": "Gem. aanwezigheidspercentage",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Laatste 5 jaar",
+        "allHistory": "Volledige geschiedenis"
+      },
+      "export": {
+        "button": "Excel exporteren",
+        "loading": "Exporteren..."
+      },
+      "noData": "Geen aanwezigheidsgegevens gevonden voor de geselecteerde periode",
+      "error": "Laden van aanwezigheidsgegevens mislukt",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    },
+    "topics": {
+      "title": "Onderwerpssuggesties",
+      "suggest": "Onderwerp suggereren",
+      "vote": "Stemmen",
+      "unvote": "Stem verwijderen",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "col": {
+        "topic": "Onderwerp",
+        "company": "Bedrijf",
+        "date": "Datum",
+        "actions": "Acties"
+      },
+      "status": {
+        "proposed": "Voorgesteld",
+        "selected": "Geselecteerd",
+        "declined": "Afgewezen"
+      },
+      "plannedFor": "Gepland voor",
+      "empty": "Nog geen onderwerpssuggesties",
+      "form": {
+        "title": "Titel",
+        "description": "Beschrijving",
+        "submit": "Indienen",
+        "titleRequired": "Titel is verplicht (minimaal 5 tekens)",
+        "descriptionHint": "Optioneel, maximaal 500 tekens",
+        "dialogTitle": "Nieuw onderwerp suggereren",
+        "editDialogTitle": "Onderwerp bewerken",
+        "update": "Bijwerken"
+      },
+      "organizer": {
+        "title": "Onderwerpssuggesties van partners",
+        "col": {
+          "title": "Titel",
+          "company": "Bedrijf",
+          "votes": "Stemmen",
+          "date": "Datum",
+          "actions": "Acties"
+        },
+        "status": "Status",
+        "plannedEvent": "Gepland evenement",
+        "save": "Opslaan",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "error": "Laden van onderwerpen mislukt"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

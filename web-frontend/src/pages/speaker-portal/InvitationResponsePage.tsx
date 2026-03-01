@@ -13,6 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
@@ -46,6 +47,7 @@ interface ResponseFormData {
 }
 
 const InvitationResponsePage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const actionParam = searchParams.get('action'); // 'accept' or 'decline' from email link
@@ -118,16 +120,18 @@ const InvitationResponsePage = () => {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-12 max-w-3xl">
-          <div className="text-center">
+          <div className="text-center" data-testid="invitation-error-invalid">
             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h1 className="text-3xl font-light mb-2 text-zinc-100">Invalid Link</h1>
+            <h1 className="text-3xl font-light mb-2 text-zinc-100">
+              {t('speakerPortal.invitationResponse.invalidLink')}
+            </h1>
             <p className="text-zinc-400 mb-8">
-              This page requires a valid invitation link from your email.
+              {t('speakerPortal.invitationResponse.invalidLinkMessage')}
             </p>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t('speakerPortal.invitationResponse.backToHome')}
               </Link>
             </Button>
           </div>
@@ -171,41 +175,50 @@ const InvitationResponsePage = () => {
 
   // Extract error details
   const getErrorDetails = () => {
+    const ir = 'speakerPortal.invitationResponse';
     if (validationError) {
       const err = validationError as Error & { errorCode?: string };
       if (err.errorCode === 'EXPIRED') {
         return {
-          title: 'Link Expired',
-          message: 'This invitation link has expired. Please contact the event organizers.',
+          title: t(`${ir}.linkExpired`),
+          message: t(`${ir}.linkExpiredMessage`),
         };
       }
       if (err.errorCode === 'ALREADY_USED') {
         return {
-          title: 'Link Already Used',
-          message: 'This invitation link has already been used.',
+          title: t(`${ir}.linkAlreadyUsed`),
+          message: t(`${ir}.linkAlreadyUsedMessage`),
         };
       }
       if (err.errorCode === 'NOT_FOUND') {
         return {
-          title: 'Invalid Link',
-          message: 'This invitation link is not valid.',
+          title: t(`${ir}.invalidLink`),
+          message: t(`${ir}.linkNotValid`),
         };
       }
       return {
-        title: 'Error',
-        message: err.message || 'An error occurred while validating your invitation.',
+        title: t(`${ir}.genericError`),
+        message: err.message || t(`${ir}.genericErrorMessage`),
       };
     }
     if (invitation && !invitation.valid) {
       return {
-        title: 'Invalid Link',
-        message: invitation.error || 'This invitation link is not valid.',
+        title: t(`${ir}.invalidLink`),
+        message: invitation.error || t(`${ir}.linkNotValid`),
       };
     }
     return {
-      title: 'Error',
-      message: 'An unexpected error occurred.',
+      title: t(`${ir}.genericError`),
+      message: t(`${ir}.unexpectedErrorMessage`),
     };
+  };
+
+  const getErrorTestId = () => {
+    if (validationError) {
+      const err = validationError as Error & { errorCode?: string };
+      if (err.errorCode === 'EXPIRED') return 'invitation-error-expired';
+    }
+    return 'invitation-error-invalid';
   };
 
   return (
@@ -213,36 +226,44 @@ const InvitationResponsePage = () => {
       <div className="container mx-auto px-4 py-12 max-w-3xl min-h-screen">
         {/* Loading State */}
         {pageState === 'loading' && (
-          <div className="text-center py-24" role="status" aria-label="Loading invitation">
+          <div
+            className="text-center py-24"
+            role="status"
+            aria-label={t('speakerPortal.invitationResponse.loadingAria')}
+          >
             <BATbernLoader size={128} />
-            <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Invitation...</h2>
-            <p className="text-zinc-400">Please wait while we verify your link.</p>
+            <h2 className="text-2xl font-light text-zinc-100 mb-2">
+              {t('speakerPortal.invitationResponse.loading')}
+            </h2>
+            <p className="text-zinc-400">{t('speakerPortal.invitationResponse.loadingMessage')}</p>
           </div>
         )}
 
         {/* Error State */}
         {pageState === 'error' && (
-          <div className="text-center">
+          <div className="text-center" data-testid={getErrorTestId()}>
             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
             <h1 className="text-3xl font-light text-zinc-100 mb-2">{getErrorDetails().title}</h1>
             <p className="text-zinc-400 mb-8">{getErrorDetails().message}</p>
             <Card className="p-6 mb-8 text-left">
-              <h3 className="text-lg font-light text-zinc-100 mb-3">Need Help?</h3>
+              <h3 className="text-lg font-light text-zinc-100 mb-3">
+                {t('speakerPortal.invitationResponse.needHelp')}
+              </h3>
               <ul className="space-y-2 text-sm text-zinc-400">
                 <li>
-                  Contact the event organizers at{' '}
+                  {t('speakerPortal.invitationResponse.contactOrganizersAt')}{' '}
                   <a href="mailto:info@batbern.ch" className="text-blue-400 hover:underline">
                     info@batbern.ch
                   </a>
                 </li>
-                <li>Check your email for a more recent invitation link</li>
-                <li>Request a new invitation from the organizers</li>
+                <li>{t('speakerPortal.invitationResponse.checkEmail')}</li>
+                <li>{t('speakerPortal.invitationResponse.requestNew')}</li>
               </ul>
             </Card>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t('speakerPortal.invitationResponse.backToHome')}
               </Link>
             </Button>
           </div>
@@ -250,19 +271,21 @@ const InvitationResponsePage = () => {
 
         {/* Already Responded State */}
         {pageState === 'already_responded' && invitation && (
-          <div className="text-center">
+          <div className="text-center" data-testid="invitation-already-responded">
             <AlertCircle className="h-16 w-16 text-amber-400 mx-auto mb-4" />
-            <h1 className="text-3xl font-light text-zinc-100 mb-2">Already Responded</h1>
+            <h1 className="text-3xl font-light text-zinc-100 mb-2">
+              {t('speakerPortal.invitationResponse.alreadyResponded')}
+            </h1>
             <p className="text-zinc-400 mb-8">
-              You have already responded to this invitation on{' '}
-              {invitation.previousResponseDate
-                ? new Date(invitation.previousResponseDate).toLocaleDateString('de-CH')
-                : 'a previous date'}
-              .
+              {t('speakerPortal.invitationResponse.alreadyRespondedOn', {
+                date: invitation.previousResponseDate
+                  ? new Date(invitation.previousResponseDate).toLocaleDateString('de-CH')
+                  : '—',
+              })}
             </p>
             <Card className="p-6 mb-8">
               <p className="text-zinc-300">
-                Your response:{' '}
+                {t('speakerPortal.invitationResponse.yourResponseWas')}{' '}
                 <span
                   className={`font-semibold ${
                     invitation.previousResponse === 'ACCEPTED'
@@ -272,27 +295,29 @@ const InvitationResponsePage = () => {
                         : 'text-amber-400'
                   }`}
                 >
-                  {invitation.previousResponse === 'ACCEPTED' && 'Accepted'}
-                  {invitation.previousResponse === 'DECLINED' && 'Declined'}
-                  {invitation.previousResponse === 'TENTATIVE' && 'Tentative'}
+                  {invitation.previousResponse === 'ACCEPTED' &&
+                    t('speakerPortal.invitationResponse.accepted')}
+                  {invitation.previousResponse === 'DECLINED' &&
+                    t('speakerPortal.invitationResponse.declined')}
+                  {invitation.previousResponse === 'TENTATIVE' &&
+                    t('speakerPortal.invitationResponse.tentative')}
                 </span>
               </p>
               {invitation.previousResponse === 'ACCEPTED' && (
                 <p className="mt-4 text-sm text-zinc-400">
-                  You can manage your speaker profile and content submissions from your speaker
-                  dashboard.
+                  {t('speakerPortal.invitationResponse.manageProfileText')}
                 </p>
               )}
               {invitation.previousResponse === 'DECLINED' && (
                 <p className="mt-4 text-sm text-zinc-400">
-                  If you&apos;d like to reconsider, please contact the event organizers directly.
+                  {t('speakerPortal.invitationResponse.reconsiderText')}
                 </p>
               )}
             </Card>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t('speakerPortal.invitationResponse.backToHome')}
               </Link>
             </Button>
           </div>
@@ -304,7 +329,7 @@ const InvitationResponsePage = () => {
             {/* Event Details Card */}
             <Card className="p-6 mb-8">
               <h1 className="text-2xl font-light text-zinc-100 mb-4">
-                You&apos;re Invited to Speak at {invitation.eventTitle}
+                {t('speakerPortal.invitationResponse.invitedToSpeak')} {invitation.eventTitle}
               </h1>
 
               <div className="flex flex-wrap gap-4 text-zinc-400 mb-6">
@@ -323,7 +348,10 @@ const InvitationResponsePage = () => {
                 {invitation.responseDeadline && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>Respond by {invitation.responseDeadline}</span>
+                    <span>
+                      {t('speakerPortal.invitationResponse.respondBy')}{' '}
+                      {invitation.responseDeadline}
+                    </span>
                   </div>
                 )}
               </div>
@@ -337,17 +365,19 @@ const InvitationResponsePage = () => {
               )}
 
               <p className="text-zinc-300">
-                Dear <span className="font-medium text-zinc-100">{invitation.speakerName}</span>,
+                {t('speakerPortal.invitationResponse.dear')}{' '}
+                <span className="font-medium text-zinc-100">{invitation.speakerName}</span>,
                 <br />
                 <br />
-                We would be honored to have you as a speaker at this event. Please let us know if
-                you can join us by selecting one of the options below.
+                {t('speakerPortal.invitationResponse.invitationBody')}
               </p>
             </Card>
 
             {/* Response Buttons */}
             <Card className="p-6 mb-8">
-              <h2 className="text-lg font-light text-zinc-100 mb-4">Your Response</h2>
+              <h2 className="text-lg font-light text-zinc-100 mb-4">
+                {t('speakerPortal.invitationResponse.yourResponse')}
+              </h2>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Button
@@ -355,18 +385,20 @@ const InvitationResponsePage = () => {
                   className={`flex-1 h-14 ${selectedResponse === 'ACCEPT' ? 'bg-green-600 hover:bg-green-700 border-green-600' : ''}`}
                   onClick={() => handleResponseSelect('ACCEPT')}
                   disabled={respondMutation.isPending}
+                  data-testid="invitation-response-accept-btn"
                 >
                   <ThumbsUp className="h-5 w-5 mr-2" />
-                  Accept
+                  {t('speakerPortal.invitationResponse.accept')}
                 </Button>
                 <Button
                   variant={selectedResponse === 'DECLINE' ? 'default' : 'outline'}
                   className={`flex-1 h-14 ${selectedResponse === 'DECLINE' ? 'bg-red-600 hover:bg-red-700 border-red-600' : ''}`}
                   onClick={() => handleResponseSelect('DECLINE')}
                   disabled={respondMutation.isPending}
+                  data-testid="invitation-response-decline-btn"
                 >
                   <ThumbsDown className="h-5 w-5 mr-2" />
-                  Decline
+                  {t('speakerPortal.invitationResponse.decline')}
                 </Button>
               </div>
 
@@ -375,12 +407,12 @@ const InvitationResponsePage = () => {
                 <div className="space-y-4 border-t border-zinc-700 pt-6">
                   <div>
                     <label htmlFor="comments" className="block text-sm text-zinc-400 mb-2">
-                      Message to Organizers (optional)
+                      {t('speakerPortal.invitationResponse.messageToOrganizers')}
                     </label>
                     <textarea
                       id="comments"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[80px]"
-                      placeholder="Any questions or comments for the organizers..."
+                      placeholder={t('speakerPortal.invitationResponse.commentsPlaceholder')}
                       value={preferences.comments || ''}
                       onChange={(e) => setPreferences({ ...preferences, comments: e.target.value })}
                     />
@@ -393,7 +425,7 @@ const InvitationResponsePage = () => {
                 <div className="space-y-4 border-t border-zinc-700 pt-6">
                   <div>
                     <label htmlFor="declineReason" className="block text-sm text-zinc-400 mb-2">
-                      Reason for declining{' '}
+                      {t('speakerPortal.invitationResponse.reasonForDeclining')}{' '}
                       <span className="text-red-400" aria-hidden="true">
                         *
                       </span>
@@ -402,7 +434,7 @@ const InvitationResponsePage = () => {
                     <textarea
                       id="declineReason"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[100px]"
-                      placeholder="Please let us know why you can't participate..."
+                      placeholder={t('speakerPortal.invitationResponse.declinePlaceholder')}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       required
@@ -411,7 +443,7 @@ const InvitationResponsePage = () => {
                     />
                     {!reason.trim() && (
                       <p id="declineReasonError" className="text-sm text-red-400 mt-1" role="alert">
-                        A reason is required to decline
+                        {t('speakerPortal.invitationResponse.reasonRequired')}
                       </p>
                     )}
                   </div>
@@ -425,20 +457,22 @@ const InvitationResponsePage = () => {
                     onClick={handleSubmit}
                     disabled={!isSubmitValid() || respondMutation.isPending}
                     className="w-full h-12"
+                    data-testid="invitation-response-submit-btn"
                   >
                     {respondMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Submitting...
+                        {t('speakerPortal.invitationResponse.submitting')}
                       </>
                     ) : (
-                      <>Submit Response</>
+                      <>{t('speakerPortal.invitationResponse.submit')}</>
                     )}
                   </Button>
 
                   {respondMutation.error && (
                     <p className="text-sm text-red-400 mt-2 text-center">
-                      {(respondMutation.error as Error).message || 'Failed to submit response'}
+                      {(respondMutation.error as Error).message ||
+                        t('speakerPortal.invitationResponse.failedToSubmit')}
                     </p>
                   )}
                 </div>
@@ -452,16 +486,22 @@ const InvitationResponsePage = () => {
           <>
             <div className="text-center mb-8">
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-              <h1 className="text-3xl font-light text-zinc-100 mb-2">Response Submitted!</h1>
+              <h1 className="text-3xl font-light text-zinc-100 mb-2">
+                {t('speakerPortal.invitationResponse.submitted')}
+              </h1>
               <p className="text-xl text-zinc-400">
-                Thank you, {responseResult.speakerName}, for your response.
+                {t('speakerPortal.invitationResponse.thankYouResponse', {
+                  name: responseResult.speakerName,
+                })}
               </p>
             </div>
 
             <Card className="p-6 mb-8">
               {responseResult.nextSteps && responseResult.nextSteps.length > 0 && (
                 <>
-                  <h2 className="text-lg font-light text-zinc-100 mb-4">What&apos;s Next?</h2>
+                  <h2 className="text-lg font-light text-zinc-100 mb-4">
+                    {t('speakerPortal.invitationResponse.whatsNext')}
+                  </h2>
                   <ul className="space-y-3 text-zinc-300">
                     {responseResult.nextSteps.map((step, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -477,7 +517,8 @@ const InvitationResponsePage = () => {
                 <div className="mt-6 p-4 bg-blue-900/20 rounded-lg border border-blue-800">
                   <p className="text-sm text-blue-300">
                     <Calendar className="h-4 w-4 inline mr-2" />
-                    Content submission deadline: {responseResult.contentDeadline}
+                    {t('speakerPortal.invitationResponse.contentDeadline')}{' '}
+                    {responseResult.contentDeadline}
                   </p>
                 </div>
               )}
@@ -490,13 +531,15 @@ const InvitationResponsePage = () => {
             <div className="flex justify-center gap-4">
               {responseResult.profileUrl && (
                 <Button asChild>
-                  <a href={responseResult.profileUrl}>Complete Your Profile</a>
+                  <a href={responseResult.profileUrl}>
+                    {t('speakerPortal.invitationResponse.completeProfile')}
+                  </a>
                 </Button>
               )}
               <Button asChild variant="outline">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Home
+                  {t('speakerPortal.invitationResponse.backToHome')}
                 </Link>
               </Button>
             </div>

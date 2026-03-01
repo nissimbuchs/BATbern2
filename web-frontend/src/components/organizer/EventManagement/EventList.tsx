@@ -51,7 +51,12 @@ export const EventList: React.FC<EventListProps> = ({
   // Empty state
   if (events.length === 0) {
     return (
-      <Box textAlign="center" py={8} aria-label="No events found" data-testid="event-list-empty">
+      <Box
+        textAlign="center"
+        py={8}
+        aria-label={t('accessibility.noEventsFound')}
+        data-testid="event-list-empty"
+      >
         <Typography variant="h6" color="text.secondary" gutterBottom>
           {t('dashboard.noEventsFound')}
         </Typography>
@@ -66,7 +71,12 @@ export const EventList: React.FC<EventListProps> = ({
   return (
     <Box>
       {/* Event cards grid */}
-      <Grid container spacing={3} data-testid="event-list-container" aria-label="Event list">
+      <Grid
+        container
+        spacing={3}
+        data-testid="event-list-container"
+        aria-label={t('accessibility.eventList')}
+      >
         {events.map((event) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={event.eventCode}>
             <Box data-testid={`event-card-${event.eventCode}`}>

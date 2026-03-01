@@ -27,6 +27,7 @@ vi.mock('react-i18next', () => ({
         'navigation.myRegistrations': 'My Registrations',
         'navigation.myCompany': 'My Company',
         'navigation.topics': 'Topics',
+        'navigation.mainNav': 'main navigation',
       };
       return translations[key] || key;
     },

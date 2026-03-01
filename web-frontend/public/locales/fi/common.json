@@ -1,0 +1,724 @@
+{
+  "app": {
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "Etusivu",
+    "dashboard": "Kojelauta",
+    "events": "Tapahtumat",
+    "speakers": "Puhujat",
+    "partners": "Kumppanit",
+    "companies": "Yritykset",
+    "users": "Käyttäjät",
+    "myCompany": "Oma yritys",
+    "myAccount": "Oma tili",
+    "analytics": "Analytiikka",
+    "profile": "Profiili",
+    "myEvents": "Omat tapahtumat",
+    "myContent": "Oma sisältö",
+    "myRegistrations": "Omat ilmoittautumiset",
+    "about": "Tietoa",
+    "pastEvents": "Menneet tapahtumat",
+    "publicSite": "Julkinen sivusto",
+    "partnerTopics": "Kumppaniaiheet",
+    "partnerMeetings": "Kumppanikokoukset",
+    "topics": "Aiheehdotukset",
+    "openMenu": "Avaa valikko",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
+  },
+  "public": {
+    "login": "Kirjaudu sisään",
+    "joinUp": "Rekisteröidy",
+    "register": "Ilmoittaudu",
+    "goToPortal": "Siirry portaaliin",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan."
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "Tervetuloa BATberniin!",
+      "titleWithName": "Tervetuloa, {{name}}!",
+      "subtitle": "Tilisi on valmis. Selaa tulevia tapahtumia ja arkistoja.",
+      "dashboardSoon": "Henkilökohtainen kojelautasi on tulossa — ilmoitamme sinulle, kun se on valmis.",
+      "browseEvents": "Selaa tapahtumia",
+      "viewArchive": "Näytä arkisto",
+      "canDoTitle": "Mitä voit tehdä heti nyt",
+      "canDo1": "Selata ja ilmoittautua tuleviin BATbern-tapahtumiin",
+      "canDo2": "Tutustua aiempiin esityksiin ja puhujien materiaaleihin arkistossa",
+      "canDo3": "Hallita tiliäsi ja ilmoitusasetuksia"
+    }
+  },
+  "footer": {
+    "tagline": "Teknologian vaihto IT-asiantuntijoiden välillä",
+    "quickLinks": "Pikaliittymät",
+    "currentEvent": "Nykyinen tapahtuma",
+    "legal": "Juridinen",
+    "privacyPolicy": "Tietosuojakäytäntö",
+    "support": "Tuki",
+    "copyright": "© {{year}} Berner Architekten Treffen. Kaikki oikeudet pidätetään."
+  },
+  "actions": {
+    "save": "Tallenna",
+    "saving": "Tallennetaan...",
+    "cancel": "Peruuta",
+    "delete": "Poista",
+    "edit": "Muokkaa",
+    "close": "Sulje",
+    "sending": "Lähetetään...",
+    "loading": "Ladataan...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters",
+    "previous": "Previous",
+    "next": "Next",
+    "deleting": "Deleting..."
+  },
+  "language": {
+    "select": "Valitse kieli",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
+  },
+  "status": {
+    "wait": "Odota {{seconds}} sekuntia",
+    "didntReceive": "Etkö saanut sähköpostia?"
+  },
+  "menu": {
+    "profile": "Profiili",
+    "settings": "Asetukset",
+    "administration": "Hallinta",
+    "help": "Ohje",
+    "logout": "Kirjaudu ulos"
+  },
+  "role": {
+    "organizer": "Tapahtumajärjestäjä",
+    "speaker": "Puhuja",
+    "partner": "Kumppani",
+    "attendee": "Osallistuja"
+  },
+  "company": {
+    "title": "Yrityshallinta",
+    "createCompany": "Luo yritys",
+    "editCompany": "Muokkaa yritystä",
+    "viewDetails": "Näytä tiedot: {{name}}",
+    "noCompaniesFound": "Yrityksiä ei löydy",
+    "adjustFilters": "Kokeile muuttaa hakua tai suodattimia",
+    "viewMode": {
+      "grid": "Ruudukkonäkymä",
+      "list": "Listanäkymä",
+      "toggleCurrent": "Vaihda näkymätila. Nykyinen: {{mode}}"
+    },
+    "fields": {
+      "name": "Yrityksen nimi",
+      "displayName": "Näyttönimi (jos eri kuin juridinen nimi)",
+      "swissUID": "Sveitsin UID (CHE-XXX.XXX.XXX)",
+      "website": "Verkkosivusto",
+      "industry": "Toimiala",
+      "description": "Kuvaus",
+      "legalName": "Lyhyt nimi: {{name}}",
+      "logo": "Yrityksen logo"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com"
+    },
+    "industries": {
+      "selectIndustry": "Valitse toimiala"
+    },
+    "badges": {
+      "verified": "Vahvistettu"
+    },
+    "filters": {
+      "verifiedOnly": "Vain vahvistetut yritykset",
+      "industry": "Toimiala",
+      "allIndustries": "Kaikki toimialat",
+      "clearAll": "Tyhjennä kaikki suodattimet",
+      "filters": "Suodattimet"
+    },
+    "form": {
+      "createTitle": "Luo uusi yritys",
+      "editTitle": "Muokkaa yritystä",
+      "saveDraft": "Tallenna luonnos",
+      "saveCreate": "Tallenna ja luo",
+      "saveChanges": "Tallenna muutokset",
+      "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?",
+      "characterCount": "{{count}}/{{max}} merkkiä",
+      "helpText": {
+        "swissUID": "Valinnainen - automaattista vahvistusta varten"
+      },
+      "errors": {
+        "noPermission": "Sinulla ei ole oikeutta muokata tätä yritystä. Puhujat voivat muokata vain omaa yritystään."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "users": "Käyttäjät",
+        "ariaLabel": "Company detail tabs"
+      },
+      "noData": "Yritystietoja ei ole saatavilla"
+    },
+    "errors": {
+      "saveFailed": "Yrityksen tallentamisessa tapahtui virhe",
+      "deleteFailed": "Yrityksen poistaminen epäonnistui"
+    },
+    "search": {
+      "placeholder": "Etsi yrityksiä..."
+    },
+    "batchImport": {
+      "title": "Tuo yrityksiä JSON-tiedostosta",
+      "dropzone": "Pudota JSON-tiedosto tähän tai napsauta ladataksesi",
+      "dropzoneActive": "Pudota JSON-tiedosto tähän",
+      "noCompanies": "JSON-tiedostosta ei löydy yrityksiä.",
+      "preview": "Esikatselu ({{count}} yritystä)",
+      "cancelButton": "Peruuta",
+      "status": {
+        "importing": "Tuodaan...",
+        "success": "Tuotu",
+        "updated": "Päivitetty",
+        "willUpdate": "Päivitetään",
+        "skipped": "Ohitettu (on olemassa)"
+      },
+      "progress": "Tuodaan {{current}}/{{total}}...",
+      "complete": "Tuonti valmis: {{success}} luotu, {{updated}} päivitetty, {{failed}} epäonnistui, {{skipped}} ohitettu",
+      "checkingExisting": "Tarkistetaan olemassa olevia yrityksiä...",
+      "existingFound": "{{count}}/{{total}} yrityksestä on jo olemassa ja ne päivitetään.",
+      "allSkipped": "Kaikki ohitettu",
+      "importButtonWithCount": "Tuo {{count}} yritystä",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Näyttönimi",
+        "name": "API-nimi",
+        "industry": "Toimiala",
+        "website": "Verkkosivusto"
+      },
+      "errors": {
+        "invalidFile": "Virheellinen tiedostotyyppi. Lataa JSON-tiedosto.",
+        "parseError": "JSON-tiedoston jäsennys epäonnistui: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Poista yritys",
+      "message": "Haluatko varmasti poistaa tämän yrityksen?",
+      "dataWarning": "Tämä toiminto poistaa yrityksen pysyvästi eikä sitä voi kumota.",
+      "cascadeWarning": "Kaikki liittyvät tiedot (käyttäjät, kumppanuudet, puhujat, tapahtumat) voivat vaikuttua.",
+      "deleting": "Poistetaan..."
+    },
+    "pagination": {
+      "itemsPerPage": "Kohteita per sivu"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "title": "Tuo tapahtumat topics.json-tiedostosta",
+      "dropzone": "Pudota topics.json-tiedosto tähän tai napsauta ladataksesi",
+      "dropzoneActive": "Pudota JSON-tiedosto tähän",
+      "dropzoneHint": "Lataa esikäsitelty topics.json-tiedosto (kentillä parsedDate, description ja moderator)",
+      "noEvents": "JSON-tiedostosta ei löydy tapahtumia.",
+      "preview": "Esikatselu ({{count}} tapahtumaa)",
+      "cancelButton": "Peruuta",
+      "status": {
+        "pending": "Odottaa",
+        "importing": "Tuodaan...",
+        "success": "Tuotu",
+        "error": "Virhe",
+        "skipped": "Ohitettu (on olemassa)"
+      },
+      "progress": "Tuodaan {{current}}/{{total}}...",
+      "complete": "Tuonti valmis: {{success}} onnistui, {{failed}} epäonnistui, {{skipped}} ohitettu",
+      "allSkipped": "Kaikki ohitettu",
+      "importButtonWithCount": "Tuo {{count}} tapahtumaa",
+      "columns": {
+        "eventNumber": "#",
+        "organizer": "Järjestäjä",
+        "category": "Kategoria"
+      },
+      "errors": {
+        "invalidFile": "Virheellinen tiedostotyyppi. Lataa JSON-tiedosto.",
+        "parseError": "JSON-tiedoston jäsennys epäonnistui: {{error}}"
+      },
+      "fieldSelection": {
+        "legend": "Kenttävalinta (Tuo = luo jos uusi, päivitä jos olemassa | Ohita = ohita kenttä)",
+        "import": "Tuo",
+        "ignore": "Ohita",
+        "fieldTitle": "Otsikko:",
+        "fieldDescription": "Kuvaus:",
+        "fieldTopic": "Aihe/Kategoria:",
+        "fieldDate": "Päivämäärä:",
+        "fieldVenue": "Paikka:",
+        "fieldOrganizer": "Järjestäjä:"
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Vedä ja pudota tiedosto tähän tai napsauta valitaksesi",
+    "dragDropMultiple": "Vedä ja pudota tiedostoja tähän tai napsauta valitaksesi",
+    "dragActive": "Pudota tiedosto tähän",
+    "acceptedFormats": "Hyväksytyt muodot: PNG, JPEG, SVG (enintään {{maxSize}} Mt)",
+    "acceptedFormatsMultiple": "Hyväksytyt muodot: Useita tiedostotyyppejä (enintään {{maxSize}} Mt per tiedosto)",
+    "uploading": "Ladataan... {{progress}}%",
+    "removeFile": "Poista tiedosto",
+    "altText": "Ladatun tiedoston esikatselu",
+    "errors": {
+      "multipleFiles": "Kerrallaan voidaan ladata vain yksi tiedosto"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "Ilmoittautuminen lähetetty!",
+      "subtitle": "Tarkista sähköpostisi vahvistaaksesi ilmoittautumisesi",
+      "emailSent": "Vahvistussähköposti lähetetty",
+      "emailSentTo": "Lähetimme vahvistussähköpostin osoitteeseen",
+      "clickLink": "Napsauta sähköpostissa olevaa vahvistuslinkkiä suorittaaksesi ilmoittautumisesi loppuun. Linkki on voimassa",
+      "validFor": "48 tuntia",
+      "valid": "",
+      "didntReceive": "Etkö saanut sähköpostia?",
+      "checkSpam": "Tarkista roskapostikansio",
+      "checkEmail": "Varmista, että syötit oikean sähköpostiosoitteen",
+      "waitMinutes": "Odota muutama minuutti ja tarkista uudelleen",
+      "close": "Sulje"
+    },
+    "alreadyRegistered": {
+      "title": "Olet ilmoittautunut!",
+      "pending": "Ilmoittautuminen odottaa tapahtumaan",
+      "checkEmail": "Tarkista sähköpostisi vahvistaaksesi"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "title": "Sessioiden erätuonti",
+      "dropzone": "Pudota sessions.json tähän tai napsauta ladataksesi",
+      "dropzoneActive": "Pudota sessions.json tähän",
+      "dropzoneHint": "Vain sessions.json hyväksytään",
+      "preview": "{{count}} sessiota tuotavana",
+      "progress": "{{current}}/{{total}} tuotu",
+      "complete": "Tuonti valmis: {{success}} onnistui, {{skipped}} ohitettu, {{failed}} epäonnistui",
+      "noSessions": "Tiedostosta ei löydy sessioita",
+      "importButtonWithCount": "Tuo {{count}} sessiota",
+      "cancelButton": "Peruuta",
+      "columns": {
+        "event": "Tapahtuma",
+        "title": "Otsikko",
+        "speakers": "Puhujat",
+        "status": "Tila"
+      },
+      "status": {
+        "pending": "Odottaa",
+        "importing": "Tuodaan...",
+        "success": "Onnistui",
+        "skipped": "Ohitettu",
+        "error": "Virhe"
+      },
+      "errors": {
+        "invalidFile": "Virheellinen tiedosto. Vain sessions.json on sallittu.",
+        "parseError": "Jäsennysvirhe: {{error}}"
+      }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
+  },
+  "organizer": {
+    "select": "Valitse järjestäjä",
+    "all": "Kaikki järjestäjät",
+    "unassigned": "Määräämätön"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "Ladataan kojelautaasi...",
+      "invalidLink": "Virheellinen linkki",
+      "invalidLinkMessage": "Tämä sivu vaatii kelvollisen kojelauta-linkin. Käytä kutsusähköpostin linkkiä.",
+      "linkExpired": "Linkki on vanhentunut",
+      "linkExpiredMessage": "Linkkisi on vanhentunut. Ota yhteyttä tapahtumajärjestäjään uuden linkin saamiseksi.",
+      "error": "Jotain meni pieleen",
+      "errorMessage": "Emme voineet ladata kojelautaasi. Yritä myöhemmin uudelleen.",
+      "welcome": "Tervetuloa, {{name}}",
+      "profileComplete": "Profiili {{percent}}% valmis",
+      "upcomingEvents": "Tulevat tapahtumat",
+      "pastEvents": "Menneet tapahtumat",
+      "noUpcomingEvents": "Sinulla ei ole tulevia puhujasitoumuksia",
+      "noPastEvents": "Ei vielä menneitä puhujasitoumuksia",
+      "session": "Sessio",
+      "titleStatus": "Otsikko",
+      "abstractStatus": "Tiivistelmä",
+      "materialStatus": "Materiaali",
+      "revisionRequested": "Tarkistus pyydetty",
+      "responseBy": "Vastaa mennessä",
+      "contentBy": "Sisältö mennessä",
+      "organizer": "Järjestäjä",
+      "contact": "Yhteystieto",
+      "respond": "Vastaa",
+      "updateProfile": "Päivitä profiili",
+      "submitContent": "Lähetä sisältö",
+      "speakerStatus": "Puhujan tila",
+      "contentStatus": "Sisällön tila",
+      "materialProgress": "Materiaalin lähetysedistyminen",
+      "deadlines": "Määräajat",
+      "urgent": "Kiireellinen",
+      "soon": "Pian erääntyvä",
+      "onTime": "Ajallaan",
+      "pastEvent": "Mennyt tapahtuma",
+      "materialAvailable": "Materiaali saatavilla",
+      "noMaterials": "Ei materiaaleja",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
+    },
+    "content": {
+      "invalidLink": "Virheellinen linkki",
+      "invalidLinkMessage": "Tämä sivu vaatii kelvollisen sisältölinkin. Käytä kutsusähköpostin linkkiä.",
+      "linkExpiredMessage": "Tämä linkki on vanhentunut. Ota yhteyttä järjestäjään uuden linkin saamiseksi.",
+      "presentationTitle": "Esityksen otsikko",
+      "abstract": "Tiivistelmä",
+      "titleRequired": "Otsikko on pakollinen",
+      "abstractRequired": "Tiivistelmä on pakollinen",
+      "presentationFile": "Esitystiedosto",
+      "saving": "Tallennetaan...",
+      "lastSaved": "Viimeksi tallennettu: {{time}}",
+      "unsavedChanges": "Tallentamattomia muutoksia",
+      "submitting": "Lähetetään...",
+      "submitContent": "Lähetä sisältö",
+      "submittedSuccessfully": "Sisältö lähetetty onnistuneesti!",
+      "submittedMessage": "Sisältösi sessiolle \"{{sessionTitle}}\" on lähetetty tarkistettavaksi.",
+      "version": "Versio",
+      "status": "Tila",
+      "nextStepsInfo": "Järjestäjä tarkistaa lähetyksesi ja ottaa sinuun yhteyttä, jos muutoksia tarvitaan.",
+      "revisionRequested": "Tarkistus pyydetty",
+      "reviewedBy": "Tarkistanut",
+      "on": "",
+      "loadingContent": "Ladataan sisältöä...",
+      "linkHasExpired": "Linkki on vanhentunut",
+      "invalidLinkNotValidMessage": "Tämä linkki ei ole voimassa. Tarkista sähköpostistasi oikea linkki.",
+      "cannotSubmit": "Sisältöä ei voi lähettää",
+      "cannotSubmitMessage": "Et voi lähettää sisältöä juuri nyt. Hyväksy ensin kutsu tai ota yhteyttä järjestäjään.",
+      "goToDashboard": "Siirry puhujien hallintapaneeliin",
+      "submitYourContent": "Lähetä sisältösi",
+      "dashboard": "Hallintapaneeli",
+      "editProfile": "Muokkaa profiilia",
+      "titlePlaceholder": "Syötä esityksesi otsikko",
+      "abstractPlaceholder": "Kuvaile mitä esityksesi käsittelee...",
+      "enableFileUploads": "Lähetä ensin otsikko ja tiivistelmä ottaaksesi tiedostojen lataamisen käyttöön."
+    },
+    "upload": {
+      "uploading": "Ladataan...",
+      "presentationFile": "Esitystiedosto",
+      "changeFile": "Vaihda tiedosto",
+      "dragDropPresentation": "Vedä ja pudota esityksesi tähän",
+      "orClickBrowse": "tai napsauta selataksesi",
+      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: PPTX, PDF, KEY",
+      "fileTooLarge": "Tiedostokoko on oltava alle 50 Mt",
+      "acceptedFormats": "Hyväksytyt muodot: PPTX, PDF, KEY (enintään 50 Mt)",
+      "uploadAria": "Lataa esitystiedosto"
+    },
+    "invitationResponse": {
+      "invalidLink": "Virheellinen linkki",
+      "invalidLinkMessage": "Tämä sivu vaatii voimassa olevan kutsunkin sähköpostistasi.",
+      "loading": "Ladataan kutsua...",
+      "loadingMessage": "Odota, kun tarkistamme linkkisi.",
+      "loadingAria": "Ladataan kutsua",
+      "needHelp": "Tarvitsetko apua?",
+      "checkEmail": "Tarkista sähköpostistasi uudempi kutsulinkki",
+      "requestNew": "Pyydä uusi kutsu järjestäjiltä",
+      "alreadyResponded": "Vastattu jo",
+      "yourResponse": "Vastauksesi",
+      "commentsPlaceholder": "Kysymyksiä tai kommentteja järjestäjille...",
+      "declinePlaceholder": "Kerro meille miksi et voi osallistua...",
+      "submit": "Lähetä vastaus",
+      "submitted": "Vastaus lähetetty!",
+      "whatsNext": "Mitä seuraavaksi?",
+      "completeProfile": "Täydennä profiilisi",
+      "linkNotValid": "Tämä kutsulinkki ei ole voimassa.",
+      "backToHome": "Takaisin etusivulle",
+      "linkExpired": "Linkki vanhentunut",
+      "linkExpiredMessage": "Tämä kutsulinkki on vanhentunut. Ota yhteyttä tapahtuman järjestäjiin.",
+      "linkAlreadyUsed": "Linkki on jo käytetty",
+      "linkAlreadyUsedMessage": "Tätä kutsulinkki on jo käytetty.",
+      "genericError": "Virhe",
+      "genericErrorMessage": "Virhe kutsun tarkistamisessa.",
+      "unexpectedErrorMessage": "Odottamaton virhe tapahtui.",
+      "contactOrganizersAt": "Ota yhteyttä järjestäjiin osoitteessa",
+      "alreadyRespondedOn": "Olet jo vastannut tähän kutsuun {{date}}.",
+      "yourResponseWas": "Vastauksesi:",
+      "accepted": "Hyväksytty",
+      "declined": "Hylätty",
+      "tentative": "Alustava",
+      "manageProfileText": "Voit hallita puhujaprofiilikasi ja sisältölähetyksiäsi hallintapaneelista.",
+      "reconsiderText": "Jos haluat harkita uudelleen, ota yhteyttä suoraan järjestäjiin.",
+      "invitedToSpeak": "Sinut on kutsuttu puhujaksi tapahtumaan",
+      "respondBy": "Vastaa viimeistään",
+      "dear": "Hyvä",
+      "invitationBody": "Meille olisi kunnia saada sinut puhujana tähän tapahtumaan. Kerro meille pystytkö liittymään.",
+      "accept": "Hyväksy",
+      "decline": "Hylkää",
+      "messageToOrganizers": "Viesti järjestäjille (valinnainen)",
+      "reasonForDeclining": "Hylkäämisen syy",
+      "reasonRequired": "Hylkäämiseen tarvitaan syy",
+      "submitting": "Lähetetään...",
+      "failedToSubmit": "Vastauksen lähettäminen epäonnistui",
+      "thankYouResponse": "Kiitos, {{name}}, vastauksestasi.",
+      "contentDeadline": "Sisällön lähetysmääräaika:"
+    },
+    "profile": {
+      "invalidLink": "Virheellinen linkki",
+      "invalidLinkMessage": "Tämä sivu vaatii voimassa olevan profiililinkin sähköpostistasi.",
+      "backToHome": "Takaisin etusivulle",
+      "loadingAria": "Ladataan profiilia",
+      "loading": "Ladataan profiilia...",
+      "loadingMessage": "Odota, kun ladaamme profiilisi.",
+      "linkExpired": "Linkki vanhentunut",
+      "linkExpiredMessage": "Tämä profiililinkki on vanhentunut. Ota yhteyttä järjestäjiin.",
+      "invalidLinkNotValid": "Tämä profiililinkki ei ole voimassa.",
+      "genericError": "Virhe",
+      "genericErrorMessage": "Virhe profiilin lataamisessa.",
+      "unexpectedError": "Odottamaton virhe tapahtui.",
+      "pageTitle": "Puhujaprofiiilisi",
+      "pageSubtitle": "Päivitä tietosi tapahtumamateriaalia varten",
+      "profileCompleteness": "Profiilin täydellisyys",
+      "completeProfileHint": "Täydennä profiilisi paremman näkyvyyden saavuttamiseksi",
+      "missing": "Puuttuu:",
+      "basicInfo": "Perustiedot",
+      "emailReadOnly": "Sähköposti (vain luku)",
+      "bio": "Bio",
+      "bioPlaceholder": "Kerro meille itsestäsi...",
+      "bioExceeds": "Bio ei saa ylittää 500 merkkiä",
+      "maxExpertiseAreas": "Enintään 10 osaamis aluetta sallittu",
+      "maxSpeakingTopics": "Enintään 10 puheenaihetta sallittu",
+      "socialLinks": "Sosiaalisen median linkit",
+      "linkedInUrl": "LinkedIn-URL",
+      "invalidLinkedIn": "Täytyy olla voimassa oleva LinkedIn-URL",
+      "contentSubmissionSection": "Sisällön lähettäminen",
+      "assignedTo": "Sinut on määritetty:",
+      "contentSubmitDescription": "Lähetä esityksesi otsikko, tiivistelmä ja materiaalit tarkistettavaksi.",
+      "submitContent": "Lähetä sisältösi",
+      "saving": "Tallennetaan...",
+      "saveChanges": "Tallenna muutokset",
+      "savedSuccessfully": "Profiili päivitetty onnistuneesti!",
+      "saveFailed": "Profiilin tallentaminen epäonnistui"
+    },
+    "photo": {
+      "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: JPEG, PNG, WebP",
+      "fileTooLarge": "Tiedostokoko on oltava alle 5 Mt",
+      "changePhoto": "Vaihda kuva",
+      "dragDropHere": "Vedä ja pudota kuva tähän",
+      "orClickBrowse": "tai napsauta selataksesi",
+      "supportedFormats": "JPEG, PNG, WebP (enintään 5 Mt)",
+      "uploading": "Ladataan...",
+      "cancel": "Peruuta",
+      "uploadAria": "Lataa profiilikuva"
+    },
+    "magicLogin": {
+      "processing": "Käsitellään kirjautumista...",
+      "redirecting": "Ohjataan hallintapaneeliin...",
+      "invalidLinkTitle": "Linkki ei kelpaa",
+      "defaultError": "Tämä linkki ei ole enää voimassa. Ota yhteyttä järjestäjään."
+    }
+  },
+  "archive": {
+    "title": "Menneet tapahtumat",
+    "description": "Selaa yli 20 vuoden BATbern-tapahtumia esitysten ja puhujien kanssa",
+    "viewToggle": {
+      "grid": "Ruudukko",
+      "list": "Lista"
+    },
+    "loading": "Ladataan tapahtumia...",
+    "loadingMore": "Ladataan lisää tapahtumia...",
+    "loadingTopics": "Ladataan aiheita...",
+    "noTopicsAvailable": "Ei aiheita saatavilla",
+    "noResults": "Tapahtumia ei löydy",
+    "errors": {
+      "loadFailed": "Tapahtumien lataaminen epäonnistui"
+    },
+    "card": {
+      "viewDetails": "Näytä tiedot"
+    },
+    "filters": {
+      "title": "Suodattimet",
+      "search": "Etsi tapahtumia...",
+      "topics": "Aiheet",
+      "clearAll": "Tyhjennä kaikki",
+      "activeCount": "{{count}} aktiivinen suodatin"
+    },
+    "detail": {
+      "backToArchive": "← Takaisin arkistoon"
+    }
+  },
+  "notifications": {
+    "title": "Ilmoitukset",
+    "markAllAsRead": "Merkitse kaikki luetuiksi",
+    "markAsRead": "Merkitse luetuksi",
+    "delete": "Poista",
+    "reload": "Lataa uudelleen",
+    "viewAll": "Näytä kaikki",
+    "hideRead": "Piilota luetut",
+    "empty": "Ei ilmoituksia",
+    "noNotifications": "Ei vielä ilmoituksia",
+    "lastUpdated": "Viimeksi päivitetty",
+    "deleteConfirmation": {
+      "title": "Poista ilmoitus",
+      "message": "Haluatko varmasti poistaa tämän ilmoituksen?"
+    },
+    "notificationFeed": "Ilmoitusvirta",
+    "priority": {
+      "urgent": "KIIREELLINEN",
+      "high": "KORKEA"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
+  },
+  "emailTemplates": {
+    "layoutTemplates": "Asettelupohjat",
+    "layoutTemplatesInfo": "Määrittää BATbern-ulkoasun kaikille sähköposteille. Muutokset täällä vaikuttavat kaikkiin tätä asettelua käyttäviin pohjiin.",
+    "contentTemplates": "Sähköpostisisältö",
+    "categories": {
+      "SPEAKER": "Puhujat",
+      "REGISTRATION": "Ilmoittautuminen",
+      "TASK_REMINDER": "Tehtävämuistutukset",
+      "NEWSLETTER": "Uutiskirje"
+    },
+    "layoutKey": "Asettelu",
+    "standalone": "Ei mitään (itsenäinen)",
+    "systemTemplate": "Järjestelmäpohja",
+    "subject": "Aihe",
+    "htmlBody": "HTML-sisältö",
+    "variables": "Käytettävissä olevat muuttujat",
+    "preview": "Esikatselu",
+    "editTitle": "Muokkaa pohjaa",
+    "createTitle": "Uusi pohja",
+    "newTemplate": "+ Uusi pohja",
+    "noLayouts": "Asettelupohjia ei löydy.",
+    "noTemplates": "Pohjia ei löydy tälle suodattimelle.",
+    "missingContentPlaceholder": "{{content}}-paikkamerkki puuttuu — sähköpostin runko on tyhjä",
+    "deleteFailed": "Pohjan poistaminen epäonnistui.",
+    "saveFailed": "Pohjan tallentaminen epäonnistui. Yritä uudelleen.",
+    "validation": {
+      "htmlBodyRequired": "HTML-runko on pakollinen.",
+      "subjectRequired": "Aihe on pakollinen sisältöpohjille.",
+      "templateKeyRequired": "Pohjan avain on pakollinen."
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
+  },
+  "presentation": {
+    "errorTitle": "Tapahtumaa ei voitu ladata",
+    "errorMessage": "Tarkista verkkoyhteytesi ja yritä uudelleen.",
+    "retryButton": "Yritä uudelleen",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Tapahtumatyypit",
+      "importData": "Tuo tiedot",
+      "taskTemplates": "Tehtäväpohjat",
+      "emailTemplates": "Sähköpostipohjat",
+      "presentationSettings": "Esitys"
+    },
+    "accessDenied": "Pääsy estetty",
+    "organizerOnly": "Tämä sivu on vain järjestäjille.",
+    "presentationSettings": {
+      "title": "Esitysasetukset",
+      "subtitle": "Nämä arvot näkyvät moderaattorin esityssivulla (/present/:eventCode).",
+      "aboutText": "Tietoja-teksti",
+      "partnerCount": "Kumppanien määrä",
+      "save": "Tallenna",
+      "saved": "Asetukset tallennettu.",
+      "saveFailed": "Tallennus epäonnistui. Yritä uudelleen."
+    },
+    "taskTemplates": {
+      "defaultSection": "Oletuspohjat",
+      "customSection": "Mukautetut pohjat",
+      "addTemplate": "+ Lisää pohja",
+      "noDefaults": "Ei oletuspohjia.",
+      "noCustom": "Ei vielä mukautettuja pohjia.",
+      "confirmDelete": "Poistetaanko pohja?",
+      "deleteFailed": "Pohjan poistaminen epäonnistui. Yritä uudelleen."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address",
+    "name": "Name",
+    "description": "Description",
+    "notes": "Notes",
+    "event": "Event",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "sessions": "Sessions",
+    "topics": "Topics",
+    "firstName": "Etunimi",
+    "lastName": "Sukunimi"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "companySearch": {
+    "noOptions": "Yrityksiä ei löydy",
+    "searchAriaLabel": "Etsi yrityksiä",
+    "clearSearchAriaLabel": "Tyhjennä haku"
+  },
+  "countdown": {
+    "nextEvent": "Seuraava tapahtuma",
+    "today": "Tänään!",
+    "tomorrow": "Huomenna!",
+    "daysUntil": "{{count}} päivää tapahtumaan"
+  },
+  "errors": {
+    "somethingWentWrong": "Jokin meni pieleen",
+    "tryAgain": "Yritä uudelleen",
+    "unexpectedError": "Pahoittelut. Odottamaton virhe tapahtui.",
+    "devDetails": "Virheen tiedot (vain kehittäjille):",
+    "refreshPage": "Päivitä sivu",
+    "goHome": "Siirry etusivulle"
+  },
+  "bootstrap": {
+    "loading": "Ladataan BATbernia...",
+    "configFailed": "Konfiguraation lataaminen epäonnistui",
+    "reloadPage": "Lataa sivu uudelleen"
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
+  }
+}

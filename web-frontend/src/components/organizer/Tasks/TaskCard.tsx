@@ -107,7 +107,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   e.stopPropagation();
                   onEdit(task);
                 }}
-                aria-label="Edit task"
+                aria-label={t('tasks.editTask', 'Edit task')}
               >
                 <EditIcon fontSize="small" />
               </IconButton>
@@ -121,7 +121,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   e.stopPropagation();
                   onComplete(task.id);
                 }}
-                aria-label="Complete task"
+                aria-label={t('tasks.markComplete', 'Mark complete')}
               >
                 <CheckCircleIcon fontSize="small" />
               </IconButton>

@@ -86,10 +86,12 @@ const UserAccountPage: React.FC = () => {
     return (
       <Box sx={{ p: 3 }} data-testid="error-state">
         <Alert severity="error">
-          Failed to load user account data. Please try again.
+          {t('userAccount.errors.loadFailed')}
           {error && (
             <Box component="span" sx={{ display: 'block', mt: 1, fontSize: '0.875rem' }}>
-              Correlation ID: {(error as { correlationId?: string })?.correlationId || 'N/A'}
+              {t('userAccount.errors.correlationId', {
+                id: (error as { correlationId?: string })?.correlationId || 'N/A',
+              })}
             </Box>
           )}
         </Alert>
@@ -112,11 +114,11 @@ const UserAccountPage: React.FC = () => {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          aria-label="User account tabs"
+          aria-label={t('userAccount.tabs.ariaLabel')}
           data-testid="account-tabs"
         >
-          <Tab label="Profile" {...a11yProps(0)} data-testid="profile-tab" />
-          <Tab label="Settings" {...a11yProps(1)} data-testid="settings-tab" />
+          <Tab label={t('menu.profile')} {...a11yProps(0)} data-testid="profile-tab" />
+          <Tab label={t('menu.settings')} {...a11yProps(1)} data-testid="settings-tab" />
         </Tabs>
       </Box>
 

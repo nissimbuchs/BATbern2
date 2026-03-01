@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useParams, Link, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
@@ -17,6 +18,7 @@ import { eventApiClient } from '@/services/eventApiClient';
 type ConfirmationState = 'loading' | 'success' | 'error' | 'already_confirmed';
 
 const ConfirmRegistrationPage = () => {
+  const { t } = useTranslation('registration');
   const [searchParams] = useSearchParams();
   const { eventCode } = useParams<{ eventCode: string }>();
   const token = searchParams.get('token');
@@ -80,8 +82,8 @@ const ConfirmRegistrationPage = () => {
         {state === 'loading' && (
           <div className="text-center py-24">
             <BATbernLoader size={128} />
-            <h2 className="text-2xl font-light mb-2">Confirming Your Registration...</h2>
-            <p className="text-zinc-400">Please wait while we process your confirmation.</p>
+            <h2 className="text-2xl font-light mb-2">{t('confirmation.loading.title')}</h2>
+            <p className="text-zinc-400">{t('confirmation.loading.message')}</p>
           </div>
         )}
 
@@ -90,25 +92,25 @@ const ConfirmRegistrationPage = () => {
           <>
             <div className="text-center mb-8">
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-              <h1 className="text-4xl font-light mb-2">Registration Confirmed!</h1>
-              <p className="text-xl text-zinc-400">You're all set for the event</p>
+              <h1 className="text-4xl font-light mb-2">{t('confirmation.success.title')}</h1>
+              <p className="text-xl text-zinc-400">{t('confirmation.success.subtitle')}</p>
             </div>
 
             <Card className="p-8 mb-8">
-              <h2 className="text-xl font-light mb-4">What's Next?</h2>
+              <h2 className="text-xl font-light mb-4">{t('confirmation.success.whatsNext')}</h2>
               <ul className="space-y-3 text-zinc-300">
                 <li className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>Check-in at the Event:</strong> Present your ID at the event desk for
-                    check-in. We'll have your confirmed registration on file.
+                    <strong>{t('confirmation.success.checkIn')}:</strong>{' '}
+                    {t('confirmation.success.checkInText')}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>Event Details:</strong> You'll receive event updates and reminders via
-                    email.
+                    <strong>{t('confirmation.success.eventDetails')}:</strong>{' '}
+                    {t('confirmation.success.eventDetailsText')}
                   </span>
                 </li>
               </ul>
@@ -122,7 +124,7 @@ const ConfirmRegistrationPage = () => {
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/auth/register">Create Account to Manage Registrations</Link>
+                <Link to="/auth/register">{t('confirmation.success.createAccount')}</Link>
               </Button>
             </div>
           </>
@@ -133,8 +135,10 @@ const ConfirmRegistrationPage = () => {
           <>
             <div className="text-center mb-8">
               <CheckCircle2 className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-              <h1 className="text-3xl font-light mb-2">Already Confirmed</h1>
-              <p className="text-xl text-zinc-400">This registration has already been confirmed</p>
+              <h1 className="text-3xl font-light mb-2">
+                {t('confirmation.alreadyConfirmed.title')}
+              </h1>
+              <p className="text-xl text-zinc-400">{t('confirmation.alreadyConfirmed.subtitle')}</p>
             </div>
 
             <Card className="p-6 mb-8 text-center">
@@ -159,19 +163,19 @@ const ConfirmRegistrationPage = () => {
           <>
             <div className="text-center mb-8">
               <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-              <h1 className="text-3xl font-light mb-2">Confirmation Failed</h1>
+              <h1 className="text-3xl font-light mb-2">{t('confirmation.error.title')}</h1>
               <p className="text-xl text-zinc-400">
                 {errorMessage || 'Unable to confirm your registration'}
               </p>
             </div>
 
             <Card className="p-6 mb-8">
-              <h3 className="text-lg font-light mb-3">What can you do?</h3>
+              <h3 className="text-lg font-light mb-3">{t('confirmation.error.whatCanYouDo')}</h3>
               <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• Check if you clicked the correct link from your email</li>
-                <li>• Confirmation links expire after 48 hours - you may need to register again</li>
-                <li>• Make sure you're using the latest confirmation email</li>
-                <li>• Contact support if the problem persists</li>
+                <li>• {t('confirmation.error.checkLink')}</li>
+                <li>• {t('confirmation.error.expired')}</li>
+                <li>• {t('confirmation.error.useLatestEmail')}</li>
+                <li>• {t('confirmation.error.contactSupport')}</li>
               </ul>
             </Card>
 
@@ -183,7 +187,7 @@ const ConfirmRegistrationPage = () => {
                 </Link>
               </Button>
               <Button asChild>
-                <Link to="/register">Register Again</Link>
+                <Link to="/register">{t('confirmation.error.registerAgain')}</Link>
               </Button>
             </div>
           </>

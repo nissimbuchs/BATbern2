@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "title": "Über BATbern",
+    "subtitle": "Technologieustausch zwüsche IT-Fachleut"
+  },
+  "association": {
+    "title": "Dr Berner-Architekten-Treffe Verein",
+    "history": "Sit em 23. Januar 2009 wird dr Berner Architekten-Treffe vom Berner-Architekten-Treffe Verein organisiert.",
+    "mission": "Dr Berner Architekten-Treffe isch sit 2005 e Treffpunkt für IT-Fachleut, wo si für Architekturthemen interessiere.",
+    "platform": "Durch praktischi Vorträg und d'Mögligkeit für tiefgründigi Diskussione über aktuelli Theme sowie direkti Kontakt zwüsche Firma us verschidene Branche bietet dr Berner Architekten Treffe e hervorragende Plattform für dr Ustausch vo Idee und Erfahrige.",
+    "statuten": "Vereinsstatute (PDF)"
+  },
+  "organizers": {
+    "title": "Organisationskommission",
+    "description": "Dr Berner-Architekten-Treffe wird inhautlich und organisatorisch vo eme engagierte Organisationskomitee unterstützt:",
+    "noOrganizers": "Kei Organisatore gfunde"
+  },
+  "partners": {
+    "title": "Üsi Partner",
+    "description": "Dr Berner Architekten-Treffe isch als gratis Veranstatig dur d'grosszügige Unterstützig vo de folgende Firma und Organisatione möglich:"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "description": "Bi Frage, Vorschläg und Kommentare chönt dir direkt eis vo de Mitglieder kontaktiere oder üs erreiche:"
+  }
+}

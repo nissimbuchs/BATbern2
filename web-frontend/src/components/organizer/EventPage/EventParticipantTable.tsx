@@ -130,12 +130,12 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>{t('eventPage.participantTable.headers.name')}</TableCell>
-              <TableCell>{t('eventPage.participantTable.headers.email')}</TableCell>
-              <TableCell>{t('eventPage.participantTable.headers.company')}</TableCell>
-              <TableCell>{t('eventPage.participantTable.headers.status')}</TableCell>
+              <TableCell>{t('common:labels.name')}</TableCell>
+              <TableCell>{t('common:labels.email')}</TableCell>
+              <TableCell>{t('common:labels.company')}</TableCell>
+              <TableCell>{t('common:labels.status')}</TableCell>
               <TableCell>{t('eventPage.participantTable.headers.registrationDate')}</TableCell>
-              <TableCell align="right">{t('eventPage.participantTable.headers.actions')}</TableCell>
+              <TableCell align="right">{t('common:labels.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -193,7 +193,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 direction={sortField === 'name' ? sortDirection : 'asc'}
                 onClick={() => handleSort('name')}
               >
-                {t('eventPage.participantTable.headers.name')}
+                {t('common:labels.name')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -202,7 +202,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 direction={sortField === 'email' ? sortDirection : 'asc'}
                 onClick={() => handleSort('email')}
               >
-                {t('eventPage.participantTable.headers.email')}
+                {t('common:labels.email')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -211,7 +211,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 direction={sortField === 'company' ? sortDirection : 'asc'}
                 onClick={() => handleSort('company')}
               >
-                {t('eventPage.participantTable.headers.company')}
+                {t('common:labels.company')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -220,7 +220,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 direction={sortField === 'status' ? sortDirection : 'asc'}
                 onClick={() => handleSort('status')}
               >
-                {t('eventPage.participantTable.headers.status')}
+                {t('common:labels.status')}
               </TableSortLabel>
             </TableCell>
             <TableCell>
@@ -232,7 +232,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 {t('eventPage.participantTable.headers.registrationDate')}
               </TableSortLabel>
             </TableCell>
-            <TableCell align="right">{t('eventPage.participantTable.headers.actions')}</TableCell>
+            <TableCell align="right">{t('common:labels.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

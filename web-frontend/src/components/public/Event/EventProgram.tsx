@@ -242,7 +242,7 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                           {session.speakers && session.speakers.length > 0 ? (
                             <div>
                               <p className="text-xs text-zinc-500 mb-2">
-                                {t('public.program.speaker')}:
+                                {t('common:role.speaker')}:
                               </p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {session.speakers.map((speaker: SessionSpeaker) => (
@@ -289,7 +289,9 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                                               )
                                             }
                                             disabled={isDownloading}
-                                            aria-label={`Download ${material.fileName}`}
+                                            aria-label={t('materials.downloadAriaLabel', {
+                                              fileName: material.fileName,
+                                            })}
                                             className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                                           >
                                             {getMaterialTypeIcon(material.materialType)}

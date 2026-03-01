@@ -53,7 +53,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
   // Build breadcrumb items (memoized to prevent re-renders)
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
-      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('common:navigation.events'), path: '/organizer/events' },
       { label: t('form.eventTypeConfig.title', 'Event Type Configuration') },
     ],
     [t]
@@ -140,7 +140,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
                   onClick={() => handleEditClick(config.type)}
                   aria-label={`Edit ${config.type}`}
                 >
-                  {t('dashboard.actions.edit')}
+                  {t('common:actions.edit')}
                 </Button>
               </CardActions>
             </Card>
@@ -151,7 +151,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
       {/* Edit Modal */}
       <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
-          {t('dashboard.actions.edit')} {editingType && getEventTypeName(editingType)}
+          {t('common:actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>

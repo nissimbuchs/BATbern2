@@ -180,7 +180,7 @@ describe('SessionSpeakersTab', () => {
 
   it('should_disableAddButton_when_noUserSelected', () => {
     render(<SessionSpeakersTab session={makeSession([])} />);
-    const addButton = screen.getByRole('button', { name: 'Add Speaker' });
+    const addButton = screen.getByRole('button', { name: /Add Speaker/i });
     expect(addButton).toBeDisabled();
   });
 
@@ -192,7 +192,7 @@ describe('SessionSpeakersTab', () => {
     await user.click(screen.getByTestId('user-autocomplete'));
 
     // Add button should be enabled now
-    const addButton = screen.getByRole('button', { name: 'Add Speaker' });
+    const addButton = screen.getByRole('button', { name: /Add Speaker/i });
     expect(addButton).not.toBeDisabled();
 
     await user.click(addButton);
@@ -210,7 +210,7 @@ describe('SessionSpeakersTab', () => {
     render(<SessionSpeakersTab session={makeSession([])} />);
 
     await user.click(screen.getByTestId('user-autocomplete'));
-    await user.click(screen.getByRole('button', { name: 'Add Speaker' }));
+    await user.click(screen.getByRole('button', { name: /Add Speaker/i }));
 
     await waitFor(() => {
       expect(screen.getByText('User already assigned')).toBeInTheDocument();
@@ -225,7 +225,7 @@ describe('SessionSpeakersTab', () => {
     // Verify the selected user preview appears
     expect(screen.getByText('Jane Doe')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add Speaker' }));
+    await user.click(screen.getByRole('button', { name: /Add Speaker/i }));
 
     await waitFor(() => {
       // After success, the selected user preview (Jane Doe) is gone (form cleared)

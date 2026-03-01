@@ -189,7 +189,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     }
 
     if (status === 'PARTIAL') {
-      return t('speakers.materialsPending');
+      return t('common:filters.status.pending');
     }
 
     return t('speakers.materialsComplete');
@@ -390,7 +390,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   <IconButton
                     size="small"
                     color="error"
-                    aria-label={t('speakers.deleteSession')}
+                    aria-label={t('common:actions.delete')}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteClick(session);
@@ -415,11 +415,11 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       </Typography>
 
       <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table aria-label="speakers and sessions table">
+        <Table aria-label={t('speakersTable.ariaLabel')}>
           <TableHead>
             <TableRow>
               <TableCell>{t('speakers.slotTime')}</TableCell>
-              <TableCell>{t('speakers.speakerName')}</TableCell>
+              <TableCell>{t('common:role.speaker')}</TableCell>
               <TableCell>{t('speakers.sessionTitle')}</TableCell>
               <TableCell>{t('speakers.materials')}</TableCell>
               <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
@@ -528,7 +528,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                         <IconButton
                           size="small"
                           color="error"
-                          aria-label={t('speakers.deleteSession')}
+                          aria-label={t('common:actions.delete')}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteClick(session);
@@ -568,10 +568,10 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
-            {t('common.cancel', 'Cancel')}
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading}>
-            {t('speakers.deleteSession')}
+            {t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

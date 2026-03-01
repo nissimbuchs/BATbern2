@@ -93,7 +93,9 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
   }
 
   if (isError) {
-    return <Alert severity="error">Failed to load contact history</Alert>;
+    return (
+      <Alert severity="error">{t('speakerOutreach.markContactedModal.error.loadHistory')}</Alert>
+    );
   }
 
   if (!history || history.length === 0) {

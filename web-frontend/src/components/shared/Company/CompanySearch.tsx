@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   TextField,
   Autocomplete,
@@ -37,8 +38,10 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
   onSelect,
   onSearchChange,
   debounceMs = 300,
-  placeholder = 'Search companies...',
+  placeholder,
 }) => {
+  const { t } = useTranslation('common');
+  const effectivePlaceholder = placeholder ?? t('company.search.placeholder');
   const [inputValue, setInputValue] = useState('');
   const [debouncedValue, setDebouncedValue] = useState('');
   const [options, setOptions] = useState<Array<{ id: string; name: string }>>([]);
@@ -143,7 +146,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
       onChange={handleChange}
       getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
       filterOptions={(x) => x} // Disable built-in filtering, we handle it via API
-      noOptionsText="No companies found"
+      noOptionsText={t('companySearch.noOptions')}
       data-testid="autocomplete-results"
       renderOption={(props, option) => {
         const { key, ...otherProps } = props;
@@ -156,8 +159,8 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
       renderInput={(params) => (
         <TextField
           {...params}
-          placeholder={placeholder}
-          aria-label="Search companies"
+          placeholder={effectivePlaceholder}
+          aria-label={t('companySearch.searchAriaLabel')}
           aria-autocomplete="list"
           data-testid="search-input"
           InputProps={{
@@ -172,7 +175,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
                 {isLoading && <CircularProgress color="inherit" size={20} />}
                 {inputValue && (
                   <IconButton
-                    aria-label="Clear search"
+                    aria-label={t('companySearch.clearSearchAriaLabel')}
                     onClick={handleClear}
                     edge="end"
                     size="small"

@@ -1,0 +1,271 @@
+{
+  "title": "Gestiun da ils utilisaders",
+  "addUser": "Agiuntar utilisader",
+  "search": {
+    "placeholder": "Tschertgar per num u e-mail...",
+    "noResults": "Nagin utilisader chattà"
+  },
+  "filters": {
+    "clearAll": "Stritgar tuts ils filtros",
+    "role": {
+      "label": "Rolla",
+      "all": "Tuttas rollas"
+    },
+    "status": {
+      "active": "Activ",
+      "inactive": "Inactiv"
+    }
+  },
+  "table": {
+    "viewUser": "Mussar utilisader {{name}}",
+    "headers": {
+      "roles": "Rollas"
+    },
+    "empty": "Nagin utilisader chattà"
+  },
+  "actions": {
+    "view": "Mussar",
+    "editRoles": "Modifitgar rollas"
+  },
+  "roles": {
+    "organizer": "Organisatur",
+    "speaker": "Referent",
+    "partner": "Partner",
+    "attendee": "Participant",
+    "multiple": "{{count}} rollas"
+  },
+  "status": {
+    "active": "Activ",
+    "inactive": "Inactiv"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Detagls dal utilisader",
+      "createdAt": "Creà ils",
+      "updatedAt": "Ultima actualisaziun"
+    },
+    "createUser": {
+      "title": "Crear nov utilisader",
+      "firstName": "Prenum",
+      "lastName": "Num da famiglia",
+      "email": "E-mail",
+      "company": "Interpresa (opziunal)",
+      "roles": "Rollas",
+      "selectRoles": "Tscherner almain ina rolla",
+      "creating": "Creaziun..."
+    },
+    "editRoles": {
+      "title": "Modifitgar rollas",
+      "user": "Utilisader",
+      "selectRoles": "Tscherner rollas",
+      "saving": "Memorisaziun..."
+    },
+    "deleteConfirm": {
+      "title": "Stritgar utilisader",
+      "message": "Vuls ti propi stritgar quest utilisader?",
+      "gdprWarning": "Avis GDPR: Questa acziun stritga definitivamain tut las datas dal utilisader e na po betg vegnir revocada.",
+      "cascadeWarning": "Tut las datas associadas vegnan er stritgadas."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Chargiar la foto da profil",
+      "removePhotoAria": "Stizzar la foto da profil"
+    }
+  },
+  "pagination": {
+    "page": "Pagina {{page}} da {{total}}",
+    "itemsPerPage": "Elements per pagina"
+  },
+  "loading": {
+    "users": "Chargiar utilisaders...",
+    "search": "Tschertgar...",
+    "save": "Memorisar...",
+    "updating": "Actualisar..."
+  },
+  "error": {
+    "required": "Quest champ è obligatoric",
+    "email": {
+      "invalid": "Adressa d'e-mail nunvalida"
+    },
+    "minOneRole": "Almain ina rolla sto vegnir tschernida",
+    "loadFailed": "Chargiar ils utilisaders ha fallì",
+    "createFailed": "Crear l'utilisader ha fallì",
+    "updateFailed": "Actualisar l'utilisader ha fallì",
+    "deleteFailed": "Stritgar l'utilisader ha fallì",
+    "notFound": "Utilisader betg chattà"
+  },
+  "batchImport": {
+    "title": "Import en bloc da referents",
+    "dropzone": "Drizza speakers.json qua u clicca per navigar",
+    "dropzoneActive": "Drizza il datoteca qua...",
+    "dropzoneHint": "Chargiar speakers.json da apps/BATspa-old/src/api/",
+    "preview": "{{count}} referents per importar",
+    "progress": "Importaziun dal referent {{current}} da {{total}}...",
+    "complete": "Import cumpletà: {{success}} creads, {{updated}} actualisads, {{failed}} fallids, {{skipped}} passads",
+    "noSpeakers": "Nagin referent chattà en il datoteca",
+    "checkingExisting": "Verificar utilisaders existents...",
+    "summary": "{{total}} referents: {{new}} novs, {{update}} per actualisar, {{skip}} immutads",
+    "cancelButton": "Interrumper",
+    "importButton": "Crear {{new}} / Actualisar {{update}}",
+    "allSkipped": "Naginas midadas per importar",
+    "status": {
+      "pending": "Nov",
+      "importing": "Importaziun...",
+      "success": "Creà",
+      "updated": "Actualisà",
+      "error": "Errur",
+      "skipped": "Passà",
+      "noChanges": "Naginas midadas",
+      "willUpdate": "Vegn actualisà: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Datoteca nunvalida. Chargiar in datoteca JSON.",
+      "parseError": "Analisar il datoteca ha fallì: {{error}}"
+    },
+    "hasPortrait": "Ha ina fotorafia da portret",
+    "noPortrait": "Nagina fotorafia da portret"
+  },
+  "participantImport": {
+    "title": "Importar participants da CSV",
+    "dropzone": "Drizza e laschar il datoteca CSV qua",
+    "dropzoneActive": "Laschar il datoteca CSV qua",
+    "dropzoneHint": "u clicca per tscherner il datoteca",
+    "fileLoaded": "Datoteca chargià: {{name}} ({{size}} KB)",
+    "preview": "Preview: {{count}} participants pronts per importar",
+    "previewLimitation": "Remartga: il preview mussa utilisaders existents mo per correspondenza da num d'utilisader. Durant l'import, utilisaders pon er vegnir abbinads per num (prenum + num) sche unic. Tschertas participants mussads sco 'Nov' pon correspunder ad utilisaders existents per num.",
+    "importButton": "Importar {{count}} participants",
+    "progress": "Importaziun: {{current}} / {{total}}",
+    "summary": "Resumé da l'import",
+    "status": {
+      "pending": "En spetga",
+      "importing": "Importaziun",
+      "success": "Success",
+      "error": "Fallì",
+      "skipped": "Passà"
+    },
+    "stats": {
+      "total": "Total: {{count}}",
+      "success": "Success: {{count}}",
+      "failed": "Fallì: {{count}}",
+      "pending": "En spetga: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Sintetic",
+      "eventsCount": "{{count}} occurrenzas",
+      "existing": "Existent",
+      "new": "Nov"
+    },
+    "aria": {
+      "statusLabel": "Status d'import: {{label}}",
+      "dropzone": "Zona da chargament da file CSV. Drizzar in file CSV u cliccar per tscherner",
+      "fileInput": "Endatada da file per import CSV",
+      "previewTable": "Tabella d'avisament d'import dals participants",
+      "participantTable": "Participants cun status d'import",
+      "importProgress": "Progress da l'import",
+      "closeModal": "Serrar la fanestra d'import",
+      "startImport": "Entschaiver l'import dals participants dal file CSV",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "L'analisa dal CSV ha fallì",
+    "importFailed": "L'import ha fallì"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Survista",
+      "eventsParticipated": "Occurrenzas participadas",
+      "ariaLabel": "User detail tabs"
+    },
+    "overviewText": "Survista dal profil dal utilisader. Infurmaziuns supplementaras pon vegnir agiuntadas qua.",
+    "eventsTable": {
+      "eventCode": "Code da l'occurrenza",
+      "title": "Titel",
+      "date": "Data",
+      "status": "Status",
+      "loadError": "Chargiar l'istorgia da participaziun a las occurrenzas ha fallì",
+      "noEvents": "Quest utilisader n'ha betg participà en nagina occurrenza anc",
+      "untitledEvent": "Occurrenza senza titel",
+      "dateTBD": "Da definir",
+      "ariaLabel": "Tabella da las occurrenzas a las qualas l'utilisader ha participà",
+      "statusValues": {
+        "REGISTERED": "Registrà",
+        "CONFIRMED": "Confermà",
+        "ATTENDED": "Present",
+        "CANCELLED": "Annullà",
+        "WAITLISTED": "En glista d'spetga"
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "Conto",
+      "notifications": "Notificaziuns",
+      "privacy": "Protecziun dals datas"
+    },
+    "account": {
+      "title": "Parameters dal conto",
+      "emailStatus": "L'adressa e-mail na po betg vegnir midada",
+      "changePassword": "Midar la pled-clav",
+      "theme": "Tema",
+      "themeLight": "Cler",
+      "themeDark": "Stgir",
+      "themeAuto": "Automatic (suandar il sistem)",
+      "timezone": "Zona temporala",
+      "save": "Memorisar ils parameters dal conto"
+    },
+    "notifications": {
+      "title": "Preferenzas da notificaziun",
+      "epic7Notice": "Parameters da notificaziun avanzads vegnan en in update futur.",
+      "channels": "Canals da notificaziun",
+      "channelEmail": "Notificaziuns via e-mail",
+      "channelInApp": "Notificaziuns en l'app",
+      "channelPush": "Notificaziuns push",
+      "frequency": "Frequenza da notificaziun",
+      "frequencyImmediate": "Immediat",
+      "frequencyDaily": "Resumaziun giornaliera",
+      "frequencyWeekly": "Resumaziun settimanalas",
+      "save": "Memorisar las preferenzas da notificaziun"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscribe": "Abunnar la newsletter",
+      "description": "Retschever actualisaziuns mensualas davart ils eveniments BATbern"
+    },
+    "privacy": {
+      "title": "Parameters da protecziun dals datas",
+      "visibility": "Visibilitad dal profil",
+      "visibilityPublic": "Public",
+      "visibilityMembersOnly": "Mo per commembers",
+      "visibilityPrivate": "Privat",
+      "infoDisplay": "Mussar infurmaziuns",
+      "showEmail": "Mussar l'adressa e-mail",
+      "showCompany": "Mussar l'affiliaziun a la cumpagnia",
+      "showActivity": "Mussar la cronologia da l'activitad",
+      "communication": "Communicaziun",
+      "allowMessaging": "Permetter messadis directs d'auters utilisaders",
+      "viewPolicy": "Vesair la politica da protecziun dals datas",
+      "save": "Memorisar ils parameters da protecziun dals datas"
+    }
+  },
+  "profile": {
+    "personalInfo": "Infurmaziuns persunalas",
+    "editProfile": "Modifitgar il profil",
+    "firstName": "Prenum",
+    "lastName": "Num",
+    "bio": "Biografia",
+    "bioValidation": "La biografia sto avair {{max}} segns u main",
+    "saveChanges": "Memorisar las midadas",
+    "removePhotoConfirm": "Essas vus segirs da vulair stizzar vostra foto da profil?",
+    "labelName": "Num:",
+    "labelEmail": "E-mail:",
+    "labelCompany": "Cumpagnia:",
+    "labelBio": "Biografia:",
+    "recentActivity": "Activitad recenta",
+    "noActivity": "Nagina activitad recenta",
+    "viewAll": "Vesair tut →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Chargiar foto",
+    "removeTooltip": "Stizzar foto",
+    "verified": "Verificà",
+    "memberSince": "Commemher dapi {{date}}"
+  }
+}

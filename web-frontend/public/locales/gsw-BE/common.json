@@ -1,0 +1,555 @@
+{
+  "app": {
+    "name": "BATbern"
+  },
+  "navigation": {
+    "home": "Hei",
+    "dashboard": "Übersicht",
+    "events": "Veranstaltigen",
+    "speakers": "Redneri",
+    "partners": "Partner",
+    "companies": "Firma",
+    "users": "Benutzer",
+    "myCompany": "Miin Betrieb",
+    "myAccount": "Mii Konto",
+    "analytics": "Statistike",
+    "profile": "Profil",
+    "myEvents": "Miin Veranstaltigen",
+    "myContent": "Miin Inhaut",
+    "myRegistrations": "Mini Amäldigä",
+    "about": "Über üs",
+    "pastEvents": "Früechere Veranstaltigen",
+    "publicSite": "Öffentligi Website",
+    "partnerTopics": "Partner-Theme",
+    "partnerMeetings": "Partner-Treffe",
+    "topics": "Themenvorschläg",
+    "openMenu": "Menü ufmache",
+    "notifications": "Notifications",
+    "tasks": "Tasks",
+    "userMenu": "User menu",
+    "mobileNav": "Mobile navigation",
+    "mainNav": "Main navigation",
+    "activeRole": "Active role"
+  },
+  "public": {
+    "login": "Ämälde",
+    "joinUp": "Iischribe",
+    "register": "Registriere",
+    "goToPortal": "Zum Portal",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Du bisch scho für die Veranstautig amäldet."
+      }
+    }
+  },
+  "attendee": {
+    "welcome": {
+      "title": "Willkomme bi BATbern!",
+      "titleWithName": "Willkomme, {{name}}!",
+      "subtitle": "Dis Konto isch breit. Lueg dir d'komende Veranstaltigen und s'Archiv ah.",
+      "dashboardSoon": "Dis persönlichs Dashboard isch undergwägs — mir mälde üs, wenn's fertig isch.",
+      "browseEvents": "Veranstaltigen aluege",
+      "viewArchive": "Archiv aluege",
+      "canDoTitle": "Was du jetzt mache chasch",
+      "canDo1": "BATbern-Veranstaltigen aluege und di amälde",
+      "canDo2": "Früechere Vorträg und Rednermaterial im Archiv entdecke",
+      "canDo3": "Dis Konto und Benarichtigigseinstellige verwauté"
+    }
+  },
+  "footer": {
+    "tagline": "Technologieustausch zwüsche IT-Fachleut",
+    "quickLinks": "Schnälllinks",
+    "currentEvent": "Aktuelligi Veranstatig",
+    "legal": "Rechtlichs",
+    "privacyPolicy": "Dateschutzerklährig",
+    "support": "Support",
+    "copyright": "© {{year}} Berner Architekten Treffen. Alli Rächt vorbehalte."
+  },
+  "actions": {
+    "save": "Spychere",
+    "saving": "Spychert...",
+    "cancel": "Abbräche",
+    "delete": "Lösche",
+    "edit": "Bearbeite",
+    "close": "Zuetuä",
+    "sending": "Wird gschickt...",
+    "loading": "Lade...",
+    "retry": "Nomol versuche",
+    "back": "Zrugg",
+    "confirm": "Bestätige",
+    "clearFilters": "Filter lösche"
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Titel",
+    "date": "Datum",
+    "overview": "Übersicht",
+    "sortBy": "Sortiere nach",
+    "actions": "Aktione",
+    "company": "Firma",
+    "email": "E-Mail",
+    "dueDate": "Fälligkeitsdatum",
+    "emailAddress": "E-Mail-Adress"
+  },
+  "filters": {
+    "status": {
+      "all": "Alles",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "pending": "Hangend",
+      "confirmed": "Bestätigt",
+      "error": "Fähler"
+    },
+    "ariaLabel": "Event filters",
+    "categoryFilter": "Category filter",
+    "languageFilter": "Language filter"
+  },
+  "language": {
+    "select": "Sprach uswähle",
+    "de": "Deutsch",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "rm": "Rumantsch",
+    "es": "Español",
+    "fi": "Suomi",
+    "nl": "Nederlands",
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
+  },
+  "status": {
+    "wait": "{{seconds}} Sekunde warte",
+    "didntReceive": "Kei E-Mail erhalte?"
+  },
+  "menu": {
+    "profile": "Profil",
+    "settings": "Istellige",
+    "administration": "Verwautig",
+    "help": "Hilf",
+    "logout": "Abmälde"
+  },
+  "role": {
+    "organizer": "Veranstautigsorganisator",
+    "speaker": "Redner",
+    "partner": "Partner",
+    "attendee": "Teilnähmer"
+  },
+  "company": {
+    "title": "Firmaverwautig",
+    "createCompany": "Firma erstelle",
+    "editCompany": "Firma bearbeite",
+    "viewDetails": "Details vo {{name}} aluege",
+    "noCompaniesFound": "Kei Firma gfunde",
+    "adjustFilters": "Versueche d'Suechi oder d'Filter azpasse",
+    "viewMode": {
+      "grid": "Rasteransicht",
+      "list": "Listenansicht",
+      "toggleCurrent": "Ansicht wächsle. Aktuell: {{mode}}"
+    },
+    "fields": {
+      "name": "Firmaname",
+      "displayName": "Anzeigename (wenn abwychend vom offiziälle Name)",
+      "swissUID": "Schweizer UID (CHE-XXX.XXX.XXX)",
+      "website": "Website",
+      "industry": "Branche",
+      "description": "Beschribig",
+      "legalName": "Churzname: {{name}}",
+      "logo": "Firmalogo"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://beispiel.com"
+    },
+    "industries": {
+      "selectIndustry": "Branche uswähle"
+    },
+    "badges": {
+      "verified": "Verifiziert"
+    },
+    "filters": {
+      "verifiedOnly": "Nur verifizierti Firma",
+      "industry": "Branche",
+      "allIndustries": "Alli Branche",
+      "clearAll": "Alli Filter lösche",
+      "filters": "Filter"
+    },
+    "form": {
+      "createTitle": "Neui Firma erstelle",
+      "editTitle": "Firma bearbeite",
+      "saveDraft": "Entwurf spychere",
+      "saveCreate": "Spychere und erstelle",
+      "saveChanges": "Änderige spychere",
+      "unsavedChanges": "Du hesch ungspycherte Änderige. Bisch sicher, dass du schliesse wötsch?",
+      "characterCount": "{{count}}/{{max}} Zeiche",
+      "helpText": {
+        "swissUID": "Optional – für automatischi Verifizierig"
+      },
+      "errors": {
+        "noPermission": "Du hesch kei Bärechtigig zum Bearbeite vo dere Firma. Redneri chöne nur iri eigeni Firma bearbeite."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "users": "Benutzer",
+        "ariaLabel": "Company detail tabs"
+      },
+      "noData": "Kei Firmadaten verfügbar"
+    },
+    "errors": {
+      "saveFailed": "Es isch es Fähler bim Spychere dr Firma passiert",
+      "deleteFailed": "Firma chöne nid glöscht werde"
+    },
+    "search": {
+      "placeholder": "Firma sueche..."
+    },
+    "batchImport": {
+      "title": "Firma us JSON importiere",
+      "dropzone": "JSON-Datei da ablegge oder klicke zum Ufelade",
+      "dropzoneActive": "JSON-Datei da ablegge",
+      "noCompanies": "Kei Firma in dr JSON-Datei gfunde.",
+      "preview": "Vorschau ({{count}} Firma)",
+      "cancelButton": "Abbräche",
+      "status": {
+        "importing": "Wird importiert...",
+        "success": "Importiert",
+        "updated": "Aktualisiert",
+        "willUpdate": "Wird aktualisiert",
+        "skipped": "Übersprunge (existiert scho)"
+      },
+      "progress": "Importiere {{current}} vo {{total}}...",
+      "complete": "Import abgschlosse: {{success}} erstellt, {{updated}} aktualisiert, {{failed}} fehlgschlage, {{skipped}} übersprunge",
+      "checkingExisting": "Bestehendi Firma wird prüeft...",
+      "existingFound": "{{count}} vo {{total}} Firma existiere scho und wärde aktualisiert.",
+      "allSkipped": "Alles übersprunge",
+      "importButtonWithCount": "{{count}} Firma importiere",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Anzeigename",
+        "name": "API-Name",
+        "industry": "Branche",
+        "website": "Website"
+      },
+      "errors": {
+        "invalidFile": "Ungültige Dateityp. Bitte e JSON-Datei ufelade.",
+        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Firma lösche",
+      "message": "Bisch sicher, dass du die Firma lösche wötsch?",
+      "dataWarning": "Die Aktion löscht d'Firma permanänt und cha nid rückgängig gmacht werde.",
+      "cascadeWarning": "Alli zuegörigi Date (Benutzer, Partnerschafte, Redneri, Veranstaltigen) chönte beeinflusst werde.",
+      "deleting": "Wird glöscht..."
+    },
+    "pagination": {
+      "itemsPerPage": "Elemente pro Syte"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "title": "Veranstaltigen us topics.json importiere",
+      "dropzone": "topics.json-Datei da ablegge oder klicke zum Ufelade",
+      "dropzoneActive": "JSON-Datei da ablegge",
+      "dropzoneHint": "D'vorverarbeiteti topics.json-Datei ufelade (mit parsedDate, description und moderator-Fäuder)",
+      "noEvents": "Kei Veranstaltigen in dr JSON-Datei gfunde.",
+      "preview": "Vorschau ({{count}} Veranstaltigen)",
+      "cancelButton": "Abbräche",
+      "status": {
+        "pending": "Hangend",
+        "importing": "Wird importiert...",
+        "success": "Importiert",
+        "error": "Fähler",
+        "skipped": "Übersprunge (existiert scho)"
+      },
+      "progress": "Importiere {{current}} vo {{total}}...",
+      "complete": "Import abgschlosse: {{success}} erfolgriich, {{failed}} fehlgschlage, {{skipped}} übersprunge",
+      "allSkipped": "Alles übersprunge",
+      "importButtonWithCount": "{{count}} Veranstaltigen importiere",
+      "columns": {
+        "eventNumber": "#",
+        "organizer": "Organisator"
+      },
+      "errors": {
+        "invalidFile": "Ungültige Dateityp. Bitte e JSON-Datei ufelade.",
+        "parseError": "JSON-Datei chöne nid verarbeitet werde: {{error}}"
+      }
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Datei da ablegge oder klicke zum Uswähle",
+    "dragDropMultiple": "Dateie da ablegge oder klicke zum Uswähle",
+    "dragActive": "Datei da ablegge",
+    "acceptedFormats": "Akzeptierts Format: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "acceptedFormatsMultiple": "Akzeptierti Formäte: Verschiedeni Dateityp (max {{maxSize}}MB pro Datei)",
+    "uploading": "Wird ufeglade... {{progress}}%",
+    "removeFile": "Datei entferne",
+    "altText": "Vorschau vo dr ufegladene Datei",
+    "errors": {
+      "multipleFiles": "Es cha nur es Datei gleichzytig ufeglade werde"
+    }
+  },
+  "registration": {
+    "success": {
+      "title": "Amäldig abgschickt!",
+      "subtitle": "Lueg in dini E-Mail zum d'Amäldig bestätige",
+      "emailSent": "Bestätigis-E-Mail gschickt",
+      "emailSentTo": "Mir hei e Bestätigis-E-Mail gschickt a",
+      "clickLink": "Klick uf dr Bestätigislink in dr E-Mail zum d'Amäldig abschliesse. Dr Link isch gültig für",
+      "validFor": "48 Stunde",
+      "valid": "",
+      "didntReceive": "Kei E-Mail erhalte?",
+      "checkSpam": "Im Spam-/Junk-Ordner sueche",
+      "checkEmail": "Sicher stelle, dass du d'richtige E-Mail-Adress iiggäbe hesch",
+      "waitMinutes": "Es paar Minute warte und nomol prüefe",
+      "close": "Zuetuä"
+    },
+    "alreadyRegistered": {
+      "title": "Du bisch amäldet!",
+      "pending": "Amäldig hangend für",
+      "checkEmail": "Lueg in dini E-Mail zum bestätige"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "title": "Sessione-Massenimport",
+      "dropzone": "sessions.json da ablegge oder klicke zum Ufelade",
+      "dropzoneActive": "sessions.json da ablegge",
+      "dropzoneHint": "Nur sessions.json wird akzeptiert",
+      "preview": "{{count}} Sessione zum Importiere",
+      "progress": "{{current}} vo {{total}} importiert",
+      "complete": "Import abgschlosse: {{success}} erfolgriich, {{skipped}} übersprunge, {{failed}} fehlgschlage",
+      "noSessions": "Kei Sessione in dr Datei gfunde",
+      "importButtonWithCount": "{{count}} Sessione importiere",
+      "cancelButton": "Abbräche",
+      "columns": {
+        "event": "Veranstatig",
+        "title": "Titel",
+        "speakers": "Redneri",
+        "status": "Status"
+      },
+      "status": {
+        "pending": "Hangend",
+        "importing": "Wird importiert...",
+        "success": "Erfolgriich",
+        "skipped": "Übersprunge",
+        "error": "Fähler"
+      },
+      "errors": {
+        "invalidFile": "Ungültige Datei. Nur sessions.json isch erlaubt.",
+        "parseError": "Verarbeitigsfähler: {{error}}"
+      }
+    },
+    "speakerCount": "{{count}} speaker",
+    "speakersCount": "{{count}} speakers"
+  },
+  "organizer": {
+    "select": "Organisator uswähle",
+    "all": "Alli Organisatore",
+    "unassigned": "Nid zuegwiise"
+  },
+  "speakerPortal": {
+    "dashboard": {
+      "loading": "Dis Dashboard wird gglade...",
+      "invalidLink": "Ungültige Link",
+      "invalidLinkMessage": "Die Syte bruucht en gültige Dashboard-Link. Bitte dr Link us diner Iiladeigs-E-Mail verwände.",
+      "linkExpired": "Link abgloffe",
+      "linkExpiredMessage": "Din Link isch abgloffe. Bitte kontaktier dr Veranstautigsorganisator für en neue Link.",
+      "error": "Öppis isch schief gloffe",
+      "errorMessage": "Mir chöne dis Dashboard nid lade. Bitte später nomol versuche.",
+      "welcome": "Willkomme, {{name}}",
+      "profileComplete": "Profil {{percent}}% vollständig",
+      "upcomingEvents": "Komendi Veranstaltigen",
+      "pastEvents": "Früechere Veranstaltigen",
+      "noUpcomingEvents": "Du hesch kei komende Redeverpflichtungen",
+      "noPastEvents": "No kei früechere Redeverpflichtungen",
+      "session": "Session",
+      "titleStatus": "Titel",
+      "abstractStatus": "Abstract",
+      "materialStatus": "Material",
+      "revisionRequested": "Revision agforderet",
+      "responseBy": "Antwort bis",
+      "contentBy": "Inhaut fällig",
+      "organizer": "Organisator",
+      "contact": "Kontakt",
+      "respond": "Antwörte",
+      "updateProfile": "Profil aktualisiere",
+      "submitContent": "Inhaut iischicke",
+      "speakerStatus": "Rednerstatus",
+      "contentStatus": "Inhautsstatus",
+      "materialProgress": "Fortschritt bim Materialiireichich",
+      "deadlines": "Deadlines",
+      "urgent": "Dringend",
+      "soon": "Bald fällig",
+      "onTime": "Pünktlich",
+      "pastEvent": "Früecheris Ereignis",
+      "materialAvailable": "Material verfügbar",
+      "noMaterials": "Kei Materialien",
+      "eventCardAriaLabel": "{{title}} — {{status}}",
+      "profilePlaceholder": "{{name}} profile placeholder"
+    },
+    "content": {
+      "invalidLink": "Ungültige Link",
+      "invalidLinkMessage": "Die Syte bruucht en gültige Inhaut-Link. Bitte dr Link us diner Iiladeigs-E-Mail verwände.",
+      "linkExpiredMessage": "Dä Link isch abgloffe. Bitte kontaktier dr Organisator für en neue Link.",
+      "presentationTitle": "Präsentationstitel",
+      "abstract": "Abstract",
+      "titleRequired": "Titel isch Pflicht",
+      "abstractRequired": "Abstract isch Pflicht",
+      "presentationFile": "Präsentationsdatei",
+      "saving": "Wird gspycheret...",
+      "lastSaved": "Zuletzt gspycheret: {{time}}",
+      "unsavedChanges": "Ungspycherte Änderige",
+      "submitting": "Wird iigschickt...",
+      "submitContent": "Inhaut iischicke",
+      "submittedSuccessfully": "Inhaut erfolgriich iigschickt!",
+      "submittedMessage": "Din Inhaut für \"{{sessionTitle}}\" isch zur Überprüefig iigschickt worde.",
+      "version": "Version",
+      "status": "Status",
+      "nextStepsInfo": "Dr Organisator wird dini Iireychig prüefe und sich mälde, wenn Änderige nötig si.",
+      "revisionRequested": "Revision agforderet",
+      "reviewedBy": "Überprüeft vo",
+      "on": "am"
+    },
+    "upload": {
+      "uploading": "Wird ufeglade...",
+      "uploadAria": "Präsentationsdatei uflade"
+    },
+    "photo": {
+      "uploadAria": "Profilfoto uflade"
+    }
+  },
+  "archive": {
+    "title": "Früechere Veranstaltigen",
+    "description": "Über 20 Jahr BATbern-Veranstaltigen mit Vorträg und Redneri entdecke",
+    "viewToggle": {
+      "grid": "Raster",
+      "list": "Liste"
+    },
+    "loading": "Veranstaltigen wärde gglade...",
+    "loadingMore": "Meh Veranstaltigen wärde gglade...",
+    "loadingTopics": "Theme wärde gglade...",
+    "noTopicsAvailable": "Kei Theme verfügbar",
+    "noResults": "Kei Veranstaltigen gfunde",
+    "errors": {
+      "loadFailed": "Veranstaltigen chöne nid gglade werde"
+    },
+    "card": {
+      "viewDetails": "Details aluege"
+    },
+    "filters": {
+      "title": "Filter",
+      "search": "Veranstaltigen sueche...",
+      "topics": "Theme",
+      "clearAll": "Alli lösche",
+      "activeCount": "{{count}} aktive Filter"
+    },
+    "detail": {
+      "backToArchive": "← Zrugg zum Archiv"
+    }
+  },
+  "notifications": {
+    "title": "Benarichtigige",
+    "markAllAsRead": "Alles als gläse markiere",
+    "markAsRead": "Als gläse markiere",
+    "delete": "Lösche",
+    "reload": "Neu lade",
+    "viewAll": "Alles aluege",
+    "hideRead": "Gläseni verstecke",
+    "empty": "Kei Benarichtigige",
+    "noNotifications": "No kei Benarichtigige",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "deleteConfirmation": {
+      "title": "Benarichtigig lösche",
+      "message": "Bisch sicher, dass du die Benarichtigig lösche wötsch?"
+    },
+    "priority": {
+      "urgent": "DRINGEND",
+      "high": "HOCH"
+    },
+    "deleteAriaLabel": "Delete notification",
+    "totalCountAriaLabel": "{{count}} total notifications",
+    "unreadCount": "{{count}} unread notifications"
+  },
+  "emailTemplates": {
+    "layoutTemplates": "Layout-Vorlagen",
+    "layoutTemplatesInfo": "Definiert s'BATbern-Usseh für alli E-Mails. Änderige da beeinflusse alli Vorlagen, wo dises Layout verwände.",
+    "contentTemplates": "E-Mail-Inhaut",
+    "categories": {
+      "SPEAKER": "Redneri",
+      "REGISTRATION": "Amäldigä",
+      "TASK_REMINDER": "Ufgabeerinnerige",
+      "NEWSLETTER": "Newsletter"
+    },
+    "layoutKey": "Layout",
+    "standalone": "Keis (eigenständig)",
+    "systemTemplate": "Systemvorlage",
+    "subject": "Betreff",
+    "htmlBody": "HTML-Inhaut",
+    "variables": "Verfügbari Variable",
+    "preview": "Vorschau",
+    "editTitle": "Vorlage bearbeite",
+    "createTitle": "Neui Vorlage",
+    "newTemplate": "+ Neui Vorlage",
+    "noLayouts": "Kei Layout-Vorlagen gfunde.",
+    "noTemplates": "Kei Vorlagen für disen Filter gfunde.",
+    "missingContentPlaceholder": "{{content}}-Platzhalter fählt — E-Mail-Inhaut wird leer si",
+    "deleteFailed": "Vorlage chöne nid glöscht werde.",
+    "saveFailed": "Vorlage chöne nid gspycheret werde. Bitte nomol versuche.",
+    "validation": {
+      "htmlBodyRequired": "HTML-Inhaut isch Pflicht.",
+      "subjectRequired": "Betreff isch Pflicht für Inhautvorlagen.",
+      "templateKeyRequired": "Vorlagenschlüssel isch Pflicht."
+    },
+    "templateKey": "Template Key",
+    "locale": "Locale",
+    "previewTitle": "Email Preview"
+  },
+  "presentation": {
+    "errorTitle": "Veranstatig chöne nid gglade werde",
+    "errorMessage": "Bitte d'Netzwerkverbindig prüefe und nomol versuche.",
+    "retryButton": "Nomol versuche",
+    "previousSection": "Previous section",
+    "nextSection": "Next section"
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Veranstautigstype",
+      "importData": "Date importiere",
+      "taskTemplates": "Ufgabevorlagen",
+      "emailTemplates": "E-Mail-Vorlagen",
+      "presentationSettings": "Präsentation"
+    },
+    "accessDenied": "Zuegriff verweigeret",
+    "organizerOnly": "Die Syte isch nur für Organisatore.",
+    "presentationSettings": {
+      "title": "Präsentationsistellige",
+      "subtitle": "Die Wärt erschine uf dr Moderatorspräsentationssyte (/present/:eventCode).",
+      "aboutText": "Über-Text",
+      "partnerCount": "Partneranzahl",
+      "save": "Spychere",
+      "saved": "Istellige gspycheret.",
+      "saveFailed": "Spychere fehlgschlage. Bitte nomol versuche."
+    },
+    "taskTemplates": {
+      "defaultSection": "Standard-Vorlagen",
+      "customSection": "Eigeni Vorlagen",
+      "addTemplate": "+ Vorlage hinzuefüege",
+      "noDefaults": "Kei Standard-Vorlagen.",
+      "noCustom": "No kei eigeni Vorlagen.",
+      "confirmDelete": "Vorlage lösche?",
+      "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
+    }
+  },
+  "userAccount": {
+    "tabs": {
+      "ariaLabel": "User account tabs"
+    },
+    "errors": {
+      "loadFailed": "Failed to load user account data. Please try again.",
+      "correlationId": "Correlation ID: {{id}}"
+    }
+  },
+  "releaseNotes": {
+    "title": "Release Notes"
+  }
+}

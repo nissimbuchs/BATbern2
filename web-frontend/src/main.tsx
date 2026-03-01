@@ -3,6 +3,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 import App from './App.tsx';
 import './index.css'; // Tailwind CSS
 import './i18n/config'; // Initialize i18n before rendering
@@ -18,90 +19,96 @@ import { ErrorBoundary } from './components/ErrorBoundary'; // Task 4: Error bou
  * Loading Screen Component
  * Shown while fetching runtime configuration from backend
  */
-const LoadingScreen = () => (
-  <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}
-  >
-    <div style={{ fontSize: '24px', marginBottom: '16px' }}>Loading BATbern...</div>
+const LoadingScreen = () => {
+  const { t } = useTranslation('common');
+  return (
     <div
       style={{
-        width: '200px',
-        height: '4px',
-        backgroundColor: '#e0e0e0',
-        borderRadius: '2px',
-        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
+      <div style={{ fontSize: '24px', marginBottom: '16px' }}>{t('bootstrap.loading')}</div>
       <div
         style={{
-          width: '40%',
-          height: '100%',
-          backgroundColor: '#D52B1E',
-          animation: 'loading 1.5s ease-in-out infinite',
+          width: '200px',
+          height: '4px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '2px',
+          overflow: 'hidden',
         }}
-      />
-    </div>
-    <style>{`
+      >
+        <div
+          style={{
+            width: '40%',
+            height: '100%',
+            backgroundColor: '#D52B1E',
+            animation: 'loading 1.5s ease-in-out infinite',
+          }}
+        />
+      </div>
+      <style>{`
       @keyframes loading {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(350%); }
       }
     `}</style>
-  </div>
-);
+    </div>
+  );
+};
 
 /**
  * Error Screen Component
  * Shown if configuration loading fails
  */
-const ErrorScreen = ({ error }: { error: Error }) => (
-  <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      padding: '20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}
-  >
+const ErrorScreen = ({ error }: { error: Error }) => {
+  const { t } = useTranslation('common');
+  return (
     <div
       style={{
-        maxWidth: '500px',
-        padding: '24px',
-        backgroundColor: '#fee',
-        border: '1px solid #fcc',
-        borderRadius: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        padding: '20px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <h2 style={{ margin: '0 0 12px 0', color: '#c00' }}>Configuration Load Failed</h2>
-      <p style={{ margin: '0 0 16px 0', color: '#666' }}>{error.message}</p>
-      <button
-        onClick={() => window.location.reload()}
+      <div
         style={{
-          padding: '10px 20px',
-          backgroundColor: '#D52B1E',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '500',
+          maxWidth: '500px',
+          padding: '24px',
+          backgroundColor: '#fee',
+          border: '1px solid #fcc',
+          borderRadius: '8px',
         }}
       >
-        Reload Page
-      </button>
+        <h2 style={{ margin: '0 0 12px 0', color: '#c00' }}>{t('bootstrap.configFailed')}</h2>
+        <p style={{ margin: '0 0 16px 0', color: '#666' }}>{error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#D52B1E',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+          }}
+        >
+          {t('bootstrap.reloadPage')}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Bootstrap Application

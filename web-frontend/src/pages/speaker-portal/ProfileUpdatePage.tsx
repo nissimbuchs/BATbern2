@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
@@ -36,6 +37,7 @@ import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 type PageState = 'loading' | 'form' | 'error';
 
 const ProfileUpdatePage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const queryClient = useQueryClient();
@@ -138,19 +140,19 @@ const ProfileUpdatePage = () => {
     const newErrors: Record<string, string> = {};
 
     if (bio.length > 500) {
-      newErrors.bio = 'Bio must not exceed 500 characters';
+      newErrors.bio = t('speakerPortal.profile.bioExceeds');
     }
 
     if (expertiseAreas.length > 10) {
-      newErrors.expertiseAreas = 'Maximum 10 expertise areas allowed';
+      newErrors.expertiseAreas = t('speakerPortal.profile.maxExpertiseAreas');
     }
 
     if (speakingTopics.length > 10) {
-      newErrors.speakingTopics = 'Maximum 10 speaking topics allowed';
+      newErrors.speakingTopics = t('speakerPortal.profile.maxSpeakingTopics');
     }
 
     if (linkedInUrl && !linkedInUrl.match(/^https?:\/\/(www\.)?linkedin\.com\/.+$/i)) {
-      newErrors.linkedInUrl = 'Must be a valid LinkedIn URL';
+      newErrors.linkedInUrl = t('speakerPortal.profile.invalidLinkedIn');
     }
 
     setErrors(newErrors);
@@ -177,28 +179,29 @@ const ProfileUpdatePage = () => {
 
   // Get error details
   const getErrorDetails = () => {
+    const p = 'speakerPortal.profile';
     if (fetchError) {
       const err = fetchError as Error & { errorCode?: string };
       if (err.errorCode === 'EXPIRED') {
         return {
-          title: 'Link Expired',
-          message: 'This profile link has expired. Please contact the event organizers.',
+          title: t(`${p}.linkExpired`),
+          message: t(`${p}.linkExpiredMessage`),
         };
       }
       if (err.errorCode === 'NOT_FOUND') {
         return {
-          title: 'Invalid Link',
-          message: 'This profile link is not valid.',
+          title: t(`${p}.invalidLink`),
+          message: t(`${p}.invalidLinkNotValid`),
         };
       }
       return {
-        title: 'Error',
-        message: err.message || 'An error occurred while loading your profile.',
+        title: t(`${p}.genericError`),
+        message: err.message || t(`${p}.genericErrorMessage`),
       };
     }
     return {
-      title: 'Error',
-      message: 'An unexpected error occurred.',
+      title: t(`${p}.genericError`),
+      message: t(`${p}.unexpectedError`),
     };
   };
 
@@ -209,14 +212,14 @@ const ProfileUpdatePage = () => {
         <div className="container mx-auto px-4 py-12 max-w-3xl">
           <div className="text-center">
             <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h1 className="text-3xl font-light mb-2 text-zinc-100">Invalid Link</h1>
-            <p className="text-zinc-400 mb-8">
-              This page requires a valid profile link from your email.
-            </p>
+            <h1 className="text-3xl font-light mb-2 text-zinc-100">
+              {t('speakerPortal.profile.invalidLink')}
+            </h1>
+            <p className="text-zinc-400 mb-8">{t('speakerPortal.profile.invalidLinkMessage')}</p>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t('speakerPortal.profile.backToHome')}
               </Link>
             </Button>
           </div>
@@ -230,10 +233,16 @@ const ProfileUpdatePage = () => {
       <div className="container mx-auto px-4 py-12 max-w-3xl min-h-screen">
         {/* Loading State */}
         {pageState === 'loading' && (
-          <div className="text-center py-24" role="status" aria-label="Loading profile">
+          <div
+            className="text-center py-24"
+            role="status"
+            aria-label={t('speakerPortal.profile.loadingAria')}
+          >
             <BATbernLoader size={128} />
-            <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Profile...</h2>
-            <p className="text-zinc-400">Please wait while we load your profile.</p>
+            <h2 className="text-2xl font-light text-zinc-100 mb-2">
+              {t('speakerPortal.profile.loading')}
+            </h2>
+            <p className="text-zinc-400">{t('speakerPortal.profile.loadingMessage')}</p>
           </div>
         )}
 
@@ -246,7 +255,7 @@ const ProfileUpdatePage = () => {
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t('speakerPortal.profile.backToHome')}
               </Link>
             </Button>
           </div>
@@ -258,12 +267,16 @@ const ProfileUpdatePage = () => {
             {/* Header with Completeness */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h1 className="text-2xl font-light text-zinc-100">Your Speaker Profile</h1>
-                <p className="text-zinc-400 mt-1">Update your information for event materials</p>
+                <h1 className="text-2xl font-light text-zinc-100">
+                  {t('speakerPortal.profile.pageTitle')}
+                </h1>
+                <p className="text-zinc-400 mt-1">{t('speakerPortal.profile.pageSubtitle')}</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="text-sm text-zinc-400">Profile Completeness</div>
+                  <div className="text-sm text-zinc-400">
+                    {t('speakerPortal.profile.profileCompleteness')}
+                  </div>
                   <div
                     className={`text-2xl font-semibold ${
                       profile.profileCompleteness === 100
@@ -298,10 +311,10 @@ const ProfileUpdatePage = () => {
                   <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-amber-300 font-medium">
-                      Complete your profile for better visibility
+                      {t('speakerPortal.profile.completeProfileHint')}
                     </p>
                     <p className="text-sm text-amber-400/80 mt-1">
-                      Missing: {profile.missingFields.join(', ')}
+                      {t('speakerPortal.profile.missing')} {profile.missingFields.join(', ')}
                     </p>
                   </div>
                 </div>
@@ -312,7 +325,9 @@ const ProfileUpdatePage = () => {
             <Card className="p-6 mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <User className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-light text-zinc-100">Basic Information</h2>
+                <h2 className="text-lg font-light text-zinc-100">
+                  {t('speakerPortal.profile.basicInfo')}
+                </h2>
               </div>
 
               <div className="space-y-4">
@@ -332,7 +347,7 @@ const ProfileUpdatePage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="firstName" className="block text-sm text-zinc-400 mb-2">
-                      First Name
+                      {t('common:labels.firstName')}
                     </label>
                     <input
                       id="firstName"
@@ -347,7 +362,7 @@ const ProfileUpdatePage = () => {
                   </div>
                   <div>
                     <label htmlFor="lastName" className="block text-sm text-zinc-400 mb-2">
-                      Last Name
+                      {t('common:labels.lastName')}
                     </label>
                     <input
                       id="lastName"
@@ -364,7 +379,7 @@ const ProfileUpdatePage = () => {
 
                 <div>
                   <label htmlFor="email" className="block text-sm text-zinc-400 mb-2">
-                    Email (read-only)
+                    {t('speakerPortal.profile.emailReadOnly')}
                   </label>
                   <input
                     id="email"
@@ -377,7 +392,7 @@ const ProfileUpdatePage = () => {
 
                 <div>
                   <label htmlFor="bio" className="block text-sm text-zinc-400 mb-2">
-                    Bio
+                    {t('speakerPortal.profile.bio')}
                     <span className="ml-2 text-zinc-500">({bio.length}/500)</span>
                   </label>
                   <textarea
@@ -391,7 +406,7 @@ const ProfileUpdatePage = () => {
                       markDirty();
                     }}
                     maxLength={500}
-                    placeholder="Tell us about yourself..."
+                    placeholder={t('speakerPortal.profile.bioPlaceholder')}
                   />
                   {errors.bio && <p className="text-sm text-red-400 mt-1">{errors.bio}</p>}
                 </div>
@@ -402,12 +417,14 @@ const ProfileUpdatePage = () => {
             <Card className="p-6 mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <Globe className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-light text-zinc-100">Social Links</h2>
+                <h2 className="text-lg font-light text-zinc-100">
+                  {t('speakerPortal.profile.socialLinks')}
+                </h2>
               </div>
 
               <div>
                 <label htmlFor="linkedIn" className="block text-sm text-zinc-400 mb-2">
-                  LinkedIn URL
+                  {t('speakerPortal.profile.linkedInUrl')}
                 </label>
                 <input
                   id="linkedIn"
@@ -433,18 +450,20 @@ const ProfileUpdatePage = () => {
               <Card className="p-6 mb-6 border-blue-800 bg-blue-900/20">
                 <div className="flex items-center gap-2 mb-4">
                   <FileText className="h-5 w-5 text-blue-400" />
-                  <h2 className="text-lg font-light text-zinc-100">Content Submission</h2>
+                  <h2 className="text-lg font-light text-zinc-100">
+                    {t('speakerPortal.profile.contentSubmissionSection')}
+                  </h2>
                 </div>
                 <p className="text-zinc-400 mb-4">
-                  You&apos;re assigned to:{' '}
+                  {t('speakerPortal.profile.assignedTo')}{' '}
                   <span className="text-zinc-100">{profile.sessionTitle}</span>
                 </p>
                 <p className="text-zinc-400 text-sm mb-4">
-                  Submit your presentation title, abstract, and materials for review.
+                  {t('speakerPortal.profile.contentSubmitDescription')}
                 </p>
                 <Button asChild className="w-full sm:w-auto">
                   <Link to={`/speaker-portal/content?token=${token}`}>
-                    Submit Your Content
+                    {t('speakerPortal.profile.submitContent')}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Link>
                 </Button>
@@ -456,7 +475,7 @@ const ProfileUpdatePage = () => {
               <Button asChild variant="outline">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Home
+                  {t('speakerPortal.profile.backToHome')}
                 </Link>
               </Button>
 
@@ -468,12 +487,12 @@ const ProfileUpdatePage = () => {
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('speakerPortal.profile.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {t('speakerPortal.profile.saveChanges')}
                   </>
                 )}
               </Button>
@@ -482,14 +501,14 @@ const ProfileUpdatePage = () => {
             {/* Success/Error Messages */}
             {updateMutation.isSuccess && (
               <div className="mt-4 p-4 bg-green-900/20 border border-green-800 rounded-lg text-center">
-                <p className="text-green-400">Profile updated successfully!</p>
+                <p className="text-green-400">{t('speakerPortal.profile.savedSuccessfully')}</p>
               </div>
             )}
 
             {updateMutation.error && (
               <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-center">
                 <p className="text-red-400">
-                  {(updateMutation.error as Error).message || 'Failed to save profile'}
+                  {(updateMutation.error as Error).message || t('speakerPortal.profile.saveFailed')}
                 </p>
               </div>
             )}

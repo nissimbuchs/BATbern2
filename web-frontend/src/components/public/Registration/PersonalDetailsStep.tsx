@@ -5,10 +5,12 @@
  * Uses react-hook-form with zod validation for robust form handling.
  */
 
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useImperativeHandle, forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Form,
   FormControl,
@@ -20,15 +22,6 @@ import {
 import { Input } from '@/components/public/ui/input';
 import { CompanyAutocomplete } from './CompanyAutocomplete';
 import type { CreateRegistrationRequest } from '@/types/event.types';
-
-// Validation schema for personal details
-const personalDetailsSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address'),
-  company: z.string().min(1, 'Company is required'),
-  role: z.string().min(1, 'Role is required'),
-});
 
 export interface PersonalDetailsStepProps {
   /** Current form data */
@@ -53,6 +46,20 @@ export interface PersonalDetailsStepRef {
  */
 export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDetailsStepProps>(
   ({ formData, setFormData }, ref) => {
+    const { t } = useTranslation('registration');
+
+    const personalDetailsSchema = useMemo(
+      () =>
+        z.object({
+          firstName: z.string().min(1, t('personalDetails.validation.firstNameRequired')),
+          lastName: z.string().min(1, t('personalDetails.validation.lastNameRequired')),
+          email: z.string().email(t('personalDetails.validation.invalidEmail')),
+          company: z.string().min(1, t('personalDetails.validation.companyRequired')),
+          role: z.string().min(1, t('personalDetails.validation.roleRequired')),
+        }),
+      [t]
+    );
+
     const form = useForm({
       resolver: zodResolver(personalDetailsSchema),
       mode: 'onBlur', // Only validate on blur, not on change
@@ -80,10 +87,8 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-light text-zinc-100 mb-2">Personal Information</h2>
-          <p className="text-sm text-zinc-400">
-            Please provide your details to register for the event.
-          </p>
+          <h2 className="text-2xl font-light text-zinc-100 mb-2">{t('personalDetails.title')}</h2>
+          <p className="text-sm text-zinc-400">{t('personalDetails.subtitle')}</p>
         </div>
 
         <Form {...form}>
@@ -95,12 +100,14 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-300">First Name *</FormLabel>
+                    <FormLabel className="text-zinc-300">
+                      {t('personalDetails.fields.firstName')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                        placeholder="John"
+                        placeholder={t('personalDetails.placeholders.firstName')}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />
@@ -113,12 +120,14 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-300">Last Name *</FormLabel>
+                    <FormLabel className="text-zinc-300">
+                      {t('personalDetails.fields.lastName')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                        placeholder="Smith"
+                        placeholder={t('personalDetails.placeholders.lastName')}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />
@@ -133,18 +142,18 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-zinc-300">Email Address *</FormLabel>
+                  <FormLabel className="text-zinc-300">
+                    {t('personalDetails.fields.emailAddress')}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       type="email"
                       className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                      placeholder="john.smith@company.ch"
+                      placeholder={t('personalDetails.placeholders.email')}
                     />
                   </FormControl>
-                  <p className="text-xs text-zinc-500">
-                    We'll send your ticket and event updates here
-                  </p>
+                  <p className="text-xs text-zinc-500">{t('personalDetails.fields.emailHelper')}</p>
                   <FormMessage className="text-red-400" />
                 </FormItem>
               )}
@@ -157,7 +166,9 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                 name="company"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-300">Company *</FormLabel>
+                    <FormLabel className="text-zinc-300">
+                      {t('personalDetails.fields.company')}
+                    </FormLabel>
                     <FormControl>
                       <CompanyAutocomplete
                         value={field.value}
@@ -165,7 +176,7 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                           field.onChange(companyName);
                         }}
                         error={fieldState.error?.message}
-                        placeholder="Search for your company..."
+                        placeholder={t('personalDetails.placeholders.company')}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />
@@ -178,12 +189,14 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-300">Role *</FormLabel>
+                    <FormLabel className="text-zinc-300">
+                      {t('personalDetails.fields.role')}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                        placeholder="Senior Developer"
+                        placeholder={t('personalDetails.placeholders.role')}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />

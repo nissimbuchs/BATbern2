@@ -163,7 +163,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                   draggable
                   onDragStart={onDragStart?.(session)}
                   role="article"
-                  aria-label={`Speaker: ${displayName}`}
+                  aria-label={`${t('common:role.speaker')}: ${displayName}`}
                   tabIndex={0}
                   sx={{
                     cursor: 'grab',

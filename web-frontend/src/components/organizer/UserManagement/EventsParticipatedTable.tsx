@@ -108,9 +108,9 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
         <TableHead>
           <TableRow>
             <TableCell>{t('userDetail.eventsTable.eventCode')}</TableCell>
-            <TableCell>{t('userDetail.eventsTable.title')}</TableCell>
-            <TableCell>{t('userDetail.eventsTable.date')}</TableCell>
-            <TableCell>{t('userDetail.eventsTable.status')}</TableCell>
+            <TableCell>{t('common:labels.title')}</TableCell>
+            <TableCell>{t('common:labels.date')}</TableCell>
+            <TableCell>{t('common:labels.status')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

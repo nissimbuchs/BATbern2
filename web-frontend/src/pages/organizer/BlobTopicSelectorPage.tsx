@@ -65,7 +65,7 @@ const BlobTopicSelectorPage: React.FC = () => {
           color: 'white',
         }}
       >
-        <Typography>No event code provided</Typography>
+        <Typography>{t('blobSelector.noEventCode')}</Typography>
       </Box>
     );
   }

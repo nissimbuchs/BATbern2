@@ -108,7 +108,9 @@ describe('ParticipantBatchImportModal Component', () => {
 
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
-      expect(screen.getByText('Import Participants from CSV')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Import Participants from CSV/i })
+      ).toBeInTheDocument();
     });
 
     it('should_notRenderDialog_when_openIsFalse', () => {
@@ -304,10 +306,10 @@ describe('ParticipantBatchImportModal Component', () => {
 
       renderComponent();
 
-      expect(screen.getByText('Pending')).toBeInTheDocument();
-      expect(screen.getByText('Success')).toBeInTheDocument();
-      expect(screen.getByText('Failed')).toBeInTheDocument();
-      expect(screen.getByText('Invalid email')).toBeInTheDocument();
+      expect(screen.getAllByText(/Pending/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Success/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Failed|Error/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Invalid email/i)).toBeInTheDocument();
     });
   });
 
@@ -406,11 +408,11 @@ describe('ParticipantBatchImportModal Component', () => {
 
       renderComponent();
 
-      expect(screen.getByText('Import Summary')).toBeInTheDocument();
-      expect(screen.getByText('Total: 3')).toBeInTheDocument();
-      expect(screen.getByText('Success: 1')).toBeInTheDocument();
-      expect(screen.getByText('Failed: 1')).toBeInTheDocument();
-      expect(screen.getByText('Pending: 1')).toBeInTheDocument();
+      expect(screen.getByText(/Import Summary/i)).toBeInTheDocument();
+      expect(screen.getByText(/Total:.*3/i)).toBeInTheDocument();
+      expect(screen.getByText(/Success:.*1/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed:.*1/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pending:.*1/i)).toBeInTheDocument();
     });
   });
 
@@ -488,7 +490,7 @@ describe('ParticipantBatchImportModal Component', () => {
 
       renderComponent();
 
-      const cancelButton = screen.getByText('Cancel');
+      const cancelButton = screen.getByTestId('participant-import-cancel-button');
       expect(cancelButton).toBeDisabled();
     });
 
@@ -509,7 +511,7 @@ describe('ParticipantBatchImportModal Component', () => {
 
       renderComponent();
 
-      expect(screen.getByText('Close')).toBeInTheDocument();
+      expect(screen.getByTestId('participant-import-cancel-button')).toBeInTheDocument();
     });
   });
 

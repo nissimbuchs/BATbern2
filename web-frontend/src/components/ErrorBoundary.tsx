@@ -7,6 +7,7 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import i18next from 'i18next';
 import { Button } from '@/components/public/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
@@ -55,17 +56,16 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="h-16 w-16 text-yellow-500" />
             </div>
 
-            <h1 className="text-2xl font-light">Something went wrong</h1>
+            <h1 className="text-2xl font-light">{i18next.t('common:errors.somethingWentWrong')}</h1>
 
-            <p className="text-zinc-400">
-              We're sorry for the inconvenience. An unexpected error occurred. Please try refreshing
-              the page.
-            </p>
+            <p className="text-zinc-400">{i18next.t('common:errors.unexpectedError')}</p>
 
             {/* Show error message in development */}
             {import.meta.env.DEV && this.state.error && (
               <div className="mt-4 p-4 bg-zinc-900 border border-zinc-800 rounded-lg text-left">
-                <p className="text-xs text-zinc-500 mb-2">Error details (dev only):</p>
+                <p className="text-xs text-zinc-500 mb-2">
+                  {i18next.t('common:errors.devDetails')}
+                </p>
                 <pre className="text-xs text-red-400 overflow-x-auto">
                   {this.state.error.message}
                 </pre>
@@ -74,7 +74,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="flex justify-center gap-4">
               <Button onClick={this.handleReset} className="bg-blue-600 hover:bg-blue-700">
-                Refresh Page
+                {i18next.t('common:errors.refreshPage')}
               </Button>
 
               <Button
@@ -82,7 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="outline"
                 className="border-zinc-700 hover:bg-zinc-900"
               >
-                Go to Home
+                {i18next.t('common:errors.goHome')}
               </Button>
             </div>
           </div>

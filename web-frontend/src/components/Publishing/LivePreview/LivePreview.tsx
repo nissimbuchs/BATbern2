@@ -16,6 +16,7 @@ import {
   Print as PrintIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import { PublishingPhase, PublishingMode } from '@/types/event.types';
 
@@ -33,6 +34,7 @@ export interface LivePreviewProps {
 }
 
 export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode }) => {
+  const { t } = useTranslation('organizer');
   const { preview, fetchPreview, isLoadingPreview, previewError } = usePublishing(eventCode);
   const [device, setDevice] = useState<DeviceType>('desktop');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -67,7 +69,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
   const handleDeviceChange = (_: React.MouseEvent<HTMLElement>, newDevice: DeviceType | null) => {
     if (newDevice !== null) {
       setDevice(newDevice);
-      setDeviceAnnouncement(`Switched to ${newDevice} preview`);
+      setDeviceAnnouncement(t('livePreview.switchedTo', { device: newDevice }));
       // Clear announcement after brief delay
       setTimeout(() => setDeviceAnnouncement(''), 100);
     }
@@ -125,27 +127,31 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
           value={device}
           exclusive
           onChange={handleDeviceChange}
-          aria-label="device preview mode"
+          aria-label={t('livePreview.devicePreviewMode')}
         >
           <ToggleButton
             value="desktop"
-            aria-label="Desktop preview"
+            aria-label={t('livePreview.desktopPreview')}
             aria-pressed={device === 'desktop'}
           >
             <DesktopIcon sx={{ mr: 1 }} />
-            Desktop
+            {t('livePreview.desktop')}
           </ToggleButton>
           <ToggleButton
             value="mobile"
-            aria-label="Mobile preview"
+            aria-label={t('livePreview.mobilePreview')}
             aria-pressed={device === 'mobile'}
           >
             <MobileIcon sx={{ mr: 1 }} />
-            Mobile
+            {t('livePreview.mobile')}
           </ToggleButton>
-          <ToggleButton value="print" aria-label="Print preview" aria-pressed={device === 'print'}>
+          <ToggleButton
+            value="print"
+            aria-label={t('livePreview.printPreview')}
+            aria-pressed={device === 'print'}
+          >
             <PrintIcon sx={{ mr: 1 }} />
-            Print
+            {t('livePreview.print')}
           </ToggleButton>
         </ToggleButtonGroup>
 
@@ -153,8 +159,8 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
         <IconButton
           onClick={handleRefresh}
           disabled={isRefreshing || isLoadingPreview}
-          aria-label="Refresh preview"
-          title="Refresh preview"
+          aria-label={t('livePreview.refreshPreview')}
+          title={t('livePreview.refreshPreview')}
         >
           <RefreshIcon sx={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
         </IconButton>
@@ -192,7 +198,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
           >
             <BATbernLoader size={96} data-testid="preview-loading-spinner" />
             <Typography variant="body2" color="text.secondary">
-              Refreshing preview...
+              {t('livePreview.refreshingPreview')}
             </Typography>
           </Box>
         )}
@@ -213,11 +219,11 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
               severity="error"
               action={
                 <Button color="inherit" size="small" onClick={handleRetry}>
-                  Retry
+                  {t('common:actions.retry')}
                 </Button>
               }
             >
-              Failed to load preview. Please try again.
+              {t('livePreview.failedToLoad')}
             </Alert>
           </Box>
         )}
@@ -228,8 +234,8 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
             ref={iframeRef}
             data-testid="preview-iframe"
             src={getPreviewUrl()}
-            title="Event preview"
-            aria-label="Event content preview"
+            title={t('livePreview.iframeTitle')}
+            aria-label={t('livePreview.iframeAriaLabel')}
             className={device}
             style={{
               width: dimensions.width,
@@ -246,11 +252,17 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
       {/* Preview Info */}
       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="caption" color="text.secondary">
-          Preview Mode: {mode || 'Progressive'} | Phase: {phase || 'Topic'}
+          {t('livePreview.previewModeCaption', {
+            mode: mode || 'Progressive',
+            phase: phase || 'Topic',
+          })}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Device: {device.charAt(0).toUpperCase() + device.slice(1)} ({dimensions.width} x{' '}
-          {dimensions.height})
+          {t('livePreview.deviceCaption', {
+            device: device.charAt(0).toUpperCase() + device.slice(1),
+            width: dimensions.width,
+            height: dimensions.height,
+          })}
         </Typography>
       </Box>
 

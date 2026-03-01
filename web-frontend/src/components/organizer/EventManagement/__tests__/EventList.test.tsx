@@ -34,6 +34,8 @@ vi.mock('react-i18next', () => ({
         'workflow.states.created': 'Created',
         'workflow.states.topic_selection': 'Topic Selection',
         'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
+        'accessibility.eventList': 'Event list',
+        'accessibility.noEventsFound': 'No events found',
       };
 
       // Handle pluralization for eventCount

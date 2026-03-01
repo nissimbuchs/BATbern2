@@ -125,7 +125,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await page.goto(`${BASE_URL}/organizer/events/${eventCode}/speakers/status`);
 
       // Verify dashboard displays status lanes - Story 5.4 AC5, AC7
-      await expect(page.locator('h2')).toContainText('Speaker Status');
+      await expect(page.getByRole('heading', { name: /Speaker Status/i })).toBeVisible();
       await expect(page.locator('[data-testid="speaker-status-dashboard"]')).toBeVisible();
 
       // Verify status lanes exist - Story 5.4 AC7
@@ -154,7 +154,9 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
 
       // Verify status change dialog opens - Story 5.4 AC2, AC4
       await expect(page.locator('[data-testid="status-change-dialog"]')).toBeVisible();
-      await expect(page.locator('h2')).toContainText('Change Speaker Status');
+      await expect(
+        page.locator('[data-testid="status-change-dialog"]').getByRole('heading')
+      ).toContainText('Change Speaker Status');
 
       // Fill optional reason - Story 5.4 AC4
       await page.fill(
@@ -163,7 +165,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       );
 
       // Confirm change
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Verify dialog closes
       await expect(page.locator('[data-testid="status-change-dialog"]')).not.toBeVisible();
@@ -198,7 +200,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
 
       // Fill reason and confirm
       await page.fill('[data-testid="status-change-reason"]', 'Contacted via phone');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Verify speaker moved to CONTACTED lane
       await expect(
@@ -236,10 +238,10 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
         '[data-testid="status-change-reason"]',
         'Email sent with presentation details'
       );
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Open status history - Story 5.4 AC15, AC16
-      await speakerCard.locator('button:has-text("View History")').click();
+      await speakerCard.getByRole('button', { name: /View History/i }).click();
 
       // Verify history timeline - Story 5.4 AC3
       const timeline = page.locator('[data-testid="status-history-timeline"]');
@@ -356,7 +358,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Contacted")');
       await page.fill('[data-testid="status-change-reason"]', 'Valid transition');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Verify success
       await expect(
@@ -383,19 +385,19 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Contacted")');
       await page.fill('[data-testid="status-change-reason"]', 'Step 1');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // CONTACTED → READY
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Ready")');
       await page.fill('[data-testid="status-change-reason"]', 'Step 2');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // READY → ACCEPTED
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Accepted")');
       await page.fill('[data-testid="status-change-reason"]', 'Step 3');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Now try invalid transition: ACCEPTED → DECLINED
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
@@ -450,7 +452,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Contacted")');
       await page.fill('[data-testid="status-change-reason"]', 'API test');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       const response = await responsePromise;
       expect(response.status()).toBe(200);
@@ -473,7 +475,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Contacted")');
       await page.fill('[data-testid="status-change-reason"]', 'First change');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Intercept history API call
       const responsePromise = page.waitForResponse(
@@ -482,7 +484,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       );
 
       // View history
-      await speakerCard.locator('button:has-text("View History")').click();
+      await speakerCard.getByRole('button', { name: /View History/i }).click();
 
       const response = await responsePromise;
       expect(response.status()).toBe(200);
@@ -553,7 +555,7 @@ test.describe('Speaker Status Management (Story 5.4)', () => {
       await speakerCard.locator('[data-testid="status-dropdown"]').click();
       await page.click('[role="option"]:has-text("Contacted")');
       await page.fill('[data-testid="status-change-reason"]', 'This should fail');
-      await page.click('button:has-text("Change Status")');
+      await page.getByTestId('status-change-confirm').click();
 
       // Verify error message
       await expect(page.locator('[role="alert"]')).toContainText('Failed to update status');

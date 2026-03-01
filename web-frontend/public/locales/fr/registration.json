@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Annulation de votre inscription...",
+      "message": "Veuillez patienter pendant que nous traitons votre annulation."
+    },
+    "success": {
+      "title": "Inscription annulée",
+      "subtitle": "Votre inscription a été annulée avec succès",
+      "whatHappened": "Que s'est-il passé ?",
+      "permanentDeletion": "Suppression définitive",
+      "permanentDeletionText": "Votre inscription a été définitivement supprimée de notre système.",
+      "noFurtherAction": "Aucune action supplémentaire",
+      "noFurtherActionText": "Vous ne recevrez plus aucune communication concernant cet événement.",
+      "registerAgain": "S'inscrire à nouveau",
+      "registerAgainText": "Si vous changez d'avis, vous pouvez vous réinscrire à tout moment avant l'événement.",
+      "backToHome": "Retour à l'accueil",
+      "registerForAnother": "S'inscrire à un autre événement"
+    },
+    "error": {
+      "title": "Échec de l'annulation",
+      "subtitle": "Impossible d'annuler votre inscription",
+      "whatCanYouDo": "Que pouvez-vous faire ?",
+      "checkLink": "Vérifiez que vous avez cliqué sur le bon lien dans votre e-mail",
+      "expired": "Les liens d'annulation expirent après 48 heures",
+      "alreadyCancelled": "L'inscription a peut-être déjà été annulée",
+      "useLatestEmail": "Assurez-vous d'utiliser le dernier e-mail reçu",
+      "contactSupport": "Contactez le support si le problème persiste",
+      "errors": {
+        "expired": "Le lien d'annulation a expiré (valide pendant 48 heures).",
+        "invalid": "Lien d'annulation invalide. Veuillez vérifier votre e-mail pour obtenir le lien correct.",
+        "notFound": "Inscription introuvable ou déjà annulée.",
+        "default": "Échec de l'annulation de l'inscription. Veuillez réessayer ou contacter le support."
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "Chargement de la confirmation...",
+    "notFound": {
+      "title": "Inscription introuvable",
+      "message": "Veuillez vérifier votre code de confirmation et réessayer."
+    },
+    "copyCode": "Copier le code de confirmation",
+    "qrCodeAlt": "QR Code d'inscription",
+    "qrCodeTitle": "Votre QR Code d'enregistrement",
+    "detailsTitle": "Détails de l'inscription",
+    "shareLabel": "Partager avec votre réseau :",
+    "registerAnother": "Inscrire une autre personne",
+    "viewEventDetails": "Voir les détails de l'événement"
+  },
+  "successPage": {
+    "pendingTitle": "Inscription en attente",
+    "pendingMessage": "Si vous avez soumis une inscription, veuillez vérifier votre e-mail pour le lien de confirmation.",
+    "pendingLinkValidity": "Le lien de confirmation est valable 48 heures.",
+    "title": "Inscription soumise !",
+    "subtitle": "Vérifiez votre e-mail pour confirmer votre inscription",
+    "emailSentTitle": "E-mail de confirmation envoyé",
+    "noEmailTitle": "Vous n'avez pas reçu l'e-mail ?",
+    "noEmailCheck1": "Vérifiez votre dossier spam/indésirables",
+    "noEmailCheck2": "Assurez-vous d'avoir saisi la bonne adresse e-mail",
+    "noEmailCheck3": "Attendez quelques minutes et vérifiez à nouveau",
+    "createAccountTitle": "Créez un compte pour gérer vos inscriptions",
+    "createAccountText": "Après confirmation de votre inscription par e-mail, vous pouvez créer un compte pour consulter et gérer toutes vos inscriptions."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Vos coordonnées",
+      "step2Progress": "2. Confirmer l'inscription",
+      "step1Title": "Étape 1 : Vos coordonnées",
+      "step2Title": "Étape 2 : Confirmer l'inscription"
+    },
+    "buttons": {
+      "edit": "Modifier",
+      "cancel": "Annuler",
+      "back": "← Retour",
+      "next": "Suivant →",
+      "complete": "Finaliser l'inscription",
+      "submitting": "Envoi en cours..."
+    },
+    "errors": {
+      "fillRequired": "Veuillez remplir tous les champs obligatoires correctement.",
+      "acceptTerms": "Vous devez accepter les conditions d'utilisation pour vous inscrire.",
+      "failed": "Échec de l'inscription. Veuillez réessayer."
+    },
+    "cancelConfirm": "Êtes-vous sûr(e) de vouloir annuler l'inscription ?"
+  },
+  "personalDetails": {
+    "title": "Informations personnelles",
+    "subtitle": "Veuillez fournir vos coordonnées pour vous inscrire à l'événement.",
+    "fields": {
+      "firstName": "Prénom *",
+      "lastName": "Nom de famille *",
+      "emailAddress": "Adresse e-mail *",
+      "emailHelper": "Nous enverrons votre billet et les mises à jour ici",
+      "company": "Entreprise *",
+      "role": "Fonction *"
+    },
+    "validation": {
+      "firstNameRequired": "Le prénom est obligatoire",
+      "lastNameRequired": "Le nom de famille est obligatoire",
+      "invalidEmail": "Adresse e-mail invalide",
+      "companyRequired": "L'entreprise est obligatoire",
+      "roleRequired": "La fonction est obligatoire"
+    },
+    "placeholders": {
+      "firstName": "Jean",
+      "lastName": "Dupont",
+      "email": "jean.dupont@entreprise.ch",
+      "company": "Rechercher votre entreprise...",
+      "role": "Développeur senior"
+    }
+  },
+  "confirmStep": {
+    "title": "Vérifier et confirmer",
+    "subtitle": "Veuillez vérifier vos informations et finaliser votre inscription.",
+    "personalInfo": "Informations personnelles",
+    "commPref": {
+      "title": "Préférences de communication",
+      "reminders": "M'envoyer des rappels (1 semaine et 1 jour avant)",
+      "newsletter": "S'abonner à la newsletter BATbern (mises à jour mensuelles)"
+    },
+    "specialRequests": {
+      "label": "Demandes spéciales",
+      "optional": "(Optionnel)",
+      "placeholder": "Exigences alimentaires, besoins d'accessibilité, etc.",
+      "helper": "Indiquez-nous vos besoins alimentaires ou d'accessibilité."
+    },
+    "terms": {
+      "prefix": "J'accepte les",
+      "termsLink": "conditions d'utilisation",
+      "separator": "et la",
+      "privacyLink": "politique de confidentialité",
+      "required": "*",
+      "error": "Vous devez accepter les conditions d'utilisation pour finaliser l'inscription."
+    },
+    "account": {
+      "title": "Vous souhaitez gérer toutes vos inscriptions au même endroit ?",
+      "message": "Après votre inscription, vous pouvez créer un compte gratuit pour consulter votre historique d'inscriptions."
+    }
+  },
+  "success": {
+    "title": "Inscription soumise !",
+    "subtitle": "Vérifiez votre e-mail pour confirmer votre inscription",
+    "emailSent": "E-mail de confirmation envoyé",
+    "emailSentTo": "Nous avons envoyé un e-mail de confirmation à",
+    "clickLink": "Cliquez sur le lien dans l'e-mail pour confirmer votre inscription.",
+    "validFor": "Ce lien est valable",
+    "valid": "24 heures",
+    "didntReceive": "Vous n'avez pas reçu l'e-mail ?",
+    "checkSpam": "Vérifiez votre dossier spam",
+    "checkEmail": "Vérifiez que l'adresse e-mail est correcte",
+    "waitMinutes": "Attendez quelques minutes et réessayez",
+    "close": "Fermer"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirmation de votre inscription...",
+      "message": "Veuillez patienter pendant que nous traitons votre confirmation."
+    },
+    "success": {
+      "title": "Inscription confirmée !",
+      "subtitle": "Vous êtes prêt pour l'événement",
+      "whatsNext": "Et maintenant ?",
+      "checkIn": "Enregistrement à l'événement",
+      "checkInText": "Présentez votre pièce d'identité à l'accueil de l'événement. Votre inscription confirmée sera dans notre système.",
+      "eventDetails": "Détails de l'événement",
+      "eventDetailsText": "Vous recevrez des mises à jour et des rappels concernant l'événement par e-mail.",
+      "createAccount": "Créer un compte pour gérer vos inscriptions"
+    },
+    "alreadyConfirmed": {
+      "title": "Déjà confirmé",
+      "subtitle": "Cette inscription a déjà été confirmée"
+    },
+    "error": {
+      "title": "Échec de la confirmation",
+      "whatCanYouDo": "Que pouvez-vous faire ?",
+      "checkLink": "Vérifiez que vous avez cliqué sur le bon lien dans votre e-mail",
+      "expired": "Les liens de confirmation expirent après 48 heures - vous devrez peut-être vous réinscrire",
+      "useLatestEmail": "Assurez-vous d'utiliser le dernier e-mail de confirmation",
+      "contactSupport": "Contactez le support si le problème persiste",
+      "registerAgain": "S'inscrire à nouveau"
+    }
+  },
+  "companySearch": {
+    "error": "Erreur lors du chargement des entreprises",
+    "noResults": "Aucune entreprise existante trouvée",
+    "createNew": "Vous pouvez continuer avec \"{{value}}\" comme nouvelle entreprise",
+    "minChars": "Saisissez au moins 2 caractères pour rechercher"
+  }
+}

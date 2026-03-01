@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileText, X, AlertCircle, ExternalLink } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService } from '@/services/speakerPortalService';
@@ -51,6 +52,7 @@ const PresentationUpload = ({
   onMaterialUploaded,
   onError,
 }: PresentationUploadProps) => {
+  const { t } = useTranslation();
   // State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -88,7 +90,7 @@ const PresentationUpload = ({
         ALLOWED_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(extension);
 
       if (!isValidType) {
-        const errorMsg = 'Invalid file type. Accepted formats: PPTX, PDF, KEY';
+        const errorMsg = t('speakerPortal.upload.invalidFileType');
         setError(errorMsg);
         onError({ type: 'INVALID_FILE_TYPE', message: errorMsg });
         return false;
@@ -96,7 +98,7 @@ const PresentationUpload = ({
 
       // Validate file size (AC7.4)
       if (file.size > MAX_FILE_SIZE) {
-        const errorMsg = 'File size must be less than 50MB';
+        const errorMsg = t('speakerPortal.upload.fileTooLarge');
         setError(errorMsg);
         onError({ type: 'FILE_TOO_LARGE', message: errorMsg });
         return false;
@@ -258,7 +260,7 @@ const PresentationUpload = ({
               {currentMaterialName}
               <ExternalLink className="h-3 w-3 inline-block ml-1" />
             </a>
-            <p className="text-sm text-gray-500">Presentation file</p>
+            <p className="text-sm text-gray-500">{t('speakerPortal.upload.presentationFile')}</p>
           </div>
         </div>
         <button
@@ -266,7 +268,7 @@ const PresentationUpload = ({
           onClick={handleChangeFile}
           className="text-sm text-blue-400 hover:text-blue-300 transition-colors self-start"
         >
-          Change file
+          {t('speakerPortal.upload.changeFile')}
         </button>
       </div>
     );
@@ -302,7 +304,7 @@ const PresentationUpload = ({
           accept={[...ALLOWED_TYPES, ...ALLOWED_EXTENSIONS.map((ext) => `.${ext}`)].join(',')}
           onChange={handleFileChange}
           className="hidden"
-          aria-label="Upload presentation file"
+          aria-label={t('speakerPortal.upload.uploadAria')}
         />
 
         {isUploading ? (
@@ -313,8 +315,10 @@ const PresentationUpload = ({
         ) : (
           <>
             <Upload className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-white font-medium mb-1">Drag and drop your presentation here</p>
-            <p className="text-gray-400 text-sm">or click to browse</p>
+            <p className="text-white font-medium mb-1">
+              {t('speakerPortal.upload.dragDropPresentation')}
+            </p>
+            <p className="text-gray-400 text-sm">{t('speakerPortal.upload.orClickBrowse')}</p>
           </>
         )}
       </div>
@@ -323,7 +327,7 @@ const PresentationUpload = ({
       {isUploading && (
         <div role="status" aria-live="polite">
           <div className="flex justify-between text-sm text-gray-400 mb-1">
-            <span>Uploading...</span>
+            <span>{t('speakerPortal.upload.uploading')}</span>
             <span>{uploadProgress}%</span>
           </div>
           <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -342,7 +346,7 @@ const PresentationUpload = ({
       {/* Instructions */}
       {!isUploading && (
         <p className="text-xs text-gray-500 text-center">
-          Accepted formats: PPTX, PDF, KEY (max 50MB)
+          {t('speakerPortal.upload.acceptedFormats')}
         </p>
       )}
 
@@ -363,10 +367,10 @@ const PresentationUpload = ({
           type="button"
           onClick={handleCancel}
           className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 transition-colors self-center"
-          aria-label="Cancel"
+          aria-label={t('speakerPortal.photo.cancel')}
         >
           <X className="h-4 w-4" />
-          Cancel
+          {t('speakerPortal.photo.cancel')}
         </button>
       )}
     </div>

@@ -34,6 +34,124 @@
       }
     }
   },
+  "confirmationPage": {
+    "loading": "Bestätigung wird geladen...",
+    "notFound": {
+      "title": "Anmeldung nicht gefunden",
+      "message": "Bitte überprüfen Sie Ihren Bestätigungscode und versuchen Sie es erneut."
+    },
+    "copyCode": "Bestätigungscode kopieren",
+    "qrCodeAlt": "Anmeldungs-QR-Code",
+    "qrCodeTitle": "Ihr Check-In-QR-Code",
+    "detailsTitle": "Anmeldungsdetails",
+    "shareLabel": "Mit Ihrem Netzwerk teilen:",
+    "registerAnother": "Weitere Person anmelden",
+    "viewEventDetails": "Veranstaltungsdetails anzeigen"
+  },
+  "successPage": {
+    "pendingTitle": "Anmeldung ausstehend",
+    "pendingMessage": "Falls Sie eine Anmeldung eingereicht haben, prüfen Sie Ihre E-Mail für den Bestätigungslink.",
+    "pendingLinkValidity": "Der Bestätigungslink ist 48 Stunden gültig.",
+    "title": "Anmeldung eingereicht!",
+    "subtitle": "Prüfen Sie Ihre E-Mail, um Ihre Anmeldung zu bestätigen",
+    "emailSentTitle": "Bestätigungs-E-Mail gesendet",
+    "noEmailTitle": "Keine E-Mail erhalten?",
+    "noEmailCheck1": "Spam-/Junk-Ordner prüfen",
+    "noEmailCheck2": "Stellen Sie sicher, dass Sie die richtige E-Mail-Adresse eingegeben haben",
+    "noEmailCheck3": "Einige Minuten warten und erneut prüfen",
+    "createAccountTitle": "Erstellen Sie ein Konto, um Ihre Anmeldungen zu verwalten",
+    "createAccountText": "Nach der Bestätigung Ihrer Anmeldung per E-Mail können Sie ein Konto erstellen, um alle Ihre Veranstaltungsanmeldungen an einem Ort zu verwalten."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Ihre Angaben",
+      "step2Progress": "2. Anmeldung bestätigen",
+      "step1Title": "Schritt 1: Ihre Angaben",
+      "step2Title": "Schritt 2: Anmeldung bestätigen"
+    },
+    "buttons": {
+      "edit": "Bearbeiten",
+      "cancel": "Abbrechen",
+      "back": "← Zurück",
+      "next": "Weiter →",
+      "complete": "Anmeldung abschliessen",
+      "submitting": "Wird gesendet..."
+    },
+    "errors": {
+      "fillRequired": "Bitte füllen Sie alle Pflichtfelder korrekt aus.",
+      "acceptTerms": "Sie müssen den Nutzungsbedingungen zustimmen, um sich anzumelden.",
+      "failed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "cancelConfirm": "Möchten Sie die Anmeldung wirklich abbrechen?"
+  },
+  "personalDetails": {
+    "title": "Persönliche Informationen",
+    "subtitle": "Bitte geben Sie Ihre Angaben ein, um sich für die Veranstaltung anzumelden.",
+    "fields": {
+      "firstName": "Vorname *",
+      "lastName": "Nachname *",
+      "emailAddress": "E-Mail-Adresse *",
+      "emailHelper": "Wir senden Ihr Ticket und Veranstaltungsupdates an diese Adresse",
+      "company": "Unternehmen *",
+      "role": "Funktion *"
+    },
+    "validation": {
+      "firstNameRequired": "Vorname ist erforderlich",
+      "lastNameRequired": "Nachname ist erforderlich",
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "companyRequired": "Unternehmen ist erforderlich",
+      "roleRequired": "Funktion ist erforderlich"
+    },
+    "placeholders": {
+      "firstName": "Hans",
+      "lastName": "Müller",
+      "email": "hans.mueller@unternehmen.ch",
+      "company": "Ihr Unternehmen suchen...",
+      "role": "Senior Entwickler"
+    }
+  },
+  "confirmStep": {
+    "title": "Überprüfen & Bestätigen",
+    "subtitle": "Bitte überprüfen Sie Ihre Angaben und schliessen Sie die Anmeldung ab.",
+    "personalInfo": "Persönliche Informationen",
+    "commPref": {
+      "title": "Kommunikationseinstellungen",
+      "reminders": "Veranstaltungserinnerungen senden (1 Woche und 1 Tag vorher)",
+      "newsletter": "BATbern-Newsletter abonnieren (monatliche Updates)"
+    },
+    "specialRequests": {
+      "label": "Besondere Wünsche",
+      "optional": "(Optional)",
+      "placeholder": "Ernährungsanforderungen, Barrierefreiheitsbedürfnisse, etc.",
+      "helper": "Teilen Sie uns Ihre Ernährungsanforderungen oder Barrierefreiheitsbedürfnisse mit."
+    },
+    "terms": {
+      "prefix": "Ich stimme den",
+      "termsLink": "Nutzungsbedingungen",
+      "separator": "und der",
+      "privacyLink": "Datenschutzerklärung",
+      "required": "*",
+      "error": "Sie müssen den Nutzungsbedingungen zustimmen, um die Anmeldung abzuschliessen."
+    },
+    "account": {
+      "title": "Möchten Sie alle Ihre Anmeldungen an einem Ort verwalten?",
+      "message": "Nach der Anmeldung können Sie ein kostenloses Konto erstellen, um Ihre Anmeldungshistorie einzusehen, Präferenzen zu aktualisieren und personalisierte Veranstaltungsempfehlungen zu erhalten."
+    }
+  },
+  "success": {
+    "title": "Anmeldung eingereicht!",
+    "subtitle": "Prüfen Sie Ihre E-Mail, um Ihre Anmeldung zu bestätigen",
+    "emailSent": "Bestätigungs-E-Mail gesendet",
+    "emailSentTo": "Wir haben eine Bestätigungs-E-Mail gesendet an",
+    "clickLink": "Klicken Sie auf den Link in der E-Mail, um Ihre Anmeldung zu bestätigen.",
+    "validFor": "Dieser Link ist gültig für",
+    "valid": "24 Stunden",
+    "didntReceive": "Keine E-Mail erhalten?",
+    "checkSpam": "Spam-Ordner überprüfen",
+    "checkEmail": "E-Mail-Adresse überprüfen",
+    "waitMinutes": "Einige Minuten warten und erneut versuchen",
+    "close": "Schliessen"
+  },
   "confirmation": {
     "loading": {
       "title": "Ihre Registrierung wird bestätigt...",
@@ -47,30 +165,26 @@
       "checkInText": "Zeigen Sie Ihren Ausweis am Veranstaltungsschalter vor. Wir haben Ihre bestätigte Registrierung hinterlegt.",
       "eventDetails": "Veranstaltungsdetails",
       "eventDetailsText": "Sie erhalten Veranstaltungsaktualisierungen und Erinnerungen per E-Mail.",
-      "backToHome": "Zurück zur Startseite",
       "createAccount": "Konto erstellen, um Registrierungen zu verwalten"
     },
     "alreadyConfirmed": {
       "title": "Bereits bestätigt",
-      "subtitle": "Diese Registrierung wurde bereits bestätigt",
-      "message": "Ihre Registrierung wurde zuvor bestätigt. Es ist keine weitere Aktion erforderlich.",
-      "backToHome": "Zurück zur Startseite"
+      "subtitle": "Diese Registrierung wurde bereits bestätigt"
     },
     "error": {
       "title": "Bestätigung fehlgeschlagen",
-      "subtitle": "Ihre Registrierung konnte nicht bestätigt werden",
       "whatCanYouDo": "Was können Sie tun?",
       "checkLink": "Überprüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail angeklickt haben",
       "expired": "Bestätigungslinks sind 48 Stunden gültig - möglicherweise müssen Sie sich erneut registrieren",
       "useLatestEmail": "Stellen Sie sicher, dass Sie die neueste Bestätigungs-E-Mail verwenden",
       "contactSupport": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht",
-      "backToHome": "Zurück zur Startseite",
-      "registerAgain": "Erneut registrieren",
-      "errors": {
-        "expired": "Der Bestätigungslink ist abgelaufen. Bitte registrieren Sie sich erneut.",
-        "invalid": "Ungültiger Bestätigungslink. Bitte überprüfen Sie Ihre E-Mail auf den richtigen Link.",
-        "default": "Die Bestätigung der Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support."
-      }
+      "registerAgain": "Erneut registrieren"
     }
+  },
+  "companySearch": {
+    "error": "Fehler beim Laden der Unternehmen",
+    "noResults": "Kein bestehendes Unternehmen gefunden",
+    "createNew": "Sie können mit \"{{value}}\" als neuem Unternehmen fortfahren",
+    "minChars": "Mindestens 2 Zeichen eingeben, um zu suchen"
   }
 }

@@ -1,0 +1,271 @@
+{
+  "title": "ユーザー管理",
+  "addUser": "ユーザーを追加",
+  "search": {
+    "placeholder": "名前またはメールで検索...",
+    "noResults": "ユーザーが見つかりません"
+  },
+  "filters": {
+    "clearAll": "すべてのフィルターをクリア",
+    "role": {
+      "label": "役割",
+      "all": "すべての役割"
+    },
+    "status": {
+      "active": "アクティブ",
+      "inactive": "非アクティブ"
+    }
+  },
+  "table": {
+    "viewUser": "ユーザー {{name}} を表示",
+    "headers": {
+      "roles": "役割"
+    },
+    "empty": "ユーザーが見つかりません"
+  },
+  "actions": {
+    "view": "表示",
+    "editRoles": "役割を編集"
+  },
+  "roles": {
+    "organizer": "オーガナイザー",
+    "speaker": "スピーカー",
+    "partner": "パートナー",
+    "attendee": "参加者",
+    "multiple": "{{count}} 個の役割"
+  },
+  "status": {
+    "active": "アクティブ",
+    "inactive": "非アクティブ"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "ユーザー詳細",
+      "createdAt": "作成日時",
+      "updatedAt": "最終更新日時"
+    },
+    "createUser": {
+      "title": "新しいユーザーを作成",
+      "firstName": "名",
+      "lastName": "姓",
+      "email": "メール",
+      "company": "会社（任意）",
+      "roles": "役割",
+      "selectRoles": "少なくとも1つの役割を選択してください",
+      "creating": "作成中..."
+    },
+    "editRoles": {
+      "title": "役割を編集",
+      "user": "ユーザー",
+      "selectRoles": "役割を選択",
+      "saving": "保存中..."
+    },
+    "deleteConfirm": {
+      "title": "ユーザーを削除",
+      "message": "このユーザーを削除してもよろしいですか？",
+      "gdprWarning": "GDPRに関する注意：このアクションはすべてのユーザーデータを完全に削除し、元に戻すことはできません。",
+      "cascadeWarning": "関連するすべてのデータも削除されます。"
+    },
+    "editUser": {
+      "uploadPhotoAria": "プロフィール写真をアップロード",
+      "removePhotoAria": "プロフィール写真を削除"
+    }
+  },
+  "pagination": {
+    "page": "{{total}} ページ中 {{page}} ページ",
+    "itemsPerPage": "1ページあたりの件数"
+  },
+  "loading": {
+    "users": "ユーザーを読み込み中...",
+    "search": "検索中...",
+    "save": "保存中...",
+    "updating": "更新中..."
+  },
+  "error": {
+    "required": "このフィールドは必須です",
+    "email": {
+      "invalid": "メールアドレスが無効です"
+    },
+    "minOneRole": "少なくとも1つの役割を選択する必要があります",
+    "loadFailed": "ユーザーの読み込みに失敗しました",
+    "createFailed": "ユーザーの作成に失敗しました",
+    "updateFailed": "ユーザーの更新に失敗しました",
+    "deleteFailed": "ユーザーの削除に失敗しました",
+    "notFound": "ユーザーが見つかりません"
+  },
+  "batchImport": {
+    "title": "スピーカーの一括インポート",
+    "dropzone": "speakers.json をここにドロップするか、クリックして参照",
+    "dropzoneActive": "ここにファイルをドロップ...",
+    "dropzoneHint": "apps/BATspa-old/src/api/ から speakers.json をアップロード",
+    "preview": "{{count}} 人のスピーカーをインポート",
+    "progress": "スピーカー {{current}} / {{total}} をインポート中...",
+    "complete": "インポート完了：{{success}} 件作成、{{updated}} 件更新、{{failed}} 件失敗、{{skipped}} 件スキップ",
+    "noSpeakers": "ファイルにスピーカーが見つかりません",
+    "checkingExisting": "既存のユーザーを確認中...",
+    "summary": "{{total}} 人のスピーカー：{{new}} 件新規、{{update}} 件更新、{{skip}} 件変更なし",
+    "cancelButton": "キャンセル",
+    "importButton": "{{new}} 件作成 / {{update}} 件更新",
+    "allSkipped": "インポートする変更はありません",
+    "status": {
+      "pending": "新規",
+      "importing": "インポート中...",
+      "success": "作成済み",
+      "updated": "更新済み",
+      "error": "エラー",
+      "skipped": "スキップ済み",
+      "noChanges": "変更なし",
+      "willUpdate": "更新予定：{{fields}}"
+    },
+    "errors": {
+      "invalidFile": "無効なファイルです。JSONファイルをアップロードしてください。",
+      "parseError": "ファイルの解析に失敗しました：{{error}}"
+    },
+    "hasPortrait": "プロフィール画像あり",
+    "noPortrait": "プロフィール画像なし"
+  },
+  "participantImport": {
+    "title": "CSVから参加者をインポート",
+    "dropzone": "CSVファイルをここにドラッグ＆ドロップ",
+    "dropzoneActive": "CSVファイルをここにドロップ",
+    "dropzoneHint": "またはクリックしてファイルを選択",
+    "fileLoaded": "ファイルを読み込みました：{{name}}（{{size}} KB）",
+    "preview": "プレビュー：{{count}} 人の参加者をインポート準備完了",
+    "previewLimitation": "注意：プレビューはユーザー名の一致のみで既存ユーザーを表示します。インポート時には、名前（名＋姓）が一意な場合にも一致する可能性があります。「新規」として表示されている参加者の一部が、名前で既存ユーザーに一致する場合があります。",
+    "importButton": "{{count}} 人の参加者をインポート",
+    "progress": "インポート中：{{current}} / {{total}}",
+    "summary": "インポートサマリー",
+    "status": {
+      "pending": "保留中",
+      "importing": "インポート中",
+      "success": "成功",
+      "error": "失敗",
+      "skipped": "スキップ済み"
+    },
+    "stats": {
+      "total": "合計：{{count}}",
+      "success": "成功：{{count}}",
+      "failed": "失敗：{{count}}",
+      "pending": "保留中：{{count}}"
+    },
+    "badges": {
+      "synthetic": "合成データ",
+      "eventsCount": "{{count}} 件のイベント",
+      "existing": "既存",
+      "new": "新規"
+    },
+    "aria": {
+      "statusLabel": "インポートステータス：{{label}}",
+      "dropzone": "CSVファイルのアップロードエリア。CSVファイルをドラッグ＆ドロップするかクリックして選択",
+      "fileInput": "CSVインポート用ファイル入力",
+      "previewTable": "参加者インポートプレビューテーブル",
+      "participantTable": "インポートステータス付き参加者",
+      "importProgress": "インポートの進行状況",
+      "closeModal": "インポートウィンドウを閉じる",
+      "startImport": "CSVファイルから参加者のインポートを開始",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "CSVの解析に失敗しました",
+    "importFailed": "インポートに失敗しました"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "概要",
+      "eventsParticipated": "参加イベント",
+      "ariaLabel": "User detail tabs"
+    },
+    "overviewText": "ユーザープロフィールの概要。ここに追加情報を記載できます。",
+    "eventsTable": {
+      "eventCode": "イベントコード",
+      "title": "タイトル",
+      "date": "日付",
+      "status": "ステータス",
+      "loadError": "イベント参加履歴の読み込みに失敗しました",
+      "noEvents": "このユーザーはまだどのイベントにも参加していません",
+      "untitledEvent": "無題のイベント",
+      "dateTBD": "未定",
+      "ariaLabel": "ユーザーが参加したイベントのテーブル",
+      "statusValues": {
+        "REGISTERED": "登録済み",
+        "CONFIRMED": "確認済み",
+        "ATTENDED": "参加済み",
+        "CANCELLED": "キャンセル済み",
+        "WAITLISTED": "キャンセル待ち"
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "アカウント",
+      "notifications": "通知",
+      "privacy": "プライバシー"
+    },
+    "account": {
+      "title": "アカウント設定",
+      "emailStatus": "メールアドレスは変更できません",
+      "changePassword": "パスワードを変更",
+      "theme": "テーマ",
+      "themeLight": "ライト",
+      "themeDark": "ダーク",
+      "themeAuto": "自動（システム設定に従う）",
+      "timezone": "タイムゾーン",
+      "save": "アカウント設定を保存"
+    },
+    "notifications": {
+      "title": "通知設定",
+      "epic7Notice": "高度な通知設定は今後のアップデートで追加される予定です。",
+      "channels": "通知チャンネル",
+      "channelEmail": "メール通知",
+      "channelInApp": "アプリ内通知",
+      "channelPush": "プッシュ通知",
+      "frequency": "通知頻度",
+      "frequencyImmediate": "即時",
+      "frequencyDaily": "日次ダイジェスト",
+      "frequencyWeekly": "週次ダイジェスト",
+      "save": "通知設定を保存"
+    },
+    "newsletter": {
+      "title": "ニュースレター",
+      "subscribe": "ニュースレターを購読",
+      "description": "BATbernイベントに関する毎月の更新を受け取る"
+    },
+    "privacy": {
+      "title": "プライバシー設定",
+      "visibility": "プロフィールの公開設定",
+      "visibilityPublic": "公開",
+      "visibilityMembersOnly": "メンバーのみ",
+      "visibilityPrivate": "プライベート",
+      "infoDisplay": "情報表示",
+      "showEmail": "メールアドレスを表示",
+      "showCompany": "所属企業を表示",
+      "showActivity": "アクティビティ履歴を表示",
+      "communication": "コミュニケーション",
+      "allowMessaging": "他のユーザーからのダイレクトメッセージを許可",
+      "viewPolicy": "プライバシーポリシーを見る",
+      "save": "プライバシー設定を保存"
+    }
+  },
+  "profile": {
+    "personalInfo": "個人情報",
+    "editProfile": "プロフィールを編集",
+    "firstName": "名",
+    "lastName": "姓",
+    "bio": "自己紹介",
+    "bioValidation": "自己紹介は{{max}}文字以内にしてください",
+    "saveChanges": "変更を保存",
+    "removePhotoConfirm": "プロフィール写真を削除してもよろしいですか？",
+    "labelName": "名前：",
+    "labelEmail": "メール：",
+    "labelCompany": "会社：",
+    "labelBio": "自己紹介：",
+    "recentActivity": "最近のアクティビティ",
+    "noActivity": "最近のアクティビティはありません",
+    "viewAll": "すべて見る →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "写真をアップロード",
+    "removeTooltip": "写真を削除",
+    "verified": "認証済み",
+    "memberSince": "{{date}}からのメンバー"
+  }
+}

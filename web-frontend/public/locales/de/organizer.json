@@ -1,19 +1,7 @@
 {
   "navigation": {
     "partners": "Partner",
-    "speakerOutreach": "Sprecher-Kontaktierung",
     "topicManagement": "Themenverwaltung"
-  },
-  "dashboard": {
-    "criticalTasks": "Kritische Aufgaben",
-    "noCriticalTasks": "Keine kritischen Aufgaben",
-    "greatJob": "Gute Arbeit!",
-    "taskCount": "{{count}} Aufgabe",
-    "taskCount_plural": "{{count}} Aufgaben",
-    "dueDate": "Fälligkeitsdatum",
-    "assignedTo": "Zugewiesen an {{name}}",
-    "confirmAction": "Aktion bestätigen",
-    "areYouSure": "Sind Sie sicher, dass Sie diese Aktion ausführen möchten?"
   },
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
@@ -153,7 +141,6 @@
         "message": "Die folgenden Themen weisen eine hohe Ähnlichkeit (>70%) mit Ihrer Auswahl auf. Möchten Sie wirklich fortfahren?",
         "similarity": "Ähnlichkeit",
         "justification": "Begründung (optional)",
-        "cancel": "Abbrechen",
         "confirm": "Trotzdem auswählen"
       },
       "override": {
@@ -161,16 +148,13 @@
         "message": "Dieses Thema wurde kürzlich verwendet (Veraltetheitsgrad: {{score}}%). Bitte geben Sie eine Begründung an, um es erneut zu verwenden.",
         "justification": "Begründung",
         "helper": "Erklären Sie, warum dieses Thema trotz seiner Aktualität wiederverwendet werden sollte",
-        "cancel": "Abbrechen",
         "confirm": "Überschreiben und auswählen"
       },
       "delete": {
         "title": "Thema löschen",
         "message": "Möchten Sie \"{{title}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "cannotDelete": "Dieses Thema kann nicht gelöscht werden, da es in {{count}} Veranstaltung(en) verwendet wurde.",
-        "cancel": "Abbrechen",
         "confirm": "Thema löschen",
-        "deleting": "Wird gelöscht...",
         "success": "Thema erfolgreich gelöscht",
         "error": "Fehler beim Löschen des Themas. Bitte versuchen Sie es erneut."
       }
@@ -184,7 +168,6 @@
       "company": "Unternehmen",
       "expertise": "Fachgebiet",
       "assignOrganizer": "Organisator zuweisen (Optional)",
-      "unassigned": "Nicht zugewiesen",
       "notes": "Notizen (Optional)",
       "addButton": "Zum Pool hinzufügen",
       "adding": "Wird hinzugefügt...",
@@ -195,7 +178,6 @@
       "empty": "Noch keine Referenten im Pool. Fügen Sie oben welche hinzu!",
       "expertise": "Fachgebiet",
       "assigned": "Zugewiesen an",
-      "notes": "Notizen",
       "error": "Fehler beim Laden des Referenten-Pools"
     },
     "actions": {
@@ -204,29 +186,11 @@
     }
   },
   "speakerOutreach": {
-    "title": "Referenten-Kontaktierung",
-    "subtitle": "Verfolgen Sie Ihre Kontaktversuche mit Referenten und koordinieren Sie mit anderen Organisatoren",
-    "breadcrumbs": {
-      "home": "Startseite",
-      "speakerOutreach": "Referenten-Kontaktierung"
-    },
-    "emptyPool": {
-      "message": "Sie müssen Referenten zum Pool hinzufügen, bevor Sie mit der Kontaktierung beginnen können.",
-      "hint": "Kehren Sie zur Veranstaltungsplanungsphase zurück, um potenzielle Referenten hinzuzufügen.",
-      "addSpeakers": "Referenten zum Pool hinzufügen"
-    },
-    "showBrainstorm": "Referenten hinzufügen",
-    "hideBrainstorm": "Hinzufügen ausblenden",
     "speakerName": "Referent",
     "contactMethod": "Kontaktmethode",
     "contactDate": "Kontaktdatum",
-    "notes": "Notizen",
     "markContacted": "Als kontaktiert markieren",
-    "filterByOrganizer": "Nach Organisator filtern",
     "contactHistory": "Kontaktverlauf",
-    "daysSinceAssignment": "Tage seit Zuweisung",
-    "overdue": "Überfällig",
-    "lastContact": "Letzter Kontakt",
     "outreachDetails": "Kontaktdetails",
     "noContactHistory": "Noch kein Kontaktverlauf vorhanden",
     "contactedBy": "Kontaktiert von",
@@ -245,10 +209,7 @@
         "loadHistory": "Fehler beim Laden des Kontaktverlaufs"
       }
     },
-    "bulkAction": {
-      "title": "Mehrere als kontaktiert markieren",
-      "confirm": "{{count}} Referenten als kontaktiert markieren?"
-    }
+    "emailPlaceholder": "speaker@example.com"
   },
   "speakerStatus": {
     "title": "Sprecher-Status",
@@ -266,7 +227,6 @@
     "changeStatus": "Status ändern",
     "changeReason": "Grund für Statusänderung (optional)",
     "confirmChange": "Status ändern",
-    "cancelChange": "Abbrechen",
     "statusChanged": "Status erfolgreich geändert",
     "invalidTransition": "Ungültiger Statusübergang von {{from}} zu {{to}}",
     "historyTitle": "Status-Verlauf",
@@ -292,7 +252,6 @@
     "createNewSpeaker": "Neuen Sprecher erstellen",
     "form": {
       "username": "Sprecher suchen",
-      "usernameHelp": "Geben Sie den Benutzernamen des Sprechers ein",
       "presentationTitle": "Präsentationstitel",
       "presentationAbstract": "Präsentationszusammenfassung",
       "charactersRemaining": "Zeichen verbleibend"
@@ -337,11 +296,8 @@
   },
   "speakers": {
     "invite": "Einladen",
-    "sendInvite": "Einladung senden",
     "sendInvitation": "Einladung senden",
-    "confirmInvite": "Einladung an diesen Sprecher senden?",
     "noEmailTooltip": "E-Mail hinzufügen zum Einladen",
-    "inviting": "Wird gesendet...",
     "sending": "Wird gesendet...",
     "inviteSent": "Einladung gesendet",
     "invitationSent": "Einladung gesendet an {{email}}",
@@ -407,7 +363,6 @@
     "tabs": {
       "overview": "Übersicht",
       "attendance": "Teilnahme",
-      "topics": "Themen",
       "companies": "Unternehmen"
     },
     "kpi": {
@@ -447,8 +402,7 @@
       "allEvents": "Alle Veranstaltungen",
       "sessions": "Sessions",
       "speakers": "Speaker",
-      "attendees": "Teilnehmende",
-      "yourCompany": "Ihr Unternehmen"
+      "attendees": "Teilnehmende"
     }
   },
   "blobSelector": {
@@ -465,6 +419,27 @@
       "confirm": "Dieses Thema wählen",
       "cancel": "Weiter erkunden",
       "saveError": "Themenauswahl konnte nicht gespeichert werden. Bitte erneut versuchen."
-    }
+    },
+    "noEventCode": "Kein Veranstaltungscode angegeben"
+  },
+  "livePreview": {
+    "devicePreviewMode": "Gerätvorschaumodus",
+    "desktopPreview": "Desktop-Vorschau",
+    "mobilePreview": "Mobile Vorschau",
+    "printPreview": "Druckvorschau",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "print": "Drucken",
+    "refreshPreview": "Vorschau aktualisieren",
+    "switchedTo": "Zu {{device}}-Vorschau gewechselt",
+    "refreshingPreview": "Vorschau wird aktualisiert...",
+    "failedToLoad": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "iframeTitle": "Veranstaltungsvorschau",
+    "iframeAriaLabel": "Inhalt der Veranstaltungsvorschau",
+    "previewModeCaption": "Vorschaumodus: {{mode}} | Phase: {{phase}}",
+    "deviceCaption": "Gerät: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
   }
 }

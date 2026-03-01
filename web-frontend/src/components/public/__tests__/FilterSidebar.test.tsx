@@ -18,11 +18,12 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'archive.filters.title': 'Filters',
+        'filters.ariaLabel': 'Event filters',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',
         'archive.filters.activeCount': '{{count}} active filters',
-        'archive.sort.label': 'Sort By',
+        'labels.sortBy': 'Sort By',
         'archive.sort.newest': 'Newest First',
         'archive.sort.oldest': 'Oldest First',
         'archive.sort.mostAttended': 'Most Attended',
@@ -97,13 +98,13 @@ describe('FilterSidebar Component', () => {
     test('should_renderFilterTitle_when_mounted', () => {
       render(<FilterSidebar {...defaultProps} />);
 
-      expect(screen.getByText('Filters')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Filters/i })).toBeInTheDocument();
     });
 
     test('should_renderTopicsSection_when_mounted', () => {
       render(<FilterSidebar {...defaultProps} />);
 
-      expect(screen.getByText('Topics')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Topics/i })).toBeInTheDocument();
     });
 
     test('should_renderSearchInput_when_mounted', () => {
@@ -115,7 +116,7 @@ describe('FilterSidebar Component', () => {
     test('should_renderClearAllButton_when_mounted', () => {
       render(<FilterSidebar {...defaultProps} />);
 
-      expect(screen.getByText('Clear All Filters')).toBeInTheDocument();
+      expect(screen.getByTestId('clear-filters')).toBeInTheDocument();
     });
 
     test('should_renderSortSection_when_mounted', () => {
@@ -316,7 +317,7 @@ describe('FilterSidebar Component', () => {
         <FilterSidebar {...defaultProps} filters={activeFilters} onClearFilters={onClearFilters} />
       );
 
-      const clearButton = screen.getByText('Clear All Filters');
+      const clearButton = screen.getByTestId('clear-filters');
       await user.click(clearButton);
 
       expect(onClearFilters).toHaveBeenCalled();
@@ -325,7 +326,7 @@ describe('FilterSidebar Component', () => {
     test('should_disableClearButton_when_noFiltersActive', () => {
       render(<FilterSidebar {...defaultProps} filters={defaultFilters} />);
 
-      const clearButton = screen.getByText('Clear All Filters');
+      const clearButton = screen.getByTestId('clear-filters');
       expect(clearButton).toBeDisabled();
     });
 
@@ -337,7 +338,7 @@ describe('FilterSidebar Component', () => {
 
       render(<FilterSidebar {...defaultProps} filters={activeFilters} />);
 
-      const clearButton = screen.getByText('Clear All Filters');
+      const clearButton = screen.getByTestId('clear-filters');
       expect(clearButton).not.toBeDisabled();
     });
   });
@@ -346,7 +347,7 @@ describe('FilterSidebar Component', () => {
     test('should_displaySortDropdown_when_rendered', () => {
       render(<FilterSidebar {...defaultProps} />);
 
-      expect(screen.getByText('Sort By')).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /Sort By/i })).toBeInTheDocument();
     });
 
     test('should_displayAllSortOptions_when_dropdownOpened', async () => {
@@ -481,7 +482,7 @@ describe('FilterSidebar Component', () => {
     test('should_handleNoTopics_when_topicsArrayEmpty', () => {
       render(<FilterSidebar {...defaultProps} topics={[]} />);
 
-      expect(screen.getByText('Topics')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Topics/i })).toBeInTheDocument();
       // Should show "No topics available" or hide section
     });
 
@@ -516,7 +517,7 @@ describe('FilterSidebar Component', () => {
       render(<FilterSidebar {...defaultProps} topics={manyTopics} />);
 
       // Should show all topics or implement scrolling/pagination
-      expect(screen.getByText('Topics')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Topics/i })).toBeInTheDocument();
     });
   });
 });

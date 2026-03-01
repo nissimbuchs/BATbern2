@@ -1,0 +1,271 @@
+{
+  "title": "Gestion des utilisateurs",
+  "addUser": "Ajouter un utilisateur",
+  "search": {
+    "placeholder": "Rechercher par nom ou e-mail...",
+    "noResults": "Aucun utilisateur trouvé"
+  },
+  "filters": {
+    "clearAll": "Effacer tous les filtres",
+    "role": {
+      "label": "Rôle",
+      "all": "Tous les rôles"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    }
+  },
+  "table": {
+    "viewUser": "Voir l'utilisateur {{name}}",
+    "headers": {
+      "roles": "Rôles"
+    },
+    "empty": "Aucun utilisateur trouvé"
+  },
+  "actions": {
+    "view": "Voir",
+    "editRoles": "Modifier les rôles"
+  },
+  "roles": {
+    "organizer": "Organisateur",
+    "speaker": "Intervenant",
+    "partner": "Partenaire",
+    "attendee": "Participant",
+    "multiple": "{{count}} rôles"
+  },
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Détails de l'utilisateur",
+      "createdAt": "Créé le",
+      "updatedAt": "Dernière mise à jour"
+    },
+    "createUser": {
+      "title": "Créer un nouvel utilisateur",
+      "firstName": "Prénom",
+      "lastName": "Nom de famille",
+      "email": "E-mail",
+      "company": "Entreprise (optionnel)",
+      "roles": "Rôles",
+      "selectRoles": "Sélectionnez au moins un rôle",
+      "creating": "Création en cours..."
+    },
+    "editRoles": {
+      "title": "Modifier les rôles",
+      "user": "Utilisateur",
+      "selectRoles": "Sélectionner les rôles",
+      "saving": "Enregistrement..."
+    },
+    "deleteConfirm": {
+      "title": "Supprimer l'utilisateur",
+      "message": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+      "gdprWarning": "Avis RGPD : Cette action supprimera définitivement toutes les données de l'utilisateur et ne peut pas être annulée.",
+      "cascadeWarning": "Toutes les données associées seront également supprimées."
+    },
+    "editUser": {
+      "uploadPhotoAria": "Télécharger la photo de profil",
+      "removePhotoAria": "Supprimer la photo de profil"
+    }
+  },
+  "pagination": {
+    "page": "Page {{page}} sur {{total}}",
+    "itemsPerPage": "Éléments par page"
+  },
+  "loading": {
+    "users": "Chargement des utilisateurs...",
+    "search": "Recherche en cours...",
+    "save": "Enregistrement en cours...",
+    "updating": "Mise à jour en cours..."
+  },
+  "error": {
+    "required": "Ce champ est obligatoire",
+    "email": {
+      "invalid": "Adresse e-mail invalide"
+    },
+    "minOneRole": "Au moins un rôle doit être sélectionné",
+    "loadFailed": "Échec du chargement des utilisateurs",
+    "createFailed": "Échec de la création de l'utilisateur",
+    "updateFailed": "Échec de la mise à jour de l'utilisateur",
+    "deleteFailed": "Échec de la suppression de l'utilisateur",
+    "notFound": "Utilisateur introuvable"
+  },
+  "batchImport": {
+    "title": "Importation groupée d'intervenants",
+    "dropzone": "Déposez speakers.json ici ou cliquez pour parcourir",
+    "dropzoneActive": "Déposez le fichier ici...",
+    "dropzoneHint": "Téléchargez speakers.json depuis apps/BATspa-old/src/api/",
+    "preview": "{{count}} intervenants à importer",
+    "progress": "Importation de l'intervenant {{current}} sur {{total}}...",
+    "complete": "Importation terminée : {{success}} créés, {{updated}} mis à jour, {{failed}} échoués, {{skipped}} ignorés",
+    "noSpeakers": "Aucun intervenant trouvé dans le fichier",
+    "checkingExisting": "Vérification des utilisateurs existants...",
+    "summary": "{{total}} intervenants : {{new}} nouveaux, {{update}} à mettre à jour, {{skip}} inchangés",
+    "cancelButton": "Annuler",
+    "importButton": "Créer {{new}} / Mettre à jour {{update}}",
+    "allSkipped": "Aucun changement à importer",
+    "status": {
+      "pending": "Nouveau",
+      "importing": "Importation...",
+      "success": "Créé",
+      "updated": "Mis à jour",
+      "error": "Erreur",
+      "skipped": "Ignoré",
+      "noChanges": "Aucun changement",
+      "willUpdate": "Sera mis à jour : {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Fichier invalide. Veuillez télécharger un fichier JSON.",
+      "parseError": "Échec de l'analyse du fichier : {{error}}"
+    },
+    "hasPortrait": "Possède une image de portrait",
+    "noPortrait": "Aucune image de portrait"
+  },
+  "participantImport": {
+    "title": "Importer des participants depuis un CSV",
+    "dropzone": "Glissez-déposez le fichier CSV ici",
+    "dropzoneActive": "Déposez le fichier CSV ici",
+    "dropzoneHint": "ou cliquez pour sélectionner un fichier",
+    "fileLoaded": "Fichier chargé : {{name}} ({{size}} Ko)",
+    "preview": "Aperçu : {{count}} participants prêts à importer",
+    "previewLimitation": "Remarque : L'aperçu affiche les utilisateurs existants par correspondance de nom d'utilisateur uniquement. Lors de l'importation, les utilisateurs peuvent également être mis en correspondance par nom (prénom + nom) si c'est non ambigu. Certains participants affichés comme « Nouveau » peuvent correspondre à des utilisateurs existants par nom.",
+    "importButton": "Importer {{count}} participants",
+    "progress": "Importation : {{current}} / {{total}}",
+    "summary": "Résumé de l'importation",
+    "status": {
+      "pending": "En attente",
+      "importing": "Importation",
+      "success": "Succès",
+      "error": "Échec",
+      "skipped": "Ignoré"
+    },
+    "stats": {
+      "total": "Total : {{count}}",
+      "success": "Succès : {{count}}",
+      "failed": "Échec : {{count}}",
+      "pending": "En attente : {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthétique",
+      "eventsCount": "{{count}} événements",
+      "existing": "Existant",
+      "new": "Nouveau"
+    },
+    "aria": {
+      "statusLabel": "Statut d'importation : {{label}}",
+      "dropzone": "Zone de dépôt de fichier CSV. Faites glisser un fichier CSV ou cliquez pour sélectionner",
+      "fileInput": "Entrée de fichier pour importation CSV",
+      "previewTable": "Tableau de prévisualisation de l'importation",
+      "participantTable": "Participants avec statut d'importation",
+      "importProgress": "Progression de l'importation",
+      "closeModal": "Fermer la fenêtre d'importation",
+      "startImport": "Démarrer l'importation des participants depuis le fichier CSV",
+      "progressBar": "Import progress: {{percent}}% complete"
+    },
+    "parseError": "Échec de l'analyse du fichier CSV",
+    "importFailed": "Échec de l'importation"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Aperçu",
+      "eventsParticipated": "Événements auxquels il a participé",
+      "ariaLabel": "User detail tabs"
+    },
+    "overviewText": "Aperçu du profil utilisateur. Des informations supplémentaires peuvent être ajoutées ici.",
+    "eventsTable": {
+      "eventCode": "Code de l'événement",
+      "title": "Titre",
+      "date": "Date",
+      "status": "Statut",
+      "loadError": "Échec du chargement de l'historique de participation aux événements",
+      "noEvents": "Cet utilisateur n'a encore participé à aucun événement",
+      "untitledEvent": "Événement sans titre",
+      "dateTBD": "À déterminer",
+      "ariaLabel": "Tableau des événements auxquels l'utilisateur a participé",
+      "statusValues": {
+        "REGISTERED": "Inscrit",
+        "CONFIRMED": "Confirmé",
+        "ATTENDED": "Présent",
+        "CANCELLED": "Annulé",
+        "WAITLISTED": "Sur liste d'attente"
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "account": "Compte",
+      "notifications": "Notifications",
+      "privacy": "Confidentialité"
+    },
+    "account": {
+      "title": "Paramètres du compte",
+      "emailStatus": "L'adresse e-mail ne peut pas être modifiée",
+      "changePassword": "Changer le mot de passe",
+      "theme": "Thème",
+      "themeLight": "Clair",
+      "themeDark": "Sombre",
+      "themeAuto": "Automatique (suivre le système)",
+      "timezone": "Fuseau horaire",
+      "save": "Enregistrer les paramètres du compte"
+    },
+    "notifications": {
+      "title": "Préférences de notification",
+      "epic7Notice": "Les paramètres de notification avancés seront disponibles dans une prochaine mise à jour.",
+      "channels": "Canaux de notification",
+      "channelEmail": "Notifications par e-mail",
+      "channelInApp": "Notifications dans l'application",
+      "channelPush": "Notifications push",
+      "frequency": "Fréquence de notification",
+      "frequencyImmediate": "Immédiat",
+      "frequencyDaily": "Résumé quotidien",
+      "frequencyWeekly": "Résumé hebdomadaire",
+      "save": "Enregistrer les paramètres de notification"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscribe": "S'abonner à la newsletter",
+      "description": "Recevoir des mises à jour mensuelles sur les événements BATbern"
+    },
+    "privacy": {
+      "title": "Paramètres de confidentialité",
+      "visibility": "Visibilité du profil",
+      "visibilityPublic": "Public",
+      "visibilityMembersOnly": "Membres uniquement",
+      "visibilityPrivate": "Privé",
+      "infoDisplay": "Affichage des informations",
+      "showEmail": "Afficher l'adresse e-mail",
+      "showCompany": "Afficher l'appartenance à l'entreprise",
+      "showActivity": "Afficher l'historique d'activité",
+      "communication": "Communication",
+      "allowMessaging": "Autoriser les messages directs d'autres utilisateurs",
+      "viewPolicy": "Voir la politique de confidentialité",
+      "save": "Enregistrer les paramètres de confidentialité"
+    }
+  },
+  "profile": {
+    "personalInfo": "Informations personnelles",
+    "editProfile": "Modifier le profil",
+    "firstName": "Prénom",
+    "lastName": "Nom de famille",
+    "bio": "Biographie",
+    "bioValidation": "La biographie doit contenir {{max}} caractères ou moins",
+    "saveChanges": "Enregistrer les modifications",
+    "removePhotoConfirm": "Êtes-vous sûr(e) de vouloir supprimer votre photo de profil ?",
+    "labelName": "Nom :",
+    "labelEmail": "E-mail :",
+    "labelCompany": "Entreprise :",
+    "labelBio": "Biographie :",
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité récente",
+    "viewAll": "Voir tout →"
+  },
+  "profileHeader": {
+    "uploadTooltip": "Télécharger une photo",
+    "removeTooltip": "Supprimer la photo",
+    "verified": "Vérifié",
+    "memberSince": "Membre depuis {{date}}"
+  }
+}

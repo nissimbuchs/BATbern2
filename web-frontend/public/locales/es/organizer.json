@@ -1,0 +1,444 @@
+{
+  "navigation": {
+    "partners": "Socios",
+    "topicManagement": "Gestión de temas"
+  },
+  "topicBacklog": {
+    "pageTitle": "Gestión de temas",
+    "pageDescription": "Gestiona los temas del backlog, selecciona temas para eventos y analiza los patrones de uso",
+    "title": "Gestor de backlog de temas",
+    "subtitle": "Selecciona temas del backlog con sugerencias inteligentes y detección de obsolescencia",
+    "selectPrompt": "Selecciona un tema para ver los detalles",
+    "noTopics": "No se encontraron temas que coincidan con tus filtros",
+    "lastUsed": "Último uso",
+    "usageCount": "Usado {{count}} veces",
+    "createNew": "Crear nuevo tema",
+    "breadcrumbs": {
+      "home": "Inicio",
+      "events": "Eventos",
+      "topicSelection": "Selección de tema",
+      "manageTopics": "Gestionar temas"
+    },
+    "error": {
+      "loadFailed": "Error al cargar los temas"
+    },
+    "createModal": {
+      "title": "Crear nuevo tema",
+      "fields": {
+        "title": "Título",
+        "description": "Descripción",
+        "category": "Categoría",
+        "categoryHint": "ej. técnico, negocios, diseño"
+      },
+      "errors": {
+        "titleRequired": "El título es obligatorio",
+        "titleTooLong": "El título debe tener 255 caracteres o menos",
+        "descriptionRequired": "La descripción es obligatoria",
+        "categoryRequired": "La categoría es obligatoria",
+        "createFailed": "Error al crear el tema. Por favor, inténtalo de nuevo."
+      },
+      "create": "Crear tema",
+      "creating": "Creando..."
+    },
+    "editModal": {
+      "title": "Editar tema",
+      "fields": {
+        "title": "Título",
+        "description": "Descripción",
+        "category": "Categoría"
+      },
+      "errors": {
+        "titleRequired": "El título es obligatorio",
+        "titleTooLong": "El título debe tener 255 caracteres o menos",
+        "categoryRequired": "La categoría es obligatoria",
+        "updateFailed": "Error al actualizar el tema. Por favor, inténtalo de nuevo."
+      },
+      "save": "Guardar cambios",
+      "saving": "Guardando..."
+    },
+    "filters": {
+      "title": "Filtros",
+      "category": "Categoría",
+      "status": "Estado",
+      "sort": "Ordenar por",
+      "all": "Todas las categorías",
+      "allStatuses": "Todos los estados",
+      "categories": {
+        "technical": "Técnico",
+        "management": "Gestión",
+        "softSkills": "Habilidades blandas",
+        "industryTrends": "Tendencias del sector",
+        "toolsPlatforms": "Herramientas y plataformas"
+      },
+      "statuses": {
+        "available": "Disponible (verde)",
+        "caution": "Usar con precaución (amarillo)",
+        "unavailable": "Demasiado reciente (rojo)"
+      },
+      "sortOptions": {
+        "safestFirst": "Más seguro primero (obsolescencia ↓)",
+        "recentFirst": "Más reciente primero (obsolescencia ↑)",
+        "titleAZ": "Título (A-Z)",
+        "mostUsed": "Más utilizado"
+      }
+    },
+    "details": {
+      "metrics": "Métricas",
+      "lastUsed": "Último uso",
+      "usageCount": "Número de usos",
+      "editButton": "Editar tema",
+      "deleteButton": "Eliminar tema",
+      "selectButton": "Seleccionar para el evento",
+      "selecting": "Seleccionando...",
+      "overrideButton": "Ignorar advertencia",
+      "statusGreen": "Seguro para reutilizar - último uso hace más de 20 meses",
+      "statusYellow": "Usar con precaución - último uso hace 12-20 meses",
+      "statusRed": "Demasiado reciente - último uso en los últimos 12 meses, alto riesgo de duplicación",
+      "similarityWarning": "{{count}} temas similares detectados (similitud > 70%)"
+    },
+    "viewMode": {
+      "label": "Modo de vista",
+      "heatMap": "Mapa de calor",
+      "list": "Lista",
+      "board": "Tablero",
+      "boardComingSoon": "Vista tablero próximamente..."
+    },
+    "heatMap": {
+      "title": "Mapa de calor de uso de temas",
+      "subtitle": "Los colores más oscuros indican mayor uso. Haz clic en un tema para ver los detalles.",
+      "description": "Frecuencia de uso de temas en los últimos 24 meses (agrupados por trimestre)",
+      "quarter": "Trimestre",
+      "spring": "Primavera",
+      "summer": "Verano",
+      "autumn": "Otoño",
+      "usageCount": "Número de usos",
+      "totalAttendance": "Asistencia total",
+      "avgEngagement": "Participación media",
+      "events": "Eventos",
+      "noData": "No hay historial de uso disponible para este tema.",
+      "noTopics": "No hay temas disponibles para mostrar.",
+      "tooltip": "Haz clic en un trimestre para ver detalles sobre los eventos que usaron este tema",
+      "hint": "Pasa el cursor sobre los puntos de datos para más información",
+      "stale": "Obsoleto - no usado recientemente",
+      "trending": "En tendencia - usado recientemente",
+      "legend": {
+        "noUsage": "Sin uso",
+        "low": "Uso bajo",
+        "medium": "Uso medio",
+        "high": "Uso alto",
+        "stale": "Obsoleto",
+        "trending": "En tendencia"
+      },
+      "navigation": {
+        "previous": "Años anteriores",
+        "next": "Años siguientes",
+        "atCurrent": "En el año actual"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Temas similares detectados",
+        "message": "Los siguientes temas tienen alta similitud (> 70%) con tu selección. ¿Estás seguro de que deseas continuar?",
+        "similarity": "Similitud",
+        "justification": "Justificación (opcional)",
+        "confirm": "Seleccionar de todos modos"
+      },
+      "override": {
+        "title": "Ignorar advertencia de obsolescencia",
+        "message": "Este tema se usó recientemente (puntuación de obsolescencia: {{score}}%). Por favor, proporciona una justificación para usarlo de nuevo.",
+        "justification": "Justificación",
+        "helper": "Explica por qué este tema debería reutilizarse a pesar de ser reciente",
+        "confirm": "Ignorar y seleccionar"
+      },
+      "delete": {
+        "title": "Eliminar tema",
+        "message": "¿Estás seguro de que deseas eliminar \"{{title}}\"? Esta acción no se puede deshacer.",
+        "cannotDelete": "No se puede eliminar este tema porque se ha usado en {{count}} evento(s).",
+        "confirm": "Eliminar tema",
+        "success": "Tema eliminado correctamente",
+        "error": "Error al eliminar el tema. Por favor, inténtalo de nuevo."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Lluvia de ideas de ponentes",
+    "subtitle": "Agrega ponentes potenciales al grupo del evento y asígnalos a los organizadores para el contacto",
+    "form": {
+      "speakerName": "Nombre del ponente",
+      "company": "Empresa",
+      "expertise": "Área de especialización",
+      "assignOrganizer": "Asignar a organizador (opcional)",
+      "notes": "Notas (opcional)",
+      "addButton": "Agregar al grupo",
+      "adding": "Agregando...",
+      "error": "Error al agregar el ponente"
+    },
+    "pool": {
+      "title": "Grupo de ponentes",
+      "empty": "No hay ponentes en el grupo. ¡Agrega algunos arriba!",
+      "expertise": "Área de especialización",
+      "assigned": "Asignado a",
+      "error": "Error al cargar el grupo de ponentes"
+    },
+    "actions": {
+      "skipForNow": "Omitir por ahora",
+      "continue": "Continuar al contacto"
+    }
+  },
+  "speakerOutreach": {
+    "speakerName": "Ponente",
+    "contactMethod": "Método de contacto",
+    "contactDate": "Fecha de contacto",
+    "markContacted": "Marcar como contactado",
+    "contactHistory": "Historial de contactos",
+    "outreachDetails": "Detalles del contacto",
+    "noContactHistory": "Sin historial de contactos",
+    "contactedBy": "Contactado por",
+    "markContactedModal": {
+      "title": "Marcar ponente como contactado",
+      "method": {
+        "email": "Correo electrónico",
+        "phone": "Teléfono",
+        "inPerson": "En persona"
+      },
+      "notesPlaceholder": "Notas sobre la conversación...",
+      "error": {
+        "methodRequired": "El método de contacto es obligatorio",
+        "dateRequired": "La fecha de contacto es obligatoria",
+        "failed": "Error al registrar el contacto",
+        "loadHistory": "Error al cargar el historial de contactos"
+      }
+    },
+    "emailPlaceholder": "speaker@example.com"
+  },
+  "speakerStatus": {
+    "title": "Estado de ponentes",
+    "statusSummary": "Resumen de estados",
+    "lanes": "Carriles de estado",
+    "IDENTIFIED": "Identificado",
+    "INVITED": "Invitado",
+    "CONTACTED": "Contactado",
+    "READY": "Listo",
+    "ACCEPTED": "Aceptado",
+    "CONTENT_SUBMITTED": "Contenido enviado",
+    "QUALITY_REVIEWED": "Calidad revisada",
+    "CONFIRMED": "Confirmado",
+    "DECLINED": "Rechazado",
+    "changeStatus": "Cambiar estado",
+    "changeReason": "Motivo del cambio de estado (opcional)",
+    "confirmChange": "Cambiar estado",
+    "statusChanged": "Estado cambiado correctamente",
+    "invalidTransition": "Transición de estado no válida de {{from}} a {{to}}",
+    "historyTitle": "Historial de estados",
+    "changedBy": "Cambiado por",
+    "noHistory": "No hay historial de estados disponible",
+    "acceptanceRate": "Tasa de aceptación: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} ponentes aceptados",
+    "thresholdMet": "Umbral mínimo alcanzado ✓",
+    "thresholdNotMet": "Umbral mínimo no alcanzado ({{count}} / {{required}})",
+    "overflowDetected": "Desbordamiento detectado ({{count}} > {{max}})",
+    "dragToChange": "Arrastra los ponentes para cambiar el estado",
+    "confirmChangeMessage": "¿Cambiar el estado de {{speaker}} de {{from}} a {{to}}?",
+    "reasonHelperText": "Opcional (máx. {{max}} caracteres)",
+    "reasonPlaceholder": "ej. Ponente confirmado por correo electrónico",
+    "reasonTooLong": "El motivo es demasiado largo ({{current}}/{{max}} caracteres)"
+  },
+  "speakerContent": {
+    "submitContent": "Enviar contenido del ponente",
+    "presentationDetails": "Detalles de la presentación",
+    "speakerInformation": "Información del ponente",
+    "submitting": "Enviando...",
+    "editSpeakerProfile": "Editar perfil del ponente",
+    "createNewSpeaker": "Crear nuevo ponente",
+    "form": {
+      "username": "Buscar ponente",
+      "presentationTitle": "Título de la presentación",
+      "presentationAbstract": "Resumen de la presentación",
+      "charactersRemaining": "caracteres restantes"
+    },
+    "errors": {
+      "usernameRequired": "El ponente es obligatorio",
+      "titleRequired": "El título de la presentación es obligatorio",
+      "abstractRequired": "El resumen de la presentación es obligatorio",
+      "abstractTooLong": "El resumen debe tener {{max}} caracteres o menos",
+      "submitFailed": "Error al enviar el contenido. Por favor, inténtalo de nuevo."
+    }
+  },
+  "qualityReview": {
+    "title": "Revisión de calidad",
+    "speaker": "Ponente",
+    "presentationTitle": "Título de la presentación",
+    "abstract": "Resumen",
+    "qualityCriteria": "Criterios de calidad",
+    "characters": "caracteres",
+    "detected": "Detectado",
+    "notDetected": "No detectado",
+    "passed": "Aprobado",
+    "promotionDetected": "Promoción detectada",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "approving": "Aprobando...",
+    "submitting": "Enviando...",
+    "confirmReject": "Confirmar rechazo",
+    "rejectInstructions": "Por favor, proporciona comentarios sobre por qué se rechaza el contenido.",
+    "feedbackLabel": "Comentarios",
+    "feedbackPlaceholder": "Explica qué debe mejorarse...",
+    "noContent": "No hay contenido disponible",
+    "criteria": {
+      "abstractLength": "Longitud del resumen",
+      "lessonsLearned": "Contiene \"Lecciones aprendidas\"",
+      "noPromotion": "Sin promoción de productos"
+    },
+    "errors": {
+      "feedbackRequired": "Los comentarios son obligatorios",
+      "unknown": "Se produjo un error desconocido"
+    }
+  },
+  "speakers": {
+    "invite": "Invitar",
+    "sendInvitation": "Enviar invitación",
+    "noEmailTooltip": "Agrega correo electrónico para invitar",
+    "sending": "Enviando...",
+    "inviteSent": "Invitación enviada",
+    "invitationSent": "Invitación enviada a {{email}}",
+    "inviteFailed": "Error al enviar",
+    "invitationFailed": "Error al enviar la invitación",
+    "email": "Dirección de correo electrónico",
+    "emailRequired": "El correo electrónico es obligatorio para enviar la invitación",
+    "invalidEmail": "Por favor, introduce una dirección de correo electrónico válida",
+    "saveEmail": "Guardar correo electrónico",
+    "emailSaved": "Correo electrónico guardado",
+    "tentative": "Provisional",
+    "responseDetails": "Detalles de la respuesta",
+    "acceptedAt": "Aceptado el",
+    "preferredTimeSlot": "Franja horaria preferida",
+    "travelRequirements": "Requisitos de viaje",
+    "technicalRequirements": "Requisitos técnicos",
+    "initialTitle": "Título de la presentación",
+    "comments": "Comentarios",
+    "declineDetails": "Detalles del rechazo",
+    "declinedAt": "Rechazado el",
+    "declineReason": "Motivo",
+    "tentativeDetails": "Detalles provisionales",
+    "tentativeReason": "Motivo",
+    "sendReminder": "Enviar recordatorio",
+    "sendingReminder": "Enviando...",
+    "reminderSent": "Recordatorio enviado a {{email}}",
+    "reminderFailed": "Error al enviar el recordatorio"
+  },
+  "tasks": {
+    "taskBoard": "Tablero de tareas",
+    "filter": "Filtrar",
+    "myTasks": "Mis tareas",
+    "allTasks": "Todas las tareas",
+    "sortBy": "Ordenar por",
+    "dueDate": "Fecha de vencimiento",
+    "createdDate": "Fecha de creación",
+    "addCustomTask": "Agregar tarea personalizada",
+    "errorLoadingTasks": "Error al cargar las tareas",
+    "pending": "Pendiente",
+    "pendingDescription": "Esperando el estado de activación",
+    "toDo": "Por hacer",
+    "todoDescription": "Listo para trabajar",
+    "inProgress": "En progreso",
+    "inProgressDescription": "Actualmente en proceso",
+    "completed": "Completado",
+    "completedDescription": "Tareas finalizadas",
+    "completeTask": "Completar tarea",
+    "completionNotes": "Notas de finalización (opcional)",
+    "markComplete": "Marcar como completado",
+    "due": "Vencimiento",
+    "assignedTo": "Asignado a",
+    "completedOn": "Completado el",
+    "completedBy": "Completado por",
+    "noTasks": "Sin tareas"
+  },
+  "analytics": {
+    "title": "Análisis",
+    "timeRange": {
+      "all": "Todo el período",
+      "5y": "Últimos 5 años",
+      "2y": "Últimos 2 años"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "attendance": "Asistencia",
+      "companies": "Empresas"
+    },
+    "kpi": {
+      "totalEvents": "Total de eventos",
+      "totalAttendees": "Total de asistentes",
+      "companiesRepresented": "Empresas",
+      "totalSessions": "Total de sesiones",
+      "totalSpeakers": "Total de ponentes"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Historial de eventos",
+      "attendeesPerEvent": "Asistentes por evento",
+      "returningVsNew": "Asistentes recurrentes vs nuevos",
+      "eventsPerCategory": "Eventos por categoría",
+      "topicPopularity": "Popularidad de temas",
+      "attendanceOverTime": "Asistencia por empresa a lo largo del tiempo",
+      "sessionsPerCompany": "Sesiones por empresa",
+      "attendeeDistribution": "Distribución de asistentes por empresa"
+    },
+    "labels": {
+      "returning": "Recurrentes",
+      "new": "Nuevos",
+      "showDataTable": "Mostrar tabla de datos",
+      "hideDataTable": "Ocultar tabla de datos",
+      "noData": "No hay datos disponibles para este período",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Todos"
+      },
+      "labelToggle": {
+        "title": "Título",
+        "category": "Categoría",
+        "both": "Ambos"
+      },
+      "filterByEvent": "Filtrar por evento",
+      "allEvents": "Todos los eventos",
+      "sessions": "sesiones",
+      "speakers": "ponentes"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Escribe un tema y presiona Enter...",
+    "fitAll": "Ajustar todo",
+    "snapToActive": "Centrar en activo",
+    "backButton": "← Volver a la lista de temas",
+    "unsavedWarning": "Sesión sin guardar — todos los cambios se perderán. ¿Volver?",
+    "accept": {
+      "title": "Seleccionar tema: {{topic}}",
+      "partnerAlignment": "{{count}} de 9 socios alineados",
+      "lastCovered": "Última presentación: BATbern #{{num}} (hace {{count}} eventos)",
+      "overrideReason": "¿Por qué revisitar este tema? (opcional)",
+      "confirm": "Seleccionar este tema",
+      "cancel": "Seguir explorando",
+      "saveError": "Error al guardar la selección del tema. Por favor, inténtalo de nuevo."
+    },
+    "noEventCode": "No se proporcionó código de evento"
+  },
+  "livePreview": {
+    "devicePreviewMode": "modo de vista previa del dispositivo",
+    "desktopPreview": "Vista previa de escritorio",
+    "mobilePreview": "Vista previa móvil",
+    "printPreview": "Vista previa de impresión",
+    "desktop": "Escritorio",
+    "mobile": "Móvil",
+    "print": "Imprimir",
+    "refreshPreview": "Actualizar vista previa",
+    "switchedTo": "Cambiado a vista previa {{device}}",
+    "refreshingPreview": "Actualizando vista previa...",
+    "failedToLoad": "Error al cargar la vista previa. Inténtalo de nuevo.",
+    "iframeTitle": "Vista previa del evento",
+    "iframeAriaLabel": "Vista previa del contenido del evento",
+    "previewModeCaption": "Modo vista previa: {{mode}} | Fase: {{phase}}",
+    "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
+  }
+}

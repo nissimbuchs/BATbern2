@@ -1,0 +1,246 @@
+{
+  "title": "Répertoire des partenaires",
+  "addPartner": "Ajouter un partenaire",
+  "searchPlaceholder": "Rechercher par nom de partenaire...",
+  "searchAriaLabel": "Rechercher des partenaires",
+  "clearSearch": "Effacer la recherche",
+  "filters": {
+    "tier": "Niveau de partenariat",
+    "tierAll": "Tous les niveaux",
+    "status": "Statut",
+    "statusAll": "Tous",
+    "statusActive": "Actif",
+    "statusInactive": "Inactif",
+    "reset": "Réinitialiser les filtres"
+  },
+  "tiers": {
+    "strategic": "Stratégique",
+    "platinum": "Platine",
+    "gold": "Or",
+    "silver": "Argent",
+    "bronze": "Bronze"
+  },
+  "sort": {
+    "label": "Trier par",
+    "engagement": "Score d'engagement",
+    "name": "Nom de l'entreprise",
+    "tier": "Niveau de partenariat",
+    "lastEvent": "Dernier événement"
+  },
+  "card": {
+    "comingSoon": "Bientôt disponible - Epic 8"
+  },
+  "pagination": {
+    "page": "Page {{current}} sur {{total}}",
+    "firstPage": "Première page",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "lastPage": "Dernière page",
+    "ariaLabel": "Pagination de la liste des partenaires",
+    "partners_one": "{{count}} partenaire",
+    "partners_other": "{{count}} partenaires"
+  },
+  "empty": {
+    "noPartners": "Aucun partenaire trouvé"
+  },
+  "loading": "Chargement des partenaires...",
+  "error": {
+    "failedToLoad": "Impossible de charger les partenaires",
+    "correlationId": "ID de corrélation"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partenaire trouvé",
+    "filterUpdate": "Filtres mis à jour",
+    "loading": "Chargement des partenaires"
+  },
+  "modal": {
+    "createTitle": "Créer un partenariat",
+    "editTitle": "Modifier le partenariat",
+    "fields": {
+      "company": "Entreprise",
+      "startDate": "Date de début",
+      "endDateOptional": "Date de fin (facultatif)"
+    },
+    "messages": {
+      "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir fermer ?"
+    }
+  },
+  "validation": {
+    "companyRequired": "L'entreprise est requise",
+    "tierRequired": "Le niveau de partenariat est requis",
+    "startDateRequired": "La date de début est requise",
+    "endDateBeforeStart": "La date de fin doit être postérieure à la date de début"
+  },
+  "detail": {
+    "meetingsTab": {
+      "title": "Réunions",
+      "addMeeting": "Planifier une réunion"
+    },
+    "notesTab": {
+      "title": "Notes",
+      "addNote": "Ajouter une note",
+      "editNote": "Modifier la note",
+      "deleteNoteConfirmTitle": "Supprimer la note",
+      "deleteNoteConfirmMessage": "Êtes-vous sûr de vouloir supprimer « {{title}} » ?",
+      "titleLabel": "Titre",
+      "contentLabel": "Contenu",
+      "htmlSupported": "La mise en forme HTML est prise en charge",
+      "noNotes": "Aucune note pour l'instant",
+      "failedToLoadNotes": "Échec du chargement des notes",
+      "deleteNote": "Supprimer la note"
+    },
+    "settingsTab": {
+      "title": "Paramètres",
+      "activePartnership": "Partenariat actif",
+      "exportData": "Exporter les données du partenaire",
+      "deletePartner": "Supprimer les données du partenaire",
+      "accessDenied": "Accès refusé",
+      "accessDeniedMessage": "Cette section est uniquement accessible aux organisateurs.",
+      "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "overview": "Aperçu",
+      "contacts": "Contacts",
+      "meetings": "Réunions",
+      "analytics": "Analyses",
+      "settings": "Paramètres",
+      "partnerDetailTabs": "Onglets de détail partenaire"
+    },
+    "overviewTab": {
+      "title": "Détails du partenariat",
+      "tier": "Niveau de partenariat",
+      "startDate": "Date de début du partenariat",
+      "benefits": "Avantages",
+      "changeTier": "Changer de niveau",
+      "tierBenefits": {
+        "logoPlacement": "Placement du logo sur le site web",
+        "newsletterMentions": "Mentions dans la newsletter",
+        "priorityAccess": "Accès prioritaire aux événements",
+        "quarterlyMeetings": "Réunions stratégiques trimestrielles",
+        "roiAnalytics": "Tableau de bord d'analyse du ROI",
+        "accountManager": "Chargé de compte dédié",
+        "eventAccess": "Accès aux événements"
+      }
+    },
+    "errors": {
+      "failedToLoadContacts": "Échec du chargement des contacts.",
+      "noContactsAssigned": "Aucun utilisateur partenaire n'est encore assigné à cette entreprise.",
+      "notFound": "Partenaire introuvable",
+      "notFoundMessage": "Le partenaire \"{{name}}\" est introuvable.",
+      "loading": "Erreur lors du chargement du partenaire",
+      "loadingMessage": "Une erreur s'est produite lors du chargement des détails du partenaire. Veuillez réessayer plus tard.",
+      "noData": "Aucune donnée",
+      "noDataMessage": "Aucune donnée partenaire disponible."
+    }
+  },
+  "meetings": {
+    "title": "Réunions des partenaires",
+    "create": "Créer une réunion",
+    "fields": {
+      "agenda": "Ordre du jour",
+      "notes": "Notes de réunion",
+      "location": "Lieu",
+      "eventCode": "Code d'événement BATbern",
+      "eventCodeHint": "ex. BATbern57",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "type": {
+        "spring": "Réunion de printemps",
+        "autumn": "Réunion d'automne"
+      },
+      "eventCodePlaceholder": "BATbern57"
+    },
+    "sendInvite": "Envoyer une invitation de calendrier",
+    "inviteSent": "Invitation envoyée",
+    "inviteNotSent": "Invitation non envoyée",
+    "inviteSentOn": "Invitation envoyée le {{date}}",
+    "noMeetings": "Aucune réunion de partenaire trouvée",
+    "confirmSendInvite": "Envoyer une invitation de calendrier à tous les contacts partenaires ?",
+    "inviteQueued": "Envoi de l'invitation de calendrier...",
+    "columns": {
+      "type": "Type",
+      "date": "Date",
+      "location": "Lieu",
+      "inviteStatus": "Invitation",
+      "actions": "Actions"
+    },
+    "error": "Impossible de charger les réunions",
+    "inviteSuccess": "L'invitation de calendrier est en cours d'envoi"
+  },
+  "portal": {
+    "noCompanyLinked": "Votre compte n'est pas lié à une entreprise",
+    "noCompanyLinked.detail": "Veuillez contacter votre organisateur",
+    "analytics": {
+      "kpi": {
+        "costPerAttendee": "Coût par participant",
+        "attendanceRate": "Taux de présence moyen",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "5 dernières années",
+        "allHistory": "Tout l'historique"
+      },
+      "export": {
+        "button": "Exporter Excel",
+        "loading": "Exportation..."
+      },
+      "noData": "Aucune donnée de présence trouvée pour la période sélectionnée",
+      "error": "Échec du chargement des données de présence",
+      "charts": {
+        "companyVsTotal": "Attendance per Event — Your Company vs. Total",
+        "yoyHeadcount": "Year-over-Year — Headcount & Attendance Share %"
+      }
+    },
+    "topics": {
+      "title": "Suggestions de sujets",
+      "suggest": "Suggérer un sujet",
+      "vote": "Voter",
+      "unvote": "Retirer le vote",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "col": {
+        "topic": "Sujet",
+        "company": "Entreprise",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "status": {
+        "proposed": "Proposé",
+        "selected": "Sélectionné",
+        "declined": "Refusé"
+      },
+      "plannedFor": "Prévu pour",
+      "empty": "Aucune suggestion de sujet pour l'instant",
+      "form": {
+        "title": "Titre",
+        "description": "Description",
+        "submit": "Soumettre",
+        "titleRequired": "Le titre est requis (au moins 5 caractères)",
+        "descriptionHint": "Facultatif, 500 caractères maximum",
+        "dialogTitle": "Suggérer un nouveau sujet",
+        "editDialogTitle": "Modifier le sujet",
+        "update": "Mettre à jour"
+      },
+      "organizer": {
+        "title": "Suggestions de sujets des partenaires",
+        "col": {
+          "title": "Titre",
+          "company": "Entreprise",
+          "votes": "Votes",
+          "date": "Date",
+          "actions": "Actions"
+        },
+        "status": "Statut",
+        "plannedEvent": "Événement prévu",
+        "save": "Enregistrer",
+        "tableAriaLabel": "Partner topic suggestions",
+        "editAriaLabel": "Edit topic {{title}}",
+        "deleteAriaLabel": "Delete topic {{title}}"
+      },
+      "error": "Échec du chargement des sujets"
+    }
+  },
+  "topicStatus": {
+    "eventCodePlaceholder": "e.g. BATbern58"
+  }
+}

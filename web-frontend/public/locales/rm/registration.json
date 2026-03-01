@@ -1,0 +1,190 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Annullaziun da vossa inscripziun...",
+      "message": "Sper plaschair spetgai entant che nus tractain vossa annullaziun."
+    },
+    "success": {
+      "title": "Inscripziun annullada",
+      "subtitle": "Vossa inscripziun è vegnida annullada cun success",
+      "whatHappened": "Tge è capità?",
+      "permanentDeletion": "Stritgament permanent",
+      "permanentDeletionText": "Vossa inscripziun è vegnida stritgada permanentamain da noss sistem.",
+      "noFurtherAction": "Nagina ulteriura acziun",
+      "noFurtherActionText": "Vus na retschavrais naginas ulteriuras communicaziuns davart quest eveniment.",
+      "registerAgain": "Inscriver anc ina giada",
+      "registerAgainText": "Sche vus cambiads l'opiniun, pudais vus vus inscriver anc ina giada en tut mument avant l'eveniment.",
+      "backToHome": "Turnar a la pagina principala",
+      "registerForAnother": "Inscriver per in auter eveniment"
+    },
+    "error": {
+      "title": "Annullaziun betg reussida",
+      "subtitle": "Impussibel dad annullar vossa inscripziun",
+      "whatCanYouDo": "Tge pudais vus far?",
+      "checkLink": "Controllescha sche vus avais clicà sin il link correct da vossa email",
+      "expired": "Links d'annullaziun expireschan suenter 48 uras",
+      "alreadyCancelled": "L'inscripziun vegn eventualmain gia ad esser annullada",
+      "useLatestEmail": "Assegurais vus dad utilisar l'ultima email",
+      "contactSupport": "Contactescha il support sche il problem persista",
+      "errors": {
+        "expired": "Il link d'annullaziun è expireschaus (valid per 48 uras).",
+        "invalid": "Link d'annullaziun nunvalid. Sper plaschair controllescha vossa email per il link correct.",
+        "notFound": "Inscripziun betg chattada u gia annullada.",
+        "default": "Betg reussì dad annullar l'inscripziun. Sper plaschair empruvai anc ina giada u contactescha il support."
+      }
+    }
+  },
+  "confirmationPage": {
+    "loading": "Cargament da la confirmaziun...",
+    "notFound": {
+      "title": "Annunziaziun betg chattada",
+      "message": "Controllai voss code da confirmaziun e pruvai anc ina giada."
+    },
+    "copyCode": "Copiar il code da confirmaziun",
+    "qrCodeAlt": "Code QR da l'annunziaziun",
+    "qrCodeTitle": "Voss code QR da check-in",
+    "detailsTitle": "Detagls da l'annunziaziun",
+    "shareLabel": "Partegidar cun voss retschel:",
+    "registerAnother": "Annunziar in'autra persuna",
+    "viewEventDetails": "Vesair ils detagls da l'eveniment"
+  },
+  "successPage": {
+    "pendingTitle": "Annunziaziun en spetga",
+    "pendingMessage": "Sch'avais tramess in'annunziaziun, controllai vostra e-mail per il link da confirmaziun.",
+    "pendingLinkValidity": "Il link da confirmaziun è valid per 48 uras.",
+    "title": "Annunziaziun tramessa!",
+    "subtitle": "Controllai vostra e-mail per confirmar vostra annunziaziun",
+    "emailSentTitle": "E-mail da confirmaziun tramessa",
+    "noEmailTitle": "Betg retschavì la e-mail?",
+    "noEmailCheck1": "Controllai voss dossier spam",
+    "noEmailCheck2": "Assegiurevai d'avair endatà l'adressa e-mail correcta",
+    "noEmailCheck3": "Spetgai nagins minutas e verifitgeschai anc ina giada",
+    "createAccountTitle": "Crear in conto per administrar vossas annunziaziuns",
+    "createAccountText": "Suenter la confirmaziun via e-mail, pudais crear in conto per administrar tuttas vossas annunziaziuns."
+  },
+  "wizard": {
+    "steps": {
+      "step1Progress": "1. Vossas datas",
+      "step2Progress": "2. Confirmar l'annunziaziun",
+      "step1Title": "Pass 1: Vossas datas",
+      "step2Title": "Pass 2: Confirmar l'annunziaziun"
+    },
+    "buttons": {
+      "edit": "Modifitgar",
+      "cancel": "Interrumper",
+      "back": "← Enavos",
+      "next": "Suenter →",
+      "complete": "Cumplettar l'annunziaziun",
+      "submitting": "Tramissura..."
+    },
+    "errors": {
+      "fillRequired": "Emplenai tut ils champs obligatorics correctamain.",
+      "acceptTerms": "Duveis acceptar las cundiziuns d'utilisaziun per s'annunziar.",
+      "failed": "L'annunziaziun ha fallì. Pruvai anc ina giada."
+    },
+    "cancelConfirm": "Essas vus segirs da vulair interromper l'annunziaziun?"
+  },
+  "personalDetails": {
+    "title": "Infurmaziuns persunalas",
+    "subtitle": "Endatai vossas datas per s'annunziar a l'eveniment.",
+    "fields": {
+      "firstName": "Prenum *",
+      "lastName": "Num *",
+      "emailAddress": "Adressa e-mail *",
+      "emailHelper": "Nus tramettain voss bigliard e las actualisaziuns qua",
+      "company": "Cumpagnia *",
+      "role": "Rolla *"
+    },
+    "validation": {
+      "firstNameRequired": "Il prenum è obligatoric",
+      "lastNameRequired": "Il num è obligatoric",
+      "invalidEmail": "Adressa e-mail nunvalida",
+      "companyRequired": "La cumpagnia è obligatorica",
+      "roleRequired": "La rolla è obligatorica"
+    },
+    "placeholders": {
+      "firstName": "Jon",
+      "lastName": "Müller",
+      "email": "jon.mueller@cumpagnia.ch",
+      "company": "Tschertgar vostra cumpagnia...",
+      "role": "Sviluppader senior"
+    }
+  },
+  "confirmStep": {
+    "title": "Revider e confirmar",
+    "subtitle": "Revidi vossas infurmaziuns e cumpletai l'annunziaziun.",
+    "personalInfo": "Infurmaziuns persunalas",
+    "commPref": {
+      "title": "Preferenzas da communicaziun",
+      "reminders": "Trametter rememorativs (1 emna e 1 di avant)",
+      "newsletter": "Abunnar la newsletter BATbern (actualisaziuns mensualas)"
+    },
+    "specialRequests": {
+      "label": "Giavüschs spezials",
+      "optional": "(Opziunal)",
+      "placeholder": "Basegns alimentars, basegns d'accessibilitad, etc.",
+      "helper": "Communitgai nus voss basegns alimentars u d'accessibilitad."
+    },
+    "terms": {
+      "prefix": "Jau acceptel las",
+      "termsLink": "cundiziuns d'utilisaziun",
+      "separator": "e la",
+      "privacyLink": "politica da protecziun dals datas",
+      "required": "*",
+      "error": "Duveis acceptar las cundiziuns d'utilisaziun per cumplettar l'annunziaziun."
+    },
+    "account": {
+      "title": "Vulair administrar tuttas vossas annunziaziuns en in lieu?",
+      "message": "Suenter l'annunziaziun pudais crear in conto gratis per administrar tuttas vossas annunziaziuns."
+    }
+  },
+  "success": {
+    "title": "Annunziaziun tramessa!",
+    "subtitle": "Controllai vostra e-mail per confirmar vostra annunziaziun",
+    "emailSent": "E-mail da confirmaziun tramessa",
+    "emailSentTo": "Avains tramess in'e-mail da confirmaziun a",
+    "clickLink": "Cliccar sin il link en la e-mail per confirmar vostra annunziaziun.",
+    "validFor": "Quest link è valid per",
+    "valid": "24 uras",
+    "didntReceive": "Betg retschavì la e-mail?",
+    "checkSpam": "Controllar il dossier spam",
+    "checkEmail": "Verificar l'adressa e-mail",
+    "waitMinutes": "Spetgar nagins minutas e turnar a provar",
+    "close": "Serrar"
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirmaziun da vossa inscripziun...",
+      "message": "Sper plaschair spetgai entant che nus tractain vossa confirmaziun."
+    },
+    "success": {
+      "title": "Inscripziun confirmada!",
+      "subtitle": "Vus essas pronts per l'eveniment",
+      "whatsNext": "Tge suonda?",
+      "checkIn": "Check-in tar l'eveniment",
+      "checkInText": "Presentescha voss document d'identitad al maletg da l'eveniment per il check-in. Nus avain vossa inscripziun confirmada en noss sistem.",
+      "eventDetails": "Detagls da l'eveniment",
+      "eventDetailsText": "Vus retschavrais actualisaziuns ed admoniments davart l'eveniment via email.",
+      "createAccount": "Crear in conto per administrar las inscripziuns"
+    },
+    "alreadyConfirmed": {
+      "title": "Gia confirmada",
+      "subtitle": "Questa inscripziun è gia vegnida confirmada"
+    },
+    "error": {
+      "title": "Confirmaziun betg reussida",
+      "whatCanYouDo": "Tge pudais vus far?",
+      "checkLink": "Controllescha sche vus avais clicà sin il link correct da vossa email",
+      "expired": "Links da confirmaziun expireschan suenter 48 uras - forsa dovais vus vus inscriver anc ina giada",
+      "useLatestEmail": "Assegurais vus dad utilisar l'ultima email da confirmaziun",
+      "contactSupport": "Contactescha il support sche il problem persista",
+      "registerAgain": "Inscriver anc ina giada"
+    }
+  },
+  "companySearch": {
+    "error": "Errur durant il cargament da las cumpagnias",
+    "noResults": "Nagina cumpagnia existenta chattada",
+    "createNew": "Pudais cuntinuar cun \"{{value}}\" sco nova cumpagnia",
+    "minChars": "Endatai almain 2 segns per tschertgar"
+  }
+}

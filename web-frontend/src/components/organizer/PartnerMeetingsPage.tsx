@@ -98,12 +98,12 @@ const PartnerMeetingsPage: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableCell sx={{ width: 40 }} />
-              <TableCell>{t('meetings.columns.event')}</TableCell>
+              <TableCell>{t('common:labels.event')}</TableCell>
               <TableCell>{t('meetings.columns.type')}</TableCell>
-              <TableCell>{t('meetings.columns.date')}</TableCell>
+              <TableCell>{t('common:labels.date')}</TableCell>
               <TableCell>{t('meetings.columns.location')}</TableCell>
               <TableCell>{t('meetings.columns.inviteStatus')}</TableCell>
-              <TableCell>{t('meetings.columns.actions')}</TableCell>
+              <TableCell>{t('common:labels.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

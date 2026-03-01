@@ -49,11 +49,8 @@ test.describe('Event Registration Flow', () => {
     await page.fill('input[name="company"], input[id*="company"]', 'Acme Corp');
     await page.fill('input[name="role"], input[id*="role"]', 'Software Architect');
 
-    // Click Next button
-    const nextButton = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
+    // Click Next button via testid (language-independent)
+    const nextButton = page.getByTestId('registration-wizard-next-btn');
     await nextButton.click();
 
     // Step 4: Select sessions (Step 2)
@@ -68,30 +65,20 @@ test.describe('Event Registration Flow', () => {
       await sessionCheckbox.check();
     }
 
-    // Click Next to go to review step
-    const nextButton2 = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
-    await nextButton2.click();
+    // Click Next to go to review step via testid
+    await page.getByTestId('registration-wizard-next-btn').click();
 
     // Step 5: Review and accept terms (Step 3)
     await page.waitForTimeout(1000); // Allow for transition
 
-    // Accept terms and conditions
-    const termsCheckbox = page
-      .locator('[data-testid="terms-checkbox"], input[type="checkbox"]')
-      .filter({ hasText: /terms|bedingungen|accept|akzeptieren/i })
-      .first();
+    // Accept terms and conditions (use testid directly — inputs have no visible text)
+    const termsCheckbox = page.locator('[data-testid="terms-checkbox"]');
     if (await termsCheckbox.isVisible()) {
       await termsCheckbox.check();
     }
 
-    // Complete registration
-    const submitButton = page
-      .locator('button')
-      .filter({ hasText: /complete|submit|abschließen|registrieren/i })
-      .first();
+    // Complete registration via testid
+    const submitButton = page.getByTestId('registration-wizard-submit-btn');
     await submitButton.click();
 
     // Step 6: Verify confirmation page
@@ -121,12 +108,8 @@ test.describe('Event Registration Flow', () => {
       .first();
     await registerButton.click();
 
-    // Try to proceed without filling form
-    const nextButton = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
-    await nextButton.click();
+    // Try to proceed without filling form via testid (language-independent)
+    await page.getByTestId('registration-wizard-next-btn').click();
 
     // Verify validation errors appear
     const errorMessage = page.locator('text=/required|erforderlich|pflichtfeld/i').first();
@@ -149,12 +132,8 @@ test.describe('Event Registration Flow', () => {
     await page.fill('input[name="company"], input[id*="company"]', 'Acme Corp');
     await page.fill('input[name="role"], input[id*="role"]', 'Architect');
 
-    // Try to proceed
-    const nextButton = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
-    await nextButton.click();
+    // Try to proceed via testid (language-independent)
+    await page.getByTestId('registration-wizard-next-btn').click();
 
     // Verify email validation error
     const emailError = page.locator('text=/invalid email|ungültige e-mail|valid email/i').first();
@@ -177,17 +156,11 @@ test.describe('Event Registration Flow', () => {
     await page.fill('input[name="company"], input[id*="company"]', 'Acme Corp');
     await page.fill('input[name="role"], input[id*="role"]', 'Architect');
 
-    const nextButton = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
-    await nextButton.click();
+    // Proceed via testid (language-independent)
+    await page.getByTestId('registration-wizard-next-btn').click();
 
-    // Go back to step 1
-    const backButton = page
-      .locator('button')
-      .filter({ hasText: /back|zurück|previous/i })
-      .first();
+    // Go back to step 1 via testid
+    const backButton = page.getByTestId('registration-wizard-back-btn');
     if (await backButton.isVisible()) {
       await backButton.click();
 
@@ -213,29 +186,21 @@ test.describe('Event Registration Flow', () => {
     await page.fill('input[name="company"], input[id*="company"]', 'Acme Corp');
     await page.fill('input[name="role"], input[id*="role"]', 'Architect');
 
-    // Proceed through all steps quickly
-    const nextButton = page
-      .locator('button')
-      .filter({ hasText: /next|weiter|continue/i })
-      .first();
+    // Proceed through all steps via testid (language-independent)
+    const nextButton = page.getByTestId('registration-wizard-next-btn');
     await nextButton.click();
     await page.waitForTimeout(500);
     await nextButton.click();
     await page.waitForTimeout(500);
 
-    // Accept terms if present
-    const termsCheckbox = page
-      .locator('[data-testid="terms-checkbox"], input[type="checkbox"]')
-      .first();
+    // Accept terms if present (use testid directly — inputs have no visible text)
+    const termsCheckbox = page.locator('[data-testid="terms-checkbox"]');
     if (await termsCheckbox.isVisible()) {
       await termsCheckbox.check();
     }
 
-    // Submit and check for loading state
-    const submitButton = page
-      .locator('button')
-      .filter({ hasText: /complete|submit|abschließen/i })
-      .first();
+    // Submit via testid and check for loading state
+    const submitButton = page.getByTestId('registration-wizard-submit-btn');
     await submitButton.click();
 
     // Verify loading indicator or disabled button

@@ -1,0 +1,444 @@
+{
+  "navigation": {
+    "partners": "Partners",
+    "topicManagement": "Gestiun da temas"
+  },
+  "topicBacklog": {
+    "pageTitle": "Gestiun da temas",
+    "pageDescription": "Gestir temas en backlog, tscherner temas per occurrenzas ed analysar modellers d'utilisaziun",
+    "title": "Gestiun da backlog da temas",
+    "subtitle": "Tscherner temas dal backlog cun propostas intelligenta e detecziun d'obsolescenza",
+    "selectPrompt": "Tscherna in tema per visualisar detagls",
+    "noTopics": "Nagins temas chattads che correspundan als filtrs",
+    "lastUsed": "Ultima utilisaziun",
+    "usageCount": "Utilisà {{count}} giadas",
+    "createNew": "Crear nov tema",
+    "breadcrumbs": {
+      "home": "Pagina principala",
+      "events": "Occurrenzas",
+      "topicSelection": "Tscherna da tema",
+      "manageTopics": "Gestir temas"
+    },
+    "error": {
+      "loadFailed": "Chargiar temas ha fallì"
+    },
+    "createModal": {
+      "title": "Crear nov tema",
+      "fields": {
+        "title": "Titel",
+        "description": "Descripziun",
+        "category": "Categoria",
+        "categoryHint": "p.ex. tecnic, affars, design"
+      },
+      "errors": {
+        "titleRequired": "Il titel è necessari",
+        "titleTooLong": "Il titel sto avair maximalmain 255 caracters",
+        "descriptionRequired": "La descripziun è necessaria",
+        "categoryRequired": "La categoria è necessaria",
+        "createFailed": "Crear tema ha fallì. Emprova anc ina giada."
+      },
+      "create": "Crear tema",
+      "creating": "Creaziun..."
+    },
+    "editModal": {
+      "title": "Modifitgar tema",
+      "fields": {
+        "title": "Titel",
+        "description": "Descripziun",
+        "category": "Categoria"
+      },
+      "errors": {
+        "titleRequired": "Il titel è necessari",
+        "titleTooLong": "Il titel sto avair maximalmain 255 caracters",
+        "categoryRequired": "La categoria è necessaria",
+        "updateFailed": "Actualisar tema ha fallì. Emprova anc ina giada."
+      },
+      "save": "Salvar modifitgaziuns",
+      "saving": "Salvament..."
+    },
+    "filters": {
+      "title": "Filtrs",
+      "category": "Categoria",
+      "status": "Status",
+      "sort": "Sortir tenor",
+      "all": "Tut las categorias",
+      "allStatuses": "Tut ils status",
+      "categories": {
+        "technical": "Tecnic",
+        "management": "Management",
+        "softSkills": "Cumpetenzas socials",
+        "industryTrends": "Tendenzas dal sectur",
+        "toolsPlatforms": "Instruments e plattaformas"
+      },
+      "statuses": {
+        "available": "Disponibel (verd)",
+        "caution": "Utilisar cun precauziun (mellen)",
+        "unavailable": "Memia recent (cotschen)"
+      },
+      "sortOptions": {
+        "safestFirst": "Il pli segir il emprim (obsolescenza ↓)",
+        "recentFirst": "Il pli recent il emprim (obsolescenza ↑)",
+        "titleAZ": "Titel (A-Z)",
+        "mostUsed": "Il pli utilisà"
+      }
+    },
+    "details": {
+      "metrics": "Metricas",
+      "lastUsed": "Ultima utilisaziun",
+      "usageCount": "Dumber d'utilisaziuns",
+      "editButton": "Modifitgar tema",
+      "deleteButton": "Stizzar tema",
+      "selectButton": "Tscherner per occurrenza",
+      "selecting": "Tscherna...",
+      "overrideButton": "Ignorar avis",
+      "statusGreen": "Segir da reutilisar - ultima utilisaziun avant pli che 20 mais",
+      "statusYellow": "Utilisar cun precauziun - ultima utilisaziun avant 12-20 mais",
+      "statusRed": "Memia recent - ultima utilisaziun en ils davos 12 mais, ristga auta da duplicaziun",
+      "similarityWarning": "{{count}} temas simils detectads (> 70% similaridat)"
+    },
+    "viewMode": {
+      "label": "Modus da visualisaziun",
+      "heatMap": "Carta da calura",
+      "list": "Lista",
+      "board": "Tabla",
+      "boardComingSoon": "Vista tabla vegn disponibla a breve..."
+    },
+    "heatMap": {
+      "title": "Carta da calura d'utilisaziun da temas",
+      "subtitle": "Colurs pli ombrivels indichan in'utilisaziun pli alta. Clicca sin in tema per visualisar detagls.",
+      "description": "Frequenza d'utilisaziun da temas en ils davos 24 mais (gruppads per quartal)",
+      "quarter": "Quartal",
+      "spring": "Primavaira",
+      "summer": "Stad",
+      "autumn": "Atun",
+      "usageCount": "Dumber d'utilisaziuns",
+      "totalAttendance": "Participaziun totala",
+      "avgEngagement": "Engaschament mesaun",
+      "events": "Occurrenzas",
+      "noData": "Nagina istorgia d'utilisaziun disponibla per quest tema.",
+      "noTopics": "Nagins temas disponibels per visualisar.",
+      "tooltip": "Clicca sin in quartal per vesair detagls davart occurrenzas che han utilisà quest tema",
+      "hint": "Mova il curser sin ils puncts da datas per ulteriuras infurmaziuns",
+      "stale": "Obsolet - betg utilisà recentemente",
+      "trending": "En tendenza - utilisà recentemente",
+      "legend": {
+        "noUsage": "Nagina utilisaziun",
+        "low": "Utilisaziun bassa",
+        "medium": "Utilisaziun mesauna",
+        "high": "Utilisaziun auta",
+        "stale": "Obsolet",
+        "trending": "En tendenza"
+      },
+      "navigation": {
+        "previous": "Onns precedents",
+        "next": "Onns suandants",
+        "atCurrent": "A l'onn actual"
+      }
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Temas simils detectads",
+        "message": "Ils suandants temas han ina alta similaridat (> 70%) cun tia tscherna. Est ti segir da vulair cuntinuar?",
+        "similarity": "Similaridat",
+        "justification": "Giustificaziun (facultativ)",
+        "confirm": "Tscherner mintgatant"
+      },
+      "override": {
+        "title": "Ignorar avis d'obsolescenza",
+        "message": "Quest tema è vegnì utilisà recentemente (score d'obsolescenza: {{score}}%). Dà ina giustificaziun per utilisar el anc ina giada.",
+        "justification": "Giustificaziun",
+        "helper": "Spiega perché quest tema duess vegnir reutilisà malgrà ch'el è recent",
+        "confirm": "Ignorar e tscherner"
+      },
+      "delete": {
+        "title": "Stizzar tema",
+        "message": "Est ti segir da vulair stizzar \"{{title}}\"? Questa acziun na po betg vegnir revocada.",
+        "cannotDelete": "Impussibel da stizzar quest tema perché el è vegnì utilisà en {{count}} occurrenza/s.",
+        "confirm": "Stizzar tema",
+        "success": "Tema stizzà cun success",
+        "error": "Stizzar tema ha fallì. Emprova anc ina giada."
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Brainstorming da referents",
+    "subtitle": "Agiuntar referents potenzials al pool da l'occurrenza ed assignarils ad organisaturs per il contact",
+    "form": {
+      "speakerName": "Num dal referent",
+      "company": "Interpresa",
+      "expertise": "Cumpetenza",
+      "assignOrganizer": "Assignar ad organisatur (facultativ)",
+      "notes": "Notas (facultativ)",
+      "addButton": "Agiuntar al pool",
+      "adding": "Agiuntament...",
+      "error": "Agiuntar referent ha fallì"
+    },
+    "pool": {
+      "title": "Pool da referents",
+      "empty": "Nagins referents en il pool. Agiunter ins qua sura!",
+      "expertise": "Cumpetenza",
+      "assigned": "Assignà a",
+      "error": "Chargiar pool da referents ha fallì"
+    },
+    "actions": {
+      "skipForNow": "Saltar per ussa",
+      "continue": "Cuntinuar al contact"
+    }
+  },
+  "speakerOutreach": {
+    "speakerName": "Referent",
+    "contactMethod": "Metoda da contact",
+    "contactDate": "Data da contact",
+    "markContacted": "Marcar sco contactà",
+    "contactHistory": "Istorgia da contacts",
+    "outreachDetails": "Detagls dal contact",
+    "noContactHistory": "Nagina istorgia da contacts",
+    "contactedBy": "Contactà da",
+    "markContactedModal": {
+      "title": "Marcar referent sco contactà",
+      "method": {
+        "email": "E-mail",
+        "phone": "Telefon",
+        "inPerson": "Persunalamain"
+      },
+      "notesPlaceholder": "Notas davart la conversaziun...",
+      "error": {
+        "methodRequired": "La metoda da contact è necessaria",
+        "dateRequired": "La data da contact è necessaria",
+        "failed": "Documentar contact ha fallì",
+        "loadHistory": "Chargiar istorgia da contacts ha fallì"
+      }
+    },
+    "emailPlaceholder": "speaker@example.com"
+  },
+  "speakerStatus": {
+    "title": "Status da referents",
+    "statusSummary": "Resumé da status",
+    "lanes": "Corsias da status",
+    "IDENTIFIED": "Identificà",
+    "INVITED": "Invità",
+    "CONTACTED": "Contactà",
+    "READY": "Pront",
+    "ACCEPTED": "Acceptà",
+    "CONTENT_SUBMITTED": "Cuntegn tramess",
+    "QUALITY_REVIEWED": "Qualità verificada",
+    "CONFIRMED": "Confirmà",
+    "DECLINED": "Refusà",
+    "changeStatus": "Midar status",
+    "changeReason": "Motiv da midada da status (facultativ)",
+    "confirmChange": "Midar status",
+    "statusChanged": "Status midà cun success",
+    "invalidTransition": "Transiziun da status nunvalida da {{from}} a {{to}}",
+    "historyTitle": "Istorgia da status",
+    "changedBy": "Midà da",
+    "noHistory": "Nagina istorgia da status disponibla",
+    "acceptanceRate": "Quota d'acceptaziun: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} referents acceptads",
+    "thresholdMet": "Valur minimal cuntanschì ✓",
+    "thresholdNotMet": "Valur minimal betg cuntanschì ({{count}} / {{required}})",
+    "overflowDetected": "Overflow detectà ({{count}} > {{max}})",
+    "dragToChange": "Trejer referents per midar status",
+    "confirmChangeMessage": "Midar status da {{speaker}} da {{from}} a {{to}}?",
+    "reasonHelperText": "Facultativ (max {{max}} caracters)",
+    "reasonPlaceholder": "p.ex. Referent confirmà via e-mail",
+    "reasonTooLong": "Il motiv è memia lung ({{current}}/{{max}} caracters)"
+  },
+  "speakerContent": {
+    "submitContent": "Trametter cuntegn da referent",
+    "presentationDetails": "Detagls da presentaziun",
+    "speakerInformation": "Infurmaziuns davart referent",
+    "submitting": "Trasmissiun...",
+    "editSpeakerProfile": "Modifitgar profil da referent",
+    "createNewSpeaker": "Crear nov referent",
+    "form": {
+      "username": "Tschertgar referent",
+      "presentationTitle": "Titel da presentaziun",
+      "presentationAbstract": "Abstract da presentaziun",
+      "charactersRemaining": "caracters restants"
+    },
+    "errors": {
+      "usernameRequired": "Il referent è necessari",
+      "titleRequired": "Il titel da presentaziun è necessari",
+      "abstractRequired": "L'abstract da presentaziun è necessari",
+      "abstractTooLong": "L'abstract sto avair maximalmain {{max}} caracters",
+      "submitFailed": "Trametter cuntegn ha fallì. Emprova anc ina giada."
+    }
+  },
+  "qualityReview": {
+    "title": "Revisiun da qualità",
+    "speaker": "Referent",
+    "presentationTitle": "Titel da presentaziun",
+    "abstract": "Abstract",
+    "qualityCriteria": "Criteris da qualità",
+    "characters": "caracters",
+    "detected": "Detectà",
+    "notDetected": "Betg detectà",
+    "passed": "Passà",
+    "promotionDetected": "Promoziun detectada",
+    "approve": "Approvar",
+    "reject": "Refusar",
+    "approving": "Approvament...",
+    "submitting": "Trasmissiun...",
+    "confirmReject": "Confermar refus",
+    "rejectInstructions": "Dà in feedback perché il cuntegn vegn refusà.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Spiega tge che sto vegnir meglierà...",
+    "noContent": "Nagin cuntegn disponibel",
+    "criteria": {
+      "abstractLength": "Lunghezza d'abstract",
+      "lessonsLearned": "Cuntegna «Lecziuns imparads»",
+      "noPromotion": "Nagina promoziun da products"
+    },
+    "errors": {
+      "feedbackRequired": "Il feedback è necessari",
+      "unknown": "In errur nunenconuschent è cumpareglià"
+    }
+  },
+  "speakers": {
+    "invite": "Invitar",
+    "sendInvitation": "Trametter invitaziun",
+    "noEmailTooltip": "Agiuntar e-mail per invitar",
+    "sending": "Trasmissiun...",
+    "inviteSent": "Invitaziun tramessa",
+    "invitationSent": "Invitaziun tramessa a {{email}}",
+    "inviteFailed": "Trasmetter ha fallì",
+    "invitationFailed": "Trametter invitaziun ha fallì",
+    "email": "Adressa e-mail",
+    "emailRequired": "L'e-mail è necessaria per trametter l'invitaziun",
+    "invalidEmail": "Endatescha ina adressa e-mail valida",
+    "saveEmail": "Salvar e-mail",
+    "emailSaved": "E-mail salvada",
+    "tentative": "Provisoric",
+    "responseDetails": "Detagls da resposta",
+    "acceptedAt": "Acceptà ils",
+    "preferredTimeSlot": "Urari preferì",
+    "travelRequirements": "Basegns da viadi",
+    "technicalRequirements": "Basegns tecnics",
+    "initialTitle": "Titel da presentaziun",
+    "comments": "Commentaris",
+    "declineDetails": "Detagls dal refus",
+    "declinedAt": "Refusà ils",
+    "declineReason": "Motiv",
+    "tentativeDetails": "Detagls provisorics",
+    "tentativeReason": "Motiv",
+    "sendReminder": "Trametter ramintur",
+    "sendingReminder": "Trasmissiun...",
+    "reminderSent": "Ramintur tramess a {{email}}",
+    "reminderFailed": "Trametter ramintur ha fallì"
+  },
+  "tasks": {
+    "taskBoard": "Tabla d'activitads",
+    "filter": "Filtrar",
+    "myTasks": "Mes activitads",
+    "allTasks": "Tut las activitads",
+    "sortBy": "Sortir tenor",
+    "dueDate": "Data da scadenza",
+    "createdDate": "Data da creaziun",
+    "addCustomTask": "Agiuntar activitad persunalisada",
+    "errorLoadingTasks": "Chargiar activitads ha fallì",
+    "pending": "En spetga",
+    "pendingDescription": "En spetga dal status da declanchaziun",
+    "toDo": "Da far",
+    "todoDescription": "Pront per cumenzar",
+    "inProgress": "En cors",
+    "inProgressDescription": "Actualmain en lavuraziun",
+    "completed": "Terminà",
+    "completedDescription": "Activitads terminadas",
+    "completeTask": "Terminar activitad",
+    "completionNotes": "Notas da terminaziun (facultativ)",
+    "markComplete": "Marcar sco terminà",
+    "due": "Scadenza",
+    "assignedTo": "Assignà a",
+    "completedOn": "Terminà ils",
+    "completedBy": "Terminà da",
+    "noTasks": "Naginas activitads"
+  },
+  "analytics": {
+    "title": "Analisas",
+    "timeRange": {
+      "all": "Tut il temp",
+      "5y": "Davos 5 onns",
+      "2y": "Davos 2 onns"
+    },
+    "tabs": {
+      "overview": "Survista",
+      "attendance": "Participaziun",
+      "companies": "Interpresas"
+    },
+    "kpi": {
+      "totalEvents": "Total d'occurrenzas",
+      "totalAttendees": "Total da participants",
+      "companiesRepresented": "Interpresas",
+      "totalSessions": "Total da sessiuns",
+      "totalSpeakers": "Total da referents"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Istorgia d'occurrenzas",
+      "attendeesPerEvent": "Participants per occurrenza",
+      "returningVsNew": "Participants returnants vs novs",
+      "eventsPerCategory": "Occurrenzas per categoria",
+      "topicPopularity": "Popularitad da temas",
+      "attendanceOverTime": "Participaziun per interpresa en il temp",
+      "sessionsPerCompany": "Sessiuns per interpresa",
+      "attendeeDistribution": "Distribuziun da participants per interpresa"
+    },
+    "labels": {
+      "returning": "Returnants",
+      "new": "Novs",
+      "showDataTable": "Mussar tabella da datas",
+      "hideDataTable": "Zuppentar tabella da datas",
+      "noData": "Naginas datas disponiblas per quest periud",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Tut"
+      },
+      "labelToggle": {
+        "title": "Titel",
+        "category": "Categoria",
+        "both": "Ambedus"
+      },
+      "filterByEvent": "Filtrar per occurrenza",
+      "allEvents": "Tut las occurrenzas",
+      "sessions": "sessiuns",
+      "speakers": "referents"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Scrivi in tema e premma Enter...",
+    "fitAll": "Mussar tut",
+    "snapToActive": "Centrar sin activ",
+    "backButton": "← Turnar a la lista da temas",
+    "unsavedWarning": "Sessiun betg salvada — tut las modifitgaziuns vegnan pers. Turnar?",
+    "accept": {
+      "title": "Tscherner tema: {{topic}}",
+      "partnerAlignment": "{{count}} da 9 partners aliniads",
+      "lastCovered": "Ultima tractada: BATbern #{{num}} ({{count}} occurrenzas fa)",
+      "overrideReason": "Perché revisitar quest tema? (facultativ)",
+      "confirm": "Tscherner quest tema",
+      "cancel": "Cuntinuar a explorar",
+      "saveError": "Salvar tscherna da tema ha fallì. Emprova anc ina giada."
+    },
+    "noEventCode": "Nagin code d'eveniment furnì"
+  },
+  "livePreview": {
+    "devicePreviewMode": "modus d'avisament da l'apparat",
+    "desktopPreview": "Avisament desktop",
+    "mobilePreview": "Avisament mobil",
+    "printPreview": "Avisament da stampa",
+    "desktop": "Desktop",
+    "mobile": "Mobil",
+    "print": "Stampar",
+    "refreshPreview": "Actualisar l'avisament",
+    "switchedTo": "Midat ad avisament {{device}}",
+    "refreshingPreview": "Actualisaziun da l'avisament...",
+    "failedToLoad": "Il cargament da l'avisament ha fallì. Pruvai anc ina giada.",
+    "iframeTitle": "Avisament da l'eveniment",
+    "iframeAriaLabel": "Avisament dal cuntegn da l'eveniment",
+    "previewModeCaption": "Modus d'avisament: {{mode}} | Fasa: {{phase}}",
+    "deviceCaption": "Apparat: {{device}} ({{width}} x {{height}})"
+  },
+  "acceptTopic": {
+    "descriptionOptional": "Description (optional)"
+  }
+}

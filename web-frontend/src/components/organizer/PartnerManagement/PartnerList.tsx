@@ -12,11 +12,13 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { FirstPage, NavigateBefore, NavigateNext, LastPage } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { PartnerCard } from './PartnerCard';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
 
 export const PartnerList: React.FC = () => {
+  const { t } = useTranslation('partners');
   const { viewMode, filters, searchQuery, sortBy, sortOrder, page, setPage } = usePartnerStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -65,7 +67,7 @@ export const PartnerList: React.FC = () => {
   // Error state
   if (isError) {
     const errorObj = error as Error & { correlationId?: string };
-    const errorMessage = errorObj?.message || 'Failed to fetch partners';
+    const errorMessage = errorObj?.message || t('error.failedToLoad');
     const correlationId = errorObj?.correlationId || 'N/A';
 
     return (
@@ -73,7 +75,7 @@ export const PartnerList: React.FC = () => {
         <Alert severity="error">
           <Typography variant="body1">{errorMessage}</Typography>
           <Typography variant="caption" color="text.secondary">
-            Correlation ID: {correlationId}
+            {t('error.correlationId')}: {correlationId}
           </Typography>
         </Alert>
       </Box>
@@ -93,7 +95,7 @@ export const PartnerList: React.FC = () => {
         }}
       >
         <Typography variant="h6" color="text.secondary">
-          No partners found
+          {t('empty.noPartners')}
         </Typography>
       </Box>
     );
@@ -133,7 +135,7 @@ export const PartnerList: React.FC = () => {
           <Box
             component="nav"
             role="navigation"
-            aria-label="Partner list pagination"
+            aria-label={t('pagination.ariaLabel')}
             data-testid="partner-pagination"
             sx={{
               display: 'flex',
@@ -146,15 +148,18 @@ export const PartnerList: React.FC = () => {
             }}
           >
             <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
-              Page {(pagination?.page || 0) + 1} of {pagination?.totalPages || 1} •{' '}
-              {pagination?.totalElements || 0} partners
+              {t('pagination.page', {
+                current: (pagination?.page || 0) + 1,
+                total: pagination?.totalPages || 1,
+              })}{' '}
+              • {t('pagination.partners', { count: pagination?.totalElements || 0 })}
             </Typography>
 
             <ButtonGroup variant="outlined" size="small">
               <Button
                 onClick={handleFirstPage}
                 disabled={isFirstPage}
-                aria-label="First page"
+                aria-label={t('pagination.firstPage')}
                 data-testid="first-page-button"
               >
                 <FirstPage />
@@ -162,7 +167,7 @@ export const PartnerList: React.FC = () => {
               <Button
                 onClick={handlePrevPage}
                 disabled={isFirstPage}
-                aria-label="Previous page"
+                aria-label={t('pagination.previousPage')}
                 data-testid="prev-page-button"
               >
                 <NavigateBefore />
@@ -170,7 +175,7 @@ export const PartnerList: React.FC = () => {
               <Button
                 onClick={handleNextPage}
                 disabled={isLastPage}
-                aria-label="Next page"
+                aria-label={t('pagination.nextPage')}
                 data-testid="next-page-button"
               >
                 <NavigateNext />
@@ -178,7 +183,7 @@ export const PartnerList: React.FC = () => {
               <Button
                 onClick={handleLastPage}
                 disabled={isLastPage}
-                aria-label="Last page"
+                aria-label={t('pagination.lastPage')}
                 data-testid="last-page-button"
               >
                 <LastPage />
@@ -203,7 +208,7 @@ export const PartnerList: React.FC = () => {
         <Box
           component="nav"
           role="navigation"
-          aria-label="Partner list pagination"
+          aria-label={t('pagination.ariaLabel')}
           data-testid="partner-pagination"
           sx={{
             display: 'flex',
@@ -216,15 +221,18 @@ export const PartnerList: React.FC = () => {
           }}
         >
           <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
-            Page {(pagination?.page || 0) + 1} of {pagination?.totalPages || 1} •{' '}
-            {pagination?.totalElements || 0} partners
+            {t('pagination.page', {
+              current: (pagination?.page || 0) + 1,
+              total: pagination?.totalPages || 1,
+            })}{' '}
+            • {t('pagination.partners', { count: pagination?.totalElements || 0 })}
           </Typography>
 
           <ButtonGroup variant="outlined" size="small">
             <Button
               onClick={handleFirstPage}
               disabled={isFirstPage}
-              aria-label="First page"
+              aria-label={t('pagination.firstPage')}
               data-testid="first-page-button"
             >
               <FirstPage />
@@ -232,7 +240,7 @@ export const PartnerList: React.FC = () => {
             <Button
               onClick={handlePrevPage}
               disabled={isFirstPage}
-              aria-label="Previous page"
+              aria-label={t('pagination.previousPage')}
               data-testid="prev-page-button"
             >
               <NavigateBefore />
@@ -240,7 +248,7 @@ export const PartnerList: React.FC = () => {
             <Button
               onClick={handleNextPage}
               disabled={isLastPage}
-              aria-label="Next page"
+              aria-label={t('pagination.nextPage')}
               data-testid="next-page-button"
             >
               <NavigateNext />
@@ -248,7 +256,7 @@ export const PartnerList: React.FC = () => {
             <Button
               onClick={handleLastPage}
               disabled={isLastPage}
-              aria-label="Last page"
+              aria-label={t('pagination.lastPage')}
               data-testid="last-page-button"
             >
               <LastPage />

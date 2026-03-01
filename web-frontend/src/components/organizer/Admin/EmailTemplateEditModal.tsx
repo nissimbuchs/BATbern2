@@ -160,7 +160,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
         {!isEdit && (
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField
-              label="Template Key"
+              label={t('emailTemplates.templateKey', 'Template Key')}
               value={newTemplateKey}
               onChange={(e) => setNewTemplateKey(e.target.value)}
               fullWidth
@@ -168,10 +168,10 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
               helperText="e.g. my-custom-invitation"
             />
             <FormControl sx={{ minWidth: 100 }}>
-              <InputLabel>Locale</InputLabel>
+              <InputLabel>{t('emailTemplates.locale', 'Locale')}</InputLabel>
               <Select
                 value={newLocale}
-                label="Locale"
+                label={t('emailTemplates.locale', 'Locale')}
                 onChange={(e) => setNewLocale(e.target.value as 'de' | 'en')}
               >
                 <MenuItem value="de">DE</MenuItem>
