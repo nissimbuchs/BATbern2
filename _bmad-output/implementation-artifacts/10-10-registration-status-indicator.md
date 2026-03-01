@@ -335,6 +335,12 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- **Post-merge fix — JWT username mismatch (critical):** `GET /my-registration` in `EventController` was calling `authentication.getName()` which returns the Cognito `sub` UUID, not the human-readable `custom:username`. All other endpoints in the controller used `securityContextHelper.getCurrentUsername()` (reads `custom:username` claim, falls back to `sub`). The mismatch caused the endpoint to always return 404 for authenticated users, silently breaking AC2, AC5, AC6, and the new hero-section check. Fixed in commit `4ded9217`.
+
+- **Post-merge feature — JWT form prefill:** When an authenticated user opens the registration wizard and has not yet registered, `firstName`, `lastName`, and `email` are pre-filled from `GET /users/me` (via `useUserProfile`). Added `prefill()` method to `PersonalDetailsStepRef` to update react-hook-form's live state (not just `defaultValues`). Anonymous users unaffected. Committed `0c39e589`.
+
+- **Post-merge fix — hero "already registered" cross-browser:** The HeroSection replaced the CTA with an "already registered" box only from `sessionStorage` (browser-local). Added `useMyRegistration(eventCode)` directly in `HeroSection` so authenticated users see the correct state in any browser. Committed `10000bac`.
+
 ### File List
 
 | File | Change |
@@ -342,20 +348,23 @@ claude-sonnet-4-6
 | `docs/api/events-api.openapi.yml` | Added `GET /events/{eventCode}/my-registration` + `MyRegistrationResponse` schema |
 | `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` | Added `findByEventCodeAndAttendeeUsername` JPQL query |
 | `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` | Added `getMyRegistration()`; updated `createRegistration()` for CANCELLED re-registration (T4.6) |
-| `services/event-management-service/src/main/java/ch/batbern/events/controller/EventController.java` | Added `getMyRegistration` endpoint with `@PreAuthorize("isAuthenticated()")` |
+| `services/event-management-service/src/main/java/ch/batbern/events/controller/EventController.java` | Added `getMyRegistration` endpoint; fixed username extraction (`authentication.getName()` → `securityContextHelper.getCurrentUsername()`) |
 | `services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java` | New — 7 GET status tests + T4.6.2 POST re-registration test |
 | `web-frontend/src/hooks/useMyRegistration.ts` | New hook (AC1, AC7, AC8) |
 | `web-frontend/src/hooks/useMyRegistration.test.ts` | New unit tests |
 | `web-frontend/src/services/registrationService.ts` | Added `getMyRegistration()` service function |
 | `web-frontend/src/components/public/RegistrationStatusBanner.tsx` | New component (AC2, AC3, AC4) |
 | `web-frontend/src/components/public/__tests__/RegistrationStatusBanner.test.tsx` | New tests |
-| `web-frontend/src/components/public/Registration/RegistrationWizard.tsx` | Guard screen inline (AC6/T11); cache invalidation (AC7/T6.8) |
-| `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx` | Guard tests added (Story 10.10) |
+| `web-frontend/src/components/public/Registration/RegistrationWizard.tsx` | Guard screen inline (AC6/T11); cache invalidation (AC7/T6.8); JWT pre-fill via `useUserProfile` |
+| `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx` | Guard tests + pre-fill test added |
 | `web-frontend/src/components/public/EventCard.tsx` | Added `myRegistrationStatus` prop + status chip (AC5) |
 | `web-frontend/src/components/public/UpcomingEventsSection.tsx` | `UpcomingEventCardWithStatus` wrapper per-event hook |
 | `web-frontend/src/pages/public/HomePage.tsx` | Integrated `RegistrationStatusBanner` (AC2, AC4) |
 | `web-frontend/src/pages/public/ArchivePage.tsx` | `ArchiveEventCardWithStatus` with 12-month filter (AC5/T10.5) |
 | `web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx` | Updated |
+| `web-frontend/src/components/public/Hero/HeroSection.tsx` | Added `useMyRegistration` + "already registered" branch for authenticated cross-browser |
+| `web-frontend/src/components/public/Hero/__tests__/HeroSection.test.tsx` | Mock `useMyRegistration` added |
+| `web-frontend/src/components/public/Registration/PersonalDetailsStep.tsx` | Added `prefill()` to `PersonalDetailsStepRef` — calls `form.setValue()` for JWT pre-fill |
 | `web-frontend/src/types/generated/events-api.types.ts` | Regenerated (MyRegistrationResponse schema) |
 | `web-frontend/public/locales/en/registration.json` | Added `registrationStatusBanner.*` + `registrationStatusGuard.*` keys |
 | `web-frontend/public/locales/de/registration.json` | German translations |
