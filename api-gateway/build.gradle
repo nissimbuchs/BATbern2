@@ -33,7 +33,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for Cognito and SES
-    implementation platform('software.amazon.awssdk:bom:2.41.19')
+    implementation platform('software.amazon.awssdk:bom:2.42.4')
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:ses'
     implementation 'software.amazon.awssdk:auth'
