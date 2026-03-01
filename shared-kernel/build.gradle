@@ -79,7 +79,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic'
 
     // Database
-    implementation 'org.postgresql:postgresql:42.7.7'
+    implementation 'org.postgresql:postgresql:42.7.10'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
