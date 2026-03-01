@@ -63,7 +63,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.9.1",
     "@types/pg": "^8.16.0",
-    "aws-cdk": "^2.1104.0",
+    "aws-cdk": "^2.1108.0",
     "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.27.0",
     "jest": "^30.0.0",
@@ -74,7 +74,7 @@
   },
   "dependencies": {
     "@aws-crypto/client-node": "^4.2.1",
-    "aws-cdk-lib": "^2.236.0",
+    "aws-cdk-lib": "^2.240.0",
     "constructs": "^10.4.5",
     "js-yaml": "^4.1.0",
     "pg": "^8.18.0",
