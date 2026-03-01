@@ -186,5 +186,18 @@
     "noResults": "Nagina cumpagnia existenta chattada",
     "createNew": "Pudais cuntinuar cun \"{{value}}\" sco nova cumpagnia",
     "minChars": "Endatai almain 2 segns per tschertgar"
+  },
+  "registrationStatusBanner": {
+    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
+    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
+    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
+    "cancelled": "[MISSING] Your registration was cancelled.",
+    "manageLink": "[MISSING] Manage Registration",
+    "registerAgain": "[MISSING] Register again"
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "[MISSING] You are already registered for this event",
+    "goBack": "[MISSING] Go back",
+    "registerAgain": "[MISSING] Register again"
   }
 }

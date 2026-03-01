@@ -15,13 +15,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
 import type { CreateRegistrationRequest } from '@/types/event.types';
-import { Loader2, CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -47,7 +49,11 @@ export const RegistrationWizard = ({
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation(['registration', 'common']);
+  const queryClient = useQueryClient();
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
+
+  // AC6: Check if authenticated user already has a registration (Story 10.10, T11)
+  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(eventCode);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -163,6 +169,8 @@ export const RegistrationWizard = ({
       setRegisteredEmail(response.email);
       setRegistrationSuccess(true);
       setIsSubmitting(false);
+      // AC7: Invalidate my-registration cache so banner/guard reflect new status immediately
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventCode] });
     } catch (err) {
       // Handle duplicate registration (409 Conflict)
       // Backend returns 409 only for confirmed/cancelled registrations
@@ -200,6 +208,61 @@ export const RegistrationWizard = ({
       </Button>
     </div>
   );
+
+  // AC6: Registration Wizard guard (Story 10.10, T11)
+  // When the authenticated user already has a non-null registration:
+  // - REGISTERED / CONFIRMED / WAITLIST → show guard with "Go back" button
+  // - CANCELLED → show guard with "Register again" button (backend T4.6 allows re-registration)
+  if (!isRegistrationLoading && myRegistration != null) {
+    const isCancelled = myRegistration.status === 'CANCELLED';
+    const formattedDate = myRegistration.registrationDate
+      ? new Date(myRegistration.registrationDate).toLocaleDateString()
+      : null;
+
+    return (
+      <div
+        className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}
+        data-testid="registration-status-guard"
+      >
+        <div className="text-center mb-6">
+          <AlertCircle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-light mb-2">
+            {t('registrationStatusGuard.alreadyRegistered')}
+          </h2>
+          {formattedDate && (
+            <p className="text-sm text-zinc-400">
+              {myRegistration.status} · {formattedDate}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-center gap-4">
+          {isCancelled ? (
+            // CANCELLED: allow re-registration (backend deletes old record and creates new)
+            // Note: we can't reset myRegistration client-side, but the guard will dismiss
+            // once the query is invalidated after successful submission.
+            <Button
+              onClick={() => {
+                // Navigate through the wizard by "resetting" the guard state.
+                // We do this by invalidating the cache so the query returns null next time.
+                queryClient.removeQueries({ queryKey: ['my-registration', eventCode] });
+              }}
+              data-testid="registration-guard-register-again-btn"
+            >
+              {t('registrationStatusGuard.registerAgain')}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={onCancel ?? (() => navigate('/'))}
+              data-testid="registration-guard-go-back-btn"
+            >
+              {t('registrationStatusGuard.goBack')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Success view
   if (registrationSuccess) {

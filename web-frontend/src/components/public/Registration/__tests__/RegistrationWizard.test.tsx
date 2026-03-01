@@ -19,6 +19,11 @@ vi.mock('@/services/eventApiClient', () => ({
   },
 }));
 
+// Mock useMyRegistration — return null (not registered) so guard doesn't show (Story 10.10, T11)
+vi.mock('@/hooks/useMyRegistration', () => ({
+  useMyRegistration: () => ({ data: null, isLoading: false }),
+}));
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {

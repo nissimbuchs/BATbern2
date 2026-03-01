@@ -8,6 +8,8 @@ import ch.batbern.events.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.generated.FailedRegistration;
+import ch.batbern.events.dto.generated.MyRegistrationResponse;
+import ch.batbern.events.dto.generated.MyRegistrationResponse.StatusEnum;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -21,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,8 +108,16 @@ public class RegistrationService {
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
                 return registration;
+            } else if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
+                // Story 10.10 (T4.6): Allow re-registration for cancelled users.
+                // Delete the cancelled record and fall through to create a new registration.
+                // This replaces the confusing IllegalStateException that users previously experienced.
+                registrationRepository.delete(registration);
+                log.info("Deleted cancelled registration for event: {} by user: {}, allowing re-registration",
+                        eventCode, username);
+                // Fall through to create a new registration below
             } else {
-                // Registration exists and is confirmed/cancelled - reject duplicate
+                // confirmed or waitlist — reject duplicate
                 log.warn("Duplicate registration attempt for event: {} by user: {} (status: {})",
                         eventCode, username, registration.getStatus());
                 throw new IllegalStateException(
@@ -228,6 +240,41 @@ public class RegistrationService {
                     .attendeeCompany(null)
                     .build();
         }
+    }
+
+    /**
+     * Get the authenticated user's registration status for a specific event.
+     * <p>
+     * Story 10.10: GET /events/{eventCode}/my-registration (AC1)
+     * <p>
+     * ADR-004: Response is minimal — no user profile fields (firstName, lastName, email).
+     * ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     *
+     * @param eventCode             Event code (e.g., "BATbern142")
+     * @param authenticatedUsername Username extracted from SecurityContext
+     * @return Optional containing MyRegistrationResponse if a registration exists, empty if not
+     */
+    @Transactional(readOnly = true)
+    public Optional<MyRegistrationResponse> getMyRegistration(String eventCode, String authenticatedUsername) {
+        log.debug("Getting registration for event: {} and user: {}", eventCode, authenticatedUsername);
+
+        return registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, authenticatedUsername)
+                .map(registration -> {
+                    // Map DB status to API enum. DB uses 'waitlisted'; API enum uses WAITLIST.
+                    String dbStatus = registration.getStatus() != null
+                            ? registration.getStatus().toUpperCase() : null;
+                    if ("WAITLISTED".equals(dbStatus)) {
+                        dbStatus = "WAITLIST";
+                    }
+                    StatusEnum statusEnum = dbStatus != null ? StatusEnum.fromValue(dbStatus) : null;
+                    OffsetDateTime registrationDate = registration.getRegistrationDate() != null
+                            ? registration.getRegistrationDate().atOffset(ZoneOffset.UTC) : null;
+                    return new MyRegistrationResponse(
+                            registration.getRegistrationCode(),
+                            eventCode,
+                            statusEnum,
+                            registrationDate);
+                });
     }
 
     /**

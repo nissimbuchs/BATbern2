@@ -10,6 +10,7 @@ import ch.batbern.events.dto.CreateRegistrationResponse;
 import ch.batbern.events.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
@@ -47,6 +48,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -1457,6 +1460,40 @@ public class EventController {
     // ================================
     // Registration Endpoints (Story 2.2a: Anonymous Event Registration)
     // ================================
+
+    /**
+     * Get My Registration Status - Story 10.10 (AC1)
+     *
+     * GET /api/v1/events/{eventCode}/my-registration
+     *
+     * Returns the authenticated user's registration status for the specified event.
+     * ADR-003: Uses eventCode (meaningful ID). ADR-004: Minimal response (no user profile fields).
+     *
+     * Authentication: Required. @PreAuthorize("isAuthenticated()") provides method-level guard
+     * (production URL-level security via SecurityConfig.anyRequest().authenticated() also applies).
+     *
+     * @param eventCode Event code to check registration for
+     * @return 200 with MyRegistrationResponse if registered, 404 if not registered
+     */
+    @GetMapping("/{eventCode}/my-registration")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get my registration status for an event",
+            description = "Returns the authenticated user's registration status. "
+                    + "Returns 404 when not registered. Requires authentication."
+    )
+    public ResponseEntity<MyRegistrationResponse> getMyRegistration(
+            @PathVariable String eventCode) {
+        log.debug("GET /api/v1/events/{}/my-registration", eventCode);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        return registrationService.getMyRegistration(eventCode, username)
+                .map(response -> ResponseEntity.ok(response))
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No registration found for event " + eventCode + " and user " + username));
+    }
 
     /**
      * Create Event Registration (Anonymous) - Story 2.2a (ADR-005)

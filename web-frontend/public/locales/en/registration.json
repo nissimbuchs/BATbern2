@@ -186,5 +186,18 @@
       "contactSupport": "Contact support if the problem persists",
       "registerAgain": "Register Again"
     }
+  },
+  "registrationStatusBanner": {
+    "confirmed": "Your registration is confirmed. We'll see you there!",
+    "registered": "You are registered for this event. Check your email for confirmation.",
+    "waitlist": "You are on the waitlist. We'll notify you if a spot opens.",
+    "cancelled": "Your registration was cancelled.",
+    "manageLink": "Manage Registration",
+    "registerAgain": "Register again"
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "You are already registered for this event",
+    "goBack": "Go back",
+    "registerAgain": "Register again"
   }
 }

@@ -929,6 +929,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/my-registration': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get my registration status for an event
+     * @description Returns the authenticated user's registration status for the specified event.
+     *
+     *     **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
+     *     **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
+     *     Returns 404 when the authenticated user has no registration for this event.
+     *
+     *     **ADR-003**: Uses eventCode (meaningful ID) not UUID.
+     *     **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
+     */
+    get: operations['getMyRegistration'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/registrations/{registrationCode}': {
     parameters: {
       query?: never;
@@ -2808,6 +2835,35 @@ export interface components {
        * @example user-interface-design-abc123
        */
       sessionSlug?: string | null;
+    };
+    /**
+     * @description Story 10.10: Minimal registration status for the authenticated user (AC1).
+     *     ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
+     *     ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     */
+    MyRegistrationResponse: {
+      /**
+       * @description Unique registration code (public identifier)
+       * @example BATbern142-reg-ABC123
+       */
+      registrationCode: string;
+      /**
+       * @description Event code this registration belongs to
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (uppercase)
+       * @example CONFIRMED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      /**
+       * Format: date-time
+       * @description ISO-8601 timestamp when registration was created
+       * @example 2025-11-01T10:30:00Z
+       */
+      registrationDate: string;
     };
     /**
      * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
@@ -5643,6 +5699,56 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getMyRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration found — returns status for the authenticated user */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "registrationCode": "BATbern142-reg-ABC123",
+           *       "eventCode": "BATbern142",
+           *       "status": "CONFIRMED",
+           *       "registrationDate": "2025-11-01T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['MyRegistrationResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No registration found for this user and event */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "RESOURCE_NOT_FOUND",
+           *       "errorCode": "NOT_FOUND",
+           *       "message": "No registration found for event BATbern142",
+           *       "timestamp": "2025-11-01T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
       500: components['responses']['InternalServerError'];
     };

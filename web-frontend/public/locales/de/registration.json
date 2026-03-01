@@ -186,5 +186,18 @@
     "noResults": "Kein bestehendes Unternehmen gefunden",
     "createNew": "Sie können mit \"{{value}}\" als neuem Unternehmen fortfahren",
     "minChars": "Mindestens 2 Zeichen eingeben, um zu suchen"
+  },
+  "registrationStatusBanner": {
+    "confirmed": "Ihre Anmeldung ist bestätigt. Wir freuen uns auf Sie!",
+    "registered": "Sie sind für diese Veranstaltung angemeldet. Prüfen Sie Ihre E-Mail für die Bestätigung.",
+    "waitlist": "Sie stehen auf der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
+    "cancelled": "Ihre Anmeldung wurde storniert.",
+    "manageLink": "Anmeldung verwalten",
+    "registerAgain": "Erneut anmelden"
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "Sie sind bereits für diese Veranstaltung angemeldet",
+    "goBack": "Zurück",
+    "registerAgain": "Erneut anmelden"
   }
 }

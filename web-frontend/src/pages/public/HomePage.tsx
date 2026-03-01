@@ -29,9 +29,11 @@ import { TestimonialSection } from '@/components/public/Testimonials/Testimonial
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { NewsletterSubscribeWidget } from '@/components/public/NewsletterSubscribeWidget';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { useTranslation } from 'react-i18next';
 
 const HomePage = () => {
@@ -69,6 +71,18 @@ const HomePage = () => {
 
   // Select the appropriate query result
   const { data: event, isLoading, error } = eventCode ? specificEventQuery : currentEventQuery;
+
+  // AC2/AC4: Registration status banner (Story 10.10)
+  // Hook returns undefined immediately for unauthenticated users — no API call made (AC8)
+  const BANNER_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'AGENDA_FINALIZED', 'EVENT_LIVE'];
+  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
+    !isArchiveMode &&
+      event &&
+      event.workflowState &&
+      BANNER_WORKFLOW_STATES.includes(event.workflowState)
+      ? event.eventCode
+      : undefined
+  );
 
   // Loading state
   if (isLoading) {
@@ -167,6 +181,17 @@ const HomePage = () => {
 
       {/* Event Content */}
       <div className="container mx-auto px-4">
+        {/* Registration Status Banner (Story 10.10) — AC2, AC4
+            Shown below hero when authenticated user has a registration for the current event.
+            Only for events in AGENDA_PUBLISHED / AGENDA_FINALIZED / EVENT_LIVE states. */}
+        {!isArchiveMode && (
+          <RegistrationStatusBanner
+            status={myRegistration?.status ?? null}
+            eventCode={event.eventCode ?? ''}
+            isLoading={isRegistrationLoading}
+          />
+        )}
+
         {/* Back Button - Only shown in archive mode (Story 4.2) */}
         {isArchiveMode && backToArchiveUrl && (
           <Link

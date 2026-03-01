@@ -130,6 +130,24 @@ public interface RegistrationRepository
     List<String> findUsernamesByEventCode(@Param("eventCode") String eventCode);
 
     /**
+     * Find registration for a specific event (by event code) and authenticated user.
+     * Story 10.10: GET /events/{eventCode}/my-registration (AC1)
+     *
+     * Uses existing indices:
+     * - idx_registrations_event_id (via JOIN to events table on event code)
+     * - idx_registrations_attendee_username
+     *
+     * @param eventCode Event code (e.g., "BATbern142")
+     * @param username  Authenticated user's username (Cognito sub or username)
+     * @return Registration if found for this event and user
+     */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE e.eventCode = :eventCode AND r.attendeeUsername = :username")
+    Optional<Registration> findByEventCodeAndAttendeeUsername(
+            @Param("eventCode") String eventCode,
+            @Param("username") String username);
+
+    /**
      * Attendance summary per event for a given company.
      * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5
      *

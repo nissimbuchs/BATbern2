@@ -743,5 +743,13 @@
   },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
+  },
+  "eventCard": {
+    "statusChip": {
+      "confirmed": "[MISSING] Confirmed",
+      "registered": "[MISSING] Registered",
+      "waitlist": "[MISSING] Waitlist",
+      "cancelled": "[MISSING] Cancelled"
+    }
   }
 }

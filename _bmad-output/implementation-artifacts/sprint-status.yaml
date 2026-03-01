@@ -151,7 +151,10 @@ development_status:
   10-8a-moderator-presentation-page: done                   # fullscreen projector page; keyboard nav; break flow; 60s poll; no Framer Motion; CUMS V14 migration
   10-8b-moderator-presentation-page-animations: done        # animation layer on 10.8a: FLIP, Ken Burns, section springs, stagger, break/apéro effects; prereq: 10.8a
   10-9-i18n-cleanup: in-progress                        # 4-phase cleanup: deduplication, hardcoded text, test resilience, unused key removal; plan: docs/plans/i18n-cleanup-plan.md
-  10-10-registration-status-indicator: in-progress      # logged-in user sees banner/chip showing registration status on public homepage and event cards; GET /my-registration endpoint
+  10-10-registration-status-indicator: review            # logged-in user sees banner/chip showing registration status on public homepage and event cards; GET /my-registration endpoint
+  10-11-venue-capacity-enforcement-waitlist-management: ready-for-dev  # registration_capacity on events; waitlist_position on registrations; WaitlistPromotionService; capacity bar in organizer tab
+  10-12-self-service-deregistration: ready-for-dev                     # deregistration_token on registrations (V74); DeregistrationController; /deregister page; by-email modal; soft-cancel + waitlist promotion
+  10-13-registration-portal-email-templates: ready-for-dev             # deriveCategory() fix (waitlist-/deregistration-/portal-registration-); portal-registration classpath templates; quick-edit drawer from EventParticipantsTab
   epic-10-retrospective: optional
 
   # ============================================================
