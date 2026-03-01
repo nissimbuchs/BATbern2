@@ -21,8 +21,8 @@
   "backend": {
     "java": "21",
     "spring-boot": null,
-    "junit": "6.x",
-    "testcontainers": "2.x",
+    "junit": "5.x",
+    "testcontainers": "1.x",
     "gradle": "8.x",
     "mockito": "5.x",
     "aws-sdk": "2.x",
