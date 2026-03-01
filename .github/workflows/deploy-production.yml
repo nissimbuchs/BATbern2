@@ -10,6 +10,9 @@ on:
         description: 'Run database migrations'
         type: boolean
         default: true
+      release_name:
+        description: 'Optional release name (e.g. v1.0.0). If empty, release is tagged prod/<sha>.'
+        required: false
 
 env:
   AWS_REGION: eu-central-1
@@ -414,14 +417,26 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          TAG="prod/${VERSION}"
+          RELEASE_NAME="${{ github.event.inputs.release_name }}"
           DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
 
+          # Use provided release name as tag if given, otherwise fall back to prod/<sha>
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "${RELEASE_NAME}" ]; then
+            TAG="${RELEASE_NAME}"
+            TITLE="${RELEASE_NAME} — Production (${DATE})"
+            NOTES=$(printf '**Version:** `%s`\n**Commit:** `%s`\n**Deployed:** %s\n**Workflow:** %s' \
+              "${RELEASE_NAME}" "${VERSION}" "${DATE}" "${WORKFLOW_URL}")
+          else
+            TAG="prod/${VERSION}"
+            TITLE="Production release ${VERSION} (${DATE})"
+            NOTES=$(printf '**Commit:** `%s`\n**Deployed:** %s\n**Workflow:** %s' \
+              "${VERSION}" "${DATE}" "${WORKFLOW_URL}")
+          fi
+
           gh release create "${TAG}" \
-            --title "Production release ${VERSION} (${DATE})" \
-            --notes "**Commit:** \`${VERSION}\`
-**Deployed:** ${DATE}
-**Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --title "${TITLE}" \
+            --notes "${NOTES}" \
             --target "${VERSION}"
 
           echo "✅ GitHub Release created: ${TAG}"
