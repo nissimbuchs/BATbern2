@@ -151,6 +151,7 @@ development_status:
   10-8a-moderator-presentation-page: done                   # fullscreen projector page; keyboard nav; break flow; 60s poll; no Framer Motion; CUMS V14 migration
   10-8b-moderator-presentation-page-animations: done        # animation layer on 10.8a: FLIP, Ken Burns, section springs, stagger, break/apéro effects; prereq: 10.8a
   10-9-i18n-cleanup: in-progress                        # 4-phase cleanup: deduplication, hardcoded text, test resilience, unused key removal; plan: docs/plans/i18n-cleanup-plan.md
+  10-10-registration-status-indicator: in-progress      # logged-in user sees banner/chip showing registration status on public homepage and event cards; GET /my-registration endpoint
   epic-10-retrospective: optional
 
   # ============================================================

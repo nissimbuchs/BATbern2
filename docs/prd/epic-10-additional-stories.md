@@ -659,4 +659,702 @@ web-frontend/e2e/**/*.spec.ts               — E2E refactors (Phase 3C)
 
 ---
 
+### Story 10.10: Registration Status Indicator for Logged-in Users
+
+**Status**: ready-for-dev
+**Prerequisite**: None (independent — uses existing registration + auth APIs)
+
+**User Story:**
+As a **logged-in attendee**, I want to see my registration status for an upcoming event directly on the public homepage and event cards, so that I don't accidentally try to register twice and I always know my current status at a glance.
+
+**Background:**
+Currently, a logged-in user who has already registered for an event sees the same public homepage as an anonymous visitor — there is no visual indication that they are already registered. The only way to discover this is by clicking "Register" and submitting the form, at which point the backend returns an error. This creates confusion and poor UX for returning attendees.
+
+The `RegistrationService.createRegistration()` already handles duplicate detection (returns existing pending registration or throws `IllegalStateException` for confirmed). A new **read-only status endpoint** will allow the frontend to efficiently check the current user's status without side effects.
+
+**Scope:**
+
+**Backend — New Read-Only Status Endpoint:**
+- `GET /api/v1/events/{eventCode}/my-registration` — returns the current authenticated user's registration status for this event (or 404 if not registered)
+- Response: `{ registrationCode, status, registrationDate }` — minimal DTO, no PII duplication
+- Auth: requires `ROLE_USER` (any authenticated role); anonymous requests → 401
+- Implementation: `RegistrationRepository.findByEventCodeAndAttendeeUsername(eventCode, username)` — new query method
+- No new DB migration needed — reads from existing `registrations` table
+- Cache: 5-minute Caffeine cache keyed by `(eventCode, username)` — invalidated on registration mutation events
+
+**Frontend — Public Homepage Status Banner:**
+- After authentication check resolves, `useMyRegistration(eventCode)` hook fires for the "current event" (most recent `AGENDA_PUBLISHED`/`AGENDA_FINALIZED`/`EVENT_LIVE` event)
+- If status = `registered` → amber info banner below hero: "You are registered for this event. [Manage Registration]"
+- If status = `confirmed` → green success banner: "Your registration is confirmed. We'll see you there! [Manage Registration]"
+- If status = `waitlist` → blue info banner: "You are on the waitlist for this event. We'll notify you if a spot opens. [Manage Registration]"
+- If status = `cancelled` → grey banner: "Your registration was cancelled. [Register again]"
+- If not registered or anonymous → no banner (existing CTA "Register Now" shown as before)
+- "Manage Registration" links to `/register/{eventCode}` (RegistrationWizard shows status; deregistration from Story 10.12)
+
+**Frontend — Event Cards (Archive / Upcoming List):**
+- `EventCard.tsx` receives optional `myRegistrationStatus?: string` prop
+- If status present, a small status chip overlays the top-right corner of the card:
+  - ✅ confirmed (green) · 🕐 registered (amber) · ⏳ waitlist (blue) · ✗ cancelled (grey)
+- Parent component (`ArchivePage`, `UpcomingEventsSection`) passes status only for past 12 months (to avoid N+1 on full archive)
+
+**Frontend — Registration Wizard (RegistrationWizard.tsx):**
+- On step 1 load, if `useMyRegistration` returns data, show "You are already registered" with current status + option to continue to deregistration (Story 10.12)
+- This replaces the current confusing error-on-submit behavior
+
+**Key new files:**
+```
+web-frontend/src/hooks/useMyRegistration.ts
+web-frontend/src/components/public/RegistrationStatusBanner.tsx
+```
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                            — GET /events/{eventCode}/my-registration (FIRST)
+services/event-management-service/.../repository/RegistrationRepository.java  — new query method
+services/event-management-service/.../service/RegistrationService.java         — getMyRegistration()
+services/event-management-service/.../controller/EventController.java          — new endpoint
+web-frontend/src/pages/public/HomePage.tsx             — RegistrationStatusBanner integration
+web-frontend/src/components/public/EventCard.tsx       — status chip overlay
+web-frontend/src/components/public/RegistrationWizard.tsx  — already-registered guard
+public/locales/de/registration.json + en/registration.json — registrationStatus.* keys
+```
+
+**Definition of Done (Story 10.10):**
+- [ ] OpenAPI spec committed before backend implementation (ADR-006)
+- [ ] TDD: `RegistrationStatusIntegrationTest` written first — tests 200 (registered), 200 (confirmed), 200 (waitlist), 404 (not registered), 401 (anonymous)
+- [ ] Authenticated user who is confirmed sees green banner on homepage; non-registered user sees no banner
+- [ ] Banner shows within 500ms of page load (no layout shift — skeleton placeholder during fetch)
+- [ ] Registration wizard shows status guard if already registered
+- [ ] Event cards show status chip for events registered within past 12 months
+- [ ] Cache invalidated on registration creation (Story 10.12 deregistration must also invalidate)
+- [ ] i18n: `registrationStatus.*` keys in de/en registration files; no hardcoded strings
+- [ ] Type-check passes; Checkstyle passes; `npm run lint` passes
+
+---
+
+### Story 10.11: Venue Capacity Enforcement & Waitlist Management
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.10 (registration status indicator) recommended first for UX coherence; technically independent
+
+**User Story:**
+As an **organizer**, I want to set a maximum capacity for an event based on venue size, so that we never overbook the venue. When the event is full, new registrations automatically go to a waitlist. When a registered attendee cancels, the next person on the waitlist is automatically promoted and notified.
+
+As an **attendee**, I want to know my position on the waitlist and be automatically promoted if a spot opens up.
+
+**Background:**
+Currently, `Registration.status` has a `waitlist` value in the enum but there is no enforcement logic — any number of registrations are accepted. The `Event` entity has a `venueCapacity` field that is already stored (from venue management) but is not used for registration gating. This story wires the two together.
+
+**Scope:**
+
+**Backend — Capacity Enforcement:**
+- Flyway **V73**: Add `waitlist_position` column to `registrations` table (nullable INTEGER; NULL for non-waitlist registrations); add `registration_capacity` to `events` table (nullable INTEGER; NULL = unlimited, preserving backward compatibility)
+- `RegistrationService.createRegistration()` extended:
+  1. Count `registrations` with status IN (`registered`, `confirmed`) for the event
+  2. Load event's `registrationCapacity` (nullable)
+  3. If capacity is NULL or count < capacity → create with status `registered` (existing behavior)
+  4. If count >= capacity → create with status `waitlist`; assign `waitlistPosition = nextWaitlistPosition(eventId)`
+- `nextWaitlistPosition(eventId)`: `MAX(waitlist_position) + 1` for the event (0 if first)
+- New `WaitlistPromotionService`:
+  - `promoteFromWaitlist(eventCode)`: finds the registration with the lowest `waitlistPosition` for this event, updates status to `registered`, clears `waitlist_position`, sends promotion email
+  - Called by `RegistrationService.cancelRegistration()` (Story 10.12) after every successful cancellation
+  - `WaitlistPromotionEmailService`: sends `waitlist-promotion-de/en.html` email template (new classpath templates seeded by `EmailTemplateSeedService`)
+
+**Backend — Capacity Management API:**
+- `PATCH /api/v1/events/{eventCode}` already exists — extend request DTO to include `registrationCapacity: Integer` (nullable)
+- `GET /api/v1/events/{eventCode}` response extended with `registrationCapacity`, `confirmedCount`, `waitlistCount`, `spotsRemaining` (computed: capacity - confirmedCount, null if unlimited)
+- Organizer-only endpoints; public read access to `spotsRemaining` and `waitlistCount` only (no PII)
+
+**Frontend — Organizer Attendees Tab:**
+- `EventParticipantsTab.tsx` extended:
+  - Capacity bar at top: `[███████░░░] 42/60 confirmed · 3 on waitlist`
+  - Two sections in `EventParticipantList`: "Registered / Confirmed" (existing table) + collapsible "Waitlist" section (table with `waitlistPosition` column shown)
+  - `RegistrationActionsMenu` for waitlist rows: "Promote to Registered" (manual promotion, bypasses auto logic), "Remove from Waitlist"
+- `EventSettingsTab.tsx` or event edit form: "Registration Capacity" numeric field (blank = unlimited)
+- Capacity editable only when event status is not `ARCHIVED`
+
+**Frontend — Public Homepage & Registration Wizard:**
+- `RegistrationWizard.tsx` Step 1: if `spotsRemaining === 0`, show "This event is full — you will be added to the waitlist" info alert before form submission; user must acknowledge
+- `RegistrationStatusBanner.tsx` (Story 10.10): add waitlist position display: "You are #3 on the waitlist"
+- `HomePage.tsx`: "X spots remaining" or "Full — join waitlist" badge on event hero if capacity is set
+
+**Email Templates (new classpath content fragments):**
+```
+services/event-management-service/src/main/resources/email-templates/waitlist-promotion-de.html
+services/event-management-service/src/main/resources/email-templates/waitlist-promotion-en.html
+services/event-management-service/src/main/resources/email-templates/waitlist-confirmation-de.html
+services/event-management-service/src/main/resources/email-templates/waitlist-confirmation-en.html
+```
+All use `batbern-default` layout. Variables: `recipientName`, `eventTitle`, `eventCode`, `eventDate`, `venueAddress`, `registrationCode`.
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V73__add_capacity_and_waitlist.sql
+services/event-management-service/.../service/WaitlistPromotionService.java
+services/event-management-service/.../service/WaitlistPromotionEmailService.java
+services/event-management-service/.../service/WaitlistPromotionServiceTest.java
+web-frontend/src/components/organizer/EventPage/WaitlistSection.tsx
+web-frontend/src/components/public/CapacityIndicator.tsx
+```
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                                      — capacity fields + waitlist response (FIRST)
+services/event-management-service/.../domain/Registration.java   — waitlistPosition field
+services/event-management-service/.../domain/Event.java          — registrationCapacity field
+services/event-management-service/.../service/RegistrationService.java — capacity enforcement
+services/event-management-service/.../repository/RegistrationRepository.java — waitlist queries
+web-frontend/src/components/organizer/EventPage/EventParticipantsTab.tsx — capacity bar + waitlist section
+web-frontend/src/components/public/RegistrationWizard.tsx        — waitlist acknowledgment
+web-frontend/src/pages/public/HomePage.tsx                       — capacity badge
+public/locales/de/events.json + en/events.json                   — waitlist.* keys
+public/locales/de/registration.json + en/registration.json       — waitlist.* keys
+```
+
+**Definition of Done (Story 10.11):**
+- [ ] V73 migration runs cleanly; `waitlist_position` nullable; `registration_capacity` nullable on events
+- [ ] TDD: `WaitlistPromotionServiceTest` and `RegistrationCapacityIntegrationTest` written first
+- [ ] Creating registration when event is full → status=waitlist with correct sequential position (1, 2, 3…)
+- [ ] Cancelling a registration when waitlist exists → first waitlisted person auto-promoted + email sent
+- [ ] Manual promotion by organizer works from attendees tab
+- [ ] Organizer can set/clear capacity from event settings; NULL = unlimited (existing events unaffected)
+- [ ] Waitlist email templates seeded and editable in Email Templates admin tab
+- [ ] Public homepage shows capacity badge when capacity is set
+- [ ] Registration wizard shows waitlist acknowledgment when full
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `waitlist.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.12: Self-Service Deregistration
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.11 (waitlist promotion must fire on cancellation)
+
+**User Story:**
+As a **registered attendee**, I want to cancel my event registration easily without contacting an organizer — either by clicking a link in my confirmation email or by entering my email address on the event page — so that my spot can be given to someone else.
+
+**Background:**
+Currently there is no self-service cancellation path. The `Registration.status` enum includes `cancelled` but no endpoint or UI supports transitioning to it from the attendee side. Organizers can manually cancel from the attendees tab but this requires contacting the organizer. The todo explicitly requests:
+1. A non-expiring magic link embedded in the confirmation email
+2. An email-input form on the public portal for deregistration
+
+**Scope:**
+
+**Backend — Deregistration Token:**
+- Flyway **V74**: Add `deregistration_token` column to `registrations` (UUID, NOT NULL, unique — generated on creation, never rotated, never expires)
+- `RegistrationService.createRegistration()` extended: generate UUID deregistration token and persist
+- Migration backfill: `UPDATE registrations SET deregistration_token = gen_random_uuid() WHERE deregistration_token IS NULL`
+
+**Backend — Deregistration Endpoints:**
+```
+# Public (no auth required — token IS the auth)
+GET  /api/v1/registrations/deregister/verify?token={uuid}
+     → 200: { registrationCode, eventCode, eventTitle, eventDate, attendeeFirstName }
+     → 404: { error: "invalid_token" } (token not found or already cancelled)
+
+POST /api/v1/registrations/deregister
+     body: { token: uuid }
+     → 200: success; fires waitlist promotion (Story 10.11)
+     → 404: invalid token
+     → 409: already cancelled
+
+# Public (no auth required — email verification flow)
+POST /api/v1/registrations/deregister/by-email
+     body: { email: string, eventCode: string }
+     → 200: always (anti-enumeration: "if registered, you'll receive a deregistration email")
+     Sends email with deregistration link (containing token) if registration found
+```
+
+**Email Template:**
+- `deregistration-link-de.html` + `deregistration-link-en.html` — content fragments with `batbern-default` layout
+- Variables: `recipientName`, `eventTitle`, `eventCode`, `eventDate`, `deregistrationLink`
+- `deregistrationLink` = `{baseUrl}/deregister?token={deregistrationToken}`
+- Also embed deregistration link in the existing registration **confirmation** email: "To cancel: [Cancel Registration]"
+
+**Frontend — Deregistration Page (`/deregister?token=`):**
+- Public route (no auth required)
+- Step 1 (token verify): shows event title, date, attendee name — "Are you sure you want to cancel your registration?"
+- "Confirm Cancellation" button → POST /deregister → success state
+- Invalid/used token → error state with contact info
+- Already cancelled → "Your registration was already cancelled" state
+- Component: `DeregistrationPage.tsx` (new public page, same pattern as `UnsubscribePage.tsx`)
+
+**Frontend — Deregistration via Email Form:**
+- On `HomePage.tsx` (when event is in `AGENDA_PUBLISHED`/`AGENDA_FINALIZED`/`EVENT_LIVE` state):
+  - Secondary link "Cancel your registration" below registration CTA
+  - Opens `DeregistrationByEmailModal.tsx` — email + eventCode input → submit → shows "Check your inbox" message
+- On `RegistrationWizard.tsx` (when user is already registered — Story 10.10 guard):
+  - "Cancel my registration" button alongside status display → opens same modal
+
+**Frontend — Organizer Attendees Tab:**
+- Cancelled registrations shown in table with grey `CANCELLED` chip
+- Existing `RegistrationActionsMenu` already has cancel action for organizers — ensure it uses the same `RegistrationService.cancelRegistration()` that triggers waitlist promotion
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V74__add_deregistration_token.sql
+services/event-management-service/src/main/resources/email-templates/deregistration-link-de.html
+services/event-management-service/src/main/resources/email-templates/deregistration-link-en.html
+services/event-management-service/.../service/DeregistrationService.java
+services/event-management-service/.../controller/DeregistrationController.java
+services/event-management-service/.../service/DeregistrationServiceTest.java
+services/event-management-service/.../controller/DeregistrationControllerIntegrationTest.java
+web-frontend/src/pages/public/DeregistrationPage.tsx
+web-frontend/src/components/public/DeregistrationByEmailModal.tsx
+web-frontend/src/hooks/useDeregistration.ts
+```
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                                  — deregistration endpoints (FIRST)
+services/event-management-service/.../domain/Registration.java — deregistrationToken field
+services/event-management-service/.../service/RegistrationService.java — generate token on create; cancelRegistration() triggers waitlist promotion
+services/event-management-service/.../service/RegistrationEmailService.java — add deregistrationLink variable to confirmation email
+services/event-management-service/.../config/SecurityConfig.java — permitAll /deregister/** public paths
+api-gateway/.../SecurityConfig.java                          — permitAll /api/v1/registrations/deregister/**
+web-frontend/src/App.tsx                                     — /deregister public route
+web-frontend/src/pages/public/HomePage.tsx                   — "Cancel registration" link
+web-frontend/src/components/public/RegistrationWizard.tsx    — cancel button when already registered
+public/locales/de/registration.json + en/registration.json   — deregistration.* keys
+```
+
+**Definition of Done (Story 10.12):**
+- [ ] V74 migration runs cleanly; backfill generates tokens for all existing registrations
+- [ ] TDD: `DeregistrationServiceTest` + `DeregistrationControllerIntegrationTest` written first
+- [ ] Valid token → verify shows correct event/attendee info; confirm → status=cancelled; waitlist promotion fires (Story 10.11)
+- [ ] Used/invalid token → 404; already cancelled → 409
+- [ ] By-email flow: valid email → sends deregistration link email; unknown email → 200 (anti-enumeration, no email sent)
+- [ ] Confirmation email (existing) includes deregistration link
+- [ ] `/deregister?token=valid` page renders correctly (no auth required)
+- [ ] Organizer cancellation via attendees tab also triggers waitlist promotion
+- [ ] Deregistration email templates seeded and editable in admin Email Templates tab
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `deregistration.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.13: Registration & Portal Email Templates — Editable in Admin
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.2 (Email Template Management — provides DB storage, seed service, admin UI)
+
+**User Story:**
+As an **organizer**, I want the registration confirmation email and all speaker portal emails to be editable from the Email Templates admin tab — just like speaker invitation emails — so that I can update their subject and content without a code deploy.
+
+**Background:**
+Story 10.2 seeded and made editable 22 classpath email templates (speaker invitations, task reminders, newsletter, etc.). However, two important categories were explicitly left out of the initial UI:
+1. **Registration emails**: `registration-confirmation-de/en.html` (sent by `RegistrationEmailService`)
+2. **Speaker portal registration emails**: Emails sent when a speaker creates their portal account or responds to an invitation via the portal (`SpeakerAcceptanceEmailService`, `PortalRegistrationEmailService`)
+
+Additionally, organizers have requested a shortcut to jump directly to an event-relevant email template from the event page (e.g., "Edit Registration Template" from the event attendees tab) without navigating to the admin page manually.
+
+**Scope:**
+
+**Backend — Seed Additional Templates:**
+- `EmailTemplateSeedService.@PostConstruct` extended to seed:
+  - `registration-confirmation-de/en` (REGISTRATION category) — from existing classpath files
+  - `registration-waitlist-confirmation-de/en` (REGISTRATION category) — from Story 10.11 files
+  - `deregistration-link-de/en` (REGISTRATION category) — from Story 10.12 files
+  - `waitlist-promotion-de/en` (REGISTRATION category) — from Story 10.11 files
+  - `portal-registration-de/en` (SPEAKER category) — speaker portal account creation email
+- All new templates: system templates (editable, not deletable)
+- New `REGISTRATION` category added to `EmailTemplateCategory` enum (if not already present)
+
+**Frontend — Email Templates Tab Enhancement:**
+- `EmailTemplatesTab.tsx`: Add `REGISTRATION` category to the category filter (alongside Speaker, Task Reminders, Newsletter)
+- Registration templates visible and editable in same TinyMCE editor as other content templates
+- Preview merges with `batbern-default` layout and renders branded email preview
+
+**Frontend — Quick Template Access from Event Pages:**
+- `EventParticipantsTab.tsx`: "Edit Registration Email Template" icon-button (top-right) → opens `EmailTemplateQuickEditDrawer.tsx` with `registration-confirmation-{locale}` pre-loaded
+- `EventParticipantsTab.tsx`: "Edit Waitlist Confirmation Email" icon-button → opens drawer with `registration-waitlist-confirmation-{locale}`
+- `EventParticipantsTab.tsx`: "Edit Deregistration Email" icon-button → `deregistration-link-{locale}`
+- `EmailTemplateQuickEditDrawer.tsx`: Right-side MUI Drawer (480px); embeds the same `EmailTemplateEditModal` content but without navigating away from the event page. Header shows "Email Template: [name]" + locale toggle + "Open in Admin" link
+
+**Key new files:**
+```
+web-frontend/src/components/organizer/EventPage/EmailTemplateQuickEditDrawer.tsx
+```
+
+**Key modified files:**
+```
+services/event-management-service/.../service/EmailTemplateSeedService.java  — seed REGISTRATION category templates
+services/event-management-service/.../domain/EmailTemplateCategory.java      — add REGISTRATION enum value
+web-frontend/src/components/organizer/Admin/EmailTemplatesTab.tsx             — add REGISTRATION category filter
+web-frontend/src/components/organizer/EventPage/EventParticipantsTab.tsx     — quick template access buttons
+public/locales/de/organizer.json + en/organizer.json                          — emailTemplates.categories.registration key
+```
+
+**Definition of Done (Story 10.13):**
+- [ ] All registration/portal email template classpath files are seeded to DB on service startup (idempotent)
+- [ ] REGISTRATION category visible in Email Templates tab filter — all seeded templates listed and editable
+- [ ] TinyMCE editor opens for registration templates; preview shows branded email with batbern-default layout
+- [ ] Quick-edit drawer opens from EventParticipantsTab without navigating away; changes reflect immediately in admin tab
+- [ ] Existing `RegistrationEmailService` loads templates from DB with classpath fallback (same pattern as other email services)
+- [ ] Waitlist and deregistration email templates (Stories 10.11, 10.12) also editable via same tab
+- [ ] i18n: `emailTemplates.categories.registration` key in de/en; Type-check passes
+
+---
+
+### Story 10.14: Newsletter Sending with Template Selection
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.2 (email template management), Story 10.7 (newsletter sending infrastructure)
+
+**User Story:**
+As an **organizer**, I want to choose which email template to use when sending a newsletter for an event, so that I can use different templates for different types of communications (general newsletter, event reminder, partner announcement) without needing separate template hardcoding.
+
+**Background:**
+Story 10.7 implemented newsletter sending from the `EventNewsletterTab` with a single hardcoded template key (`newsletter-event-{locale}`). The admin `EmailTemplatesTab` (Story 10.2) supports multiple templates in the `NEWSLETTER` category, but the newsletter sending UI doesn't let organizers pick which one to use — it always uses the hardcoded default. This story adds template selection to the newsletter send flow.
+
+**Scope:**
+
+**Backend — Newsletter Send API Extension:**
+- `POST /api/v1/events/{eventCode}/newsletter/send` request body extended with optional `templateKey: string`
+  - If `templateKey` is provided → use that template from DB
+  - If omitted → use default `newsletter-event-{locale}` (backward compatible)
+- `NewsletterEmailService.sendNewsletter()` updated to accept `templateKey` parameter
+- `POST /api/v1/events/{eventCode}/newsletter/preview` same extension for preview
+
+**Backend — Newsletter Template Listing:**
+- `GET /api/v1/email-templates?category=NEWSLETTER` — already works via existing `EmailTemplateController` (no changes needed)
+
+**Frontend — EventNewsletterTab:**
+- Before "Send Newsletter" and "Send Reminder" buttons: add a "Template" select dropdown
+  - Populated by `GET /api/v1/email-templates?category=NEWSLETTER` response
+  - Default selection: `newsletter-event-{currentLocale}` (same as current hardcoded behavior)
+  - Options: all NEWSLETTER category templates (display: template name + language badge)
+- Locale toggle (DE/EN) now also affects which templates are shown in the dropdown (filtered by locale suffix)
+- "Preview" iframe uses selected template for preview render
+- "Create new template" shortcut link → opens admin Email Templates tab with NEWSLETTER filter pre-applied
+- Confirmation dialog for "Send Newsletter" shows selected template name: "Send newsletter using '[Template Name]' to 234 subscribers?"
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                                        — extend newsletter send request (FIRST)
+services/event-management-service/.../service/NewsletterEmailService.java  — accept templateKey param
+services/event-management-service/.../controller/NewsletterController.java — pass templateKey through
+web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx    — template selector + preview
+web-frontend/src/hooks/useNewsletter/useNewsletter.ts                     — pass templateKey to API
+public/locales/de/organizer.json + en/organizer.json                       — newsletter.templateSelect.* keys
+```
+
+**Definition of Done (Story 10.14):**
+- [ ] Newsletter send with explicit `templateKey` uses that template; send without `templateKey` uses default (backward compatible)
+- [ ] `EventNewsletterTab` shows template dropdown populated from DB templates; default = `newsletter-event-{locale}`
+- [ ] Preview updates immediately when different template is selected
+- [ ] Confirmation dialog names the selected template
+- [ ] All existing Story 10.7 tests continue to pass
+- [ ] i18n: `newsletter.templateSelect.*` keys in de/en; Type-check passes
+
+---
+
+### Story 10.15: Newsletter Subscription Integrity & Language Fix
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.7 (newsletter subscriber tables + service)
+
+**User Story:**
+As a **community member**, I want my newsletter subscription language preference to match the language I was browsing in when I registered, so that I receive newsletters in my preferred language — not always in German.
+
+As an **organizer**, I want to confirm that all newsletter opt-in paths (public registration wizard, speaker portal registration) are wired correctly so that no subscriber is silently lost.
+
+**Background:**
+Two gaps identified in the todo:
+
+**Gap 1 — Language hardcoding in RegistrationService:**
+`RegistrationService.createRegistration()` (line 146) hardcodes `"de"` as the newsletter subscription language when a user opts in during registration:
+```java
+newsletterSubscriberService.subscribe(request.getEmail(), request.getFirstName(), "de", "registration", username);
+```
+This should use the user's `communicationPreferences.preferredLanguage` (already in the `CreateRegistrationRequest` DTO) or fall back to the browser Accept-Language header.
+
+**Gap 2 — Speaker portal registration:**
+When a speaker creates their BATbern account via the self-service portal (Epic 9 / Speaker Authentication), there is no newsletter opt-in checkbox or auto-subscription. The `SpeakerPortalRegistrationService` (if it exists) should respect the speaker's language preference for any newsletter subscription.
+
+**Scope:**
+
+**Backend — Language Fix (RegistrationService):**
+- `CreateRegistrationRequest` already has `communicationPreferences.preferredLanguage` (String, nullable)
+- `RegistrationService.createRegistration()`: replace hardcoded `"de"` with:
+  ```java
+  String lang = Optional.ofNullable(request.getCommunicationPreferences())
+      .map(p -> p.getPreferredLanguage())
+      .filter(l -> l != null && !l.isBlank())
+      .orElse("de");  // fallback to German
+  ```
+- Unit test: `RegistrationServiceTest` — assert newsletter subscription uses `preferredLanguage` from request
+
+**Backend — Speaker Portal Newsletter Opt-in (if 9.x speaker auth service exists):**
+- If `SpeakerPortalAccountService` or equivalent exists in `speaker-coordination-service`:
+  - Add `newsletterOptIn: boolean` field to speaker portal registration request DTO
+  - On account creation: call `NewsletterSubscriberService.subscribe()` using speaker's language preference if `newsletterOptIn = true`
+  - If speaker-coordination-service cannot call newsletter service directly (cross-service boundary): emit `SpeakerPortalRegisteredEvent` via shared-kernel domain event; EMS consumes and subscribes
+- If Epic 9 speaker auth is not yet deployed: scaffold the opt-in field in the DTO + stub the wiring; the feature becomes active when Story 9.x (Cognito account creation) is implemented
+
+**Frontend — Registration Wizard:**
+- `RegistrationWizard.tsx` Step 3 (Communication Preferences): ensure `preferredLanguage` field value is passed in `CreateRegistrationRequest` payload
+- Currently the wizard likely sends the i18n language from the UI — verify and fix if not
+
+**Frontend — Speaker Portal Registration (Epic 9 alignment):**
+- `SpeakerPortalRegistrationPage.tsx` (if exists): add "Subscribe to BATbern newsletter" checkbox in account creation form, defaulting to checked
+
+**Testing — Newsletter Opt-in Integration Tests:**
+- `NewsletterOptInIntegrationTest`: POST registration with `newsletterSubscribed=true` + `preferredLanguage=en` → subscriber created with `language=en`
+- POST registration with `newsletterSubscribed=true` + no language → subscriber created with `language=de` (fallback)
+- POST registration with `newsletterSubscribed=false` → no subscriber created
+- POST registration with `newsletterSubscribed=true` for already-subscribed email → idempotent (no error, subscriber unchanged)
+
+**Key modified files:**
+```
+services/event-management-service/.../service/RegistrationService.java    — language from request
+services/event-management-service/.../service/RegistrationServiceTest.java — new language assertions
+services/speaker-coordination-service/.../ (if exists)                    — newsletter opt-in on portal registration
+web-frontend/src/components/public/RegistrationWizard.tsx                  — ensure lang passed in payload
+```
+
+**Definition of Done (Story 10.15):**
+- [ ] `RegistrationService` uses `preferredLanguage` from request (not hardcoded "de"); unit test proves it
+- [ ] Integration test: registration with `preferredLanguage=fr` → newsletter subscriber created with `language=fr`
+- [ ] Registration with `newsletterSubscribed=false` → no newsletter subscriber created (negative test)
+- [ ] Speaker portal newsletter opt-in wired (or scaffolded with TODO comment linked to Epic 9 story)
+- [ ] No regression in existing newsletter tests (Story 10.7 suite passes)
+- [ ] Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.16: AI-Assisted Event Content Creation
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.2 (email template management introduces OpenAI dependency pattern)
+
+**User Story:**
+As an **organizer**, I want to use AI assistance to generate a polished event description from a topic title, create a themed event image, and get a quality summary of a speaker's abstract — so that I can produce professional event content in minutes instead of hours.
+
+**Background:**
+The codebase has keyword-based topic classification (`BatbernTopicClusterService`) but no generative AI integration. The `TrendingTopicsService` has a comment noting "Optional — falls back gracefully when API key absent", indicating OpenAI integration was always planned. This story introduces a controlled, optional AI layer:
+- All AI calls are **gated by `batbern.ai.enabled: ${AI_ENABLED:false}`** — disabled by default; enabled in staging/prod via environment variable
+- All AI calls have **graceful fallbacks** — if disabled or if the API call fails, the UI degrades to manual input
+- **OpenAI API** (GPT-4o for text, DALL-E 3 for images) via the `openai-java` SDK
+
+**Scope:**
+
+**Backend — AI Service Infrastructure:**
+- New dependency: `com.theokanning.openai-gpt3-java:service:{version}` (or `com.openai:openai-java:1.x.x` — latest official SDK)
+- `AiConfig.java`: bean configuration; reads `${OPENAI_API_KEY:}` and `${batbern.ai.enabled:false}`; returns no-op stub when disabled
+- `BatbernAiService.java`: central service wrapping OpenAI SDK:
+  - `generateEventDescription(topicTitle, topicCategory, eventNumber): String` → GPT-4o prompt: "Write a 2-paragraph German event description for BATbern#{n}, a Swiss software architecture conference. Topic: {topicTitle}. Style: professional, enthusiastic, 150-200 words."
+  - `generateThemeImage(topicTitle, topicCategory): String (S3 URL)` → DALL-E 3 prompt: "Abstract illustration for a software architecture conference themed '{topicTitle}', dark navy and blue tones, Swiss minimalist style, no text"; result uploaded to S3; returns presigned URL
+  - `analyzeAbstract(abstract, speakerName): AbstractAnalysisResult` → GPT-4o: returns `{ qualityScore: 0-10, suggestion: string, improvedAbstract: string, keyThemes: string[] }`
+- All methods: `if (!aiEnabled) return Optional.empty()` — callers handle absent result gracefully
+- Rate limiting: 1 request/second per method via Caffeine (prevents abuse); cache results for 1 hour by input hash
+- Flyway **V75**: `ai_generation_log` table — `(id, event_code, type, input_hash, generated_at, tokens_used, was_accepted)` — for cost monitoring
+
+**Backend — New AI Endpoints:**
+```
+# Organizer only
+POST /api/v1/events/{eventCode}/ai/description
+     body: { topicTitle, topicCategory }
+     response: { description: string } | 503 (if AI disabled)
+
+POST /api/v1/events/{eventCode}/ai/theme-image
+     body: { topicTitle, topicCategory }
+     response: { imageUrl: string, s3Key: string } | 503 (if AI disabled)
+
+POST /api/v1/speakers/{speakerId}/ai/analyze-abstract
+     body: { abstract: string }
+     response: { qualityScore, suggestion, improvedAbstract, keyThemes } | 503 (if AI disabled)
+```
+
+**Frontend — AI Assist Buttons (Organizer):**
+
+*Event Description (EventSettingsTab or EventOverviewTab):*
+- "Event Description" textarea: right-aligned "✨ Generate with AI" ghost button (only if `aiEnabled=true` feature flag from `/api/v1/public/settings` response)
+- Click → loading spinner → inserts generated text into textarea (user can edit before saving)
+- "Regenerate" button appears after first generation
+
+*Theme Image (EventSettingsTab):*
+- "Theme Image" section: "✨ Generate theme image with AI" button alongside existing file upload
+- Click → "Generating image…" skeleton → generated image preview with "Use this image" / "Regenerate" / "Upload my own" choices
+- "Use this image" → stores S3 key on event record via PATCH event endpoint
+
+*Abstract Analysis (SpeakerContentReviewTab or speaker detail view):*
+- Per-speaker "Analyze Abstract" button (visible to organizers only, appears after abstract is submitted)
+- Click → right-side drawer with: quality score badge (0-10, color-coded), suggestion text, key themes chips, "Improved version" accordion
+- Organizer can copy improved version to clipboard; original abstract unchanged
+
+**Frontend — AI Feature Flag:**
+- `useFeatureFlags()` hook reads from `/api/v1/public/settings/presentation` (or new `/api/v1/public/settings/features`) response
+- `{ aiContentEnabled: boolean }` — all AI UI only shown when flag is true
+- Feature flag endpoint returns false when `batbern.ai.enabled=false` (zero frontend changes for on/off toggle)
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V75__create_ai_generation_log.sql
+services/event-management-service/.../config/AiConfig.java
+services/event-management-service/.../service/BatbernAiService.java
+services/event-management-service/.../service/BatbernAiServiceTest.java
+services/event-management-service/.../controller/AiAssistController.java
+services/event-management-service/.../controller/AiAssistControllerIntegrationTest.java
+web-frontend/src/hooks/useAiAssist.ts
+web-frontend/src/components/organizer/EventPage/AiAssistDrawer.tsx
+web-frontend/src/components/organizer/EventPage/AbstractAnalysisDrawer.tsx
+```
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                                     — AI assist endpoints (FIRST)
+services/event-management-service/build.gradle                  — openai-java dependency
+services/event-management-service/.../service/TrendingTopicsService.java — wire real BatbernAiService
+web-frontend/src/hooks/useFeatureFlags.ts                       — aiContentEnabled flag (new or extend)
+web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx — AI description + image buttons
+web-frontend/src/components/organizer/EventPage/SpeakerDetailView.tsx  — abstract analysis button
+public/locales/de/organizer.json + en/organizer.json            — aiAssist.* keys
+```
+
+**Definition of Done (Story 10.16):**
+- [ ] `AI_ENABLED=false` (default): all AI endpoints return 503; AI buttons hidden from UI; all existing tests pass unchanged
+- [ ] `AI_ENABLED=true` + valid `OPENAI_API_KEY`: description generation returns German text within 10s; image generation returns S3 URL
+- [ ] Graceful degradation: if OpenAI API returns error → UI shows "AI generation failed, please write manually" toast
+- [ ] `ai_generation_log` table records each generation attempt (for cost monitoring)
+- [ ] Abstract analysis drawer shows score, suggestion, key themes, improved version
+- [ ] TDD: `BatbernAiServiceTest` mocks OpenAI client; integration test uses WireMock for OpenAI API
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `aiAssist.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.17: Email Reply-based Unsubscribe & Deregistration (Inbound Email Handler)
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.12 (deregistration service), Story 10.7 (newsletter unsubscribe)
+
+**User Story:**
+As a **subscriber or attendee**, I want to unsubscribe from the newsletter or cancel my event registration simply by replying "UNSUBSCRIBE" or "CANCEL" to any email from BATbern, so that I can manage my preferences without clicking any links — especially useful on mobile.
+
+**Background:**
+All outbound emails currently use `noreply@batbern.ch`. There is no inbound email processing. This story sets up AWS SES inbound email receiving and routes replies to the appropriate service action. The implementation uses the standard AWS pattern: SES Receiving → S3 (raw email storage) → SQS → Spring `@SqsListener`.
+
+**Scope:**
+
+**AWS Infrastructure (CDK changes in `infrastructure/`):**
+- SES receiving rule set for `replies@batbern.ch` (separate from `noreply@batbern.ch` sending address)
+- SES receipt rule: all mail to `replies@batbern.ch` → store to S3 bucket `batbern-inbound-emails-{env}` → send notification to SQS queue `batbern-inbound-email-{env}`
+- IAM: EMS task role gains `sqs:ReceiveMessage` + `sqs:DeleteMessage` on inbound queue + `s3:GetObject` on inbound bucket
+- CDK stack: `InboundEmailStack` (new) in `infrastructure/lib/`
+
+**Backend — Inbound Email Processor (event-management-service):**
+- New dependency: `io.awspring.cloud:spring-cloud-aws-starter-sqs:{version}` (already in project for other SQS work, likely)
+- `InboundEmailConfig.java`: SQS listener bean configuration; reads `${AWS_INBOUND_EMAIL_QUEUE_URL}`
+- `InboundEmailListenerService.java` (`@SqsListener`):
+  1. Receive SQS message (S3 event notification → raw email S3 key)
+  2. Fetch raw email from S3 via `S3Client.getObject()`
+  3. Parse MIME message with `jakarta.mail.internet.MimeMessage` (Java Mail API)
+  4. Extract: sender email (`From:` header), `In-Reply-To` / `References` headers (to match original email), and first non-quoted line of plain-text body (normalized: trim, lowercase, remove punctuation)
+- `InboundEmailRouter.java`: routes parsed email to action handler based on body content:
+  - Body contains `unsubscribe` / `abmelden` / `désinscription` → `NewsletterSubscriberService.unsubscribeByEmail(senderEmail)`
+  - Body contains `cancel` / `deregister` / `abmelden` / `absagen` + event code (parsed from reply subject "Re: BATbernXX Registration Confirmation") → `DeregistrationService.cancelByEmail(senderEmail, eventCode)`
+  - Unrecognized → log and discard; no action
+- **Anti-abuse**: max 10 inbound emails per sender per hour (Caffeine rate limiter)
+- **Reply confirmation**: After successful action, send a brief confirmation email ("Your newsletter subscription has been cancelled")
+- **From header**: Update all outbound emails to use `Reply-To: replies@batbern.ch` (keeping `From: noreply@batbern.ch`)
+
+**Key new files:**
+```
+infrastructure/lib/inbound-email-stack.ts
+services/event-management-service/.../config/InboundEmailConfig.java
+services/event-management-service/.../service/InboundEmailListenerService.java
+services/event-management-service/.../service/InboundEmailRouter.java
+services/event-management-service/.../service/InboundEmailRouterTest.java
+services/event-management-service/src/main/resources/email-templates/unsubscribe-confirmation-de.html
+services/event-management-service/src/main/resources/email-templates/unsubscribe-confirmation-en.html
+```
+
+**Key modified files:**
+```
+infrastructure/lib/batbern-stack.ts                                — add InboundEmailStack
+shared-kernel/.../service/EmailService.java                        — add Reply-To: replies@batbern.ch header
+services/event-management-service/build.gradle                     — spring-cloud-aws-starter-sqs (if not present)
+services/event-management-service/.../service/NewsletterSubscriberService.java — unsubscribeByEmail() method
+services/event-management-service/.../service/DeregistrationService.java       — cancelByEmail() method
+```
+
+**Definition of Done (Story 10.17):**
+- [ ] CDK `InboundEmailStack` deploys cleanly to staging; `replies@batbern.ch` receiving rule active
+- [ ] All outbound emails include `Reply-To: replies@batbern.ch` header
+- [ ] Replying "unsubscribe" to a newsletter email → subscriber unsubscribed; confirmation email sent
+- [ ] Replying "cancel" to a registration confirmation email → registration cancelled; waitlist promotion fires (Story 10.11/10.12); confirmation email sent
+- [ ] Unknown reply body → silently discarded; no error; no action
+- [ ] Rate limiter: >10 emails from same sender in 1h → excess messages discarded
+- [ ] TDD: `InboundEmailRouterTest` with mocked S3/SQS; WireMock for SES in integration test
+- [ ] Confirmation email templates seeded and editable in admin Email Templates tab
+- [ ] Checkstyle passes; CDK synth passes
+
+---
+
+### Story 10.18: Event Archival Task & Notification Cleanup
+
+**Status**: ready-for-dev
+**Prerequisite**: None (bug fix / data cleanup — independent)
+
+**User Story:**
+As an **organizer**, I want all pending tasks and in-app notifications for an event to be automatically cleaned up when the event is archived, so that my task board and notification center are not cluttered with stale items from past events.
+
+**Background (Error from todo.md):**
+When an event transitions to `ARCHIVED` state via the event state machine, currently:
+- Open tasks (`status != completed`) remain open and appear in organizer task boards
+- Any queued task reminder emails continue to fire (if the scheduler window includes past-due tasks from archived events)
+- In-app notifications referencing the archived event linger in the notification center
+
+This is a data integrity bug — the `EventLifecycleService` (or equivalent state machine handler) does not include a cleanup step on the `ARCHIVED` transition.
+
+**Scope:**
+
+**Backend — Archival Cleanup:**
+- `EventArchivalCleanupService.java` — called from event state machine `onEntry(ARCHIVED)` or `EventStateTransitionHandler`:
+  1. **Task cancellation**: `EventTaskRepository.findByEventIdAndStatusNot(eventId, "completed")` → bulk update all to status `cancelled` + set `cancelledReason = "Event archived"` + `cancelledAt = now()`
+  2. **Task reminder suppression**: `ShedLock`-based scheduler already queries for non-completed tasks due tomorrow — now task status = `cancelled` so they are naturally excluded. Verify `TaskDeadlineReminderScheduler.findTasksDueForReminder()` query excludes `cancelled` status (add if missing)
+  3. **Notification dismissal**: `NotificationRepository.findByEventCodeAndReadFalse(eventCode)` → bulk mark as `read = true` + `dismissedAt = now()`; if no notification table exists, skip this step and log a warning
+  4. **Registration cleanup**: Waitlisted registrations (`status = waitlist`) for the archived event → update to `cancelled`, `cancelledReason = "Event archived"`. Confirmed/registered registrations → no change (historical data preserved)
+- All 4 steps in a single `@Transactional` method; failures in steps 2-4 are caught and logged but do not roll back step 1 (task cancellation is most important)
+- Idempotent: running cleanup twice has no side effects (already-cancelled tasks are skipped)
+
+**Backend — Scheduler Safety Net:**
+- `TaskDeadlineReminderScheduler.findTasksDueForReminder()` JPQL query: ensure `status NOT IN ('completed', 'cancelled')` (add `cancelled` if not already excluded)
+- Unit test: scheduler does NOT send reminder for tasks belonging to ARCHIVED events
+
+**Frontend — No Changes Required:**
+- Task board already filters by event; once tasks are cancelled, they naturally fall into the "Cancelled" bucket (or are hidden if the task board filters by `pending|in_progress` only)
+- Notification dismissal is backend-side; frontend already respects `read=true`
+
+**Key new files:**
+```
+services/event-management-service/.../service/EventArchivalCleanupService.java
+services/event-management-service/.../service/EventArchivalCleanupServiceTest.java
+```
+
+**Key modified files:**
+```
+services/event-management-service/.../service/EventLifecycleService.java (or EventStateTransitionHandler.java)
+     — call EventArchivalCleanupService.cleanup(eventCode) on ARCHIVED transition
+services/event-management-service/.../scheduler/TaskDeadlineReminderScheduler.java
+     — ensure 'cancelled' excluded from reminder query
+services/event-management-service/.../repository/EventTaskRepository.java
+     — bulk cancel query + findByEventIdAndStatusNot
+services/event-management-service/.../repository/NotificationRepository.java (if exists)
+     — bulk dismiss query
+```
+
+**Definition of Done (Story 10.18):**
+- [ ] TDD: `EventArchivalCleanupServiceTest` written first — covers task bulk cancel, waitlist cancel, notification dismiss
+- [ ] Archiving an event with 5 open tasks → all 5 tasks transition to `cancelled` within the same transaction
+- [ ] Task reminder scheduler does not send emails for tasks with `status=cancelled` or belonging to `ARCHIVED` events
+- [ ] Waitlisted registrations cancelled on archival; confirmed registrations preserved (historical)
+- [ ] Cleanup is idempotent — running twice produces same result with no errors
+- [ ] Integration test: archive event → verify DB state (task statuses, notification read flags)
+- [ ] Checkstyle passes; no TypeScript changes needed
+
+---
+
 **END OF EPIC 10**
