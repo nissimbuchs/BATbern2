@@ -48,8 +48,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -1486,8 +1485,8 @@ public class EventController {
             @PathVariable String eventCode) {
         log.debug("GET /api/v1/events/{}/my-registration", eventCode);
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        // ADR-001: Use custom:username claim (not sub UUID) — same pattern as all other endpoints
+        String username = securityContextHelper.getCurrentUsername();
 
         return registrationService.getMyRegistration(eventCode, username)
                 .map(response -> ResponseEntity.ok(response))
