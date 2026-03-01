@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
 
 interface HeroSectionProps {
   title: string;
@@ -37,13 +38,17 @@ export const HeroSection = ({
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
 }: HeroSectionProps) => {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState<{
     email: string;
     eventCode: string;
     expiresAt: number;
   } | null>(null);
+
+  // API-based registration check for authenticated users (no sessionStorage required)
+  const { data: myRegistration } = useMyRegistration(eventCode);
+  const isAlreadyRegistered = myRegistration != null && myRegistration.status !== 'CANCELLED';
 
   // Check for pending registration in sessionStorage
   useEffect(() => {
@@ -222,7 +227,7 @@ export const HeroSection = ({
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 {pendingRegistration ? (
-                  // Show "already registered" message
+                  // Show "already registered" message (sessionStorage — just registered this session)
                   <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -240,6 +245,31 @@ export const HeroSection = ({
                           <Mail className="h-3 w-3" />
                           <span>{t('registration.alreadyRegistered.checkEmail')}</span>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : isAlreadyRegistered ? (
+                  // Show "already registered" for authenticated users with an active registration
+                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-green-400 font-medium mb-1">
+                          {t('registration.alreadyRegistered.title')}
+                        </p>
+                        <p className="text-sm text-zinc-300 mb-2">
+                          {t(
+                            `registration:registrationStatusBanner.${myRegistration!.status.toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
+                          )}
+                        </p>
+                        {eventCode && (
+                          <Link
+                            to={`/register/${eventCode}`}
+                            className="text-xs text-green-400 underline"
+                          >
+                            {t('registration:registrationStatusBanner.manageLink')}
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
