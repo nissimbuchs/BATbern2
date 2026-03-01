@@ -5,324 +5,238 @@ stepsCompleted:
   - step-03-epic-coverage-validation
   - step-04-ux-alignment
   - step-05-epic-quality-review
-scope: story-10.10
-documentsInventoried:
-  prd: docs/prd/epic-10-additional-stories.md
-  architecture: docs/architecture/ (sharded, index.md present)
-  storyFile: _bmad-output/implementation-artifacts/10-10-registration-status-indicator.md
-  ux: NOT FOUND
+  - step-06-final-assessment
+story: "10.11 — Venue Capacity Enforcement & Waitlist Management"
+date: "2026-03-01"
 ---
 
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-03-01
 **Project:** BATbern
-**Scope:** Story 10.10 — Registration Status Indicator
+**Story:** 10.11 — Venue Capacity Enforcement & Waitlist Management
 
 ---
 
-## Document Inventory
+## Step 1: Document Inventory
 
-| Type | Format | Location | Status |
-|------|--------|----------|--------|
-| PRD (Epic 10) | Whole file | `docs/prd/epic-10-additional-stories.md` | ✅ Found |
-| Architecture | Sharded folder | `docs/architecture/` (index.md present, 20+ files) | ✅ Found |
-| Story File | Whole file | `_bmad-output/implementation-artifacts/10-10-registration-status-indicator.md` | ✅ Found |
-| UX Design | — | Not found | ⚠️ Missing |
+### PRD Documents
+- `docs/prd/epic-10-additional-stories.md` — primary Epic 10 PRD
+- `docs/prd-enhanced.md` — full platform PRD
+
+### Architecture Documents
+- `docs/architecture/01-system-overview.md`
+- `docs/architecture/03-data-architecture.md`
+- `docs/architecture/04-api-event-management.md`
+- `docs/architecture/06-backend-architecture.md`
+- `docs/architecture/06a-workflow-state-machines.md`
+- `docs/architecture/06d-notification-system.md`
+- `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`
+- `docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md`
+- `docs/architecture/ADR-006-openapi-contract-first-code-generation.md`
+
+### Story Spec
+- `_bmad-output/implementation-artifacts/10-11-venue-capacity-enforcement-waitlist-management.md` — status: ready-for-dev
+
+### UX Documents
+- ⚠️ None found for Story 10.11
 
 ---
 
-## PRD Analysis
+## Step 2: PRD Analysis
+
+**Source:** `docs/prd/epic-10-additional-stories.md` — lines 735–826
 
 ### Functional Requirements
 
-FR1: New read-only API endpoint — `GET /api/v1/events/{eventCode}/my-registration` returns the authenticated user's registration status for that event.
+FR1 — Flyway V73: Add `waitlist_position` nullable INTEGER column to `registrations`; add `registration_capacity` nullable INTEGER to `events` (NULL = unlimited, backward-compatible)
+FR2 — `RegistrationService.createRegistration()`: count active regs (registered+confirmed); if capacity NULL or count < capacity → status=`registered`; if count >= capacity → status=`waitlist` with sequential `waitlistPosition`
+FR3 — `nextWaitlistPosition(eventId)`: `COALESCE(MAX(waitlist_position), 0) + 1` — positions are 1-based (1, 2, 3…)
+FR4 — `WaitlistPromotionService.promoteFromWaitlist(eventId)`: find registration with lowest `waitlistPosition`, set status=`registered`, clear `waitlist_position`, send promotion email
+FR5 — Auto-promotion triggered by `RegistrationService.cancelRegistration()` after every successful cancellation (dependency on Story 10.12 for the cancellation path)
+FR6 — `WaitlistPromotionEmailService`: sends locale-resolved `waitlist-promotion-{locale}.html` template via `EmailTemplateSeedService`
+FR7 — `PATCH /api/v1/events/{eventCode}`: extend request DTO with `registrationCapacity: Integer` (nullable; null clears/sets unlimited)
+FR8 — `GET /api/v1/events/{eventCode}`: extend response with `registrationCapacity`, `confirmedCount`, `waitlistCount`, `spotsRemaining` (computed; null when unlimited)
+FR9 — Public read restricted: `spotsRemaining` + `waitlistCount` only (no PII); full attendee list organizer-only
+FR10 — `EventParticipantsTab.tsx`: capacity bar at top (`[███░░░] 42/60 confirmed · 3 on waitlist`) + collapsible "Waitlist" section with `waitlistPosition` column
+FR11 — `RegistrationActionsMenu` on waitlist rows: "Promote to Registered" (manual bypass) + "Remove from Waitlist"
+FR12 — Event settings: "Registration Capacity" numeric field (blank = unlimited); disabled when event is `ARCHIVED`
+FR13 — `RegistrationWizard.tsx`: if `spotsRemaining === 0`, show info alert before submission; user must acknowledge before proceeding
+FR14 — `RegistrationStatusBanner.tsx` (Story 10.10): display waitlist position "You are #N on the waitlist"
+FR15 — `HomePage.tsx`: capacity badge — "X spots remaining" or "Full — join waitlist" when capacity is set and event accepts registrations
+FR16 — 4 new email template classpath content fragments: `waitlist-promotion-de/en.html`, `waitlist-confirmation-de/en.html` — all use `batbern-default` layout
+FR17 — OpenAPI spec `docs/api/events.openapi.yml` updated FIRST before any backend implementation (ADR-006)
+FR18 — i18n: `waitlist.*` keys added to `de/en` locale files for events and registration namespaces
+FR19 — TDD: `WaitlistPromotionServiceTest` and `RegistrationCapacityIntegrationTest` written before implementation (RED→GREEN→REFACTOR)
 
-FR2: Response DTO `MyRegistrationResponse` — fields: `registrationCode`, `eventCode`, `status` (enum: `REGISTERED`, `CONFIRMED`, `WAITLIST`, `CANCELLED`), `registrationDate` (ISO-8601).
-
-FR3: Returns `404` when the user has no registration for that event; returns `401` for unauthenticated requests.
-
-FR4: Homepage status banner — when authenticated user visits the homepage and the "current event" is in state `AGENDA_PUBLISHED`, `AGENDA_FINALIZED`, or `EVENT_LIVE`, a coloured banner appears below the hero section mapping status → colour/icon/i18n text.
-
-FR5: Banner "Manage Registration" link navigates to `/register/{eventCode}`. For `CANCELLED` status, link text is "Register again" (`registrationStatusBanner.registerAgain`).
-
-FR6: Loading skeleton — while the `GET my-registration` call is in-flight, a skeleton placeholder (same dimensions as the banner) is shown. No cumulative layout shift after resolution.
-
-FR7: EventCard status chip — `EventCard` accepts optional `myRegistrationStatus?: string` prop; when provided, renders a small badge chip in the top-right corner with colour matching status. Parent components pass this prop only for events in the past 12 months.
-
-FR8: Registration Wizard guard — on wizard mount, `useMyRegistration` is called. If status is `REGISTERED`, `CONFIRMED`, or `WAITLIST`, the wizard shows a guard screen instead of step 1 (current status + "Done, go back" button). If `CANCELLED`, shows guard with "Register again" button that proceeds to step 1.
-
-FR9: Cache invalidation — `my-registration` query is invalidated when a new event registration is successfully created (`useEventRegistration` mutation success callback calls `queryClient.invalidateQueries(['my-registration', eventCode])`).
-
-FR10: Anonymous users — when `isAuthenticated === false`, no API call is made. No banner, no chip, no guard screen.
-
-FR11: TDD compliance — `RegistrationStatusIntegrationTest` written first (RED phase) covering: `200 REGISTERED`, `200 CONFIRMED`, `200 WAITLIST`, `200 CANCELLED`, `404 not-registered`, `401 unauthenticated`. `useMyRegistration.test.ts` covers all states.
-
-FR12: i18n — all visible strings use i18n keys. Keys added to `en/registration.json` and `de/registration.json` for banner and chip texts. Other 8 locales get `[MISSING]` prefix placeholders.
-
-**Total FRs: 12**
-
----
+**Total FRs: 19**
 
 ### Non-Functional Requirements
 
-NFR1 (Performance): Banner must resolve and render within ~500ms of page load on staging.
+NFR1 — Backward compatibility: existing events with no `registrationCapacity` (NULL) must behave identically to current (unlimited registrations accepted)
+NFR2 — PII protection: public endpoints must NOT expose attendee names/emails; only aggregate counts (`spotsRemaining`, `waitlistCount`) are public
+NFR3 — TDD mandate: unit + integration tests written first; integration tests extend `AbstractIntegrationTest` (PostgreSQL via Testcontainers, never H2)
+NFR4 — Contract-first (ADR-006): OpenAPI spec committed before any implementation code
+NFR5 — Code quality: Type-check passes; Checkstyle passes; `npm run lint` passes
+NFR6 — i18n completeness: de/en full translations; 8 other locales get `[MISSING]` placeholders
 
-NFR2 (UX/Stability): No cumulative layout shift (CLS = 0) after the registration status banner resolves.
-
-NFR3 (Caching): Client-side TanStack Query `staleTime: 5 * 60 * 1000` (5 minutes). No server-side Caffeine cache in this story (deferred to follow-up if needed).
-
-NFR4 (ADR-006 Contract-First): OpenAPI spec in `docs/api/events.openapi.yml` MUST be updated and committed BEFORE any backend implementation begins.
-
-NFR5 (ADR-003 Meaningful Identifiers): Endpoint path uses `{eventCode}` (e.g., `BATbern58`), not UUID. Response uses `registrationCode`, not UUID.
-
-NFR6 (ADR-004 No User Field Duplication): `MyRegistrationResponse` must NOT include `firstName`, `lastName`, `email`, or any user profile field.
-
-NFR7 (Quality Gates): `npm run type-check` passes; `npm run lint` passes; Checkstyle passes.
-
-NFR8 (Test Coverage): Backend integration tests via Testcontainers/PostgreSQL (never H2). Frontend unit tests co-located with components.
-
-**Total NFRs: 8**
-
----
+**Total NFRs: 6**
 
 ### Additional Requirements / Constraints
 
-- **No new DB migration** needed — reads from existing `registrations` table.
-- **EventController line count guard** — if `EventController.java` exceeds 2,400 lines, the new endpoint must be extracted to `RegistrationController.java`.
-- **Story 10.12 dependency** (soft): Cache invalidation note in PRD mentions Story 10.12 (deregistration) must also invalidate the `my-registration` query. Story 10.12 is not a hard prerequisite.
-- **Story 10.11 soft dependency**: 10.11 PRD references `RegistrationStatusBanner.tsx` for waitlist position display — the component must be designed with extensibility in mind.
+- **ADR-003**: Internal service methods use `UUID eventId`; all public API paths use `eventCode` (e.g., `BATbern58`)
+- **ADR-004**: Do NOT duplicate `preferredLanguage` on Registration entity — resolve user locale via `UserApiClient` at email send-time only
+- **Concurrency note**: `MAX(waitlist_position) + 1` is safe for BATbern's low concurrency; add unique constraint + retry only if race conditions observed in production
+- **`EventController` line limit**: Check line count; if > 2,400, extract registration endpoints to new `RegistrationController.java`
+- **Story 10.12 dependency**: Auto-promotion from waitlist depends on Story 10.12 (`cancelRegistration()`) — the `WaitlistPromotionService` is called from 10.12's cancellation path. Story 10.11 must be implemented before 10.12.
+
+### PRD Completeness Assessment
+
+PRD is well-written and complete for backend and most frontend concerns. Minor ambiguity on email template file naming (PRD uses `waitlist-confirmation-*`; Story 10.13 references `registration-waitlist-confirmation-*`) — resolved in story spec.
 
 ---
 
-### PRD Completeness Assessment — Initial
+## Step 3: Epic Coverage Validation
 
-The PRD section for story 10.10 is well-structured with clear scope, user story, and Definition of Done. The story artifact file elaborates substantially on the PRD. However, **notable divergences exist between the PRD and the story file** — flagged below for resolution before implementation.
+Story spec (`10-11-*.md`) serves as the implementation plan. Tracing each PRD FR against ACs and Tasks:
 
-⚠️ **Divergence D1 — Server-side cache**: PRD specifies "5-minute Caffeine cache keyed by `(eventCode, username)` — invalidated on registration mutation events". Story file explicitly says "no server-side cache in this story". **Story file is more conservative and pragmatic — recommend following story file.**
+| FR | Requirement Summary | Story Spec Coverage | Status |
+|----|--------------------|--------------------|--------|
+| FR1 | V73 migration — `waitlist_position` + `registration_capacity` columns + index | AC1, T2 | ✅ Covered |
+| FR2 | Capacity enforcement in `createRegistration()` | AC2, T10 | ✅ Covered |
+| FR3 | `nextWaitlistPosition` — 1-based sequential | T5.4 | ✅ Covered |
+| FR4 | `WaitlistPromotionService.promoteFromWaitlist()` | AC3, T7 | ✅ Covered |
+| FR5 | Auto-promotion triggered by `cancelRegistration()` | AC3 + Story 10.12 scope | ⚠️ Cross-story dependency (by design) |
+| FR6 | `WaitlistPromotionEmailService` with locale resolution | AC3, T8 | ✅ Covered |
+| FR7 | PATCH extend with `registrationCapacity` | AC4, T11.1–T11.2 | ✅ Covered |
+| FR8 | GET extend with `confirmedCount`, `waitlistCount`, `spotsRemaining` | AC4, T11.3 | ✅ Covered |
+| FR9 | Public read: `spotsRemaining` + `waitlistCount` only (no PII) | AC4 text | ✅ Covered |
+| FR10 | `EventParticipantsTab` capacity bar + collapsible waitlist section | AC5, T16, T14 | ✅ Covered |
+| FR11 | RegistrationActionsMenu "Promote" + "Remove" for waitlist rows | AC5, T14.5–T14.6 | ✅ Covered |
+| FR12 | Event settings "Registration Capacity" field, disabled when ARCHIVED | AC6, T17 | ✅ Covered |
+| FR13 | RegistrationWizard waitlist acknowledgment when `spotsRemaining === 0` | AC8, T19 | ✅ Covered |
+| FR14 | `RegistrationStatusBanner` waitlist position display ("You are #N…") | Dev Notes only — no AC, no Task | ⚠️ **MISSING from Tasks** |
+| FR15 | `HomePage` capacity badge | AC7, T18 | ✅ Covered |
+| FR16 | 4 email templates seeded | AC9, T9 | ⚠️ **Naming discrepancy** |
+| FR17 | OpenAPI spec first (ADR-006) | AC12, T1 | ✅ Covered |
+| FR18 | i18n `waitlist.*` + `capacity.*` keys de/en | AC11, T20 | ✅ Covered |
+| FR19 | TDD — tests written first | AC10, T6 | ✅ Covered |
 
-⚠️ **Divergence D2 — Response DTO fields**: PRD has `{ registrationCode, status, registrationDate }`. Story file has `{ registrationCode, eventCode, status, registrationDate }` (adds `eventCode`). **Story file is the authoritative spec — follow it.**
+**Coverage: 17/19 fully covered · 2 flagged**
 
-⚠️ **Divergence D3 — i18n key namespace**: PRD says `registrationStatus.*` prefix. Story file uses `registrationStatusBanner.*`, `registrationStatusGuard.*`, `eventCard.statusChip.*` (more granular). **Story file is more specific and implementation-ready — follow it.**
+### Missing / Partial Coverage Detail
 
-⚠️ **Divergence D4 — Integration test count**: PRD DoD lists 5 test cases (no CANCELLED 200 test). Story AC9 lists 6 (adds `200 CANCELLED`). **Story file is more complete — follow it.**
+**FR5 — Auto-promotion on cancellation (cross-story):**
+Story 10.11 provides `WaitlistPromotionService`; Story 10.12 calls it from `cancelRegistration()`. This is the correct design — 10.11 can be deployed independently with manual promotion working. The full automated loop requires 10.12. Not a defect, but must be noted as an integration dependency.
 
----
+**FR14 — RegistrationStatusBanner waitlist position (gap):**
+PRD explicitly requires Story 10.11 to add "You are #3 on the waitlist" display to `RegistrationStatusBanner.tsx`. Story 10.10 (which introduced the banner) is already done (`feat(10.10)` committed). Story spec mentions this only in Dev Notes as optional ("Story 10.10 can pick it up") — but 10.10 is already closed. There is no AC or Task for this display integration. **This is a gap that will leave the banner showing "Waitlist" status without a position number.**
 
-## Epic Coverage Validation
-
-### Coverage Matrix
-
-| FR | Requirement (Summary) | Story Task(s) | Status |
-|----|----------------------|---------------|--------|
-| FR1 | New read-only API endpoint `GET /events/{eventCode}/my-registration` | T1 (OpenAPI), T2 (repo query), T3 (service), T4 (controller) | ✅ Covered |
-| FR2 | Response DTO with `registrationCode`, `eventCode`, `status`, `registrationDate` | T1.2 (schema definition) | ✅ Covered |
-| FR3 | 404 when not registered; 401 for unauthenticated | T1.3 (security spec), T4.4, T4.5 | ✅ Covered |
-| FR4 | Homepage status banner (4 status variants, correct states only) | T8 (component), T9 (HomePage integration) | ✅ Covered |
-| FR5 | Banner "Manage Registration" / "Register again" link | T8.6 | ✅ Covered |
-| FR6 | Loading skeleton, no CLS | T8.3 (Skeleton component) | ✅ Covered |
-| FR7 | EventCard status chip — parent components batch-fetch (past 12 months only) | T10 (chip), T10.5 (parents) | ⚠️ Partial — see gap G1 |
-| FR8 | Registration Wizard guard (REGISTERED/CONFIRMED/WAITLIST → "Done, go back"; CANCELLED → "Register again") | T11 | ✅ Covered |
-| FR9 | Cache invalidation on registration creation | T6.4 (staleTime set) — **no explicit task for mutation callback** | ⚠️ Partial — see gap G2 |
-| FR10 | Anonymous users: no API call made | T6.3 (`!isAuthenticated` guard in hook) | ✅ Covered |
-| FR11 | TDD: integration tests written first (6 test cases) | T5 (backend), T6.7 (frontend unit tests), T13 (full run) | ✅ Covered |
-| FR12 | i18n: all strings keyed, en+de complete, 8 locales `[MISSING]` | T12 | ✅ Covered |
-
-**Coverage: 10/12 FRs fully covered · 2/12 partially covered · 0/12 missing**
-
----
-
-### Missing / Incomplete FR Coverage
-
-#### ⚠️ GAP G1 — FR7: EventCard parent batch-fetch strategy undefined
-
-T10.5 states: *"Parent components (e.g., `UpcomingEventsSection`, `ArchivePage`) must batch-fetch user registrations and pass the prop. Only for events in the last 12 months."*
-
-**Problem**: The story only defines a single-event endpoint `GET /events/{eventCode}/my-registration`. If a user has registrations across multiple events in the past 12 months, calling this endpoint per-card IS an N+1 pattern. T10.5 acknowledges N+1 concern but does not resolve it — it only bounds the scope to 12 months.
-
-**No task defines how batch-fetch works.** Options not chosen between:
-- a) Call per-event endpoint N times (bounded N+1 — acceptable if few events)
-- b) New batch endpoint `GET /my-registrations?eventCodes=code1,code2,...`
-- c) Include `myRegistrationStatus` in the events list API response
-
-**Impact**: Could result in multiple parallel API calls on pages with event lists. Needs a decision before implementation starts.
-
-**Recommendation**: Clarify in the story — if option (a) is chosen, add a note on the expected maximum N. If option (b), add it to T7 and T1.
-
----
-
-#### ⚠️ GAP G2 — FR9: No task for `useEventRegistration` mutation cache invalidation
-
-AC7 states: *"The `useEventRegistration` mutation success callback must call `queryClient.invalidateQueries(['my-registration', eventCode])`."*
-
-**Problem**: There is no task in the story that modifies the existing `useEventRegistration` hook (or equivalent) to add this invalidation. The file is not listed in "Key Files to Modify". A dev reading only the task list could complete all tasks and miss the cache invalidation wiring.
-
-**Impact**: Registration status banner would show stale data immediately after a successful registration, requiring a page refresh.
-
-**Recommendation**: Add a subtask — e.g., *"T6.8 — In the event registration creation mutation (hook or component that calls `POST /api/v1/events/{eventCode}/registrations`), add `queryClient.invalidateQueries(['my-registration', eventCode])` to the `onSuccess` callback."*
-
----
+**FR16 — Email template naming discrepancy:**
+PRD: `waitlist-confirmation-de/en.html`
+Story spec (AC9, T9): `registration-waitlist-confirmation-de/en.html`
+Story 10.13 also references `registration-waitlist-confirmation-*`. The story spec naming is more consistent with the `EmailTemplateSeedService` `registration-` category detection pattern. The PRD naming is informal. Dev must use the story spec names, not the PRD names.
 
 ### Coverage Statistics
 
-- Total PRD FRs: 12
-- FRs fully covered in story tasks: 10
-- FRs partially covered (gap exists): 2
-- FRs not covered: 0
-- **Coverage: 83% full · 100% partial**
-
-
+- Total PRD FRs: 19
+- FRs fully covered: 17
+- FRs with gaps/flags: 2 (FR14 gap, FR16 naming)
+- Coverage: 89% with 1 actionable gap
 
 ---
 
-## UX Alignment Assessment
+## Step 4: UX Alignment Assessment
 
 ### UX Document Status
 
-**Not Found** — no standalone UX design document exists for story 10.10.
+**Not found** — No formal wireframe or UX spec exists for Story 10.11.
 
-However, the story is not UX-blind. Detailed UX specifications are **embedded within the acceptance criteria and task list**:
+### Assessment: UX is strongly implied
 
-| UX Element | Specified In | Detail Level |
-|------------|-------------|--------------|
-| Status banner colours/icons | AC2, T8.5 | Full — MUI Alert `severity`, icon components named |
-| Banner skeleton dimensions | AC4, T8.3 | Full — MUI Skeleton `height="56px"`, no CLS |
-| Banner link text + routing | AC3, T8.6 | Full — i18n keys + `/register/{eventCode}` |
-| EventCard chip positioning | AC5, T10.2 | Full — top-right corner, Tailwind colour classes specified |
-| Registration Wizard guard layout | AC6, T11 | Partial — described functionally, no pixel layout |
-| Loading states | AC4 | Full — skeleton before resolve |
-| Empty state (not registered) | AC8 | Full — no render (`return null`) |
-
-**Assessment**: The embedded UX specs in the story are sufficient for component-level implementation. No wireframes are strictly needed. This is a common and acceptable pattern for backend-driven status-display UI — there is no novel interaction design involved.
-
----
+Story 10.11 introduces significant new UI components:
+1. `CapacityIndicator.tsx` — new public component with badge variants
+2. `WaitlistSection.tsx` — new organizer component with accordion + table + action menu
+3. `EventParticipantsTab.tsx` changes — MUI LinearProgress capacity bar
+4. `RegistrationWizard.tsx` changes — waitlist acknowledgment flow + conditional success message
+5. Event Settings — new numeric field
+6. `HomePage.tsx` — capacity badge in event hero
 
 ### Alignment Issues
 
-No UX ↔ PRD misalignment found. The story AC descriptions are consistent with the PRD scope section.
+The story spec ACs and Tasks contain inline UX specs sufficient for implementation (progress bar format, table columns, MUI component choices, alert text). This is acceptable given BATbern's pattern of embedding UX detail in story specs without formal wireframes.
 
-One **UX concern not addressed anywhere**:
+**However, one UX ambiguity remains:**
 
-⚠️ **UX-G1 — Wizard guard "Register again" backend behaviour undefined**
-
-AC6 states: *"for `CANCELLED` → 'Register again' button that proceeds to step 1 of the wizard, clears existing cancelled registration via a new re-registration endpoint or allows the backend to detect the cancelled status and create a new registration."*
-
-T11.4 says: *"verify this behaviour or file it as a follow-up"*
-
-**Problem**: The backend behaviour for re-registration of a cancelled user is explicitly unresolved. If `createRegistration()` throws `IllegalStateException` on duplicate regardless of status, the "Register again" flow will silently fail at submit. This is a UX cliff edge.
-
-**Impact**: Medium-high. The wizard guard is specifically added to improve UX over the current error-on-submit problem. If the "Register again" path hits the same backend error, the story's main usability goal is only half-delivered.
-
-**Recommendation**: Resolve before implementation — either:
-- a) Confirm that `RegistrationService.createRegistration()` already handles `CANCELLED` → creates new registration (check existing service code)
-- b) Or add a task to update `createRegistration()` to allow re-registration for `CANCELLED` users
-
----
+⚠️ **AC8 / T19.3 — Waitlist acknowledgment UX is underspecified:**
+- AC8 says "User must acknowledge before proceeding" and T19.3 says "check `waitlistAcknowledged` state before submit button is active (or show acknowledge button)" — these are two different patterns that would produce meaningfully different user experiences:
+  - Pattern A: checkbox the user checks → button activates
+  - Pattern B: separate "I understand" button → enables submit button
+- Both are valid but which to implement is ambiguous. A developer could implement either; reviewer expectations may differ.
 
 ### Warnings
 
-⚠️ No formal wireframes or UX design document for story 10.10. **Acceptable** for this story given embedded UX specs in ACs. If the visual design deviates significantly in implementation, there is no reference to validate against.
-
-⚠️ WCAG / accessibility requirements not explicitly stated for the new components (`RegistrationStatusBanner`, `RegistrationStatusGuard`, status chip). MUI Alert components are inherently accessible (use ARIA roles), but the chip in `EventCard.tsx` uses Tailwind-only styling — confirm `aria-label` or visually-hidden text is included for screen readers (not currently mentioned in T10).
-
+- ⚠️ No formal wireframe — inline specs are sufficient but AC8 waitlist acknowledgment UX needs clarification before dev begins
+- ℹ️ `CapacityIndicator` props and appearance are well-specified in T13; no wireframe needed
 
 ---
 
-## Epic Quality Review
+## Step 5: Epic Quality Review
 
-### User Value Focus
+### User Value Check
 
-✅ **Story is user-centric.** Title and user story clearly describe attendee benefit ("never accidentally register twice", "always know status at a glance"). This is not a technical milestone — it delivers visible UX value.
+✅ **Story delivers clear user value on two axes:**
+- Organizer: can now prevent venue overbooking by setting a capacity ceiling
+- Attendee: gains automatic promotion when spots open, avoiding manual checking
 
-✅ **Independent story.** PRD states: "Prerequisite: None (independent — uses existing registration + auth APIs)." No hard dependency on any other in-progress story.
+This is NOT a technical milestone — it's a directly user-facing capability.
 
----
+### Story Independence
 
-### Story Sizing Assessment
+⚠️ **Partial forward dependency on Story 10.12:**
+- The full automated promotion-on-cancel loop requires Story 10.12 (`cancelRegistration()` calls `promoteFromWaitlist()`)
+- Story 10.11 IS independently completable: manual promotion, capacity enforcement, waitlist email, and all UI work can be done and tested without 10.12
+- The story correctly notes this as a known dependency
+- **Verdict**: Acceptable incremental delivery. Not a blocking violation.
 
-⚠️ **Story is large.** 13 major tasks with ~60 subtasks spanning:
-- Backend: API spec, repository, service, controller, 7 integration tests
-- Frontend: hook, service, banner component, EventCard chip, wizard guard, i18n (10 locales)
-- Test: unit tests (2 suites), type-check, lint, Playwright E2E
+### Story Sizing
 
-This is arguably 2 stories (backend + frontend) merged into one. In isolation it's implementable, but represents significant scope for a single delivery unit. **No story point estimate is present** — sprint planning impact is unclear.
+The story is large (21 tasks across 6 phases) but represents a coherent, vertically-sliced capability. Each phase builds on the previous in a logical dependency chain. No phase can be meaningfully split out without breaking the slice.
 
-**Recommendation (minor)**: Consider noting an estimate (e.g., 8 SP) or splitting into 10.10a (backend endpoint + TDD) and 10.10b (frontend components). Not blocking.
+### Acceptance Criteria Quality
 
----
-
-### Acceptance Criteria Review
-
-| AC | Format | Testable | Complete | Verdict |
-|----|--------|----------|----------|---------|
-| AC1 | Specification | ✅ | ✅ Status codes, fields, auth all specified | ✅ |
-| AC2 | Specification | ✅ | ✅ All 4 states, i18n keys, conditions | ✅ |
-| AC3 | Specification | ✅ | ✅ Both link variants specified | ✅ |
-| AC4 | Specification | ✅ | ✅ Skeleton dimensions, no-CLS requirement | ✅ |
-| AC5 | Specification | ✅ | ✅ Tailwind classes specified, 12-month scope | ✅ |
-| AC6 | Specification | ⚠️ | ❌ **Ambiguous backend behaviour** — see EQ-1 | ⚠️ |
-| AC7 | Specification | ✅ | ⚠️ Invalidation stated but no task covers it — Gap G2 | ⚠️ |
-| AC8 | Specification | ✅ | ✅ | ✅ |
-| AC9 | Specification | ✅ | ✅ 6 test cases enumerated | ✅ |
-| AC10 | Specification | ✅ | ✅ Lint + type-check as gates | ✅ |
-
----
+| AC | Assessment |
+|----|-----------|
+| AC1 — V73 migration | ✅ Specific, testable, includes index |
+| AC2 — Capacity enforcement | ✅ Clear logic with edge cases (NULL = unlimited) |
+| AC3 — WaitlistPromotionService | ✅ Behavior + email + manual path specified |
+| AC4 — API extension | ✅ Specific field names + nullability + access control |
+| AC5 — Organizer Attendees Tab UI | ✅ Visual format + column names + action labels |
+| AC6 — Event Settings field | ✅ Disabled state condition specified |
+| AC7 — Public homepage badge | ✅ Both variants ("X spots" + "Full—join waitlist") |
+| AC8 — Wizard acknowledgment | ⚠️ "Must acknowledge" is ambiguous — see UX concern |
+| AC9 — Email templates seeded | ✅ 4 templates, layout, variables all specified |
+| AC10 — TDD compliance | ✅ Specific test class names + RED phase command |
+| AC11 — i18n | ✅ Namespace + file specified + `[MISSING]` for 8 locales |
+| AC12 — OpenAPI spec first | ✅ Explicit ADR-006 reference |
 
 ### Dependency Analysis
 
-**Within-story dependencies** (sequential tasks, valid):
-- T1 (OpenAPI spec) → T4 (controller) + T6/T7 (frontend types) — correct ADR-006 ordering ✅
-- T5 (integration tests written first) → T2/T3/T4 (RED phase TDD) ✅
+✅ Database created story-scoped (V73 is this story's migration, not pre-created)
+✅ No circular dependencies
+✅ Backward: Story 10.10 (recommended, not required) — correctly marked
+⚠️ Forward: Story 10.12 cancellation path — acceptable by design
 
-**Forward-story dependencies (soft):**
-- Story 10.12 (deregistration) must also invalidate `my-registration` query. If 10.12 is not implemented, deregistering a user leaves the status banner showing the old status for up to 5 minutes. **Acceptable known limitation** — low risk.
-- Story 10.11 (capacity/waitlist) extends `RegistrationStatusBanner.tsx` with waitlist position. Component must be designed for extension — not mentioned in T8. **Minor forward-coupling concern** — the story should note this.
+### Implicit Behaviors Without ACs (Quality Concerns)
 
----
+🟠 **T10.4 — Duplicate waitlist registration guard not in any AC:**
+Task T10.4 adds logic: "if existing registration status is 'waitlist' → do NOT create duplicate, return existing and resend waitlist-confirmation email." This is a non-trivial business rule (extending the duplicate check from Story 10.10) that has no AC. If a developer misses T10.4, there's no failing test to catch it unless the integration tests in T6.2 cover this case — they currently don't.
 
-### Best Practices Checklist
+🟠 **T7.5 — `manuallyPromote(String registrationCode)` has no error-case AC:**
+The method is specified in T7.5 but there's no AC or test for what happens when `manuallyPromote()` is called with a registration that is NOT in `waitlist` status. Should it throw an exception? Return silently? This could cause a confusing organizer experience.
 
-| Check | Result |
-|-------|--------|
-| Story delivers user value | ✅ |
-| Story is independent (no hard prerequisites) | ✅ |
-| No forward dependencies (hard) | ✅ |
-| Acceptance criteria are testable | ✅ (9/10 clean, 1 ambiguous) |
-| DB migration only when needed | ✅ (no new migration required) |
-| FR traceability maintained | ✅ |
-| Story estimate present | ❌ Missing |
-| No ambiguous implementation decisions | ❌ AC6 CANCELLED re-registration path |
-
----
-
-### 🔴 Critical Violations
-
-None.
-
----
-
-### 🟠 Major Issues
-
-**EQ-1 — AC6: CANCELLED re-registration path is ambiguous**
-
-AC6 uses "OR" for a backend behaviour decision: *"clears existing cancelled registration via a new re-registration endpoint **OR** allows the backend to detect the cancelled status and create a new registration."*
-
-This is an implementation decision delegated to the dev agent. If `createRegistration()` currently throws `IllegalStateException` for any existing registration regardless of status, the "Register again" UI path will silently fail. This could require a backend fix not accounted for in the task list.
-
-**Remediation**: Before implementation, run: `grep -n "IllegalStateException\|CANCELLED\|cancelled" services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` to confirm whether `CANCELLED` users can re-register. If not, add a task to handle it.
-
----
-
-### 🟡 Minor Concerns
-
-**EQ-2 — No story point estimate** — makes sprint planning opaque. Recommend adding estimate (suggested: 8 SP based on scope).
-
-**EQ-3 — `RegistrationStatusGuard.tsx` is listed in "New Files" but has no dedicated task** — it's implied within T11 ("add guard screen") but splitting the task would prevent it being missed.
-
-**EQ-4 — EventCard chip accessibility gap** — T10 does not specify `aria-label` or visually-hidden text for the status chip. Screen readers would read only the Tailwind-styled text. Needs explicit mention.
-
-**EQ-5 — T10.5 parent component batch-fetch is vague** (also flagged as G1) — "e.g., `UpcomingEventsSection`, `ArchivePage`" is non-exhaustive. A dev could complete T10 correctly but miss pages that render events.
-
+🟡 **T15 — Promote endpoint error cases unspecified:**
+T15.2 adds the `POST /promote` endpoint but doesn't specify HTTP status for invalid `registrationCode` (404?) or non-waitlist registration (409? 422?). These should be in the OpenAPI spec and tested.
 
 ---
 
@@ -330,75 +244,52 @@ This is an implementation decision delegated to the dev agent. If `createRegistr
 
 ### Overall Readiness Status
 
-## 🟡 NEEDS WORK — Conditional Go
+**🟡 READY WITH RESERVATIONS** — Story is well-specified and can be implemented as-is, but 4 items should be addressed before or during dev to prevent rework.
 
-Story 10.10 is well-specified and clearly valuable. The architecture is sound, TDD requirements are explicit, and ADR compliance is mandated. However, **3 items need resolution before a dev agent begins** — they are quick to resolve (minutes to hours) and none require redesigning the story.
+### Issues by Severity
 
----
+#### 🟠 Major Issues (address before or during dev)
 
-### Issue Summary
+1. **FR14 gap — RegistrationStatusBanner waitlist position display is unimplemented**
+   - PRD requires "You are #3 on the waitlist" in the banner
+   - Story 10.10 is already done; this display is orphaned
+   - **Action**: Add one AC and Task to Story 10.11: "Update `RegistrationStatusBanner.tsx` to show `waitlistPosition` when status is WAITLIST"
+   - Effort: ~30 min (MyRegistrationResponse DTO already has the field per Dev Notes)
 
-| ID | Severity | Category | Issue |
-|----|----------|----------|-------|
-| EQ-1 | 🟠 Major | Story Quality | AC6: CANCELLED re-registration backend path is ambiguous ("or") — could require unplanned backend changes |
-| G1 | 🟠 Major | Coverage Gap | FR7: EventCard parent batch-fetch strategy not specified — could become N+1 at scale or require a new endpoint |
-| G2 | 🟠 Major | Coverage Gap | FR9/AC7: No task covers wiring cache invalidation into the existing registration creation mutation |
-| D1 | 🟡 Minor | PRD Divergence | Server-side Caffeine cache: PRD says yes, story says no — follow story file |
-| D2 | 🟡 Minor | PRD Divergence | Response DTO: PRD omits `eventCode` field — follow story file |
-| D3 | 🟡 Minor | PRD Divergence | i18n key prefix differs — follow story file (more granular keys) |
-| D4 | 🟡 Minor | PRD Divergence | Integration test count: PRD=5, story=6 (CANCELLED case missing from PRD) — follow story file |
-| EQ-2 | 🟡 Minor | Story Quality | No story point estimate — sprint planning opaque |
-| EQ-3 | 🟡 Minor | Story Quality | `RegistrationStatusGuard.tsx` has no dedicated task — implied in T11 |
-| EQ-4 | 🟡 Minor | Story Quality | EventCard status chip missing `aria-label` / accessible text requirement |
-| UX-G1 | 🟠 Major | UX Gap | Same as EQ-1 — CANCELLED "Register again" UX path relies on unverified backend behaviour |
+2. **AC8 ambiguity — Waitlist acknowledgment UX interaction type**
+   - "User must acknowledge" could be a checkbox or a secondary button
+   - **Action**: Clarify before T19 implementation. Recommend: MUI `Alert` + checkbox pattern for inline form consistency with existing wizard steps.
 
-**Total: 3 major · 7 minor · 0 critical**
+3. **T10.4 — Duplicate waitlist guard not backed by AC/test**
+   - Business rule exists only in a task comment; no failing test will catch if omitted
+   - **Action**: Add test case to `RegistrationCapacityIntegrationTest` (T6.2): "register when already on waitlist → 200, no duplicate created, waitlist-confirmation email resent"
 
----
+4. **T7.5 / T15 — `manuallyPromote()` error handling unspecified**
+   - No AC for invalid `registrationCode` or non-waitlist promotion attempts
+   - **Action**: Add to OpenAPI spec: `404 Not Found` for invalid code; `409 Conflict` for non-waitlist status. Add test in T15.3.
 
-### Critical Issues Requiring Immediate Action (Before Dev Starts)
+#### 🟡 Minor Concerns (can be addressed during dev)
 
-**Action 1 — Resolve AC6 CANCELLED re-registration (EQ-1 / UX-G1)**
+5. **FR16 — Email template filename discrepancy**
+   - PRD uses `waitlist-confirmation-*`; story spec (and Story 10.13) use `registration-waitlist-confirmation-*`
+   - **Action**: Use story spec names (`registration-waitlist-confirmation-de/en.html`). No change needed in story spec — dev must NOT use the PRD names.
 
-Run this before writing a single line of code:
-```bash
-grep -n "IllegalStateException\|cancelled\|CANCELLED" \
-  services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java
-```
-Then either:
-- Confirm `createRegistration()` allows new registration when existing is `CANCELLED` → note it in the story
-- Or add a task: *"T4.6 — Update `createRegistration()` to allow re-registration for CANCELLED status"*
-
-**Action 2 — Add missing cache invalidation task (G2)**
-
-Add to story file under "Frontend" tasks:
-> **T6.8 — Wire cache invalidation** (AC: #7)
-> In the mutation hook / component that calls `POST /api/v1/events/{eventCode}/registrations`, add `queryClient.invalidateQueries(['my-registration', eventCode])` to the `onSuccess` callback. Also add this file to "Key Files to Modify".
-
-**Action 3 — Clarify EventCard parent batch-fetch strategy (G1)**
-
-Decide and document one of:
-- a) N+1 per-card calls bounded to ≤12 months of events (acceptable if typical event count is <10)
-- b) New batch endpoint `GET /my-registrations?eventCodes=...` (more work, needed if archive shows >20 events)
-
-Add the decision to T10.5 so the dev agent has a clear path.
-
----
+6. **T11.4 — Performance note on confirmedCount / waitlistCount queries**
+   - Two extra DB queries per event response noted as acceptable
+   - **Action**: Monitor in staging; add `@Cacheable` if event list pages show latency. This is already noted in the task.
 
 ### Recommended Next Steps
 
-1. **Nissim resolves Action 1-3** in the story file (estimated 30 min) — then story is dev-ready
-2. **Dev agent proceeds with T1 first** (OpenAPI spec) as mandated by ADR-006
-3. **PRD divergences D1-D4 do not need fixing** — the story file is authoritative; optionally update the PRD section to sync
-4. **EQ-4 (accessibility)**: Add `aria-label` requirement to T10.2 before implementation
-
----
+1. Add one AC + Task to story spec for RegistrationStatusBanner waitlist position display (FR14 gap)
+2. Clarify AC8 acknowledgment interaction pattern before frontend dev begins
+3. Add duplicate-waitlist-registration test case to T6.2 test plan
+4. Add error-case ACs to T15 for the promote endpoint
+5. Confirm email template filenames use `registration-waitlist-confirmation-*` naming (not PRD `waitlist-confirmation-*`)
+6. Proceed to implementation after above are resolved — all other 17 FRs are fully covered and ready
 
 ### Final Note
 
-This assessment identified **10 issues across 5 categories** for story 10.10. The 3 major issues are pre-implementation decisions that take ~30 minutes to resolve. Once resolved, the story has clear, well-specified acceptance criteria, strong ADR compliance requirements, explicit TDD requirements, and sufficient architectural context to proceed directly to implementation. No redesign is needed.
+This assessment identified **6 issues** across **3 categories** (1 FR gap, 2 UX/AC ambiguities, 3 missing error handling specs). The story is architecturally sound, ADR-compliant, and has solid TDD coverage for the happy path. The issues are targeted and do not require story redesign — they are additive clarifications. The story can proceed to implementation once the major issues (especially FR14 and AC8) are resolved.
 
-**Report:** `docs/implementation-readiness-report-2026-03-01.md`
-
-**Assessor:** Winston (BATbern Architect Agent) · 2026-03-01
-
+---
+*Assessed by Winston — BATbern Architect | 2026-03-01*
