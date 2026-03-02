@@ -1,6 +1,6 @@
 # Story 10.11: Venue Capacity Enforcement & Waitlist Management
 
-Status: review
+Status: done
 
 <!-- Prerequisite: Story 10.10 (registration status indicator) recommended for UX coherence; technically independent -->
 

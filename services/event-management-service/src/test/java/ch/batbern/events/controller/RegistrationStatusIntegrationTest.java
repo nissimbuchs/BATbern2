@@ -147,8 +147,8 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should return 200 with WAITLIST status when user is on the waitlist")
     @WithMockUser(username = USERNAME)
     void should_return200_with_waitlistStatus() throws Exception {
-        // DB constraint (V2 migration) uses 'waitlisted'; service maps it to API enum WAITLIST
-        saveRegistration(testEvent, USERNAME, "waitlisted");
+        // V73+ uses 'waitlist' (lowercase); V74 migration removed the legacy 'waitlisted' value
+        saveRegistration(testEvent, USERNAME, "waitlist");
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
