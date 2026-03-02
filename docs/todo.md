@@ -1,28 +1,21 @@
 # BATbern Project TODO
-recognize, when a logged in user registered for an event on the public page
 
-Partner bei AWS registrieren und testen ob sie verbunden werden wegen was pw reset
+<!-- All items below have been converted to Epic 10 stories (2026-03-02) -->
 
-Partner meeting ical einladung senden und email template
+- ~~Email aus organizer page in presenter view und /about entfernen~~ → **Story 10.19**
 
-add email template button bei administration
+- ~~add admin section for export and import json using old bat legacy format if possible:~~
+    - ~~all events, sessions, speakers, bio~~
+    - ~~all companies~~
+    - ~~all attendees~~
+    - ~~all portraits, company logos and presentations from s3~~ → **Story 10.20**
 
-Newsletter mit auswahl welches email template
+- ~~Add upload/delete images tab to event detail, so we can keep memories of the actual event itself. On the public homepage, replace the dummy testimonial infinite marquee through 20 random images of the last 5 events. On the archive event detail page, show at the same place, the images of that event itself in the infinite marquee.~~ → **Story 10.21**
 
-sicherstellen, dass auch Registrierungs email template editierter ist. gleiches für portal registrierung
+- ~~We should also be able to add an image, that is then shown on the presenter page, as a separate page, right after we introduce the topic and before the agenda. Probably the upload should be placed on the event detail overview tab.~~ → **Story 10.22**
 
-evend detail attendee tab mit den Registrierungen um Warteliste erweitern. grenze ist venue size
+- ~~We have an event description that we can set on the event detail page, but we do not show it anywhere on the public page. Lets add it right below the hero page as a separate section.~~ → **Story 10.23**
 
-sicherstellen, dass registrierte Leute sich auch wieder deregistrieren können (mit nicht verfallendem magic link aus mail, mit eingäbe email fürs deregistrierem im portal.
+- ~~Admin kann n User bei AWS registrieren. Testen ob sie danach mit dem existierenden user (gleiche email adresse) verbunden werden, und korrekt geführt werden wegen dem AWS "user must reset pw on first login"~~ → **Story 10.24**
 
-sicherstellen, dass Leute die sich beim registrieren auch grad für die newsletter anmelden, auch grad angemeldet sind
-
-sicherstellen, dass bei portal registrierung, auch die newsletter registrierung funktioniert.
-
-use AI to write description for bat title und generate bat theme image and to analize abstract and materials
-
-können wir auch email Empfangs-client schreiben, so dass leute sich per Antwort aufs email mit unsubscribe deregistrieren können
-
-## Errors:
-- clean up all tasks and notifications when an event is archived
-
+- ~~Partner meeting ical einladung senden und email template dafür definieren in der admin section für email templates. PartnerMeeting und batbern event calender eintrag direkt beim erstellen des events erstellen. Task erstellen, dass die meetings noch an die Partner versendet werden müssen. Reminder Termin 31.12. das aktuellen Jahres für das nächste Jahr. Für partner-meeting und batbern-event.~~ → **Story 10.25**

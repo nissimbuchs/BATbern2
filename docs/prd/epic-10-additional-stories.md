@@ -1669,169 +1669,256 @@ public/locales/de/events.json + en/events.json                  — description.
 
 ---
 
-### Story 10.24: Admin AWS Cognito User Registration
+### Story 10.24: AWS Cognito User Provisioning from User Management
 
 **Status**: ready-for-dev
-**Prerequisite**: Story 10.1 (Admin page must exist); Epic 9 Story 9.1 (Cognito integration patterns established)
+**Prerequisite**: Epic 9 Story 9.1 (Cognito integration patterns established)
 
 **User Story:**
-As an **organizer**, I want to create a new user directly in AWS Cognito from the admin panel, so that I can onboard new attendees, speakers, or organizers without requiring them to self-register — especially for users who will receive a temporary password and must reset it on first login.
+As an **organizer**, I want to create an AWS Cognito account for a BATbern user directly from the User Management list — either as part of creating a new user or for an existing user who is not yet linked to AWS — so that I can onboard people without requiring them to self-register.
+
+**Architectural Clarification — Who Actually Calls AWS:**
+
+> **The organizer's own Cognito account has zero special AWS rights.** A regular Cognito user pool token cannot call `AdminCreateUser` — that API requires IAM credentials.
+>
+> This works as follows:
+> 1. The organizer (authenticated via Cognito JWT) calls the BATbern **backend** endpoint.
+> 2. The backend (`company-user-management-service`) runs on ECS with an **IAM task role**.
+> 3. The ECS task role has `cognito-idp:AdminCreateUser` + `cognito-idp:AdminAddUserToGroup` permissions granted via CDK.
+> 4. The backend calls the AWS Cognito API using those IAM credentials — fully transparent to the organizer.
+>
+> In short: the organizer only needs ORGANIZER role in BATbern. AWS IAM is handled entirely by the backend's ECS role.
 
 **Background:**
-Currently, users either self-register via Cognito's hosted UI or are synced from Cognito via `sync-users-from-cognito.sh`. There is no in-app flow for an organizer to provision a new Cognito user. AWS Cognito's `AdminCreateUser` API creates the user with a temporary password and sets `FORCE_CHANGE_PASSWORD` status; the user must set a new password on first login. If a user with the same email already exists in Cognito, the call fails gracefully with `UsernameExistsException`. The new user's Cognito `sub` should be linked to an existing `users` DB record if one shares the same email.
+The `User` domain entity has a nullable `cognitoUserId` field (`cognito_user_id` column). A user can exist in the BATbern DB without a Cognito account (e.g., imported from legacy data or pre-created by an organizer). This story detects that state and allows the organizer to trigger Cognito provisioning on demand. AWS Cognito's `AdminCreateUser` creates the user with a temporary password and `FORCE_CHANGE_PASSWORD` status; the user must set a new password on first login. If a Cognito account with the same email already exists, the API returns `UsernameExistsException`.
 
 **Scope:**
 
 **Backend — Cognito User Provisioning (`company-user-management-service`):**
 - New service: `CognitoAdminService.java`
-  - Wraps AWS Cognito `AdminCreateUser` API call (using `software.amazon.awssdk:cognitoidentityprovider` SDK, already in project)
-  - Parameters: `email`, `givenName`, `familyName`, `role` (maps to Cognito group: `ATTENDEE`, `SPEAKER`, `ORGANIZER`)
-  - Sets `SUPPRESS` message action to avoid sending Cognito's default email (BATbern sends a custom welcome email)
-  - Sends custom welcome email via `EmailService` with template `user-welcome-temp-password-de/en.html` (new classpath template, seeded by `EmailTemplateSeedService`)
-  - Catches `UsernameExistsException` → returns structured error "A user with this email already exists in Cognito"
-  - After successful Cognito creation: upserts DB `users` record (create if not found by email, update `cognitoId` if found by email without `cognitoId`)
-- New endpoint: `POST /api/v1/admin/users/provision` (organizer-only)
-  - Body: `{ email, givenName, familyName, role, language }`
-  - Returns: `{ username, temporaryPasswordSent: true }` on success; structured error on failure
-- IAM: ECS task role for company-user-management-service must have `cognito-idp:AdminCreateUser` + `cognito-idp:AdminAddUserToGroup` permissions (add to CDK stack)
+  - Wraps `AdminCreateUser` (using `software.amazon.awssdk:cognitoidentityprovider` SDK, already present for Cognito sync)
+  - Call parameters: `email`, `givenName`, `familyName`; `MessageAction = SUPPRESS` (no Cognito default email — BATbern sends a custom one)
+  - Adds user to the appropriate Cognito group via `AdminAddUserToGroup` based on their BATbern role(s)
+  - Sends custom welcome email via `EmailService` using template `user-welcome-temp-password-{de,en}.html` (new classpath templates seeded by `EmailTemplateSeedService`)
+  - Catches `UsernameExistsException` → propagates as structured 409; does not create duplicate
+  - On success: updates `users.cognito_user_id` with the new Cognito `sub` (linking DB ↔ Cognito)
+- New endpoint: `POST /api/v1/users/{userId}/provision-cognito` (organizer-only)
+  - Works for both new-user flows and existing users without a cognitoUserId
+  - Body: `{ language }` (role inferred from DB user record)
+  - Returns: `{ cognitoUsername, temporaryPasswordSent: true }` on success
+  - Returns 409 if `UsernameExistsException` from Cognito, or if user already has a `cognitoUserId`
+- IAM: ECS task role for company-user-management-service must have:
+  - `cognito-idp:AdminCreateUser` on the user pool
+  - `cognito-idp:AdminAddUserToGroup` on the user pool
+  - Both added to the existing CDK IAM inline policy for this service
 
-**Frontend — Admin User Provisioning UI:**
-- New "Provision User" section in the Admin page (add to Tab 1 "Import" or as standalone Tab 5 "User Provisioning")
-  - Alternatively: add a "Create User in AWS" button to the existing User Management list page (`/organizer/users`) — preferred location for discoverability
-- `web-frontend/src/components/organizer/UserManagement/ProvisionUserModal.tsx`:
-  - Fields: Email, First Name, Last Name, Role (dropdown: Attendee / Speaker / Organizer), Language (dropdown)
-  - Submit → `POST /api/v1/admin/users/provision`
-  - Success: "User created. A temporary password has been sent to {email}. They must reset it on first login."
-  - Error (UsernameExistsException): "A Cognito account already exists for {email}. If they are not linked in the system, use the Sync Users function."
-  - Error (other): generic error toast
+**Frontend — User Table: Row Action Menu (`UserTable.tsx`):**
+- Add new action `"linkCognito"` in the `Menu` (alongside existing `view`, `editRoles`, `delete`)
+- Action is **only rendered** when `user.cognitoUserId` is null/undefined:
+  ```tsx
+  {!user.cognitoUserId && (
+    <MenuItem onClick={() => handleAction('linkCognito')}>
+      {t('actions.createAwsAccount')}
+    </MenuItem>
+  )}
+  ```
+- `UserList.tsx` handles the `'linkCognito'` action by opening a new `LinkCognitoDialog` for the selected user
 
-**Email Templates (new classpath content fragments, seeded by `EmailTemplateSeedService`):**
+**Frontend — Link Cognito Dialog (`LinkCognitoDialog.tsx`):**
+- Simple confirmation dialog (not the full create/edit modal):
+  - Title: "Create AWS Account for {firstName} {lastName}"
+  - Body: "This will create an AWS Cognito account for {email}. They will receive a welcome email with a temporary password and must reset it on first login."
+  - Language selector (dropdown: DE / EN, defaults to user's stored language)
+  - "Create Account" + "Cancel" buttons
+  - On confirm: calls `POST /api/v1/users/{userId}/provision-cognito`
+  - Success state: inline success message "AWS account created. Welcome email sent to {email}." — dialog auto-closes after 2s
+  - Error (409 UsernameExistsException): "An AWS account already exists for this email address. Use the user sync function to link it."
+  - Error (other): generic error alert within dialog
+
+**Frontend — Create/Edit User Modal: "Also Create AWS Account" toggle (`UserCreateEditModal.tsx`):**
+- In **create mode only** (`!isEditMode`): add a `FormControlLabel` with a `Switch` (or `Checkbox`) below the role selector:
+  - Label: "Also create an AWS Cognito account (send temporary password)"
+  - Default: unchecked
+  - When checked: language selector appears (DE / EN)
+  - On form submit with toggle enabled: first calls the existing create-user endpoint, then (on success) calls `POST /api/v1/users/{newUserId}/provision-cognito` automatically
+  - If Cognito provisioning fails after user creation: user is still created in BATbern; a warning toast appears: "User created in BATbern but AWS account creation failed. Use the 'Create AWS Account' action from the user list to retry."
+
+**Note on `UserResponse` DTO:** The `cognitoUserId` field does not need to be returned in the public API response (it is an internal identifier). Instead, expose a boolean `hasCognitoAccount: boolean` in `UserResponse` / the user list endpoint so the frontend can conditionally show/hide the "Create AWS Account" action without exposing the raw Cognito sub.
+
+**Email Templates (new classpath content fragments, seeded by `EmailTemplateSeedService` in company-user-management-service):**
 ```
 services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-de.html
 services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-en.html
 ```
-Variables: `recipientName`, `email`, `temporaryPasswordNote` (explains first-login reset), `loginUrl`.
+Variables: `recipientName`, `loginUrl`, `temporaryPasswordNote` (text block explaining first-login reset requirement).
 
 **Key new files:**
 ```
 services/company-user-management-service/.../service/CognitoAdminService.java
-services/company-user-management-service/.../controller/AdminUserProvisioningController.java
-services/company-user-management-service/.../dto/ProvisionUserRequest.java
-services/company-user-management-service/.../dto/ProvisionUserResponse.java
 services/company-user-management-service/.../service/CognitoAdminServiceTest.java
-web-frontend/src/components/organizer/UserManagement/ProvisionUserModal.tsx
+services/company-user-management-service/.../dto/ProvisionCognitoResponse.java
+web-frontend/src/components/organizer/UserManagement/LinkCognitoDialog.tsx
 services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-de.html
 services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-en.html
 ```
 
 **Key modified files:**
 ```
-docs/api/users-api.openapi.yml                                           — provision endpoint (FIRST)
-infrastructure/lib/company-user-management-stack.ts                      — IAM: AdminCreateUser + AdminAddUserToGroup
-web-frontend/src/components/organizer/UserManagement/UserList.tsx        — "Create User" button → ProvisionUserModal
-web-frontend/src/services/api/adminUserService.ts (new or extend)        — provisionUser() call
-public/locales/de/common.json + en/common.json                           — admin.provisionUser.* keys
+docs/api/users-api.openapi.yml
+     — POST /api/v1/users/{userId}/provision-cognito endpoint + hasCognitoAccount in UserResponse (FIRST)
+infrastructure/lib/company-user-management-stack.ts
+     — IAM policy: AdminCreateUser + AdminAddUserToGroup on user pool ARN
+services/company-user-management-service/.../controller/UserController.java
+     — new provision-cognito endpoint
+services/company-user-management-service/.../service/UserService.java
+     — update cognitoUserId after successful provisioning
+services/company-user-management-service/.../dto/UserResponse.java (or generated DTO)
+     — add hasCognitoAccount boolean
+services/company-user-management-service/.../service/EmailTemplateSeedService.java
+     — seed welcome-temp-password templates
+web-frontend/src/components/organizer/UserManagement/UserTable.tsx
+     — conditional "Create AWS Account" menu item based on hasCognitoAccount
+web-frontend/src/components/organizer/UserManagement/UserList.tsx
+     — handle 'linkCognito' action → open LinkCognitoDialog
+web-frontend/src/components/organizer/UserManagement/UserCreateEditModal.tsx
+     — "Also create AWS account" toggle in create mode
+web-frontend/src/types/user.types.ts
+     — add hasCognitoAccount to User type
+public/locales/de/userManagement.json + en/userManagement.json
+     — actions.createAwsAccount, linkCognito.* keys
 ```
 
 **Definition of Done (Story 10.24):**
-- [ ] `POST /api/v1/admin/users/provision` creates Cognito user with `FORCE_CHANGE_PASSWORD`; sends custom welcome email; organizer-only (403 for others)
-- [ ] If email already in Cognito (`UsernameExistsException`) → 409 with clear message; no duplicate created
-- [ ] If email matches existing DB user without `cognitoId` → DB record linked post-creation
-- [ ] If email matches existing DB user with existing `cognitoId` → no DB change; 409 returned
-- [ ] IAM role in CDK grants `AdminCreateUser` + `AdminAddUserToGroup` on the correct user pool ARN
-- [ ] Welcome email templates seeded and editable in Email Templates admin tab
-- [ ] Frontend modal opens from User Management page; renders success/error states correctly
-- [ ] TDD: `CognitoAdminServiceTest` with mocked Cognito SDK (`UsernameExistsException`, success, SDK error)
+- [ ] `POST /api/v1/users/{userId}/provision-cognito` creates Cognito user with `FORCE_CHANGE_PASSWORD`; links `cognitoUserId` in DB; sends custom welcome email; organizer-only (403 for non-organizers)
+- [ ] Backend uses ECS IAM task role for `AdminCreateUser` — organizer's own Cognito token has no AWS IAM rights; this is confirmed in a `CognitoAdminServiceTest` that mocks the SDK client (not Cognito tokens)
+- [ ] 409 returned if email already exists in Cognito (`UsernameExistsException`) — no duplicate created, DB unchanged
+- [ ] 409 returned if user already has a `cognitoUserId` in DB
+- [ ] `UserResponse` includes `hasCognitoAccount: boolean` (does not expose raw `cognitoUserId`)
+- [ ] User table row action menu shows "Create AWS Account" only for users with `hasCognitoAccount = false`
+- [ ] `LinkCognitoDialog` shows confirmation, language selector, success/error states correctly
+- [ ] Create-user modal toggle "Also create AWS account" triggers provisioning after DB user is created; handles Cognito failure gracefully (user still saved, warning shown)
+- [ ] IAM: CDK grants `AdminCreateUser` + `AdminAddUserToGroup` scoped to the specific user pool ARN
+- [ ] Welcome email templates seeded and visible/editable in Email Templates admin tab
+- [ ] TDD: `CognitoAdminServiceTest` covers success, `UsernameExistsException`, SDK error, already-linked guard
 - [ ] OpenAPI spec (users-api) committed before implementation (ADR-006)
-- [ ] i18n: `admin.provisionUser.*` keys in de/en; Type-check passes; Checkstyle passes
+- [ ] i18n: `actions.createAwsAccount`, `linkCognito.*` keys in de/en userManagement namespace; Type-check passes; Checkstyle passes
 
 ---
 
 ### Story 10.25: Partner Meeting iCal Auto-creation & Year-End Reminders
 
 **Status**: ready-for-dev
-**Prerequisite**: Epic 8 Story 8.3 (IcsGeneratorService + PartnerMeetingService exist); Story 10.2 (email templates editable in admin)
+**Prerequisite**: Story 8.3 (all prerequisites below verified ✅); Story 10.2 (DB-backed email templates with admin edit UI)
 
-**User Story:**
-As an **organizer**, I want a partner meeting calendar entry to be automatically created whenever I create a new BATbern event, so that I don't have to manually set it up each time.
+**Audit of Story 8.3 — What is ALREADY implemented (verified by code inspection):**
 
-As an **organizer**, I want an iCal invitation email template for partner meetings to be manageable in the admin email templates section, so that I can customize the meeting invite content.
+| Capability | Status | Location |
+|---|---|---|
+| Partner meeting CRUD (create, list, get, update) | ✅ Fully implemented | `PartnerMeetingController` + `PartnerMeetingService` |
+| Date auto-populated from event on creation | ✅ Implemented | `PartnerMeetingService.createMeeting()` |
+| RFC 5545 iCal generation (2 VEVENTs) | ✅ Implemented | `IcsGeneratorService.generate()` |
+| "Send invite" endpoint (`POST /{id}/send-invite`) | ✅ Implemented | `PartnerMeetingController` returns 202 |
+| Actual email sent via AWS SES with ICS attachment | ✅ Implemented | `PartnerInviteEmailService` → `EmailService.sendHtmlEmailWithAttachments()` → `sesClient.sendRawEmail()` |
+| Frontend "Send Invite" button with confirmation dialog | ✅ Implemented | `MeetingDetailPanel.tsx` |
+| `inviteSentAt` timestamp shown as status chip | ✅ Implemented | `PartnerMeetingsPage.tsx` + `MeetingDetailPanel.tsx` |
 
-As an **organizer**, I want a task automatically created on 31 December of the current year reminding me to send partner meeting and BATbern event iCal invitations for the following year, so that we never forget to coordinate with partners in advance.
+**What was missing in Story 8.3 and is the subject of THIS story:**
 
-**Background:**
-`IcsGeneratorService` (Story 8.3) already generates RFC 5545 iCal content for partner meetings. `PartnerMeetingService` already handles CRUD and manual invite sending. Currently, partner meetings must be created manually after each event is created, and there is no automated reminder for annual partner coordination. The BATbern events typically occur in early spring; the 31 December reminder ensures the team plans partner outreach well in advance.
+| Gap | This Story Adds |
+|---|---|
+| Partner meetings must be created manually | Auto-create on event creation |
+| Email body is hardcoded German HTML in `buildEmailBody()` | Replace with DB-backed, editable template (Story 10.2 pattern) |
+| No year-end reminder to coordinate partners for next year | `YearEndReminderScheduler` creates tasks on 31 December |
+| Local dev: `sesClient == null` → email only logged, not sent | Not a story gap — expected local behavior; SES works in staging/prod |
+
+> **Note on "I only saw a status change, no real email":** In local development, when `sesClient` is `null` (no SES configured locally), `EmailService` logs `"Would send email with N attachment(s) to: ..."` and skips the send. The status chip (`inviteSentAt`) is still set, making it look like only a status change happened. On staging/production with a real SES client, the email with .ics attachment is actually sent. The behavior is correct — this is the expected local fallback.
+
+**User Stories:**
+
+As an **organizer**, I want a partner meeting to be automatically created whenever I create a new BATbern event, so that I don't have to set it up manually each time.
+
+As an **organizer**, I want the partner meeting invite email body to be editable from the admin Email Templates section (like all other system emails), so that I can customize the content without a code deploy.
+
+As an **organizer**, I want a task to be automatically created on 31 December each year reminding me to send iCal invitations to partners for the coming year's event, so we never forget partner coordination.
 
 **Scope:**
 
-**Backend — Auto-create Partner Meeting on Event Creation (`partner-coordination-service`):**
-- `EventWorkflowTransitionListener` (or equivalent event listener in `event-management-service`) publishes a domain event `EventCreatedEvent` when a new event is saved with status `CREATED`
-- `partner-coordination-service` consumes this event (via existing inter-service event bus or HTTP callback pattern already used in the project):
-  - Creates a `PartnerMeeting` record with default values:
-    - `eventCode` = new event's code
-    - `meetingDate` = same date as the event (partners meet on the event day)
-    - `meetingStartTime` = `12:00` (standard lunch slot — configurable via `partner.meeting.default-start-time` property)
-    - `meetingEndTime` = `14:00` (standard end — configurable)
-    - `location` = `""` (empty; organizer fills in later)
-    - `title` = `"Partner Meeting — {eventTitle}"`
-    - `status` = `DRAFT` (not yet sent)
-  - Also creates an organizer Task (via `EventTaskService` or cross-service HTTP call): "Send partner meeting iCal invitations" with due date = 14 days before event date, triggered by `TOPIC_SELECTION` state (consistent with existing task trigger patterns)
-- If auto-creation fails (e.g., partner service unavailable), log error and do not fail the event creation (non-blocking, best-effort)
+**Backend — Auto-create Partner Meeting on Event Creation:**
+- When a new BATbern event is created (saved with status `CREATED`), `event-management-service` makes a best-effort HTTP call to `partner-coordination-service` to auto-create the linked partner meeting
+- Use the existing `EventManagementClient` / inter-service HTTP client pattern (partner-coordination-service already calls event-management-service via `EventManagementClientImpl`; the reverse direction needs a new `PartnerCoordinationClient` in event-management-service, or trigger from partner-service side by listening to an event)
+- **Simplest pattern (recommended):** `EventController.createEvent()` or `EventService.createEvent()` fires a Spring `ApplicationEvent` `EventCreatedEvent(eventCode, eventDate)`. A new `@EventListener` in event-management-service calls `PartnerCoordinationClient.createMeetingForEvent(eventCode)` — a one-way best-effort HTTP call (`try/catch`, failure only logged, does not roll back event creation)
+- Auto-created `PartnerMeeting` fields:
+  - `eventCode` = new event's code
+  - `meetingDate` = event date (populated by partner service via its own `EventManagementClient.getEventSummary()`)
+  - `startTime` = `12:00` (from `partner.meeting.default-start-time` property, default `12:00`)
+  - `endTime` = `14:00` (from `partner.meeting.default-end-time` property, default `14:00`)
+  - `location` = `""` (empty; organizer fills in later)
+  - `meetingType` = `SPRING` (default; organizer can update)
+  - `agenda` = `null`, `notes` = `null`
+- `inviteSentAt` remains null (invite not yet sent — organizer triggers manually via existing "Send Invite" button)
+- Idempotent: if a `PartnerMeeting` with `eventCode` already exists, skip creation (no duplicate)
 
-**Backend — iCal Email Template (`event-management-service` / `partner-coordination-service`):**
-- New email template: `partner-meeting-invite-de.html` + `partner-meeting-invite-en.html` (classpath; seeded by `EmailTemplateSeedService`)
-- Template variables: `recipientName`, `partnerCompanyName`, `meetingTitle`, `meetingDate`, `meetingStartTime`, `meetingLocation`, `eventTitle`, `eventDate`, `icsAttachment` (note only — actual ICS attached by service)
-- `PartnerInviteEmailService.sendInvite()`: update to load template from DB (Story 10.2 pattern) with fallback to classpath
-- Template editable in Admin → Email Templates tab under category `PARTNER`
+**Backend — Editable Partner Meeting Invite Email Template:**
+- Currently `PartnerInviteEmailService.buildEmailBody()` returns a hardcoded German HTML string
+- Replace with DB-backed template loading (Story 10.2 pattern):
+  - New classpath template files seeded by `EmailTemplateSeedService` **in partner-coordination-service** (the service that sends this email):
+    ```
+    services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-de.html
+    services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-en.html
+    ```
+  - Template variables: `{{meetingDate}}`, `{{meetingStartTime}}`, `{{meetingEndTime}}`, `{{location}}`, `{{eventTitle}}`, `{{organizerName}}`
+  - `PartnerInviteEmailService.sendCalendarInvites()`: replace `buildEmailBody()` call with `emailTemplateService.loadAndRender("partner-meeting-invite", language, variables)` with fallback to classpath
+  - Templates appear in Admin → Email Templates tab under category `PARTNER`
+- Language: since partner users may have different language preferences, send in DE by default (or in the user's stored language if available from `UserServiceClient`)
 
-**Backend — Year-End Reminder Task (Scheduler):**
-- New `YearEndReminderScheduler.java` in `event-management-service` (ShedLock-protected, runs daily at 08:00):
-  - On 31 December each year, creates two organizer tasks (if they don't already exist for the target year):
-    1. "Send partner meeting iCal invitations for {nextYear}" — assigned to all organizers; due date: 31 January of next year
-    2. "Create BATbern event calendar entry for {nextYear}" — assigned to all organizers; due date: 31 January of next year
-  - Idempotent: checks for existing tasks with the same title + year before creating (no duplicates on re-run)
-  - Task type: `CUSTOM` (not tied to a specific event); `eventCode` = null (global organizer task)
+**Backend — Year-End Reminder Task (Scheduler in `event-management-service`):**
+- New `YearEndReminderScheduler.java` (ShedLock-protected, cron `0 0 8 31 12 *` — 08:00 on 31 December):
+  - Creates two organizer tasks if they don't already exist for `{nextYear}`:
+    1. `"Send partner meeting iCal invitations for {nextYear}"` — due: 31 January of next year
+    2. `"Create BATbern event calendar entry for {nextYear}"` — due: 31 January of next year
+  - Assigned to all users with ORGANIZER role (fetched via `UserServiceClient` or internal query)
+  - `eventCode` = null (global tasks, not tied to a specific event)
+  - Idempotent: checks for existing tasks matching title + year before inserting
 
-**Frontend — Admin Email Templates:**
-- Partner meeting invite templates automatically appear in the Email Templates tab (via `EmailTemplateSeedService` seed + existing template list UI)
-- No additional frontend changes required for auto-creation (happens server-side)
-- Partner Meeting list page: show `DRAFT` badge on auto-created meetings so organizer knows invite not yet sent
+**Frontend — No New Components Required:**
+- Auto-creation is fully server-side; the existing `PartnerMeetingsPage` list will show the auto-created meeting
+- Email template appears automatically in Email Templates admin tab (seeded by `EmailTemplateSeedService`)
+- Year-end tasks appear in the existing task board
 
 **Key new files:**
 ```
-services/partner-coordination-service/.../service/AutoPartnerMeetingService.java
-services/event-management-service/.../scheduler/YearEndReminderScheduler.java
-services/event-management-service/.../service/YearEndReminderSchedulerTest.java
 services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-de.html
 services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-en.html
+services/event-management-service/.../scheduler/YearEndReminderScheduler.java
+services/event-management-service/.../scheduler/YearEndReminderSchedulerTest.java
+services/event-management-service/.../client/PartnerCoordinationClient.java  (if HTTP trigger pattern used)
 ```
 
 **Key modified files:**
 ```
-services/event-management-service/.../listener/EventWorkflowTransitionListener.java
-     — publish EventCreatedEvent or call partner service on event creation
-services/partner-coordination-service/.../service/PartnerMeetingService.java
-     — auto-create meeting from event created event
+services/event-management-service/.../service/EventService.java (or EventController)
+     — fire EventCreatedEvent after successful event save
+services/event-management-service/.../listener/PartnerMeetingAutoCreateListener.java (new)
+     — @EventListener on EventCreatedEvent → call PartnerCoordinationClient
 services/partner-coordination-service/.../service/PartnerInviteEmailService.java
-     — load invite template from DB with classpath fallback
-services/event-management-service/.../service/EmailTemplateSeedService.java
-     — seed partner-meeting-invite-de/en templates
-web-frontend/src/components/organizer/PartnerManagement/PartnerMeetingList.tsx (if exists)
-     — show DRAFT badge on auto-created meetings
-public/locales/de/common.json + en/common.json
-     — tasks.yearEndReminder.* keys
+     — replace buildEmailBody() with template load + variable substitution
+services/partner-coordination-service/.../service/EmailTemplateSeedService.java (new, mirrors EMS pattern)
+     — seed partner-meeting-invite-de/en on startup
+services/partner-coordination-service/.../repository/PartnerMeetingRepository.java
+     — add existsByEventCode() for idempotent auto-creation guard
 ```
 
 **Definition of Done (Story 10.25):**
-- [ ] Creating a new BATbern event automatically creates a `DRAFT` partner meeting with correct date, default times, and linked event code
-- [ ] Auto-creation failure (partner service down) does not fail or roll back the event creation; error is logged
-- [ ] Partner meeting invite email templates (`partner-meeting-invite-de/en`) are seeded and appear in Email Templates admin tab under category PARTNER
-- [ ] `PartnerInviteEmailService` loads template from DB with classpath fallback (Story 10.2 pattern)
-- [ ] `YearEndReminderScheduler` runs on 31 December; creates two tasks for next year; idempotent (no duplicate tasks on re-run)
-- [ ] Year-end tasks have correct due dates (31 January of next year) and are assigned to all active organizers
-- [ ] TDD: `AutoPartnerMeetingServiceTest` (mocked event listener); `YearEndReminderSchedulerTest` (verifies task creation + idempotency); `PartnerInviteEmailServiceTest` (DB template loaded, fallback works)
-- [ ] OpenAPI spec committed if any new endpoints added (ADR-006)
-- [ ] i18n: `tasks.yearEndReminder.*` keys in de/en; Checkstyle passes; Type-check passes
+- [ ] Creating a new BATbern event automatically creates a partner meeting (correct date, 12:00–14:00 defaults, empty location)
+- [ ] Auto-creation is idempotent — creating the same event twice does not produce duplicate meetings
+- [ ] Auto-creation failure (partner service down) does not fail or roll back event creation; error only logged
+- [ ] `PartnerInviteEmailService` loads invite body from DB template with classpath fallback; hardcoded `buildEmailBody()` removed
+- [ ] `partner-meeting-invite-de/en` templates are seeded and appear in Admin → Email Templates under category PARTNER
+- [ ] `YearEndReminderScheduler` fires on 31 December (verified by unit test with `@SpyBean` / manual trigger); creates two tasks for next year; is idempotent
+- [ ] Year-end tasks have due dates of 31 January of next year and are assigned to all active organizers
+- [ ] TDD: `PartnerMeetingAutoCreateListenerTest` (mocked client, idempotency, failure isolation); `YearEndReminderSchedulerTest` (task creation, dedup); `PartnerInviteEmailServiceTest` (template load, fallback)
+- [ ] No OpenAPI changes needed (no new public endpoints)
+- [ ] Checkstyle passes; Type-check passes
 
 ---
 
