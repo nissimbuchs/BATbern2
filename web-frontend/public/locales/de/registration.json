@@ -204,5 +204,32 @@
     "alreadyRegistered": "Sie sind bereits für diese Veranstaltung angemeldet",
     "goBack": "Zurück",
     "registerAgain": "Erneut anmelden"
+  },
+  "deregistration": {
+    "page": {
+      "verifying": "Ihr Abmelde-Link wird überprüft…",
+      "title": "Anmeldung stornieren",
+      "confirmQuestion": "Hallo {{name}}, möchten Sie Ihre Anmeldung für {{eventTitle}} am {{eventDate}} wirklich stornieren?",
+      "confirmButton": "Ja, Anmeldung stornieren",
+      "goBack": "Zurück",
+      "successTitle": "Anmeldung storniert",
+      "successBody": "Ihre Anmeldung wurde storniert. Ihr Platz wurde für die nächste Person auf der Warteliste freigegeben.",
+      "invalidToken": "Dieser Abmelde-Link ist ungültig oder wurde bereits verwendet. Bitte kontaktieren Sie uns, wenn Sie Hilfe benötigen.",
+      "alreadyCancelled": "Ihre Anmeldung wurde bereits storniert."
+    },
+    "modal": {
+      "title": "Anmeldung stornieren",
+      "body": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Abmelde-Link.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "submitButton": "Abmelde-Link senden",
+      "successMessage": "Falls Sie für diese Veranstaltung angemeldet sind, erhalten Sie in Kürze eine E-Mail mit einem Abmelde-Link."
+    },
+    "homepage": {
+      "cancelLink": "Anmeldung stornieren"
+    },
+    "wizard": {
+      "cancelButton": "Anmeldung stornieren"
+    }
   }
 }

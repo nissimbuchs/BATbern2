@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -78,6 +79,7 @@ export const RegistrationWizard = ({
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [waitlistAcknowledged, setWaitlistAcknowledged] = useState(false);
   const [isWaitlistRegistration, setIsWaitlistRegistration] = useState(false);
+  const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState<CreateRegistrationRequest>({
@@ -263,7 +265,7 @@ export const RegistrationWizard = ({
             </p>
           )}
         </div>
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 flex-wrap">
           {isCancelled ? (
             // CANCELLED: allow re-registration (backend deletes old record and creates new)
             // Note: we can't reset myRegistration client-side, but the guard will dismiss
@@ -281,15 +283,32 @@ export const RegistrationWizard = ({
               {t('registrationStatusGuard.registerAgain')}
             </Button>
           ) : (
-            <Button
-              variant="outline"
-              onClick={onCancel ?? (() => navigate('/'))}
-              data-testid="registration-guard-go-back-btn"
-            >
-              {t('registrationStatusGuard.goBack')}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={onCancel ?? (() => navigate('/'))}
+                data-testid="registration-guard-go-back-btn"
+              >
+                {t('registrationStatusGuard.goBack')}
+              </Button>
+              {/* Story 10.12 (AC9, T19): Cancel my registration — shown for active registrations */}
+              <Button
+                variant="ghost"
+                onClick={() => setDeregisterModalOpen(true)}
+                className="text-red-400 hover:text-red-300"
+                data-testid="registration-guard-cancel-btn"
+              >
+                {t('deregistration.wizard.cancelButton')}
+              </Button>
+            </>
           )}
         </div>
+        {/* Story 10.12 (AC9): Deregistration by email modal */}
+        <DeregistrationByEmailModal
+          open={deregisterModalOpen}
+          onClose={() => setDeregisterModalOpen(false)}
+          eventCode={eventCode}
+        />
       </div>
     );
   }

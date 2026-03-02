@@ -13,6 +13,7 @@
  * - Hides speakers, sessions, and venue sections
  */
 
+import { useState } from 'react';
 import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -35,11 +36,16 @@ import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
+import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
+
+const DEREGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'AGENDA_FINALIZED', 'EVENT_LIVE'];
 
 const HomePage = () => {
   const { t } = useTranslation('events');
   const { t: tCommon } = useTranslation('common');
+  const { t: tReg } = useTranslation('registration');
+  const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
   const { eventCode } = useParams<{ eventCode?: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -194,6 +200,28 @@ const HomePage = () => {
             waitlistPosition={myRegistration?.waitlistPosition}
           />
         )}
+
+        {/* Story 10.12 (AC9): "Cancel your registration" link for anonymous and authenticated registrants.
+            Shown when event is in a state where registrations can be cancelled. */}
+        {!isArchiveMode &&
+          event.workflowState &&
+          DEREGISTRATION_WORKFLOW_STATES.includes(event.workflowState) && (
+            <>
+              <div className="mt-2 text-center">
+                <button
+                  onClick={() => setDeregisterModalOpen(true)}
+                  className="text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors"
+                >
+                  {tReg('deregistration.homepage.cancelLink')}
+                </button>
+              </div>
+              <DeregistrationByEmailModal
+                open={deregisterModalOpen}
+                onClose={() => setDeregisterModalOpen(false)}
+                eventCode={event.eventCode ?? ''}
+              />
+            </>
+          )}
 
         {/* Back Button - Only shown in archive mode (Story 4.2) */}
         {isArchiveMode && backToArchiveUrl && (

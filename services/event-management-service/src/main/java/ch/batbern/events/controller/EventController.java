@@ -59,6 +59,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -112,6 +113,9 @@ public class EventController {
     private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
     private final ch.batbern.events.service.SessionService sessionService;
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
+
+    @Value("${app.base-url:https://batbern.ch}")
+    private String appBaseUrl;
 
     /**
      * List/Search Events (AC1)
@@ -1615,12 +1619,17 @@ public class EventController {
             // Email includes:
             //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
             //   - Cancellation link: https://batbern.ch/cancel-registration?token={cancellationToken}
+            //   - Deregistration link: https://batbern.ch/deregister?token={deregistrationToken} (Story 10.12)
+            String deregistrationUrl = registration.getDeregistrationToken() != null
+                    ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                    : null;
             registrationEmailService.sendRegistrationConfirmation(
                     registration,
                     userProfile,
                     event,
                     confirmationToken,
                     cancellationToken,
+                    deregistrationUrl,
                     java.util.Locale.GERMAN // Default to German for BATbern events
             );
 
@@ -2021,8 +2030,9 @@ public class EventController {
                     "Registration does not belong to event: " + eventCode);
             }
 
-            // Delete registration (permanent deletion)
-            registrationRepository.delete(registration);
+            // Story 10.12: Soft-cancel (status = "cancelled") instead of hard-delete.
+            // Triggers waitlist promotion via cancelRegistration().
+            registrationService.cancelRegistration(registration);
 
             log.info("Registration cancelled successfully: registrationId={}, eventCode={}",
                     registrationId, eventCode);
@@ -2080,10 +2090,10 @@ public class EventController {
             String newStatus = (String) updates.get("status");
             String previousStatus = registration.getStatus();
             registration.setStatus(newStatus);
-            // Track if an active registration is being cancelled (triggers waitlist promotion)
+            // Story 10.12 (CR fix): Trigger waitlist promotion for ANY non-cancelled → cancelled
+            // transition, including waitlist → cancelled. Previously missed the waitlist case.
             becomingCancelled = "cancelled".equalsIgnoreCase(newStatus)
-                    && ("registered".equalsIgnoreCase(previousStatus)
-                            || "confirmed".equalsIgnoreCase(previousStatus));
+                    && !"cancelled".equalsIgnoreCase(previousStatus);
         }
 
         // Save updated registration

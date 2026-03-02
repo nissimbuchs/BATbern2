@@ -2724,6 +2724,125 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # Story 10.12: Self-service deregistration endpoints (token-protected, no JWT auth)
+  /registrations/deregister/verify:
+    get:
+      tags:
+        - Registrations
+      summary: Verify deregistration token (public)
+      description: |
+        Verifies a deregistration token and returns registration details for confirmation.
+        Returns 404 if token is unknown or registration is already cancelled.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — UUID token provides authentication
+      operationId: verifyDeregistrationToken
+      security: []
+      parameters:
+        - name: token
+          in: query
+          description: UUID deregistration token
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token valid — returns registration summary for confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeregistrationVerifyResponse'
+        '404':
+          description: Token not found or registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_token
+                message: Deregistration token not found or already used
+
+  /registrations/deregister:
+    post:
+      tags:
+        - Registrations
+      summary: Cancel registration via deregistration token (public)
+      description: |
+        Cancels a registration using the self-service deregistration token.
+        Sets registration status to "cancelled" and triggers waitlist promotion.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — UUID token provides authentication
+      operationId: deregisterByToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationRequest'
+      responses:
+        '200':
+          description: Registration cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration cancelled successfully
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: already_cancelled
+                message: This registration has already been cancelled
+
+  /registrations/deregister/by-email:
+    post:
+      tags:
+        - Registrations
+      summary: Request deregistration link via email (public, anti-enumeration)
+      description: |
+        Sends a deregistration link to the provided email address if a matching registration is found.
+        Always returns 200 to prevent email enumeration — the caller cannot determine whether
+        a registration exists from the response.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — anti-enumeration design
+      operationId: requestDeregistrationByEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationByEmailRequest'
+      responses:
+        '200':
+          description: |
+            Always 200 regardless of whether registration was found.
+            "If you are registered, you'll receive a deregistration email."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "If you are registered for this event, you'll receive a cancellation link by email."
+
   /events/batch_registrations:
     post:
       tags:
@@ -6308,6 +6427,132 @@ components:
           items:
             type: string
           example: ["Event BATbern99 not found"]
+
+    # Story 10.12: Self-service deregistration schemas
+    DeregistrationVerifyResponse:
+      type: object
+      description: |
+        Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
+        Returns registration summary so the user can confirm they want to cancel.
+      required:
+        - registrationCode
+        - eventCode
+        - eventTitle
+        - eventDate
+        - attendeeFirstName
+      properties:
+        registrationCode:
+          type: string
+          description: Public registration code
+          example: BATbern142-reg-A3X9K2
+        eventCode:
+          type: string
+          description: Event code
+          example: BATbern142
+        eventTitle:
+          type: string
+          description: Event title
+          example: BATbern — Berner Architekten Treffen #142
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date as ISO-8601
+          example: '2026-06-15T18:00:00Z'
+        attendeeFirstName:
+          type: string
+          description: Attendee first name for personalised confirmation message
+          example: Max
+
+    DeregistrationRequest:
+      type: object
+      description: "Story 10.12 (AC3): Body for POST /registrations/deregister."
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          format: uuid
+          description: Deregistration UUID token from confirmation email
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    DeregistrationByEmailRequest:
+      type: object
+      description: "Story 10.12 (AC3): Body for POST /registrations/deregister/by-email."
+      required:
+        - email
+        - eventCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the registrant
+          example: max.muster@example.com
+        eventCode:
+          type: string
+          description: Event code the user is registered for
+          example: BATbern142
+
+    RegistrationAdminResponse:
+      type: object
+      description: |
+        Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
+        such as deregistrationToken. Schema separation is the security control — do NOT add
+        deregistrationToken to RegistrationResponse (public schema).
+        ADR-003: Uses registrationCode/eventCode as public identifiers.
+      required:
+        - registrationCode
+        - eventCode
+        - status
+        - attendeeUsername
+      properties:
+        registrationCode:
+          type: string
+          description: Unique registration code (public identifier)
+          example: BATbern142-reg-ABC123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to
+          example: BATbern142
+        status:
+          type: string
+          description: Registration status (uppercase)
+          enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED]
+          example: CONFIRMED
+        attendeeUsername:
+          type: string
+          description: Cross-service reference to user_profiles.username
+          example: max.muster
+        attendeeFirstName:
+          type: string
+          example: Max
+        attendeeLastName:
+          type: string
+          example: Muster
+        attendeeEmail:
+          type: string
+          format: email
+          example: max.muster@example.com
+        attendeeCompany:
+          type: string
+          nullable: true
+          example: Acme AG
+        registrationDate:
+          type: string
+          format: date-time
+          example: '2026-01-15T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
+          example: 3
+        deregistrationToken:
+          type: string
+          format: uuid
+          readOnly: true
+          description: |
+            Story 10.12: UUID token used for self-service deregistration link.
+            ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
+          example: 550e8400-e29b-41d4-a716-446655440000
 
     FailedRegistration:
       type: object

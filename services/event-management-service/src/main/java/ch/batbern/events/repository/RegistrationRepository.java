@@ -147,6 +147,31 @@ public interface RegistrationRepository
             @Param("eventCode") String eventCode,
             @Param("username") String username);
 
+    // ── Story 10.12: Deregistration Methods ───────────────────────────────────
+
+    /**
+     * Find a registration by its self-service deregistration token.
+     * Story 10.12 (T4.1): Token-based lookup for the public deregistration flow.
+     *
+     * @param token Deregistration UUID token
+     * @return Registration if found (may be cancelled)
+     */
+    Optional<Registration> findByDeregistrationToken(UUID token);
+
+    /**
+     * Find a registration by attendee email and event code.
+     * Story 10.12 (T4.2): Used for the by-email deregistration flow.
+     *
+     * @param email     Attendee email (denormalized search field)
+     * @param eventCode Event code (joined from events table)
+     * @return Registration if found for this email and event
+     */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE r.attendeeEmail = :email AND e.eventCode = :eventCode")
+    Optional<Registration> findByAttendeeEmailAndEventCode(
+            @Param("email") String email,
+            @Param("eventCode") String eventCode);
+
     // ── Story 10.11: Waitlist & Capacity Methods ───────────────────────────────
 
     /**

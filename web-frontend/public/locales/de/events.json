@@ -46,11 +46,15 @@
       "waitlistTableEmail": "E-Mail",
       "waitlistTableCompany": "Unternehmen",
       "waitlistTableRegisteredOn": "Angemeldet am",
-      "waitlistTableActions": "Aktionen"
+      "waitlistTableActions": "Aktionen",
+      "statusCancelled": "Abgemeldet"
     },
     "settings": {
-      "capacityLabel": "Anmelde-Kapazität",
-      "capacityHelperText": "Leer lassen für unbegrenzte Anmeldungen. Darf die Veranstaltungskapazität nicht überschreiten."
+      "moderator": "Veranstaltungsmoderation",
+      "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator erfolgreich aktualisiert",
+      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
     },
     "participantTable": {
       "headers": {
@@ -92,13 +96,6 @@
       "actions": {
         "retry": "Erneut versuchen"
       }
-    },
-    "settings": {
-      "moderator": "Veranstaltungsmoderation",
-      "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
-      "moderatorLabel": "Moderator",
-      "moderatorUpdated": "Moderator erfolgreich aktualisiert",
-      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
     },
     "speakers": {
       "progress": "Fortschritt",

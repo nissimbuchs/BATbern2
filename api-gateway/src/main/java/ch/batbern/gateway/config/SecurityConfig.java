@@ -253,6 +253,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
+                        // Story 10.12: Self-service deregistration (token-protected)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister/by-email").permitAll()
+
                         // W2.2: Watch pairing — unauthenticated (Watch has no JWT yet; exchanges pairing code for JWT)
                         .requestMatchers(HttpMethod.POST, "/api/v1/watch/pair").permitAll()
                         // W2.2: Watch JWT auth — unauthenticated (exchanges pairing token for JWT; must be permit-all)

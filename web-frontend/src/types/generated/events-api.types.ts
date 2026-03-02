@@ -1078,6 +1078,79 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/registrations/deregister/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verify deregistration token (public)
+     * @description Verifies a deregistration token and returns registration details for confirmation.
+     *     Returns 404 if token is unknown or registration is already cancelled.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — UUID token provides authentication
+     */
+    get: operations['verifyDeregistrationToken'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/registrations/deregister': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel registration via deregistration token (public)
+     * @description Cancels a registration using the self-service deregistration token.
+     *     Sets registration status to "cancelled" and triggers waitlist promotion.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — UUID token provides authentication
+     */
+    post: operations['deregisterByToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/registrations/deregister/by-email': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request deregistration link via email (public, anti-enumeration)
+     * @description Sends a deregistration link to the provided email address if a matching registration is found.
+     *     Always returns 200 to prevent email enumeration — the caller cannot determine whether
+     *     a registration exists from the response.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — anti-enumeration design
+     */
+    post: operations['requestDeregistrationByEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/batch_registrations': {
     parameters: {
       query?: never;
@@ -3295,6 +3368,118 @@ export interface components {
        *     ]
        */
       errors: string[];
+    };
+    /**
+     * @description Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
+     *     Returns registration summary so the user can confirm they want to cancel.
+     */
+    DeregistrationVerifyResponse: {
+      /**
+       * @description Public registration code
+       * @example BATbern142-reg-A3X9K2
+       */
+      registrationCode: string;
+      /**
+       * @description Event code
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Event title
+       * @example BATbern — Berner Architekten Treffen
+       */
+      eventTitle: string;
+      /**
+       * Format: date-time
+       * @description Event date as ISO-8601
+       * @example 2026-06-15T18:00:00Z
+       */
+      eventDate: string;
+      /**
+       * @description Attendee first name for personalised confirmation message
+       * @example Max
+       */
+      attendeeFirstName: string;
+    };
+    /** @description Story 10.12 (AC3): Body for POST /registrations/deregister. */
+    DeregistrationRequest: {
+      /**
+       * Format: uuid
+       * @description Deregistration UUID token from confirmation email
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      token: string;
+    };
+    /** @description Story 10.12 (AC3): Body for POST /registrations/deregister/by-email. */
+    DeregistrationByEmailRequest: {
+      /**
+       * Format: email
+       * @description Email address of the registrant
+       * @example max.muster@example.com
+       */
+      email: string;
+      /**
+       * @description Event code the user is registered for
+       * @example BATbern142
+       */
+      eventCode: string;
+    };
+    /**
+     * @description Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
+     *     such as deregistrationToken. Schema separation is the security control — do NOT add
+     *     deregistrationToken to RegistrationResponse (public schema).
+     *     ADR-003: Uses registrationCode/eventCode as public identifiers.
+     */
+    RegistrationAdminResponse: {
+      /**
+       * @description Unique registration code (public identifier)
+       * @example BATbern142-reg-ABC123
+       */
+      registrationCode: string;
+      /**
+       * @description Event code this registration belongs to
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (uppercase)
+       * @example CONFIRMED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      /**
+       * @description Cross-service reference to user_profiles.username
+       * @example max.muster
+       */
+      attendeeUsername: string;
+      /** @example Max */
+      attendeeFirstName?: string;
+      /** @example Muster */
+      attendeeLastName?: string;
+      /**
+       * Format: email
+       * @example max.muster@example.com
+       */
+      attendeeEmail?: string;
+      /** @example Acme AG */
+      attendeeCompany?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-01-15T10:30:00Z
+       */
+      registrationDate?: string;
+      /**
+       * @description Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
+       * @example 3
+       */
+      waitlistPosition?: number | null;
+      /**
+       * Format: uuid
+       * @description Story 10.12: UUID token used for self-service deregistration link.
+       *     ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      readonly deregistrationToken?: string;
     };
     /** @description Details of a failed registration within a batch */
     FailedRegistration: {
@@ -6067,6 +6252,125 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  verifyDeregistrationToken: {
+    parameters: {
+      query: {
+        /** @description UUID deregistration token */
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Token valid — returns registration summary for confirmation */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeregistrationVerifyResponse'];
+        };
+      };
+      /** @description Token not found or registration already cancelled */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "invalid_token",
+           *       "message": "Deregistration token not found or already used"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deregisterByToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeregistrationRequest'];
+      };
+    };
+    responses: {
+      /** @description Registration cancelled successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration cancelled successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Token not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration already cancelled */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "already_cancelled",
+           *       "message": "This registration has already been cancelled"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  requestDeregistrationByEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeregistrationByEmailRequest'];
+      };
+    };
+    responses: {
+      /**
+       * @description Always 200 regardless of whether registration was found.
+       *     "If you are registered, you'll receive a deregistration email."
+       */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example If you are registered for this event, you'll receive a cancellation link by email. */
+            message?: string;
+          };
+        };
+      };
     };
   };
   createBatchRegistrations: {

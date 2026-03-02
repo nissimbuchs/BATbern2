@@ -127,6 +127,9 @@ const SpeakerMagicLoginPage = React.lazy(
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
+// Story 10.12: Self-service deregistration page
+const DeregistrationPage = React.lazy(() => import('@pages/public/DeregistrationPage'));
+
 // Dev tool: local email inbox (no auth, no layout)
 const DevEmailInboxPage = React.lazy(() => import('@pages/dev/DevEmailInboxPage'));
 
@@ -278,6 +281,9 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Story 10.12: Self-service deregistration (token-protected, no auth required) */}
+                    <Route path="/deregister" element={<DeregistrationPage />} />
 
                     {/* Story 10.8a: Fullscreen moderator presentation page — public, no auth */}
                     <Route path="/present/:eventCode" element={<PresentationPage />} />
@@ -624,4 +630,3 @@ function App() {
 }
 
 export default App;
-

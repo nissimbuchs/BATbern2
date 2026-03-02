@@ -46,7 +46,8 @@
       "waitlistTableEmail": "[MISSING] Email",
       "waitlistTableCompany": "[MISSING] Company",
       "waitlistTableRegisteredOn": "[MISSING] Registered On",
-      "waitlistTableActions": "[MISSING] Actions"
+      "waitlistTableActions": "[MISSING] Actions",
+      "statusCancelled": "[MISSING] Cancelled"
     },
     "participantTable": {
       "headers": {

@@ -204,5 +204,32 @@
     "alreadyRegistered": "You are already registered for this event",
     "goBack": "Go back",
     "registerAgain": "Register again"
+  },
+  "deregistration": {
+    "page": {
+      "verifying": "Verifying your cancellation link…",
+      "title": "Cancel Registration",
+      "confirmQuestion": "Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
+      "confirmButton": "Yes, cancel my registration",
+      "goBack": "Go back",
+      "successTitle": "Registration Cancelled",
+      "successBody": "Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
+      "invalidToken": "This cancellation link is invalid or has already been used. Please contact us if you need help.",
+      "alreadyCancelled": "Your registration was already cancelled."
+    },
+    "modal": {
+      "title": "Cancel Registration",
+      "body": "Enter your email address and we'll send you a cancellation link.",
+      "emailLabel": "Email address",
+      "emailError": "Please enter a valid email address",
+      "submitButton": "Send cancellation link",
+      "successMessage": "If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+    },
+    "homepage": {
+      "cancelLink": "Cancel your registration"
+    },
+    "wizard": {
+      "cancelButton": "Cancel my registration"
+    }
   }
 }

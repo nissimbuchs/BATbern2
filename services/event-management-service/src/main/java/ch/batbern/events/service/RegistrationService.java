@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +59,7 @@ public class RegistrationService {
     private final RegistrationEmailService registrationEmailService;
     private final NewsletterSubscriberService newsletterSubscriberService;
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
+    private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -157,6 +159,7 @@ public class RegistrationService {
         // 4. Create and save registration (ADR-004: No denormalized user data)
         // Story 4.1.5c: Status starts as "registered", becomes "confirmed" after email confirmation
         // Story 10.11: Status may be "waitlist" when event is full
+        // Story 10.12: Generate deregistration token (non-expiring, never rotated)
         // Performance: Populate search cache fields for database-level filtering
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
@@ -170,6 +173,7 @@ public class RegistrationService {
                 .attendeeCompanyId(userResponse.getUser().getCompanyId())
                 .status(registrationStatus) // "registered" or "waitlist" (lowercase per DB constraint)
                 .waitlistPosition(waitlistPosition) // null for registered, 1-based for waitlist
+                .deregistrationToken(UUID.randomUUID()) // Story 10.12: self-service deregistration token
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();
 
@@ -421,6 +425,30 @@ public class RegistrationService {
                 response.getFailedRegistrations().size());
 
         return response;
+    }
+
+    /**
+     * Soft-cancel a registration and trigger waitlist promotion.
+     * <p>
+     * Story 10.12 (AC4, AC5): Cancels a registration by setting status = "cancelled"
+     * (no hard delete). After persisting, calls WaitlistPromotionService to promote
+     * the next waitlisted attendee if one exists.
+     * <p>
+     * Called by:
+     * - DeregistrationService (token-based self-service flow)
+     * - DeregistrationService (by-email flow — sends link, promotion happens on actual cancel)
+     * - EventController (organizer cancel — replaces hard-delete)
+     * - EventController JWT-token cancel endpoint (anonymous cancellation flow)
+     *
+     * @param registration The registration to cancel (must not be null, must have eventId)
+     */
+    @Transactional
+    public void cancelRegistration(Registration registration) {
+        registration.setStatus("cancelled");
+        registrationRepository.save(registration);
+        waitlistPromotionService.promoteFromWaitlist(registration.getEventId());
+        log.info("Registration {} cancelled; waitlist promotion triggered for event {}",
+                registration.getRegistrationCode(), registration.getEventId());
     }
 
     /**

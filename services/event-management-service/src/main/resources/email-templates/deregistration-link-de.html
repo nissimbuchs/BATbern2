@@ -1,0 +1,34 @@
+<!-- subject: Abmeldung von {{eventTitle}} -->
+<h2>Ihre Abmeldungsanfrage</h2>
+
+<p>Hallo {{recipientName}},</p>
+
+<p>Sie haben eine Abmeldung vom folgenden Event angefordert:</p>
+
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Datum:</span>
+        <span class="detail-value">{{eventDate}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Event-Code:</span>
+        <span class="detail-value">{{eventCode}}</span>
+    </div>
+</div>
+
+<p>Klicken Sie auf den folgenden Button, um Ihre Registrierung zu stornieren:</p>
+
+<div style="text-align: center;">
+    <a href="{{deregistrationLink}}" class="cta-button" style="background-color: #d32f2f;">Registrierung stornieren</a>
+</div>
+
+<p style="font-size: 12px; color: #666; margin-top: 20px;">
+    Falls der Button nicht funktioniert, kopieren Sie bitte diesen Link in Ihren Browser:<br>
+    <a href="{{deregistrationLink}}" style="color: #d32f2f; word-break: break-all;">{{deregistrationLink}}</a>
+</p>
+
+<p><strong>Hinweis:</strong> Dieser Link ist einmalig verwendbar. Wenn Sie keine Abmeldung angefordert haben, können Sie diese E-Mail ignorieren.</p>
+
+<p>Mit freundlichen Grüssen,<br>
+<strong>Das BATbern Team</strong></p>

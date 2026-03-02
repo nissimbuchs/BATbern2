@@ -145,6 +145,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
+                // Story 10.12: Self-service deregistration (token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister/by-email").permitAll()
+
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 

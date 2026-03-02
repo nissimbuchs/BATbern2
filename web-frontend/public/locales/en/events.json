@@ -46,11 +46,15 @@
       "waitlistTableEmail": "Email",
       "waitlistTableCompany": "Company",
       "waitlistTableRegisteredOn": "Registered On",
-      "waitlistTableActions": "Actions"
+      "waitlistTableActions": "Actions",
+      "statusCancelled": "Cancelled"
     },
     "settings": {
-      "capacityLabel": "Registration Capacity",
-      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity."
+      "moderator": "Event Moderator",
+      "moderatorDesc": "The organizer responsible for moderating this event.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator updated successfully",
+      "moderatorUpdateError": "Failed to update moderator."
     },
     "participantTable": {
       "headers": {
@@ -92,13 +96,6 @@
       "actions": {
         "retry": "Retry"
       }
-    },
-    "settings": {
-      "moderator": "Event Moderator",
-      "moderatorDesc": "The organizer responsible for moderating this event.",
-      "moderatorLabel": "Moderator",
-      "moderatorUpdated": "Moderator updated successfully",
-      "moderatorUpdateError": "Failed to update moderator."
     },
     "speakers": {
       "progress": "Progress",

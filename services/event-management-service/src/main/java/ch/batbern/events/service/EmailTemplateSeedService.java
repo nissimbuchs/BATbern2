@@ -152,8 +152,10 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("speaker-")) {
             return "SPEAKER";
         }
-        if (templateKey.startsWith("registration-") || templateKey.startsWith("waitlist-")) {
+        if (templateKey.startsWith("registration-") || templateKey.startsWith("waitlist-")
+                || templateKey.startsWith("deregistration-")) {
             // Story 10.11: waitlist-* templates belong to REGISTRATION category
+            // Story 10.12: deregistration-* templates belong to REGISTRATION category
             return "REGISTRATION";
         }
         if (templateKey.startsWith("task-reminder")) {
