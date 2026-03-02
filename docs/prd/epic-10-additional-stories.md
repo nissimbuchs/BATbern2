@@ -1423,9 +1423,9 @@ The legacy BATspa application uses a proprietary JSON export format for events, 
   - Serializes to the legacy BAT JSON envelope: `{ version, exportedAt, events[], companies[], speakers[], attendees[] }`
   - Returns as `application/json` download (`Content-Disposition: attachment; filename=batbern-export-{date}.json`)
 - New endpoint: `GET /api/v1/admin/export/assets` (organizer-only)
-  - Returns a signed S3 ZIP URL (or triggers async ZIP creation) containing all portraits, logos, and presentation PDFs/files
+  - Returns a JSON manifest of presigned S3 GET URLs for all portraits, logos, and presentation PDFs/files (one URL per asset, valid 1 hour) — **chosen approach: presigned URL manifest** (simpler, no async complexity, no Lambda needed) *(IR fix 2026-03-02: resolved "async ZIP vs manifest" ambiguity in favour of manifest)*
   - Assets identified via S3 keys stored on User (portrait), Company (logo), and SessionMaterials (presentation) entities
-  - Use AWS S3 `selectObjectContent` or batch-presigned URLs if ZIP async is too complex; list presigned URLs in a JSON manifest as fallback
+  - Response: `{ exportedAt, assetCount, assets: [{ type, entityId, filename, presignedUrl }] }`
 
 **Backend — Import API (`event-management-service`):**
 - New endpoint: `POST /api/v1/admin/import/legacy` (organizer-only, `multipart/form-data`)
@@ -1470,7 +1470,7 @@ public/locales/de/common.json + en/common.json          — admin.exportImport.*
 **Definition of Done (Story 10.20):**
 - [ ] `GET /api/v1/admin/export/legacy` returns valid legacy JSON for a seeded dataset; organizer-only (403 for others)
 - [ ] `POST /api/v1/admin/import/legacy` upserts all entity types; returns structured result; idempotent (importing same file twice has no side effects)
-- [ ] Asset export endpoint returns presigned URLs or download; asset import ZIP is unpacked to S3 and linked to entities
+- [ ] Asset export endpoint returns JSON presigned URL manifest (`{ exportedAt, assetCount, assets: [...] }`); each URL valid 1 hour; asset import ZIP is unpacked to S3 and linked to entities
 - [ ] Frontend tab shows export buttons and import file pickers; result summary renders after import
 - [ ] Confirmation dialog shown before any import action
 - [ ] TDD: `LegacyExportServiceTest` and `LegacyImportServiceTest` with mocked repositories; integration test covers round-trip (export → import → verify DB)
@@ -1482,7 +1482,7 @@ public/locales/de/common.json + en/common.json          — admin.exportImport.*
 ### Story 10.21: Event Photos Gallery
 
 **Status**: ready-for-dev
-**Prerequisite**: Story 10.1 (Admin page exists); no other hard prerequisite
+**Prerequisite**: None — `EventPhotosTab` is added to `EventPage.tsx` (organizer event detail), not to the Admin page. Independent of Story 10.1. *(IR fix 2026-03-02)*
 
 **User Story:**
 As an **organizer**, I want to upload and manage photos from each event directly in the event detail page, so that we can preserve visual memories of our events.
@@ -1495,7 +1495,7 @@ The homepage `TestimonialSection` currently shows 20 hardcoded fake testimonials
 **Scope:**
 
 **Backend — Event Photos API (`event-management-service`):**
-- Flyway **V74**: New `event_photos` table: `id (UUID PK)`, `event_code (VARCHAR FK → events.event_code)`, `s3_key (TEXT NOT NULL)`, `display_url (TEXT NOT NULL)`, `filename (TEXT)`, `uploaded_at (TIMESTAMPTZ)`, `uploaded_by (VARCHAR)`, `sort_order (INT DEFAULT 0)`
+- Flyway **V75**: New `event_photos` table: `id (UUID PK)`, `event_code (VARCHAR FK → events.event_code)`, `s3_key (TEXT NOT NULL)`, `display_url (TEXT NOT NULL)`, `filename (TEXT)`, `uploaded_at (TIMESTAMPTZ)`, `uploaded_by (VARCHAR)`, `sort_order (INT DEFAULT 0)` *(V74 is already taken by `V74__migrate_waitlisted_to_waitlist.sql` — IR fix 2026-03-02)*
 - New endpoints (organizer-only for write; public for read):
   - `GET /api/v1/events/{eventCode}/photos` → `List<EventPhotoResponse>` (public)
   - `POST /api/v1/events/{eventCode}/photos/upload-url` → presigned S3 upload URL + `photoId` (organizer)
@@ -1524,7 +1524,7 @@ The homepage `TestimonialSection` currently shows 20 hardcoded fake testimonials
 
 **Key new files:**
 ```
-services/event-management-service/src/main/resources/db/migration/V74__create_event_photos.sql
+services/event-management-service/src/main/resources/db/migration/V75__create_event_photos.sql
 services/event-management-service/.../domain/EventPhoto.java
 services/event-management-service/.../repository/EventPhotoRepository.java
 services/event-management-service/.../service/EventPhotoService.java
@@ -1544,7 +1544,7 @@ public/locales/de/events.json + en/events.json                      — photos.*
 ```
 
 **Definition of Done (Story 10.21):**
-- [ ] V74 migration runs cleanly; `event_photos` table created
+- [ ] V75 migration runs cleanly; `event_photos` table created
 - [ ] Organizer can upload photos to an event via presigned URL flow; photos appear in photo grid
 - [ ] Organizer can delete a photo; S3 object and DB record both removed
 - [ ] `GET /api/v1/events/recent-photos` returns up to 20 photos from last 5 events (public, no auth)
@@ -1553,6 +1553,7 @@ public/locales/de/events.json + en/events.json                      — photos.*
 - [ ] TDD: `EventPhotoServiceTest` covers upload confirmation, delete, recent-photos query
 - [ ] OpenAPI spec committed before implementation (ADR-006)
 - [ ] i18n: `photos.*` keys in de/en; Type-check passes; Checkstyle passes
+- [ ] ❌ Drag-to-reorder (`sort_order`) is explicitly **NOT in scope** for this story — defer to a follow-up
 
 ---
 
@@ -1570,7 +1571,7 @@ The moderator presentation page (`/present/:eventCode`) currently shows slides: 
 **Scope:**
 
 **Backend — Teaser Image Field:**
-- Flyway **V75**: Add `teaser_image_s3_key (TEXT)` and `teaser_image_url (TEXT)` columns to the `events` table (both nullable)
+- Flyway **V76**: Add `teaser_image_s3_key (TEXT)` and `teaser_image_url (TEXT)` columns to the `events` table (both nullable) *(V75 is used by Story 10.21 — IR fix 2026-03-02)*
 - `EventResponse` DTO: add `teaserImageUrl: String` (null if not set)
 - `PatchEventRequest` / `UpdateEventRequest` DTO: no change needed — image managed via dedicated presigned-URL endpoints
 - New endpoints (organizer-only):
@@ -1592,7 +1593,7 @@ The moderator presentation page (`/present/:eventCode`) currently shows slides: 
 
 **Key new files:**
 ```
-services/event-management-service/src/main/resources/db/migration/V75__add_teaser_image_to_events.sql
+services/event-management-service/src/main/resources/db/migration/V76__add_teaser_image_to_events.sql
 services/event-management-service/.../service/EventTeaserImageService.java
 services/event-management-service/.../controller/EventTeaserImageController.java
 ```
@@ -1609,7 +1610,7 @@ public/locales/de/events.json + en/events.json                  — teaserImage.
 ```
 
 **Definition of Done (Story 10.22):**
-- [ ] V75 migration runs cleanly; columns nullable; existing events unaffected
+- [ ] V76 migration runs cleanly; columns nullable; existing events unaffected
 - [ ] Organizer can upload teaser image via presigned URL; thumbnail shown in Settings tab
 - [ ] Organizer can remove teaser image; DB cleared, S3 object deleted
 - [ ] Presentation page shows full-screen teaser image slide between topic intro and first agenda slide when `teaserImageUrl` is set
@@ -1796,7 +1797,7 @@ public/locales/de/userManagement.json + en/userManagement.json
 - [ ] `UserResponse` includes `hasCognitoAccount: boolean` (does not expose raw `cognitoUserId`)
 - [ ] User table row action menu shows "Create AWS Account" only for users with `hasCognitoAccount = false`
 - [ ] `LinkCognitoDialog` shows confirmation, language selector, success/error states correctly
-- [ ] Create-user modal toggle "Also create AWS account" triggers provisioning after DB user is created; handles Cognito failure gracefully (user still saved, warning shown)
+- [ ] Create-user modal toggle "Also create AWS account" triggers provisioning after DB user is created; when Cognito provisioning fails: (a) the BATbern user record is still persisted, (b) `cognitoUserId` remains null, (c) a warning toast is shown "User created but AWS account creation failed — use 'Create AWS Account' from the user list to retry", (d) integration test asserts DB state and toast presence
 - [ ] IAM: CDK grants `AdminCreateUser` + `AdminAddUserToGroup` scoped to the specific user pool ARN
 - [ ] Welcome email templates seeded and visible/editable in Email Templates admin tab
 - [ ] TDD: `CognitoAdminServiceTest` covers success, `UsernameExistsException`, SDK error, already-linked guard
@@ -1809,6 +1810,7 @@ public/locales/de/userManagement.json + en/userManagement.json
 
 **Status**: ready-for-dev
 **Prerequisite**: Story 8.3 (all prerequisites below verified ✅); Story 10.2 (DB-backed email templates with admin edit UI)
+**Note (IR 2026-03-02)**: ShedLock is already configured in `event-management-service` (`V31__Add_shedlock_table.sql` + `shedlock-spring:5.10.0` dependency) — no setup needed. Transitive block: Story 10.2 depends on Story 10.1; if 10.1 is delayed, 10.25 is also delayed.
 
 **Audit of Story 8.3 — What is ALREADY implemented (verified by code inspection):**
 
