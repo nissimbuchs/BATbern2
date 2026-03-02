@@ -48,6 +48,8 @@ import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPane
 import SpeakerOutreachDetailsDrawer from '@/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer';
 import { ContentSubmissionDrawer } from '@/components/organizer/SpeakerStatus/ContentSubmissionDrawer';
 import { QualityReviewDrawer } from '@/components/organizer/SpeakerStatus/QualityReviewDrawer';
+import { AbstractAnalysisDrawer } from './AbstractAnalysisDrawer';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
@@ -63,6 +65,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation(['events', 'organizer']);
+  const { aiContentEnabled } = useFeatureFlags();
 
   // Get view mode from URL, default to 'kanban'
   const viewParam = searchParams.get('view');
@@ -80,6 +83,14 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [contentSpeaker, setContentSpeaker] = useState<SpeakerPoolEntry | null>(null);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [reviewSpeaker, setReviewSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Abstract analysis drawer state (Story 10.16)
+  const [analysisDrawerState, setAnalysisDrawerState] = useState<{
+    open: boolean;
+    speakerId: string;
+    speakerName: string;
+    abstractText: string;
+  }>({ open: false, speakerId: '', speakerName: '', abstractText: '' });
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -156,6 +167,16 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const handleOpenQualityReview = (speaker: SpeakerPoolEntry) => {
     setReviewSpeaker(speaker);
     setReviewDrawerOpen(true);
+  };
+
+  // Handle opening abstract analysis drawer (Story 10.16)
+  const handleOpenAbstractAnalysis = (speaker: SpeakerPoolEntry) => {
+    setAnalysisDrawerState({
+      open: true,
+      speakerId: speaker.id,
+      speakerName: speaker.speakerName,
+      abstractText: speaker.submittedAbstract ?? '',
+    });
   };
 
   // Session handlers
@@ -416,6 +437,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         }
         onOpenContentSubmission={handleOpenContentSubmission}
         onOpenQualityReview={handleOpenQualityReview}
+        onOpenAbstractAnalysis={aiContentEnabled ? handleOpenAbstractAnalysis : undefined}
       />
 
       {/* Content Submission Drawer (for ACCEPTED speakers) */}
@@ -432,6 +454,15 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         onClose={() => setReviewDrawerOpen(false)}
         speaker={reviewSpeaker}
         eventCode={eventCode}
+      />
+
+      {/* Abstract Analysis Drawer (Story 10.16) */}
+      <AbstractAnalysisDrawer
+        open={analysisDrawerState.open}
+        onClose={() => setAnalysisDrawerState((s) => ({ ...s, open: false }))}
+        speakerId={analysisDrawerState.speakerId}
+        speakerName={analysisDrawerState.speakerName}
+        abstractText={analysisDrawerState.abstractText}
       />
     </Stack>
   );

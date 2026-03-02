@@ -1,0 +1,131 @@
+package ch.batbern.events.controller;
+
+import ch.batbern.events.config.TestAwsConfig;
+import ch.batbern.events.config.TestSecurityConfig;
+import ch.batbern.events.service.BatbernAiService;
+import ch.batbern.shared.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
+class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @MockBean
+    BatbernAiService aiService;
+
+    @Test
+    void getFeatureFlags_isPublic_returnsAiEnabledFlag() throws Exception {
+        // Public endpoint — no auth required
+        mockMvc.perform(get("/api/v1/public/settings/features"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.aiContentEnabled").isBoolean());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void generateDescription_whenAiReturnsEmpty_returns503() throws Exception {
+        when(aiService.generateEventDescription(anyString(), anyString(), anyInt()))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void generateDescription_whenAiReturnsResult_returns200() throws Exception {
+        when(aiService.generateEventDescription(anyString(), anyString(), anyInt()))
+            .thenReturn(Optional.of("BATbern#99 widmet sich dem Thema Cloud Native..."));
+
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
+        when(aiService.generateThemeImage(anyString(), anyString()))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void generateThemeImage_whenAiReturnsResult_returns200() throws Exception {
+        var result = new BatbernAiService.ThemeImageResult(
+            "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
+        when(aiService.generateThemeImage(anyString(), anyString()))
+            .thenReturn(Optional.of(result));
+
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.imageUrl").isNotEmpty())
+            .andExpect(jsonPath("$.s3Key").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void analyzeAbstract_whenAiReturnsResult_returns200() throws Exception {
+        var result = new BatbernAiService.AbstractAnalysisResult(
+            8, "Good but needs examples", "Improved text", List.of("Cloud", "Architecture"));
+        when(aiService.analyzeAbstract(anyString(), any())).thenReturn(Optional.of(result));
+
+        mockMvc.perform(post("/api/v1/speakers/some-speaker-id/ai/analyze-abstract")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"abstract\":\"My speaker abstract\",\"speakerName\":\"Alice\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.qualityScore").value(8))
+            .andExpect(jsonPath("$.suggestion").isNotEmpty())
+            .andExpect(jsonPath("$.keyThemes").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void analyzeAbstract_whenAiReturnsEmpty_returns503() throws Exception {
+        when(aiService.analyzeAbstract(anyString(), any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/speakers/some-speaker-id/ai/analyze-abstract")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"abstract\":\"My speaker abstract\",\"speakerName\":\"Alice\"}"))
+            .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    void generateDescription_withoutAuth_returns401or403() throws Exception {
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().is4xxClientError());
+    }
+}

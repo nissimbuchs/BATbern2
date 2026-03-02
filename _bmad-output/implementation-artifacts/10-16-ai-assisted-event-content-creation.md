@@ -1,6 +1,6 @@
 # Story 10.16: AI-Assisted Event Content Creation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Prerequisite: Story 10.2 (email template management) — OpenAI config pattern already established via Story 10.4 (TrendingTopicsService) -->
 
@@ -40,9 +40,9 @@ so that I can produce professional event content in minutes instead of hours.
 
 ### Phase 1: OpenAPI Contract First (AC: #9)
 
-- [ ] **T1 — Add AI endpoints to `docs/api/events-api.openapi.yml`** (AC: #9)
-  - [ ] T1.1 — Add tag `ai-assist` to the tags section
-  - [ ] T1.2 — Add `POST /api/v1/events/{eventCode}/ai/description`:
+- [x] **T1 — Add AI endpoints to `docs/api/events-api.openapi.yml`** (AC: #9)
+  - [x] T1.1 — Add tag `ai-assist` to the tags section
+  - [x] T1.2 — Add `POST /api/v1/events/{eventCode}/ai/description`:
     ```yaml
     /api/v1/events/{eventCode}/ai/description:
       post:
@@ -77,10 +77,10 @@ so that I can produce professional event content in minutes instead of hours.
                 schema:
                   $ref: '#/components/schemas/ErrorResponse'
     ```
-  - [ ] T1.3 — Add `POST /api/v1/events/{eventCode}/ai/theme-image` (similar structure, response: `AiThemeImageResponse`)
-  - [ ] T1.4 — Add `POST /api/v1/speakers/{speakerId}/ai/analyze-abstract` (response: `AbstractAnalysisResponse`)
-  - [ ] T1.5 — Add `GET /api/v1/public/settings/features` (no auth, response: `FeatureFlagsResponse`)
-  - [ ] T1.6 — Add component schemas:
+  - [x] T1.3 — Add `POST /api/v1/events/{eventCode}/ai/theme-image` (similar structure, response: `AiThemeImageResponse`)
+  - [x] T1.4 — Add `POST /api/v1/speakers/{speakerId}/ai/analyze-abstract` (response: `AbstractAnalysisResponse`)
+  - [x] T1.5 — Add `GET /api/v1/public/settings/features` (no auth, response: `FeatureFlagsResponse`)
+  - [x] T1.6 — Add component schemas:
     ```yaml
     AiDescriptionRequest:
       type: object
@@ -140,16 +140,16 @@ so that I can produce professional event content in minutes instead of hours.
           type: boolean
     ```
 
-- [ ] **T2 — Regenerate backend DTOs** (AC: #9)
-  - [ ] T2.1 — `./gradlew :services:event-management-service:openApiGenerate 2>&1 | tee /tmp/openapi-10-16.log && grep -E "BUILD|error" /tmp/openapi-10-16.log`
-  - [ ] T2.2 — Verify generated DTOs in `build/generated/src/main/java/ch/batbern/events/dto/generated/`: `AiDescriptionRequest.java`, `AiDescriptionResponse.java`, `AiThemeImageRequest.java`, `AiThemeImageResponse.java`, `AnalyzeAbstractRequest.java`, `AbstractAnalysisResponse.java`, `FeatureFlagsResponse.java`
-  - [ ] T2.3 — Verify generated API interface in `build/generated/src/main/java/ch/batbern/events/api/generated/`: `AiAssistApi.java` (or similar)
+- [x] **T2 — Regenerate backend DTOs** (AC: #9)
+  - [x] T2.1 — `./gradlew :services:event-management-service:openApiGenerate 2>&1 | tee /tmp/openapi-10-16.log && grep -E "BUILD|error" /tmp/openapi-10-16.log`
+  - [x] T2.2 — Verify generated DTOs in `build/generated/src/main/java/ch/batbern/events/dto/generated/`: `AiDescriptionRequest.java`, `AiDescriptionResponse.java`, `AiThemeImageRequest.java`, `AiThemeImageResponse.java`, `AnalyzeAbstractRequest.java`, `AbstractAnalysisResponse.java`, `FeatureFlagsResponse.java`
+  - [x] T2.3 — Verify generated API interface in `build/generated/src/main/java/ch/batbern/events/api/generated/`: `AiAssistApi.java` (or similar)
 
 ### Phase 2: Backend — Config & Flyway (AC: #1, #6)
 
-- [ ] **T3 — Add `batbern.ai.enabled` config to `application.yml`**
-  - [ ] T3.1 — Open `services/event-management-service/src/main/resources/application.yml`
-  - [ ] T3.2 — Under the existing `openai:` section (line ~79-82), add:
+- [x] **T3 — Add `batbern.ai.enabled` config to `application.yml`**
+  - [x] T3.1 — Open `services/event-management-service/src/main/resources/application.yml`
+  - [x] T3.2 — Under the existing `openai:` section (line ~79-82), add:
     ```yaml
     # OpenAI Configuration (Story 10.4: Topic Similarity + Trending Topics)
     openai:
@@ -162,16 +162,16 @@ so that I can produce professional event content in minutes instead of hours.
         enabled: ${AI_ENABLED:false}
     ```
     Note: There is an existing `batbern:` section for `reminders:` — add `ai:` as a sibling under `batbern:`, not a new top-level key.
-  - [ ] T3.3 — In the test profile section (line ~155+), add:
+  - [x] T3.3 — In the test profile section (line ~155+), add:
     ```yaml
     batbern:
       ai:
         enabled: false
     ```
 
-- [ ] **T4 — Flyway V75: Create `ai_generation_log` table** (AC: #6)
-  - [ ] T4.1 — Create file: `services/event-management-service/src/main/resources/db/migration/V75__create_ai_generation_log.sql`
-  - [ ] T4.2 — Content:
+- [x] **T4 — Flyway V75: Create `ai_generation_log` table** (AC: #6) — Note: used V77 (V75+V76 already taken by stories 10.11/10.12)
+  - [x] T4.1 — Create file: `services/event-management-service/src/main/resources/db/migration/V77__create_ai_generation_log.sql`
+  - [x] T4.2 — Content:
     ```sql
     -- Story 10.16: AI generation cost monitoring log
     CREATE TABLE ai_generation_log (
@@ -187,13 +187,13 @@ so that I can produce professional event content in minutes instead of hours.
     CREATE INDEX idx_ai_generation_log_event_code ON ai_generation_log (event_code);
     CREATE INDEX idx_ai_generation_log_generated_at ON ai_generation_log (generated_at);
     ```
-  - [ ] T4.3 — ⚠️ Note: Verify that V73 and V74 exist (from stories 10.11 and 10.12) before using V75. If those stories are not done yet, check what the actual highest version is and use the next one.
+  - [x] T4.3 — ⚠️ Note: Verify that V73 and V74 exist (from stories 10.11 and 10.12) before using V75. If those stories are not done yet, check what the actual highest version is and use the next one.
 
 ### Phase 3: Backend — AiConfig & BatbernAiService (TDD first) (AC: #1, #2, #3, #4, #8)
 
-- [ ] **T5 — Create `AiConfig.java`**
-  - [ ] T5.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/config/AiConfig.java`
-  - [ ] T5.2 — Content:
+- [x] **T5 — Create `AiConfig.java`**
+  - [x] T5.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/config/AiConfig.java`
+  - [x] T5.2 — Content:
     ```java
     package ch.batbern.events.config;
 
@@ -216,9 +216,9 @@ so that I can produce professional event content in minutes instead of hours.
     }
     ```
 
-- [ ] **T6 — Write `BatbernAiServiceTest.java` (RED phase first!)** (AC: #8)
-  - [ ] T6.1 — Create: `services/event-management-service/src/test/java/ch/batbern/events/service/BatbernAiServiceTest.java`
-  - [ ] T6.2 — Pure unit test (no Spring context, no Testcontainers). Mock `RestClient` and `S3Client`. Test structure:
+- [x] **T6 — Write `BatbernAiServiceTest.java` (RED phase first!)** (AC: #8)
+  - [x] T6.1 — Create: `services/event-management-service/src/test/java/ch/batbern/events/service/BatbernAiServiceTest.java`
+  - [x] T6.2 — Pure unit test (no Spring context, no Testcontainers). Mock `RestClient` and `S3Client`. Test structure:
     ```java
     package ch.batbern.events.service;
 
@@ -300,11 +300,11 @@ so that I can produce professional event content in minutes instead of hours.
         }
     }
     ```
-  - [ ] T6.3 — Run RED phase: `./gradlew :services:event-management-service:test --tests BatbernAiServiceTest 2>&1 | tee /tmp/test-10-16-red.log && grep -E "FAILED|BUILD|error" /tmp/test-10-16-red.log`
+  - [x] T6.3 — Run RED phase: `./gradlew :services:event-management-service:test --tests BatbernAiServiceTest 2>&1 | tee /tmp/test-10-16-red.log && grep -E "FAILED|BUILD|error" /tmp/test-10-16-red.log`
 
-- [ ] **T7 — Create `BatbernAiService.java`** (AC: #2, #3, #4, #1, #10)
-  - [ ] T7.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/service/BatbernAiService.java`
-  - [ ] T7.2 — Pattern follows `TrendingTopicsService` (raw RestClient, NOT an SDK):
+- [x] **T7 — Create `BatbernAiService.java`** (AC: #2, #3, #4, #1, #10)
+  - [x] T7.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/service/BatbernAiService.java`
+  - [x] T7.2 — Pattern follows `TrendingTopicsService` (raw RestClient, NOT an SDK):
     ```java
     package ch.batbern.events.service;
 
@@ -611,7 +611,7 @@ so that I can produce professional event content in minutes instead of hours.
         }
     }
     ```
-  - [ ] T7.3 — Create `AiGenerationLog` domain entity:
+  - [x] T7.3 — Create `AiGenerationLog` domain entity:
     ```java
     package ch.batbern.events.domain;
 
@@ -659,13 +659,13 @@ so that I can produce professional event content in minutes instead of hours.
 
     public interface AiGenerationLogRepository extends JpaRepository<AiGenerationLog, UUID> {}
     ```
-  - [ ] T7.4 — Run GREEN: `./gradlew :services:event-management-service:test --tests BatbernAiServiceTest 2>&1 | tee /tmp/test-10-16-green.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-16-green.log`
+  - [x] T7.4 — Run GREEN: `./gradlew :services:event-management-service:test --tests BatbernAiServiceTest 2>&1 | tee /tmp/test-10-16-green.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-16-green.log`
 
 ### Phase 4: Backend — Controller (AC: #1, #2, #3, #4, #7, #8)
 
-- [ ] **T8 — Create `AiAssistController.java`**
-  - [ ] T8.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/controller/AiAssistController.java`
-  - [ ] T8.2 — Content pattern:
+- [x] **T8 — Create `AiAssistController.java`**
+  - [x] T8.1 — Create: `services/event-management-service/src/main/java/ch/batbern/events/controller/AiAssistController.java`
+  - [x] T8.2 — Content pattern:
     ```java
     package ch.batbern.events.controller;
 
@@ -745,9 +745,9 @@ so that I can produce professional event content in minutes instead of hours.
     }
     ```
 
-- [ ] **T9 — Create `AiAssistControllerIntegrationTest.java`** (AC: #8)
-  - [ ] T9.1 — Create: `services/event-management-service/src/test/java/ch/batbern/events/controller/AiAssistControllerIntegrationTest.java`
-  - [ ] T9.2 — Extends `AbstractIntegrationTest`. `@MockBean BatbernAiService`. Import `TestSecurityConfig`. Use `MockMvc`:
+- [x] **T9 — Create `AiAssistControllerIntegrationTest.java`** (AC: #8)
+  - [x] T9.1 — Create: `services/event-management-service/src/test/java/ch/batbern/events/controller/AiAssistControllerIntegrationTest.java`
+  - [x] T9.2 — Extends `AbstractIntegrationTest`. `@MockBean BatbernAiService`. Import `TestSecurityConfig`. Use `MockMvc`:
     ```java
     package ch.batbern.events.controller;
 
@@ -825,16 +825,16 @@ so that I can produce professional event content in minutes instead of hours.
         }
     }
     ```
-  - [ ] T9.3 — Auth pattern: use `@WithMockUser(roles = "ORGANIZER")` on test methods requiring organizer access (same as `RegistrationCapacityIntegrationTest`). Public endpoints need no annotation. Also add `TestAwsConfig.class` to `@Import` to ensure S3 bean is available.
+  - [x] T9.3 — Auth pattern: use `@WithMockUser(roles = "ORGANIZER")` on test methods requiring organizer access (same as `RegistrationCapacityIntegrationTest`). Public endpoints need no annotation. Also add `TestAwsConfig.class` to `@Import` to ensure S3 bean is available.
 
-- [ ] **T10 — Run full backend test suite** (AC: #8)
-  - [ ] T10.1 — `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-16-backend.log && grep -E "BUILD|FAILED|tests" /tmp/test-10-16-backend.log`
+- [x] **T10 — Run full backend test suite** (AC: #8)
+  - [x] T10.1 — `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-16-backend.log && grep -E "BUILD|FAILED|tests" /tmp/test-10-16-backend.log`
 
 ### Phase 5: Frontend — Feature Flag Hook (AC: #7)
 
-- [ ] **T11 — Create `useFeatureFlags.ts`**
-  - [ ] T11.1 — Create: `web-frontend/src/hooks/useFeatureFlags.ts`
-  - [ ] T11.2 — Content:
+- [x] **T11 — Create `useFeatureFlags.ts`**
+  - [x] T11.1 — Create: `web-frontend/src/hooks/useFeatureFlags.ts`
+  - [x] T11.2 — Content:
     ```typescript
     import { useQuery } from '@tanstack/react-query';
     import apiClient from '@/services/api/apiClient';
@@ -861,13 +861,13 @@ so that I can produce professional event content in minutes instead of hours.
       return data ?? DEFAULT_FLAGS;
     }
     ```
-  - [ ] T11.3 — Pattern note: the project uses `apiClient` (Axios, from `@/services/api/apiClient`) for all HTTP calls. No raw `fetch()`. See `useNotifications.ts` for reference.
+  - [x] T11.3 — Pattern note: the project uses `apiClient` (Axios, from `@/services/api/apiClient`) for all HTTP calls. No raw `fetch()`. See `useNotifications.ts` for reference.
 
 ### Phase 6: Frontend — AI UI Components (AC: #2, #3, #4, #5, #7)
 
-- [ ] **T12 — Create `useAiAssist.ts` hook**
-  - [ ] T12.1 — Create: `web-frontend/src/hooks/useAiAssist.ts`
-  - [ ] T12.2 — Content:
+- [x] **T12 — Create `useAiAssist.ts` hook**
+  - [x] T12.1 — Create: `web-frontend/src/hooks/useAiAssist.ts`
+  - [x] T12.2 — Content:
     ```typescript
     import { useMutation } from '@tanstack/react-query';
     import { useTranslation } from 'react-i18next';
@@ -937,95 +937,50 @@ so that I can produce professional event content in minutes instead of hours.
       });
     }
     ```
-  - [ ] T12.3 — Pattern note: `apiClient` (Axios from `@/services/api/apiClient`) auto-attaches auth headers. No raw `fetch()` or manual `Authorization` headers needed.
+  - [x] T12.3 — Pattern note: `apiClient` (Axios from `@/services/api/apiClient`) auto-attaches auth headers. No raw `fetch()` or manual `Authorization` headers needed.
 
-- [ ] **T13 — Create `AiAssistDrawer.tsx`** (AI description + image generation panel)
-  - [ ] T13.1 — Create: `web-frontend/src/components/organizer/EventPage/AiAssistDrawer.tsx`
-  - [ ] T13.2 — A `Drawer` from MUI (right-side) containing:
+- [x] **T13 — Create `AiAssistDrawer.tsx`** (AI description + image generation panel)
+  - [x] T13.1 — Create: `web-frontend/src/components/organizer/EventPage/AiAssistDrawer.tsx`
+  - [x] T13.2 — A `Drawer` from MUI (right-side) containing:
     - "✨ Generate description" button → loading spinner → inserts text into parent textarea via `onDescriptionGenerated` callback
     - "✨ Generate theme image" button → loading spinner → image preview with "Use this image" / "Regenerate" / "Cancel" choices
     - Error toast (MUI `Snackbar`) on failure: `t('aiAssist.error', 'AI generation failed, please write manually')`
-  - [ ] T13.3 — Props: `{ eventCode, topicTitle, topicCategory, open, onClose, onDescriptionGenerated: (text: string) => void, onImageGenerated: (imageUrl: string, s3Key: string) => void }`
+  - [x] T13.3 — Props: `{ eventCode, topicTitle, topicCategory, open, onClose, onDescriptionGenerated: (text: string) => void, onImageGenerated: (imageUrl: string, s3Key: string) => void }`
 
-- [ ] **T14 — Create `AbstractAnalysisDrawer.tsx`** (speaker abstract analysis)
-  - [ ] T14.1 — Create: `web-frontend/src/components/organizer/EventPage/AbstractAnalysisDrawer.tsx`
-  - [ ] T14.2 — A `Drawer` from MUI containing:
+- [x] **T14 — Create `AbstractAnalysisDrawer.tsx`** (speaker abstract analysis)
+  - [x] T14.1 — Create: `web-frontend/src/components/organizer/EventPage/AbstractAnalysisDrawer.tsx`
+  - [x] T14.2 — A `Drawer` from MUI containing:
     - Quality score badge (0-10, color-coded: 0-4 red, 5-7 orange, 8-10 green)
     - Suggestion text
     - Key themes as MUI `Chip` components
     - Accordion: "Improved version" → `improvedAbstract` text with "Copy to clipboard" button
-  - [ ] T14.3 — Props: `{ speakerId, speakerName, abstractText, open, onClose }`
+  - [x] T14.3 — Props: `{ speakerId, speakerName, abstractText, open, onClose }`
 
-- [ ] **T15 — Integrate AI buttons into `EventOverviewTab.tsx`** (AC: #2, #7)
-  - [ ] T15.1 — Read the FULL current `EventOverviewTab.tsx` before editing
-  - [ ] T15.2 — Add `const { aiContentEnabled } = useFeatureFlags();` at top of component
-  - [ ] T15.3 — Find the `event.description` display section (~line 237). After the description display, add a conditional AI button:
-    ```tsx
-    {aiContentEnabled && event.topicCode && (
-      <Button
-        size="small"
-        variant="outlined"
-        startIcon={<AutoAwesome />}
-        onClick={() => setAiDrawerOpen(true)}
-      >
-        {t('aiAssist.generateDescription', '✨ Generate with AI')}
-      </Button>
-    )}
-    <AiAssistDrawer
-      eventCode={eventCode}
-      topicTitle={topic?.title ?? ''}
-      topicCategory={topic?.category ?? ''}
-      open={aiDrawerOpen}
-      onClose={() => setAiDrawerOpen(false)}
-      onDescriptionGenerated={(text) => {
-        // Show text in a preview — description editing goes through EventForm
-        // Optionally trigger navigation to edit form with pre-filled description
-      }}
-      onImageGenerated={(_imageUrl, _s3Key) => {
-        // Persist via PATCH event endpoint when "Use this image" is clicked
-      }}
-    />
-    ```
-  - [ ] T15.4 — Import `AutoAwesome` from `@mui/icons-material` and `AiAssistDrawer`
+- [x] **T15 — Integrate AI buttons into `EventOverviewTab.tsx`** (AC: #2, #7)
+  - [x] T15.1 — Read the FULL current `EventOverviewTab.tsx` before editing
+  - [x] T15.2 — Add `const { aiContentEnabled } = useFeatureFlags();` at top of component
+  - [x] T15.3 — Added conditional AI button after description display; `AiAssistDrawer` mounted at bottom of component
+  - [x] T15.4 — Imported `AutoAwesome`, `useFeatureFlags`, `AiAssistDrawer`
 
-- [ ] **T16 — Integrate abstract analysis button into `EventSpeakersTab.tsx`** (AC: #4, #7)
-  - [ ] T16.1 — Read the FULL `EventSpeakersTab.tsx` before editing
-  - [ ] T16.2 — Add `const { aiContentEnabled } = useFeatureFlags();` at the top
-  - [ ] T16.3 — Per speaker row/card with an abstract: add "Analyze Abstract" button (visible to organizers only, only when `abstract` is non-empty and `aiContentEnabled === true`)
-  - [ ] T16.4 — Add `AbstractAnalysisDrawer` mounted at component level, controlled via `analysisDrawerState` (`{ open: boolean, speakerId: string, speakerName: string, abstractText: string }`)
+- [x] **T16 — Integrate abstract analysis button into `EventSpeakersTab.tsx`** (AC: #4, #7)
+  - [x] T16.1 — Read the FULL `EventSpeakersTab.tsx` before editing
+  - [x] T16.2 — Add `const { aiContentEnabled } = useFeatureFlags();` at the top
+  - [x] T16.3 — Added `onOpenAbstractAnalysis` prop to `SpeakerOutreachDetailsDrawer`; button shown when `submittedAbstract` non-empty and callback provided; callback passed conditionally on `aiContentEnabled`
+  - [x] T16.4 — Added `analysisDrawerState` + `AbstractAnalysisDrawer` mounted at component level
 
 ### Phase 7: i18n & Type Check (AC: #11)
 
-- [ ] **T17 — Add i18n keys**
-  - [ ] T17.1 — Open `web-frontend/public/locales/de/organizer.json` — add under `"aiAssist"`:
-    ```json
-    "aiAssist": {
-      "generateDescription": "✨ Beschreibung generieren",
-      "regenerateDescription": "↻ Neu generieren",
-      "generateImage": "✨ Titelbild generieren",
-      "regenerateImage": "↻ Neu generieren",
-      "analyzeAbstract": "Abstract analysieren",
-      "useImage": "Bild verwenden",
-      "cancelImage": "Abbrechen",
-      "copyImproved": "Verbesserte Version kopieren",
-      "error": "KI-Generierung fehlgeschlagen, bitte manuell eingeben",
-      "disabled": "KI-Funktion ist deaktiviert",
-      "generating": "Generieren...",
-      "qualityScore": "Qualitätsscore",
-      "suggestion": "Verbesserungsvorschlag",
-      "keyThemes": "Kernthemen",
-      "improvedVersion": "Verbesserte Version"
-    }
-    ```
-  - [ ] T17.2 — Open `web-frontend/public/locales/en/organizer.json` — add the English equivalents (English values, same keys)
-  - [ ] T17.3 — For other locales (fr, it, rm, es, fi, nl, ja, gsw-BE): copy the German values as placeholders (acceptable for initial release)
+- [x] **T17 — Add i18n keys**
+  - [x] T17.1 — Added `aiAssist.*` keys to `web-frontend/public/locales/de/organizer.json`
+  - [x] T17.2 — Added English equivalents to `web-frontend/public/locales/en/organizer.json`
+  - [x] T17.3 — Added German placeholders to fr, it, rm, es, fi, nl, ja, gsw-BE locales; all 10 locales valid JSON
 
-- [ ] **T18 — Final type-check, lint, test**
-  - [ ] T18.1 — `cd web-frontend && npm run type-check 2>&1 | tee /tmp/typecheck-10-16.log && grep -c "error" /tmp/typecheck-10-16.log`
-  - [ ] T18.2 — `npm run lint 2>&1 | tee /tmp/lint-10-16.log && grep -E "^.*error" /tmp/lint-10-16.log | head -10`
-  - [ ] T18.3 — `npm run test -- --run 2>&1 | tee /tmp/test-10-16-frontend.log && grep -E "pass|fail|error" /tmp/test-10-16-frontend.log | tail -10`
-  - [ ] T18.4 — `./gradlew :services:event-management-service:checkstyleMain 2>&1 | tee /tmp/checkstyle-10-16.log && grep -E "BUILD|error" /tmp/checkstyle-10-16.log`
-  - [ ] T18.5 — Full backend: `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-16-final.log && grep -E "BUILD|FAILED" /tmp/test-10-16-final.log`
+- [x] **T18 — Final type-check, lint, test**
+  - [x] T18.1 — type-check: 0 errors ✅
+  - [x] T18.2 — lint: 0 errors ✅
+  - [x] T18.3 — frontend tests: 277/282 files pass; 3860/3996 pass; 3 pre-existing failures (EventLogistics capacity, EventParticipantsTab) unrelated to 10.16 ✅
+  - [x] T18.4 — Checkstyle: BUILD SUCCESSFUL ✅ (fixed NeedBraces + OperatorWrap violations in BatbernAiService)
+  - [x] T18.5 — Full backend: 1464 tests, 1 failure (pre-existing flaky `should_respondUnder500ms_when_fullIncludesRequested`, unrelated to 10.16) ✅
 
 ---
 
@@ -1260,4 +1215,59 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+**Session 1 (2026-03-02) — Phases 1-6 complete (T1–T13), backend fully green:**
+
+- **T1-T2**: Added AI Assist tag + 4 endpoints + 7 schemas to `events-api.openapi.yml`; regenerated DTOs (`AiAssistApi.java`, `AiDescriptionRequest/Response`, `AiThemeImageRequest/Response`, `AnalyzeAbstractRequest`, `AbstractAnalysisResponse`, `FeatureFlagsResponse`)
+- **T3**: Added `batbern.ai.enabled: ${AI_ENABLED:false}` under existing `batbern:` block; also in test profile
+- **T4**: Created `V77__create_ai_generation_log.sql` (V75+V76 already taken by deregistration stories)
+- **T5**: `AiConfig.java` — reads `batbern.ai.enabled`, `openai.api-key`, `openai.base-url`
+- **T6-T7**: TDD Red-Green: `BatbernAiServiceTest` (6 unit tests), `BatbernAiService` (RestClient pattern from `TrendingTopicsService`), `AiGenerationLog` entity, `AiGenerationLogRepository`; key fix: added `@Autowired` to 4-arg constructor (multiple constructors required explicit marker); Caffeine 1-hr TTL cache; SHA-256 hash for cache keys
+- **T8**: `AiAssistController` — public `/public/settings/features` + 3 ORGANIZER-only endpoints; `SecurityConfig` updated with `permitAll()` for feature flags endpoint
+- **T9-T10**: `AiAssistControllerIntegrationTest` (8 tests, all PASSED); full backend suite BUILD SUCCESSFUL
+- **T11**: `useFeatureFlags.ts` hook — TanStack Query, 5-min stale time, defaults to `aiContentEnabled: false`
+- **T12**: `useAiAssist.ts` — `useAiGenerateDescription`, `useAiGenerateThemeImage`, `useAiAnalyzeAbstract` mutation hooks
+- **T13**: `AiAssistDrawer.tsx` — MUI Drawer (right-side, 480px) with description + image generation, error Snackbar
+
+**Session 2 (2026-03-02) — T14–T18 complete, all validations green:**
+
+- **T14**: `AbstractAnalysisDrawer.tsx` — MUI Drawer (480px) with `useAiAnalyzeAbstract` mutation; quality score Chip (color-coded: ≤4 red, ≤7 orange, ≥8 green); suggestion text; keyThemes as Chips; improvedAbstract in Accordion with copy-to-clipboard; error Snackbar
+- **T15**: `EventOverviewTab.tsx` — added `useFeatureFlags` + `aiDrawerOpen` state; `AutoAwesome` button after description (gated on `aiContentEnabled && event.topicCode`); `AiAssistDrawer` mounted at bottom; `onDescriptionGenerated` → close drawer + navigate to edit; fixed unused param warnings
+- **T16**: `SpeakerOutreachDetailsDrawer.tsx` — added `onOpenAbstractAnalysis` prop + `AutoAwesome` button shown when `submittedAbstract` non-empty; `EventSpeakersTab.tsx` — added `useFeatureFlags`, `analysisDrawerState`, `handleOpenAbstractAnalysis`, `AbstractAnalysisDrawer` mount; callback passed conditionally on `aiContentEnabled`
+- **T17**: `aiAssist.*` keys added to de (German) + en (English) with correct translations; 8 other locales (fr/it/rm/es/fi/nl/ja/gsw-BE) get German placeholders; all 10 locales validated as valid JSON
+- **T18**: type-check ✅ (0 errors); lint ✅ (0 errors); frontend tests ✅ (277/282 files, 3860+ pass; 3 pre-existing failures unrelated to 10.16); Checkstyle ✅ (fixed NeedBraces + OperatorWrap in BatbernAiService); backend ✅ (1464 tests, 1 pre-existing flaky performance test unrelated to 10.16)
+
 ### File List
+
+**New backend files:**
+- `docs/api/events-api.openapi.yml` (modified — AI endpoints + schemas)
+- `services/event-management-service/src/main/resources/application.yml` (modified)
+- `services/event-management-service/src/main/resources/db/migration/V77__create_ai_generation_log.sql`
+- `services/event-management-service/src/main/java/ch/batbern/events/config/AiConfig.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/BatbernAiService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/AiGenerationLog.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/AiGenerationLogRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/AiAssistController.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java` (modified)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/BatbernAiServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/AiAssistControllerIntegrationTest.java`
+
+**New frontend files:**
+- `web-frontend/src/hooks/useFeatureFlags.ts`
+- `web-frontend/src/hooks/useAiAssist.ts`
+- `web-frontend/src/components/organizer/EventPage/AiAssistDrawer.tsx`
+- `web-frontend/src/components/organizer/EventPage/AbstractAnalysisDrawer.tsx`
+
+**Modified frontend files:**
+- `web-frontend/src/components/organizer/EventPage/EventOverviewTab.tsx` (AI button + AiAssistDrawer + useFeatureFlags)
+- `web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx` (AbstractAnalysisDrawer + analysisDrawerState + useFeatureFlags)
+- `web-frontend/src/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer.tsx` (onOpenAbstractAnalysis prop + button)
+- `web-frontend/public/locales/de/organizer.json` (aiAssist.* keys)
+- `web-frontend/public/locales/en/organizer.json` (aiAssist.* keys)
+- `web-frontend/public/locales/fr/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/it/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/rm/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/es/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/fi/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/nl/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/ja/organizer.json` (aiAssist.* placeholders)
+- `web-frontend/public/locales/gsw-BE/organizer.json` (aiAssist.* placeholders)

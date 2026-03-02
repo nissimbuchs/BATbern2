@@ -447,5 +447,22 @@
   },
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
+  },
+  "aiAssist": {
+    "generateDescription": "✨ Generate description",
+    "regenerateDescription": "↻ Regenerate",
+    "generateImage": "✨ Generate theme image",
+    "regenerateImage": "↻ Regenerate",
+    "analyzeAbstract": "Analyze abstract",
+    "useImage": "Use this image",
+    "cancelImage": "Cancel",
+    "copyImproved": "Copy improved version",
+    "error": "AI generation failed, please write manually",
+    "disabled": "AI feature is disabled",
+    "generating": "Generating...",
+    "qualityScore": "Quality score",
+    "suggestion": "Improvement suggestion",
+    "keyThemes": "Key themes",
+    "improvedVersion": "Improved version"
   }
 }

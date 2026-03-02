@@ -58,6 +58,8 @@ tags:
     description: Email template management for organizers (Story 10.2)
   - name: Newsletter
     description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
+  - name: AI Assist
+    description: AI-assisted event content creation — description, theme image, abstract analysis (Story 10.16)
 
 paths:
   /events/attendance-summary:
@@ -4501,8 +4503,202 @@ paths:
         '404':
           description: Event not found
 
+  # ── AI Assist (Story 10.16) ──────────────────────────────────────────────────
+
+  /public/settings/features:
+    get:
+      tags: [AI Assist]
+      operationId: getFeatureFlags
+      summary: Get feature flags (public, no auth required)
+      security: []
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+
+  /events/{eventCode}/ai/description:
+    post:
+      tags: [AI Assist]
+      operationId: generateEventDescription
+      summary: Generate AI event description (GPT-4o, German, 150-200 words)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiDescriptionRequest'
+      responses:
+        '200':
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiDescriptionResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/ai/theme-image:
+    post:
+      tags: [AI Assist]
+      operationId: generateThemeImage
+      summary: Generate AI theme image (DALL-E 3), upload to S3
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiThemeImageRequest'
+      responses:
+        '200':
+          description: Generated theme image URL and S3 key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiThemeImageResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /speakers/{speakerId}/ai/analyze-abstract:
+    post:
+      tags: [AI Assist]
+      operationId: analyzeAbstract
+      summary: Analyze speaker abstract quality (GPT-4o)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeAbstractRequest'
+      responses:
+        '200':
+          description: Abstract analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbstractAnalysisResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+
+    # ── AI Assist Schemas (Story 10.16) ──────────────────────────────────────
+
+    FeatureFlagsResponse:
+      type: object
+      properties:
+        aiContentEnabled:
+          type: boolean
+
+    AiDescriptionRequest:
+      type: object
+      required: [topicTitle, topicCategory]
+      properties:
+        topicTitle:
+          type: string
+        topicCategory:
+          type: string
+
+    AiDescriptionResponse:
+      type: object
+      properties:
+        description:
+          type: string
+
+    AiThemeImageRequest:
+      type: object
+      required: [topicTitle, topicCategory]
+      properties:
+        topicTitle:
+          type: string
+        topicCategory:
+          type: string
+
+    AiThemeImageResponse:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        s3Key:
+          type: string
+
+    AnalyzeAbstractRequest:
+      type: object
+      required: [abstract]
+      properties:
+        abstract:
+          type: string
+        speakerName:
+          type: string
+
+    AbstractAnalysisResponse:
+      type: object
+      properties:
+        qualityScore:
+          type: integer
+          minimum: 0
+          maximum: 10
+        suggestion:
+          type: string
+        improvedAbstract:
+          type: string
+        keyThemes:
+          type: array
+          items:
+            type: string
 
     # ── Newsletter Schemas (Story 10.7) ───────────────────────────────────────
 

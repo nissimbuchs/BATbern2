@@ -446,5 +446,22 @@
       "label": "[MISSING] Vorlage",
       "createNew": "[MISSING] Neue Vorlage erstellen"
     }
+  },
+  "aiAssist": {
+    "generateDescription": "✨ Beschreibung generieren",
+    "regenerateDescription": "↻ Neu generieren",
+    "generateImage": "✨ Titelbild generieren",
+    "regenerateImage": "↻ Neu generieren",
+    "analyzeAbstract": "Abstract analysieren",
+    "useImage": "Bild verwenden",
+    "cancelImage": "Abbrechen",
+    "copyImproved": "Verbesserte Version kopieren",
+    "error": "KI-Generierung fehlgeschlagen, bitte manuell eingeben",
+    "disabled": "KI-Funktion ist deaktiviert",
+    "generating": "Generieren...",
+    "qualityScore": "Qualitätsscore",
+    "suggestion": "Verbesserungsvorschlag",
+    "keyThemes": "Kernthemen",
+    "improvedVersion": "Verbesserte Version"
   }
 }

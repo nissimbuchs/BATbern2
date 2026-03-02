@@ -25,6 +25,8 @@ export interface EventManagementStackProps extends cdk.StackProps {
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
   alarmTopic?: sns.ITopic;
+  /** When true, injects AI_ENABLED=true and the OpenAI key into the container (Story 10.16). */
+  aiEnabled?: boolean;
 }
 
 /**
@@ -42,6 +44,16 @@ export class EventManagementStack extends cdk.Stack {
 
     const envName = props.config.envName;
     const serviceName = 'event-management';
+
+    // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
+    let openAiSecret: secretsmanager.ISecret | undefined;
+    if (props.aiEnabled) {
+      openAiSecret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        'OpenAiApiKeySecret',
+        `batbern/${envName}/openai/api-key`,
+      );
+    }
 
     // Create domain service using reusable helper function
     const domainService = createDomainService(this, {
@@ -72,7 +84,15 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.config.domain && {
             APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
           }),
+          // Story 10.16: AI content generation feature flag
+          ...(props.aiEnabled && { AI_ENABLED: 'true' }),
         },
+        // Story 10.16: Inject OpenAI API key from Secrets Manager
+        ...(openAiSecret && {
+          additionalSecrets: {
+            OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret),
+          },
+        }),
       },
       cluster: props.cluster,
       vpc: props.vpc,
@@ -84,6 +104,11 @@ export class EventManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Grant Secrets Manager read access for OpenAI key to the ECS execution role (Story 10.16)
+    if (openAiSecret) {
+      openAiSecret.grantRead(this.service.taskDefinition.executionRole!);
+    }
 
     // Override desiredCount for Event Management specifically (3 tasks for HA + load capacity)
     // 2048 MiB / 256 CPU per task; auto-scaling floor is 2, ceiling is 6

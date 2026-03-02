@@ -104,6 +104,8 @@ workflow:
 
 # Speaker Deadline Reminders Configuration (Story 6.5)
 batbern:
+  ai:
+    enabled: ${AI_ENABLED:false}
   reminders:
     enabled: true
     cron: "0 0 8 * * *"  # Daily at 8 AM (before 9 AM registration reminder)
@@ -164,3 +166,7 @@ spring:
         jwt:
           issuer-uri: http://localhost:9999/oauth2/default
           jwk-set-uri: http://localhost:9999/oauth2/default/v1/keys
+
+batbern:
+  ai:
+    enabled: false

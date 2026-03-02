@@ -155,11 +155,13 @@ development_status:
   10-11-venue-capacity-enforcement-waitlist-management: done           # registration_capacity on events; waitlist_position on registrations; WaitlistPromotionService; capacity bar in organizer tab
   10-12-self-service-deregistration: done                              # deregistration_token on registrations (V75); DeregistrationController; /deregister page; by-email modal; soft-cancel + waitlist promotion
   10-13-registration-portal-email-templates: cancelled                 # deriveCategory() fix (waitlist-/deregistration-/portal-registration-); portal-registration classpath templates; quick-edit drawer from EventParticipantsTab
-  10-14-newsletter-sending-template-selection: done                     # optional templateKey on send/preview; NEWSLETTER template dropdown in EventNewsletterTab; locale-filtered; prereq: 10.2, 10.7
-  10-15-newsletter-subscription-integrity-language-fix: ready-for-dev  # fix hardcoded "de" in RegistrationService; add preferredLanguage to OpenAPI+DTO; frontend wizard passes i18n.language; prereq: 10.7
-  10-16-ai-assisted-event-content-creation: ready-for-dev              # AI description (GPT-4o), theme image (DALL-E 3), abstract analysis; RestClient pattern from TrendingTopicsService; batbern.ai.enabled flag; V75 migration; prereq: 10.2
+  10-14-newsletter-sending-template-selection: done                    # optional templateKey on send/preview; NEWSLETTER template dropdown in EventNewsletterTab; locale-filtered; prereq: 10.2, 10.7
+  10-15-newsletter-subscription-integrity-language-fix: cancelled      # fix hardcoded "de" in RegistrationService; add preferredLanguage to OpenAPI+DTO; frontend wizard passes i18n.language; prereq: 10.7
+  10-16-ai-assisted-event-content-creation: review                   # AI description (GPT-4o), theme image (DALL-E 3), abstract analysis; RestClient pattern from TrendingTopicsService; batbern.ai.enabled flag; V75 migration; prereq: 10.2
   10-17-email-reply-based-unsubscribe-deregistration: ready-for-dev    # SES inbound; @SqsListener; MIME parse; unsubscribe/cancel reply routing; Caffeine rate limiter; Reply-To header; InboundEmailStack CDK; prereq: 10.7, 10.12
   10-18-event-archival-task-notification-cleanup: ready-for-dev        # EventArchivalCleanupService; bulk cancel open tasks + waitlist registrations + dismiss notifications on ARCHIVED transition; no prerequisites
+  10-19-remove-organizer-email-from-public-pages: ready-for-dev        # remove email/mailto block from OrganizerDisplay.tsx; fixes /about + /present/:eventCode CommitteeSlide; no backend change; no prerequisites
+  10-20-legacy-bat-format-data-export-import: ready-for-dev            # AdminExportImportController + LegacyExportService + LegacyImportService + ExportImportTab; presigned asset manifest; OpenAPI first; prereq: 10.1
   epic-10-retrospective: optional
 
   # ============================================================

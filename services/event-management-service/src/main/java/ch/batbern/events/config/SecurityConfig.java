@@ -150,6 +150,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister/by-email").permitAll()
 
+                // Story 10.16: AI feature flag endpoint (public — no auth required)
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
+
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 
