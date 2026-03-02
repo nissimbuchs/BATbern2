@@ -42,6 +42,10 @@ interface Props {
   /** When provided: edit mode. When undefined: create mode. */
   template?: EmailTemplateResponse;
   isLayoutMode: boolean;
+  /** Category to assign when creating a new template (defaults to 'SPEAKER'). */
+  initialCategory?: string;
+  /** When set, pre-fills content/subject/layout from this template (create mode only). */
+  cloneFrom?: EmailTemplateResponse;
   onClose: () => void;
 }
 
@@ -55,18 +59,28 @@ function extractVariables(html: string): string[] {
   return Array.from(matches);
 }
 
-export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode, onClose }) => {
+export const EmailTemplateEditModal: React.FC<Props> = ({
+  template,
+  isLayoutMode,
+  initialCategory,
+  cloneFrom,
+  onClose,
+}) => {
   const { t } = useTranslation();
   const isEdit = Boolean(template);
 
   // Create-mode fields
   const [newTemplateKey, setNewTemplateKey] = useState('');
-  const [newLocale, setNewLocale] = useState<'de' | 'en'>('de');
+  const [newLocale, setNewLocale] = useState<'de' | 'en'>(
+    (cloneFrom?.locale as 'de' | 'en') ?? 'de'
+  );
 
-  // Shared fields
-  const [subject, setSubject] = useState(template?.subject ?? '');
-  const [htmlBody, setHtmlBody] = useState(template?.htmlBody ?? '');
-  const [layoutKey, setLayoutKey] = useState(template?.layoutKey ?? 'batbern-default');
+  // Shared fields (pre-fill from cloneFrom in create mode)
+  const [subject, setSubject] = useState(template?.subject ?? cloneFrom?.subject ?? '');
+  const [htmlBody, setHtmlBody] = useState(template?.htmlBody ?? cloneFrom?.htmlBody ?? '');
+  const [layoutKey, setLayoutKey] = useState(
+    template?.layoutKey ?? cloneFrom?.layoutKey ?? 'batbern-default'
+  );
   const [error, setError] = useState<string | null>(null);
 
   const { data: layouts = [] } = useLayoutTemplates();
@@ -119,7 +133,12 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
         await createMutation.mutateAsync({
           templateKey: newTemplateKey.trim(),
           locale: newLocale,
-          category: 'SPEAKER',
+          category: (initialCategory ?? 'SPEAKER') as
+            | 'SPEAKER'
+            | 'REGISTRATION'
+            | 'TASK_REMINDER'
+            | 'LAYOUT'
+            | 'NEWSLETTER',
           isLayout: false,
           subject,
           htmlBody,
@@ -134,7 +153,9 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
 
   const title = isEdit
     ? t('emailTemplates.editTitle', 'Edit Template')
-    : t('emailTemplates.createTitle', 'New Template');
+    : cloneFrom
+      ? t('emailTemplates.duplicateTitle', 'Duplicate Template')
+      : t('emailTemplates.createTitle', 'New Template');
 
   return (
     <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
