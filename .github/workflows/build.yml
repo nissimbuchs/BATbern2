@@ -105,6 +105,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # On main branch pushes, always build all services.
+          # Production deploys require every service image to be present in prod ECR
+          # tagged with the current SHA — smart change detection would leave gaps.
+          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ github.event_name }}" = "push" ]; then
+            echo "✓ Push to main — building all services for production ECR"
+            echo "build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Determine base and head SHA for comparison
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # PRs: compare against base branch (existing behavior)
