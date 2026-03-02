@@ -14,4 +14,7 @@ public class NewsletterSendRequest {
 
     @NotNull(message = "locale is required")
     private String locale;
+
+    /** Optional template key override. Null → use default 'newsletter-event'. */
+    private String templateKey;
 }

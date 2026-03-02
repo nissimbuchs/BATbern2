@@ -129,7 +129,7 @@
       "sendNewsletter": "Newsletter versände",
       "sendReminder": "Erinnerig schicke",
       "confirmSendTitle": "Versand bestätige",
-      "confirmSendBody": "{{type}} an {{count}} Abonnente für d'Veranstatig «{{eventTitle}}» schicke?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter an {{count}} Empfänger gschickt.",
       "sendError": "Versand fehlgschlage. Bitte nomol versuche.",
       "historyDate": "Datum",

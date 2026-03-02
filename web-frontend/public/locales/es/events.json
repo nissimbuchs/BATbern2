@@ -123,7 +123,7 @@
       "sendNewsletter": "Enviar newsletter",
       "sendReminder": "Enviar recordatorio",
       "confirmSendTitle": "Confirmar envío",
-      "confirmSendBody": "¿Enviar {{type}} a {{count}} suscriptores para el evento «{{eventTitle}}»?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter enviada a {{count}} destinatarios.",
       "sendError": "Error al enviar. Inténtelo de nuevo.",
       "historyDate": "Fecha",

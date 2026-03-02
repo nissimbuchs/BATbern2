@@ -123,7 +123,7 @@
       "sendNewsletter": "Lähetä uutiskirje",
       "sendReminder": "Lähetä muistutus",
       "confirmSendTitle": "Vahvista lähetys",
-      "confirmSendBody": "Lähetetäänkö {{type}} {{count}} tilaajalle tapahtumaan «{{eventTitle}}»?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Uutiskirje lähetetty {{count}} vastaanottajalle.",
       "sendError": "Lähetys epäonnistui. Yritä uudelleen.",
       "historyDate": "Päivämäärä",

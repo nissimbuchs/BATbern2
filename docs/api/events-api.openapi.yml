@@ -4546,6 +4546,12 @@ components:
         locale:
           type: string
           enum: [de, en]
+        templateKey:
+          type: string
+          nullable: true
+          description: >
+            Optional template key override. If omitted, uses default 'newsletter-event'.
+            Must be a NEWSLETTER category template key present in DB.
 
     NewsletterSendResponse:
       type: object

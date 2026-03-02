@@ -123,7 +123,7 @@
       "sendNewsletter": "Invia newsletter",
       "sendReminder": "Invia promemoria",
       "confirmSendTitle": "Conferma invio",
-      "confirmSendBody": "Inviare {{type}} a {{count}} iscritti per l'evento «{{eventTitle}}»?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter inviata a {{count}} destinatari.",
       "sendError": "Invio fallito. Riprova.",
       "historyDate": "Data",

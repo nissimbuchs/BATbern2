@@ -123,7 +123,7 @@
       "sendNewsletter": "ニュースレターを送信",
       "sendReminder": "リマインダーを送信",
       "confirmSendTitle": "送信を確認",
-      "confirmSendBody": "イベント「{{eventTitle}}」の{{count}}人の購読者に{{type}}を送信しますか？",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "ニュースレターを{{count}}人の受信者に送信しました。",
       "sendError": "送信に失敗しました。もう一度お試しください。",
       "historyDate": "日付",

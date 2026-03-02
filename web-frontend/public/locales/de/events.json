@@ -121,7 +121,7 @@
       "sendNewsletter": "Newsletter senden",
       "sendReminder": "Erinnerung senden",
       "confirmSendTitle": "Senden bestätigen",
-      "confirmSendBody": "{{type}} an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
+      "confirmSendBody": "{{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter an {{count}} Empfänger gesendet.",
       "sendError": "Senden fehlgeschlagen. Bitte versuche es erneut.",
       "historyDate": "Datum",

@@ -121,7 +121,7 @@
       "sendNewsletter": "Send Newsletter",
       "sendReminder": "Send Reminder",
       "confirmSendTitle": "Confirm Send",
-      "confirmSendBody": "Send {{type}} to {{count}} subscribers for event «{{eventTitle}}»?",
+      "confirmSendBody": "Send {{type}} using '{{templateKey}}' to {{count}} subscribers for event «{{eventTitle}}»?",
       "sendSuccess": "Newsletter sent to {{count}} recipients.",
       "sendError": "Failed to send. Please try again.",
       "historyDate": "Date",

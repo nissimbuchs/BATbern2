@@ -4,5 +4,11 @@
   },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
+  },
+  "newsletter": {
+    "templateSelect": {
+      "label": "[MISSING] Vorlage",
+      "createNew": "[MISSING] Neue Vorlage erstellen"
+    }
   }
 }

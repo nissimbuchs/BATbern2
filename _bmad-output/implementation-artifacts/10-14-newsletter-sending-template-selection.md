@@ -1,6 +1,6 @@
 # Story 10.14: Newsletter Sending with Template Selection
 
-Status: ready-for-dev
+Status: review
 
 <!-- Prerequisite: Story 10.2 (email template management), Story 10.7 (newsletter sending infrastructure) -->
 
@@ -38,10 +38,10 @@ so that I can send different types of communications (general newsletter, event 
 
 ### Phase 1: OpenAPI Contract Update (FIRST — ADR-006)
 
-- [ ] **T1 — Update `events-api.openapi.yml`** (AC: #10, #1)
-  - [ ] T1.1 — Open `docs/api/events-api.openapi.yml`
-  - [ ] T1.2 — Locate `NewsletterSendRequest` schema (~line 4372)
-  - [ ] T1.3 — Add optional `templateKey` field:
+- [x] **T1 — Update `events-api.openapi.yml`** (AC: #10, #1)
+  - [x] T1.1 — Open `docs/api/events-api.openapi.yml`
+  - [x] T1.2 — Locate `NewsletterSendRequest` schema (~line 4372)
+  - [x] T1.3 — Add optional `templateKey` field:
     ```yaml
     NewsletterSendRequest:
       type: object
@@ -59,13 +59,13 @@ so that I can send different types of communications (general newsletter, event 
             Optional template key override. If omitted, uses default 'newsletter-event'.
             Must be a NEWSLETTER category template key present in DB.
     ```
-  - [ ] T1.4 — NOTE: `newsletterService.ts` defines `NewsletterSendRequest` **manually** (not from generated types). No type regeneration needed. The OpenAPI update is for contract documentation only.
+  - [x] T1.4 — NOTE: `newsletterService.ts` defines `NewsletterSendRequest` **manually** (not from generated types). No type regeneration needed. The OpenAPI update is for contract documentation only.
 
 ### Phase 2: Backend — TDD first
 
-- [ ] **T2 — Add unit tests FIRST (RED phase)** (AC: #2, #8)
-  - [ ] T2.1 — Open `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java`
-  - [ ] T2.2 — Add test: `sendNewsletter_withCustomTemplateKey_usesProvidedKey`:
+- [x] **T2 — Add unit tests FIRST (RED phase)** (AC: #2, #8)
+  - [x] T2.1 — Open `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java`
+  - [x] T2.2 — Add test: `sendNewsletter_withCustomTemplateKey_usesProvidedKey`:
     ```java
     @Test
     @DisplayName("preview: when templateKey provided → renderContent uses that key")
@@ -90,7 +90,7 @@ so that I can send different types of communications (general newsletter, event 
         verify(emailTemplateService, never()).findByKeyAndLocale("newsletter-event", "de");
     }
     ```
-  - [ ] T2.3 — Add test: `preview_withNullTemplateKey_usesDefaultKey`:
+  - [x] T2.3 — Add test: `preview_withNullTemplateKey_usesDefaultKey`:
     ```java
     @Test
     @DisplayName("preview: when templateKey null → renderContent uses default 'newsletter-event'")
@@ -108,20 +108,20 @@ so that I can send different types of communications (general newsletter, event 
         verify(emailTemplateService).findByKeyAndLocale("newsletter-event", "de");
     }
     ```
-  - [ ] T2.4 — Add `private EmailTemplate mockTemplate(String key, String locale, String html)` helper returning a mocked `EmailTemplate`
-  - [ ] T2.5 — Run to confirm RED: `./gradlew :services:event-management-service:test --tests NewsletterEmailServiceTest 2>&1 | tee /tmp/test-10-14-red.log && grep -E "FAILED|BUILD" /tmp/test-10-14-red.log`
+  - [x] T2.4 — Add `private EmailTemplate mockTemplate(String key, String locale, String html)` helper returning a mocked `EmailTemplate`
+  - [x] T2.5 — Run to confirm RED: `./gradlew :services:event-management-service:test --tests NewsletterEmailServiceTest 2>&1 | tee /tmp/test-10-14-red.log && grep -E "FAILED|BUILD" /tmp/test-10-14-red.log`
 
-- [ ] **T3 — Update `NewsletterSendRequest.java`** (AC: #1)
-  - [ ] T3.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSendRequest.java`
-  - [ ] T3.2 — Add field (nullable, no `@NotNull`):
+- [x] **T3 — Update `NewsletterSendRequest.java`** (AC: #1)
+  - [x] T3.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSendRequest.java`
+  - [x] T3.2 — Add field (nullable, no `@NotNull`):
     ```java
     /** Optional template key override. Null → use default 'newsletter-event'. */
     private String templateKey;
     ```
 
-- [ ] **T4 — Update `NewsletterEmailService.java`** (AC: #2)
-  - [ ] T4.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java`
-  - [ ] T4.2 — Update `preview()` signature to accept `templateKey`:
+- [x] **T4 — Update `NewsletterEmailService.java`** (AC: #2)
+  - [x] T4.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java`
+  - [x] T4.2 — Update `preview()` signature to accept `templateKey`:
     ```java
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
                                               @Nullable String templateKey) {
@@ -139,7 +139,7 @@ so that I can send different types of communications (general newsletter, event 
                 .build();
     }
     ```
-  - [ ] T4.3 — Update `sendNewsletter()` signature to accept `templateKey`:
+  - [x] T4.3 — Update `sendNewsletter()` signature to accept `templateKey`:
     ```java
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername,
@@ -154,13 +154,13 @@ so that I can send different types of communications (general newsletter, event 
         String contentHtml = renderContent(locale, recipientVars, effectiveKey);
     }
     ```
-  - [ ] T4.4 — Add private helper `resolveTemplateKey()`:
+  - [x] T4.4 — Add private helper `resolveTemplateKey()`:
     ```java
     private String resolveTemplateKey(@Nullable String templateKey) {
         return (templateKey != null && !templateKey.isBlank()) ? templateKey : TEMPLATE_KEY;
     }
     ```
-  - [ ] T4.5 — Update `renderContent()` to accept `effectiveKey`:
+  - [x] T4.5 — Update `renderContent()` to accept `effectiveKey`:
     ```java
     private String renderContent(String locale, Map<String, String> vars, String templateKey) {
         Optional<ch.batbern.events.domain.EmailTemplate> templateOpt =
@@ -168,7 +168,7 @@ so that I can send different types of communications (general newsletter, event 
         // ...
     }
     ```
-  - [ ] T4.6 — Update `buildSubject()` to accept `effectiveKey`:
+  - [x] T4.6 — Update `buildSubject()` to accept `effectiveKey`:
     ```java
     private String buildSubject(Event event, boolean isReminder, String locale,
                                 Map<String, String> vars, String templateKey) {
@@ -176,7 +176,7 @@ so that I can send different types of communications (general newsletter, event 
         // ...
     }
     ```
-  - [ ] T4.7 — Update `createSendAuditRecord()` to store the actual used `templateKey`:
+  - [x] T4.7 — Update `createSendAuditRecord()` to store the actual used `templateKey`:
     ```java
     protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
                                                    String sentByUsername, int recipientCount,
@@ -189,11 +189,11 @@ so that I can send different types of communications (general newsletter, event 
                 // ...
     }
     ```
-  - [ ] T4.8 — Add import: `import org.springframework.lang.Nullable;`
+  - [x] T4.8 — Add import: `import org.springframework.lang.Nullable;`
 
-- [ ] **T5 — Update `NewsletterController.java`** (AC: #1, #2)
-  - [ ] T5.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java`
-  - [ ] T5.2 — Update `previewNewsletter()` to pass `templateKey`:
+- [x] **T5 — Update `NewsletterController.java`** (AC: #1, #2)
+  - [x] T5.1 — Open `services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java`
+  - [x] T5.2 — Update `previewNewsletter()` to pass `templateKey`:
     ```java
     NewsletterPreviewResponse preview = emailService.preview(
             event,
@@ -202,7 +202,7 @@ so that I can send different types of communications (general newsletter, event 
             request.getTemplateKey()  // nullable — service handles fallback
     );
     ```
-  - [ ] T5.3 — Update `sendNewsletter()` to pass `templateKey`:
+  - [x] T5.3 — Update `sendNewsletter()` to pass `templateKey`:
     ```java
     NewsletterSendResponse response = emailService.sendNewsletter(
             event,
@@ -213,16 +213,16 @@ so that I can send different types of communications (general newsletter, event 
     );
     ```
 
-- [ ] **T6 — Run GREEN tests** (AC: #2, #8)
-  - [ ] T6.1 — `./gradlew :services:event-management-service:test --tests NewsletterEmailServiceTest 2>&1 | tee /tmp/test-10-14-green.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-14-green.log`
-  - [ ] T6.2 — `./gradlew :services:event-management-service:test --tests NewsletterControllerIntegrationTest 2>&1 | tee /tmp/test-10-14-integration.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-14-integration.log`
-  - [ ] T6.3 — Full backend: `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-14-backend.log && grep -E "BUILD|FAILED|tests" /tmp/test-10-14-backend.log`
+- [x] **T6 — Run GREEN tests** (AC: #2, #8)
+  - [x] T6.1 — `./gradlew :services:event-management-service:test --tests NewsletterEmailServiceTest 2>&1 | tee /tmp/test-10-14-green.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-14-green.log`
+  - [x] T6.2 — `./gradlew :services:event-management-service:test --tests NewsletterControllerIntegrationTest 2>&1 | tee /tmp/test-10-14-integration.log && grep -E "BUILD|FAILED|passed" /tmp/test-10-14-integration.log`
+  - [x] T6.3 — Full backend: `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-14-backend.log && grep -E "BUILD|FAILED|tests" /tmp/test-10-14-backend.log`
 
 ### Phase 3: Frontend — update newsletterService types
 
-- [ ] **T7 — Update `newsletterService.ts`** (AC: #1)
-  - [ ] T7.1 — Open `web-frontend/src/services/newsletterService.ts`
-  - [ ] T7.2 — Add `templateKey?: string` to `NewsletterSendRequest` interface:
+- [x] **T7 — Update `newsletterService.ts`** (AC: #1)
+  - [x] T7.1 — Open `web-frontend/src/services/newsletterService.ts`
+  - [x] T7.2 — Add `templateKey?: string` to `NewsletterSendRequest` interface:
     ```typescript
     export interface NewsletterSendRequest {
       isReminder: boolean;
@@ -230,40 +230,40 @@ so that I can send different types of communications (general newsletter, event 
       templateKey?: string;  // Optional override; service defaults to 'newsletter-event' if omitted
     }
     ```
-  - [ ] T7.3 — No other changes to `newsletterService.ts` needed — all functions already accept and pass through `NewsletterSendRequest`.
+  - [x] T7.3 — No other changes to `newsletterService.ts` needed — all functions already accept and pass through `NewsletterSendRequest`.
 
 ### Phase 4: Frontend — update `EventNewsletterTab.tsx`
 
-- [ ] **T8 — Update `EventNewsletterTab.tsx`** (AC: #3, #4, #5, #6, #7)
-  - [ ] T8.1 — Read the FULL current file before editing
-  - [ ] T8.2 — Add imports:
+- [x] **T8 — Update `EventNewsletterTab.tsx`** (AC: #3, #4, #5, #6, #7)
+  - [x] T8.1 — Read the FULL current file before editing
+  - [x] T8.2 — Add imports:
     ```typescript
     import { useEmailTemplates } from '@/hooks/useEmailTemplates';
     import type { EmailTemplateResponse } from '@/services/emailTemplateService';
     import { Link } from '@mui/material';  // MUI Link (already imported from @mui/material above)
     ```
     NOTE: `useEmailTemplates` is already exported from `web-frontend/src/hooks/useEmailTemplates.ts`. Import it from there — do NOT create a new hook.
-  - [ ] T8.3 — Switch `useTranslation` to multi-namespace pattern:
+  - [x] T8.3 — Switch `useTranslation` to multi-namespace pattern:
     ```typescript
     const { t } = useTranslation(['events', 'organizer']);
     // Access organizer keys: t('organizer:newsletter.templateSelect.label')
     ```
-  - [ ] T8.4 — Add state for selected template key:
+  - [x] T8.4 — Add state for selected template key:
     ```typescript
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('newsletter-event');
     ```
-  - [ ] T8.5 — Fetch NEWSLETTER templates:
+  - [x] T8.5 — Fetch NEWSLETTER templates:
     ```typescript
     const newsletterTemplatesQuery = useEmailTemplates({ category: 'NEWSLETTER' });
     ```
-  - [ ] T8.6 — Derive filtered template list (re-filters when locale changes):
+  - [x] T8.6 — Derive filtered template list (re-filters when locale changes):
     ```typescript
     const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
       () => (newsletterTemplatesQuery.data ?? []).filter(t => t.locale === locale),
       [newsletterTemplatesQuery.data, locale]
     );
     ```
-  - [ ] T8.7 — Add `useEffect` to reset `selectedTemplateKey` when locale changes (pick first available or default):
+  - [x] T8.7 — Add `useEffect` to reset `selectedTemplateKey` when locale changes (pick first available or default):
     ```typescript
     useEffect(() => {
       const defaultKey = 'newsletter-event';
@@ -271,14 +271,14 @@ so that I can send different types of communications (general newsletter, event 
       setSelectedTemplateKey(hasDefault ? defaultKey : (filteredTemplates[0]?.templateKey ?? defaultKey));
     }, [locale, filteredTemplates]);
     ```
-  - [ ] T8.8 — Update `handlePreview()` to include `templateKey`:
+  - [x] T8.8 — Update `handlePreview()` to include `templateKey`:
     ```typescript
     function handlePreview() {
       const request: NewsletterSendRequest = { isReminder: false, locale, templateKey: selectedTemplateKey };
       // ...
     }
     ```
-  - [ ] T8.9 — Update `handleConfirmSend()` to include `templateKey`:
+  - [x] T8.9 — Update `handleConfirmSend()` to include `templateKey`:
     ```typescript
     const request: NewsletterSendRequest = {
       isReminder: pendingSendType === 'reminder',
@@ -286,7 +286,7 @@ so that I can send different types of communications (general newsletter, event 
       templateKey: selectedTemplateKey,
     };
     ```
-  - [ ] T8.10 — Add template dropdown UI in **Section 3 — Compose & send**, BEFORE the button stack. Insert after the locale `<FormControl>` and before `<Stack direction="row" spacing={1} ...>`:
+  - [x] T8.10 — Add template dropdown UI in **Section 3 — Compose & send**, BEFORE the button stack. Insert after the locale `<FormControl>` and before `<Stack direction="row" spacing={1} ...>`:
     ```tsx
     {/* Template selector */}
     <FormControl size="small">
@@ -315,7 +315,7 @@ so that I can send different types of communications (general newsletter, event 
       {t('organizer:newsletter.templateSelect.createNew')} ↗
     </Link>
     ```
-  - [ ] T8.11 — Update confirmation dialog text to show template name. Find `confirmSendBody` usage and add `templateKey` to interpolation vars:
+  - [x] T8.11 — Update confirmation dialog text to show template name. Find `confirmSendBody` usage and add `templateKey` to interpolation vars:
     ```tsx
     {t('eventPage.newsletter.confirmSendBody', {
       type: sendType,
@@ -325,12 +325,12 @@ so that I can send different types of communications (general newsletter, event 
     })}
     ```
     Also update the i18n key value (T10 below) to include `{{templateKey}}`.
-  - [ ] T8.12 — Add `data-testid="newsletter-template-select"` on the template `<Select>` element
+  - [x] T8.12 — Add `data-testid="newsletter-template-select"` on the template `<Select>` element
 
 ### Phase 5: i18n
 
-- [ ] **T9 — English i18n** (AC: #9)
-  - [ ] T9.1 — Add to `web-frontend/public/locales/en/organizer.json` (no `newsletter` key exists yet — add at top level):
+- [x] **T9 — English i18n** (AC: #9)
+  - [x] T9.1 — Add to `web-frontend/public/locales/en/organizer.json` (no `newsletter` key exists yet — add at top level):
     ```json
     "newsletter": {
       "templateSelect": {
@@ -339,13 +339,13 @@ so that I can send different types of communications (general newsletter, event 
       }
     }
     ```
-  - [ ] T9.2 — Also update `web-frontend/public/locales/en/events.json` `eventPage.newsletter.confirmSendBody` to include template name:
+  - [x] T9.2 — Also update `web-frontend/public/locales/en/events.json` `eventPage.newsletter.confirmSendBody` to include template name:
     ```json
     "confirmSendBody": "Send {{type}} using '{{templateKey}}' to {{count}} subscribers for event «{{eventTitle}}»?"
     ```
 
-- [ ] **T10 — German i18n** (AC: #9)
-  - [ ] T10.1 — Add to `web-frontend/public/locales/de/organizer.json`:
+- [x] **T10 — German i18n** (AC: #9)
+  - [x] T10.1 — Add to `web-frontend/public/locales/de/organizer.json`:
     ```json
     "newsletter": {
       "templateSelect": {
@@ -354,14 +354,14 @@ so that I can send different types of communications (general newsletter, event 
       }
     }
     ```
-  - [ ] T10.2 — Update `web-frontend/public/locales/de/events.json` `eventPage.newsletter.confirmSendBody`:
+  - [x] T10.2 — Update `web-frontend/public/locales/de/events.json` `eventPage.newsletter.confirmSendBody`:
     ```json
     "confirmSendBody": "{{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für den Event «{{eventTitle}}» senden?"
     ```
 
-- [ ] **T11 — Other locale placeholders** (AC: #9)
-  - [ ] T11.1 — Add `[MISSING]` prefix translations to all 8 other locales: `fr, it, rm, es, fi, nl, ja, gsw-BE`
-  - [ ] T11.2 — In each `{lang}/organizer.json`:
+- [x] **T11 — Other locale placeholders** (AC: #9)
+  - [x] T11.1 — Add `[MISSING]` prefix translations to all 8 other locales: `fr, it, rm, es, fi, nl, ja, gsw-BE`
+  - [x] T11.2 — In each `{lang}/organizer.json`:
     ```json
     "newsletter": {
       "templateSelect": {
@@ -370,14 +370,14 @@ so that I can send different types of communications (general newsletter, event 
       }
     }
     ```
-  - [ ] T11.3 — In each `{lang}/events.json`, update `eventPage.newsletter.confirmSendBody` with `[MISSING]` prefix (copy DE value with `[MISSING]` prefix)
+  - [x] T11.3 — In each `{lang}/events.json`, update `eventPage.newsletter.confirmSendBody` with `[MISSING]` prefix (copy DE value with `[MISSING]` prefix)
 
 ### Phase 6: Final verification
 
-- [ ] **T12 — Frontend tests** (AC: #8, #9)
-  - [ ] T12.1 — `cd web-frontend && npm run test -- --run 2>&1 | tee /tmp/test-10-14-frontend.log && grep -E "pass|fail|error" /tmp/test-10-14-frontend.log | tail -20`
-  - [ ] T12.2 — `npm run type-check 2>&1 | tee /tmp/typecheck-10-14.log && grep -E "error|Error" /tmp/typecheck-10-14.log | head -20`
-  - [ ] T12.3 — `npm run lint 2>&1 | tee /tmp/lint-10-14.log && grep -E "error" /tmp/lint-10-14.log | head -20`
+- [x] **T12 — Frontend tests** (AC: #8, #9)
+  - [x] T12.1 — `cd web-frontend && npm run test -- --run 2>&1 | tee /tmp/test-10-14-frontend.log && grep -E "pass|fail|error" /tmp/test-10-14-frontend.log | tail -20`
+  - [x] T12.2 — `npm run type-check 2>&1 | tee /tmp/typecheck-10-14.log && grep -E "error|Error" /tmp/typecheck-10-14.log | head -20`
+  - [x] T12.3 — `npm run lint 2>&1 | tee /tmp/lint-10-14.log && grep -E "error" /tmp/lint-10-14.log | head -20`
 
 ---
 
@@ -497,4 +497,43 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- AC1/AC10: `NewsletterSendRequest` schema in `events-api.openapi.yml` updated first per ADR-006. Added optional nullable `templateKey` field. No type regeneration needed (interface manually defined in `newsletterService.ts`).
+- AC2: `NewsletterEmailService` refactored — `preview()` and `sendNewsletter()` accept `@Nullable String templateKey`; `resolveTemplateKey()` helper encapsulates default fallback; `renderContent()`, `buildSubject()`, `createSendAuditRecord()` all propagate effective key. Backward compatible: null/omitted uses `"newsletter-event"` default.
+- AC1: `NewsletterSendRequest.java` gains `private String templateKey` (no `@NotNull` — nullable).
+- AC1/AC2: `NewsletterController.java` passes `request.getTemplateKey()` to both `preview()` and `sendNewsletter()`.
+- AC8: TDD — 2 new unit tests added (`preview_withCustomTemplateKey_usesCustomTemplate`, `preview_withNullTemplateKey_usesDefaultTemplate`). All 12 `NewsletterEmailServiceTest` pass. All 19 `NewsletterControllerIntegrationTest` pass. Full backend BUILD SUCCESSFUL.
+- AC3-AC7: `EventNewsletterTab.tsx` fully updated — `useEmailTemplates({ category: 'NEWSLETTER' })` fetches templates; `filteredTemplates` memo filters by locale; `useEffect` resets selection on locale change; template `<Select>` with `data-testid`; MUI `Link` to admin email-templates tab; `handlePreview()` and `handleConfirmSend()` include `templateKey`; confirmation dialog shows `{{templateKey}}`.
+- AC9: i18n — `newsletter.templateSelect.*` keys added to `de` and `en` organizer.json; `confirmSendBody` updated with `{{templateKey}}` in all 10 locales; 8 non-primary locales have `[MISSING]` prefix in organizer.json and events.json.
+- Pre-existing failures in `EventLogistics.test.tsx` and `EventParticipantsTab.test.tsx` (3 tests) confirmed unrelated to this story (same failures present on unmodified HEAD).
+- type-check: ✅ (exit 0), lint: ✅ (exit 0), frontend: 3855/3858 pass (3 pre-existing failures unrelated to this story).
+
 ### File List
+
+- `docs/api/events-api.openapi.yml`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSendRequest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java`
+- `web-frontend/src/services/newsletterService.ts`
+- `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
+- `web-frontend/public/locales/en/organizer.json`
+- `web-frontend/public/locales/en/events.json`
+- `web-frontend/public/locales/de/organizer.json`
+- `web-frontend/public/locales/de/events.json`
+- `web-frontend/public/locales/fr/organizer.json`
+- `web-frontend/public/locales/fr/events.json`
+- `web-frontend/public/locales/it/organizer.json`
+- `web-frontend/public/locales/it/events.json`
+- `web-frontend/public/locales/rm/organizer.json`
+- `web-frontend/public/locales/rm/events.json`
+- `web-frontend/public/locales/es/organizer.json`
+- `web-frontend/public/locales/es/events.json`
+- `web-frontend/public/locales/fi/organizer.json`
+- `web-frontend/public/locales/fi/events.json`
+- `web-frontend/public/locales/nl/organizer.json`
+- `web-frontend/public/locales/nl/events.json`
+- `web-frontend/public/locales/ja/organizer.json`
+- `web-frontend/public/locales/ja/events.json`
+- `web-frontend/public/locales/gsw-BE/organizer.json`
+- `web-frontend/public/locales/gsw-BE/events.json`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`

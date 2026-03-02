@@ -1,14 +1,15 @@
 /**
- * EventNewsletterTab (Story 10.7 — AC9)
+ * EventNewsletterTab (Story 10.7 — AC9, Story 10.14 — AC3-AC7)
  *
  * Newsletter management tab for organizers:
  * 1. Subscriber summary
  * 2. Send history table
- * 3. Compose & send section (language, preview iframe, send/reminder buttons + confirm dialog)
+ * 3. Compose & send section (template select, language, preview iframe, send/reminder buttons + confirm dialog)
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -19,7 +20,9 @@ import {
   DialogTitle,
   FormControl,
   InputLabel,
+  Link,
   MenuItem,
+  Paper,
   Select,
   Skeleton,
   Stack,
@@ -29,8 +32,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  Alert,
-  Paper,
 } from '@mui/material';
 import { Email as EmailIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +42,8 @@ import {
   useSendNewsletter,
 } from '@/hooks/useNewsletter/useNewsletter';
 import type { NewsletterSendRequest } from '@/services/newsletterService';
+import { useEmailTemplates } from '@/hooks/useEmailTemplates';
+import type { EmailTemplateResponse } from '@/services/emailTemplateService';
 
 interface EventNewsletterTabProps {
   eventCode: string;
@@ -53,16 +56,31 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   eventCode,
   eventTitle,
 }) => {
-  const { t } = useTranslation('events');
+  const { t } = useTranslation(['events', 'organizer']);
   const [locale, setLocale] = useState<'de' | 'en'>('de');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSendType, setPendingSendType] = useState<SendType | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('newsletter-event');
 
   const subscriberCountQuery = useSubscriberCount();
   const historyQuery = useNewsletterHistory(eventCode);
   const previewMutation = useNewsletterPreview();
   const sendMutation = useSendNewsletter(eventCode);
+  const newsletterTemplatesQuery = useEmailTemplates({ category: 'NEWSLETTER' });
+
+  const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
+    () => (newsletterTemplatesQuery.data ?? []).filter((tpl) => tpl.locale === locale),
+    [newsletterTemplatesQuery.data, locale]
+  );
+
+  useEffect(() => {
+    const defaultKey = 'newsletter-event';
+    const hasDefault = filteredTemplates.some((tpl) => tpl.templateKey === defaultKey);
+    setSelectedTemplateKey(
+      hasDefault ? defaultKey : (filteredTemplates[0]?.templateKey ?? defaultKey)
+    );
+  }, [locale, filteredTemplates]);
 
   function openConfirm(sendType: SendType) {
     setPendingSendType(sendType);
@@ -76,6 +94,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
     const request: NewsletterSendRequest = {
       isReminder: pendingSendType === 'reminder',
       locale,
+      templateKey: selectedTemplateKey,
     };
     sendMutation.mutate(request, {
       onSuccess: () => {
@@ -89,7 +108,11 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   }
 
   function handlePreview() {
-    const request: NewsletterSendRequest = { isReminder: false, locale };
+    const request: NewsletterSendRequest = {
+      isReminder: false,
+      locale,
+      templateKey: selectedTemplateKey,
+    };
     previewMutation.mutate(
       { eventCode, request },
       {
@@ -179,6 +202,34 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             </Select>
           </FormControl>
 
+          {/* Template selector */}
+          <FormControl size="small">
+            <InputLabel>{t('organizer:newsletter.templateSelect.label')}</InputLabel>
+            <Select
+              value={selectedTemplateKey}
+              label={t('organizer:newsletter.templateSelect.label')}
+              onChange={(e) => setSelectedTemplateKey(e.target.value)}
+              disabled={newsletterTemplatesQuery.isLoading}
+              inputProps={{ 'data-testid': 'newsletter-template-select' }}
+            >
+              {filteredTemplates.map((tpl) => (
+                <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
+                  {tpl.templateKey}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Create new template link */}
+          <Link
+            href="/organizer/admin?tab=email-templates"
+            variant="caption"
+            color="text.secondary"
+            underline="hover"
+          >
+            {t('organizer:newsletter.templateSelect.createNew')} ↗
+          </Link>
+
           <Stack direction="row" spacing={1} flexWrap="wrap">
             <Button
               variant="outlined"
@@ -251,6 +302,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
               type: sendType,
               count: activeCount,
               eventTitle,
+              templateKey: selectedTemplateKey,
             })}
           </DialogContentText>
         </DialogContent>
