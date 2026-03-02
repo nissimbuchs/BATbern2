@@ -68,7 +68,9 @@ describe('BootstrapOrganizer', () => {
   /**
    * Test 7.2: should_assignOrganizerRole_when_bootstrapUserCreated
    *
-   * Verifies that the bootstrap user is added to the organizer Cognito group
+   * Verifies that the bootstrap user is created with custom:role=ORGANIZER attribute.
+   * ADR-001: Roles are managed in the database, not in Cognito Groups.
+   * The custom:role attribute is used by PostConfirmation Lambda to assign the DB role.
    */
   test('should_assignOrganizerRole_when_bootstrapUserCreated', () => {
     // Given: Bootstrap organizer configuration
@@ -82,16 +84,14 @@ describe('BootstrapOrganizer', () => {
       password,
     });
 
-    // Then: Verify template contains the adminAddUserToGroup action
+    // Then: Verify template sets custom:role=ORGANIZER via adminCreateUser
     const template = Template.fromStack(stack);
     const templateJson = JSON.stringify(template.toJSON());
 
-    // Verify the template contains the expected configuration
     expect(templateJson).toContain('adminCreateUser');
-    expect(templateJson).toContain('adminAddUserToGroup');
-    // Check for GroupName and organizer (they appear in escaped JSON strings)
-    expect(templateJson).toContain('GroupName');
-    expect(templateJson).toContain('organizer');
+    // ADR-001: custom:role attribute carries the role (no Cognito Groups)
+    expect(templateJson).toContain('custom:role');
+    expect(templateJson).toContain('ORGANIZER');
     expect(templateJson).toContain(email);
   });
 
@@ -248,19 +248,82 @@ describe('BootstrapOrganizer', () => {
     const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
-    const construct = new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
+    new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
       userPool,
       email,
       password,
     });
 
-    // Then: Should have dependency between resources
+    // Then: Should have at least 2 custom resources (create user + set password)
     const template = Template.fromStack(stack);
-
-    // Count custom resources - should have 2 (create user + set password)
     const resources = template.findResources('Custom::AWS');
     const customResourceKeys = Object.keys(resources);
 
     expect(customResourceKeys.length).toBeGreaterThanOrEqual(2);
+  });
+
+  /**
+   * Test 7.9: should_syncBootstrapUserToDb_when_postConfirmationLambdaProvided
+   *
+   * Verifies that when postConfirmationLambdaArn is provided, additional custom resources
+   * are created to retrieve the user sub and invoke the PostConfirmation Lambda,
+   * thereby syncing the bootstrap user to the database with ORGANIZER role.
+   */
+  test('should_syncBootstrapUserToDb_when_postConfirmationLambdaProvided', () => {
+    // Given: Bootstrap organizer configuration with PostConfirmation Lambda ARN
+    const email = 'nissim@buchs.be';
+    const password = 'test-password-for-unit-tests';
+    const postConfirmationLambdaArn =
+      'arn:aws:lambda:eu-central-1:123456789012:function:post-confirmation-trigger';
+
+    // When: Bootstrap organizer construct is created with Lambda ARN
+    new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
+      userPool,
+      email,
+      password,
+      postConfirmationLambdaArn,
+    });
+
+    // Then: Should have 4 custom resources
+    // (create user, set password, get user sub, invoke PostConfirmation Lambda)
+    const template = Template.fromStack(stack);
+    const resources = template.findResources('Custom::AWS');
+    const customResourceKeys = Object.keys(resources);
+    expect(customResourceKeys.length).toBeGreaterThanOrEqual(4);
+
+    const templateJson = JSON.stringify(template.toJSON());
+
+    // AdminGetUser to retrieve the sub
+    expect(templateJson).toContain('adminGetUser');
+    // Lambda invoke to sync user to DB — check IAM policy action and Lambda ARN
+    expect(templateJson).toContain('lambda:InvokeFunction');
+    expect(templateJson).toContain(postConfirmationLambdaArn);
+    // Idempotency IDs for sync resources
+    expect(templateJson).toContain(`bootstrap-user-sub-${email}`);
+    expect(templateJson).toContain(`sync-bootstrap-db-${email}`);
+  });
+
+  /**
+   * Test 7.10: should_notSyncToDb_when_postConfirmationLambdaNotProvided
+   *
+   * Verifies that without a PostConfirmation Lambda ARN, only Cognito resources are created
+   * (no DB sync). This is the case for local development environments.
+   */
+  test('should_notSyncToDb_when_postConfirmationLambdaNotProvided', () => {
+    // Given: Bootstrap organizer without PostConfirmation Lambda ARN
+    new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
+      userPool,
+      email: 'nissim@buchs.be',
+      password: 'test-password-for-unit-tests',
+    });
+
+    // Then: Should have exactly 2 custom resources (no DB sync resources)
+    const template = Template.fromStack(stack);
+    const resources = template.findResources('Custom::AWS');
+    expect(Object.keys(resources).length).toBe(2);
+
+    const templateJson = JSON.stringify(template.toJSON());
+    expect(templateJson).not.toContain('bootstrap-user-sub-');
+    expect(templateJson).not.toContain('sync-bootstrap-db-');
   });
 });

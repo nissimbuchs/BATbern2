@@ -340,6 +340,68 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         expect.arrayContaining(['user-123', 'ATTENDEE'])
       );
     });
+
+    it('should_assignOrganizerRole_when_customRoleAttributeIsOrganizer', async () => {
+      // Arrange: admin-created user (e.g. bootstrap organizer) with custom:role=ORGANIZER
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'bootstrap-sub-123',
+            email: 'nissim@buchs.be',
+            email_verified: 'true',
+            'custom:role': 'ORGANIZER',
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [{ id: 'user-bootstrap' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
+
+      // Act
+      await handler(event, context, {} as any);
+
+      // Assert: ORGANIZER role assigned (not defaulting to ATTENDEE)
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO role_assignments'),
+        expect.arrayContaining(['user-bootstrap', 'ORGANIZER'])
+      );
+    });
+
+    it('should_defaultToAttendee_when_customRoleAttributeIsInvalid', async () => {
+      // Arrange: custom:role with an unrecognised value should fall back to ATTENDEE
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'test-sub-456',
+            email: 'unknown@example.com',
+            email_verified: 'true',
+            'custom:role': 'SUPERADMIN', // not a valid role
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-456' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
+
+      // Act
+      await handler(event, context, {} as any);
+
+      // Assert: falls back to ATTENDEE for unknown role values
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO role_assignments'),
+        expect.arrayContaining(['user-456', 'ATTENDEE'])
+      );
+    });
   });
 
   // ============================================================================
