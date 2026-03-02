@@ -87,22 +87,43 @@ public class BatbernAiService {
     }
 
     /** Returns empty if AI disabled, API key absent, or call fails. */
-    public Optional<String> generateEventDescription(String topicTitle, String topicCategory, int eventNumber) {
+    public Optional<String> generateEventDescription(String topicTitle, String topicCategory,
+                                                     int eventNumber,
+                                                     String eventTitle, String eventDate) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String cacheKey = "desc:" + hash(topicTitle + topicCategory + eventNumber);
+        String cacheKey = "desc:" + hash(topicTitle + topicCategory + eventNumber
+                + (eventTitle != null ? eventTitle : "") + (eventDate != null ? eventDate : ""));
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof String s) {
             return Optional.of(s);
         }
 
         try {
+            String eventLabel = (eventTitle != null && !eventTitle.isBlank()) ? eventTitle : topicTitle;
+            String dateLine = (eventDate != null && !eventDate.isBlank())
+                ? "Event date: " + eventDate + "."
+                : "";
             String prompt = String.format(
-                "Write a 2-paragraph German event description for BATbern#%d, a Swiss software architecture "
-                    + "conference. Topic: %s (Category: %s). Style: professional, enthusiastic, 150-200 words.",
-                eventNumber, topicTitle, topicCategory);
+                "Write a German event description for BATbern#%d, the Berner Architekten Treffen – "
+                    + "a community evening event in Bern where local IT professionals and companies "
+                    + "share hands-on experience with current hot topics in software architecture and engineering.\n\n"
+                    + "This BATbern event is entirely dedicated to the topic: \"%s\" (category: %s).\n"
+                    + "%s\n\n"
+                    + "Structure (2-3 paragraphs, 120-160 words total, in professional German):\n"
+                    + "1. Set the industry context: what is happening in the field, what trends/challenges/tools "
+                    + "   are relevant to this topic right now.\n"
+                    + "2. Describe what will happen at THIS BATbern: local companies and speakers present their "
+                    + "   real-world approaches, practical experience, and lessons learned – "
+                    + "   not academic talks, but practitioner insights.\n"
+                    + "3. End with a sentence in this style (adapt to the topic): "
+                    + "   'An diesem BAT stellen unsere Referenten ihre Ansätze und Lessons Learned vor.'\n\n"
+                    + "Important: use only the exact date provided (do not invent or omit dates). "
+                    + "The event is a single evening, not a multi-day conference. "
+                    + "Do not say 'Konferenz' or 'Session' – say 'Veranstaltung' or 'BAT'.",
+                eventNumber, eventLabel, topicCategory, dateLine);
 
             String content = callChatCompletions("gpt-4o", prompt);
             if (content == null) {
@@ -119,12 +140,14 @@ public class BatbernAiService {
     }
 
     /** Downloads DALL-E image and uploads to S3. Returns empty on any failure. */
-    public Optional<ThemeImageResult> generateThemeImage(String topicTitle, String topicCategory) {
+    public Optional<ThemeImageResult> generateThemeImage(String topicTitle, String topicCategory,
+                                                         String eventTitle) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String cacheKey = "img:" + hash(topicTitle + topicCategory);
+        String effectiveTitle = (eventTitle != null && !eventTitle.isBlank()) ? eventTitle : topicTitle;
+        String cacheKey = "img:" + hash(effectiveTitle + topicCategory);
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof ThemeImageResult r) {
             return Optional.of(r);
@@ -132,8 +155,16 @@ public class BatbernAiService {
 
         try {
             String dallePrompt = String.format(
-                "Abstract illustration for a software architecture conference themed '%s', "
-                    + "dark navy and blue tones, Swiss minimalist style, no text", topicTitle);
+                "Ultra-wide banner illustration for BATbern – the Berner Architekten Treffen, "
+                    + "a Swiss IT architecture community event in Bern. "
+                    + "Topic: \"%s\" (category: %s). "
+                    + "Style: deep midnight navy/black background, glowing neon cyan and electric blue "
+                    + "abstract digital elements, circuit board traces, network connection nodes, "
+                    + "central symbolic motif strongly representing the topic theme, "
+                    + "volumetric atmospheric glow, dramatic cinematic lighting, "
+                    + "ultra-detailed photorealistic digital illustration, dark futuristic tech aesthetic, "
+                    + "16:9 landscape format. No text. No logos. No people.",
+                effectiveTitle, topicCategory);
 
             String dalleImageUrl = callImageGeneration(dallePrompt);
             if (dalleImageUrl == null) {
@@ -243,7 +274,7 @@ public class BatbernAiService {
             "model", "dall-e-3",
             "prompt", prompt,
             "n", 1,
-            "size", "1024x1024",
+            "size", "1792x1024",
             "quality", "standard"
         );
         OpenAiImageResponse resp = openAiClient.post()
@@ -259,7 +290,20 @@ public class BatbernAiService {
 
     private byte[] downloadBytes(String url) {
         try {
-            return RestClient.create().get().uri(url).retrieve().body(byte[].class);
+            // Use Java's native HttpClient to avoid RestClient URI template expansion
+            // which re-encodes the SAS token signature in Azure Blob URLs returned by DALL-E.
+            var client = java.net.http.HttpClient.newHttpClient();
+            var request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(url))
+                .GET()
+                .build();
+            var response = client.send(request,
+                java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() >= 400) {
+                log.warn("Failed to download DALL-E image: HTTP {}", response.statusCode());
+                return null;
+            }
+            return response.body();
         } catch (Exception e) {
             log.warn("Failed to download DALL-E image: {}", e.getMessage());
             return null;

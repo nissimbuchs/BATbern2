@@ -9,8 +9,10 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Paper,
+  Tooltip,
 } from '@mui/material';
-import { Close as CloseIcon, AutoAwesome } from '@mui/icons-material';
+import { Close as CloseIcon, AutoAwesome, ContentCopy, Check } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAiGenerateDescription, useAiGenerateThemeImage } from '@/hooks/useAiAssist';
 
@@ -18,6 +20,8 @@ interface AiAssistDrawerProps {
   eventCode: string;
   topicTitle: string;
   topicCategory: string;
+  eventTitle?: string;
+  eventDate?: string;
   open: boolean;
   onClose: () => void;
   onDescriptionGenerated: (text: string) => void;
@@ -28,6 +32,8 @@ export function AiAssistDrawer({
   eventCode,
   topicTitle,
   topicCategory,
+  eventTitle,
+  eventDate,
   open,
   onClose,
   onDescriptionGenerated,
@@ -35,6 +41,8 @@ export function AiAssistDrawer({
 }: AiAssistDrawerProps) {
   const { t } = useTranslation('organizer');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [generatedDescription, setGeneratedDescription] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [generatedImageS3Key, setGeneratedImageS3Key] = useState<string | null>(null);
 
@@ -43,10 +51,13 @@ export function AiAssistDrawer({
 
   const handleGenerateDescription = () => {
     setErrorMessage(null);
+    setGeneratedDescription(null);
+    setCopied(false);
     descriptionMutation.mutate(
-      { topicTitle, topicCategory },
+      { topicTitle, topicCategory, eventTitle, eventDate },
       {
         onSuccess: (data) => {
+          setGeneratedDescription(data.description);
           onDescriptionGenerated(data.description);
         },
         onError: (err) => {
@@ -56,12 +67,21 @@ export function AiAssistDrawer({
     );
   };
 
+  const handleCopyDescription = () => {
+    if (generatedDescription) {
+      navigator.clipboard.writeText(generatedDescription).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
+
   const handleGenerateImage = () => {
     setErrorMessage(null);
     setGeneratedImageUrl(null);
     setGeneratedImageS3Key(null);
     imageMutation.mutate(
-      { topicTitle, topicCategory },
+      { topicTitle, topicCategory, eventTitle },
       {
         onSuccess: (data) => {
           setGeneratedImageUrl(data.imageUrl);
@@ -119,10 +139,31 @@ export function AiAssistDrawer({
                 ? t('aiAssist.generating', 'Generieren...')
                 : t('aiAssist.generateDescription', '✨ Beschreibung generieren')}
             </Button>
-            {descriptionMutation.isSuccess && (
-              <Alert severity="success" sx={{ mt: 1 }}>
-                {t('aiAssist.generateDescription', 'Beschreibung generiert und eingefügt!')}
-              </Alert>
+            {generatedDescription && (
+              <Paper variant="outlined" sx={{ mt: 1, p: 1.5, position: 'relative' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto', pr: 4 }}
+                >
+                  {generatedDescription}
+                </Typography>
+                <Tooltip
+                  title={
+                    copied
+                      ? t('aiAssist.copied', 'Copied!')
+                      : t('aiAssist.copy', 'Copy to clipboard')
+                  }
+                >
+                  <IconButton
+                    size="small"
+                    onClick={handleCopyDescription}
+                    sx={{ position: 'absolute', top: 4, right: 4 }}
+                    color={copied ? 'success' : 'default'}
+                  >
+                    {copied ? <Check fontSize="small" /> : <ContentCopy fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              </Paper>
             )}
           </Box>
 

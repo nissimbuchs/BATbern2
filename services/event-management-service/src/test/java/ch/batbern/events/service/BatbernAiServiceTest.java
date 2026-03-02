@@ -46,7 +46,7 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty")
         void generateDescription_disabled_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("Cloud Native", "DEVOPS", 99);
+            Optional<String> result = aiService.generateEventDescription("Cloud Native", "DEVOPS", 99, null, null);
             assertThat(result).isEmpty();
             verifyNoInteractions(logRepository);
         }
@@ -54,7 +54,7 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty")
         void generateThemeImage_disabled_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS");
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null);
             assertThat(result).isEmpty();
         }
 
@@ -82,14 +82,14 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty gracefully")
         void generateDescription_noApiKey_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("Cloud Native", "DEVOPS", 99);
+            Optional<String> result = aiService.generateEventDescription("Cloud Native", "DEVOPS", 99, null, null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("generateThemeImage returns empty gracefully")
         void generateThemeImage_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS");
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null);
             assertThat(result).isEmpty();
         }
 

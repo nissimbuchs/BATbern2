@@ -41,7 +41,8 @@ public class AiAssistController {
             @PathVariable String eventCode,
             @RequestBody AiDescriptionRequest request) {
         Optional<String> desc = aiService.generateEventDescription(
-            request.getTopicTitle(), request.getTopicCategory(), extractEventNumber(eventCode));
+            request.getTopicTitle(), request.getTopicCategory(), extractEventNumber(eventCode),
+            request.getEventTitle(), request.getEventDate() != null ? request.getEventDate().toString() : null);
         return desc.map(d -> ResponseEntity.ok(new AiDescriptionResponse().description(d)))
                    .orElse(ResponseEntity.status(503).build());
     }
@@ -52,7 +53,7 @@ public class AiAssistController {
             @PathVariable String eventCode,
             @RequestBody AiThemeImageRequest request) {
         Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
-            request.getTopicTitle(), request.getTopicCategory());
+            request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle());
         return result.map(r -> ResponseEntity.ok(
                     new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
                      .orElse(ResponseEntity.status(503).build());

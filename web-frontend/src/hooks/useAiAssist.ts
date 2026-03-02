@@ -5,6 +5,8 @@ import apiClient from '@/services/api/apiClient';
 interface DescriptionRequest {
   topicTitle: string;
   topicCategory: string;
+  eventTitle?: string;
+  eventDate?: string;
 }
 interface DescriptionResponse {
   description: string;
@@ -12,6 +14,7 @@ interface DescriptionResponse {
 interface ThemeImageRequest {
   topicTitle: string;
   topicCategory: string;
+  eventTitle?: string;
 }
 interface ThemeImageResponse {
   imageUrl: string;

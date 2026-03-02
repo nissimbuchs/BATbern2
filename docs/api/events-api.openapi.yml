@@ -4651,6 +4651,13 @@ components:
           type: string
         topicCategory:
           type: string
+        eventTitle:
+          type: string
+          description: The specific session/event title (e.g. "Importance of DevOps in vibe coding")
+        eventDate:
+          type: string
+          format: date
+          description: The event date (ISO 8601, e.g. 2026-04-04)
 
     AiDescriptionResponse:
       type: object
@@ -4666,6 +4673,9 @@ components:
           type: string
         topicCategory:
           type: string
+        eventTitle:
+          type: string
+          description: The specific session/event title for a more accurate image
 
     AiThemeImageResponse:
       type: object

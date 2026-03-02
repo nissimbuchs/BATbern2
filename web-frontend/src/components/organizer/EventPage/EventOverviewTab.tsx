@@ -430,11 +430,12 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
         eventCode={eventCode}
         topicTitle={topic?.title ?? ''}
         topicCategory={topic?.category ?? ''}
+        eventTitle={event.title}
+        eventDate={eventDate ?? undefined}
         open={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}
         onDescriptionGenerated={() => {
-          setAiDrawerOpen(false);
-          handleEditDetails();
+          // text is displayed inside the drawer with a copy button; no auto-close needed
         }}
         onImageGenerated={() => {
           setAiDrawerOpen(false);

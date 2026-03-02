@@ -44,7 +44,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateDescription_whenAiReturnsEmpty_returns503() throws Exception {
-        when(aiService.generateEventDescription(anyString(), anyString(), anyInt()))
+        when(aiService.generateEventDescription(anyString(), anyString(), anyInt(), any(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
@@ -56,7 +56,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateDescription_whenAiReturnsResult_returns200() throws Exception {
-        when(aiService.generateEventDescription(anyString(), anyString(), anyInt()))
+        when(aiService.generateEventDescription(anyString(), anyString(), anyInt(), any(), any()))
             .thenReturn(Optional.of("BATbern#99 widmet sich dem Thema Cloud Native..."));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
@@ -69,7 +69,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
-        when(aiService.generateThemeImage(anyString(), anyString()))
+        when(aiService.generateThemeImage(anyString(), anyString(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
@@ -83,7 +83,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateThemeImage_whenAiReturnsResult_returns200() throws Exception {
         var result = new BatbernAiService.ThemeImageResult(
             "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
-        when(aiService.generateThemeImage(anyString(), anyString()))
+        when(aiService.generateThemeImage(anyString(), anyString(), any()))
             .thenReturn(Optional.of(result));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
