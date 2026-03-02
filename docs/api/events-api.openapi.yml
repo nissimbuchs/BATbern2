@@ -4697,18 +4697,29 @@ components:
     AbstractAnalysisResponse:
       type: object
       properties:
-        qualityScore:
+        noPromotionScore:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10
-        suggestion:
+          description: "1=heavy product promotion, 10=no promotion at all"
+        noPromotionFeedback:
           type: string
-        improvedAbstract:
+          description: "Brief German explanation of the noPromotionScore"
+        lessonsLearnedScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "1=no real-world experience mentioned, 10=clearly practical lessons learned"
+        lessonsLearnedFeedback:
           type: string
-        keyThemes:
-          type: array
-          items:
-            type: string
+          description: "Brief German explanation of the lessonsLearnedScore"
+        wordCount:
+          type: integer
+          description: "Number of words in the original abstract"
+        shortenedAbstract:
+          type: string
+          nullable: true
+          description: "Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null"
 
     # ── Newsletter Schemas (Story 10.7) ───────────────────────────────────────
 

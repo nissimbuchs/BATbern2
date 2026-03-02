@@ -165,6 +165,8 @@ development_status:
   10-21-event-photos-gallery: ready-for-dev                            # V78 event_photos table; EventPhotoController; EventPhotosTab; homepage marquee replaces dummy testimonials; archive detail photos; no drag-reorder; no prerequisites
   10-22-event-teaser-image: ready-for-dev                              # V78 (or V79 if 10.21 first) teaser_image cols on events; EventTeaserImageService/Controller; TeaserImageSlide in PresentationPage after topic-reveal; EventSettingsTab upload UI; no prerequisites
   10-23-event-description-section-on-public-homepage: ready-for-dev   # EventDescriptionSection.tsx; HomePage after HeroSection; ArchiveEventDetailPage before sessions; description.heading in 10 locales; no backend changes
+  10-24-aws-cognito-user-provisioning-from-user-management: ready-for-dev  # CognitoAdminService; POST /users/{username}/provision-cognito; hasCognitoAccount in UserResponse; LinkCognitoDialog; create modal toggle; CDK IAM; welcome email templates; prereq: Story 9.1 patterns
+  10-25-partner-meeting-ical-auto-creation-year-end-reminders: ready-for-dev  # EventCreatedApplicationEvent in EMS → PartnerCoordinationClient auto-create; PCS email_templates V8 + EmailTemplateSeedService; YearEndReminderScheduler (ShedLock, cron 31-Dec); prereq: Story 8.3, 10.2
   epic-10-retrospective: optional
 
   # ============================================================

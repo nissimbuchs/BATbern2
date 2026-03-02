@@ -1,6 +1,8 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.AiConfig;
+import ch.batbern.events.config.CacheConfig;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.AbstractAnalysisResponse;
 import ch.batbern.events.dto.generated.AiDescriptionRequest;
 import ch.batbern.events.dto.generated.AiDescriptionResponse;
@@ -8,8 +10,11 @@ import ch.batbern.events.dto.generated.AiThemeImageRequest;
 import ch.batbern.events.dto.generated.AiThemeImageResponse;
 import ch.batbern.events.dto.generated.AnalyzeAbstractRequest;
 import ch.batbern.events.dto.generated.FeatureFlagsResponse;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.BatbernAiService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -28,6 +34,7 @@ public class AiAssistController {
 
     private final BatbernAiService aiService;
     private final AiConfig aiConfig;
+    private final EventRepository eventRepository;
 
     /** Public: no auth required — used by frontend feature flag check */
     @GetMapping("/public/settings/features")
@@ -51,12 +58,30 @@ public class AiAssistController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<AiThemeImageResponse> generateThemeImage(
             @PathVariable String eventCode,
-            @RequestBody AiThemeImageRequest request) {
+            @RequestBody AiThemeImageRequest request,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String seed,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String description) {
         Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
-            request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle());
+            request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle(), description, seed);
         return result.map(r -> ResponseEntity.ok(
                     new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
                      .orElse(ResponseEntity.status(503).build());
+    }
+
+    /** Simple request body for applying an AI-generated image to an event. */
+    record ApplyThemeImageRequest(String imageUrl) {}
+
+    @PostMapping("/events/{eventCode}/ai/theme-image/apply")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<Void> applyThemeImage(
+            @PathVariable String eventCode,
+            @RequestBody ApplyThemeImageRequest request) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found: " + eventCode));
+        event.setThemeImageUrl(request.imageUrl());
+        eventRepository.save(event);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/speakers/{speakerId}/ai/analyze-abstract")
@@ -67,10 +92,12 @@ public class AiAssistController {
         Optional<BatbernAiService.AbstractAnalysisResult> result =
             aiService.analyzeAbstract(request.getAbstract(), request.getSpeakerName());
         return result.map(r -> ResponseEntity.ok(new AbstractAnalysisResponse()
-                    .qualityScore(r.qualityScore())
-                    .suggestion(r.suggestion())
-                    .improvedAbstract(r.improvedAbstract())
-                    .keyThemes(r.keyThemes())))
+                    .noPromotionScore(r.noPromotionScore())
+                    .noPromotionFeedback(r.noPromotionFeedback())
+                    .lessonsLearnedScore(r.lessonsLearnedScore())
+                    .lessonsLearnedFeedback(r.lessonsLearnedFeedback())
+                    .wordCount(r.wordCount())
+                    .shortenedAbstract(r.shortenedAbstract())))
                      .orElse(ResponseEntity.status(503).build());
     }
 

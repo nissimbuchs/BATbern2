@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import apiClient from '@/services/api/apiClient';
 
@@ -15,6 +15,8 @@ interface ThemeImageRequest {
   topicTitle: string;
   topicCategory: string;
   eventTitle?: string;
+  eventDescription?: string;
+  seed?: string;
 }
 interface ThemeImageResponse {
   imageUrl: string;
@@ -25,10 +27,12 @@ interface AbstractRequest {
   speakerName?: string;
 }
 interface AbstractResponse {
-  qualityScore: number;
-  suggestion: string;
-  improvedAbstract: string;
-  keyThemes: string[];
+  noPromotionScore: number;
+  noPromotionFeedback: string;
+  lessonsLearnedScore: number;
+  lessonsLearnedFeedback: string;
+  wordCount: number;
+  shortenedAbstract: string | null;
 }
 
 export function useAiGenerateDescription(eventCode: string) {
@@ -57,14 +61,37 @@ export function useAiGenerateThemeImage(eventCode: string) {
   return useMutation<ThemeImageResponse, Error, ThemeImageRequest>({
     mutationFn: async (req) => {
       try {
+        const { seed, eventDescription, ...body } = req;
+        const params = new URLSearchParams();
+        if (seed) params.set('seed', seed);
+        if (eventDescription) params.set('description', eventDescription);
+        const qs = params.toString();
         const response = await apiClient.post<ThemeImageResponse>(
-          `/events/${eventCode}/ai/theme-image`,
-          req
+          `/events/${eventCode}/ai/theme-image${qs ? `?${qs}` : ''}`,
+          body
         );
         return response.data;
       } catch {
         throw new Error(t('aiAssist.error'));
       }
+    },
+  });
+}
+
+export function useAiApplyThemeImage(eventCode: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('organizer');
+
+  return useMutation<void, Error, { imageUrl: string }>({
+    mutationFn: async ({ imageUrl }) => {
+      try {
+        await apiClient.post(`/events/${eventCode}/ai/theme-image/apply`, { imageUrl });
+      } catch {
+        throw new Error(t('aiAssist.error'));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
     },
   });
 }

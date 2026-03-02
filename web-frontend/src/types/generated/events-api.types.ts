@@ -1969,10 +1969,123 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/settings/features': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get feature flags (public, no auth required) */
+    get: operations['getFeatureFlags'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/description': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate AI event description (GPT-4o, German, 150-200 words) */
+    post: operations['generateEventDescription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/theme-image': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate AI theme image (DALL-E 3), upload to S3 */
+    post: operations['generateThemeImage'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speakers/{speakerId}/ai/analyze-abstract': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Analyze speaker abstract quality (GPT-4o) */
+    post: operations['analyzeAbstract'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    FeatureFlagsResponse: {
+      aiContentEnabled?: boolean;
+    };
+    AiDescriptionRequest: {
+      topicTitle: string;
+      topicCategory: string;
+      /** @description The specific session/event title (e.g. "Importance of DevOps in vibe coding") */
+      eventTitle?: string;
+      /**
+       * Format: date
+       * @description The event date (ISO 8601, e.g. 2026-04-04)
+       */
+      eventDate?: string;
+    };
+    AiDescriptionResponse: {
+      description?: string;
+    };
+    AiThemeImageRequest: {
+      topicTitle: string;
+      topicCategory: string;
+      /** @description The specific session/event title for a more accurate image */
+      eventTitle?: string;
+    };
+    AiThemeImageResponse: {
+      imageUrl?: string;
+      s3Key?: string;
+    };
+    AnalyzeAbstractRequest: {
+      abstract: string;
+      speakerName?: string;
+    };
+    AbstractAnalysisResponse: {
+      /** @description 1=heavy product promotion, 10=no promotion at all */
+      noPromotionScore?: number;
+      /** @description Brief German explanation of the noPromotionScore */
+      noPromotionFeedback?: string;
+      /** @description 1=no real-world experience mentioned, 10=clearly practical lessons learned */
+      lessonsLearnedScore?: number;
+      /** @description Brief German explanation of the lessonsLearnedScore */
+      lessonsLearnedFeedback?: string;
+      /** @description Number of words in the original abstract */
+      wordCount?: number;
+      /** @description Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null */
+      shortenedAbstract?: string | null;
+    };
     NewsletterSubscribeRequest: {
       /** Format: email */
       email: string;
@@ -1994,6 +2107,8 @@ export interface components {
       isReminder: boolean;
       /** @enum {string} */
       locale: 'de' | 'en';
+      /** @description Optional template key override. If omitted, uses default 'newsletter-event'. Must be a NEWSLETTER category template key present in DB. */
+      templateKey?: string | null;
     };
     NewsletterSendResponse: {
       /** Format: uuid */
@@ -7642,6 +7757,139 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  getFeatureFlags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Feature flags */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FeatureFlagsResponse'];
+        };
+      };
+    };
+  };
+  generateEventDescription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AiDescriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description Generated description */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiDescriptionResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  generateThemeImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AiThemeImageRequest'];
+      };
+    };
+    responses: {
+      /** @description Generated theme image URL and S3 key */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiThemeImageResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  analyzeAbstract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnalyzeAbstractRequest'];
+      };
+    };
+    responses: {
+      /** @description Abstract analysis result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AbstractAnalysisResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
     };
   };

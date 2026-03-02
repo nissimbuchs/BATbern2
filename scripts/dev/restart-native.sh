@@ -191,8 +191,9 @@ start_spring_service() {
     echo -e "${CYAN}  → Starting ${service_name}...${NC}"
     echo -e "${CYAN}    JAR: $(basename $jar_path)${NC}"
 
-    # Export environment
+    # Export environment: base .env first, then instance overrides
     set -a
+    [ -f "${PROJECT_ROOT}/.env" ] && source "${PROJECT_ROOT}/.env"
     source "${ENV_NATIVE_FILE}"
     set +a
 

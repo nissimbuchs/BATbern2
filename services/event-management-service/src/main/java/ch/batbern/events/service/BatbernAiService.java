@@ -141,30 +141,35 @@ public class BatbernAiService {
 
     /** Downloads DALL-E image and uploads to S3. Returns empty on any failure. */
     public Optional<ThemeImageResult> generateThemeImage(String topicTitle, String topicCategory,
-                                                         String eventTitle) {
+                                                         String eventTitle, String eventDescription,
+                                                         String seed) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
         String effectiveTitle = (eventTitle != null && !eventTitle.isBlank()) ? eventTitle : topicTitle;
-        String cacheKey = "img:" + hash(effectiveTitle + topicCategory);
+        String cacheKey = "img:" + hash(effectiveTitle + topicCategory + (seed != null ? seed : ""));
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof ThemeImageResult r) {
             return Optional.of(r);
         }
 
         try {
+            String contextLine = (eventDescription != null && !eventDescription.isBlank())
+                ? "Context: " + eventDescription.substring(0, Math.min(eventDescription.length(), 300)) + " "
+                : "";
             String dallePrompt = String.format(
-                "Ultra-wide banner illustration for BATbern – the Berner Architekten Treffen, "
-                    + "a Swiss IT architecture community event in Bern. "
-                    + "Topic: \"%s\" (category: %s). "
-                    + "Style: deep midnight navy/black background, glowing neon cyan and electric blue "
-                    + "abstract digital elements, circuit board traces, network connection nodes, "
-                    + "central symbolic motif strongly representing the topic theme, "
-                    + "volumetric atmospheric glow, dramatic cinematic lighting, "
-                    + "ultra-detailed photorealistic digital illustration, dark futuristic tech aesthetic, "
-                    + "16:9 landscape format. No text. No logos. No people.",
-                effectiveTitle, topicCategory);
+                "Abstract digital artwork that visually represents the IT topic: \"%s\" (category: %s). "
+                    + "%s"
+                    + "Use abstract visual metaphors, symbols, and imagery that are directly related to "
+                    + "this specific topic and category — not generic circuit boards. "
+                    + "Style: dark midnight navy-to-black background, glowing neon cyan and electric blue "
+                    + "abstract digital elements covering the full frame uniformly from corner to corner. "
+                    + "Flat 2D digital illustration – no 3D perspective, no room, no floor, no staging, "
+                    + "no display panel, no frame, no spotlights, no shadow on a surface. "
+                    + "The image fills the entire 16:9 rectangle edge-to-edge. "
+                    + "No text. No logos. No people.",
+                effectiveTitle, topicCategory, contextLine);
 
             String dalleImageUrl = callImageGeneration(dallePrompt);
             if (dalleImageUrl == null) {
@@ -211,10 +216,27 @@ public class BatbernAiService {
 
         try {
             String prompt = String.format(
-                "Analyze this speaker abstract for BATbern (Swiss software architecture conference). "
-                    + "Speaker: %s. Abstract: \"%s\". "
-                    + "Return JSON: {\"qualityScore\": 0-10, \"suggestion\": \"string\", "
-                    + "\"improvedAbstract\": \"string\", \"keyThemes\": [\"string\"]}",
+                "Analyze this speaker abstract for BATbern – a Swiss IT architecture community event "
+                    + "where practitioners share real-world experience and lessons learned "
+                    + "(NOT product demos or service sales pitches). "
+                    + "Speaker: %s. Abstract: \"%s\".\n\n"
+                    + "Evaluate these two criteria, rate each from 1 to 10 "
+                    + "(10 = perfectly aligned, 1 = completely misaligned):\n"
+                    + "1. noPromotion: Does the abstract avoid promoting an IT product, tool, or service? "
+                    + "(10 = purely about experience/knowledge; 1 = reads like a product advertisement)\n"
+                    + "2. lessonsLearned: Does the abstract suggest the speaker will share practical "
+                    + "lessons learned from real-world experience? "
+                    + "(10 = clearly hands-on experience and lessons; 1 = no indication of practical experience)\n\n"
+                    + "Also count the words in the abstract. "
+                    + "If the word count exceeds 160, provide a shortened German version of maximum 150 words "
+                    + "that preserves the key message. If 160 or fewer words, set shortenedAbstract to null.\n\n"
+                    + "Return JSON only (no other text):\n"
+                    + "{\"noPromotionScore\": <1-10>, "
+                    + "\"noPromotionFeedback\": \"<brief German explanation, 1-2 sentences>\", "
+                    + "\"lessonsLearnedScore\": <1-10>, "
+                    + "\"lessonsLearnedFeedback\": \"<brief German explanation, 1-2 sentences>\", "
+                    + "\"wordCount\": <number>, "
+                    + "\"shortenedAbstract\": \"<shortened German text or null>\"}",
                 speakerName != null ? speakerName : "Unknown", abstractText);
 
             String content = callChatCompletionsJson("gpt-4o", prompt);
@@ -290,20 +312,23 @@ public class BatbernAiService {
 
     private byte[] downloadBytes(String url) {
         try {
-            // Use Java's native HttpClient to avoid RestClient URI template expansion
-            // which re-encodes the SAS token signature in Azure Blob URLs returned by DALL-E.
-            var client = java.net.http.HttpClient.newHttpClient();
-            var request = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .GET()
-                .build();
-            var response = client.send(request,
-                java.net.http.HttpResponse.BodyHandlers.ofByteArray());
-            if (response.statusCode() >= 400) {
-                log.warn("Failed to download DALL-E image: HTTP {}", response.statusCode());
+            // Use HttpURLConnection (not HttpClient / URI.create) because DALL-E returns
+            // Azure Blob SAS URLs whose signature contains base64 '+' characters.
+            // URI.create() normalises those, corrupting the signature and causing
+            // Azure to reject with 403 AuthenticationFailed / Signature not well formed.
+            // HttpURLConnection accepts the raw URL string without any URI parsing.
+            @SuppressWarnings("deprecation")
+            var conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            conn.setConnectTimeout(15_000);
+            conn.setReadTimeout(30_000);
+            int status = conn.getResponseCode();
+            if (status >= 400) {
+                log.warn("Failed to download DALL-E image: HTTP {}", status);
                 return null;
             }
-            return response.body();
+            try (var in = conn.getInputStream()) {
+                return in.readAllBytes();
+            }
         } catch (Exception e) {
             log.warn("Failed to download DALL-E image: {}", e.getMessage());
             return null;
@@ -323,16 +348,20 @@ public class BatbernAiService {
     private AbstractAnalysisResult parseAbstractAnalysis(String json) {
         try {
             var node = objectMapper.readTree(json);
-            int qualityScore = node.path("qualityScore").asInt(5);
-            String suggestion = node.path("suggestion").asText("");
-            String improvedAbstract = node.path("improvedAbstract").asText("");
-            List<String> keyThemes = objectMapper.convertValue(
-                node.path("keyThemes"), objectMapper.getTypeFactory()
-                    .constructCollectionType(List.class, String.class));
-            return new AbstractAnalysisResult(qualityScore, suggestion, improvedAbstract, keyThemes);
+            int noPromotionScore = node.path("noPromotionScore").asInt(5);
+            String noPromotionFeedback = node.path("noPromotionFeedback").asText("");
+            int lessonsLearnedScore = node.path("lessonsLearnedScore").asInt(5);
+            String lessonsLearnedFeedback = node.path("lessonsLearnedFeedback").asText("");
+            int wordCount = node.path("wordCount").asInt(0);
+            String shortenedAbstract = node.path("shortenedAbstract").isNull()
+                ? null : node.path("shortenedAbstract").asText(null);
+            return new AbstractAnalysisResult(
+                noPromotionScore, noPromotionFeedback,
+                lessonsLearnedScore, lessonsLearnedFeedback,
+                wordCount, shortenedAbstract);
         } catch (Exception e) {
             log.warn("Failed to parse abstract analysis JSON: {}", e.getMessage());
-            return new AbstractAnalysisResult(5, "Unable to parse AI response", json, List.of());
+            return new AbstractAnalysisResult(5, "", 5, "", 0, null);
         }
     }
 
@@ -357,10 +386,12 @@ public class BatbernAiService {
     public record ThemeImageResult(String imageUrl, String s3Key) {}
 
     public record AbstractAnalysisResult(
-        int qualityScore,
-        String suggestion,
-        String improvedAbstract,
-        List<String> keyThemes
+        int noPromotionScore,
+        String noPromotionFeedback,
+        int lessonsLearnedScore,
+        String lessonsLearnedFeedback,
+        int wordCount,
+        String shortenedAbstract
     ) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -236,6 +236,14 @@ COGNITO_DOMAIN_URL=${COGNITO_DOMAIN_URL}
 ENABLE_COGNITO_AUTH=${ENABLE_COGNITO_AUTH:-true}
 
 # ==============================================
+# AI / OpenAI Configuration (Story 10.16)
+# ==============================================
+AI_ENABLED=${AI_ENABLED:-false}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+# Local dev: CloudFront is MinIO — include bucket name for path-style URL
+CLOUDFRONT_DOMAIN=http://localhost:${MINIO_API_PORT}/${AWS_S3_BUCKET_NAME:-batbern-development-company-logos}
+
+# ==============================================
 # Service Ports (Instance ${INSTANCE})
 # ==============================================
 API_GATEWAY_PORT=${API_GATEWAY_PORT}
@@ -466,8 +474,9 @@ start_spring_service() {
     echo -e "${CYAN}  → Starting ${service_name}...${NC}"
     echo -e "${CYAN}    JAR: $(basename $jar_path)${NC}"
 
-    # Export environment from .env.native
+    # Export environment: base .env first, then instance overrides
     set -a
+    [ -f "${ENV_FILE}" ] && source "${ENV_FILE}"
     source "${ENV_NATIVE_FILE}"
     set +a
 

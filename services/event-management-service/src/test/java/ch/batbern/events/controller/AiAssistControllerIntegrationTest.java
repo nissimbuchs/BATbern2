@@ -69,7 +69,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
-        when(aiService.generateThemeImage(anyString(), anyString(), any()))
+        when(aiService.generateThemeImage(anyString(), anyString(), any(), any(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
@@ -83,7 +83,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateThemeImage_whenAiReturnsResult_returns200() throws Exception {
         var result = new BatbernAiService.ThemeImageResult(
             "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
-        when(aiService.generateThemeImage(anyString(), anyString(), any()))
+        when(aiService.generateThemeImage(anyString(), anyString(), any(), any(), any()))
             .thenReturn(Optional.of(result));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
@@ -98,16 +98,16 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(roles = "ORGANIZER")
     void analyzeAbstract_whenAiReturnsResult_returns200() throws Exception {
         var result = new BatbernAiService.AbstractAnalysisResult(
-            8, "Good but needs examples", "Improved text", List.of("Cloud", "Architecture"));
+            8, "Kein Produktmarketing erkennbar.", 9, "Klare Praxisreferenz vorhanden.", 120, null);
         when(aiService.analyzeAbstract(anyString(), any())).thenReturn(Optional.of(result));
 
         mockMvc.perform(post("/api/v1/speakers/some-speaker-id/ai/analyze-abstract")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"abstract\":\"My speaker abstract\",\"speakerName\":\"Alice\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.qualityScore").value(8))
-            .andExpect(jsonPath("$.suggestion").isNotEmpty())
-            .andExpect(jsonPath("$.keyThemes").isArray());
+            .andExpect(jsonPath("$.noPromotionScore").value(8))
+            .andExpect(jsonPath("$.lessonsLearnedScore").value(9))
+            .andExpect(jsonPath("$.wordCount").value(120));
     }
 
     @Test

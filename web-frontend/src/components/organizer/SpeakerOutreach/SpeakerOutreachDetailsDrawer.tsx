@@ -42,7 +42,6 @@ import {
   Send as SendIcon,
   NotificationsActive,
   AttachFile as AttachFileIcon,
-  AutoAwesome,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
@@ -59,7 +58,6 @@ interface SpeakerOutreachDetailsDrawerProps {
   showMarkContactedForm?: boolean; // Show form for IDENTIFIED/CONTACTED speakers
   onOpenContentSubmission?: (speaker: SpeakerPoolEntry) => void; // Callback for ACCEPTED speakers
   onOpenQualityReview?: (speaker: SpeakerPoolEntry) => void; // Callback for CONTENT_SUBMITTED speakers
-  onOpenAbstractAnalysis?: (speaker: SpeakerPoolEntry) => void; // Callback for AI abstract analysis (Story 10.16)
 }
 
 interface FormData {
@@ -81,7 +79,6 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   showMarkContactedForm = false,
   onOpenContentSubmission,
   onOpenQualityReview,
-  onOpenAbstractAnalysis,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -634,21 +631,6 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   fullWidth
                 >
                   {t('speakers.reviewContent', 'Review Content')}
-                </Button>
-              </Box>
-            )}
-
-            {/* Abstract Analysis Button (Story 10.16) — shown when AI enabled and abstract exists */}
-            {speaker.submittedAbstract && onOpenAbstractAnalysis && (
-              <Box mt={2}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<AutoAwesome />}
-                  onClick={() => onOpenAbstractAnalysis(speaker)}
-                  fullWidth
-                >
-                  {t('aiAssist.analyzeAbstract', 'Abstract analysieren')}
                 </Button>
               </Box>
             )}

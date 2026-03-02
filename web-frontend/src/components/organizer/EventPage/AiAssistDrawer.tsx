@@ -14,7 +14,11 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon, AutoAwesome, ContentCopy, Check } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useAiGenerateDescription, useAiGenerateThemeImage } from '@/hooks/useAiAssist';
+import {
+  useAiGenerateDescription,
+  useAiGenerateThemeImage,
+  useAiApplyThemeImage,
+} from '@/hooks/useAiAssist';
 
 interface AiAssistDrawerProps {
   eventCode: string;
@@ -22,6 +26,7 @@ interface AiAssistDrawerProps {
   topicCategory: string;
   eventTitle?: string;
   eventDate?: string;
+  eventDescription?: string;
   open: boolean;
   onClose: () => void;
   onDescriptionGenerated: (text: string) => void;
@@ -34,6 +39,7 @@ export function AiAssistDrawer({
   topicCategory,
   eventTitle,
   eventDate,
+  eventDescription,
   open,
   onClose,
   onDescriptionGenerated,
@@ -48,6 +54,7 @@ export function AiAssistDrawer({
 
   const descriptionMutation = useAiGenerateDescription(eventCode);
   const imageMutation = useAiGenerateThemeImage(eventCode);
+  const applyMutation = useAiApplyThemeImage(eventCode);
 
   const handleGenerateDescription = () => {
     setErrorMessage(null);
@@ -76,12 +83,18 @@ export function AiAssistDrawer({
     }
   };
 
-  const handleGenerateImage = () => {
+  const handleGenerateImage = (regenerate = false) => {
     setErrorMessage(null);
     setGeneratedImageUrl(null);
     setGeneratedImageS3Key(null);
     imageMutation.mutate(
-      { topicTitle, topicCategory, eventTitle },
+      {
+        topicTitle,
+        topicCategory,
+        eventTitle,
+        eventDescription,
+        seed: regenerate ? crypto.randomUUID() : undefined,
+      },
       {
         onSuccess: (data) => {
           setGeneratedImageUrl(data.imageUrl);
@@ -96,9 +109,19 @@ export function AiAssistDrawer({
 
   const handleUseImage = () => {
     if (generatedImageUrl && generatedImageS3Key) {
-      onImageGenerated(generatedImageUrl, generatedImageS3Key);
-      setGeneratedImageUrl(null);
-      setGeneratedImageS3Key(null);
+      applyMutation.mutate(
+        { imageUrl: generatedImageUrl },
+        {
+          onSuccess: () => {
+            onImageGenerated(generatedImageUrl, generatedImageS3Key);
+            setGeneratedImageUrl(null);
+            setGeneratedImageS3Key(null);
+          },
+          onError: (err) => {
+            setErrorMessage(err.message);
+          },
+        }
+      );
     }
   };
 
@@ -184,7 +207,7 @@ export function AiAssistDrawer({
                 )
               }
               disabled={imageMutation.isPending || !topicTitle}
-              onClick={handleGenerateImage}
+              onClick={() => handleGenerateImage()}
               fullWidth
             >
               {imageMutation.isPending
@@ -201,10 +224,26 @@ export function AiAssistDrawer({
                   sx={{ width: '100%', borderRadius: 1, mb: 1 }}
                 />
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button variant="contained" size="small" onClick={handleUseImage} fullWidth>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleUseImage}
+                    disabled={applyMutation.isPending}
+                    startIcon={
+                      applyMutation.isPending ? (
+                        <CircularProgress size={14} color="inherit" />
+                      ) : undefined
+                    }
+                    fullWidth
+                  >
                     {t('aiAssist.useImage', 'Bild verwenden')}
                   </Button>
-                  <Button variant="outlined" size="small" onClick={handleGenerateImage} fullWidth>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleGenerateImage(true)}
+                    fullWidth
+                  >
                     {t('aiAssist.regenerateImage', '↻ Neu generieren')}
                   </Button>
                   <Button

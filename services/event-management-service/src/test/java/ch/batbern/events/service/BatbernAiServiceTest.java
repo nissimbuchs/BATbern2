@@ -54,7 +54,7 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty")
         void generateThemeImage_disabled_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null, null, null);
             assertThat(result).isEmpty();
         }
 
@@ -89,7 +89,7 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty gracefully")
         void generateThemeImage_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("Cloud Native", "DEVOPS", null, null, null);
             assertThat(result).isEmpty();
         }
 

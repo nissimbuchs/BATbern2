@@ -432,6 +432,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
         topicCategory={topic?.category ?? ''}
         eventTitle={event.title}
         eventDate={eventDate ?? undefined}
+        eventDescription={event.description ?? undefined}
         open={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}
         onDescriptionGenerated={() => {
