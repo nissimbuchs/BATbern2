@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,7 @@ public class WaitlistPromotionEmailService {
     private final EmailTemplateService emailTemplateService;
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
+    private final ConfirmationTokenService confirmationTokenService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -159,16 +161,28 @@ public class WaitlistPromotionEmailService {
         String formattedDate = event.getDate() != null
                 ? event.getDate().atZone(SWISS_ZONE).format(DATE_FORMATTER) : "";
 
-        return Map.of(
-                "recipientName", recipientName,
-                "eventTitle", event.getTitle(),
-                "eventCode", event.getEventCode(),
-                "eventDate", formattedDate,
-                "venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "",
-                "registrationCode", registration.getRegistrationCode(),
-                "eventUrl", baseUrl + "/events/" + event.getEventCode(),
-                "currentYear", String.valueOf(java.time.Year.now().getValue())
-        );
+        // Story 10.12 (AC7-equiv): Generate confirmation token so promoted attendees can confirm
+        // attendance, and expose deregistrationUrl so they can cancel via the self-service page.
+        String confirmationToken = confirmationTokenService.generateConfirmationToken(
+                registration.getId(), event.getEventCode());
+        String confirmationUrl = baseUrl + "/events/" + event.getEventCode()
+                + "/confirm-registration?token=" + confirmationToken;
+        String deregistrationUrl = registration.getDeregistrationToken() != null
+                ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                : "";
+
+        Map<String, String> vars = new LinkedHashMap<>();
+        vars.put("recipientName", recipientName);
+        vars.put("eventTitle", event.getTitle());
+        vars.put("eventCode", event.getEventCode());
+        vars.put("eventDate", formattedDate);
+        vars.put("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "");
+        vars.put("registrationCode", registration.getRegistrationCode());
+        vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
+        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
+        vars.put("confirmationUrl", confirmationUrl);
+        vars.put("deregistrationUrl", deregistrationUrl);
+        return vars;
     }
 
     private UserResponse resolveUser(String username) {
