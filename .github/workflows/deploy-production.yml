@@ -344,10 +344,13 @@ jobs:
               "${VERSION}" "${DATE}" "${WORKFLOW_URL}")
           fi
 
+          # Resolve short SHA to full 40-char SHA (GitHub API requires full SHA for target_commitish)
+          FULL_SHA=$(gh api "repos/${{ github.repository }}/commits/${VERSION}" --jq '.sha')
+
           gh release create "${TAG}" \
             --title "${TITLE}" \
             --notes "${NOTES}" \
-            --target "${VERSION}"
+            --target "${FULL_SHA}"
 
           echo "✅ GitHub Release created: ${TAG}"
 
