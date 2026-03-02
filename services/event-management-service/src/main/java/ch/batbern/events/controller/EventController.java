@@ -2075,12 +2075,24 @@ public class EventController {
         }
 
         // Apply updates
+        boolean becomingCancelled = false;
         if (updates.containsKey("status")) {
-            registration.setStatus((String) updates.get("status"));
+            String newStatus = (String) updates.get("status");
+            String previousStatus = registration.getStatus();
+            registration.setStatus(newStatus);
+            // Track if an active registration is being cancelled (triggers waitlist promotion)
+            becomingCancelled = "cancelled".equalsIgnoreCase(newStatus)
+                    && ("registered".equalsIgnoreCase(previousStatus)
+                            || "confirmed".equalsIgnoreCase(previousStatus));
         }
 
         // Save updated registration
         registration = registrationRepository.save(registration);
+
+        // Story 10.11: Auto-promote next waitlisted attendee when a spot is freed
+        if (becomingCancelled) {
+            waitlistPromotionService.promoteFromWaitlist(event.getId());
+        }
 
         // Enrich with user data
         registration.setEventCode(eventCode);
