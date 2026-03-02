@@ -35,7 +35,7 @@ export function useAiGenerateDescription(eventCode: string) {
     mutationFn: async (req) => {
       try {
         const response = await apiClient.post<DescriptionResponse>(
-          `/api/v1/events/${eventCode}/ai/description`,
+          `/events/${eventCode}/ai/description`,
           req
         );
         return response.data;
@@ -55,7 +55,7 @@ export function useAiGenerateThemeImage(eventCode: string) {
     mutationFn: async (req) => {
       try {
         const response = await apiClient.post<ThemeImageResponse>(
-          `/api/v1/events/${eventCode}/ai/theme-image`,
+          `/events/${eventCode}/ai/theme-image`,
           req
         );
         return response.data;
@@ -73,7 +73,7 @@ export function useAiAnalyzeAbstract(speakerId: string) {
     mutationFn: async (req) => {
       try {
         const response = await apiClient.post<AbstractResponse>(
-          `/api/v1/speakers/${speakerId}/ai/analyze-abstract`,
+          `/speakers/${speakerId}/ai/analyze-abstract`,
           req
         );
         return response.data;

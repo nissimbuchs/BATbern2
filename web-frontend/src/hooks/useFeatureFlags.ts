@@ -13,7 +13,7 @@ export function useFeatureFlags(): FeatureFlags {
   const { data } = useQuery<FeatureFlags>({
     queryKey: ['feature-flags'],
     queryFn: async () => {
-      const response = await apiClient.get<FeatureFlags>('/api/v1/public/settings/features');
+      const response = await apiClient.get<FeatureFlags>('/public/settings/features');
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes — feature flags don't change often
