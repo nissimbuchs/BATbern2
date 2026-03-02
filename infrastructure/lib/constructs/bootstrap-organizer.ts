@@ -29,14 +29,14 @@ export class BootstrapOrganizer extends Construct {
     super(scope, id);
 
     // Create log groups for custom resources
+    // Note: no hardcoded logGroupName — CDK generates a unique name per stack to avoid
+    // cross-environment collisions and orphaned log group conflicts on rollback.
     const createUserLogGroup = new logs.LogGroup(this, 'CreateUserLogGroup', {
-      logGroupName: `/aws/lambda/bootstrap-organizer-create-user`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const setPasswordLogGroup = new logs.LogGroup(this, 'SetPasswordLogGroup', {
-      logGroupName: `/aws/lambda/bootstrap-organizer-set-password`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
