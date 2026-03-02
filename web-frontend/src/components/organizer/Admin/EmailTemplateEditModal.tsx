@@ -130,6 +130,15 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           setError(t('emailTemplates.validation.templateKeyRequired', 'Template key is required.'));
           return;
         }
+        if (/\s/.test(newTemplateKey)) {
+          setError(
+            t(
+              'emailTemplates.validation.templateKeyNoSpaces',
+              'Template key must not contain spaces.'
+            )
+          );
+          return;
+        }
         await createMutation.mutateAsync({
           templateKey: newTemplateKey.trim(),
           locale: newLocale,
@@ -146,8 +155,18 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
         });
       }
       onClose();
-    } catch {
-      setError(t('emailTemplates.saveFailed', 'Failed to save template. Please try again.'));
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setError(
+          t(
+            'emailTemplates.validation.duplicateKey',
+            'A template with this key already exists for this locale. Please choose a different key.'
+          )
+        );
+      } else {
+        setError(t('emailTemplates.saveFailed', 'Failed to save template. Please try again.'));
+      }
     }
   };
 

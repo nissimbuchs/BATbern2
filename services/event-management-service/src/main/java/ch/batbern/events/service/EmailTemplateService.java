@@ -71,6 +71,11 @@ public class EmailTemplateService {
         if (!isLayout && (request.getSubject() == null || request.getSubject().isBlank())) {
             throw new IllegalArgumentException("Content templates must have a non-empty subject");
         }
+        if (emailTemplateRepository.findByTemplateKeyAndLocale(
+                request.getTemplateKey(), request.getLocale()).isPresent()) {
+            throw new IllegalStateException(
+                    "Template already exists: " + request.getTemplateKey() + " (" + request.getLocale() + ")");
+        }
         EmailTemplate template = new EmailTemplate();
         template.setTemplateKey(request.getTemplateKey());
         template.setLocale(request.getLocale());
