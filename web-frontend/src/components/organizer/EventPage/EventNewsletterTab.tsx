@@ -210,13 +210,23 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
               label={t('organizer:newsletter.templateSelect.label')}
               onChange={(e) => setSelectedTemplateKey(e.target.value)}
               disabled={newsletterTemplatesQuery.isLoading}
-              inputProps={{ 'data-testid': 'newsletter-template-select' }}
+              SelectDisplayProps={
+                {
+                  'data-testid': 'newsletter-template-select',
+                } as React.HTMLAttributes<HTMLDivElement>
+              }
             >
-              {filteredTemplates.map((tpl) => (
-                <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
-                  {tpl.templateKey}
+              {filteredTemplates.length === 0 && !newsletterTemplatesQuery.isLoading ? (
+                <MenuItem value={selectedTemplateKey} disabled>
+                  {selectedTemplateKey}
                 </MenuItem>
-              ))}
+              ) : (
+                filteredTemplates.map((tpl) => (
+                  <MenuItem key={tpl.templateKey} value={tpl.templateKey}>
+                    {tpl.templateKey}
+                  </MenuItem>
+                ))
+              )}
             </Select>
           </FormControl>
 

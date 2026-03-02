@@ -14,6 +14,10 @@ vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
   useSendNewsletter: vi.fn(),
 }));
 
+vi.mock('@/hooks/useEmailTemplates', () => ({
+  useEmailTemplates: vi.fn(),
+}));
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -29,10 +33,12 @@ vi.mock('react-i18next', () => ({
         'eventPage.newsletter.sendNewsletter': 'Send Newsletter',
         'eventPage.newsletter.sendReminder': 'Send Reminder',
         'eventPage.newsletter.confirmSendTitle': 'Confirm Send',
-        'eventPage.newsletter.confirmSendBody': `Send ${opts?.type ?? ''} to ${opts?.count ?? 0} subscribers for event ${opts?.eventTitle ?? ''}?`,
+        'eventPage.newsletter.confirmSendBody': `Send ${opts?.type ?? ''} using '${opts?.templateKey ?? ''}' to ${opts?.count ?? 0} subscribers for event ${opts?.eventTitle ?? ''}?`,
         'eventPage.newsletter.sendSuccess': `Newsletter sent to ${opts?.count ?? 0} recipients.`,
         'common.cancel': 'Cancel',
         'common.confirm': 'Confirm',
+        'organizer:newsletter.templateSelect.label': 'Template',
+        'organizer:newsletter.templateSelect.createNew': 'Create new template',
       };
       if (opts) {
         return map[key]?.replace(/\{\{(\w+)\}\}/g, (_, k: string) => String(opts[k] ?? '')) ?? key;
@@ -48,6 +54,7 @@ import {
   useNewsletterPreview,
   useSendNewsletter,
 } from '@/hooks/useNewsletter/useNewsletter';
+import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 
 function renderTab(eventCode = 'BATbern58', eventTitle = 'AI in der Software Entwicklung') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -59,6 +66,25 @@ function renderTab(eventCode = 'BATbern58', eventTitle = 'AI in der Software Ent
 }
 
 describe('EventNewsletterTab', () => {
+  const deTemplate = {
+    templateKey: 'newsletter-event',
+    locale: 'de',
+    category: 'NEWSLETTER',
+    htmlBody: '<p>DE template</p>',
+    isLayout: false,
+    isSystemTemplate: false,
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+  const enTemplate = {
+    templateKey: 'newsletter-event',
+    locale: 'en',
+    category: 'NEWSLETTER',
+    htmlBody: '<p>EN template</p>',
+    isLayout: false,
+    isSystemTemplate: false,
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -78,6 +104,11 @@ describe('EventNewsletterTab', () => {
       isSuccess: false,
       isError: false,
     } as ReturnType<typeof useSendNewsletter>);
+
+    vi.mocked(useEmailTemplates).mockReturnValue({
+      isLoading: false,
+      data: [deTemplate, enTemplate],
+    } as ReturnType<typeof useEmailTemplates>);
   });
 
   it('shows subscriber count when loaded', () => {
@@ -173,8 +204,96 @@ describe('EventNewsletterTab', () => {
     fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
 
     expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ isReminder: false }),
+      expect.objectContaining({ isReminder: false, templateKey: 'newsletter-event' }),
       expect.anything()
     );
+  });
+
+  // ── AC3: Template dropdown renders ──────────────────────────────────────────
+
+  it('AC3: renders template dropdown with data-testid', () => {
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 0 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    renderTab();
+
+    expect(screen.getByTestId('newsletter-template-select')).toBeInTheDocument();
+  });
+
+  it('AC3: template dropdown is disabled while templates are loading', () => {
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 0 },
+    } as ReturnType<typeof useSubscriberCount>);
+    vi.mocked(useEmailTemplates).mockReturnValue({
+      isLoading: true,
+      data: undefined,
+    } as ReturnType<typeof useEmailTemplates>);
+
+    renderTab();
+
+    // The combobox (SelectDisplay div) carries aria-disabled when Select is disabled
+    const combobox = screen.getByTestId('newsletter-template-select');
+    expect(combobox).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  // ── AC5: Preview passes templateKey ─────────────────────────────────────────
+
+  it('AC5: preview request includes selected templateKey', () => {
+    const mockPreviewMutate = vi.fn();
+    vi.mocked(useNewsletterPreview).mockReturnValue({
+      mutate: mockPreviewMutate,
+      isPending: false,
+    } as ReturnType<typeof useNewsletterPreview>);
+
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 10 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    renderTab();
+
+    fireEvent.click(screen.getByRole('button', { name: /Preview/i }));
+
+    expect(mockPreviewMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({ templateKey: 'newsletter-event' }),
+      }),
+      expect.anything()
+    );
+  });
+
+  // ── AC6: Confirm dialog shows templateKey ────────────────────────────────────
+
+  it('AC6: confirmation dialog body includes selected templateKey', async () => {
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 100 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    renderTab();
+
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/using 'newsletter-event'/)).toBeInTheDocument();
+    });
+  });
+
+  // ── AC7: Create new template link ────────────────────────────────────────────
+
+  it('AC7: shows create new template link pointing to email-templates admin tab', () => {
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 0 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    renderTab();
+
+    const link = screen.getByRole('link', { name: /create new template/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/organizer/admin?tab=email-templates');
   });
 });

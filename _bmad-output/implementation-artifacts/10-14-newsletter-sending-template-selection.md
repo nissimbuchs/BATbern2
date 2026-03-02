@@ -1,6 +1,6 @@
 # Story 10.14: Newsletter Sending with Template Selection
 
-Status: review
+Status: done
 
 <!-- Prerequisite: Story 10.2 (email template management), Story 10.7 (newsletter sending infrastructure) -->
 
@@ -506,6 +506,7 @@ claude-sonnet-4-6
 - AC9: i18n — `newsletter.templateSelect.*` keys added to `de` and `en` organizer.json; `confirmSendBody` updated with `{{templateKey}}` in all 10 locales; 8 non-primary locales have `[MISSING]` prefix in organizer.json and events.json.
 - Pre-existing failures in `EventLogistics.test.tsx` and `EventParticipantsTab.test.tsx` (3 tests) confirmed unrelated to this story (same failures present on unmodified HEAD).
 - type-check: ✅ (exit 0), lint: ✅ (exit 0), frontend: 3855/3858 pass (3 pre-existing failures unrelated to this story).
+- Code review fixes (CR): H1 — added `useEmailTemplates` mock + 5 new tests for AC3/AC5/AC6/AC7 in `EventNewsletterTab.test.tsx`; H2 — added 3 new integration tests verifying `templateKey` field is accepted (404 not 400) in `NewsletterControllerIntegrationTest`; M1 — empty dropdown now renders disabled fallback MenuItem; M2 — `data-testid` moved from `inputProps` to `SelectDisplayProps` targeting visible Select button. Frontend: 3860/3863 pass. Backend: 37/37 pass.
 
 ### File List
 
@@ -537,3 +538,4 @@ claude-sonnet-4-6
 - `web-frontend/public/locales/gsw-BE/organizer.json`
 - `web-frontend/public/locales/gsw-BE/events.json`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/NewsletterControllerIntegrationTest.java` (CR: +3 templateKey acceptance tests)
