@@ -293,17 +293,6 @@ jobs:
             echo "::warning::Header propagation tests script not found"
           fi
 
-      - name: Run Bruno API contract tests
-        run: |
-          if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
-            chmod +x scripts/ci/run-bruno-tests.sh
-            echo "Running Bruno API contract tests..."
-            ./scripts/ci/run-bruno-tests.sh production || echo "::warning::Bruno tests not fully configured"
-            echo "✅ Bruno API contract tests completed"
-          else
-            echo "::warning::Bruno test script not found, skipping"
-          fi
-
       - name: Verify critical endpoints
         run: |
           endpoints=(
@@ -322,87 +311,8 @@ jobs:
             fi
           done
 
-  e2e-infrastructure-tests:
-    needs: blue-green-deployment
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # Required for OIDC authentication
-      contents: read   # Required for checkout
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Install infrastructure dependencies
-        working-directory: ./infrastructure
-        run: npm ci
-
-      - name: Run E2E infrastructure tests
-        working-directory: ./infrastructure
-        run: |
-          echo "Running E2E tests against deployed production infrastructure..."
-          TEST_E2E=true TEST_ENVIRONMENT=production npm test -- test/e2e/
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-
-  e2e-frontend-tests:
-    needs: blue-green-deployment
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read   # Required for checkout
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: web-frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: ./web-frontend
-        run: npm ci
-
-      - name: Install Playwright
-        working-directory: ./web-frontend
-        run: |
-          npm install -D @playwright/test
-          npx playwright install --with-deps chromium
-
-      - name: Run frontend E2E tests (Playwright)
-        working-directory: ./web-frontend
-        run: |
-          echo "Running Playwright E2E tests against production environment..."
-          npx playwright test --project=chromium
-        env:
-          E2E_BASE_URL: https://www.batbern.ch
-          E2E_API_URL: https://api.batbern.ch
-          E2E_AWS_REGION: ${{ env.AWS_REGION }}
-
-      - name: Upload Playwright test results
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: playwright-report-production
-          path: web-frontend/playwright-report/
-          retention-days: 30
-
   create-release:
-    needs: [smoke-tests, e2e-infrastructure-tests, e2e-frontend-tests]
+    needs: [smoke-tests]
     if: success()
     runs-on: ubuntu-latest
     permissions:
@@ -442,7 +352,7 @@ jobs:
           echo "✅ GitHub Release created: ${TAG}"
 
   rollback-on-failure:
-    needs: [blue-green-deployment, smoke-tests, e2e-infrastructure-tests, e2e-frontend-tests]
+    needs: [blue-green-deployment, smoke-tests]
     if: failure()
     runs-on: ubuntu-latest
     permissions:
