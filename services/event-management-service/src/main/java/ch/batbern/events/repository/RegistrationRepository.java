@@ -147,6 +147,42 @@ public interface RegistrationRepository
             @Param("eventCode") String eventCode,
             @Param("username") String username);
 
+    // ── Story 10.11: Waitlist & Capacity Methods ───────────────────────────────
+
+    /**
+     * Count active registrations (registered + confirmed) for an event.
+     * T5.1 — Used for capacity enforcement in RegistrationService.createRegistration().
+     */
+    long countByEventIdAndStatusIn(UUID eventId, List<String> statuses);
+
+    /**
+     * Find all waitlisted registrations for an event ordered by position (FIFO).
+     * T5.2 — Used for waitlist display and management.
+     */
+    @Query("SELECT r FROM Registration r WHERE r.eventId = :eventId AND r.status = 'waitlist' "
+            + "ORDER BY r.waitlistPosition ASC")
+    List<Registration> findWaitlistByEventIdOrdered(@Param("eventId") UUID eventId);
+
+    /**
+     * Find the first waitlisted registration (lowest waitlistPosition) for promotion.
+     * T5.3 — Spring Data derived query: finds lowest-position waitlist entry.
+     */
+    Optional<Registration> findTopByEventIdAndStatusOrderByWaitlistPositionAsc(UUID eventId, String status);
+
+    /**
+     * Get the next sequential waitlist position for an event.
+     * T5.4 — MAX(waitlist_position) + 1, or 1 if no waitlist entries exist yet.
+     */
+    @Query("SELECT COALESCE(MAX(r.waitlistPosition), 0) + 1 FROM Registration r "
+            + "WHERE r.eventId = :eventId AND r.status = 'waitlist'")
+    int getNextWaitlistPosition(@Param("eventId") UUID eventId);
+
+    /**
+     * Count registrations by event and single status.
+     * T5.5 — Used to compute waitlistCount for event responses.
+     */
+    long countByEventIdAndStatus(UUID eventId, String status);
+
     /**
      * Attendance summary per event for a given company.
      * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5

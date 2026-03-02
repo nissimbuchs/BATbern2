@@ -11,11 +11,12 @@
  */
 
 import React from 'react';
-import { Box, Typography, Chip, Stack } from '@mui/material';
+import { Box, Typography, Chip, Stack, LinearProgress } from '@mui/material';
 import { People as PeopleIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { Event } from '../../../types/event.types';
 import EventParticipantList from './EventParticipantList';
+import WaitlistSection from './WaitlistSection';
 
 interface EventParticipantsTabProps {
   event: Event;
@@ -25,6 +26,13 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
   const { t } = useTranslation('events');
 
   const participantCount = event.currentAttendeeCount || 0;
+  const capacity = (event as { registrationCapacity?: number | null }).registrationCapacity ?? null;
+  const confirmedCount = (event as { confirmedCount?: number }).confirmedCount ?? participantCount;
+  const waitlistCount = (event as { waitlistCount?: number }).waitlistCount ?? 0;
+
+  const fillPct =
+    capacity != null && capacity > 0 ? Math.min(100, (confirmedCount / capacity) * 100) : 0;
+  const isFull = capacity != null && confirmedCount >= capacity;
 
   return (
     <Box sx={{ py: 3 }}>
@@ -39,8 +47,34 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
         </Stack>
       </Stack>
 
+      {/* Story 10.11: Capacity progress bar (only when registrationCapacity is set) */}
+      {capacity != null && (
+        <Box sx={{ mb: 3 }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t('eventPage.participantsTab.capacityBar', {
+                confirmed: confirmedCount,
+                capacity,
+                waitlist: waitlistCount,
+              })}
+            </Typography>
+          </Stack>
+          <LinearProgress
+            variant="determinate"
+            value={fillPct}
+            color={isFull ? 'error' : 'primary'}
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
+      )}
+
       {/* Participant List */}
       <EventParticipantList eventCode={event.eventCode} />
+
+      {/* Story 10.11: Waitlist section (only when registrationCapacity is set) */}
+      {capacity != null && (
+        <WaitlistSection eventCode={event.eventCode} waitlistCount={waitlistCount} />
+      )}
     </Box>
   );
 };

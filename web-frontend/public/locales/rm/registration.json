@@ -82,7 +82,11 @@
       "acceptTerms": "Duveis acceptar las cundiziuns d'utilisaziun per s'annunziar.",
       "failed": "L'annunziaziun ha fallì. Pruvai anc ina giada."
     },
-    "cancelConfirm": "Essas vus segirs da vulair interromper l'annunziaziun?"
+    "cancelConfirm": "Essas vus segirs da vulair interromper l'annunziaziun?",
+    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
+    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
+    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
+    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
   },
   "personalDetails": {
     "title": "Infurmaziuns persunalas",
@@ -193,7 +197,8 @@
     "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
     "cancelled": "[MISSING] Your registration was cancelled.",
     "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again"
+    "registerAgain": "[MISSING] Register again",
+    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "[MISSING] You are already registered for this event",

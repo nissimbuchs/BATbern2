@@ -2507,6 +2507,55 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/registrations/{registrationCode}/promote:
+    post:
+      tags:
+        - Registrations
+      summary: Manually promote a waitlisted registration
+      description: |
+        Organizer-only action to manually promote a waitlisted registration to registered status.
+
+        **Story**: 10.11 — Venue Capacity Enforcement & Waitlist Management (AC3, AC5)
+        **Security**: ORGANIZER role required
+
+      operationId: promoteFromWaitlist
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code of the waitlisted registration
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Registration successfully promoted from waitlist to registered
+        '404':
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Registration exists but is not on the waitlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Registration is not on the waitlist
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/registrations/confirm:
     post:
       tags:
@@ -5206,6 +5255,26 @@ components:
         venueCapacity:
           type: integer
           example: 500
+        registrationCapacity:
+          type: integer
+          nullable: true
+          description: |
+            Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
+            Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
+          example: 60
+        confirmedCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status registered or confirmed.
+          example: 42
+        waitlistCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status waitlist.
+          example: 3
+        spotsRemaining:
+          type: integer
+          nullable: true
+          description: Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
+          example: 18
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
@@ -5694,6 +5763,13 @@ components:
           format: date-time
           description: ISO-8601 timestamp when registration was created
           example: '2025-11-01T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: |
+            Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
+            Backward-compatible addition — null for non-waitlist registrations.
+          example: 3
 
     Registration:
       type: object
@@ -5753,7 +5829,12 @@ components:
         # Registration metadata
         status:
           type: string
-          enum: [REGISTERED, WAITLISTED, CONFIRMED, CANCELLED, ATTENDED]
+          enum: [REGISTERED, WAITLIST, CONFIRMED, CANCELLED, ATTENDED]
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+          example: 2
         registrationDate:
           type: string
           format: date-time
@@ -5815,6 +5896,11 @@ components:
         venueCapacity:
           type: integer
           minimum: 1
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited.
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
@@ -5877,6 +5963,11 @@ components:
           type: string
         venueCapacity:
           type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
@@ -5925,6 +6016,11 @@ components:
           type: string
         venueCapacity:
           type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:

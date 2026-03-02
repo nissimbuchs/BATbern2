@@ -82,7 +82,11 @@
       "acceptTerms": "You must accept the terms and conditions to register.",
       "failed": "Registration failed. Please try again."
     },
-    "cancelConfirm": "Are you sure you want to cancel registration?"
+    "cancelConfirm": "Are you sure you want to cancel registration?",
+    "waitlistWarning": "This event is full. Submitting will add you to the waitlist.",
+    "waitlistAcknowledgeLabel": "I understand I will be on the waitlist",
+    "waitlistSuccessTitle": "You're on the waitlist!",
+    "waitlistSuccessBody": "You are #{{position}} on the waitlist. We'll email you if a spot opens."
   },
   "personalDetails": {
     "title": "Personal Information",
@@ -191,6 +195,7 @@
     "confirmed": "Your registration is confirmed. We'll see you there!",
     "registered": "You are registered for this event. Check your email for confirmation.",
     "waitlist": "You are on the waitlist. We'll notify you if a spot opens.",
+    "waitlistWithPosition": "You are #{{position}} on the waitlist. We'll notify you if a spot opens.",
     "cancelled": "Your registration was cancelled.",
     "manageLink": "Manage Registration",
     "registerAgain": "Register again"

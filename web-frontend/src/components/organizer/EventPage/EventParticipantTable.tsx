@@ -107,7 +107,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
         return 'info';
       case 'CANCELLED':
         return 'error';
-      case 'WAITLISTED':
+      case 'WAITLIST':
         return 'warning';
       default:
         return 'default';

@@ -82,7 +82,11 @@
       "acceptTerms": "Devi accettare i termini e le condizioni per iscriverti.",
       "failed": "Iscrizione fallita. Riprova."
     },
-    "cancelConfirm": "Sei sicuro/a di voler annullare l'iscrizione?"
+    "cancelConfirm": "Sei sicuro/a di voler annullare l'iscrizione?",
+    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
+    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
+    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
+    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
   },
   "personalDetails": {
     "title": "Informazioni personali",
@@ -193,7 +197,8 @@
     "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
     "cancelled": "[MISSING] Your registration was cancelled.",
     "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again"
+    "registerAgain": "[MISSING] Register again",
+    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "[MISSING] You are already registered for this event",

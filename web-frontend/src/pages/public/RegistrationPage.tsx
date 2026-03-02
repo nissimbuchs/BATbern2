@@ -80,7 +80,11 @@ const RegistrationPage = () => {
             </div>
 
             {/* Registration Wizard */}
-            <RegistrationWizard eventCode={eventCode} inline={false} />
+            <RegistrationWizard
+              eventCode={eventCode}
+              inline={false}
+              spotsRemaining={event?.spotsRemaining}
+            />
           </div>
         )}
       </div>

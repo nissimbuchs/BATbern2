@@ -32,7 +32,15 @@
       "previewPublic": "公開ページをプレビュー"
     },
     "participantsTab": {
-      "title": "イベント参加者"
+      "title": "イベント参加者",
+      "confirmed": "[MISSING] confirmed",
+      "onWaitlist": "[MISSING] on waitlist",
+      "capacityBar": "[MISSING] {{confirmed}} / {{capacity}} confirmed",
+      "waitlistSection": "[MISSING] Waitlist ({{count}})",
+      "waitlistPromote": "[MISSING] Promote to Registered",
+      "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
+      "waitlistPromoteError": "[MISSING] Failed to promote",
+      "waitlistEmpty": "[MISSING] No one on the waitlist"
     },
     "participantTable": {
       "headers": {
@@ -80,7 +88,9 @@
       "moderatorDesc": "このイベントのモデレーションを担当するオーガナイザー。",
       "moderatorLabel": "モデレーター",
       "moderatorUpdated": "モデレーターが正常に更新されました",
-      "moderatorUpdateError": "モデレーターの更新に失敗しました。"
+      "moderatorUpdateError": "モデレーターの更新に失敗しました。",
+      "capacityLabel": "[MISSING] Registration Capacity",
+      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
     },
     "speakers": {
       "progress": "進捗",
@@ -749,5 +759,11 @@
       "waitlist": "[MISSING] Waitlist",
       "cancelled": "[MISSING] Cancelled"
     }
+  },
+  "capacity": {
+    "spotsRemaining": "[MISSING] {{count}} spots remaining",
+    "spotsRemaining_one": "[MISSING] 1 spot remaining",
+    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
+    "waitlistCount": "[MISSING] {{count}} on waitlist"
   }
 }

@@ -32,7 +32,15 @@
       "previewPublic": "Öffentligi Syte vorschau"
     },
     "participantsTab": {
-      "title": "Veranstautigsteilnähmer"
+      "title": "Veranstautigsteilnähmer",
+      "confirmed": "[MISSING] confirmed",
+      "onWaitlist": "[MISSING] on waitlist",
+      "capacityBar": "[MISSING] {{confirmed}} / {{capacity}} confirmed",
+      "waitlistSection": "[MISSING] Waitlist ({{count}})",
+      "waitlistPromote": "[MISSING] Promote to Registered",
+      "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
+      "waitlistPromoteError": "[MISSING] Failed to promote",
+      "waitlistEmpty": "[MISSING] No one on the waitlist"
     },
     "participantTable": {
       "headers": {
@@ -85,7 +93,9 @@
       "moderatorDesc": "Dr Organisator, wo für d'Moderierig vo dere Veranstatig zuständig isch.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgriich aktualisiert",
-      "moderatorUpdateError": "Moderator chöne nid aktualisiert werde."
+      "moderatorUpdateError": "Moderator chöne nid aktualisiert werde.",
+      "capacityLabel": "[MISSING] Registration Capacity",
+      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -751,5 +761,11 @@
       "waitlist": "[MISSING] Waitlist",
       "cancelled": "[MISSING] Cancelled"
     }
+  },
+  "capacity": {
+    "spotsRemaining": "[MISSING] {{count}} spots remaining",
+    "spotsRemaining_one": "[MISSING] 1 spot remaining",
+    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
+    "waitlistCount": "[MISSING] {{count}} on waitlist"
   }
 }

@@ -110,6 +110,7 @@ public class EventController {
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
     private final ch.batbern.events.service.SessionService sessionService;
+    private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
 
     /**
      * List/Search Events (AC1)
@@ -234,6 +235,7 @@ public class EventController {
 
             // Build response using EventMapper (BAT-91 Phase 3)
             response = eventMapper.toDto(event);
+            enrichWithRegistrationCounts(response, event.getId());
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
@@ -784,6 +786,7 @@ public class EventController {
 
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(currentEvent);
+        enrichWithRegistrationCounts(response, currentEvent.getId());
 
         // Apply resource expansions if requested
         if (include != null && !include.trim().isEmpty()) {
@@ -841,6 +844,7 @@ public class EventController {
                 .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
                 .workflowState(request.getWorkflowState()) // Use workflowState from request directly
+                .registrationCapacity(request.getRegistrationCapacity())
                 .build();
 
         // Save event
@@ -878,6 +882,7 @@ public class EventController {
 
         // Build response using EventMapper (Phase 3: BAT-91)
         EventResponse response = eventMapper.toDto(savedEvent);
+        enrichWithRegistrationCounts(response, savedEvent.getId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -961,6 +966,7 @@ public class EventController {
         if (request.getWorkflowState() != null) {
             event.setWorkflowState(request.getWorkflowState());
         }
+        event.setRegistrationCapacity(request.getRegistrationCapacity()); // null = unlimited
 
         // Set theme image upload ID before save (Story 2.5.3a)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
@@ -1025,6 +1031,7 @@ public class EventController {
 
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(updatedEvent);
+        enrichWithRegistrationCounts(response, updatedEvent.getId());
 
         return ResponseEntity.ok(response);
     }
@@ -1126,6 +1133,7 @@ public class EventController {
 
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(patchedEvent);
+        enrichWithRegistrationCounts(response, patchedEvent.getId());
 
         return ResponseEntity.ok(response);
     }
@@ -1290,6 +1298,7 @@ public class EventController {
 
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(publishedEvent);
+        enrichWithRegistrationCounts(response, publishedEvent.getId());
 
         return ResponseEntity.ok(response);
     }
@@ -1332,6 +1341,22 @@ public class EventController {
      * @param event The event to update
      * @param request The patch request with optional fields
      */
+    /**
+     * Enrich an EventResponse with live registration counts (Story 10.11).
+     * Adds confirmedCount, waitlistCount, and spotsRemaining (null when capacity is unlimited).
+     * Cost: 2 DB queries per call — acceptable for single-event endpoints.
+     */
+    private void enrichWithRegistrationCounts(EventResponse response, java.util.UUID eventId) {
+        long confirmed = registrationRepository.countByEventIdAndStatusIn(
+                eventId, java.util.List.of("registered", "confirmed"));
+        long waitlisted = registrationRepository.countByEventIdAndStatus(eventId, "waitlist");
+        response.setConfirmedCount((int) confirmed);
+        response.setWaitlistCount((int) waitlisted);
+        if (response.getRegistrationCapacity() != null) {
+            response.setSpotsRemaining((int) (response.getRegistrationCapacity() - confirmed));
+        }
+    }
+
     private void applyPatchUpdates(Event event, PatchEventRequest request) {
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());
@@ -1410,6 +1435,30 @@ public class EventController {
         if (request.getTopicSelectionNote() != null) {
             event.setTopicSelectionNote(request.getTopicSelectionNote());
         }
+        // Story 10.11: only set if explicitly provided (non-null); to clear use PUT with null
+        if (request.getRegistrationCapacity() != null) {
+            event.setRegistrationCapacity(request.getRegistrationCapacity());
+        }
+    }
+
+    /**
+     * Manually promote a waitlisted registration to registered (Story 10.11 — AC3, AC5)
+     *
+     * POST /api/v1/events/{eventCode}/registrations/{registrationCode}/promote
+     *
+     * Organizer-only: promotes the specified waitlisted registration to status=registered.
+     * Returns 204 on success, 404 if registration not found, 409 if not on waitlist.
+     */
+    @PostMapping("/{eventCode}/registrations/{registrationCode}/promote")
+    @Operation(summary = "Promote Waitlisted Registration",
+            description = "Organizer-only: promote a waitlisted registration to registered status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> promoteFromWaitlist(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("POST /api/v1/events/{}/registrations/{}/promote", eventCode, registrationCode);
+        waitlistPromotionService.manuallyPromote(registrationCode);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -1549,35 +1598,46 @@ public class EventController {
         ch.batbern.events.dto.generated.users.UserResponse userProfile =
                 userApiClient.getUserByUsername(registration.getAttendeeUsername());
 
-        // Send confirmation email with JWT tokens (Story 4.1.5c + Anonymous Cancellation)
-        // Email includes:
-        //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
-        //   - Cancellation link: https://batbern.ch/cancel-registration?token={cancellationToken}
-        registrationEmailService.sendRegistrationConfirmation(
-                registration,
-                userProfile,
-                event,
-                confirmationToken,
-                cancellationToken,
-                java.util.Locale.GERMAN // Default to German for BATbern events
-        );
+        // Story 10.11: Waitlist registrations get waitlist-confirmation email (sent by service).
+        // Regular registrations get normal confirmation email with JWT tokens.
+        if (!"waitlist".equals(registration.getStatus())) {
+            // Send confirmation email with JWT tokens (Story 4.1.5c + Anonymous Cancellation)
+            // Email includes:
+            //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
+            //   - Cancellation link: https://batbern.ch/cancel-registration?token={cancellationToken}
+            registrationEmailService.sendRegistrationConfirmation(
+                    registration,
+                    userProfile,
+                    event,
+                    confirmationToken,
+                    cancellationToken,
+                    java.util.Locale.GERMAN // Default to German for BATbern events
+            );
 
-        log.info("Confirmation and cancellation tokens generated, email queued for registration {}: "
-                        + "confirm={}, cancel={}",
-                registration.getId(),
-                confirmationToken.substring(0, 20) + "...",
-                cancellationToken.substring(0, 20) + "...");
+            log.info("Confirmation and cancellation tokens generated, email queued for registration {}: "
+                            + "confirm={}, cancel={}",
+                    registration.getId(),
+                    confirmationToken.substring(0, 20) + "...",
+                    cancellationToken.substring(0, 20) + "...");
+        }
 
         // QA Fix (VALID-001): Return different status for resend vs new registration
         if (isResend) {
-            // Resending confirmation email for existing pending registration
-            log.info("Resending confirmation email for existing pending registration: {}",
-                registration.getId());
-            CreateRegistrationResponse response = CreateRegistrationResponse.builder()
-                    .message("You are already registered for this event. A new confirmation email has been sent.")
-                    .email(request.getEmail())
-                    .build();
-            // Return 409 Conflict for duplicate registration attempt
+            if ("waitlist".equals(registration.getStatus())) {
+                // Story 10.11 (T10.4): Duplicate waitlist registration — return 200 OK.
+                // Waitlist-confirmation email already resent by RegistrationService.
+                log.info("Duplicate waitlist registration for event: {} by user: {}, returning existing waitlist entry",
+                        eventCode, registration.getAttendeeUsername());
+                CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                        .message("You are already on the waitlist for this event."
+                                + " A new confirmation email has been sent.")
+                        .email(request.getEmail())
+                        .build();
+                return ResponseEntity.ok(response);
+            }
+            // For other statuses (e.g., "registered"), return 409
+            log.info("Duplicate registration attempt for event: {} by user: {} (status: {})",
+                    eventCode, registration.getAttendeeUsername(), registration.getStatus());
             throw new IllegalStateException("User " + registration.getAttendeeUsername()
                 + " is already registered for event " + eventCode);
         }

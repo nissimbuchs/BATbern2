@@ -16,6 +16,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import Alert from '@mui/material/Alert';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
@@ -34,6 +37,8 @@ export interface RegistrationWizardProps {
   onCancel?: () => void;
   /** Whether wizard is displayed inline (vs dedicated page) */
   inline?: boolean;
+  /** AC8 (Story 10.11): Remaining spots. 0 = event full → waitlist flow. null/undefined = unlimited. */
+  spotsRemaining?: number | null;
 }
 
 /**
@@ -48,6 +53,7 @@ export const RegistrationWizard = ({
   eventCode,
   onCancel,
   inline = false,
+  spotsRemaining,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation(['registration', 'common']);
@@ -61,12 +67,17 @@ export const RegistrationWizard = ({
   const { isAuthenticated } = useAuth();
   const { userProfile } = useUserProfile({ enabled: isAuthenticated });
 
+  // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
+  const isEventFull = spotsRemaining === 0;
+
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [waitlistAcknowledged, setWaitlistAcknowledged] = useState(false);
+  const [isWaitlistRegistration, setIsWaitlistRegistration] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState<CreateRegistrationRequest>({
@@ -183,6 +194,7 @@ export const RegistrationWizard = ({
 
       // Success: Show success message inline (Story 4.1.5c)
       setRegisteredEmail(response.email);
+      setIsWaitlistRegistration(isEventFull);
       setRegistrationSuccess(true);
       setIsSubmitting(false);
       // AC7: Invalidate my-registration cache so banner/guard reflect new status immediately
@@ -288,8 +300,17 @@ export const RegistrationWizard = ({
       <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
         <div className="text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h2 className="text-3xl font-light mb-2">{t('success.title')}</h2>
-          <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+          {isWaitlistRegistration ? (
+            <>
+              <h2 className="text-3xl font-light mb-2">{t('wizard.waitlistSuccessTitle')}</h2>
+              <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-light mb-2">{t('success.title')}</h2>
+              <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+            </>
+          )}
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
@@ -405,6 +426,27 @@ export const RegistrationWizard = ({
         </RegistrationAccordion>
       </div>
 
+      {/* AC8 (Story 10.11): Waitlist acknowledgment — shown in Step 2 when event is full */}
+      {isEventFull && currentStep === 2 && (
+        <div className="mt-4">
+          <Alert severity="info" sx={{ mb: 1 }}>
+            {t('wizard.waitlistWarning')}
+          </Alert>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={waitlistAcknowledged}
+                onChange={(e) => setWaitlistAcknowledged(e.target.checked)}
+                data-testid="waitlist-acknowledge-checkbox"
+                sx={{ color: 'info.main' }}
+              />
+            }
+            label={t('wizard.waitlistAcknowledgeLabel')}
+            sx={{ color: 'text.secondary', mt: 0.5 }}
+          />
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg">
@@ -440,7 +482,9 @@ export const RegistrationWizard = ({
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={!formData.termsAccepted || isSubmitting}
+              disabled={
+                !formData.termsAccepted || isSubmitting || (isEventFull && !waitlistAcknowledged)
+              }
               className="min-w-[200px]"
               data-testid="registration-wizard-submit-btn"
             >

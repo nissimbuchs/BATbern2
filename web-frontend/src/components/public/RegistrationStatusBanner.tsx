@@ -24,6 +24,8 @@ interface RegistrationStatusBannerProps {
   eventCode: string;
   /** When true, renders a skeleton placeholder instead of the banner */
   isLoading: boolean;
+  /** AC13 (Story 10.11): Position on the waitlist (1-based). Only relevant when status=WAITLIST. */
+  waitlistPosition?: number | null;
 }
 
 /**
@@ -37,6 +39,7 @@ export function RegistrationStatusBanner({
   status,
   eventCode,
   isLoading,
+  waitlistPosition,
 }: RegistrationStatusBannerProps) {
   const { t } = useTranslation('registration');
 
@@ -113,12 +116,21 @@ export function RegistrationStatusBanner({
     WAITLIST: {
       severity: 'info',
       icon: <QueueIcon fontSize="small" />,
-      textKey: 'registrationStatusBanner.waitlist',
+      textKey:
+        waitlistPosition != null
+          ? 'registrationStatusBanner.waitlistWithPosition'
+          : 'registrationStatusBanner.waitlist',
       linkKey: 'registrationStatusBanner.manageLink',
     },
   };
 
   const { severity, icon, textKey, linkKey } = config[status];
+
+  // AC13: interpolate position for WAITLIST when available
+  const bannerText =
+    status === 'WAITLIST' && waitlistPosition != null
+      ? t(textKey, { position: waitlistPosition })
+      : t(textKey);
 
   return (
     <Alert
@@ -135,7 +147,7 @@ export function RegistrationStatusBanner({
         </Link>
       }
     >
-      {t(textKey)}
+      {bannerText}
     </Alert>
   );
 }

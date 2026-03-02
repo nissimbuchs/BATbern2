@@ -95,7 +95,7 @@ describe('RegistrationStatusBanner', () => {
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
   });
 
-  test('renders info (WAITLIST) banner with manage link', () => {
+  test('renders info (WAITLIST) banner with manage link — no position (fallback)', () => {
     render(<RegistrationStatusBanner status="WAITLIST" eventCode="BATbern999" isLoading={false} />);
 
     const banner = screen.getByTestId('registration-status-banner');
@@ -104,6 +104,41 @@ describe('RegistrationStatusBanner', () => {
 
     const link = screen.getByText('registrationStatusBanner.manageLink');
     expect(link.closest('a')).toHaveAttribute('href', '/register/BATbern999');
+  });
+
+  // ── AC13 (Story 10.11): WAITLIST with position ───────────────────────────
+
+  test('WAITLIST with waitlistPosition=3 shows waitlistWithPosition key', () => {
+    render(
+      <RegistrationStatusBanner
+        status="WAITLIST"
+        eventCode="BATbern999"
+        isLoading={false}
+        waitlistPosition={3}
+      />
+    );
+
+    const banner = screen.getByTestId('registration-status-banner');
+    expect(banner.className).toMatch(/info/i);
+    // t mock returns key; key used is waitlistWithPosition (not waitlist)
+    expect(screen.getByText('registrationStatusBanner.waitlistWithPosition')).toBeInTheDocument();
+    expect(screen.queryByText('registrationStatusBanner.waitlist')).not.toBeInTheDocument();
+  });
+
+  test('WAITLIST with waitlistPosition=null falls back to waitlist key', () => {
+    render(
+      <RegistrationStatusBanner
+        status="WAITLIST"
+        eventCode="BATbern999"
+        isLoading={false}
+        waitlistPosition={null}
+      />
+    );
+
+    expect(screen.getByText('registrationStatusBanner.waitlist')).toBeInTheDocument();
+    expect(
+      screen.queryByText('registrationStatusBanner.waitlistWithPosition')
+    ).not.toBeInTheDocument();
   });
 
   test('renders grey (CANCELLED) banner with "register again" link', () => {

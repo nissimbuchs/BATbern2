@@ -25,6 +25,8 @@ interface HeroSectionProps {
   themeImageUrl?: string;
   unicornProjectId?: string;
   countdownTimer?: ReactNode;
+  /** AC8 (Story 10.11): Remaining spots — passed through to RegistrationWizard */
+  spotsRemaining?: number | null;
 }
 
 export const HeroSection = ({
@@ -37,6 +39,7 @@ export const HeroSection = ({
   themeImageUrl,
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
+  spotsRemaining,
 }: HeroSectionProps) => {
   const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
@@ -310,6 +313,7 @@ export const HeroSection = ({
               eventCode={eventCode}
               inline={true}
               onCancel={() => setIsRegistrationExpanded(false)}
+              spotsRemaining={spotsRemaining}
             />
           </div>
         </section>

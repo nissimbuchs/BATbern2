@@ -57,6 +57,7 @@ public class RegistrationService {
     @SuppressWarnings("unused") // Story 2.2a Task B12 - Will be used when email confirmation is implemented
     private final RegistrationEmailService registrationEmailService;
     private final NewsletterSubscriberService newsletterSubscriberService;
+    private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -108,6 +109,14 @@ public class RegistrationService {
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
                 return registration;
+            } else if ("waitlist".equalsIgnoreCase(registration.getStatus())) {
+                // Story 10.11 (T10.4): Duplicate waitlist registration — do NOT create another entry.
+                // Return existing and resend waitlist-confirmation email.
+                log.info("Found waitlist registration for event: {} by user: {},"
+                        + " will resend waitlist-confirmation email", eventCode, username);
+                registration.setEventCode(eventCode);
+                waitlistPromotionEmailService.sendWaitlistConfirmationEmail(registration);
+                return registration;
             } else if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
                 // Story 10.10 (T4.6): Allow re-registration for cancelled users.
                 // Delete the cancelled record and fall through to create a new registration.
@@ -117,7 +126,7 @@ public class RegistrationService {
                         eventCode, username);
                 // Fall through to create a new registration below
             } else {
-                // confirmed or waitlist — reject duplicate
+                // confirmed — reject duplicate
                 log.warn("Duplicate registration attempt for event: {} by user: {} (status: {})",
                         eventCode, username, registration.getStatus());
                 throw new IllegalStateException(
@@ -129,8 +138,25 @@ public class RegistrationService {
         String registrationCode = generateUniqueRegistrationCode(eventCode);
         log.debug("Generated registration code: {}", registrationCode);
 
+        // Story 10.11 (T10.1): Capacity enforcement
+        // Count active (registered + confirmed) registrations; if full → place on waitlist
+        Integer capacity = event.getRegistrationCapacity();
+        String registrationStatus = "registered"; // default
+        Integer waitlistPosition = null;
+        if (capacity != null) {
+            long activeCount = registrationRepository.countByEventIdAndStatusIn(
+                    event.getId(), List.of("registered", "confirmed"));
+            if (activeCount >= capacity) {
+                registrationStatus = "waitlist";
+                waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());
+                log.info("Event {} is at capacity ({}/{}), placing {} on waitlist at position {}",
+                        eventCode, activeCount, capacity, username, waitlistPosition);
+            }
+        }
+
         // 4. Create and save registration (ADR-004: No denormalized user data)
         // Story 4.1.5c: Status starts as "registered", becomes "confirmed" after email confirmation
+        // Story 10.11: Status may be "waitlist" when event is full
         // Performance: Populate search cache fields for database-level filtering
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
@@ -142,7 +168,8 @@ public class RegistrationService {
                 .attendeeLastName(userResponse.getUser().getLastName())
                 .attendeeEmail(userResponse.getUser().getEmail())
                 .attendeeCompanyId(userResponse.getUser().getCompanyId())
-                .status("registered") // Status before email confirmation (lowercase per DB constraint)
+                .status(registrationStatus) // "registered" or "waitlist" (lowercase per DB constraint)
+                .waitlistPosition(waitlistPosition) // null for registered, 1-based for waitlist
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();
 
@@ -161,6 +188,12 @@ public class RegistrationService {
                 // Already subscribed — silently ignore (AC6)
                 log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
             }
+        }
+
+        // Story 10.11 (T10.3): For waitlist registrations, send waitlist-confirmation email now.
+        // Normal registrations: confirmation email sent by controller after token generation.
+        if ("waitlist".equals(saved.getStatus())) {
+            waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
         }
 
         // Story 4.1.5c: Email sending moved to EventController (needs JWT token)

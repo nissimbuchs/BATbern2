@@ -53,6 +53,12 @@ public class EventResponse {
     private Map<String, Object> venue;        // Populated with include=venue
     private List<Map<String, Object>> sessions; // Populated with include=sessions (includes speakers)
 
+    // Registration capacity fields (Story 10.11)
+    private Integer registrationCapacity; // null = unlimited
+    private Integer confirmedCount;       // active registrations (registered + confirmed)
+    private Integer waitlistCount;        // registrations with status=waitlist
+    private Integer spotsRemaining;       // null when registrationCapacity is null
+
     // Optional metrics fields (populated with include=metrics)
     private Integer confirmedSpeakersCount;
     private Integer speakersWithCompleteInfoCount;

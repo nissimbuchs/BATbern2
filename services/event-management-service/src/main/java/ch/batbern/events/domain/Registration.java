@@ -124,7 +124,14 @@ public class Registration {
     private String attendeeCompanyId;
 
     @Column(nullable = false)
-    private String status; // pending, confirmed, cancelled, waitlist
+    private String status; // registered, confirmed, waitlist, cancelled
+
+    /**
+     * Story 10.11: Waitlist position (1-based). Null for non-waitlist registrations.
+     * Sequential — assigned at waitlist entry time. Not renumbered on cancellation.
+     */
+    @Column(name = "waitlist_position")
+    private Integer waitlistPosition;
 
     @Column(nullable = false)
     private Instant registrationDate;

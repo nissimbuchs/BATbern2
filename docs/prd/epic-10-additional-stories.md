@@ -1,6 +1,6 @@
 # Epic 10: Additional Stories
 
-**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24).
+**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02).
 
 **Epic Goal**: Consolidate scattered admin configuration and tooling into coherent, discoverable interfaces. These are standalone improvements that don't belong to any prior epic's domain.
 
@@ -734,7 +734,7 @@ public/locales/de/registration.json + en/registration.json — registrationStatu
 
 ### Story 10.11: Venue Capacity Enforcement & Waitlist Management
 
-**Status**: ready-for-dev
+**Status**: done
 **Prerequisite**: Story 10.10 (registration status indicator) recommended first for UX coherence; technically independent
 
 **User Story:**
@@ -812,17 +812,19 @@ public/locales/de/registration.json + en/registration.json       — waitlist.* 
 ```
 
 **Definition of Done (Story 10.11):**
-- [ ] V73 migration runs cleanly; `waitlist_position` nullable; `registration_capacity` nullable on events
-- [ ] TDD: `WaitlistPromotionServiceTest` and `RegistrationCapacityIntegrationTest` written first
-- [ ] Creating registration when event is full → status=waitlist with correct sequential position (1, 2, 3…)
-- [ ] Cancelling a registration when waitlist exists → first waitlisted person auto-promoted + email sent
-- [ ] Manual promotion by organizer works from attendees tab
-- [ ] Organizer can set/clear capacity from event settings; NULL = unlimited (existing events unaffected)
-- [ ] Waitlist email templates seeded and editable in Email Templates admin tab
-- [ ] Public homepage shows capacity badge when capacity is set
-- [ ] Registration wizard shows waitlist acknowledgment when full
-- [ ] OpenAPI spec committed before implementation (ADR-006)
-- [ ] i18n: `waitlist.*` keys in de/en; Type-check passes; Checkstyle passes
+- [x] V73 migration runs cleanly; `waitlist_position` nullable; `registration_capacity` nullable on events
+- [x] TDD: `WaitlistPromotionServiceTest` and `RegistrationCapacityIntegrationTest` written first (RED→GREEN confirmed)
+- [x] Creating registration when event is full → status=waitlist with correct sequential position (1, 2, 3…)
+- [ ] Cancelling a registration when waitlist exists → first waitlisted person auto-promoted + email sent *(Story 10.12 — `cancelRegistration` endpoint implemented there; `WaitlistPromotionService.promoteFromWaitlist()` ready)*
+- [x] Manual promotion by organizer works from attendees tab (`POST /{eventCode}/registrations/{registrationCode}/promote`)
+- [x] Organizer can set/clear capacity from event settings; NULL = unlimited (existing events unaffected)
+- [x] Waitlist email templates seeded (`registration-waitlist-confirmation-de/en`, `waitlist-promotion-de/en`) and editable via Email Templates admin tab (Story 10.13)
+- [x] Public homepage shows capacity badge when capacity is set (`CapacityIndicator` in logistics section)
+- [x] Registration wizard shows waitlist acknowledgment when full (Alert + Checkbox in Step 2; submit disabled until acknowledged; waitlist-specific success title)
+- [x] `RegistrationStatusBanner` shows "You are #N on the waitlist" when `waitlistPosition` is set (AC13)
+- [x] OpenAPI spec committed before implementation (ADR-006) — T1 done first
+- [x] i18n: `waitlist.*` and `capacity.*` keys in all 10 locales; type-check passes; lint passes
+- [x] `RegistrationStatus` type corrected: `WAITLISTED` → `WAITLIST` (consistent with OpenAPI fix)
 
 ---
 
@@ -1354,6 +1356,482 @@ services/event-management-service/.../repository/NotificationRepository.java (if
 - [ ] Cleanup is idempotent — running twice produces same result with no errors
 - [ ] Integration test: archive event → verify DB state (task statuses, notification read flags)
 - [ ] Checkstyle passes; no TypeScript changes needed
+
+---
+
+---
+
+### Story 10.19: Remove Organizer Email from Public Presenter & About Pages
+
+**Status**: ready-for-dev
+**Prerequisite**: None (pure UI cleanup — independent)
+
+**User Story:**
+As an **organizer**, I want our personal email addresses removed from the public-facing About page and the moderator presentation page, so that we don't expose team members' private contact details to every event attendee.
+
+**Background:**
+The `OrganizerDisplay.tsx` component (used on `/about`) renders a clickable `mailto:` link for every organizer whose `email` field is populated. The same presenter view (`/present/:eventCode`) displays organizer bios. The general contact email `info@berner-architekten-treffen.ch` already exists in the About page Contact section, making individual emails redundant.
+
+**Scope:**
+
+**Frontend — OrganizerDisplay.tsx:**
+- Remove the `{organizer.email && (<a href={`mailto:...`}>)}` block (lines 69–76)
+- The organizer portrait, name, title, and bio remain unchanged
+- No backend change needed — the email field still exists in the DB/API for organizer-internal use (e.g., task notifications); it simply must not be rendered on public pages
+
+**Frontend — PresentationPage.tsx (if email is rendered):**
+- Audit `PresentationPage.tsx` and all child components (e.g., speaker bio sections, organizer credit slides) for any `email` renders
+- Remove any public-facing `mailto:` or email text renders found; retain email in organizer-only internal views
+
+**Frontend — About i18n:**
+- If any `t('contact.email')` or similar keys were used solely to label the email display, remove those uses (keys themselves may remain for Contact section)
+- No new i18n keys needed
+
+**Key modified files:**
+```
+web-frontend/src/components/public/About/OrganizerDisplay.tsx   — remove email block
+web-frontend/src/pages/PresentationPage.tsx                     — remove any email renders (if present)
+```
+
+**Definition of Done (Story 10.19):**
+- [ ] `/about` page renders all organizer cards without any email address or mailto link
+- [ ] `/present/:eventCode` renders with no organizer or speaker email addresses visible
+- [ ] The Contact section on `/about` still shows `info@berner-architekten-treffen.ch` (unchanged)
+- [ ] Organizer email field remains in DB and API (no schema change); only the UI render is removed
+- [ ] Type-check passes; lint passes; no test changes needed for this pure UI removal
+
+---
+
+### Story 10.20: Legacy BAT Format Data Export & Import (Admin Tool)
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.1 (Admin page must exist to add new tab)
+
+**User Story:**
+As an **organizer**, I want to export all BATbern data (events, sessions, speakers, companies, attendees, portraits, logos, and presentations) in the legacy BAT JSON format, and to import data in that same format, so that we can migrate data between system versions and maintain interoperability with the old BATspa platform.
+
+**Background:**
+The legacy BATspa application uses a proprietary JSON export format for events, sessions, speakers, bios, companies, and attendees. Binary assets (speaker portraits, company logos, presentation files) are stored in S3. This story adds a new "Export / Import" tab (Tab 5) to the existing `/organizer/admin` Administration page that allows full data snapshots and restores using this format.
+
+**Scope:**
+
+**Backend — Export API (`event-management-service`):**
+- New endpoint: `GET /api/v1/admin/export/legacy` (organizer-only)
+  - Collects all events with their sessions, speaker pools, registrations (attendees)
+  - Collects all companies (via HTTP call to company-user-management-service)
+  - Collects all users with role SPEAKER (bio, portrait S3 key, links)
+  - Serializes to the legacy BAT JSON envelope: `{ version, exportedAt, events[], companies[], speakers[], attendees[] }`
+  - Returns as `application/json` download (`Content-Disposition: attachment; filename=batbern-export-{date}.json`)
+- New endpoint: `GET /api/v1/admin/export/assets` (organizer-only)
+  - Returns a signed S3 ZIP URL (or triggers async ZIP creation) containing all portraits, logos, and presentation PDFs/files
+  - Assets identified via S3 keys stored on User (portrait), Company (logo), and SessionMaterials (presentation) entities
+  - Use AWS S3 `selectObjectContent` or batch-presigned URLs if ZIP async is too complex; list presigned URLs in a JSON manifest as fallback
+
+**Backend — Import API (`event-management-service`):**
+- New endpoint: `POST /api/v1/admin/import/legacy` (organizer-only, `multipart/form-data`)
+  - Accepts `file` (JSON in legacy BAT format)
+  - Parses and validates the envelope; returns 400 with structured error list on validation failure
+  - Import strategy: **upsert by legacy ID / event code** — existing records updated, new records inserted, nothing deleted
+  - Speaker bios and company data delegated via internal service calls (company-user-management-service)
+  - Attendee registrations imported as `registered` status (no waitlist logic during import)
+  - Returns `{ imported: { events: N, sessions: N, speakers: N, companies: N, attendees: N }, skipped: [...], errors: [...] }`
+- Portrait / logo / asset import: **separate** `POST /api/v1/admin/import/assets` endpoint
+  - Accepts a ZIP file; unpacks to S3 under `imports/{timestamp}/` prefix
+  - Links assets to entities by filename convention matching the legacy export manifest
+
+**Frontend — New Admin Tab 5 "Export / Import":**
+- `web-frontend/src/components/organizer/Admin/ExportImportTab.tsx`
+- **Export section:**
+  - "Export All Data (JSON)" button → triggers `GET /api/v1/admin/export/legacy` download
+  - "Export Assets (Portraits, Logos, Presentations)" button → triggers `GET /api/v1/admin/export/assets` (opens presigned URL or shows ZIP progress)
+- **Import section:**
+  - JSON import: file picker (`.json`) + "Import" button → `POST /api/v1/admin/import/legacy` → shows result summary table (imported counts + skipped/error list)
+  - Asset import: file picker (`.zip`) + "Import Assets" button → `POST /api/v1/admin/import/assets`
+  - Confirmation dialog before import: "This will upsert data. Existing records will be updated. This cannot be undone automatically."
+- Tab added to `EventManagementAdminPage.tsx` as Tab 5 (index 5)
+
+**Key new files:**
+```
+services/event-management-service/.../controller/AdminExportImportController.java
+services/event-management-service/.../service/LegacyExportService.java
+services/event-management-service/.../service/LegacyImportService.java
+services/event-management-service/.../dto/LegacyExportEnvelope.java
+services/event-management-service/.../dto/LegacyImportResult.java
+web-frontend/src/components/organizer/Admin/ExportImportTab.tsx
+```
+
+**Key modified files:**
+```
+docs/api/events-api.openapi.yml                         — export/import endpoints (FIRST)
+web-frontend/src/pages/organizer/EventManagementAdminPage.tsx — add Tab 5
+public/locales/de/common.json + en/common.json          — admin.exportImport.* keys
+```
+
+**Definition of Done (Story 10.20):**
+- [ ] `GET /api/v1/admin/export/legacy` returns valid legacy JSON for a seeded dataset; organizer-only (403 for others)
+- [ ] `POST /api/v1/admin/import/legacy` upserts all entity types; returns structured result; idempotent (importing same file twice has no side effects)
+- [ ] Asset export endpoint returns presigned URLs or download; asset import ZIP is unpacked to S3 and linked to entities
+- [ ] Frontend tab shows export buttons and import file pickers; result summary renders after import
+- [ ] Confirmation dialog shown before any import action
+- [ ] TDD: `LegacyExportServiceTest` and `LegacyImportServiceTest` with mocked repositories; integration test covers round-trip (export → import → verify DB)
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `admin.exportImport.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.21: Event Photos Gallery
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.1 (Admin page exists); no other hard prerequisite
+
+**User Story:**
+As an **organizer**, I want to upload and manage photos from each event directly in the event detail page, so that we can preserve visual memories of our events.
+
+As a **visitor**, I want to see real photos from past BATbern events on the homepage — replacing the dummy testimonials — and I want to see each archived event's own photos when I browse the archive.
+
+**Background:**
+The homepage `TestimonialSection` currently shows 20 hardcoded fake testimonials in an infinite marquee. This story replaces that row with up to 20 real event photos randomly selected from the last 5 events. Each archived event detail page also gets an image marquee showing that event's photos. Photos are stored in S3 under `events/{eventCode}/photos/{filename}`.
+
+**Scope:**
+
+**Backend — Event Photos API (`event-management-service`):**
+- Flyway **V74**: New `event_photos` table: `id (UUID PK)`, `event_code (VARCHAR FK → events.event_code)`, `s3_key (TEXT NOT NULL)`, `display_url (TEXT NOT NULL)`, `filename (TEXT)`, `uploaded_at (TIMESTAMPTZ)`, `uploaded_by (VARCHAR)`, `sort_order (INT DEFAULT 0)`
+- New endpoints (organizer-only for write; public for read):
+  - `GET /api/v1/events/{eventCode}/photos` → `List<EventPhotoResponse>` (public)
+  - `POST /api/v1/events/{eventCode}/photos/upload-url` → presigned S3 upload URL + `photoId` (organizer)
+  - `POST /api/v1/events/{eventCode}/photos/confirm` (body: `photoId`) → marks upload complete, stores `display_url` (organizer)
+  - `DELETE /api/v1/events/{eventCode}/photos/{photoId}` → deletes DB record + S3 object (organizer)
+- New endpoint for homepage use: `GET /api/v1/events/recent-photos?limit=20&lastNEvents=5` → returns up to `limit` photo URLs randomly sampled from the last `lastNEvents` events (by event date)
+
+**Frontend — Organizer Event Page: Photos Tab:**
+- New tab "Photos" added to `EventPage.tsx` tab list (after existing tabs)
+- `web-frontend/src/components/organizer/EventPage/EventPhotosTab.tsx`:
+  - Photo grid (3-4 columns, thumbnails)
+  - "Upload Photo" button → triggers presigned URL flow (same pattern as logo/presentation uploads)
+  - Each photo card has "Delete" icon; confirmation before delete
+  - Drag-to-reorder for sort_order (optional enhancement)
+
+**Frontend — Public Homepage: Replace Dummy Testimonials:**
+- `TestimonialSection.tsx`:
+  - First marquee row: replace hardcoded `testimonials[]` array with `useRecentEventPhotos(limit=20, lastNEvents=5)` hook
+  - If < 3 photos available (not enough data), fall back to a subset of the current testimonial cards
+  - Photo cards use `<img src={photo.displayUrl} alt="BATbern event" className="...rounded-lg object-cover h-48 w-64" />`
+  - Remove `TestimonialCard` component if unused after this change (or keep for fallback)
+
+**Frontend — Archive Event Detail: Photos Marquee:**
+- Archive event detail page (public) gets a "Photos" section below the sessions list: `InfiniteMarquee` showing that event's photos (fetched via `GET /api/v1/events/{eventCode}/photos`)
+- Only shown if the event has ≥ 1 photo; section hidden otherwise
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V74__create_event_photos.sql
+services/event-management-service/.../domain/EventPhoto.java
+services/event-management-service/.../repository/EventPhotoRepository.java
+services/event-management-service/.../service/EventPhotoService.java
+services/event-management-service/.../controller/EventPhotoController.java
+web-frontend/src/components/organizer/EventPage/EventPhotosTab.tsx
+web-frontend/src/hooks/useRecentEventPhotos.ts
+web-frontend/src/hooks/useEventPhotos.ts
+```
+
+**Key modified files:**
+```
+docs/api/events-api.openapi.yml                                     — photo endpoints (FIRST)
+web-frontend/src/components/organizer/EventPage/EventPage.tsx       — add Photos tab
+web-frontend/src/components/public/Testimonials/TestimonialSection.tsx — replace dummy data with real photos
+web-frontend/src/pages/public/ArchiveEventDetailPage.tsx (or similar) — add photos marquee section
+public/locales/de/events.json + en/events.json                      — photos.* keys
+```
+
+**Definition of Done (Story 10.21):**
+- [ ] V74 migration runs cleanly; `event_photos` table created
+- [ ] Organizer can upload photos to an event via presigned URL flow; photos appear in photo grid
+- [ ] Organizer can delete a photo; S3 object and DB record both removed
+- [ ] `GET /api/v1/events/recent-photos` returns up to 20 photos from last 5 events (public, no auth)
+- [ ] Homepage marquee shows real event photos; graceful fallback if < 3 photos exist
+- [ ] Archive event detail page shows event's own photos in marquee when photos exist; section hidden otherwise
+- [ ] TDD: `EventPhotoServiceTest` covers upload confirmation, delete, recent-photos query
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `photos.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.22: Event Teaser Image on Moderator Presentation Page
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.8a (PresentationPage must exist)
+
+**User Story:**
+As an **organizer**, I want to upload a teaser image for an event from the event detail page, so that it appears on the moderator presentation screen right after we introduce the topic and before the agenda slides — giving the audience a visual mood-setter.
+
+**Background:**
+The moderator presentation page (`/present/:eventCode`) currently shows slides: intro → topic → agenda. This story inserts a dedicated full-screen image slide between the topic introduction and the first agenda slide. The image is stored in S3 and managed from the event detail Overview tab (same organizer panel used to edit event settings).
+
+**Scope:**
+
+**Backend — Teaser Image Field:**
+- Flyway **V75**: Add `teaser_image_s3_key (TEXT)` and `teaser_image_url (TEXT)` columns to the `events` table (both nullable)
+- `EventResponse` DTO: add `teaserImageUrl: String` (null if not set)
+- `PatchEventRequest` / `UpdateEventRequest` DTO: no change needed — image managed via dedicated presigned-URL endpoints
+- New endpoints (organizer-only):
+  - `POST /api/v1/events/{eventCode}/teaser-image/upload-url` → returns presigned S3 PUT URL + expiry; S3 key: `events/{eventCode}/teaser/{uuid}.{ext}`
+  - `POST /api/v1/events/{eventCode}/teaser-image/confirm` (body: `{ s3Key }`) → stores `teaser_image_s3_key` + CloudFront `teaser_image_url` on event
+  - `DELETE /api/v1/events/{eventCode}/teaser-image` → clears both columns + deletes S3 object
+
+**Frontend — Event Settings Tab (Organizer):**
+- `EventSettingsTab.tsx`: new "Teaser Image" subsection below existing fields
+  - Shows current teaser image thumbnail if set (from `event.teaserImageUrl`)
+  - "Upload Teaser Image" button → presigned URL flow → on completion, refetch event
+  - "Remove" button (shown when image exists) → calls DELETE endpoint → clears preview
+
+**Frontend — Presentation Page:**
+- `PresentationPage.tsx`: insert a new slide type `TEASER_IMAGE` in the slide sequence, positioned after the topic introduction slide and before the first agenda slot slide
+- The slide renders the `teaserImageUrl` as a full-screen background image (`object-fit: cover`) with no overlaid text
+- If `teaserImageUrl` is null/undefined, the slide is omitted (no empty slide shown)
+- Slide navigation and keyboard controls (`ArrowRight` / `ArrowLeft`) already handle dynamic slide counts
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V75__add_teaser_image_to_events.sql
+services/event-management-service/.../service/EventTeaserImageService.java
+services/event-management-service/.../controller/EventTeaserImageController.java
+```
+
+**Key modified files:**
+```
+docs/api/events-api.openapi.yml                                 — teaser image endpoints + teaserImageUrl in EventResponse (FIRST)
+services/event-management-service/.../domain/Event.java         — teaserImageS3Key, teaserImageUrl fields
+services/event-management-service/.../dto/EventResponse.java    — teaserImageUrl field
+web-frontend/src/types/generated/events-api.types.ts            — regenerate after spec change
+web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx — teaser image upload UI
+web-frontend/src/pages/PresentationPage.tsx                     — insert TEASER_IMAGE slide
+public/locales/de/events.json + en/events.json                  — teaserImage.* keys
+```
+
+**Definition of Done (Story 10.22):**
+- [ ] V75 migration runs cleanly; columns nullable; existing events unaffected
+- [ ] Organizer can upload teaser image via presigned URL; thumbnail shown in Settings tab
+- [ ] Organizer can remove teaser image; DB cleared, S3 object deleted
+- [ ] Presentation page shows full-screen teaser image slide between topic intro and first agenda slide when `teaserImageUrl` is set
+- [ ] When no teaser image set, presentation page renders identically to pre-story behavior
+- [ ] TDD: `EventTeaserImageServiceTest` covers upload-confirm, delete; integration test verifies DB state
+- [ ] OpenAPI spec committed before implementation (ADR-006)
+- [ ] i18n: `teaserImage.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.23: Event Description Section on Public Homepage
+
+**Status**: ready-for-dev
+**Prerequisite**: None (field already exists in DB and API)
+
+**User Story:**
+As a **visitor**, I want to read the event description on the public homepage right below the hero section, so that I can understand what this BATbern event is about before deciding to register.
+
+**Background:**
+The `Event` entity already has a `description` (TEXT) field stored in the DB and returned in `EventResponse.description`. The field is settable from the organizer's event settings panel. However, it is currently not displayed anywhere on the public-facing pages — the homepage hero goes straight from the event title/date into the speakers section. This story surfaces the description as a distinct styled section between the hero and the speakers/content sections.
+
+**Scope:**
+
+**Frontend — Public Homepage:**
+- In `HomePage.tsx` (or whichever component renders the active event public view): add an `EventDescriptionSection` component rendered after the `HeroSection` and before the speaker/agenda sections
+- Only rendered when `activeEvent.description` is non-null and non-empty; hidden otherwise (no placeholder shown to anonymous visitors)
+- Component: `web-frontend/src/components/public/Event/EventDescriptionSection.tsx`
+  - Styled card or prose block (consistent with site dark theme)
+  - Renders description as formatted paragraph text (plain text stored in DB; render with `white-space: pre-wrap` or convert `\n` to `<br/>`)
+  - Optional section heading: `t('events.description.heading')` → "About This Event" / "Über diese Veranstaltung"
+
+**Frontend — Archive Event Detail Page:**
+- If `ArchiveEventDetailPage` (or equivalent) renders event details, also display `description` in a similar prose block (if non-empty) below the event metadata and above the sessions list
+- Consistent styling with homepage section
+
+**No backend changes required** — `EventResponse.description` already populated from the existing `description` column (confirmed at `EventResponse.java:37`).
+
+**Key new files:**
+```
+web-frontend/src/components/public/Event/EventDescriptionSection.tsx
+```
+
+**Key modified files:**
+```
+web-frontend/src/pages/public/HomePage.tsx                      — render EventDescriptionSection after hero
+web-frontend/src/pages/public/ArchiveEventDetailPage.tsx (or equivalent) — add description block
+public/locales/de/events.json + en/events.json                  — description.heading key
+```
+
+**Definition of Done (Story 10.23):**
+- [ ] Homepage shows event description below the hero section when `activeEvent.description` is non-empty
+- [ ] Section is completely absent (no empty card/space) when description is null or empty
+- [ ] Description text wraps correctly on mobile and desktop
+- [ ] Archive event detail page also shows description when available
+- [ ] No backend changes; no DB migrations needed
+- [ ] i18n: `events.description.heading` key in all locales (10 languages); Type-check passes; lint passes
+
+---
+
+### Story 10.24: Admin AWS Cognito User Registration
+
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.1 (Admin page must exist); Epic 9 Story 9.1 (Cognito integration patterns established)
+
+**User Story:**
+As an **organizer**, I want to create a new user directly in AWS Cognito from the admin panel, so that I can onboard new attendees, speakers, or organizers without requiring them to self-register — especially for users who will receive a temporary password and must reset it on first login.
+
+**Background:**
+Currently, users either self-register via Cognito's hosted UI or are synced from Cognito via `sync-users-from-cognito.sh`. There is no in-app flow for an organizer to provision a new Cognito user. AWS Cognito's `AdminCreateUser` API creates the user with a temporary password and sets `FORCE_CHANGE_PASSWORD` status; the user must set a new password on first login. If a user with the same email already exists in Cognito, the call fails gracefully with `UsernameExistsException`. The new user's Cognito `sub` should be linked to an existing `users` DB record if one shares the same email.
+
+**Scope:**
+
+**Backend — Cognito User Provisioning (`company-user-management-service`):**
+- New service: `CognitoAdminService.java`
+  - Wraps AWS Cognito `AdminCreateUser` API call (using `software.amazon.awssdk:cognitoidentityprovider` SDK, already in project)
+  - Parameters: `email`, `givenName`, `familyName`, `role` (maps to Cognito group: `ATTENDEE`, `SPEAKER`, `ORGANIZER`)
+  - Sets `SUPPRESS` message action to avoid sending Cognito's default email (BATbern sends a custom welcome email)
+  - Sends custom welcome email via `EmailService` with template `user-welcome-temp-password-de/en.html` (new classpath template, seeded by `EmailTemplateSeedService`)
+  - Catches `UsernameExistsException` → returns structured error "A user with this email already exists in Cognito"
+  - After successful Cognito creation: upserts DB `users` record (create if not found by email, update `cognitoId` if found by email without `cognitoId`)
+- New endpoint: `POST /api/v1/admin/users/provision` (organizer-only)
+  - Body: `{ email, givenName, familyName, role, language }`
+  - Returns: `{ username, temporaryPasswordSent: true }` on success; structured error on failure
+- IAM: ECS task role for company-user-management-service must have `cognito-idp:AdminCreateUser` + `cognito-idp:AdminAddUserToGroup` permissions (add to CDK stack)
+
+**Frontend — Admin User Provisioning UI:**
+- New "Provision User" section in the Admin page (add to Tab 1 "Import" or as standalone Tab 5 "User Provisioning")
+  - Alternatively: add a "Create User in AWS" button to the existing User Management list page (`/organizer/users`) — preferred location for discoverability
+- `web-frontend/src/components/organizer/UserManagement/ProvisionUserModal.tsx`:
+  - Fields: Email, First Name, Last Name, Role (dropdown: Attendee / Speaker / Organizer), Language (dropdown)
+  - Submit → `POST /api/v1/admin/users/provision`
+  - Success: "User created. A temporary password has been sent to {email}. They must reset it on first login."
+  - Error (UsernameExistsException): "A Cognito account already exists for {email}. If they are not linked in the system, use the Sync Users function."
+  - Error (other): generic error toast
+
+**Email Templates (new classpath content fragments, seeded by `EmailTemplateSeedService`):**
+```
+services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-de.html
+services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-en.html
+```
+Variables: `recipientName`, `email`, `temporaryPasswordNote` (explains first-login reset), `loginUrl`.
+
+**Key new files:**
+```
+services/company-user-management-service/.../service/CognitoAdminService.java
+services/company-user-management-service/.../controller/AdminUserProvisioningController.java
+services/company-user-management-service/.../dto/ProvisionUserRequest.java
+services/company-user-management-service/.../dto/ProvisionUserResponse.java
+services/company-user-management-service/.../service/CognitoAdminServiceTest.java
+web-frontend/src/components/organizer/UserManagement/ProvisionUserModal.tsx
+services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-de.html
+services/company-user-management-service/src/main/resources/email-templates/user-welcome-temp-password-en.html
+```
+
+**Key modified files:**
+```
+docs/api/users-api.openapi.yml                                           — provision endpoint (FIRST)
+infrastructure/lib/company-user-management-stack.ts                      — IAM: AdminCreateUser + AdminAddUserToGroup
+web-frontend/src/components/organizer/UserManagement/UserList.tsx        — "Create User" button → ProvisionUserModal
+web-frontend/src/services/api/adminUserService.ts (new or extend)        — provisionUser() call
+public/locales/de/common.json + en/common.json                           — admin.provisionUser.* keys
+```
+
+**Definition of Done (Story 10.24):**
+- [ ] `POST /api/v1/admin/users/provision` creates Cognito user with `FORCE_CHANGE_PASSWORD`; sends custom welcome email; organizer-only (403 for others)
+- [ ] If email already in Cognito (`UsernameExistsException`) → 409 with clear message; no duplicate created
+- [ ] If email matches existing DB user without `cognitoId` → DB record linked post-creation
+- [ ] If email matches existing DB user with existing `cognitoId` → no DB change; 409 returned
+- [ ] IAM role in CDK grants `AdminCreateUser` + `AdminAddUserToGroup` on the correct user pool ARN
+- [ ] Welcome email templates seeded and editable in Email Templates admin tab
+- [ ] Frontend modal opens from User Management page; renders success/error states correctly
+- [ ] TDD: `CognitoAdminServiceTest` with mocked Cognito SDK (`UsernameExistsException`, success, SDK error)
+- [ ] OpenAPI spec (users-api) committed before implementation (ADR-006)
+- [ ] i18n: `admin.provisionUser.*` keys in de/en; Type-check passes; Checkstyle passes
+
+---
+
+### Story 10.25: Partner Meeting iCal Auto-creation & Year-End Reminders
+
+**Status**: ready-for-dev
+**Prerequisite**: Epic 8 Story 8.3 (IcsGeneratorService + PartnerMeetingService exist); Story 10.2 (email templates editable in admin)
+
+**User Story:**
+As an **organizer**, I want a partner meeting calendar entry to be automatically created whenever I create a new BATbern event, so that I don't have to manually set it up each time.
+
+As an **organizer**, I want an iCal invitation email template for partner meetings to be manageable in the admin email templates section, so that I can customize the meeting invite content.
+
+As an **organizer**, I want a task automatically created on 31 December of the current year reminding me to send partner meeting and BATbern event iCal invitations for the following year, so that we never forget to coordinate with partners in advance.
+
+**Background:**
+`IcsGeneratorService` (Story 8.3) already generates RFC 5545 iCal content for partner meetings. `PartnerMeetingService` already handles CRUD and manual invite sending. Currently, partner meetings must be created manually after each event is created, and there is no automated reminder for annual partner coordination. The BATbern events typically occur in early spring; the 31 December reminder ensures the team plans partner outreach well in advance.
+
+**Scope:**
+
+**Backend — Auto-create Partner Meeting on Event Creation (`partner-coordination-service`):**
+- `EventWorkflowTransitionListener` (or equivalent event listener in `event-management-service`) publishes a domain event `EventCreatedEvent` when a new event is saved with status `CREATED`
+- `partner-coordination-service` consumes this event (via existing inter-service event bus or HTTP callback pattern already used in the project):
+  - Creates a `PartnerMeeting` record with default values:
+    - `eventCode` = new event's code
+    - `meetingDate` = same date as the event (partners meet on the event day)
+    - `meetingStartTime` = `12:00` (standard lunch slot — configurable via `partner.meeting.default-start-time` property)
+    - `meetingEndTime` = `14:00` (standard end — configurable)
+    - `location` = `""` (empty; organizer fills in later)
+    - `title` = `"Partner Meeting — {eventTitle}"`
+    - `status` = `DRAFT` (not yet sent)
+  - Also creates an organizer Task (via `EventTaskService` or cross-service HTTP call): "Send partner meeting iCal invitations" with due date = 14 days before event date, triggered by `TOPIC_SELECTION` state (consistent with existing task trigger patterns)
+- If auto-creation fails (e.g., partner service unavailable), log error and do not fail the event creation (non-blocking, best-effort)
+
+**Backend — iCal Email Template (`event-management-service` / `partner-coordination-service`):**
+- New email template: `partner-meeting-invite-de.html` + `partner-meeting-invite-en.html` (classpath; seeded by `EmailTemplateSeedService`)
+- Template variables: `recipientName`, `partnerCompanyName`, `meetingTitle`, `meetingDate`, `meetingStartTime`, `meetingLocation`, `eventTitle`, `eventDate`, `icsAttachment` (note only — actual ICS attached by service)
+- `PartnerInviteEmailService.sendInvite()`: update to load template from DB (Story 10.2 pattern) with fallback to classpath
+- Template editable in Admin → Email Templates tab under category `PARTNER`
+
+**Backend — Year-End Reminder Task (Scheduler):**
+- New `YearEndReminderScheduler.java` in `event-management-service` (ShedLock-protected, runs daily at 08:00):
+  - On 31 December each year, creates two organizer tasks (if they don't already exist for the target year):
+    1. "Send partner meeting iCal invitations for {nextYear}" — assigned to all organizers; due date: 31 January of next year
+    2. "Create BATbern event calendar entry for {nextYear}" — assigned to all organizers; due date: 31 January of next year
+  - Idempotent: checks for existing tasks with the same title + year before creating (no duplicates on re-run)
+  - Task type: `CUSTOM` (not tied to a specific event); `eventCode` = null (global organizer task)
+
+**Frontend — Admin Email Templates:**
+- Partner meeting invite templates automatically appear in the Email Templates tab (via `EmailTemplateSeedService` seed + existing template list UI)
+- No additional frontend changes required for auto-creation (happens server-side)
+- Partner Meeting list page: show `DRAFT` badge on auto-created meetings so organizer knows invite not yet sent
+
+**Key new files:**
+```
+services/partner-coordination-service/.../service/AutoPartnerMeetingService.java
+services/event-management-service/.../scheduler/YearEndReminderScheduler.java
+services/event-management-service/.../service/YearEndReminderSchedulerTest.java
+services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-de.html
+services/partner-coordination-service/src/main/resources/email-templates/partner-meeting-invite-en.html
+```
+
+**Key modified files:**
+```
+services/event-management-service/.../listener/EventWorkflowTransitionListener.java
+     — publish EventCreatedEvent or call partner service on event creation
+services/partner-coordination-service/.../service/PartnerMeetingService.java
+     — auto-create meeting from event created event
+services/partner-coordination-service/.../service/PartnerInviteEmailService.java
+     — load invite template from DB with classpath fallback
+services/event-management-service/.../service/EmailTemplateSeedService.java
+     — seed partner-meeting-invite-de/en templates
+web-frontend/src/components/organizer/PartnerManagement/PartnerMeetingList.tsx (if exists)
+     — show DRAFT badge on auto-created meetings
+public/locales/de/common.json + en/common.json
+     — tasks.yearEndReminder.* keys
+```
+
+**Definition of Done (Story 10.25):**
+- [ ] Creating a new BATbern event automatically creates a `DRAFT` partner meeting with correct date, default times, and linked event code
+- [ ] Auto-creation failure (partner service down) does not fail or roll back the event creation; error is logged
+- [ ] Partner meeting invite email templates (`partner-meeting-invite-de/en`) are seeded and appear in Email Templates admin tab under category PARTNER
+- [ ] `PartnerInviteEmailService` loads template from DB with classpath fallback (Story 10.2 pattern)
+- [ ] `YearEndReminderScheduler` runs on 31 December; creates two tasks for next year; idempotent (no duplicate tasks on re-run)
+- [ ] Year-end tasks have correct due dates (31 January of next year) and are assigned to all active organizers
+- [ ] TDD: `AutoPartnerMeetingServiceTest` (mocked event listener); `YearEndReminderSchedulerTest` (verifies task creation + idempotency); `PartnerInviteEmailServiceTest` (DB template loaded, fallback works)
+- [ ] OpenAPI spec committed if any new endpoints added (ADR-006)
+- [ ] i18n: `tasks.yearEndReminder.*` keys in de/en; Checkstyle passes; Type-check passes
 
 ---
 

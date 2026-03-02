@@ -156,3 +156,19 @@ export const deleteRegistration = async (
 ): Promise<void> => {
   await apiClient.delete(`/events/${eventCode}/registrations/${registrationCode}`);
 };
+
+/**
+ * Promote a waitlisted registration to registered (Story 10.11 — AC3, AC5)
+ *
+ * ORGANIZER only. Promotes the specified waitlisted registration to status=registered.
+ *
+ * @param eventCode - Event code
+ * @param registrationCode - Registration code of the waitlisted attendee
+ * @throws 404 if registration not found; 409 if not on waitlist; 403 if not ORGANIZER
+ */
+export const promoteFromWaitlist = async (
+  eventCode: string,
+  registrationCode: string
+): Promise<void> => {
+  await apiClient.post(`/events/${eventCode}/registrations/${registrationCode}/promote`);
+};

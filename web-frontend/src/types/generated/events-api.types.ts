@@ -991,6 +991,29 @@ export interface paths {
     patch: operations['updateRegistration'];
     trace?: never;
   };
+  '/events/{eventCode}/registrations/{registrationCode}/promote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Manually promote a waitlisted registration
+     * @description Organizer-only action to manually promote a waitlisted registration to registered status.
+     *
+     *     **Story**: 10.11 — Venue Capacity Enforcement & Waitlist Management (AC3, AC5)
+     *     **Security**: ORGANIZER role required
+     */
+    post: operations['promoteFromWaitlist'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/registrations/confirm': {
     parameters: {
       query?: never;
@@ -2437,6 +2460,27 @@ export interface components {
       /** @example 500 */
       venueCapacity: number;
       /**
+       * @description Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
+       *     Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
+       * @example 60
+       */
+      registrationCapacity?: number | null;
+      /**
+       * @description Story 10.11 — Count of registrations with status registered or confirmed.
+       * @example 42
+       */
+      confirmedCount?: number;
+      /**
+       * @description Story 10.11 — Count of registrations with status waitlist.
+       * @example 3
+       */
+      waitlistCount?: number;
+      /**
+       * @description Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
+       * @example 18
+       */
+      spotsRemaining?: number | null;
+      /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
@@ -2864,6 +2908,12 @@ export interface components {
        * @example 2025-11-01T10:30:00Z
        */
       registrationDate: string;
+      /**
+       * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
+       *     Backward-compatible addition — null for non-waitlist registrations.
+       * @example 3
+       */
+      waitlistPosition?: number | null;
     };
     /**
      * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
@@ -2907,7 +2957,12 @@ export interface components {
       /** @description Company name from user_profiles.company_id (FK to companies table) */
       company?: string;
       /** @enum {string} */
-      status: 'REGISTERED' | 'WAITLISTED' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
+      status: 'REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
+      /**
+       * @description Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+       * @example 2
+       */
+      waitlistPosition?: number | null;
       /** Format: date-time */
       registrationDate?: string;
       /** @description Event-level registration - sessions are preferences only, not commitments */
@@ -2935,6 +2990,8 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited. */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -2966,6 +3023,8 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -2992,6 +3051,8 @@ export interface components {
       venueName?: string;
       venueAddress?: string;
       venueCapacity?: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -5840,6 +5901,54 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  promoteFromWaitlist: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbernXXX */
+        eventCode: string;
+        /** @description Registration code of the waitlisted registration */
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration successfully promoted from waitlist to registered */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Registration not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration exists but is not on the waitlist */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Registration is not on the waitlist"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

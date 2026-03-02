@@ -32,7 +32,15 @@
       "previewPublic": "Anteprima pagina pubblica"
     },
     "participantsTab": {
-      "title": "Partecipanti all'evento"
+      "title": "Partecipanti all'evento",
+      "confirmed": "[MISSING] confirmed",
+      "onWaitlist": "[MISSING] on waitlist",
+      "capacityBar": "[MISSING] {{confirmed}} / {{capacity}} confirmed",
+      "waitlistSection": "[MISSING] Waitlist ({{count}})",
+      "waitlistPromote": "[MISSING] Promote to Registered",
+      "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
+      "waitlistPromoteError": "[MISSING] Failed to promote",
+      "waitlistEmpty": "[MISSING] No one on the waitlist"
     },
     "participantTable": {
       "headers": {
@@ -80,7 +88,9 @@
       "moderatorDesc": "L'organizzatore responsabile della moderazione di questo evento.",
       "moderatorLabel": "Moderatore",
       "moderatorUpdated": "Moderatore aggiornato con successo",
-      "moderatorUpdateError": "Aggiornamento moderatore fallito."
+      "moderatorUpdateError": "Aggiornamento moderatore fallito.",
+      "capacityLabel": "[MISSING] Registration Capacity",
+      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
     },
     "speakers": {
       "progress": "Avanzamento",
@@ -749,5 +759,11 @@
       "waitlist": "[MISSING] Waitlist",
       "cancelled": "[MISSING] Cancelled"
     }
+  },
+  "capacity": {
+    "spotsRemaining": "[MISSING] {{count}} spots remaining",
+    "spotsRemaining_one": "[MISSING] 1 spot remaining",
+    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
+    "waitlistCount": "[MISSING] {{count}} on waitlist"
   }
 }

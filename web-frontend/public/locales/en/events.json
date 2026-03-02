@@ -32,7 +32,19 @@
       "previewPublic": "Preview Public Page"
     },
     "participantsTab": {
-      "title": "Event Participants"
+      "title": "Event Participants",
+      "confirmed": "confirmed",
+      "onWaitlist": "on waitlist",
+      "capacityBar": "{{confirmed}} / {{capacity}} confirmed · {{waitlist}} on waitlist",
+      "waitlistSection": "Waitlist ({{count}})",
+      "waitlistPromote": "Promote to Registered",
+      "waitlistPromoteSuccess": "Successfully promoted to registered",
+      "waitlistPromoteError": "Failed to promote registration",
+      "waitlistEmpty": "No one on the waitlist"
+    },
+    "settings": {
+      "capacityLabel": "Registration Capacity",
+      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity."
     },
     "participantTable": {
       "headers": {
@@ -749,5 +761,11 @@
       "waitlist": "Waitlist",
       "cancelled": "Cancelled"
     }
+  },
+  "capacity": {
+    "spotsRemaining": "{{count}} spots remaining",
+    "spotsRemaining_one": "1 spot remaining",
+    "fullJoinWaitlist": "Full — join waitlist",
+    "waitlistCount": "{{count}} on waitlist"
   }
 }

@@ -66,6 +66,7 @@ public class EventMapper {
                 .workflowState(entity.getWorkflowState() != null ? entity.getWorkflowState().name() : null)
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
+                .registrationCapacity(entity.getRegistrationCapacity())
                 .build();
     }
 
@@ -108,6 +109,7 @@ public class EventMapper {
                 .workflowState(entity.getWorkflowState() != null ? entity.getWorkflowState().name() : null)
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
+                .registrationCapacity(entity.getRegistrationCapacity())
                 .build();
     }
 
@@ -140,6 +142,7 @@ public class EventMapper {
         entity.setWorkflowState(request.getWorkflowState() != null
                 ? request.getWorkflowState()
                 : EventWorkflowState.CREATED);
+        entity.setRegistrationCapacity(request.getRegistrationCapacity());
 
         return entity;
     }
@@ -177,6 +180,7 @@ public class EventMapper {
         if (request.getWorkflowState() != null) {
             entity.setWorkflowState(request.getWorkflowState());
         }
+        entity.setRegistrationCapacity(request.getRegistrationCapacity());
     }
 
     /**

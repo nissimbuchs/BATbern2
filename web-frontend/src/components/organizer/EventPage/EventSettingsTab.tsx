@@ -26,6 +26,7 @@ import {
   DialogActions,
   IconButton,
   Snackbar,
+  TextField,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -34,6 +35,7 @@ import {
   Delete as DeleteIcon,
   Cancel as CancelIcon,
   Person as PersonIcon,
+  Group as GroupIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +66,14 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [selectedOrganizer, setSelectedOrganizer] = useState(event.organizerUsername);
   const [moderatorUpdateError, setModeratorUpdateError] = useState<string | null>(null);
   const [moderatorUpdateSuccess, setModeratorUpdateSuccess] = useState(false);
+
+  // AC6 (Story 10.11): Registration Capacity field
+  const [capacityValue, setCapacityValue] = useState<string>(
+    event.registrationCapacity?.toString() ?? ''
+  );
+  const [capacityError, setCapacityError] = useState<string | null>(null);
+  const [capacitySuccess, setCapacitySuccess] = useState(false);
+  const isArchived = event.workflowState === 'ARCHIVED';
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -98,6 +108,28 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       scheduledDate: '2025-03-15',
     },
   ]);
+
+  const handleCapacitySave = async () => {
+    setCapacityError(null);
+    const parsed = capacityValue.trim() === '' ? null : parseInt(capacityValue, 10);
+    if (parsed !== null && (isNaN(parsed) || parsed <= 0)) {
+      setCapacityError(t('create.form.capacityPositive', 'Capacity must be a positive number'));
+      return;
+    }
+    try {
+      await updateEventMutation.mutateAsync({
+        eventCode,
+        data: { registrationCapacity: parsed },
+      });
+      setCapacitySuccess(true);
+    } catch (error) {
+      setCapacityError(
+        error instanceof Error
+          ? error.message
+          : t('eventPage.settings.capacityUpdateError', 'Failed to update capacity.')
+      );
+    }
+  };
 
   const handleOrganizerChange = async (newOrganizer: string) => {
     const previous = selectedOrganizer;
@@ -186,6 +218,56 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         autoHideDuration={3000}
         onClose={() => setModeratorUpdateSuccess(false)}
         message={t('eventPage.settings.moderatorUpdated', 'Moderator updated successfully')}
+      />
+
+      {/* Registration Capacity (AC6 — Story 10.11) */}
+      <Paper sx={{ p: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <GroupIcon color="action" />
+          <Typography variant="h6">
+            {t('eventPage.settings.capacityLabel', 'Registration Capacity')}
+          </Typography>
+        </Stack>
+        <Divider sx={{ mb: 2 }} />
+        <Stack spacing={2}>
+          <TextField
+            label={t('eventPage.settings.capacityLabel', 'Registration Capacity')}
+            helperText={t(
+              'eventPage.settings.capacityHelperText',
+              'Leave blank for unlimited registrations. Cannot exceed venue capacity.'
+            )}
+            type="number"
+            value={capacityValue}
+            onChange={(e) => setCapacityValue(e.target.value)}
+            disabled={isArchived || updateEventMutation.isPending}
+            inputProps={{ min: 1 }}
+            sx={{ maxWidth: 300 }}
+            data-testid="registration-capacity-field"
+            error={!!capacityError}
+          />
+          {capacityError && (
+            <Alert severity="error" onClose={() => setCapacityError(null)}>
+              {capacityError}
+            </Alert>
+          )}
+          <Box>
+            <Button
+              variant="contained"
+              onClick={handleCapacitySave}
+              disabled={isArchived || updateEventMutation.isPending}
+              data-testid="registration-capacity-save-btn"
+            >
+              {t('common:actions.save', 'Save')}
+            </Button>
+          </Box>
+        </Stack>
+      </Paper>
+
+      <Snackbar
+        open={capacitySuccess}
+        autoHideDuration={3000}
+        onClose={() => setCapacitySuccess(false)}
+        message={t('eventPage.settings.capacityUpdated', 'Capacity updated successfully')}
       />
 
       {/* Notifications */}

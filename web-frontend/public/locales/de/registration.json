@@ -82,7 +82,11 @@
       "acceptTerms": "Sie müssen den Nutzungsbedingungen zustimmen, um sich anzumelden.",
       "failed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
     },
-    "cancelConfirm": "Möchten Sie die Anmeldung wirklich abbrechen?"
+    "cancelConfirm": "Möchten Sie die Anmeldung wirklich abbrechen?",
+    "waitlistWarning": "Diese Veranstaltung ist ausgebucht. Sie werden auf die Warteliste gesetzt.",
+    "waitlistAcknowledgeLabel": "Ich verstehe, dass ich auf der Warteliste stehe",
+    "waitlistSuccessTitle": "Sie stehen auf der Warteliste!",
+    "waitlistSuccessBody": "Sie sind auf Platz #{{position}} der Warteliste. Wir informieren Sie, falls ein Platz frei wird."
   },
   "personalDetails": {
     "title": "Persönliche Informationen",
@@ -191,6 +195,7 @@
     "confirmed": "Ihre Anmeldung ist bestätigt. Wir freuen uns auf Sie!",
     "registered": "Sie sind für diese Veranstaltung angemeldet. Prüfen Sie Ihre E-Mail für die Bestätigung.",
     "waitlist": "Sie stehen auf der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
+    "waitlistWithPosition": "Sie stehen auf Platz #{{position}} der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
     "cancelled": "Ihre Anmeldung wurde storniert.",
     "manageLink": "Anmeldung verwalten",
     "registerAgain": "Erneut anmelden"

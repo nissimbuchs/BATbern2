@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
 import { EventLogistics } from '@/components/public/Event/EventLogistics';
+import { CapacityIndicator } from '@/components/public/Event/CapacityIndicator';
 import { CountdownTimer } from '@/components/public/Event/CountdownTimer';
 import { SpeakerGrid } from '@/components/public/Event/SpeakerGrid';
 import { SessionCards } from '@/components/public/Event/SessionCards';
@@ -177,6 +178,7 @@ const HomePage = () => {
         eventCode={event.eventCode}
         themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
+        spotsRemaining={event.spotsRemaining}
       />
 
       {/* Event Content */}
@@ -189,6 +191,7 @@ const HomePage = () => {
             status={myRegistration?.status ?? null}
             eventCode={event.eventCode ?? ''}
             isLoading={isRegistrationLoading}
+            waitlistPosition={myRegistration?.waitlistPosition}
           />
         )}
 
@@ -207,6 +210,14 @@ const HomePage = () => {
           <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
             <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
             <EventLogistics event={event} />
+            {/* AC7 (Story 10.11): Capacity badge — only when capacity is configured */}
+            <div className="mt-4">
+              <CapacityIndicator
+                registrationCapacity={event.registrationCapacity}
+                spotsRemaining={event.spotsRemaining}
+                waitlistCount={event.waitlistCount}
+              />
+            </div>
           </div>
         )}
 

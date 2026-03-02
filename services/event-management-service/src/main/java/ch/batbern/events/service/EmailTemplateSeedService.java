@@ -152,7 +152,8 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("speaker-")) {
             return "SPEAKER";
         }
-        if (templateKey.startsWith("registration-")) {
+        if (templateKey.startsWith("registration-") || templateKey.startsWith("waitlist-")) {
+            // Story 10.11: waitlist-* templates belong to REGISTRATION category
             return "REGISTRATION";
         }
         if (templateKey.startsWith("task-reminder")) {
