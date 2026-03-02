@@ -52,6 +52,7 @@ interface CustomEmailSenderEvent {
  */
 interface EnvironmentConfig {
   FRONTEND_DOMAIN: string;
+  FROM_EMAIL: string;
   KEY_ARN: string;
   KEY_ID: string;
 }
@@ -60,7 +61,7 @@ interface EnvironmentConfig {
  * Validate required environment variables
  */
 function getEnvironmentConfig(): EnvironmentConfig {
-  const requiredVars = ['FRONTEND_DOMAIN', 'KEY_ARN', 'KEY_ID'];
+  const requiredVars = ['FRONTEND_DOMAIN', 'FROM_EMAIL', 'KEY_ARN', 'KEY_ID'];
   const missing = requiredVars.filter((varName) => !process.env[varName]);
 
   if (missing.length > 0) {
@@ -69,6 +70,7 @@ function getEnvironmentConfig(): EnvironmentConfig {
 
   return {
     FRONTEND_DOMAIN: process.env.FRONTEND_DOMAIN!,
+    FROM_EMAIL: process.env.FROM_EMAIL!,
     KEY_ARN: process.env.KEY_ARN!,
     KEY_ID: process.env.KEY_ID!,
   };
@@ -463,7 +465,7 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     // Send email directly via SES
     const sesClient = new SESClient({ region: process.env.AWS_REGION || 'eu-central-1' });
     const sendEmailCommand = new SendEmailCommand({
-      Source: 'BATbern <noreply@berner-architekten-treffen.ch>',
+      Source: config.FROM_EMAIL,
       Destination: {
         ToAddresses: [email],
       },

@@ -113,6 +113,12 @@ export class CognitoStack extends cdk.Stack {
         ? 'https://staging.batbern.ch'
         : 'http://localhost:3000';
 
+    // FROM address must use a domain verified in SES for the environment
+    const fromEmail =
+      envName === 'production'
+        ? 'BATbern <noreply@batbern.ch>'
+        : 'BATbern <noreply@berner-architekten-treffen.ch>';
+
     const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
       functionName: `batbern-${envName}-custom-email-sender-trigger`,
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -122,6 +128,7 @@ export class CognitoStack extends cdk.Stack {
       logGroup: customEmailSenderLogGroup,
       environment: {
         FRONTEND_DOMAIN: frontendDomain,
+        FROM_EMAIL: fromEmail,
         KEY_ID: cognitoEmailKmsKey.keyId,
         KEY_ARN: cognitoEmailKmsKey.keyArn,
         // AWS_REGION is automatically provided by Lambda runtime
