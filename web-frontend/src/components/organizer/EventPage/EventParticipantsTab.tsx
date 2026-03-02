@@ -25,10 +25,11 @@ interface EventParticipantsTabProps {
 const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
 
-  const participantCount = event.currentAttendeeCount || 0;
   const capacity = (event as { registrationCapacity?: number | null }).registrationCapacity ?? null;
-  const confirmedCount = (event as { confirmedCount?: number }).confirmedCount ?? participantCount;
+  const confirmedCount = (event as { confirmedCount?: number }).confirmedCount ?? 0;
   const waitlistCount = (event as { waitlistCount?: number }).waitlistCount ?? 0;
+  // Badge: total active registrations (registered + confirmed + waitlist, no cancelled)
+  const activeTotal = confirmedCount + waitlistCount;
 
   const fillPct =
     capacity != null && capacity > 0 ? Math.min(100, (confirmedCount / capacity) * 100) : 0;
@@ -43,7 +44,7 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
           <Typography variant="h5" component="h2">
             {t('eventPage.participantsTab.title')}
           </Typography>
-          <Chip label={participantCount} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
+          <Chip label={activeTotal} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
         </Stack>
       </Stack>
 

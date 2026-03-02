@@ -514,8 +514,9 @@ public class EventController {
                     expandMetricsToDTO(event, response);
                     break;
                 case "registrations":
-                    // Override currentAttendeeCount with actual count from registrations table
-                    long registrationCount = registrationRepository.countByEventId(event.getId());
+                    // Active (non-cancelled) registrations only — cancelled ones must not inflate counts
+                    long registrationCount = registrationRepository.countByEventIdAndStatusIn(
+                            event.getId(), java.util.List.of("registered", "confirmed", "waitlist"));
                     response.setCurrentAttendeeCount((int) registrationCount);
                     break;
                 default:
