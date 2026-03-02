@@ -40,7 +40,13 @@
       "waitlistPromote": "Auf «Angemeldet» hochstufen",
       "waitlistPromoteSuccess": "Erfolgreich hochgestuft",
       "waitlistPromoteError": "Hochstufung fehlgeschlagen",
-      "waitlistEmpty": "Niemand auf der Warteliste"
+      "waitlistEmpty": "Niemand auf der Warteliste",
+      "waitlistTablePosition": "#",
+      "waitlistTableName": "Name",
+      "waitlistTableEmail": "E-Mail",
+      "waitlistTableCompany": "Unternehmen",
+      "waitlistTableRegisteredOn": "Angemeldet am",
+      "waitlistTableActions": "Aktionen"
     },
     "settings": {
       "capacityLabel": "Anmelde-Kapazität",

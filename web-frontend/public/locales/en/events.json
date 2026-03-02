@@ -40,7 +40,13 @@
       "waitlistPromote": "Promote to Registered",
       "waitlistPromoteSuccess": "Successfully promoted to registered",
       "waitlistPromoteError": "Failed to promote registration",
-      "waitlistEmpty": "No one on the waitlist"
+      "waitlistEmpty": "No one on the waitlist",
+      "waitlistTablePosition": "#",
+      "waitlistTableName": "Name",
+      "waitlistTableEmail": "Email",
+      "waitlistTableCompany": "Company",
+      "waitlistTableRegisteredOn": "Registered On",
+      "waitlistTableActions": "Actions"
     },
     "settings": {
       "capacityLabel": "Registration Capacity",

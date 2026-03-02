@@ -40,7 +40,13 @@
       "waitlistPromote": "[MISSING] Promote to Registered",
       "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
       "waitlistPromoteError": "[MISSING] Failed to promote",
-      "waitlistEmpty": "[MISSING] No one on the waitlist"
+      "waitlistEmpty": "[MISSING] No one on the waitlist",
+      "waitlistTablePosition": "[MISSING] #",
+      "waitlistTableName": "[MISSING] Name",
+      "waitlistTableEmail": "[MISSING] Email",
+      "waitlistTableCompany": "[MISSING] Company",
+      "waitlistTableRegisteredOn": "[MISSING] Registered On",
+      "waitlistTableActions": "[MISSING] Actions"
     },
     "participantTable": {
       "headers": {

@@ -98,12 +98,12 @@ const WaitlistSection: React.FC<WaitlistSectionProps> = ({ eventCode, waitlistCo
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>#</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Company</TableCell>
-                  <TableCell>Registered On</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTablePosition')}</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTableName')}</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTableEmail')}</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTableCompany')}</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTableRegisteredOn')}</TableCell>
+                  <TableCell>{t('eventPage.participantsTab.waitlistTableActions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

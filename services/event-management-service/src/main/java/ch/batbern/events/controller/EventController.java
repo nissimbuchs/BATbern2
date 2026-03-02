@@ -23,6 +23,7 @@ import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.EventSearchService;
@@ -1457,6 +1458,15 @@ public class EventController {
             @PathVariable String eventCode,
             @PathVariable String registrationCode) {
         log.debug("POST /api/v1/events/{}/registrations/{}/promote", eventCode, registrationCode);
+        // M2 fix: validate registration belongs to this event before promoting
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        Registration reg = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+        if (!event.getId().equals(reg.getEventId())) {
+            // Don't reveal existence of cross-event registrations — treat as not found
+            throw new RegistrationNotFoundException(registrationCode);
+        }
         waitlistPromotionService.manuallyPromote(registrationCode);
         return ResponseEntity.noContent().build();
     }

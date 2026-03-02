@@ -306,7 +306,8 @@ public class RegistrationService {
                             registration.getRegistrationCode(),
                             eventCode,
                             statusEnum,
-                            registrationDate);
+                            registrationDate)
+                            .waitlistPosition(registration.getWaitlistPosition()); // AC13 (Story 10.11)
                 });
     }
 

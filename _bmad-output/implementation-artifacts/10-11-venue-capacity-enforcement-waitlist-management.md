@@ -390,6 +390,14 @@ claude-sonnet-4-6
 - `/tmp/typecheck-10-11.log`
 - `/tmp/lint-10-11.log`
 
+### Code Review Fixes (2026-03-02)
+
+- **H1 (AC13)**: `RegistrationService.getMyRegistration()` now chains `.waitlistPosition(registration.getWaitlistPosition())` — `RegistrationStatusBanner` can now display "You are #N on the waitlist"
+- **H2 (AC11)**: `WaitlistSection.tsx` table headers (`#`, Name, Email, Company, Registered On, Actions) now use `t()` i18n keys; `waitlistTable*` keys added to `en/events.json`, `de/events.json`, and `[MISSING]` in all 8 other locales
+- **M1**: Story File List expanded with 9 undocumented git-changed files (OpenAPI spec, generated DTOs, eventRegistrationService.ts, events-api.types.ts, EventMapper.java, V74 migration)
+- **M2**: `promoteFromWaitlist` endpoint now validates registration belongs to the requested event before promoting — prevents cross-event promotion by organizers
+- **M3**: Created `V74__migrate_waitlisted_to_waitlist.sql` — normalises any legacy `waitlisted` rows to `waitlist` and removes `waitlisted` from the status check constraint
+
 ### Completion Notes List
 
 - T1: OpenAPI task name is `openApiGenerate` (not `openApiGenerateEvents`)
@@ -428,3 +436,12 @@ claude-sonnet-4-6
 - `web-frontend/src/components/public/Hero/HeroSection.tsx` (T19: spotsRemaining prop → RegistrationWizard)
 - `web-frontend/src/components/public/Registration/RegistrationWizard.tsx` (T19: spotsRemaining, waitlist alert+checkbox, waitlist success)
 - `web-frontend/src/pages/public/RegistrationPage.tsx` (T19: spotsRemaining prop pass-through)
+- `docs/api/events-api.openapi.yml` (T1: capacity fields + waitlist position + promote endpoint)
+- `services/event-management-service/src/main/java/ch/batbern/events/mapper/EventMapper.java` (T11.1–T11.3: registrationCapacity mapping)
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/CreateEventRequest.java` (T1.5: generated from OpenAPI — registrationCapacity)
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/EventResponse.java` (T1.5: generated from OpenAPI — capacity response fields)
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/PatchEventRequest.java` (T1.5: generated from OpenAPI — registrationCapacity)
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/UpdateEventRequest.java` (T1.5: generated from OpenAPI — registrationCapacity)
+- `web-frontend/src/services/api/eventRegistrationService.ts` (T14.6: promoteFromWaitlist function)
+- `web-frontend/src/types/generated/events-api.types.ts` (T1.6: generated from OpenAPI — capacity types)
+- `services/event-management-service/src/main/resources/db/migration/V74__migrate_waitlisted_to_waitlist.sql` (CR fix M3: normalise legacy waitlisted rows)
