@@ -11,7 +11,8 @@
       "participants": "Teilnehmer",
       "publishing": "Veröffentlichung",
       "newsletter": "Newsletter",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "photos": "Fotos"
     },
     "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
     "overview": {
@@ -773,5 +774,16 @@
   },
   "description": {
     "heading": "Über diese Veranstaltung"
+  },
+  "photos": {
+    "title": "Eventfotos",
+    "uploadButton": "Foto hochladen",
+    "deleteConfirmTitle": "Foto löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Foto löschen möchten? Dies kann nicht rückgängig gemacht werden.",
+    "deleteConfirm": "Löschen",
+    "deleteCancel": "Abbrechen",
+    "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
   }
 }

@@ -552,7 +552,8 @@
       "activeCount": "{{count}} aktiivinen suodatin"
     },
     "detail": {
-      "backToArchive": "← Takaisin arkistoon"
+      "backToArchive": "← Takaisin arkistoon",
+      "photos": "Photos"
     }
   },
   "notifications": {

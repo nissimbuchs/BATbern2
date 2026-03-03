@@ -11,7 +11,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   Event,
   EventDetail,
@@ -24,6 +24,12 @@ import type {
   CreateRegistrationRequest,
   Registration,
 } from '@/types/event.types';
+import type { components } from '@/types/generated/events-api.types';
+
+type EventPhotoResponse = components['schemas']['EventPhotoResponse'];
+type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
+type EventPhotoUploadResponse = components['schemas']['EventPhotoUploadResponse'];
+type EventPhotoConfirmRequest = components['schemas']['EventPhotoConfirmRequest'];
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
@@ -447,11 +453,77 @@ class EventApiClient {
     }
   }
 
+  // ── Event Photos (Story 10.21) ────────────────────────────────────────────────
+
+  async listEventPhotos(eventCode: string): Promise<EventPhotoResponse[]> {
+    try {
+      const response = await apiClient.get<EventPhotoResponse[]>(
+        `${EVENT_API_PATH}/${eventCode}/photos`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async requestEventPhotoUploadUrl(
+    eventCode: string,
+    request: EventPhotoUploadRequest
+  ): Promise<EventPhotoUploadResponse> {
+    try {
+      const response = await apiClient.post<EventPhotoUploadResponse>(
+        `${EVENT_API_PATH}/${eventCode}/photos/upload-url`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async uploadPhotoToS3(uploadUrl: string, file: File): Promise<void> {
+    await axios.put(uploadUrl, file, {
+      headers: { 'Content-Type': file.type },
+    });
+  }
+
+  async confirmEventPhotoUpload(
+    eventCode: string,
+    request: EventPhotoConfirmRequest
+  ): Promise<EventPhotoResponse> {
+    try {
+      const response = await apiClient.post<EventPhotoResponse>(
+        `${EVENT_API_PATH}/${eventCode}/photos/confirm`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async deleteEventPhoto(eventCode: string, photoId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/photos/${photoId}`);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async getRecentEventPhotos(limit = 20, lastNEvents = 5): Promise<EventPhotoResponse[]> {
+    try {
+      const response = await apiClient.get<EventPhotoResponse[]>(
+        `${EVENT_API_PATH}/recent-photos`,
+        { params: { limit, lastNEvents } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
   /**
    * Get presigned download URL for session material
-   * Story 5.9: Session Materials Upload
-   *
-   * @param eventCode Event code identifier
    * @param sessionSlug Session identifier
    * @param materialId Material UUID
    * @returns Presigned S3 URL valid for 1 hour

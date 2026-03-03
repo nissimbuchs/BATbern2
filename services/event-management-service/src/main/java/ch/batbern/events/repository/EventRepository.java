@@ -200,4 +200,11 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     default Optional<Event> findByEventCodeWithAllResources(String eventCode) {
         return findByEventCode(eventCode);
     }
+
+    /**
+     * Find the N most recent events ordered by event date descending.
+     * Used by EventPhotoService.getRecentPhotos() for homepage marquee.
+     * Story 10.21
+     */
+    List<Event> findTopByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
 }

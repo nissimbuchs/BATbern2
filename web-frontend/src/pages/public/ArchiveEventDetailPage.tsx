@@ -12,7 +12,9 @@ import { Helmet } from 'react-helmet-async';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
+import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { eventApiClient } from '@/services/eventApiClient';
+import { useEventPhotos } from '@/hooks/useEventPhotos';
 import type { EventDetailUI, SessionUI, SpeakerUI } from '@/types/event.types';
 
 export default function ArchiveEventDetailPage() {
@@ -22,6 +24,9 @@ export default function ArchiveEventDetailPage() {
 
   // Preserve query parameters when navigating back
   const backToArchiveUrl = location.search ? `/archive${location.search}` : '/archive';
+
+  // Event photos (Story 10.21 — AC7)
+  const { data: photos } = useEventPhotos(eventCode ?? '');
 
   // Fetch event details (cast to EventDetailUI for extended properties)
   const {
@@ -308,6 +313,25 @@ export default function ArchiveEventDetailPage() {
                     </div>
                   ))}
                 </div>
+              </section>
+            )}
+
+            {/* Event Photos Marquee (Story 10.21 — AC7): hidden when 0 photos */}
+            {photos && photos.length > 0 && (
+              <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 px-4 md:px-8">
+                  {t('archive.detail.photos', 'Photos')}
+                </h2>
+                <InfiniteMarquee direction="left" speed="slow">
+                  {photos.map((photo) => (
+                    <img
+                      key={photo.id}
+                      src={photo.displayUrl}
+                      alt={photo.filename || 'BATbern event photo'}
+                      className="rounded-lg object-cover h-48 w-64 shrink-0"
+                    />
+                  ))}
+                </InfiniteMarquee>
               </section>
             )}
           </>

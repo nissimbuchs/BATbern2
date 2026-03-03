@@ -444,7 +444,8 @@
       "activeCount": "{{count}} aktive Filter"
     },
     "detail": {
-      "backToArchive": "← Zrugg zum Archiv"
+      "backToArchive": "← Zrugg zum Archiv",
+      "photos": "Fotos"
     }
   },
   "notifications": {

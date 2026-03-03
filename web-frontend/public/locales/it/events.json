@@ -11,7 +11,8 @@
       "participants": "Partecipanti",
       "publishing": "Pubblicazione",
       "newsletter": "Newsletter",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "photos": "Photos"
     },
     "tabsAriaLabel": "Navigazione pagina evento",
     "overview": {
@@ -775,5 +776,16 @@
   },
   "description": {
     "heading": "Informazioni sull'evento"
+  },
+  "photos": {
+    "title": "Event Photos",
+    "uploadButton": "Upload Photo",
+    "deleteConfirmTitle": "Delete Photo",
+    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "emptyState": "No photos yet. Upload the first one!",
+    "uploading": "Uploading...",
+    "uploadError": "Upload failed. Please try again."
   }
 }

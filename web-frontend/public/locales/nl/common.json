@@ -552,7 +552,8 @@
       "activeCount": "{{count}} actief filter"
     },
     "detail": {
-      "backToArchive": "← Terug naar archief"
+      "backToArchive": "← Terug naar archief",
+      "photos": "Photos"
     }
   },
   "notifications": {

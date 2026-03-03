@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtel activ"
     },
     "detail": {
-      "backToArchive": "← Enavos a l'archiv"
+      "backToArchive": "← Enavos a l'archiv",
+      "photos": "Photos"
     }
   },
   "notifications": {

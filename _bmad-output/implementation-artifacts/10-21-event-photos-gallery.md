@@ -1,6 +1,6 @@
 # Story 10.21: Event Photos Gallery
 
-Status: ready-for-dev
+Status: done
 
 <!-- Prerequisite: None — EventPhotosTab added to EventPage.tsx (organizer event detail). Independent of 10.1. -->
 
@@ -15,7 +15,7 @@ I want to see real photos from past BATbern events on the homepage — replacing
 
 ## Acceptance Criteria
 
-1. **AC1 — Flyway V78**: New `event_photos` table created cleanly (`id UUID PK`, `event_code VARCHAR FK → events.event_code`, `s3_key TEXT NOT NULL`, `display_url TEXT NOT NULL`, `filename TEXT`, `uploaded_at TIMESTAMPTZ`, `uploaded_by VARCHAR`, `sort_order INT DEFAULT 0`).
+1. **AC1 — Flyway V79**: New `event_photos` table created cleanly (`id UUID PK`, `event_code VARCHAR FK → events.event_code`, `s3_key TEXT NOT NULL`, `display_url TEXT NOT NULL`, `filename TEXT`, `uploaded_at TIMESTAMPTZ`, `uploaded_by VARCHAR`, `sort_order INT DEFAULT 0`). *(V78 was already taken by `V78__add_task_cancellation_fields.sql`; V79 used instead.)*
 2. **AC2 — Upload flow**: Organizer can upload a photo to an event via presigned URL (3-phase: request URL → PUT to S3 → confirm); photo appears in photo grid tab.
 3. **AC3 — Delete**: Organizer can delete a photo; DB record and S3 object are both removed; confirmation dialog shown first.
 4. **AC4 — Public photo listing**: `GET /api/v1/events/{eventCode}/photos` returns `List<EventPhotoResponse>` (no auth required).
@@ -34,32 +34,32 @@ I want to see real photos from past BATbern events on the homepage — replacing
 
 ### Phase 0: Pre-checks (read before touching anything)
 
-- [ ] **T0 — Confirm Flyway version** (AC: #1)
-  - [ ] T0.1 — Run: `ls services/event-management-service/src/main/resources/db/migration/ | sort | tail -5`
-  - [ ] T0.2 — **CRITICAL**: The epic file says V75, but V75 through V77 are already taken:
+- [x] **T0 — Confirm Flyway version** (AC: #1)
+  - [x] T0.1 — Run: `ls services/event-management-service/src/main/resources/db/migration/ | sort | tail -5`
+  - [x] T0.2 — **CRITICAL**: The epic file says V75, but V75 through V77 are already taken:
     - `V75__add_deregistration_token.sql`
     - `V76__add_deregistration_link_to_confirmation_templates.sql`
     - `V77__create_ai_generation_log.sql`
-  - [ ] T0.3 — **Use V78** for `event_photos` table. Verify V78 does not exist yet.
+  - [x] T0.3 — **Use V79** for `event_photos` table. (V78 was taken by task cancellation fields migration.)
 
-- [ ] **T1 — Understand S3 presigned upload pattern** (AC: #2)
-  - [ ] T1.1 — Read `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerProfilePhotoService.java` — this is the canonical presigned PUT pattern for this project.
-  - [ ] T1.2 — Note: `S3Presigner` + `S3Client` beans from `AwsConfig.java`; no new beans needed.
-  - [ ] T1.3 — Read `services/event-management-service/src/main/java/ch/batbern/events/service/SessionMaterialsService.java` lines ~475-485 for the `DeleteObjectRequest` pattern.
-  - [ ] T1.4 — Confirm `CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key)` is available in `shared-kernel`.
+- [x] **T1 — Understand S3 presigned upload pattern** (AC: #2)
+  - [x] T1.1 — Read `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerProfilePhotoService.java` — this is the canonical presigned PUT pattern for this project.
+  - [x] T1.2 — Note: `S3Presigner` + `S3Client` beans from `AwsConfig.java`; no new beans needed.
+  - [x] T1.3 — Read `services/event-management-service/src/main/java/ch/batbern/events/service/SessionMaterialsService.java` lines ~475-485 for the `DeleteObjectRequest` pattern.
+  - [x] T1.4 — Confirm `CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key)` is available in `shared-kernel`.
 
-- [ ] **T2 — Read EventPage.tsx** (AC: #8)
-  - [ ] T2.1 — Read `web-frontend/src/components/organizer/EventPage/EventPage.tsx` (already read — 297 lines).
-  - [ ] T2.2 — Current tabs: `overview`, `speakers`, `venue`, `participants`, `publishing`, `newsletter`, `settings` (7 tabs).
-  - [ ] T2.3 — `TABS` is a `const` array at line 58; `renderTabContent()` is a switch at line 176.
-  - [ ] T2.4 — Add `photos` as tab 8 using `PhotoLibrary` or `Collections` icon from `@mui/icons-material`.
+- [x] **T2 — Read EventPage.tsx** (AC: #8)
+  - [x] T2.1 — Read `web-frontend/src/components/organizer/EventPage/EventPage.tsx` (already read — 297 lines).
+  - [x] T2.2 — Current tabs: `overview`, `speakers`, `venue`, `participants`, `publishing`, `newsletter`, `settings` (7 tabs).
+  - [x] T2.3 — `TABS` is a `const` array at line 58; `renderTabContent()` is a switch at line 176.
+  - [x] T2.4 — Add `photos` as tab 8 using `PhotoLibrary` or `Collections` icon from `@mui/icons-material`.
 
 ---
 
 ### Phase 1: OpenAPI Specification (MANDATORY FIRST — ADR-006)
 
-- [ ] **T3 — Add 5 endpoints + schemas to `docs/api/events-api.openapi.yml`** (AC: #10)
-  - [ ] T3.1 — Add endpoints under tag `Event Photos`:
+- [x] **T3 — Add 5 endpoints + schemas to `docs/api/events-api.openapi.yml`** (AC: #10)
+  - [x] T3.1 — Add endpoints under tag `Event Photos`:
 
     ```yaml
     /events/{eventCode}/photos:
@@ -183,7 +183,7 @@ I want to see real photos from past BATbern events on the homepage — replacing
                     $ref: '#/components/schemas/EventPhotoResponse'
     ```
 
-  - [ ] T3.2 — Add schemas under `components/schemas`:
+  - [x] T3.2 — Add schemas under `components/schemas`:
 
     ```yaml
     EventPhotoResponse:
@@ -245,15 +245,15 @@ I want to see real photos from past BATbern events on the homepage — replacing
           type: string
     ```
 
-  - [ ] T3.3 — Regenerate frontend types: `cd web-frontend && npm run generate:api-types 2>&1 | tee /tmp/codegen-10-21.log`
-  - [ ] T3.4 — Verify generated types include `EventPhotoResponse`, `EventPhotoUploadRequest`, etc. in `web-frontend/src/types/generated/`.
+  - [x] T3.3 — Regenerate frontend types: `cd web-frontend && npm run generate:api-types 2>&1 | tee /tmp/codegen-10-21.log`
+  - [x] T3.4 — Verify generated types include `EventPhotoResponse`, `EventPhotoUploadRequest`, etc. in `web-frontend/src/types/generated/`.
 
 ---
 
 ### Phase 2: Backend — Flyway Migration
 
-- [ ] **T4 — Create V78 migration** (AC: #1)
-  - [ ] T4.1 — Create `services/event-management-service/src/main/resources/db/migration/V78__create_event_photos.sql`:
+- [x] **T4 — Create V79 migration** (AC: #1)
+  - [x] T4.1 — Create `services/event-management-service/src/main/resources/db/migration/V79__create_event_photos.sql`:
 
     ```sql
     CREATE TABLE event_photos (
@@ -271,14 +271,14 @@ I want to see real photos from past BATbern events on the homepage — replacing
     CREATE INDEX idx_event_photos_uploaded_at ON event_photos(uploaded_at DESC);
     ```
 
-  - [ ] T4.2 — Verify the FK reference: `events.event_code` is the PK/unique key in the `events` table (it is — it's used as FK in registrations, sessions, etc.).
+  - [x] T4.2 — Verify the FK reference: `events.event_code` is the PK/unique key in the `events` table (it is — it's used as FK in registrations, sessions, etc.).
 
 ---
 
 ### Phase 3: Backend — Domain + Repository
 
-- [ ] **T5 — Create EventPhoto domain entity** (AC: #1)
-  - [ ] T5.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/domain/EventPhoto.java`:
+- [x] **T5 — Create EventPhoto domain entity** (AC: #1)
+  - [x] T5.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/domain/EventPhoto.java`:
 
     ```java
     @Entity
@@ -316,10 +316,10 @@ I want to see real photos from past BATbern events on the homepage — replacing
     }
     ```
 
-  - [ ] T5.2 — Pattern: matches existing domain entities (e.g., `AiGenerationLog.java`, `Registration.java`). Use `@GeneratedValue` (UUID default in PostgreSQL via `gen_random_uuid()`).
+  - [x] T5.2 — Pattern: matches existing domain entities (e.g., `AiGenerationLog.java`, `Registration.java`). Use `@GeneratedValue` (UUID default in PostgreSQL via `gen_random_uuid()`).
 
-- [ ] **T6 — Create EventPhotoRepository** (AC: #2, #4, #5)
-  - [ ] T6.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/repository/EventPhotoRepository.java`:
+- [x] **T6 — Create EventPhotoRepository** (AC: #2, #4, #5)
+  - [x] T6.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/repository/EventPhotoRepository.java`:
 
     ```java
     @Repository
@@ -344,14 +344,14 @@ I want to see real photos from past BATbern events on the homepage — replacing
     }
     ```
 
-  - [ ] T6.2 — JPQL note: LIMIT is not standard JPQL. Use `Pageable` or `@Query` with native SQL: `nativeQuery = true`. Alternatively use `findByEventCodeIn` + Java-level sampling. See T11 service impl for recommended approach.
+  - [x] T6.2 — JPQL note: LIMIT is not standard JPQL. Use `Pageable` or `@Query` with native SQL: `nativeQuery = true`. Alternatively use `findByEventCodeIn` + Java-level sampling. See T11 service impl for recommended approach.
 
 ---
 
 ### Phase 4: Backend — Service (TDD)
 
-- [ ] **T7 — Write EventPhotoServiceTest FIRST (RED phase)** (AC: #9)
-  - [ ] T7.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/service/EventPhotoServiceTest.java`:
+- [x] **T7 — Write EventPhotoServiceTest FIRST (RED phase)** (AC: #9)
+  - [x] T7.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/service/EventPhotoServiceTest.java`:
 
     ```java
     @ExtendWith(MockitoExtension.class)
@@ -370,7 +370,7 @@ I want to see real photos from past BATbern events on the homepage — replacing
         }
     ```
 
-  - [ ] T7.2 — Tests to write (RED — compile fails expected):
+  - [x] T7.2 — Tests to write (RED — compile fails expected):
     - `requestUploadUrl() with valid eventCode and JPEG 2MB → returns uploadUrl, photoId, s3Key (pattern: events/BATbern42/photos/{photoId}.jpg)`
     - `requestUploadUrl() with content-type image/png → s3Key ends with .png`
     - `confirmUpload() with valid photoId and s3Key → S3 headObject called; EventPhoto saved with displayUrl starting with https://cdn.batbern.ch`
@@ -380,10 +380,10 @@ I want to see real photos from past BATbern events on the homepage — replacing
     - `getRecentPhotos(20, 5) with 25 photos across 5 events → returns at most 20`
     - `getRecentPhotos(20, 5) with 3 photos → returns all 3 (no padding)`
 
-  - [ ] T7.3 — Run RED: `./gradlew :services:event-management-service:test --tests "*EventPhotoServiceTest" 2>&1 | tee /tmp/test-10-21-red.log && grep -E "FAILED|error|BUILD" /tmp/test-10-21-red.log | tail -5`
+  - [x] T7.3 — Run RED: `./gradlew :services:event-management-service:test --tests "*EventPhotoServiceTest" 2>&1 | tee /tmp/test-10-21-red.log && grep -E "FAILED|error|BUILD" /tmp/test-10-21-red.log | tail -5`
 
-- [ ] **T8 — Implement EventPhotoService** (AC: #2, #3, #4, #5)
-  - [ ] T8.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/service/EventPhotoService.java`:
+- [x] **T8 — Implement EventPhotoService** (AC: #2, #3, #4, #5)
+  - [x] T8.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/service/EventPhotoService.java`:
 
     ```java
     @Service
@@ -524,21 +524,21 @@ I want to see real photos from past BATbern events on the homepage — replacing
     }
     ```
 
-  - [ ] T8.2 — Add `findTopNByEventDateDesc` to `EventRepository` if not present:
+  - [x] T8.2 — Add `findTopNByEventDateDesc` to `EventRepository` if not present:
     ```java
     @Query("SELECT e FROM Event e WHERE e.eventDate IS NOT NULL ORDER BY e.eventDate DESC LIMIT :n")
     List<Event> findTopNByEventDateDesc(@Param("n") int n);
     ```
     Or use `findTop5ByEventDateNotNullOrderByEventDateDesc()` Spring Data naming convention.
 
-  - [ ] T8.3 — Run GREEN: `./gradlew :services:event-management-service:test --tests "*EventPhotoServiceTest" 2>&1 | tee /tmp/test-10-21-green.log && grep -E "FAILED|BUILD" /tmp/test-10-21-green.log | tail -5`
+  - [x] T8.3 — Run GREEN: `./gradlew :services:event-management-service:test --tests "*EventPhotoServiceTest" 2>&1 | tee /tmp/test-10-21-green.log && grep -E "FAILED|BUILD" /tmp/test-10-21-green.log | tail -5`
 
 ---
 
 ### Phase 5: Backend — Controller
 
-- [ ] **T9 — Create EventPhotoController** (AC: #2, #3, #4, #5)
-  - [ ] T9.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/controller/EventPhotoController.java`:
+- [x] **T9 — Create EventPhotoController** (AC: #2, #3, #4, #5)
+  - [x] T9.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/controller/EventPhotoController.java`:
 
     ```java
     @RestController
@@ -598,32 +598,32 @@ I want to see real photos from past BATbern events on the homepage — replacing
     }
     ```
 
-  - [ ] T9.2 — **IMPORTANT**: Note that `GET /events/recent-photos` is a static path and must be registered BEFORE the dynamic `GET /events/{eventCode}/photos` route in Spring to avoid routing conflicts. In Spring MVC, static paths always take priority over path variables — no special ordering needed, but double-check.
-  - [ ] T9.3 — Pattern for `@AuthenticationPrincipal Jwt jwt`: matches `AiAssistController` and other organizer endpoints in this service.
+  - [x] T9.2 — **IMPORTANT**: Note that `GET /events/recent-photos` is a static path and must be registered BEFORE the dynamic `GET /events/{eventCode}/photos` route in Spring to avoid routing conflicts. In Spring MVC, static paths always take priority over path variables — no special ordering needed, but double-check.
+  - [x] T9.3 — Pattern for `@AuthenticationPrincipal Jwt jwt`: matches `AiAssistController` and other organizer endpoints in this service.
 
 ---
 
 ### Phase 6: Backend — Integration Test
 
-- [ ] **T10 — Integration test** (AC: #9)
-  - [ ] T10.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java`
-  - [ ] T10.2 — Extends `AbstractIntegrationTest`; uses `@SpringBootTest(webEnvironment = RANDOM_PORT)`, `@AutoConfigureMockMvc`
-  - [ ] T10.3 — Tests:
+- [x] **T10 — Integration test** (AC: #9)
+  - [x] T10.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java`
+  - [x] T10.2 — Extends `AbstractIntegrationTest`; uses `@SpringBootTest(webEnvironment = RANDOM_PORT)`, `@AutoConfigureMockMvc`
+  - [x] T10.3 — Tests:
     - `GET /api/v1/events/{eventCode}/photos as anonymous → 200 with empty list`
     - `POST /api/v1/events/{eventCode}/photos/upload-url as ORGANIZER → 200 with uploadUrl and photoId`
     - `POST /api/v1/events/{eventCode}/photos/upload-url as PARTNER → 403`
     - `DELETE /api/v1/events/{eventCode}/photos/{photoId} for nonexistent photo → 404`
     - `GET /api/v1/events/recent-photos as anonymous → 200 with list`
-  - [ ] T10.4 — Mock S3 operations with `@MockBean S3Presigner` and `@MockBean S3Client` — do NOT require real S3 in integration tests.
-  - [ ] T10.5 — Run: `./gradlew :services:event-management-service:test --tests "*EventPhotoController*" 2>&1 | tee /tmp/test-10-21-integration.log && grep -E "FAILED|BUILD" /tmp/test-10-21-integration.log | tail -5`
+  - [x] T10.4 — Mock S3 operations with `@MockBean S3Presigner` and `@MockBean S3Client` — do NOT require real S3 in integration tests.
+  - [x] T10.5 — Run: `./gradlew :services:event-management-service:test --tests "*EventPhotoController*" 2>&1 | tee /tmp/test-10-21-integration.log && grep -E "FAILED|BUILD" /tmp/test-10-21-integration.log | tail -5`
 
 ---
 
 ### Phase 7: Frontend — EventPhotosTab
 
-- [ ] **T11 — Create EventPhotosTab.tsx** (AC: #8)
-  - [ ] T11.1 — Create `web-frontend/src/components/organizer/EventPage/EventPhotosTab.tsx`
-  - [ ] T11.2 — Create `web-frontend/src/hooks/useEventPhotos.ts`:
+- [x] **T11 — Create EventPhotosTab.tsx** (AC: #8)
+  - [x] T11.1 — Create `web-frontend/src/components/organizer/EventPage/EventPhotosTab.tsx`
+  - [x] T11.2 — Create `web-frontend/src/hooks/useEventPhotos.ts`:
 
     ```typescript
     export const useEventPhotos = (eventCode: string) => {
@@ -651,7 +651,7 @@ I want to see real photos from past BATbern events on the homepage — replacing
     };
     ```
 
-  - [ ] T11.3 — `EventPhotosTab.tsx` structure:
+  - [x] T11.3 — `EventPhotosTab.tsx` structure:
     - MUI `Card` header with "Photos" title + "Upload Photo" `Button`
     - Photo grid: MUI `Grid` 3-4 columns, each cell an `<img>` thumbnail
     - Each photo card: `<img src={photo.displayUrl} alt={photo.filename} />` + `<IconButton>` (delete) with `DeleteIcon`
@@ -660,29 +660,29 @@ I want to see real photos from past BATbern events on the homepage — replacing
     - Loading state: `BATbernLoader` or `CircularProgress`
     - Empty state: "No photos yet. Upload the first one!"
 
-  - [ ] T11.4 — Use `useTranslation('events')` → keys `photos.title`, `photos.uploadButton`, `photos.deleteConfirmTitle`, `photos.deleteConfirmMessage`, `photos.emptyState`.
-  - [ ] T11.5 — DO NOT implement drag-to-reorder (explicitly out of scope per AC12).
+  - [x] T11.4 — Use `useTranslation('events')` → keys `photos.title`, `photos.uploadButton`, `photos.deleteConfirmTitle`, `photos.deleteConfirmMessage`, `photos.emptyState`.
+  - [x] T11.5 — DO NOT implement drag-to-reorder (explicitly out of scope per AC12).
 
-- [ ] **T12 — Add Photos tab to EventPage.tsx** (AC: #8)
-  - [ ] T12.1 — Import MUI icon (e.g., `PhotoLibrary as PhotosIcon`) from `@mui/icons-material`.
-  - [ ] T12.2 — Add to `TABS` array:
+- [x] **T12 — Add Photos tab to EventPage.tsx** (AC: #8)
+  - [x] T12.1 — Import MUI icon (e.g., `PhotoLibrary as PhotosIcon`) from `@mui/icons-material`.
+  - [x] T12.2 — Add to `TABS` array:
     ```typescript
     { id: 'photos', labelKey: 'eventPage.tabs.photos', icon: <PhotosIcon /> },
     ```
-  - [ ] T12.3 — Add import: `import { EventPhotosTab } from './EventPhotosTab';`
-  - [ ] T12.4 — Add case to `renderTabContent()`:
+  - [x] T12.3 — Add import: `import { EventPhotosTab } from './EventPhotosTab';`
+  - [x] T12.4 — Add case to `renderTabContent()`:
     ```typescript
     case 'photos':
       return <EventPhotosTab eventCode={eventCode!} />;
     ```
-  - [ ] T12.5 — The `TABS` array uses `as const` — TypeScript will automatically pick up the new tab id.
+  - [x] T12.5 — The `TABS` array uses `as const` — TypeScript will automatically pick up the new tab id.
 
 ---
 
 ### Phase 8: Frontend — useRecentEventPhotos Hook
 
-- [ ] **T13 — Create useRecentEventPhotos.ts** (AC: #6)
-  - [ ] T13.1 — Create `web-frontend/src/hooks/useRecentEventPhotos.ts`:
+- [x] **T13 — Create useRecentEventPhotos.ts** (AC: #6)
+  - [x] T13.1 — Create `web-frontend/src/hooks/useRecentEventPhotos.ts`:
 
     ```typescript
     export const useRecentEventPhotos = (limit = 20, lastNEvents = 5) => {
@@ -698,16 +698,16 @@ I want to see real photos from past BATbern events on the homepage — replacing
 
 ### Phase 9: Frontend — Homepage TestimonialSection
 
-- [ ] **T14 — Update TestimonialSection.tsx** (AC: #6)
-  - [ ] T14.1 — Read `web-frontend/src/components/public/Testimonials/TestimonialSection.tsx` (already read — 199 lines).
-  - [ ] T14.2 — Add `useRecentEventPhotos` hook:
+- [x] **T14 — Update TestimonialSection.tsx** (AC: #6)
+  - [x] T14.1 — Read `web-frontend/src/components/public/Testimonials/TestimonialSection.tsx` (already read — 199 lines).
+  - [x] T14.2 — Add `useRecentEventPhotos` hook:
 
     ```typescript
     const { data: recentPhotos } = useRecentEventPhotos(20, 5);
     const hasEnoughPhotos = (recentPhotos?.length ?? 0) >= 3;
     ```
 
-  - [ ] T14.3 — Replace first row content:
+  - [x] T14.3 — Replace first row content:
     ```tsx
     {/* First row: real event photos (with testimonials fallback) */}
     <InfiniteMarquee direction="left" speed="slow">
@@ -726,17 +726,17 @@ I want to see real photos from past BATbern events on the homepage — replacing
     </InfiniteMarquee>
     ```
 
-  - [ ] T14.4 — Keep `TestimonialCard` and `testimonials` array for fallback (do NOT delete).
-  - [ ] T14.5 — The second row (partner showcase) is unchanged.
+  - [x] T14.4 — Keep `TestimonialCard` and `testimonials` array for fallback (do NOT delete).
+  - [x] T14.5 — The second row (partner showcase) is unchanged.
 
 ---
 
 ### Phase 10: Frontend — Archive Event Detail Photos Marquee
 
-- [ ] **T15 — Update ArchiveEventDetailPage.tsx** (AC: #7)
-  - [ ] T15.1 — Read `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx` (grep output shows ~312 lines).
-  - [ ] T15.2 — Add `useEventPhotos` import and hook call.
-  - [ ] T15.3 — Add photos section below sessions section:
+- [x] **T15 — Update ArchiveEventDetailPage.tsx** (AC: #7)
+  - [x] T15.1 — Read `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx` (grep output shows ~312 lines).
+  - [x] T15.2 — Add `useEventPhotos` import and hook call.
+  - [x] T15.3 — Add photos section below sessions section:
 
     ```tsx
     {photos && photos.length > 0 && (
@@ -758,15 +758,15 @@ I want to see real photos from past BATbern events on the homepage — replacing
     )}
     ```
 
-  - [ ] T15.4 — Section hidden if 0 photos (conditional render as above).
-  - [ ] T15.5 — Add `import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';`
+  - [x] T15.4 — Section hidden if 0 photos (conditional render as above).
+  - [x] T15.5 — Add `import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';`
 
 ---
 
 ### Phase 11: i18n
 
-- [ ] **T16 — Add i18n keys to all 10 locales** (AC: #11)
-  - [ ] T16.1 — Add to `web-frontend/public/locales/en/events.json`:
+- [x] **T16 — Add i18n keys to all 10 locales** (AC: #11)
+  - [x] T16.1 — Add to `web-frontend/public/locales/en/events.json`:
     ```json
     "photos": {
       "title": "Event Photos",
@@ -780,9 +780,9 @@ I want to see real photos from past BATbern events on the homepage — replacing
       "uploadError": "Upload failed. Please try again."
     }
     ```
-  - [ ] T16.2 — Add `"eventPage": { "tabs": { "photos": "Photos" } }` to `events.json` (merge with existing `eventPage.tabs.*` keys).
-  - [ ] T16.3 — Add `"archive": { "detail": { "photos": "Photos" } }` to `events.json`.
-  - [ ] T16.4 — Add same keys to `de/events.json` (German translations):
+  - [x] T16.2 — Add `"eventPage": { "tabs": { "photos": "Photos" } }` to `events.json` (merge with existing `eventPage.tabs.*` keys).
+  - [x] T16.3 — Add `"archive": { "detail": { "photos": "Photos" } }` to `events.json`.
+  - [x] T16.4 — Add same keys to `de/events.json` (German translations):
     ```json
     "photos": {
       "title": "Eventfotos",
@@ -796,23 +796,27 @@ I want to see real photos from past BATbern events on the homepage — replacing
       "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
     }
     ```
-  - [ ] T16.5 — For remaining 8 locales (fr, it, rm, es, fi, nl, ja, gsw-BE): use EN values as placeholder (they are functional); mark with `// TODO: translate` comment in commit message.
+  - [x] T16.5 — For remaining 8 locales (fr, it, rm, es, fi, nl, ja, gsw-BE): use EN values as placeholder (they are functional); mark with `// TODO: translate` comment in commit message.
 
 ---
 
 ### Phase 12: Quality Gates
 
-- [ ] **T17 — Backend full test suite** (AC: #9)
+- [x] **T17 — Backend full test suite** (AC: #9)
   - `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-21-full.log && grep -E "FAILED|tests|BUILD" /tmp/test-10-21-full.log | tail -10`
+  - ✅ BUILD SUCCESSFUL — 14 EventPhoto tests passed (7 unit + 7 integration)
 
-- [ ] **T18 — Checkstyle** (AC: #9)
+- [x] **T18 — Checkstyle** (AC: #9)
   - `./gradlew :services:event-management-service:checkstyleMain 2>&1 | tee /tmp/checkstyle-10-21.log && grep -i "violation\|error" /tmp/checkstyle-10-21.log | head -20`
+  - ✅ BUILD SUCCESSFUL — 0 violations
 
-- [ ] **T19 — Frontend type-check** (AC: #11)
+- [x] **T19 — Frontend type-check** (AC: #11)
   - `cd web-frontend && npx tsc --noEmit 2>&1 | tee /tmp/typecheck-10-21.log && grep -c "error" /tmp/typecheck-10-21.log`
+  - ✅ 0 errors (fixed: broken JSDoc in eventApiClient.ts, MUI Grid v2 API in EventPhotosTab.tsx)
 
-- [ ] **T20 — Frontend lint** (AC: #11)
+- [x] **T20 — Frontend lint** (AC: #11)
   - `cd web-frontend && npx eslint src/components/organizer/EventPage/EventPhotosTab.tsx src/components/public/Testimonials/TestimonialSection.tsx src/hooks/useRecentEventPhotos.ts src/hooks/useEventPhotos.ts 2>&1 | tee /tmp/lint-10-21.log`
+  - ✅ 0 warnings/errors
 
 ---
 
@@ -871,7 +875,7 @@ Browser (ArchiveEventDetailPage — Public)
 
 ```
 Backend:
-services/event-management-service/src/main/resources/db/migration/V78__create_event_photos.sql
+services/event-management-service/src/main/resources/db/migration/V79__create_event_photos.sql
 services/event-management-service/.../domain/EventPhoto.java
 services/event-management-service/.../repository/EventPhotoRepository.java
 services/event-management-service/.../service/EventPhotoService.java
@@ -957,6 +961,60 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `/tmp/ems-test-10-21.log` — backend full test suite (T17)
+- `/tmp/fe-typecheck-10-21.log` — frontend type-check (T19)
+
 ### Completion Notes List
 
+1. **V78 conflict** — Story says V78 for migration, but V78 was already taken by `V78__add_task_cancellation_fields.sql`. Used **V79** instead.
+2. **Auth pattern** — Story spec shows `@AuthenticationPrincipal Jwt jwt`, but codebase uses `Authentication authentication` injection pattern (confirmed from `PublishingEngineController`). Used `Authentication`.
+3. **Event field name** — Entity field is `date` (not `eventDate`), mapped to `event_date` column. Used `findTopByOrderByDateDesc(Pageable)` in `EventRepository`.
+4. **Broken JSDoc** — Photo methods were accidentally trapped inside an unclosed `/**` block comment in `eventApiClient.ts`. Fixed by removing the incomplete JSDoc.
+5. **MUI Grid v2** — Project uses Grid v2 API (`size={{ xs, sm, md, lg }}`). Fixed `EventPhotosTab.tsx` accordingly.
+6. **archive.detail.photos** — Lives in `common.json` (default namespace), not `events.json`.
+
 ### File List
+
+**Created:**
+- `services/event-management-service/src/main/resources/db/migration/V79__create_event_photos.sql`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/EventPhoto.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/EventPhotoRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/EventPhotoService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/EventPhotoController.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/EventPhotoResponseDto.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/EventPhotoUploadRequestDto.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/EventPhotoUploadResponseDto.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/EventPhotoConfirmRequestDto.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/EventPhotoNotFoundException.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/EventPhotoServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java`
+- `web-frontend/src/components/organizer/EventPage/EventPhotosTab.tsx`
+- `web-frontend/src/hooks/useEventPhotos.ts`
+- `web-frontend/src/hooks/useRecentEventPhotos.ts`
+
+**Modified:**
+- `docs/api/events-api.openapi.yml`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/EventRepository.java`
+- `web-frontend/src/services/eventApiClient.ts`
+- `web-frontend/src/components/organizer/EventPage/EventPage.tsx`
+- `web-frontend/src/components/public/Testimonials/TestimonialSection.tsx`
+- `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx`
+- `web-frontend/public/locales/{en,de,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json`
+- `web-frontend/public/locales/{en,de,fr,it,rm,es,fi,nl,ja,gsw-BE}/common.json`
+
+### Senior Developer Review (AI) — 2026-03-03
+
+**Result:** Changes Requested → Fixed
+
+**Findings fixed:**
+- **C1** — Added `@ExceptionHandler(InvalidFileTypeException.class)` to `GlobalExceptionHandler` returning HTTP 422.
+- **C2** — File size enforcement added: `requestUploadUrl` now validates `fileSize` against `MAX_FILE_SIZE_BYTES` (10 MB).
+- **H1** — `confirmUpload` now validates `s3Key` starts with `events/{eventCode}/photos/` before calling S3. Prevents cross-event key injection.
+- **H2** — Added `confirmUpload_asOrganizer_returns200WithPhoto` + `confirmUpload_asAnonymous_returns403` tests to `EventPhotoControllerIntegrationTest`.
+- **H3** — Null-safe `contentType` check in `requestUploadUrl` (was NPE on `Set.of().contains(null)`).
+- **M1** — AC1 text corrected to V79; stale V78 references updated throughout story.
+- **M2** — Anonymous status assertion sharpened from `is4xxClientError()` → `isForbidden()`.
+- **M3** — Added `@Valid` to `@RequestBody` params in controller; added `@NotBlank`/`@NotNull`/`@Positive` to both DTOs.
+- **L1** — `firstRow` slice moved inside the fallback branch in `TestimonialSection.tsx`.
+
+**Tests:** 23/23 PASSED (`EventPhotoServiceTest` + `EventPhotoControllerIntegrationTest`)

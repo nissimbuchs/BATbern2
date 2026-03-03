@@ -8,6 +8,7 @@ import { TestimonialCard } from './TestimonialCard';
 import { InfiniteMarquee } from './InfiniteMarquee';
 import { PartnerShowcaseCard } from '../Partners';
 import { usePublicPartners } from '@/hooks/usePublicPartners';
+import { useRecentEventPhotos } from '@/hooks/useRecentEventPhotos';
 
 interface Testimonial {
   id: string;
@@ -147,8 +148,9 @@ const testimonials: Testimonial[] = [
 ];
 
 export const TestimonialSection = () => {
-  // First row: testimonials
-  const firstRow = testimonials.slice(0, 10);
+  // First row: real event photos (fallback to testimonials if < 3 photos)
+  const { data: recentPhotos } = useRecentEventPhotos(20, 5);
+  const hasEnoughPhotos = (recentPhotos?.length ?? 0) >= 3;
 
   // Second row: partners
   const { data: partnersData } = usePublicPartners();
@@ -157,17 +159,28 @@ export const TestimonialSection = () => {
   return (
     <section className="py-16 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
       <div className="space-y-6">
-        {/* First row - testimonials scrolling left */}
+        {/* First row: real event photos with testimonial fallback */}
         <InfiniteMarquee direction="left" speed="slow">
-          {firstRow.map((testimonial) => (
-            <TestimonialCard
-              key={testimonial.id}
-              name={testimonial.name}
-              quote={testimonial.quote}
-              company={testimonial.company}
-              avatar={testimonial.avatar}
-            />
-          ))}
+          {hasEnoughPhotos
+            ? recentPhotos!.map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.displayUrl}
+                  alt="BATbern event"
+                  className="rounded-lg object-cover h-48 w-64 shrink-0"
+                />
+              ))
+            : testimonials
+                .slice(0, 10)
+                .map((testimonial) => (
+                  <TestimonialCard
+                    key={testimonial.id}
+                    name={testimonial.name}
+                    quote={testimonial.quote}
+                    company={testimonial.company}
+                    avatar={testimonial.avatar}
+                  />
+                ))}
         </InfiniteMarquee>
 
         {/* Second row - partner showcase scrolling right */}

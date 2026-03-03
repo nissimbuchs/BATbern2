@@ -4666,8 +4666,210 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # ── Event Photos (Story 10.21) ──────────────────────────────────────────────
+
+  /events/recent-photos:
+    get:
+      tags: [Event Photos]
+      summary: Recent photos from last N events (homepage use)
+      operationId: getRecentEventPhotos
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: lastNEvents
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Random sample of recent photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+
+  /events/{eventCode}/photos:
+    get:
+      tags: [Event Photos]
+      summary: List photos for an event
+      operationId: listEventPhotos
+      security: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of event photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+
+  /events/{eventCode}/photos/upload-url:
+    post:
+      tags: [Event Photos]
+      summary: Request presigned URL for photo upload
+      operationId: requestEventPhotoUploadUrl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoUploadRequest'
+      responses:
+        '200':
+          description: Presigned URL + photoId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoUploadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/photos/confirm:
+    post:
+      tags: [Event Photos]
+      summary: Confirm photo upload and persist record
+      operationId: confirmEventPhotoUpload
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoConfirmRequest'
+      responses:
+        '200':
+          description: Photo confirmed and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/photos/{photoId}:
+    delete:
+      tags: [Event Photos]
+      summary: Delete a photo (DB record + S3 object)
+      operationId: deleteEventPhoto
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Photo deleted
+        '404':
+          description: Photo not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+
+    # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
+
+    EventPhotoResponse:
+      type: object
+      required: [id, eventCode, displayUrl, uploadedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+        displayUrl:
+          type: string
+        filename:
+          type: string
+        uploadedBy:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+        sortOrder:
+          type: integer
+
+    EventPhotoUploadRequest:
+      type: object
+      required: [filename, contentType, fileSize]
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        fileSize:
+          type: integer
+          format: int64
+
+    EventPhotoUploadResponse:
+      type: object
+      required: [photoId, uploadUrl, s3Key, expiresIn]
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+        s3Key:
+          type: string
+        expiresIn:
+          type: integer
+
+    EventPhotoConfirmRequest:
+      type: object
+      required: [photoId, s3Key]
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        s3Key:
+          type: string
 
     # ── AI Assist Schemas (Story 10.16) ──────────────────────────────────────
 

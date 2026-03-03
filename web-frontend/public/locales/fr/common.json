@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtre actif"
     },
     "detail": {
-      "backToArchive": "← Retour aux archives"
+      "backToArchive": "← Retour aux archives",
+      "photos": "Photos"
     }
   },
   "notifications": {

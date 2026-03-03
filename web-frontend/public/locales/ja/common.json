@@ -552,7 +552,8 @@
       "activeCount": "{{count}}件のアクティブなフィルター"
     },
     "detail": {
-      "backToArchive": "← アーカイブに戻る"
+      "backToArchive": "← アーカイブに戻る",
+      "photos": "Photos"
     }
   },
   "notifications": {
