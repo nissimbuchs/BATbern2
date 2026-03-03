@@ -12,7 +12,6 @@ import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.exception.PhotoUploadNotFoundException;
 import ch.batbern.events.repository.EventPhotoRepository;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -144,13 +143,17 @@ public class EventPhotoService {
             throw new PhotoUploadNotFoundException(request.getPhotoId().toString());
         }
 
-        String displayUrl = CloudFrontUrlBuilder.buildUrl(
-                cloudFrontDomain, bucketName, request.getS3Key());
+        // cloudFrontDomain already includes the bucket path in local dev
+        // (e.g. http://localhost:8450/batbern-development-company-logos) so we
+        // must NOT use CloudFrontUrlBuilder (which would append bucketName again).
+        // In production cloudFrontDomain is https://cdn.batbern.ch — same pattern.
+        String displayUrl = cloudFrontDomain + "/" + request.getS3Key();
         String filename = request.getS3Key()
                 .substring(request.getS3Key().lastIndexOf('/') + 1);
 
         EventPhoto photo = EventPhoto.builder()
                 .id(request.getPhotoId())
+                .newEntity(true)
                 .eventCode(eventCode)
                 .s3Key(request.getS3Key())
                 .displayUrl(displayUrl)
@@ -204,7 +207,7 @@ public class EventPhotoService {
     @Transactional(readOnly = true)
     public List<EventPhotoResponseDto> getRecentPhotos(int limit, int lastNEvents) {
         List<Event> recentEvents = eventRepository
-                .findTopByOrderByDateDesc(PageRequest.of(0, lastNEvents));
+                .findAllByOrderByDateDesc(PageRequest.of(0, lastNEvents));
 
         if (recentEvents.isEmpty()) {
             return List.of();

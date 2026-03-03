@@ -86,6 +86,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                // Story 10.21: Public event photo endpoints (AC4, AC5)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()
+
                 // Story 4.2 (BAT-109): Public archive browsing endpoint
                 .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
 

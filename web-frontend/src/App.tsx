@@ -261,7 +261,7 @@ function App() {
                     />
                     {/* Story 4.2: Archive browsing routes */}
                     <Route path="/archive" element={<ArchivePage />} />
-                    {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
+                    {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme BATbern components) */}
                     <Route path="/archive/:eventCode" element={<HomePage />} />
 
                     {/* Story 6.2a: Speaker Portal - Invitation Response */}

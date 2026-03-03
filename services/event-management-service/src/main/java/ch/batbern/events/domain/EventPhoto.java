@@ -2,14 +2,16 @@ package ch.batbern.events.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -27,11 +29,30 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventPhoto {
+public class EventPhoto implements Persistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    /**
+     * Signals to Spring Data that this is a new entity (INSERT, not merge/UPDATE).
+     * Required because the ID is always set externally from Phase 1 photoId.
+     * Without this, Spring Data calls merge() on a non-existent row → StaleObjectStateException.
+     */
+    @Transient
+    @Builder.Default
+    private boolean newEntity = false;
+
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.newEntity = false;
+    }
 
     @Column(name = "event_code", nullable = false)
     private String eventCode;

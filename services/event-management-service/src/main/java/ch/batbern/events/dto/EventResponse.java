@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.dto.generated.TeaserImageItem;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +47,11 @@ public class EventResponse {
     private String topicSelectionNote;
     private String workflowState;
     private String currentPublishedPhase;
+
+    // Teaser images for moderator presentation page (Story 10.22)
+    // Populated by EventController after base DTO construction (N+1 acceptable at BATbern scale).
+    // TODO: If list performance degrades, switch to batch-load: findByEventCodeInOrderByDisplayOrderAsc(codes).
+    private List<TeaserImageItem> teaserImages;
 
     // Optional expanded resources (Story BAT-109: Archive browsing)
     // These fields are populated only when requested via ?include parameter

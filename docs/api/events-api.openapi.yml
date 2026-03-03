@@ -4808,6 +4808,108 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # ── Event Teaser Images (Story 10.22) ────────────────────────────────────────
+
+  /events/{eventCode}/teaser-images/upload-url:
+    post:
+      tags: [Events]
+      operationId: generateTeaserImageUploadUrl
+      summary: Get presigned S3 PUT URL for teaser image upload (organizer-only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL + s3Key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageUploadUrlResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/teaser-images/confirm:
+    post:
+      tags: [Events]
+      operationId: confirmTeaserImageUpload
+      summary: Confirm upload and persist new teaser image
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageConfirmRequest'
+      responses:
+        '200':
+          description: Teaser image confirmed and persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '422':
+          description: Max image limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/teaser-images/{imageId}:
+    delete:
+      tags: [Events]
+      operationId: deleteTeaserImage
+      summary: Delete a specific teaser image by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Teaser image deleted
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
 
@@ -4870,6 +4972,66 @@ components:
           format: uuid
         s3Key:
           type: string
+
+    # ── Event Teaser Image Schemas (Story 10.22) ──────────────────────────────
+
+    TeaserImageItem:
+      type: object
+      required: [id, imageUrl, displayOrder]
+      description: A single teaser image for the moderator presentation page.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the teaser image.
+        imageUrl:
+          type: string
+          format: uri
+          description: CloudFront URL for the teaser image.
+          example: "https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg"
+        displayOrder:
+          type: integer
+          description: Order in which the image is displayed (ascending).
+          example: 0
+
+    TeaserImageUploadUrlRequest:
+      type: object
+      required: [contentType, fileName]
+      properties:
+        contentType:
+          type: string
+          description: MIME type of the image (image/jpeg, image/png, image/webp).
+          example: "image/jpeg"
+        fileName:
+          type: string
+          description: Original filename.
+          example: "teaser.jpg"
+
+    TeaserImageUploadUrlResponse:
+      type: object
+      required: [uploadUrl, s3Key, expiresIn]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned S3 PUT URL for direct upload.
+        s3Key:
+          type: string
+          description: S3 object key to use in the confirm step.
+          example: "events/BATbern57/teaser/abc123-def456.jpg"
+        expiresIn:
+          type: integer
+          description: URL expiry in seconds.
+          example: 900
+
+    TeaserImageConfirmRequest:
+      type: object
+      required: [s3Key]
+      properties:
+        s3Key:
+          type: string
+          description: S3 object key returned by the upload-url step.
+          example: "events/BATbern57/teaser/abc123-def456.jpg"
 
     # ── AI Assist Schemas (Story 10.16) ──────────────────────────────────────
 
@@ -5907,6 +6069,15 @@ components:
             Upload ID from three-phase upload pattern (internal reference).
             Story 2.5.3a: Event Theme Image Upload
             This is returned so the frontend can track what was uploaded.
+        teaserImages:
+          type: array
+          nullable: true
+          description: |
+            Ordered list of teaser images shown as individual slides on the moderator
+            presentation page (between topic-reveal and agenda-preview).
+            Story 10.22: Event Teaser Images.
+          items:
+            $ref: '#/components/schemas/TeaserImageItem'
         topicCode:
           type: string
           nullable: true

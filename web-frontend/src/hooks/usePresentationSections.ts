@@ -19,6 +19,7 @@ export type SectionType =
   | 'about'
   | 'committee'
   | 'topic-reveal'
+  | 'teaser-image'
   | 'agenda-preview'
   | 'session'
   | 'break'
@@ -30,6 +31,8 @@ export interface PresentationSection {
   type: SectionType;
   key: string;
   session?: PresentationSession;
+  /** Present only for type === 'teaser-image' (Story 10.22) */
+  imageUrl?: string;
 }
 
 // Session types that become individual speaker slides
@@ -60,6 +63,14 @@ export function usePresentationSections(
 
     // §4 Topic Reveal
     sections.push({ type: 'topic-reveal', key: 'topic-reveal' });
+
+    // §4.5 Teaser Images — one full-screen slide per image (Story 10.22 AC5)
+    const teaserImages = event.teaserImages ?? [];
+    [...teaserImages]
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .forEach((img) => {
+        sections.push({ type: 'teaser-image', key: `teaser-${img.id}`, imageUrl: img.imageUrl });
+      });
 
     // §5 Agenda Preview
     sections.push({ type: 'agenda-preview', key: 'agenda-preview' });

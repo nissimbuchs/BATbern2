@@ -785,5 +785,13 @@
     "emptyState": "No photos yet. Upload the first one!",
     "uploading": "Uploading...",
     "uploadError": "Upload failed. Please try again."
+  },
+  "teaserImage": {
+    "title": "Teaser Images",
+    "description": "Images shown as full-screen slides on the presentation page between topic reveal and agenda preview.",
+    "uploadButton": "Add Teaser Image",
+    "uploading": "Uploading...",
+    "uploadError": "Upload failed. Please try again.",
+    "limitReached": "Maximum of {{max}} teaser images reached."
   }
 }

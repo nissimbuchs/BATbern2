@@ -31,6 +31,11 @@ type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
 type EventPhotoUploadResponse = components['schemas']['EventPhotoUploadResponse'];
 type EventPhotoConfirmRequest = components['schemas']['EventPhotoConfirmRequest'];
 
+type TeaserImageItem = components['schemas']['TeaserImageItem'];
+type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
+type TeaserImageUploadUrlResponse = components['schemas']['TeaserImageUploadUrlResponse'];
+type TeaserImageConfirmRequest = components['schemas']['TeaserImageConfirmRequest'];
+
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
 
@@ -517,6 +522,46 @@ class EventApiClient {
         { params: { limit, lastNEvents } }
       );
       return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
+
+  async requestTeaserImageUploadUrl(
+    eventCode: string,
+    request: TeaserImageUploadUrlRequest
+  ): Promise<TeaserImageUploadUrlResponse> {
+    try {
+      const response = await apiClient.post<TeaserImageUploadUrlResponse>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/upload-url`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async confirmTeaserImageUpload(
+    eventCode: string,
+    request: TeaserImageConfirmRequest
+  ): Promise<TeaserImageItem> {
+    try {
+      const response = await apiClient.post<TeaserImageItem>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/confirm`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async deleteTeaserImage(eventCode: string, imageId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`);
     } catch (error) {
       throw this.transformError(error);
     }

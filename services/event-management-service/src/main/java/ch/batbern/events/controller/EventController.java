@@ -113,6 +113,7 @@ public class EventController {
     private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
     private final ch.batbern.events.service.SessionService sessionService;
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
+    private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -241,6 +242,7 @@ public class EventController {
             // Build response using EventMapper (BAT-91 Phase 3)
             response = eventMapper.toDto(event);
             enrichWithRegistrationCounts(response, event.getId());
+            enrichWithTeaserImages(response);
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
@@ -793,6 +795,7 @@ public class EventController {
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(currentEvent);
         enrichWithRegistrationCounts(response, currentEvent.getId());
+        enrichWithTeaserImages(response);
 
         // Apply resource expansions if requested
         if (include != null && !include.trim().isEmpty()) {
@@ -889,6 +892,7 @@ public class EventController {
         // Build response using EventMapper (Phase 3: BAT-91)
         EventResponse response = eventMapper.toDto(savedEvent);
         enrichWithRegistrationCounts(response, savedEvent.getId());
+        enrichWithTeaserImages(response);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -1038,6 +1042,7 @@ public class EventController {
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(updatedEvent);
         enrichWithRegistrationCounts(response, updatedEvent.getId());
+        enrichWithTeaserImages(response);
 
         return ResponseEntity.ok(response);
     }
@@ -1140,6 +1145,7 @@ public class EventController {
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(patchedEvent);
         enrichWithRegistrationCounts(response, patchedEvent.getId());
+        enrichWithTeaserImages(response);
 
         return ResponseEntity.ok(response);
     }
@@ -1305,6 +1311,7 @@ public class EventController {
         // Build response using EventMapper (BAT-91 Phase 3)
         EventResponse response = eventMapper.toDto(publishedEvent);
         enrichWithRegistrationCounts(response, publishedEvent.getId());
+        enrichWithTeaserImages(response);
 
         return ResponseEntity.ok(response);
     }
@@ -1360,6 +1367,16 @@ public class EventController {
         response.setWaitlistCount((int) waitlisted);
         if (response.getRegistrationCapacity() != null) {
             response.setSpotsRemaining((int) (response.getRegistrationCapacity() - confirmed));
+        }
+    }
+
+    /**
+     * Populate teaserImages list on EventResponse from EventTeaserImageService.
+     * Story 10.22: Event Teaser Images — AC4
+     */
+    private void enrichWithTeaserImages(EventResponse response) {
+        if (response.getEventCode() != null) {
+            response.setTeaserImages(eventTeaserImageService.listByEventCode(response.getEventCode()));
         }
     }
 

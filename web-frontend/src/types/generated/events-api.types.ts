@@ -2139,6 +2139,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/teaser-images/upload-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Get presigned S3 PUT URL for teaser image upload (organizer-only) */
+    post: operations['generateTeaserImageUploadUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/teaser-images/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Confirm upload and persist new teaser image */
+    post: operations['confirmTeaserImageUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/teaser-images/{imageId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a specific teaser image by ID */
+    delete: operations['deleteTeaserImage'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2171,6 +2222,61 @@ export interface components {
     EventPhotoConfirmRequest: {
       /** Format: uuid */
       photoId: string;
+      s3Key: string;
+    };
+    /** @description A single teaser image for the moderator presentation page. */
+    TeaserImageItem: {
+      /**
+       * Format: uuid
+       * @description Unique identifier for the teaser image.
+       */
+      id: string;
+      /**
+       * Format: uri
+       * @description CloudFront URL for the teaser image.
+       * @example https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg
+       */
+      imageUrl: string;
+      /**
+       * @description Order in which the image is displayed (ascending).
+       * @example 0
+       */
+      displayOrder: number;
+    };
+    TeaserImageUploadUrlRequest: {
+      /**
+       * @description MIME type of the image (image/jpeg, image/png, image/webp).
+       * @example image/jpeg
+       */
+      contentType: string;
+      /**
+       * @description Original filename.
+       * @example teaser.jpg
+       */
+      fileName: string;
+    };
+    TeaserImageUploadUrlResponse: {
+      /**
+       * Format: uri
+       * @description Presigned S3 PUT URL for direct upload.
+       */
+      uploadUrl: string;
+      /**
+       * @description S3 object key to use in the confirm step.
+       * @example events/BATbern57/teaser/abc123-def456.jpg
+       */
+      s3Key: string;
+      /**
+       * @description URL expiry in seconds.
+       * @example 900
+       */
+      expiresIn: number;
+    };
+    TeaserImageConfirmRequest: {
+      /**
+       * @description S3 object key returned by the upload-url step.
+       * @example events/BATbern57/teaser/abc123-def456.jpg
+       */
       s3Key: string;
     };
     FeatureFlagsResponse: {
@@ -2842,6 +2948,12 @@ export interface components {
        * @example abc123-def456
        */
       themeImageUploadId?: string | null;
+      /**
+       * @description Ordered list of teaser images shown as individual slides on the moderator
+       *     presentation page (between topic-reveal and agenda-preview).
+       *     Story 10.22: Event Teaser Images.
+       */
+      teaserImages?: components['schemas']['TeaserImageItem'][] | null;
       /**
        * @description Topic code (slug-format identifier) of the selected topic.
        *     Story 5.2: Topic Selection & Speaker Brainstorming
@@ -8188,6 +8300,104 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  generateTeaserImageUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TeaserImageUploadUrlRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned URL + s3Key */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageUploadUrlResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmTeaserImageUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TeaserImageConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Teaser image confirmed and persisted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageItem'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Max image limit reached */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deleteTeaserImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+        imageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Teaser image deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Teaser image not found */
       404: {
         headers: {
           [name: string]: unknown;

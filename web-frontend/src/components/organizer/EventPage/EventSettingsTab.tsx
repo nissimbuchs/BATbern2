@@ -4,7 +4,7 @@
  * Event settings, notifications, and danger zone
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box,
   Paper,
@@ -27,6 +27,7 @@ import {
   IconButton,
   Snackbar,
   TextField,
+  CircularProgress,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -36,13 +37,19 @@ import {
   Cancel as CancelIcon,
   Person as PersonIcon,
   Group as GroupIcon,
+  Image as ImageIcon,
+  AddPhotoAlternate as AddPhotoAlternateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
+import { useUploadTeaserImage, useDeleteTeaserImage } from '@/hooks/useEventTeaserImages';
 import type { Event, EventDetailUI } from '@/types/event.types';
+import type { components } from '@/types/generated/events-api.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
+
+type TeaserImageItem = components['schemas']['TeaserImageItem'];
 
 interface EventSettingsTabProps {
   event: Event | EventDetailUI;
@@ -78,6 +85,15 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Teaser images (Story 10.22)
+  const teaserImages: TeaserImageItem[] =
+    (event as Event & { teaserImages?: TeaserImageItem[] }).teaserImages ?? [];
+  const MAX_TEASER_IMAGES = 10;
+  const uploadTeaserImageMutation = useUploadTeaserImage(eventCode);
+  const deleteTeaserImageMutation = useDeleteTeaserImage(eventCode);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [teaserUploadError, setTeaserUploadError] = useState<string | null>(null);
 
   // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
@@ -176,6 +192,25 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     setCancelDialogOpen(false);
   };
 
+  const handleTeaserImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setTeaserUploadError(null);
+    try {
+      await uploadTeaserImageMutation.mutateAsync({
+        file,
+        request: { contentType: file.type, fileName: file.name },
+      });
+    } catch (err) {
+      setTeaserUploadError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.uploadError', 'Upload failed. Please try again.')
+      );
+    }
+  };
+
   return (
     <Stack spacing={3}>
       {/* Event Moderator */}
@@ -269,6 +304,120 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         onClose={() => setCapacitySuccess(false)}
         message={t('eventPage.settings.capacityUpdated', 'Capacity updated successfully')}
       />
+
+      {/* Teaser Images (Story 10.22) */}
+      <Paper sx={{ p: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <ImageIcon color="action" />
+          <Typography variant="h6">{t('teaserImage.title', 'Teaser Images')}</Typography>
+          <Chip
+            label={`${teaserImages.length} / ${MAX_TEASER_IMAGES}`}
+            size="small"
+            color={teaserImages.length >= MAX_TEASER_IMAGES ? 'error' : 'default'}
+            variant="outlined"
+          />
+        </Stack>
+        <Divider sx={{ mb: 2 }} />
+
+        <Typography variant="body2" color="text.secondary" mb={2}>
+          {t(
+            'teaserImage.description',
+            'Images shown as full-screen slides on the presentation page between topic reveal and agenda preview.'
+          )}
+        </Typography>
+
+        {teaserUploadError && (
+          <Alert severity="error" onClose={() => setTeaserUploadError(null)} sx={{ mb: 2 }}>
+            {teaserUploadError}
+          </Alert>
+        )}
+
+        {/* Gallery */}
+        {teaserImages.length > 0 && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
+            {[...teaserImages]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((img) => (
+                <Box
+                  key={img.id}
+                  sx={{
+                    position: 'relative',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    aspectRatio: '16/9',
+                    bgcolor: 'grey.100',
+                  }}
+                >
+                  <img
+                    src={img.imageUrl}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => deleteTeaserImageMutation.mutate(img.id)}
+                    disabled={deleteTeaserImageMutation.isPending}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      bgcolor: 'rgba(0,0,0,0.55)',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'rgba(200,0,0,0.75)' },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+          </Box>
+        )}
+
+        {/* Upload button */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          style={{ display: 'none' }}
+          onChange={handleTeaserImageFileChange}
+        />
+        <Button
+          variant="outlined"
+          startIcon={
+            uploadTeaserImageMutation.isPending ? (
+              <CircularProgress size={16} />
+            ) : (
+              <AddPhotoAlternateIcon />
+            )
+          }
+          disabled={
+            isArchived ||
+            teaserImages.length >= MAX_TEASER_IMAGES ||
+            uploadTeaserImageMutation.isPending
+          }
+          onClick={() => fileInputRef.current?.click()}
+          data-testid="teaser-image-upload-btn"
+        >
+          {uploadTeaserImageMutation.isPending
+            ? t('teaserImage.uploading', 'Uploading...')
+            : t('teaserImage.uploadButton', 'Add Teaser Image')}
+        </Button>
+
+        {teaserImages.length >= MAX_TEASER_IMAGES && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+            {t('teaserImage.limitReached', 'Maximum of {{max}} teaser images reached.', {
+              max: MAX_TEASER_IMAGES,
+            })}
+          </Typography>
+        )}
+      </Paper>
 
       {/* Notifications */}
       <Paper sx={{ p: 3 }}>

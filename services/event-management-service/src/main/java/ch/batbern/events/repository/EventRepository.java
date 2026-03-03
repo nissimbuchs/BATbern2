@@ -206,5 +206,6 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * Used by EventPhotoService.getRecentPhotos() for homepage marquee.
      * Story 10.21
      */
-    List<Event> findTopByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
+    // Note: do NOT use findTopBy — Top without a number means 1, overriding Pageable.
+    List<Event> findAllByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
 }

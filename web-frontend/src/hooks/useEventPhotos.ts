@@ -8,10 +8,11 @@ import type { components } from '@/types/generated/events-api.types';
 
 type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
 
-export const useEventPhotos = (eventCode: string) => {
+export const useEventPhotos = (eventCode: string, enabled = true) => {
   return useQuery({
     queryKey: ['event-photos', eventCode],
     queryFn: () => eventApiClient.listEventPhotos(eventCode),
+    enabled: enabled && !!eventCode,
   });
 };
 

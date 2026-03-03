@@ -785,5 +785,13 @@
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
     "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "teaserImage": {
+    "title": "Teaser-Bilder",
+    "description": "Bilder, die auf der Präsentationsseite als Vollbild-Folien zwischen Themenbekanntgabe und Agenda-Vorschau angezeigt werden.",
+    "uploadButton": "Teaser-Bild hinzufügen",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "limitReached": "Maximum von {{max}} Teaser-Bildern erreicht."
   }
 }

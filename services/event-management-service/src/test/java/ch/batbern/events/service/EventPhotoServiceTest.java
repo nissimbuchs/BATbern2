@@ -39,6 +39,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -257,8 +258,9 @@ class EventPhotoServiceTest {
 
             // Then
             verify(s3Client).headObject(any(HeadObjectRequest.class));
-            verify(photoRepository).save(any(EventPhoto.class));
-            assertThat(result.getDisplayUrl()).startsWith(CLOUDFRONT_DOMAIN);
+            verify(photoRepository).save(argThat(EventPhoto::isNew));
+            // displayUrl must be domain + "/" + s3Key (no double bucket name)
+            assertThat(result.getDisplayUrl()).isEqualTo(CLOUDFRONT_DOMAIN + "/" + s3Key);
             assertThat(result.getEventCode()).isEqualTo(EVENT_CODE);
         }
 
@@ -365,7 +367,7 @@ class EventPhotoServiceTest {
             List<Event> recentEvents = buildEvents(5);
             List<EventPhoto> allPhotos = buildPhotos(recentEvents, 5);
 
-            when(eventRepository.findTopByOrderByDateDesc(any())).thenReturn(recentEvents);
+            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(recentEvents);
             when(photoRepository.findByEventCodeIn(any())).thenReturn(allPhotos);
 
             // When
@@ -382,7 +384,7 @@ class EventPhotoServiceTest {
             List<Event> recentEvents = buildEvents(1);
             List<EventPhoto> photos = buildPhotos(recentEvents, 3);
 
-            when(eventRepository.findTopByOrderByDateDesc(any())).thenReturn(recentEvents);
+            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(recentEvents);
             when(photoRepository.findByEventCodeIn(any())).thenReturn(photos);
 
             // When
@@ -396,7 +398,7 @@ class EventPhotoServiceTest {
         @DisplayName("should return empty list when no recent events - AC5")
         void shouldReturnEmptyWhenNoEvents() {
             // Given
-            when(eventRepository.findTopByOrderByDateDesc(any())).thenReturn(List.of());
+            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(List.of());
 
             // When
             List<EventPhotoResponseDto> result = service.getRecentPhotos(20, 5);
