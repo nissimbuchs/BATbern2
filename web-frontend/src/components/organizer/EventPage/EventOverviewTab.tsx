@@ -32,7 +32,6 @@ import { de, enUS } from 'date-fns/locale';
 import { WorkflowProgressBar } from '@/components/organizer/EventManagement';
 import type { Event, EventDetailUI, WorkflowStep } from '@/types/event.types';
 import {
-  isEarlyStage,
   getWorkflowStateLabel,
   getWorkflowStepNumber,
   getWorkflowProgress,
@@ -171,11 +170,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               compact
             />
           </Box>
-          {isEarlyStage(event.workflowState || 'CREATED') && (
-            <Button variant="outlined" size="small">
-              {t('workflow.advanceWorkflow', 'Advance Workflow')} →
-            </Button>
-          )}
         </Stack>
       </Paper>
 

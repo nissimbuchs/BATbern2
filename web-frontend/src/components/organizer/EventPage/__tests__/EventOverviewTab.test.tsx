@@ -225,17 +225,10 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
   });
 
   describe('Workflow State', () => {
-    it('should_displayAdvanceWorkflowButton_when_earlyStage', () => {
-      const earlyStageEvent = { ...mockEvent, workflowState: 'CREATED' as const };
-      renderWithProviders(<EventOverviewTab event={earlyStageEvent} eventCode="BAT54" />);
+    it('should_displayWorkflowProgressBar_when_rendered', () => {
+      renderWithProviders(<EventOverviewTab event={mockEvent} eventCode="BAT54" />);
 
-      expect(screen.getByRole('button', { name: /advance/i })).toBeInTheDocument();
-    });
-
-    it('should_notDisplayAdvanceButton_when_lateStage', () => {
-      const lateStageEvent = { ...mockEvent, workflowState: 'EVENT_READY' as const };
-      renderWithProviders(<EventOverviewTab event={lateStageEvent} eventCode="BAT54" />);
-
+      // Workflow progress bar is always shown; advance button has been removed
       expect(screen.queryByRole('button', { name: /advance/i })).not.toBeInTheDocument();
     });
   });
