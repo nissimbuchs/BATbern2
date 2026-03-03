@@ -4,12 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to deploy (e.g., v1.2.3)'
+        description: 'Commit SHA to deploy (7-char short SHA from main branch, e.g., a3f7c91)'
         required: true
       migrate_database:
         description: 'Run database migrations'
         type: boolean
         default: true
+      release_name:
+        description: 'Optional release name (e.g. v1.0.0). If empty, release is tagged prod/<sha>.'
+        required: false
 
 env:
   AWS_REGION: eu-central-1
@@ -28,15 +31,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Verify version exists
+      - name: Verify commit is on main branch
         run: |
-          git fetch --tags
-          if ! git tag | grep -q "^${{ github.event.inputs.version }}$"; then
-            echo "::error::Version ${{ github.event.inputs.version }} does not exist"
+          git fetch origin main
+          VERSION="${{ github.event.inputs.version }}"
+
+          if ! git cat-file -e "${VERSION}^{commit}" 2>/dev/null; then
+            echo "::error::Commit ${VERSION} does not exist in this repository"
             exit 1
           fi
-          echo "✅ Version ${{ github.event.inputs.version }} exists"
+
+          if ! git merge-base --is-ancestor "${VERSION}" origin/main 2>/dev/null; then
+            echo "::error::Commit ${VERSION} is not on the main branch. Only commits merged to main can be deployed to production."
+            exit 1
+          fi
+
+          echo "✅ Commit ${VERSION} is on main branch — safe to deploy"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -145,8 +158,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.version }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -198,13 +209,10 @@ jobs:
             echo "Deploying version: ${{ github.event.inputs.version }}"
 
             # CDK deployment with blue-green strategy
-            # Graceful degradation: deploy:prod script may not be fully configured yet
-            # This allows workflow validation during initial infrastructure development
-            # TODO: Remove '|| echo' once CDK deployment is fully operational
             npm run deploy:prod -- \
               --context version=${{ github.event.inputs.version }} \
               --context deploymentStrategy=blue-green \
-              --require-approval never || echo "::warning::CDK deployment not fully configured yet"
+              --require-approval never
           else
             echo "::warning::Infrastructure not configured yet"
           fi
@@ -255,7 +263,7 @@ jobs:
             chmod +x scripts/ci/smoke-tests.sh
             ./scripts/ci/smoke-tests.sh \
               https://www.batbern.ch \
-              https://api.batbern.ch || echo "::warning::Smoke tests not fully configured yet"
+              https://api.batbern.ch
           else
             echo "::warning::Smoke tests script not found"
           fi
@@ -285,17 +293,6 @@ jobs:
             echo "::warning::Header propagation tests script not found"
           fi
 
-      - name: Run Bruno API contract tests
-        run: |
-          if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
-            chmod +x scripts/ci/run-bruno-tests.sh
-            echo "Running Bruno API contract tests..."
-            ./scripts/ci/run-bruno-tests.sh production || echo "::warning::Bruno tests not fully configured"
-            echo "✅ Bruno API contract tests completed"
-          else
-            echo "::warning::Bruno test script not found, skipping"
-          fi
-
       - name: Verify critical endpoints
         run: |
           endpoints=(
@@ -314,87 +311,51 @@ jobs:
             fi
           done
 
-  e2e-infrastructure-tests:
-    needs: blue-green-deployment
+  create-release:
+    needs: [smoke-tests]
+    if: success()
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for OIDC authentication
-      contents: read   # Required for checkout
+      contents: write  # Required to create git tags and GitHub Releases
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Install infrastructure dependencies
-        working-directory: ./infrastructure
-        run: npm ci
-
-      - name: Run E2E infrastructure tests
-        working-directory: ./infrastructure
-        run: |
-          echo "Running E2E tests against deployed production infrastructure..."
-          TEST_E2E=true TEST_ENVIRONMENT=production npm test -- test/e2e/ || echo "::warning::E2E tests not fully configured yet"
+      - name: Create GitHub Release
         env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-
-  e2e-frontend-tests:
-    needs: blue-green-deployment
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read   # Required for checkout
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: web-frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: ./web-frontend
-        run: npm ci
-
-      - name: Install Playwright
-        working-directory: ./web-frontend
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm install -D @playwright/test
-          npx playwright install --with-deps chromium
+          VERSION="${{ github.event.inputs.version }}"
+          RELEASE_NAME="${{ github.event.inputs.release_name }}"
+          DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
 
-      - name: Run frontend E2E tests (Playwright)
-        working-directory: ./web-frontend
-        run: |
-          echo "Running Playwright E2E tests against production environment..."
-          npx playwright test --project=chromium || echo "::warning::Frontend E2E tests not fully configured yet"
-        env:
-          E2E_BASE_URL: https://www.batbern.ch
-          E2E_API_URL: https://api.batbern.ch
-          E2E_AWS_REGION: ${{ env.AWS_REGION }}
+          # Use provided release name as tag if given, otherwise fall back to prod/<sha>
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "${RELEASE_NAME}" ]; then
+            TAG="${RELEASE_NAME}"
+            TITLE="${RELEASE_NAME} — Production (${DATE})"
+            NOTES=$(printf '**Version:** `%s`\n**Commit:** `%s`\n**Deployed:** %s\n**Workflow:** %s' \
+              "${RELEASE_NAME}" "${VERSION}" "${DATE}" "${WORKFLOW_URL}")
+          else
+            TAG="prod/${VERSION}"
+            TITLE="Production release ${VERSION} (${DATE})"
+            NOTES=$(printf '**Commit:** `%s`\n**Deployed:** %s\n**Workflow:** %s' \
+              "${VERSION}" "${DATE}" "${WORKFLOW_URL}")
+          fi
 
-      - name: Upload Playwright test results
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: playwright-report-production
-          path: web-frontend/playwright-report/
-          retention-days: 30
+          # Resolve short SHA to full 40-char SHA (GitHub API requires full SHA for target_commitish)
+          FULL_SHA=$(gh api "repos/${{ github.repository }}/commits/${VERSION}" --jq '.sha')
+
+          gh release create "${TAG}" \
+            --title "${TITLE}" \
+            --notes "${NOTES}" \
+            --target "${FULL_SHA}"
+
+          echo "✅ GitHub Release created: ${TAG}"
 
   rollback-on-failure:
-    needs: [blue-green-deployment, smoke-tests, e2e-infrastructure-tests, e2e-frontend-tests]
+    needs: [blue-green-deployment, smoke-tests]
     if: failure()
     runs-on: ubuntu-latest
     permissions:

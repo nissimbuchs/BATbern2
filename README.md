@@ -288,43 +288,38 @@ The platform uses GitHub Actions for automated building, testing, and deployment
 
 - **Build Pipeline** - Runs on every push to `develop` or `main`
 - **Security Scanning** - Runs after successful builds
-- **Dev Deployment** - Automatic on merge to `develop`
-- **Staging Deployment** - Manual with approval
-- **Production Deployment** - Manual with two approvals
+- **Staging Deployment** - Automatic on push to `develop` (or manual via Actions)
+- **Production Deployment** - Manual via GitHub Actions after merging `develop → main`
 
 ### Deployment Environments
 
-- **Development:** https://dev.batbern.ch (auto-deploy)
-- **Staging:** https://staging.batbern.ch (manual)
-- **Production:** https://www.batbern.ch (manual)
+- **Staging:** https://staging.batbern.ch (auto-deploy from `develop`)
+- **Production:** https://www.batbern.ch (manual, requires `develop → main` PR)
 
 ### Quick Deploy
 
-**To Development:**
+**To Staging** (automatic):
 ```bash
-git checkout develop
-git merge feature/my-feature
 git push origin develop
-# Deployment happens automatically
+# Deploy to staging runs automatically after build passes
 ```
 
-**To Staging:**
+**To Production** (manual — 3 steps):
 ```bash
-# Via GitHub Actions UI
-Actions → Deploy to Staging → Run workflow
-Version: <commit-sha-or-tag>
+# Step 1: Open a PR on GitHub: develop → main and merge it.
+#         The build pipeline runs on main and pushes images to the production ECR
+#         with the merge commit SHA as the image tag.
+
+# Step 2: Note the 7-char SHA of the merge commit
+#         (visible in the commit list or the build workflow run)
+
+# Step 3: Trigger the deploy
+Actions → Deploy to Production → Run workflow → version: <sha7>
+# e.g. version: a3f7c91
 ```
 
-**To Production:**
-```bash
-# Create version tag
-git tag v1.2.3
-git push origin v1.2.3
-
-# Via GitHub Actions UI
-Actions → Deploy to Production → Run workflow
-Version: v1.2.3
-```
+A GitHub Release (`prod/<sha7>`) is created automatically after a successful production deploy.
+Each deploy is visible on the [/deployments](../../deployments) and [/releases](../../releases) pages.
 
 ## Architecture
 

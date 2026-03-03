@@ -456,18 +456,22 @@ git commit -m "test(integration): add company API contract tests"
 ## Deployment
 
 ```bash
-# Development (auto-deploy on merge to develop)
+# Development (auto-deploy on push to develop)
 git push origin develop
 
 # Staging (manual via GitHub Actions)
 # Actions → Deploy to Staging → Run workflow
 
-# Production (manual with approval)
-git tag v1.2.3
-git push origin v1.2.3
-# Actions → Deploy to Production → Run workflow
+# Production (manual — 3 steps)
+# 1. Merge develop → main via a PR on GitHub
+#    This builds images and pushes them to production ECR with the merge commit SHA as the tag.
+# 2. Note the 7-char SHA of the merge commit (visible in the commit list or build run)
+# 3. Actions → Deploy to Production → Run workflow → version: <sha7>
+#    e.g. version: a3f7c91
+#    A GitHub Release (prod/<sha7>) is automatically created on successful deploy.
+#    Each successful deploy appears on the /deployments and /releases pages.
 
-# CDK deployment (infrastructure changes)
+# CDK deployment (infrastructure changes only)
 cd infrastructure
 npm run deploy:staging
 npm run deploy:prod

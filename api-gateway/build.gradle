@@ -69,7 +69,7 @@ dependencies {
     // Testing Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.junit.jupiter:junit-jupiter:6.0.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.22.0'
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.testcontainers:testcontainers:1.21.3'

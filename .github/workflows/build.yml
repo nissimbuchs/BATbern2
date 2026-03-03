@@ -23,7 +23,7 @@ on:
   push:
     branches: [develop, main]
   pull_request:
-    branches: [develop, main]
+    branches: [develop]
   workflow_dispatch:
     inputs:
       reason:
@@ -105,6 +105,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # On main branch pushes, always build all services.
+          # Production deploys require every service image to be present in prod ECR
+          # tagged with the current SHA — smart change detection would leave gaps.
+          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ github.event_name }}" = "push" ]; then
+            echo "✓ Push to main — building all services for production ECR"
+            echo "build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Determine base and head SHA for comparison
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # PRs: compare against base branch (existing behavior)
@@ -291,6 +300,29 @@ jobs:
             docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest-production
             docker push ${ECR_REPO}:latest-production
           fi
+
+      - name: Configure AWS credentials (Production)
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR (Production)
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push to production ECR
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          VERSION="${GITHUB_SHA:0:7}"
+          STAGING_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+          PROD_REGISTRY="422940799530.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          PROD_REPO="${PROD_REGISTRY}/batbern/production/${{ matrix.service }}"
+
+          echo "Promoting ${STAGING_REPO}:${VERSION} → ${PROD_REPO}:${VERSION}"
+          docker tag ${STAGING_REPO}:${VERSION} ${PROD_REPO}:${VERSION}
+          docker push ${PROD_REPO}:${VERSION}
 
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Frontend Application

@@ -18,8 +18,8 @@ export const prodConfig: EnvironmentConfig = {
     instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance
     instanceSize: ec2.InstanceSize.MICRO, // Sufficient for 1000 users
     multiAz: false, // Single-AZ for cost savings (low traffic use case)
-    backupRetention: cdk.Duration.days(30),
-    allocatedStorage: 50, // Reduced storage (was 100GB)
+    backupRetention: cdk.Duration.days(14), // 2-week grace window (staging is 7 days)
+    allocatedStorage: 20, // Same as staging — 3 events/year, ~300 users
     deletionProtection: true,
   },
   elasticache: {
@@ -33,11 +33,11 @@ export const prodConfig: EnvironmentConfig = {
   ecs: {
     // Legacy ECS config - replaced by App Runner
     desiredCount: 1,
-    cpu: 512,
-    memory: 1024,
+    cpu: 256,
+    memory: 512,
     autoScaling: {
       minCapacity: 1,
-      maxCapacity: 3,
+      maxCapacity: 2,
       targetCpuUtilization: 70,
     },
   },

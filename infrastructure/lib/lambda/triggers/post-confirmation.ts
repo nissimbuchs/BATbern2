@@ -35,6 +35,7 @@ interface UserAttributes {
   email_verified?: string;
   'cognito:groups'?: string;
   'custom:preferences'?: string; // JSON string with user profile data
+  'custom:role'?: string; // Role override for admin-created users (e.g. bootstrap organizer)
 }
 
 /**
@@ -78,6 +79,7 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     email_verified: attributes.email_verified,
     'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
     'custom:preferences': attributes['custom:preferences'],
+    'custom:role': attributes['custom:role'],
   };
 }
 
@@ -120,14 +122,19 @@ function generateUsername(firstName: string, lastName: string): string {
 }
 
 /**
- * Get default role for self-registered users
+ * Get initial role for a user.
  * Story 1.2.6: ADR-001 Database-centric architecture
- * All self-registered users receive ATTENDEE role
- * Admin-invited users will have roles assigned via database
+ *
+ * - Admin-created users (e.g. bootstrap organizer) carry `custom:role` in their Cognito attributes.
+ *   Use that role when present and valid, so the DB record reflects the intended role.
+ * - All self-registered users receive ATTENDEE (no `custom:role` attribute set by clients).
  */
-function getDefaultRole(): UserRole {
+function getDefaultRole(attributes: UserAttributes): UserRole {
+  const customRole = attributes['custom:role'];
+  if (customRole && VALID_ROLES.includes(customRole as UserRole)) {
+    return customRole as UserRole;
+  }
   // ADR-001: Default to ATTENDEE for all self-registration
-  // NO Cognito Groups usage - roles managed exclusively in database
   return 'ATTENDEE';
 }
 
@@ -363,8 +370,8 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     // Parse user preferences from custom:preferences JSON (Story 1.2.3, ADR-001)
     const preferences = parseUserPreferences(attributes['custom:preferences']);
 
-    // Get default role for self-registered users (ADR-001)
-    const role = getDefaultRole();
+    // Get initial role — respects custom:role for admin-created users (ADR-001)
+    const role = getDefaultRole(attributes);
 
     console.log('Processing user confirmation', {
       cognitoId,
