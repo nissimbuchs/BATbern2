@@ -5,7 +5,7 @@
  */
 
 import type { User } from '@/types/user.types';
-import { Building2, Mail } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useCompany } from '@/hooks/useCompany/useCompany';
 
 interface OrganizerDisplayProps {
@@ -20,7 +20,6 @@ interface OrganizerDisplayProps {
  * Layout:
  * [Profile Picture] [Organizer Name     ] [Company Logo]
  *                   [Company Name        ]
- *                   [Email               ]
  *                   [Bio (if showBio)    ]
  */
 export const OrganizerDisplay = ({
@@ -65,15 +64,6 @@ export const OrganizerDisplay = ({
               <Building2 className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{companyName}</span>
             </div>
-          )}
-          {organizer.email && (
-            <a
-              href={`mailto:${organizer.email}`}
-              className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
-            >
-              <Mail className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{organizer.email}</span>
-            </a>
           )}
         </div>
 

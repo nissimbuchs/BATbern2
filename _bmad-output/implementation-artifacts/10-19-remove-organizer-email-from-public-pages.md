@@ -1,6 +1,6 @@
 # Story 10.19: Remove Organizer Email from Public Presenter & About Pages
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -22,30 +22,30 @@ so that we don't expose team members' private contact details to every event att
 
 ### Phase 1: Audit (read before touching anything)
 
-- [ ] **T1 — Read OrganizerDisplay.tsx** (AC: #1, #2)
-  - [ ] T1.1 — Confirm exact location of the email block:
+- [x] **T1 — Read OrganizerDisplay.tsx** (AC: #1, #2)
+  - [x] T1.1 — Confirm exact location of the email block:
     ```
     web-frontend/src/components/public/About/OrganizerDisplay.tsx  lines 69–77
     ```
-  - [ ] T1.2 — Confirm `Mail` is imported from `lucide-react` (line 8) and is ONLY used for the email block.
-  - [ ] T1.3 — Confirm `Building2` is still used elsewhere in the file (line 65, 93) → keep it.
+  - [x] T1.2 — Confirm `Mail` is imported from `lucide-react` (line 8) and is ONLY used for the email block.
+  - [x] T1.3 — Confirm `Building2` is still used elsewhere in the file (line 65, 93) → keep it.
 
-- [ ] **T2 — Verify no email renders in presentation slides** (AC: #2)
-  - [ ] T2.1 — CommitteeSlide uses `OrganizerDisplay` with `showBio={false}`. Fixing OrganizerDisplay fixes CommitteeSlide automatically.
-  - [ ] T2.2 — SessionSlide → uses SpeakerCard / TwoSpeakerCard → confirmed no email render.
-  - [ ] T2.3 — No other presentation slide child components render `email` or `mailto`.
+- [x] **T2 — Verify no email renders in presentation slides** (AC: #2)
+  - [x] T2.1 — CommitteeSlide uses `OrganizerDisplay` with `showBio={false}`. Fixing OrganizerDisplay fixes CommitteeSlide automatically.
+  - [x] T2.2 — SessionSlide → uses SpeakerCard / TwoSpeakerCard → confirmed no email render.
+  - [x] T2.3 — No other presentation slide child components render `email` or `mailto`.
 
 ### Phase 2: Edit OrganizerDisplay.tsx
 
-- [ ] **T3 — Remove email block** (AC: #1, #2)
-  - [ ] T3.1 — Remove the `Mail` import from `lucide-react` (keep `Building2`):
+- [x] **T3 — Remove email block** (AC: #1, #2)
+  - [x] T3.1 — Remove the `Mail` import from `lucide-react` (keep `Building2`):
     ```tsx
     // Before:
     import { Building2, Mail } from 'lucide-react';
     // After:
     import { Building2 } from 'lucide-react';
     ```
-  - [ ] T3.2 — Remove the entire email conditional block (lines 69–77):
+  - [x] T3.2 — Remove the entire email conditional block (lines 69–77):
     ```tsx
     // REMOVE this entire block:
     {organizer.email && (
@@ -58,21 +58,21 @@ so that we don't expose team members' private contact details to every event att
       </a>
     )}
     ```
-  - [ ] T3.3 — Verify `OrganizerDisplay.tsx` layout comment at lines 21–25 still makes sense; update the inline comment to remove "Email" mention (the layout comment says `[Email]` — remove that line).
+  - [x] T3.3 — Verify `OrganizerDisplay.tsx` layout comment at lines 21–25 still makes sense; update the inline comment to remove "Email" mention (the layout comment says `[Email]` — remove that line).
 
 ### Phase 3: Quality gates
 
-- [ ] **T4 — Type-check** (AC: #5)
-  - [ ] T4.1 — `cd web-frontend && npx tsc --noEmit 2>&1 | tee /tmp/typecheck-10-19.log && grep -c "error" /tmp/typecheck-10-19.log`
-  - [ ] T4.2 — Expect 0 errors.
+- [x] **T4 — Type-check** (AC: #5)
+  - [x] T4.1 — `cd web-frontend && npx tsc --noEmit 2>&1 | tee /tmp/typecheck-10-19.log && grep -c "error" /tmp/typecheck-10-19.log`
+  - [x] T4.2 — Expect 0 errors.
 
-- [ ] **T5 — Lint** (AC: #5)
-  - [ ] T5.1 — `cd web-frontend && npx eslint src/components/public/About/OrganizerDisplay.tsx 2>&1 | tee /tmp/lint-10-19.log`
-  - [ ] T5.2 — Expect 0 errors (removing an unused import satisfies ESLint `no-unused-vars`).
+- [x] **T5 — Lint** (AC: #5)
+  - [x] T5.1 — `cd web-frontend && npx eslint src/components/public/About/OrganizerDisplay.tsx 2>&1 | tee /tmp/lint-10-19.log`
+  - [x] T5.2 — Expect 0 errors (removing an unused import satisfies ESLint `no-unused-vars`).
 
-- [ ] **T6 — Run existing tests** (AC: #5)
-  - [ ] T6.1 — `cd web-frontend && npx vitest run 2>&1 | tee /tmp/test-10-19.log && grep -E "PASS|FAIL|Tests" /tmp/test-10-19.log | tail -10`
-  - [ ] T6.2 — No test file exists for `OrganizerDisplay`; no test changes expected.
+- [x] **T6 — Run existing tests** (AC: #5)
+  - [x] T6.1 — `cd web-frontend && npx vitest run 2>&1 | tee /tmp/test-10-19.log && grep -E "PASS|FAIL|Tests" /tmp/test-10-19.log | tail -10`
+  - [x] T6.2 — No test file exists for `OrganizerDisplay`; no test changes expected.
 
 ---
 
@@ -151,6 +151,24 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `/tmp/typecheck-10-19.log` — 0 errors
+- `/tmp/lint-10-19.log` — 0 errors
+- `/tmp/test-10-19.log` — 3860 passed / 3 pre-existing failures in unrelated components (EventParticipantsTab, EventLogistics); 0 regressions from this story
+
 ### Completion Notes List
 
+- Removed `Mail` import from `lucide-react` (line 8) — was the only usage; `Building2` kept (used at 2 locations)
+- Removed 9-line email conditional block (`{organizer.email && (<a href={mailto:...}>...</a>)}`) from OrganizerDisplay render
+- Removed `[Email]` line from JSDoc layout comment
+- AC2 satisfied automatically: CommitteeSlide renders OrganizerDisplay; no separate change needed
+- AC3 confirmed: `PublicFooter.tsx:23` `mailto:info@berner-architekten-treffen.ch` untouched
+- AC4 confirmed: no DB/API/schema changes
+- 3 pre-existing test failures in `EventParticipantsTab.test.tsx` and `EventLogistics.test.tsx` are unrelated to this story
+
 ### File List
+
+- `web-frontend/src/components/public/About/OrganizerDisplay.tsx`
+
+### Change Log
+
+- 2026-03-03: Remove organizer email from public About and CommitteeSlide pages (Story 10.19)
