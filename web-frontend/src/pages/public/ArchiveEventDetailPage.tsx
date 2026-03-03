@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
+import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetailUI, SessionUI, SpeakerUI } from '@/types/event.types';
 
@@ -203,12 +204,10 @@ export default function ArchiveEventDetailPage() {
 
               {/* Date */}
               <div className="text-lg text-gray-600 mb-4">{formattedDate}</div>
-
-              {/* Description */}
-              {event.description && (
-                <p className="text-gray-700 leading-relaxed">{event.description}</p>
-              )}
             </div>
+
+            {/* Event Description Section (Story 10.23) — positioned after header, before sessions */}
+            <EventDescriptionSection description={event.description} />
 
             {/* Sessions Section */}
             {event.sessions && event.sessions.length > 0 && (

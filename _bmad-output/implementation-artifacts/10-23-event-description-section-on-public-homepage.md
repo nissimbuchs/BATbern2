@@ -1,6 +1,6 @@
 # Story 10.23: Event Description Section on Public Homepage
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -21,102 +21,52 @@ so that I can understand what this BATbern event is about before deciding to reg
 ## Tasks / Subtasks
 
 ### Phase 1: Create EventDescriptionSection component (AC: 1, 2, 3)
-- [ ] Create `web-frontend/src/components/public/Event/EventDescriptionSection.tsx`
-  - [ ] Props: `{ description: string | null | undefined }`
-  - [ ] Return `null` when `description` is falsy (null, undefined, or empty string after trim)
-  - [ ] Render a styled prose block (section or div) using the site dark theme
+- [x] Create `web-frontend/src/components/public/Event/EventDescriptionSection.tsx`
+  - [x] Props: `{ description: string | null | undefined }`
+  - [x] Return `null` when `description` is falsy (null, undefined, or empty string after trim)
+  - [x] Render a styled prose block (section or div) using the site dark theme
     - Consistent with `EventLogistics` / `CapacityIndicator` card style
     - Use MUI `Paper` or `Box` with `sx` styling matching the site's dark theme (background `#1a1a1a` or `rgba(255,255,255,0.05)`, rounded corners, padding)
-  - [ ] Optional section heading: `<Typography variant="h6">{t('events:description.heading')}</Typography>`
-  - [ ] Description body: `<Typography sx={{ whiteSpace: 'pre-wrap' }}>{description}</Typography>` (preserves line breaks from `\n`)
-  - [ ] Use `useTranslation('events')` for the heading key
+  - [x] Optional section heading: `<Typography variant="h6">{t('events:description.heading')}</Typography>`
+  - [x] Description body: `<Typography sx={{ whiteSpace: 'pre-wrap' }}>{description}</Typography>` (preserves line breaks from `\n`)
+  - [x] Use `useTranslation('events')` for the heading key
 
 ### Phase 2: Unit test for EventDescriptionSection (AC: 7)
-- [ ] Create `web-frontend/src/components/public/Event/EventDescriptionSection.test.tsx`
-  - [ ] `renders description text when description is a non-empty string`
-  - [ ] `renders nothing (null) when description is null`
-  - [ ] `renders nothing (null) when description is empty string`
-  - [ ] `renders nothing (null) when description is whitespace-only string`
-  - [ ] Mock `useTranslation` — key `'description.heading'` → `'About This Event'`
+- [x] Create `web-frontend/src/components/public/Event/EventDescriptionSection.test.tsx`
+  - [x] `renders description text when description is a non-empty string`
+  - [x] `renders nothing (null) when description is null`
+  - [x] `renders nothing (null) when description is empty string`
+  - [x] `renders nothing (null) when description is whitespace-only string`
+  - [x] Mock `useTranslation` — key `'description.heading'` → `'About This Event'`
 
 ### Phase 3: Update HomePage (AC: 1, 2)
-- [ ] Edit `web-frontend/src/pages/public/HomePage.tsx`
-  - [ ] Import `EventDescriptionSection` from `'@/components/public/Event/EventDescriptionSection'`
-  - [ ] Insert `<EventDescriptionSection description={event?.description} />` immediately after `<HeroSection ... />` (and its associated inline RegistrationWizard expansion area) and before `EventLogistics`
-  - [ ] No guard needed beyond what `EventDescriptionSection` handles internally — pass `event?.description` directly
+- [x] Edit `web-frontend/src/pages/public/HomePage.tsx`
+  - [x] Import `EventDescriptionSection` from `'@/components/public/Event/EventDescriptionSection'`
+  - [x] Insert `<EventDescriptionSection description={event?.description} />` immediately after `<HeroSection ... />` (and its associated inline RegistrationWizard expansion area) and before `EventLogistics`
+  - [x] No guard needed beyond what `EventDescriptionSection` handles internally — pass `event?.description` directly
 
 ### Phase 4: Update ArchiveEventDetailPage (AC: 4)
-- [ ] Edit `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx`
-  - [ ] Import `EventDescriptionSection`
-  - [ ] The archive page already renders description text inline inside the header metadata block — **replace or supplement** that inline display with `<EventDescriptionSection description={event.description} />` placed after the event header/metadata card and before the sessions section
-  - [ ] Remove the duplicate inline description text from the header if it already renders there (avoid double display)
+- [x] Edit `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx`
+  - [x] Import `EventDescriptionSection`
+  - [x] The archive page already renders description text inline inside the header metadata block — **replace or supplement** that inline display with `<EventDescriptionSection description={event.description} />` placed after the event header/metadata card and before the sessions section
+  - [x] Remove the duplicate inline description text from the header if it already renders there (avoid double display)
 
 ### Phase 5: i18n — add description.heading to all 10 locales (AC: 6)
-- [ ] `web-frontend/public/locales/de/events.json` → add under `"description"` key:
-  ```json
-  "description": {
-    "heading": "Über diese Veranstaltung"
-  }
-  ```
-- [ ] `web-frontend/public/locales/en/events.json`:
-  ```json
-  "description": {
-    "heading": "About This Event"
-  }
-  ```
-- [ ] `web-frontend/public/locales/fr/events.json`:
-  ```json
-  "description": {
-    "heading": "À propos de cet événement"
-  }
-  ```
-- [ ] `web-frontend/public/locales/it/events.json`:
-  ```json
-  "description": {
-    "heading": "Informazioni sull'evento"
-  }
-  ```
-- [ ] `web-frontend/public/locales/rm/events.json`:
-  ```json
-  "description": {
-    "heading": "Davart quest'eveniment"
-  }
-  ```
-- [ ] `web-frontend/public/locales/es/events.json`:
-  ```json
-  "description": {
-    "heading": "Acerca de este evento"
-  }
-  ```
-- [ ] `web-frontend/public/locales/fi/events.json`:
-  ```json
-  "description": {
-    "heading": "Tietoja tapahtumasta"
-  }
-  ```
-- [ ] `web-frontend/public/locales/nl/events.json`:
-  ```json
-  "description": {
-    "heading": "Over dit evenement"
-  }
-  ```
-- [ ] `web-frontend/public/locales/ja/events.json`:
-  ```json
-  "description": {
-    "heading": "このイベントについて"
-  }
-  ```
-- [ ] `web-frontend/public/locales/gsw-BE/events.json`:
-  ```json
-  "description": {
-    "heading": "Über disi Veranstautig"
-  }
-  ```
+- [x] `web-frontend/public/locales/de/events.json` → `"description": { "heading": "Über diese Veranstaltung" }`
+- [x] `web-frontend/public/locales/en/events.json` → `"description": { "heading": "About This Event" }`
+- [x] `web-frontend/public/locales/fr/events.json` → `"description": { "heading": "À propos de cet événement" }`
+- [x] `web-frontend/public/locales/it/events.json` → `"description": { "heading": "Informazioni sull'evento" }`
+- [x] `web-frontend/public/locales/rm/events.json` → `"description": { "heading": "Davart quest'eveniment" }`
+- [x] `web-frontend/public/locales/es/events.json` → `"description": { "heading": "Acerca de este evento" }`
+- [x] `web-frontend/public/locales/fi/events.json` → `"description": { "heading": "Tietoja tapahtumasta" }`
+- [x] `web-frontend/public/locales/nl/events.json` → `"description": { "heading": "Over dit evenement" }`
+- [x] `web-frontend/public/locales/ja/events.json` → `"description": { "heading": "このイベントについて" }`
+- [x] `web-frontend/public/locales/gsw-BE/events.json` → `"description": { "heading": "Über disi Veranstautig" }`
 
 ### Phase 6: Validation
-- [ ] `cd web-frontend && npm run type-check` — zero errors
-- [ ] `cd web-frontend && npm run lint` — zero warnings/errors
-- [ ] `cd web-frontend && npm run test -- --testPathPattern="EventDescriptionSection"` (dump to `/tmp/test-10-23.log`, grep for PASS/FAIL)
+- [x] `cd web-frontend && npm run type-check` — zero errors
+- [x] `cd web-frontend && npm run lint` — zero warnings/errors
+- [x] `npx vitest run --reporter=verbose EventDescriptionSection` — 4/4 PASS (dumped to `/tmp/test-10-23-final.log`)
 - [ ] Manual smoke: run `make dev-native-up`, open homepage with an event that has a description set — section appears; remove description from organizer settings — section disappears
 
 ## Dev Notes
@@ -326,6 +276,35 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `/tmp/test-10-23.log` — initial test run (4/4 PASS after fixing `jest.mock` → `vi.mock`)
+- `/tmp/test-10-23-final.log` — final component test run (4/4 PASS)
+- `/tmp/typecheck-10-23.log` — type-check: zero errors (fixed by removing explicit `JSX.Element` return type)
+- `/tmp/lint-10-23.log` — lint: zero warnings/errors
+- `/tmp/fulltest-10-23.log` — full regression: 3864 pass, 3 pre-existing failures in `EventParticipantsTab.test.tsx` and `EventLogistics.test.tsx` (not in changeset)
+
 ### Completion Notes List
 
+- Created `EventDescriptionSection` component using MUI `Box`+`Typography` with dark theme `rgba(255,255,255,0.05)` background, matching `EventLogistics`/`CapacityIndicator` style
+- Component returns `null` for falsy/whitespace-only description (AC2 — no empty card, no whitespace)
+- HomePage: inserted in separate container div immediately after `HeroSection` and before the main content container, before `EventLogistics` (AC1/AC2)
+- ArchiveEventDetailPage: replaced inline `<p className="text-gray-700 leading-relaxed">{event.description}</p>` with `<EventDescriptionSection>` positioned after header block and before sessions (AC4, no duplication)
+- Fixed: Vitest project uses `vi.mock` not `jest.mock`; removed explicit `JSX.Element` return type (not exported by TS config)
+- All 10 locale files updated via Python `json.load`/`json.dump` — clean 3-line diff per file
+
 ### File List
+
+- `web-frontend/src/components/public/Event/EventDescriptionSection.tsx` (NEW)
+- `web-frontend/src/components/public/Event/EventDescriptionSection.test.tsx` (NEW)
+- `web-frontend/src/pages/public/HomePage.tsx` (MODIFIED)
+- `web-frontend/src/pages/public/ArchiveEventDetailPage.tsx` (MODIFIED)
+- `web-frontend/public/locales/de/events.json` (MODIFIED)
+- `web-frontend/public/locales/en/events.json` (MODIFIED)
+- `web-frontend/public/locales/fr/events.json` (MODIFIED)
+- `web-frontend/public/locales/it/events.json` (MODIFIED)
+- `web-frontend/public/locales/rm/events.json` (MODIFIED)
+- `web-frontend/public/locales/es/events.json` (MODIFIED)
+- `web-frontend/public/locales/fi/events.json` (MODIFIED)
+- `web-frontend/public/locales/nl/events.json` (MODIFIED)
+- `web-frontend/public/locales/ja/events.json` (MODIFIED)
+- `web-frontend/public/locales/gsw-BE/events.json` (MODIFIED)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (MODIFIED)

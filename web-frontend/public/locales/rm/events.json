@@ -772,5 +772,8 @@
     "spotsRemaining_one": "[MISSING] 1 spot remaining",
     "fullJoinWaitlist": "[MISSING] Full — join waitlist",
     "waitlistCount": "[MISSING] {{count}} on waitlist"
+  },
+  "description": {
+    "heading": "Davart quest'eveniment"
   }
 }

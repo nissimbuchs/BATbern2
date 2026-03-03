@@ -770,5 +770,8 @@
     "spotsRemaining_one": "1 spot remaining",
     "fullJoinWaitlist": "Full — join waitlist",
     "waitlistCount": "{{count}} on waitlist"
+  },
+  "description": {
+    "heading": "About This Event"
   }
 }

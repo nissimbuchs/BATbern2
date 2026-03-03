@@ -770,5 +770,8 @@
     "spotsRemaining_one": "1 Platz verfügbar",
     "fullJoinWaitlist": "Ausgebucht — Warteliste beitreten",
     "waitlistCount": "{{count}} auf Warteliste"
+  },
+  "description": {
+    "heading": "Über diese Veranstaltung"
   }
 }

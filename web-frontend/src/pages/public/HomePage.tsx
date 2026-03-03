@@ -26,6 +26,7 @@ import { SessionCards } from '@/components/public/Event/SessionCards';
 import { EventProgram } from '@/components/public/Event/EventProgram';
 import { VenueMap } from '@/components/public/Event/VenueMap';
 import { SocialSharing } from '@/components/public/Event/SocialSharing';
+import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
@@ -186,6 +187,11 @@ const HomePage = () => {
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}
       />
+
+      {/* Event Description Section (Story 10.23) — shown below hero, hidden when null/empty */}
+      <div className="container mx-auto px-4">
+        <EventDescriptionSection description={event?.description} />
+      </div>
 
       {/* Event Content */}
       <div className="container mx-auto px-4">
