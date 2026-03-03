@@ -69,7 +69,11 @@ export function usePresentationSections(
     [...teaserImages]
       .sort((a, b) => a.displayOrder - b.displayOrder)
       .forEach((img) => {
-        sections.push({ type: 'teaser-image', key: `teaser-${img.id}`, imageUrl: img.imageUrl });
+        sections.push({
+          type: 'teaser-image',
+          key: `teaser-image-${img.id}`,
+          imageUrl: img.imageUrl,
+        });
       });
 
     // §5 Agenda Preview

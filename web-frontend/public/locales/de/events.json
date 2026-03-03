@@ -792,6 +792,7 @@
     "uploadButton": "Teaser-Bild hinzufügen",
     "uploading": "Wird hochgeladen...",
     "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "removeError": "Entfernen fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "limitReached": "Maximum von {{max}} Teaser-Bildern erreicht."
   }
 }

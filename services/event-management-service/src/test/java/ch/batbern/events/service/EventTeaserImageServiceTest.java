@@ -25,6 +25,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -114,6 +116,40 @@ class EventTeaserImageServiceTest {
             // Then
             assertThat(response.getS3Key()).matches("events/" + EVENT_CODE + "/teaser/[0-9a-f-]{36}\\.png");
         }
+
+        @Test
+        @DisplayName("s3Key should use .svg extension for SVG uploads - SVG support")
+        void s3KeyShouldUseSvgExtension() throws MalformedURLException {
+            // Given
+            PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
+            when(mockPresigned.url()).thenReturn(new URL("https://s3.amazonaws.com/test/key"));
+            when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
+
+            // When
+            TeaserImageUploadUrlResponse response = service.generateUploadUrl(EVENT_CODE, "image/svg+xml", "diagram.svg");
+
+            // Then
+            assertThat(response.getS3Key()).endsWith(".svg");
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for disallowed content type - H1")
+        void shouldThrowForDisallowedContentType() {
+            // When / Then
+            assertThatThrownBy(() -> service.generateUploadUrl(EVENT_CODE, "application/pdf", "doc.pdf"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Unsupported content type");
+
+            verify(s3Presigner, never()).presignPutObject(any(PutObjectPresignRequest.class));
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for null content type - H1")
+        void shouldThrowForNullContentType() {
+            assertThatThrownBy(() -> service.generateUploadUrl(EVENT_CODE, null, "file.jpg"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Unsupported content type");
+        }
     }
 
     // ── confirmUpload ───────────────────────────────────────────────────────────
@@ -127,9 +163,8 @@ class EventTeaserImageServiceTest {
         void shouldPersistImageAndReturnItem() {
             // Given
             String s3Key = "events/" + EVENT_CODE + "/teaser/" + UUID.randomUUID() + ".jpg";
-            when(teaserImageRepository.countByEventCode(EVENT_CODE)).thenReturn(0L);
+            when(teaserImageRepository.findByEventCodeForUpdate(EVENT_CODE)).thenReturn(List.of());
             when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(HeadObjectResponse.builder().build());
-            when(teaserImageRepository.findMaxDisplayOrderByEventCode(EVENT_CODE)).thenReturn(Optional.empty());
 
             EventTeaserImage saved = new EventTeaserImage();
             saved.setId(UUID.randomUUID());
@@ -153,11 +188,12 @@ class EventTeaserImageServiceTest {
         @Test
         @DisplayName("displayOrder should be previous max + 1 on confirm - AC2")
         void shouldIncrementDisplayOrder() {
-            // Given
+            // Given: two existing images with displayOrder 0 and 1
             String s3Key = "events/" + EVENT_CODE + "/teaser/" + UUID.randomUUID() + ".jpg";
-            when(teaserImageRepository.countByEventCode(EVENT_CODE)).thenReturn(2L);
+            EventTeaserImage img0 = existingImage(0);
+            EventTeaserImage img1 = existingImage(1);
+            when(teaserImageRepository.findByEventCodeForUpdate(EVENT_CODE)).thenReturn(List.of(img0, img1));
             when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(HeadObjectResponse.builder().build());
-            when(teaserImageRepository.findMaxDisplayOrderByEventCode(EVENT_CODE)).thenReturn(Optional.of(1));
 
             EventTeaserImage saved = new EventTeaserImage();
             saved.setId(UUID.randomUUID());
@@ -179,8 +215,12 @@ class EventTeaserImageServiceTest {
         @Test
         @DisplayName("should throw TeaserImageLimitExceededException when event has 10 images - AC6")
         void shouldThrowWhenLimitReached() {
-            // Given
-            when(teaserImageRepository.countByEventCode(EVENT_CODE)).thenReturn(10L);
+            // Given: 10 existing images
+            List<EventTeaserImage> tenImages = new java.util.ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                tenImages.add(existingImage(i));
+            }
+            when(teaserImageRepository.findByEventCodeForUpdate(EVENT_CODE)).thenReturn(tenImages);
             String s3Key = "events/" + EVENT_CODE + "/teaser/" + UUID.randomUUID() + ".jpg";
 
             // When / Then
@@ -196,7 +236,7 @@ class EventTeaserImageServiceTest {
         void shouldThrowWhenS3ObjectMissing() {
             // Given
             String s3Key = "events/" + EVENT_CODE + "/teaser/" + UUID.randomUUID() + ".jpg";
-            when(teaserImageRepository.countByEventCode(EVENT_CODE)).thenReturn(0L);
+            when(teaserImageRepository.findByEventCodeForUpdate(EVENT_CODE)).thenReturn(List.of());
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                     .thenThrow(NoSuchKeyException.builder().message("Not found").build());
 
@@ -205,6 +245,17 @@ class EventTeaserImageServiceTest {
                     .isInstanceOf(RuntimeException.class);
 
             verify(teaserImageRepository, never()).save(any());
+        }
+
+        private EventTeaserImage existingImage(int displayOrder) {
+            EventTeaserImage img = new EventTeaserImage();
+            img.setId(UUID.randomUUID());
+            img.setEventCode(EVENT_CODE);
+            img.setS3Key("events/" + EVENT_CODE + "/teaser/img-" + displayOrder + ".jpg");
+            img.setImageUrl(CLOUDFRONT_DOMAIN + "/events/" + EVENT_CODE + "/teaser/img-" + displayOrder + ".jpg");
+            img.setDisplayOrder(displayOrder);
+            img.setCreatedAt(OffsetDateTime.now());
+            return img;
         }
     }
 

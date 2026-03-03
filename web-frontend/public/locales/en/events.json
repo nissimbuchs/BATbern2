@@ -792,6 +792,7 @@
     "uploadButton": "Add Teaser Image",
     "uploading": "Uploading...",
     "uploadError": "Upload failed. Please try again.",
+    "removeError": "Remove failed. Please try again.",
     "limitReached": "Maximum of {{max}} teaser images reached."
   }
 }

@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.dto.generated.TeaserImageConfirmRequest;
 import ch.batbern.events.dto.generated.TeaserImageItem;
 import ch.batbern.events.dto.generated.TeaserImageUploadUrlRequest;
@@ -7,6 +8,7 @@ import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.service.EventTeaserImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -55,6 +57,7 @@ public class EventTeaserImageController {
      */
     @PostMapping("/events/{eventCode}/teaser-images/confirm")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<TeaserImageItem> confirmUpload(
             @PathVariable String eventCode,
             @RequestBody TeaserImageConfirmRequest request) {
@@ -69,6 +72,7 @@ public class EventTeaserImageController {
      */
     @DeleteMapping("/events/{eventCode}/teaser-images/{imageId}")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> deleteTeaserImage(
             @PathVariable String eventCode,
             @PathVariable UUID imageId) {

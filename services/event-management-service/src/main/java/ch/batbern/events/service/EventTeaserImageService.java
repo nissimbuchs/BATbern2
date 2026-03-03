@@ -46,7 +46,7 @@ public class EventTeaserImageService {
     private static final int MAX_TEASER_IMAGES = 10;
     private static final int PRESIGNED_URL_EXPIRY_SECONDS = 900; // 15 min
     private static final Set<String> ALLOWED_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp");
+            "image/jpeg", "image/png", "image/webp", "image/svg+xml");
 
     private final EventTeaserImageRepository teaserImageRepository;
     private final S3Presigner s3Presigner;
@@ -69,11 +69,16 @@ public class EventTeaserImageService {
 
     /**
      * Phase 1: Generate presigned PUT URL for direct S3 upload.
-     * AC2 — Upload flow
+     * AC2 — Upload flow; H1 — content type validation
      */
     public TeaserImageUploadUrlResponse generateUploadUrl(String eventCode,
                                                           String contentType,
                                                           String fileName) {
+        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException(
+                    "Unsupported content type: " + contentType
+                    + ". Allowed: image/jpeg, image/png, image/webp, image/svg+xml");
+        }
         String ext = resolveExtension(fileName, contentType);
         String s3Key = String.format("events/%s/teaser/%s.%s", eventCode, UUID.randomUUID(), ext);
 
@@ -99,11 +104,18 @@ public class EventTeaserImageService {
 
     /**
      * Phase 3: Confirm upload — verify S3 presence, persist EventTeaserImage.
-     * AC2 — Upload flow; AC6 — max-limit guard
+     * AC2 — Upload flow; AC6 — max-limit guard; M1 — pessimistic lock prevents race conditions.
+     *
+     * A single SELECT ... FOR UPDATE replaces the separate countByEventCode +
+     * findMaxDisplayOrderByEventCode calls, ensuring that concurrent confirms for the
+     * same event serialize correctly (no over-limit bypass, no duplicate displayOrder).
      */
     public TeaserImageItem confirmUpload(String eventCode, String s3Key) {
+        // Lock existing teaser-image rows for this event so concurrent confirms serialize.
+        List<EventTeaserImage> existing = teaserImageRepository.findByEventCodeForUpdate(eventCode);
+
         // AC6: max-limit guard (check BEFORE S3 headObject)
-        if (teaserImageRepository.countByEventCode(eventCode) >= MAX_TEASER_IMAGES) {
+        if (existing.size() >= MAX_TEASER_IMAGES) {
             throw new TeaserImageLimitExceededException(eventCode, MAX_TEASER_IMAGES);
         }
 
@@ -118,7 +130,9 @@ public class EventTeaserImageService {
         }
 
         String imageUrl = cloudFrontDomain + "/" + s3Key;
-        int displayOrder = teaserImageRepository.findMaxDisplayOrderByEventCode(eventCode)
+        int displayOrder = existing.stream()
+                .mapToInt(EventTeaserImage::getDisplayOrder)
+                .max()
                 .orElse(-1) + 1;
 
         EventTeaserImage entity = new EventTeaserImage();
@@ -180,13 +194,14 @@ public class EventTeaserImageService {
     private String resolveExtension(String fileName, String contentType) {
         if (fileName != null && fileName.contains(".")) {
             String ext = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-            if (Set.of("jpg", "jpeg", "png", "webp").contains(ext)) {
+            if (Set.of("jpg", "jpeg", "png", "webp", "svg").contains(ext)) {
                 return ext.equals("jpeg") ? "jpg" : ext;
             }
         }
         return switch (contentType != null ? contentType : "") {
             case "image/png" -> "png";
             case "image/webp" -> "webp";
+            case "image/svg+xml" -> "svg";
             default -> "jpg";
         };
     }

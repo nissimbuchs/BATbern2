@@ -94,6 +94,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const deleteTeaserImageMutation = useDeleteTeaserImage(eventCode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [teaserUploadError, setTeaserUploadError] = useState<string | null>(null);
+  const [teaserRemoveError, setTeaserRemoveError] = useState<string | null>(null);
 
   // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
@@ -207,6 +208,19 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         err instanceof Error
           ? err.message
           : t('teaserImage.uploadError', 'Upload failed. Please try again.')
+      );
+    }
+  };
+
+  const handleDeleteTeaserImage = async (imageId: string) => {
+    setTeaserRemoveError(null);
+    try {
+      await deleteTeaserImageMutation.mutateAsync(imageId);
+    } catch (err) {
+      setTeaserRemoveError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.removeError', 'Remove failed. Please try again.')
       );
     }
   };
@@ -331,6 +345,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             {teaserUploadError}
           </Alert>
         )}
+        {teaserRemoveError && (
+          <Alert severity="error" onClose={() => setTeaserRemoveError(null)} sx={{ mb: 2 }}>
+            {teaserRemoveError}
+          </Alert>
+        )}
 
         {/* Gallery */}
         {teaserImages.length > 0 && (
@@ -362,8 +381,8 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
                   />
                   <IconButton
                     size="small"
-                    onClick={() => deleteTeaserImageMutation.mutate(img.id)}
-                    disabled={deleteTeaserImageMutation.isPending}
+                    onClick={() => void handleDeleteTeaserImage(img.id)}
+                    disabled={isArchived || deleteTeaserImageMutation.isPending}
                     sx={{
                       position: 'absolute',
                       top: 4,
@@ -384,7 +403,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/svg+xml"
           style={{ display: 'none' }}
           onChange={handleTeaserImageFileChange}
         />

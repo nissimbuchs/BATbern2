@@ -1,6 +1,6 @@
 # Story 10.22: Event Teaser Images on Moderator Presentation Page
 
-Status: review
+Status: done
 
 ## Story
 
@@ -510,3 +510,49 @@ claude-sonnet-4-6
 
 **Generated (do not hand-edit):**
 - `web-frontend/src/types/generated/events-api.types.ts`
+
+## Dev Agent Record
+
+### Code Review Fixes — 2026-03-03 (Amelia / CR Session)
+
+Code review found 7 issues (3H, 3M, 1L). All HIGH and MEDIUM issues resolved. SVG image support added per organizer request.
+
+**H1 — Content type validation not enforced (FIXED)**
+- Added `ALLOWED_TYPES` check at start of `EventTeaserImageService.generateUploadUrl`; throws `IllegalArgumentException` → 400 response
+- Added `"image/svg+xml"` to `ALLOWED_TYPES` (SVG now supported)
+- Integration test `generateUploadUrl_disallowedContentType_returns400` verifies 400 for `application/pdf`
+
+**H2 — Integration test used `@MockBean EventTeaserImageService` — no DB state verified (FIXED)**
+- Rewrote `EventTeaserImageControllerIntegrationTest` to use real service + `@MockitoBean S3Presigner` + `@MockitoBean S3Client`
+- Added `@BeforeEach` to create test event (EVENT_CODE `BATbern997`), delete stale data, evict caches
+- DB assertions: `teaserImageRepository.hasSize(1)` after confirm; `findById(id).isEmpty()` after delete
+
+**H3 — Delete error not shown in UI (FIXED)**
+- Added `teaserRemoveError` state + `handleDeleteTeaserImage` async function with try/catch in `EventSettingsTab.tsx`
+- Connected `teaserRemoveError` Alert below the teaser gallery section
+- Added `de/events.json` + `en/events.json` `teaserImage.removeError` keys
+
+**M1 — Race condition in `confirmUpload` (FIXED)**
+- Added `findByEventCodeForUpdate` to `EventTeaserImageRepository` using `@Lock(PESSIMISTIC_WRITE)` + `@Query`
+- `confirmUpload` now calls single `findByEventCodeForUpdate` (SELECT … FOR UPDATE) to atomically count + compute max displayOrder
+- Replaced separate `countByEventCode` + `findMaxDisplayOrderByEventCode` calls
+
+**M2 — Missing GET `/events/{eventCode}` teaserImages integration test (FIXED)**
+- Added `getEvent_returnsTeaserImagesInDisplayOrder` and `getEvent_returnsEmptyTeaserImages_whenNoneUploaded` tests in the rewritten integration test
+
+**M3 — Section key used `teaser-${img.id}` instead of `teaser-image-${img.id}` (FIXED)**
+- Fixed in `usePresentationSections.ts` — key now matches spec
+
+**L1 — Delete button not disabled when `isArchived` (FIXED)**
+- Added `isArchived` to delete button `disabled` prop in `EventSettingsTab.tsx`
+
+**SVG support added**
+- `ALLOWED_TYPES` includes `"image/svg+xml"`
+- `resolveExtension` maps `image/svg+xml` → `"svg"`
+- Frontend file input `accept` includes `image/svg+xml`
+- New unit test: `s3Key should use .svg extension for SVG uploads`
+
+**All tests GREEN after fixes:**
+- `EventTeaserImageServiceTest`: 12/12 PASS
+- `EventTeaserImageControllerIntegrationTest`: 9/9 PASS
+- `npm run type-check`: 0 errors
