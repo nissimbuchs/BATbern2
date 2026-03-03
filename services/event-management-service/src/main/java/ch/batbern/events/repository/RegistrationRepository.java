@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -207,6 +208,20 @@ public interface RegistrationRepository
      * T5.5 — Used to compute waitlistCount for event responses.
      */
     long countByEventIdAndStatus(UUID eventId, String status);
+
+    /**
+     * Bulk-cancel all waitlisted registrations for an event being archived.
+     * Story 10.18: Event Archival Task &amp; Notification Cleanup (AC3).
+     *
+     * @param eventId       the event UUID
+     * @param waitlistStatus the exact waitlist status string (e.g. "waitlist")
+     * @return number of registrations updated
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Registration r SET r.status = 'cancelled' WHERE r.eventId = :eventId "
+            + "AND r.status = :waitlistStatus")
+    int cancelWaitlistRegistrationsForEvent(@Param("eventId") UUID eventId,
+                                             @Param("waitlistStatus") String waitlistStatus);
 
     /**
      * Attendance summary per event for a given company.

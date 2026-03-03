@@ -1,6 +1,6 @@
 # Story 10.18: Event Archival Task & Notification Cleanup
 
-Status: ready-for-dev
+Status: done
 
 <!-- No prerequisites — independent bug fix / data cleanup story -->
 
@@ -34,15 +34,15 @@ so that my task board and notification center are not cluttered with stale items
 
 ### Phase 0: Pre-check (before writing any code)
 
-- [ ] **T0 — Verify EventTask schema for cancellation fields** (AC: #1)
-  - [ ] T0.1 — Read `EventTask.java` fully: does it have `cancelledReason` and `cancelledAt` fields?
+- [x] **T0 — Verify EventTask schema for cancellation fields** (AC: #1)
+  - [x] T0.1 — Read `EventTask.java` fully: does it have `cancelledReason` and `cancelledAt` fields?
     ```
     services/event-management-service/src/main/java/ch/batbern/events/domain/EventTask.java
     ```
-  - [ ] T0.2 — If fields are **absent**: a Flyway migration (V76) is needed to add them. If fields are **present**: skip T0.3.
-  - [ ] T0.3 — Identify next available Flyway version: latest migration under
+  - [x] T0.2 — If fields are **absent**: a Flyway migration (V76) is needed to add them. If fields are **present**: skip T0.3.
+  - [x] T0.3 — Identify next available Flyway version: latest migration under
     `services/event-management-service/src/main/resources/db/migration/` — stories 10.12-10.16 use V73-V75; if those are not yet applied, V76 is next available.
-  - [ ] T0.4 — Verify exact registration `status` string used for waitlist. Run:
+  - [x] T0.4 — Verify exact registration `status` string used for waitlist. Run:
     ```bash
     grep -r "waitlist" services/event-management-service/src/main/java --include="*.java" | grep -i "status\|setStatus\|\"waitlist" | head -20
     ```
@@ -50,235 +50,72 @@ so that my task board and notification center are not cluttered with stale items
 
 ### Phase 1: Flyway Migration (only if T0.2 confirms fields missing)
 
-- [ ] **T1 — Create Flyway migration V76** (AC: #1 — conditional on T0.2)
-  - [ ] T1.1 — Create `services/event-management-service/src/main/resources/db/migration/V76__add_task_cancellation_fields.sql`:
-    ```sql
-    -- Story 10.18: Event Archival Task & Notification Cleanup
-    ALTER TABLE event_tasks
-        ADD COLUMN IF NOT EXISTS cancelled_reason VARCHAR(255),
-        ADD COLUMN IF NOT EXISTS cancelled_at     TIMESTAMPTZ;
-    ```
-  - [ ] T1.2 — Verify migration applies: `./gradlew :services:event-management-service:flywayMigrate 2>&1 | tee /tmp/flyway-10-18.log && grep -i "error\|fail\|success" /tmp/flyway-10-18.log | head -20`
+- [x] **T1 — Create Flyway migration V78** (AC: #1 — conditional on T0.2; actual version V78, not V76)
+  - [x] T1.1 — Created `services/event-management-service/src/main/resources/db/migration/V78__add_task_cancellation_fields.sql`
+  - [x] T1.2 — Migration applies (verified via integration test run with Testcontainers)
 
 ### Phase 2: EventTask entity update (only if migration created in Phase 1)
 
-- [ ] **T2 — Add cancellation fields to EventTask entity** (AC: #1)
-  - [ ] T2.1 — In `EventTask.java`, add:
-    ```java
-    @Column(name = "cancelled_reason")
-    private String cancelledReason;
-
-    @Column(name = "cancelled_at")
-    private Instant cancelledAt;
-    ```
-  - [ ] T2.2 — Add getters/setters (Lombok `@Data` should cover this; check if entity uses `@Data` or manual accessors and match the existing pattern).
+- [x] **T2 — Add cancellation fields to EventTask entity** (AC: #1)
+  - [x] T2.1 — Added `cancelledReason` and `cancelledAt` fields to `EventTask.java`
+  - [x] T2.2 — Added manual getters/setters (entity uses manual accessors, not Lombok @Data)
 
 ### Phase 3: Repository queries (TDD first)
 
-- [ ] **T3 — Write FAILING repository tests (RED phase)** (AC: #8)
-  - [ ] T3.1 — Locate or create `EventTaskRepositoryTest.java` (integration test extending `AbstractIntegrationTest`).
-  - [ ] T3.2 — Add test: `findTasksDueForReminder() excludes tasks with status='cancelled'`
-    - Create event + task with `status = 'cancelled'` and `dueDate = tomorrow`
-    - Call `findTasksDueForReminder(startOfTomorrow, endOfTomorrow)`
-    - Assert: result list does NOT contain the cancelled task
-  - [ ] T3.3 — Run to confirm RED: `./gradlew :services:event-management-service:test --tests "*EventTaskRepository*" 2>&1 | tee /tmp/test-10-18-repo-red.log`
+- [x] **T3 — Write FAILING repository tests (RED phase)** (AC: #8)
+  - [x] T3.1 — Repository test covered in EventArchivalCleanupIntegrationTest (AC2 test)
+  - [x] T3.2 — Test `findTasksDueForReminder() excludes tasks with status='cancelled'` — PASSED
+  - [x] T3.3 — RED confirmed before fix, then GREEN
 
-- [ ] **T4 — Update EventTaskRepository.findTasksDueForReminder()** (AC: #2)
-  - [ ] T4.1 — Read current query in `EventTaskRepository.java`:
-    ```
-    services/event-management-service/src/main/java/ch/batbern/events/repository/EventTaskRepository.java
-    ```
-  - [ ] T4.2 — Current query: `AND t.status != 'completed'`
-    Update to: `AND t.status NOT IN ('completed', 'cancelled')`
-    ```java
-    @Query("SELECT t FROM EventTask t WHERE t.dueDate >= :from AND t.dueDate < :to "
-            + "AND t.status NOT IN ('completed', 'cancelled') AND t.assignedOrganizerUsername IS NOT NULL")
-    List<EventTask> findTasksDueForReminder(@Param("from") Instant from, @Param("to") Instant to);
-    ```
-  - [ ] T4.3 — Add bulk cancel query for archival:
-    ```java
-    @Modifying
-    @Query("UPDATE EventTask t SET t.status = 'cancelled' WHERE t.eventId = :eventId "
-            + "AND t.status NOT IN ('completed', 'cancelled')")
-    int cancelOpenTasksForEvent(@Param("eventId") UUID eventId);
-    ```
-    If `cancelledReason`/`cancelledAt` fields were added in T2:
-    ```java
-    @Modifying
-    @Query("UPDATE EventTask t SET t.status = 'cancelled', t.cancelledReason = 'Event archived', "
-            + "t.cancelledAt = CURRENT_TIMESTAMP WHERE t.eventId = :eventId "
-            + "AND t.status NOT IN ('completed', 'cancelled')")
-    int cancelOpenTasksForEvent(@Param("eventId") UUID eventId);
-    ```
-  - [ ] T4.4 — Run tests GREEN: `./gradlew :services:event-management-service:test --tests "*EventTaskRepository*" 2>&1 | tee /tmp/test-10-18-repo-green.log`
+- [x] **T4 — Update EventTaskRepository.findTasksDueForReminder()** (AC: #2)
+  - [x] T4.1 — Read current query
+  - [x] T4.2 — Updated to `AND t.status NOT IN ('completed', 'cancelled')`
+  - [x] T4.3 — Added `cancelOpenTasksForEvent()` with cancelledReason/cancelledAt set
+  - [x] T4.4 — Tests GREEN
 
-- [ ] **T5 — Add RegistrationRepository bulk cancel query** (AC: #3)
-  - [ ] T5.1 — Read `RegistrationRepository.java` to verify existing query patterns and the exact waitlist status string.
-  - [ ] T5.2 — Add query (use the verified waitlist status string from T0.4):
-    ```java
-    @Modifying
-    @Query("UPDATE Registration r SET r.status = 'cancelled' WHERE r.eventId = :eventId "
-            + "AND r.status = :waitlistStatus")
-    int cancelWaitlistRegistrationsForEvent(@Param("eventId") UUID eventId,
-                                             @Param("waitlistStatus") String waitlistStatus);
-    ```
+- [x] **T5 — Add RegistrationRepository bulk cancel query** (AC: #3)
+  - [x] T5.1 — Read RegistrationRepository; confirmed waitlist status = `'waitlist'`
+  - [x] T5.2 — Added `cancelWaitlistRegistrationsForEvent()`
 
-- [ ] **T6 — Add NotificationRepository bulk dismiss query** (AC: #4)
-  - [ ] T6.1 — Read `NotificationRepository.java` to understand existing query patterns.
-  - [ ] T6.2 — Check if `Notification` has an `eventCode` field (from the explore agent, it does).
-  - [ ] T6.3 — Add query:
-    ```java
-    @Modifying
-    @Query("UPDATE Notification n SET n.status = 'READ' WHERE n.eventCode = :eventCode "
-            + "AND n.status != 'READ'")
-    int dismissNotificationsForEvent(@Param("eventCode") String eventCode);
-    ```
-    **Note**: If `Notification` entity uses `NotificationStatus` enum instead of a String status, use `n.status != ch.batbern.events.notification.NotificationStatus.READ`. Check entity definition first.
+- [x] **T6 — Add NotificationRepository bulk dismiss query** (AC: #4)
+  - [x] T6.1 — Read NotificationRepository
+  - [x] T6.2 — Confirmed `eventCode` field exists, `status` is plain String
+  - [x] T6.3 — Added `dismissNotificationsForEvent()`
 
 ### Phase 4: EventArchivalCleanupService (TDD)
 
-- [ ] **T7 — Write EventArchivalCleanupServiceTest FIRST (RED phase)** (AC: #8)
-  - [ ] T7.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupServiceTest.java`
-  - [ ] T7.2 — Use `@ExtendWith(MockitoExtension.class)` (unit test with mocks — no Spring context needed):
-    ```java
-    @ExtendWith(MockitoExtension.class)
-    class EventArchivalCleanupServiceTest {
-        @Mock EventRepository eventRepository;
-        @Mock EventTaskRepository eventTaskRepository;
-        @Mock RegistrationRepository registrationRepository;
-        @Mock NotificationRepository notificationRepository;
-        @InjectMocks EventArchivalCleanupService service;
-    ```
-  - [ ] T7.3 — Test: `cleanup() with open tasks → bulk cancel called with correct eventId`
-    - Setup: `eventRepository.findByEventCode("BATbern42")` returns event with UUID
-    - Assert: `eventTaskRepository.cancelOpenTasksForEvent(eventId)` called once
-  - [ ] T7.4 — Test: `cleanup() with waitlisted registrations → bulk cancel registrations called`
-    - Assert: `registrationRepository.cancelWaitlistRegistrationsForEvent(eventId, <waitlistStatus>)` called
-  - [ ] T7.5 — Test: `cleanup() → notifications dismissed`
-    - Assert: `notificationRepository.dismissNotificationsForEvent("BATbern42")` called
-  - [ ] T7.6 — Test: `cleanup() is idempotent → calling twice produces no exceptions`
-    - Setup: all repos return 0 (nothing to cancel on second run)
-    - Assert: no exception thrown
-  - [ ] T7.7 — Test: `cleanup() notification step throws → task cancellation is NOT rolled back`
-    - Setup: `notificationRepository.dismissNotificationsForEvent()` throws RuntimeException
-    - Assert: no exception propagated; `eventTaskRepository.cancelOpenTasksForEvent()` was still called
-    - (This validates the "catch and log" behavior for non-critical steps)
-  - [ ] T7.8 — Run to confirm RED: `./gradlew :services:event-management-service:test --tests "*EventArchivalCleanupServiceTest" 2>&1 | tee /tmp/test-10-18-service-red.log`
+- [x] **T7 — Write EventArchivalCleanupServiceTest FIRST (RED phase)** (AC: #8)
+  - [x] T7.1-T7.8 — 7 unit tests written; RED confirmed, then all 7 PASSED GREEN
 
-- [ ] **T8 — Implement EventArchivalCleanupService** (AC: #1, #3, #4, #5, #6)
-  - [ ] T8.1 — Create `services/event-management-service/src/main/java/ch/batbern/events/service/EventArchivalCleanupService.java`:
-    ```java
-    @Service
-    @RequiredArgsConstructor
-    @Slf4j
-    public class EventArchivalCleanupService {
-
-        // Waitlist status string — set to match exact DB value (verify from RegistrationService)
-        private static final String WAITLIST_STATUS = "waitlist"; // or "waitlisted" — verify!
-
-        private final EventRepository eventRepository;
-        private final EventTaskRepository eventTaskRepository;
-        private final RegistrationRepository registrationRepository;
-        private final NotificationRepository notificationRepository;
-
-        /**
-         * Clean up all open tasks, waitlisted registrations, and unread notifications
-         * for an event being archived. Idempotent — safe to call multiple times.
-         * Task cancellation is transactional and is the primary step.
-         * Steps 2 (waitlist cleanup) and 3 (notification dismissal) are best-effort:
-         * failures are logged but do not roll back step 1.
-         *
-         * @param eventCode the event code being archived (e.g. "BATbern42")
-         */
-        @Transactional
-        public void cleanup(String eventCode) {
-            log.info("Starting archival cleanup for event: {}", eventCode);
-
-            Event event = eventRepository.findByEventCode(eventCode)
-                    .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
-            UUID eventId = event.getId();
-
-            // Step 1: Cancel open tasks (primary — inside @Transactional)
-            int cancelledTasks = eventTaskRepository.cancelOpenTasksForEvent(eventId);
-            log.info("Archival cleanup: cancelled {} open tasks for event: {}", cancelledTasks, eventCode);
-
-            // Step 2: Cancel waitlisted registrations (best-effort)
-            try {
-                int cancelledWaitlist = registrationRepository.cancelWaitlistRegistrationsForEvent(
-                        eventId, WAITLIST_STATUS);
-                log.info("Archival cleanup: cancelled {} waitlist registrations for event: {}",
-                        cancelledWaitlist, eventCode);
-            } catch (Exception e) {
-                log.warn("Archival cleanup: failed to cancel waitlist registrations for event: {} — {}",
-                        eventCode, e.getMessage());
-            }
-
-            // Step 3: Dismiss unread notifications (best-effort)
-            try {
-                int dismissed = notificationRepository.dismissNotificationsForEvent(eventCode);
-                log.info("Archival cleanup: dismissed {} notifications for event: {}", dismissed, eventCode);
-            } catch (Exception e) {
-                log.warn("Archival cleanup: failed to dismiss notifications for event: {} — {}",
-                        eventCode, e.getMessage());
-            }
-
-            log.info("Archival cleanup complete for event: {}", eventCode);
-        }
-    }
-    ```
-  - [ ] T8.2 — Run unit tests GREEN: `./gradlew :services:event-management-service:test --tests "*EventArchivalCleanupServiceTest" 2>&1 | tee /tmp/test-10-18-service-green.log`
+- [x] **T8 — Implement EventArchivalCleanupService** (AC: #1, #3, #4, #5, #6)
+  - [x] T8.1 — Created `EventArchivalCleanupService.java` with WAITLIST_STATUS="waitlist", @Transactional, best-effort steps 2-3
+  - [x] T8.2 — 7/7 unit tests GREEN
 
 ### Phase 5: Hook into EventWorkflowStateMachine
 
-- [ ] **T9 — Read EventWorkflowStateMachine before modifying** (AC: #7)
-  - [ ] T9.1 — Read `EventWorkflowStateMachine.java` fully:
-    ```
-    services/event-management-service/src/main/java/ch/batbern/events/service/EventWorkflowStateMachine.java
-    ```
-  - [ ] T9.2 — Identify `transitionToState()` method and find the right injection point for `ARCHIVED` state entry.
+- [x] **T9 — Read EventWorkflowStateMachine before modifying** (AC: #7)
+  - [x] T9.1 — Read fully; uses @RequiredArgsConstructor, @Transactional, @Slf4j
+  - [x] T9.2 — Injection point: after `eventRepository.save(event)`, before domain event publish
 
-- [ ] **T10 — Inject EventArchivalCleanupService into EventWorkflowStateMachine** (AC: #7)
-  - [ ] T10.1 — Add `EventArchivalCleanupService` as a constructor-injected dependency (Lombok `@RequiredArgsConstructor` — just add the field).
-  - [ ] T10.2 — In `transitionToState()`, after state transition is saved and before domain event is published, add:
-    ```java
-    if (newState == EventWorkflowState.ARCHIVED) {
-        eventArchivalCleanupService.cleanup(event.getEventCode());
-    }
-    ```
-  - [ ] T10.3 — Verify no circular dependencies: `EventArchivalCleanupService` → repositories only; `EventWorkflowStateMachine` → `EventArchivalCleanupService` → no back-reference to `EventWorkflowStateMachine`. Should be safe.
+- [x] **T10 — Inject EventArchivalCleanupService into EventWorkflowStateMachine** (AC: #7)
+  - [x] T10.1 — Added `private final EventArchivalCleanupService eventArchivalCleanupService`
+  - [x] T10.2 — Added `if (targetState == EventWorkflowState.ARCHIVED)` cleanup call
+  - [x] T10.3 — No circular dependency: cleanup → repos only
 
 ### Phase 6: Integration Test
 
-- [ ] **T11 — Write integration test (RED phase)** (AC: #8)
-  - [ ] T11.1 — Create `services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupIntegrationTest.java`
-  - [ ] T11.2 — Pattern: extends `AbstractIntegrationTest`, `@SpringBootTest`, `@Transactional`, inject repositories and services.
-  - [ ] T11.3 — Test: `archiving event cancels open tasks`:
-    - Create event in `EVENT_COMPLETED` state
-    - Create 3 tasks: 2 `todo`, 1 `completed`
-    - Call `eventArchivalCleanupService.cleanup(eventCode)`
-    - Assert: 2 tasks have `status = 'cancelled'`; 1 task still has `status = 'completed'`
-  - [ ] T11.4 — Test: `archiving event cancels waitlist registrations`:
-    - Create 1 `confirmed` and 1 `waitlist` registration for the event
-    - Call cleanup
-    - Assert: waitlist registration `status = 'cancelled'`; confirmed registration unchanged
-  - [ ] T11.5 — Test: `cleanup is idempotent`:
-    - Call cleanup twice
-    - Assert: no exception; task count in 'cancelled' unchanged on second call
-  - [ ] T11.6 — Test: `scheduler does not send reminder for cancelled tasks`:
-    - Create task for an event with `status = 'cancelled'` and `dueDate = tomorrow`
-    - Call `eventTaskRepository.findTasksDueForReminder(startOfTomorrow, endOfTomorrow)`
-    - Assert: result does NOT include the cancelled task
-  - [ ] T11.7 — Run to confirm RED: `./gradlew :services:event-management-service:test --tests "*EventArchivalCleanupIntegration*" 2>&1 | tee /tmp/test-10-18-integration-red.log`
+- [x] **T11 — Write integration test (RED phase)** (AC: #8)
+  - [x] T11.1-T11.7 — 5 integration tests written. Extra: V78 needed to also expand status constraint to include 'cancelled'.
 
-- [ ] **T12 — Run integration tests GREEN** (AC: #8)
-  - [ ] T12.1 — `./gradlew :services:event-management-service:test --tests "*EventArchivalCleanupIntegration*" 2>&1 | tee /tmp/test-10-18-integration-green.log`
+- [x] **T12 — Run integration tests GREEN** (AC: #8)
+  - [x] T12.1 — 5/5 integration tests PASSED
 
 ### Phase 7: Full suite validation
 
-- [ ] **T13 — Run full test suite + checkstyle** (AC: #8)
-  - [ ] T13.1 — Full EMS tests: `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-18-full.log && grep -E "FAILED|tests|errors|BUILD" /tmp/test-10-18-full.log | tail -10`
-  - [ ] T13.2 — Checkstyle: `./gradlew :services:event-management-service:checkstyleMain 2>&1 | tee /tmp/checkstyle-10-18.log && grep -i "violation\|error" /tmp/checkstyle-10-18.log | head -20`
-  - [ ] T13.3 — Build: `./gradlew :services:event-management-service:build 2>&1 | tee /tmp/build-10-18.log && grep -E "BUILD|FAILED" /tmp/build-10-18.log`
+- [x] **T13 — Run full test suite + checkstyle** (AC: #8)
+  - [x] T13.1 — Full EMS test suite: BUILD SUCCESSFUL, zero failures
+  - [x] T13.2 — Checkstyle: BUILD SUCCESSFUL, no violations
+  - [x] T13.3 — Build: SUCCESSFUL
 
 ---
 
@@ -413,6 +250,36 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `/tmp/test-10-18-service.log` — unit tests 7/7 PASSED
+- `/tmp/test-10-18-integration.log` — integration tests 5/5 PASSED
+- `/tmp/test-10-18-full.log` — full EMS suite BUILD SUCCESSFUL
+- `/tmp/checkstyle-10-18.log` — no violations
+
 ### Completion Notes List
 
+- **Pre-check**: `EventTask.java` had no cancellation fields → V78 migration needed. V76/V77 already taken by other stories. Waitlist status confirmed as `'waitlist'` via V74 migration. `Notification.status` is plain String (not enum).
+- **V78 migration**: Added `cancelled_reason`, `cancelled_at` columns AND expanded `event_tasks_status_check` constraint to include `'cancelled'` (required — existing constraint only covered pending/todo/in_progress/completed).
+- **EventTask**: Added `cancelledReason`/`cancelledAt` fields + manual getters/setters (entity uses manual pattern, not Lombok @Data). Status Javadoc updated to include all 5 valid statuses.
+- **EventTaskRepository**: Updated `findTasksDueForReminder()` to exclude `'cancelled'`. Added `cancelOpenTasksForEvent()` with `@Modifying(clearAutomatically = true)`.
+- **RegistrationRepository**: Added `cancelWaitlistRegistrationsForEvent()` with `@Modifying(clearAutomatically = true)`. Corrected orphaned Javadoc — `findAttendanceSummary()` Javadoc now sits immediately above its method.
+- **NotificationRepository**: Added `dismissNotificationsForEvent()` with `@Modifying(clearAutomatically = true)`.
+- **ArchivalBestEffortSteps** (NEW): Package-private Spring bean. Steps 2 (waitlist) and 3 (notifications) each annotated `@Transactional(propagation = REQUIRES_NEW)` — true independent transactions implementing AC5's "best-effort" guarantee against JPA-level failures.
+- **EventArchivalCleanupService**: Refactored — removed `EventRepository` dependency (redundant re-fetch eliminated). `cleanup()` now accepts `(UUID eventId, String eventCode)`. Injects `ArchivalBestEffortSteps` for steps 2-3.
+- **EventWorkflowStateMachine**: Updated cleanup call to `cleanup(savedEvent.getId(), eventCode)`.
+- **Tests (Code Review fixes)**: Unit tests updated to use new API and mock `ArchivalBestEffortSteps` (7 tests → still 7 unit tests, improved AC5 coverage). Integration test `@Transactional` removed (REQUIRES_NEW requires no wrapping test transaction); EntityManager removed. Added `EventArchivalCleanupAc5IntegrationTest` with 2 dedicated AC5 DB-verified tests using `@MockBean ArchivalBestEffortSteps`. Total: 7 unit + 6 integration + 2 AC5 integration = 15 tests. All pass. Checkstyle clean.
+
 ### File List
+
+services/event-management-service/src/main/resources/db/migration/V78__add_task_cancellation_fields.sql
+services/event-management-service/src/main/java/ch/batbern/events/domain/EventTask.java
+services/event-management-service/src/main/java/ch/batbern/events/repository/EventTaskRepository.java
+services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java
+services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationRepository.java
+services/event-management-service/src/main/java/ch/batbern/events/service/ArchivalBestEffortSteps.java
+services/event-management-service/src/main/java/ch/batbern/events/service/EventArchivalCleanupService.java
+services/event-management-service/src/main/java/ch/batbern/events/service/EventWorkflowStateMachine.java
+services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupServiceTest.java
+services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupIntegrationTest.java
+services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupAc5IntegrationTest.java
+_bmad-output/implementation-artifacts/sprint-status.yaml
+_bmad-output/implementation-artifacts/10-18-event-archival-task-notification-cleanup.md
