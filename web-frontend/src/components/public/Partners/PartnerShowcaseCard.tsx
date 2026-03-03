@@ -15,23 +15,12 @@ interface PartnerShowcaseCardProps {
   website?: string;
 }
 
-// Tier emoji and color mapping
-const TIER_CONFIG = {
-  STRATEGIC: { emoji: '🏆', color: 'text-yellow-400', label: 'Strategic' },
-  PLATINUM: { emoji: '💎', color: 'text-gray-300', label: 'Platinum' },
-  GOLD: { emoji: '🥇', color: 'text-yellow-400', label: 'Gold' },
-  SILVER: { emoji: '🥈', color: 'text-gray-400', label: 'Silver' },
-  BRONZE: { emoji: '🥉', color: 'text-orange-600', label: 'Bronze' },
-};
-
 export const PartnerShowcaseCard = ({
   companyName,
   logoUrl,
-  partnershipLevel,
   partnershipStartDate,
   website,
 }: PartnerShowcaseCardProps) => {
-  const tierConfig = TIER_CONFIG[partnershipLevel];
   const initials = companyName.substring(0, 2).toUpperCase();
   const formattedDate = format(new Date(partnershipStartDate), 'MMM yyyy');
 
@@ -60,11 +49,8 @@ export const PartnerShowcaseCard = ({
           )}
         </div>
 
-        {/* Tier and Date - Horizontal Layout */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className={tierConfig.color}>
-            {tierConfig.emoji} {tierConfig.label}
-          </span>
+        {/* Date */}
+        <div className="flex items-center text-sm">
           <span className="text-zinc-400">since {formattedDate}</span>
         </div>
       </div>
