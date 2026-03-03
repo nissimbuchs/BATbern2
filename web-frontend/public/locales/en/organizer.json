@@ -454,15 +454,16 @@
     "generateImage": "✨ Generate theme image",
     "regenerateImage": "↻ Regenerate",
     "analyzeAbstract": "Analyze abstract",
+    "reanalyze": "Re-analyze",
     "useImage": "Use this image",
     "cancelImage": "Cancel",
-    "copyImproved": "Copy improved version",
     "error": "AI generation failed, please write manually",
     "disabled": "AI feature is disabled",
     "generating": "Generating...",
-    "qualityScore": "Quality score",
-    "suggestion": "Improvement suggestion",
-    "keyThemes": "Key themes",
-    "improvedVersion": "Improved version"
+    "noPromotion": "No product promotion",
+    "lessonsLearned": "Contains real-world lessons learned",
+    "shortenedAbstract": "Shortened abstract",
+    "words": "words",
+    "copyShortened": "Copy shortened abstract"
   }
 }

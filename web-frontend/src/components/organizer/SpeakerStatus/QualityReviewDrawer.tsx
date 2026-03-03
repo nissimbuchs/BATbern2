@@ -47,6 +47,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { useAiAnalyzeAbstract } from '@/hooks/useAiAssist';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { ReviewRequest, SpeakerContentResponse } from '@/services/speakerContentService';
 
@@ -78,6 +79,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
   const [copied, setCopied] = useState(false);
   const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
 
+  const { aiContentEnabled } = useFeatureFlags();
   const analysisMutation = useAiAnalyzeAbstract(speaker?.id ?? '');
 
   // Fetch speaker content when drawer opens
@@ -264,25 +266,27 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                 }}
               >
                 <Typography variant="subtitle2">{t('qualityReview.qualityCriteria')}</Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={
-                    analysisMutation.isPending ? (
-                      <CircularProgress size={14} color="inherit" />
-                    ) : (
-                      <AutoAwesome fontSize="small" />
-                    )
-                  }
-                  disabled={analysisMutation.isPending || !abstract}
-                  onClick={handleAnalyze}
-                >
-                  {analysisMutation.isPending
-                    ? t('aiAssist.generating', 'Generieren...')
-                    : analysisMutation.isSuccess
-                      ? t('aiAssist.reanalyze', 'Neu analysieren')
-                      : t('aiAssist.analyzeAbstract', 'Abstract analysieren')}
-                </Button>
+                {aiContentEnabled && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={
+                      analysisMutation.isPending ? (
+                        <CircularProgress size={14} color="inherit" />
+                      ) : (
+                        <AutoAwesome fontSize="small" />
+                      )
+                    }
+                    disabled={analysisMutation.isPending || !abstract}
+                    onClick={handleAnalyze}
+                  >
+                    {analysisMutation.isPending
+                      ? t('aiAssist.generating', 'Generieren...')
+                      : analysisMutation.isSuccess
+                        ? t('aiAssist.reanalyze', 'Neu analysieren')
+                        : t('aiAssist.analyzeAbstract', 'Abstract analysieren')}
+                  </Button>
+                )}
               </Box>
 
               {analysisMutation.isSuccess && analysisMutation.data ? (

@@ -4595,6 +4595,40 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /events/{eventCode}/ai/theme-image/apply:
+    post:
+      tags: [AI Assist]
+      operationId: applyThemeImage
+      summary: Persist an AI-generated theme image URL on the event record
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyThemeImageRequest'
+      responses:
+        '200':
+          description: Image URL persisted on the event
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /speakers/{speakerId}/ai/analyze-abstract:
     post:
       tags: [AI Assist]
@@ -4684,6 +4718,14 @@ components:
           type: string
         s3Key:
           type: string
+
+    ApplyThemeImageRequest:
+      type: object
+      required: [imageUrl]
+      properties:
+        imageUrl:
+          type: string
+          description: "CloudFront URL of the AI-generated image to persist on the event"
 
     AnalyzeAbstractRequest:
       type: object

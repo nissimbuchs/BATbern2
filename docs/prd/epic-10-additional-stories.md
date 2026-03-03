@@ -1148,9 +1148,9 @@ The codebase has keyword-based topic classification (`BatbernTopicClusterService
 - `BatbernAiService.java`: central service wrapping OpenAI SDK:
   - `generateEventDescription(topicTitle, topicCategory, eventNumber): String` → GPT-4o prompt: "Write a 2-paragraph German event description for BATbern#{n}, a Swiss software architecture conference. Topic: {topicTitle}. Style: professional, enthusiastic, 150-200 words."
   - `generateThemeImage(topicTitle, topicCategory): String (S3 URL)` → DALL-E 3 prompt: "Abstract illustration for a software architecture conference themed '{topicTitle}', dark navy and blue tones, Swiss minimalist style, no text"; result uploaded to S3; returns presigned URL
-  - `analyzeAbstract(abstract, speakerName): AbstractAnalysisResult` → GPT-4o: returns `{ qualityScore: 0-10, suggestion: string, improvedAbstract: string, keyThemes: string[] }`
+  - `analyzeAbstract(abstract, speakerName): AbstractAnalysisResult` → GPT-4o: returns `{ noPromotionScore: 1-10, noPromotionFeedback: string, lessonsLearnedScore: 1-10, lessonsLearnedFeedback: string, wordCount: integer, shortenedAbstract: string|null }` — scores absence-of-promotion and presence-of-lessons-learned; provides shortened German abstract when >160 words
 - All methods: `if (!aiEnabled) return Optional.empty()` — callers handle absent result gracefully
-- Rate limiting: 1 request/second per method via Caffeine (prevents abuse); cache results for 1 hour by input hash
+- Results cached 1 hour by input hash via Caffeine (max 500 entries); OpenAI-side rate limits apply for burst protection
 - Flyway **V75**: `ai_generation_log` table — `(id, event_code, type, input_hash, generated_at, tokens_used, was_accepted)` — for cost monitoring
 
 **Backend — New AI Endpoints:**
@@ -1165,8 +1165,12 @@ POST /api/v1/events/{eventCode}/ai/theme-image
      response: { imageUrl: string, s3Key: string } | 503 (if AI disabled)
 
 POST /api/v1/speakers/{speakerId}/ai/analyze-abstract
-     body: { abstract: string }
-     response: { qualityScore, suggestion, improvedAbstract, keyThemes } | 503 (if AI disabled)
+     body: { abstract: string, speakerName?: string }
+     response: { noPromotionScore, noPromotionFeedback, lessonsLearnedScore, lessonsLearnedFeedback, wordCount, shortenedAbstract } | 503 (if AI disabled)
+
+POST /api/v1/events/{eventCode}/ai/theme-image/apply
+     body: { imageUrl: string }
+     response: 200 | 404 (event not found) — persists imageUrl on event record
 ```
 
 **Frontend — AI Assist Buttons (Organizer):**
@@ -1181,10 +1185,10 @@ POST /api/v1/speakers/{speakerId}/ai/analyze-abstract
 - Click → "Generating image…" skeleton → generated image preview with "Use this image" / "Regenerate" / "Upload my own" choices
 - "Use this image" → stores S3 key on event record via PATCH event endpoint
 
-*Abstract Analysis (SpeakerContentReviewTab or speaker detail view):*
-- Per-speaker "Analyze Abstract" button (visible to organizers only, appears after abstract is submitted)
-- Click → right-side drawer with: quality score badge (0-10, color-coded), suggestion text, key themes chips, "Improved version" accordion
-- Organizer can copy improved version to clipboard; original abstract unchanged
+*Abstract Analysis (QualityReviewDrawer — reached from EventSpeakersTab):*
+- "Analyze Abstract" button inside `QualityReviewDrawer` (visible to organizers only, gated on `aiContentEnabled`, appears only when abstract is non-empty)
+- Click → inline results: two score badges (`noPromotionScore`, `lessonsLearnedScore`, each 1-10 color-coded), per-score German feedback text, optional shortened abstract accordion (when original >160 words) with copy button
+- Original abstract unchanged
 
 **Frontend — AI Feature Flag:**
 - `useFeatureFlags()` hook reads from `/api/v1/public/settings/presentation` (or new `/api/v1/public/settings/features`) response
@@ -1193,37 +1197,35 @@ POST /api/v1/speakers/{speakerId}/ai/analyze-abstract
 
 **Key new files:**
 ```
-services/event-management-service/src/main/resources/db/migration/V75__create_ai_generation_log.sql
+services/event-management-service/src/main/resources/db/migration/V77__create_ai_generation_log.sql
 services/event-management-service/.../config/AiConfig.java
 services/event-management-service/.../service/BatbernAiService.java
 services/event-management-service/.../service/BatbernAiServiceTest.java
 services/event-management-service/.../controller/AiAssistController.java
 services/event-management-service/.../controller/AiAssistControllerIntegrationTest.java
 web-frontend/src/hooks/useAiAssist.ts
+web-frontend/src/hooks/useFeatureFlags.ts
 web-frontend/src/components/organizer/EventPage/AiAssistDrawer.tsx
-web-frontend/src/components/organizer/EventPage/AbstractAnalysisDrawer.tsx
 ```
 
 **Key modified files:**
 ```
-docs/api/events.openapi.yml                                     — AI assist endpoints (FIRST)
-services/event-management-service/build.gradle                  — openai-java dependency
-services/event-management-service/.../service/TrendingTopicsService.java — wire real BatbernAiService
-web-frontend/src/hooks/useFeatureFlags.ts                       — aiContentEnabled flag (new or extend)
-web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx — AI description + image buttons
-web-frontend/src/components/organizer/EventPage/SpeakerDetailView.tsx  — abstract analysis button
-public/locales/de/organizer.json + en/organizer.json            — aiAssist.* keys
+docs/api/events-api.openapi.yml                                         — AI assist endpoints + /apply (FIRST)
+services/event-management-service/.../security/SecurityConfig.java       — permitAll for /public/settings/features
+web-frontend/src/components/organizer/EventPage/EventOverviewTab.tsx     — AI description + image buttons
+web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — abstract analysis (design pivot: merged here)
+public/locales/de/organizer.json + en/organizer.json + 8 others          — aiAssist.* keys (all 10 locales)
 ```
 
-**Definition of Done (Story 10.16):**
-- [ ] `AI_ENABLED=false` (default): all AI endpoints return 503; AI buttons hidden from UI; all existing tests pass unchanged
-- [ ] `AI_ENABLED=true` + valid `OPENAI_API_KEY`: description generation returns German text within 10s; image generation returns S3 URL
-- [ ] Graceful degradation: if OpenAI API returns error → UI shows "AI generation failed, please write manually" toast
-- [ ] `ai_generation_log` table records each generation attempt (for cost monitoring)
-- [ ] Abstract analysis drawer shows score, suggestion, key themes, improved version
-- [ ] TDD: `BatbernAiServiceTest` mocks OpenAI client; integration test uses WireMock for OpenAI API
-- [ ] OpenAPI spec committed before implementation (ADR-006)
-- [ ] i18n: `aiAssist.*` keys in de/en; Type-check passes; Checkstyle passes
+**Definition of Done (Story 10.16):** ✅ COMPLETE (2026-03-03)
+- [x] `AI_ENABLED=false` (default): all AI endpoints return 503; AI buttons hidden from UI (gated on `useFeatureFlags().aiContentEnabled`); all existing tests pass unchanged
+- [x] `AI_ENABLED=true` + valid `OPENAI_API_KEY`: description generation returns German text within 10s; image generation returns S3 URL; `/apply` persists image URL on event
+- [x] Graceful degradation: if OpenAI API returns error → UI shows "KI-Generierung fehlgeschlagen, bitte manuell eingeben" toast
+- [x] `ai_generation_log` table (V77) records each generation attempt with event_code, type, input_hash, generated_at
+- [x] Abstract analysis (in `QualityReviewDrawer`) shows noPromotion + lessonsLearned scores with German feedback; optional shortened abstract
+- [x] TDD: `BatbernAiServiceTest` (6 unit tests); `AiAssistControllerIntegrationTest` (9 integration tests, including /apply)
+- [x] OpenAPI spec updated first (ADR-006): all 5 AI endpoints documented including /apply
+- [x] i18n: `aiAssist.*` keys in all 10 locales; Type-check ✅; Checkstyle ✅
 
 ---
 

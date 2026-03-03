@@ -453,15 +453,16 @@
     "generateImage": "✨ Titelbild generieren",
     "regenerateImage": "↻ Neu generieren",
     "analyzeAbstract": "Abstract analysieren",
+    "reanalyze": "Neu analysieren",
     "useImage": "Bild verwenden",
     "cancelImage": "Abbrechen",
-    "copyImproved": "Verbesserte Version kopieren",
     "error": "KI-Generierung fehlgeschlagen, bitte manuell eingeben",
     "disabled": "KI-Funktion ist deaktiviert",
     "generating": "Generieren...",
-    "qualityScore": "Qualitätsscore",
-    "suggestion": "Verbesserungsvorschlag",
-    "keyThemes": "Kernthemen",
-    "improvedVersion": "Verbesserte Version"
+    "noPromotion": "Keine Produktwerbung",
+    "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
+    "shortenedAbstract": "Gekürzter Abstract",
+    "words": "Wörter",
+    "copyShortened": "Gekürzten Abstract kopieren"
   }
 }

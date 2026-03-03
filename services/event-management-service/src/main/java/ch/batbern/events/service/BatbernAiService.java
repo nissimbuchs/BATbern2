@@ -87,7 +87,7 @@ public class BatbernAiService {
     }
 
     /** Returns empty if AI disabled, API key absent, or call fails. */
-    public Optional<String> generateEventDescription(String topicTitle, String topicCategory,
+    public Optional<String> generateEventDescription(String eventCode, String topicTitle, String topicCategory,
                                                      int eventNumber,
                                                      String eventTitle, String eventDate) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
@@ -131,7 +131,7 @@ public class BatbernAiService {
             }
 
             resultCache.put(cacheKey, content);
-            logGeneration(null, "description", cacheKey, null);
+            logGeneration(eventCode, "description", cacheKey, null);
             return Optional.of(content);
         } catch (Exception e) {
             log.warn("AI description generation failed: {}", e.getMessage());
@@ -140,7 +140,7 @@ public class BatbernAiService {
     }
 
     /** Downloads DALL-E image and uploads to S3. Returns empty on any failure. */
-    public Optional<ThemeImageResult> generateThemeImage(String topicTitle, String topicCategory,
+    public Optional<ThemeImageResult> generateThemeImage(String eventCode, String topicTitle, String topicCategory,
                                                          String eventTitle, String eventDescription,
                                                          String seed) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
@@ -194,7 +194,7 @@ public class BatbernAiService {
             String imageUrl = cloudfrontDomain + "/" + s3Key;
             ThemeImageResult result = new ThemeImageResult(imageUrl, s3Key);
             resultCache.put(cacheKey, result);
-            logGeneration(null, "theme_image", cacheKey, null);
+            logGeneration(eventCode, "theme_image", cacheKey, null);
             return Optional.of(result);
         } catch (Exception e) {
             log.warn("AI theme image generation failed: {}", e.getMessage());

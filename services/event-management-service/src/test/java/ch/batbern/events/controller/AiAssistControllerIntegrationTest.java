@@ -43,7 +43,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateDescription_whenAiReturnsEmpty_returns503() throws Exception {
-        when(aiService.generateEventDescription(anyString(), anyString(), anyInt(), any(), any()))
+        when(aiService.generateEventDescription(anyString(), anyString(), anyString(), anyInt(), any(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
@@ -55,7 +55,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateDescription_whenAiReturnsResult_returns200() throws Exception {
-        when(aiService.generateEventDescription(anyString(), anyString(), anyInt(), any(), any()))
+        when(aiService.generateEventDescription(anyString(), anyString(), anyString(), anyInt(), any(), any()))
             .thenReturn(Optional.of("BATbern#99 widmet sich dem Thema Cloud Native..."));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
@@ -68,7 +68,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
-        when(aiService.generateThemeImage(anyString(), anyString(), any(), any(), any()))
+        when(aiService.generateThemeImage(anyString(), anyString(), anyString(), any(), any(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
@@ -82,7 +82,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateThemeImage_whenAiReturnsResult_returns200() throws Exception {
         var result = new BatbernAiService.ThemeImageResult(
             "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
-        when(aiService.generateThemeImage(anyString(), anyString(), any(), any(), any()))
+        when(aiService.generateThemeImage(anyString(), anyString(), anyString(), any(), any(), any()))
             .thenReturn(Optional.of(result));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image")
@@ -125,6 +125,23 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"topicTitle\":\"Cloud Native\",\"topicCategory\":\"DEVOPS\"}"))
+            .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void applyThemeImage_whenEventNotFound_returns404() throws Exception {
+        mockMvc.perform(post("/api/v1/events/NON_EXISTENT/ai/theme-image/apply")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"imageUrl\":\"https://cdn.batbern.ch/ai-themes/abc.png\"}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void applyThemeImage_withoutAuth_returns401or403() throws Exception {
+        mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image/apply")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"imageUrl\":\"https://cdn.batbern.ch/ai-themes/abc.png\"}"))
             .andExpect(status().is4xxClientError());
     }
 }

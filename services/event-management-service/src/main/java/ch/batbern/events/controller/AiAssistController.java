@@ -10,11 +10,11 @@ import ch.batbern.events.dto.generated.AiThemeImageRequest;
 import ch.batbern.events.dto.generated.AiThemeImageResponse;
 import ch.batbern.events.dto.generated.AnalyzeAbstractRequest;
 import ch.batbern.events.dto.generated.FeatureFlagsResponse;
+import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.BatbernAiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -48,7 +47,7 @@ public class AiAssistController {
             @PathVariable String eventCode,
             @RequestBody AiDescriptionRequest request) {
         Optional<String> desc = aiService.generateEventDescription(
-            request.getTopicTitle(), request.getTopicCategory(), extractEventNumber(eventCode),
+            eventCode, request.getTopicTitle(), request.getTopicCategory(), extractEventNumber(eventCode),
             request.getEventTitle(), request.getEventDate() != null ? request.getEventDate().toString() : null);
         return desc.map(d -> ResponseEntity.ok(new AiDescriptionResponse().description(d)))
                    .orElse(ResponseEntity.status(503).build());
@@ -62,7 +61,7 @@ public class AiAssistController {
             @org.springframework.web.bind.annotation.RequestParam(required = false) String seed,
             @org.springframework.web.bind.annotation.RequestParam(required = false) String description) {
         Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
-            request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle(), description, seed);
+            eventCode, request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle(), description, seed);
         return result.map(r -> ResponseEntity.ok(
                     new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
                      .orElse(ResponseEntity.status(503).build());
@@ -78,7 +77,7 @@ public class AiAssistController {
             @PathVariable String eventCode,
             @RequestBody ApplyThemeImageRequest request) {
         Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found: " + eventCode));
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         event.setThemeImageUrl(request.imageUrl());
         eventRepository.save(event);
         return ResponseEntity.ok().build();
