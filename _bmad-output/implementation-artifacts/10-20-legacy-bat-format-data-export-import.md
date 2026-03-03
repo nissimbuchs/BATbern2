@@ -1,6 +1,6 @@
 # Story 10.20: Legacy BAT Format Data Export & Import (Admin Tool)
 
-Status: in-progress
+Status: review
 
 <!-- Prerequisite: Story 10.1 (Admin page must exist — ✅ done) -->
 
@@ -347,16 +347,16 @@ so that I can migrate data between system versions and maintain interoperability
 
 ### Phase 8: Quality gates
 
-- [ ] **T15 — Backend full test suite** (AC: #7)
+- [x] **T15 — Backend full test suite** (AC: #7)
   - `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/test-10-20-full.log && grep -E "FAILED|tests|errors|BUILD" /tmp/test-10-20-full.log | tail -10`
 
-- [ ] **T16 — Checkstyle** (AC: #7)
+- [x] **T16 — Checkstyle** (AC: #7)
   - `./gradlew :services:event-management-service:checkstyleMain 2>&1 | tee /tmp/checkstyle-10-20.log && grep -i "violation\|error" /tmp/checkstyle-10-20.log | head -20`
 
-- [ ] **T17 — Frontend type-check** (AC: #9)
+- [x] **T17 — Frontend type-check** (AC: #9)
   - `cd web-frontend && npx tsc --noEmit 2>&1 | tee /tmp/typecheck-10-20.log && grep -c "error" /tmp/typecheck-10-20.log`
 
-- [ ] **T18 — Frontend lint** (AC: #9)
+- [x] **T18 — Frontend lint** (AC: #9)
   - `cd web-frontend && npx eslint src/components/organizer/Admin/ExportImportTab.tsx src/pages/organizer/EventManagementAdminPage.tsx 2>&1 | tee /tmp/lint-10-20.log`
 
 ---
