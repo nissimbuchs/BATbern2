@@ -627,7 +627,8 @@
       "importData": "Importar datas",
       "taskTemplates": "Moduls d'incumbensas",
       "emailTemplates": "Moduls d'e-mail",
-      "presentationSettings": "Presentaziun"
+      "presentationSettings": "Presentaziun",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Access refusà",
     "organizerOnly": "Questa pagina è mo per organisaders.",
@@ -639,6 +640,31 @@
       "save": "Guardar",
       "saved": "Parameters guardads.",
       "saveFailed": "Guardar n'è betg reussì. Empruvai danovamain."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Exportar tut ils datas (JSON)",
+      "exportAssetsButton": "Obtegnair il manifest d'aviers",
+      "importSection": "Import",
+      "importJsonLabel": "Tscherner fichier JSON",
+      "importButton": "Importar",
+      "successAlert": "Import terminà cun success.",
+      "resultEvents": "Occurrenzas",
+      "resultSessions": "Sessiuns",
+      "resultSpeakers": "Referents",
+      "resultCompanies": "Firmas",
+      "resultAttendees": "Participonts",
+      "resultErrors": "Errurs",
+      "errorAlert": "Import chaschunà in'errur. Vesair ils errurs sutvart.",
+      "importAssetsLabel": "Importar aviers (ZIP)",
+      "importAssetsChooseLabel": "Tscherner datoteca ZIP",
+      "importAssetsButton": "Importar aviers",
+      "confirmTitle": "Confermar l'import",
+      "confirmMessage": "Quai importescha u actualisescha las datas. Records existents vegnan actualisads. Quest process na po betg vegnir revocà automaticamain.",
+      "confirmAssetsTitle": "Confermar l'import d'aviers",
+      "confirmAssetsMessage": "Tuts aviers dal datoteca ZIP vegnan chargads sin S3. Quest process na po betg vegnir revocà automaticamain.",
+      "confirmButton": "Cuntinuar"
     },
     "taskTemplates": {
       "defaultSection": "Moduls da standard",

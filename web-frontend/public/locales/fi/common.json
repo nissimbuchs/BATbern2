@@ -627,7 +627,8 @@
       "importData": "Tuo tiedot",
       "taskTemplates": "Tehtäväpohjat",
       "emailTemplates": "Sähköpostipohjat",
-      "presentationSettings": "Esitys"
+      "presentationSettings": "Esitys",
+      "exportImport": "Vienti / Tuonti"
     },
     "accessDenied": "Pääsy estetty",
     "organizerOnly": "Tämä sivu on vain järjestäjille.",
@@ -639,6 +640,31 @@
       "save": "Tallenna",
       "saved": "Asetukset tallennettu.",
       "saveFailed": "Tallennus epäonnistui. Yritä uudelleen."
+    },
+    "exportImport": {
+      "title": "Vienti / Tuonti",
+      "exportSection": "Vienti",
+      "exportJsonButton": "Vie kaikki tiedot (JSON)",
+      "exportAssetsButton": "Hae resurssien luettelo",
+      "importSection": "Tuonti",
+      "importJsonLabel": "Valitse JSON-tiedosto",
+      "importButton": "Tuo",
+      "successAlert": "Tuonti onnistui.",
+      "resultEvents": "Tapahtumat",
+      "resultSessions": "Istunnot",
+      "resultSpeakers": "Puhujat",
+      "resultCompanies": "Yritykset",
+      "resultAttendees": "Osallistujat",
+      "resultErrors": "Virheet",
+      "errorAlert": "Tuonti epäonnistui. Katso virheet alta.",
+      "importAssetsLabel": "Tuo resurssit (ZIP)",
+      "importAssetsChooseLabel": "Valitse ZIP-tiedosto",
+      "importAssetsButton": "Tuo resurssit",
+      "confirmTitle": "Vahvista tuonti",
+      "confirmMessage": "Tämä lisää tai päivittää tietoja. Olemassa olevat tietueet päivitetään. Tätä ei voi peruuttaa automaattisesti.",
+      "confirmAssetsTitle": "Vahvista resurssien tuonti",
+      "confirmAssetsMessage": "Kaikki ZIP-tiedoston resurssit ladataan S3:een. Tätä ei voi peruuttaa automaattisesti.",
+      "confirmButton": "Jatka"
     },
     "taskTemplates": {
       "defaultSection": "Oletuspohjat",

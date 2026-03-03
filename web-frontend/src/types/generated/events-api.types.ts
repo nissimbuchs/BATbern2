@@ -2190,10 +2190,200 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/export/legacy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export all data in legacy BAT JSON format
+     * @description Exports all events, sessions, speakers, companies, and attendees in the legacy
+     *     BATspa JSON format for data migration or interoperability. Returns a downloadable
+     *     JSON file. Organizer role required.
+     */
+    get: operations['exportLegacyData'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/export/assets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export asset presigned-URL manifest
+     * @description Returns a JSON manifest with presigned S3 URLs for all binary assets
+     *     (speaker portraits, company logos, session materials). Each URL is valid for 1 hour.
+     *     Organizer role required.
+     */
+    get: operations['exportAssetManifest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/import/legacy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import data from legacy BAT JSON file
+     * @description Accepts a multipart file upload of a legacy BAT JSON export. Upserts all entity
+     *     types (events, sessions, speakers, companies, attendees) idempotently — importing
+     *     the same file twice has no side effects. Returns import counts and error details.
+     *     Organizer role required.
+     */
+    post: operations['importLegacyData'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/import/assets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import assets from ZIP file
+     * @description Accepts a multipart ZIP file. Unpacks asset files to S3 under
+     *     `imports/{timestamp}/` prefix and links them to entities by filename convention.
+     *     Organizer role required.
+     */
+    post: operations['importAssets'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Top-level envelope for a legacy BAT JSON export */
+    LegacyExportEnvelope: {
+      /** @example 2.0 */
+      version: string;
+      /** Format: date-time */
+      exportedAt: string;
+      events: components['schemas']['LegacyEventDto'][];
+      companies: components['schemas']['LegacyCompanyDto'][];
+      speakers: components['schemas']['LegacySpeakerDto'][];
+      attendees: components['schemas']['LegacyAttendeeDto'][];
+    };
+    LegacyEventDto: {
+      /** @description Event number (legacy BAT number) */
+      bat?: number;
+      /** @example BATbern57 */
+      eventCode?: string;
+      title?: string;
+      /** Format: date-time */
+      date?: string;
+      venueName?: string;
+      venueAddress?: string;
+      sessions?: components['schemas']['LegacySessionDto'][];
+    };
+    LegacySessionDto: {
+      sessionSlug?: string;
+      title?: string;
+      description?: string;
+      sessionType?: string;
+      /** @description Legacy PDF filename for session materials */
+      pdf?: string;
+      /** @description Session speakers (legacy field name) */
+      referenten?: components['schemas']['LegacySpeakerDto'][];
+    };
+    LegacySpeakerDto: {
+      /** @description Speaker username */
+      speakerId?: string;
+      /** @description Full name (firstName + lastName) */
+      name?: string;
+      bio?: string;
+      company?: string;
+      /** @description Portrait filename or URL */
+      portrait?: string;
+      linkedInUrl?: string;
+      twitterHandle?: string;
+    };
+    LegacyCompanyDto: {
+      /** @description Company name/identifier */
+      id?: string;
+      displayName?: string;
+      /** @description Logo filename or URL */
+      logo?: string;
+      /** @description Company website URL */
+      url?: string;
+    };
+    LegacyAttendeeDto: {
+      eventCode?: string;
+      username?: string;
+      status?: string;
+      /** Format: date-time */
+      registeredAt?: string;
+    };
+    LegacyImportResult: {
+      imported: {
+        events?: number;
+        sessions?: number;
+        speakers?: number;
+        companies?: number;
+        attendees?: number;
+      };
+      skipped?: string[];
+      errors?: string[];
+    };
+    AssetManifestResponse: {
+      /** Format: date-time */
+      exportedAt: string;
+      assetCount: number;
+      assets: components['schemas']['AssetEntry'][];
+    };
+    AssetEntry: {
+      /**
+       * @description Asset type (portrait, logo, material)
+       * @example portrait
+       */
+      type: string;
+      /** Format: uuid */
+      entityId: string;
+      filename: string;
+      /** Format: uri */
+      presignedUrl: string;
+    };
+    AssetImportResult: {
+      /** Format: date-time */
+      importedAt: string;
+      importedCount: number;
+      /**
+       * @description S3 key prefix where assets were uploaded
+       * @example imports/2026-03-03T10:00:00Z/
+       */
+      s3Prefix: string;
+      errors?: string[];
+    };
     EventPhotoResponse: {
       /** Format: uuid */
       id: string;
@@ -8404,6 +8594,133 @@ export interface operations {
         };
         content?: never;
       };
+    };
+  };
+  exportLegacyData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Legacy JSON file download */
+      200: {
+        headers: {
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LegacyExportEnvelope'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  exportAssetManifest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Asset manifest with presigned URLs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssetManifestResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  importLegacyData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Legacy BAT JSON export file
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Import completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LegacyImportResult'];
+        };
+      };
+      /** @description Invalid JSON file or schema mismatch */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  importAssets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description ZIP archive containing asset files
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Asset import completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssetImportResult'];
+        };
+      };
+      /** @description Invalid ZIP file */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }

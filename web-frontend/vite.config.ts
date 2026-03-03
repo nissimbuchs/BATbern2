@@ -204,11 +204,19 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // DISABLED manual chunks to avoid circular dependency issues with @emotion
-        // https://github.com/mui/material-ui/issues/43817
-        // https://github.com/emotion-js/emotion/issues/3322
-        // Vite will automatically split chunks based on dependencies
-        manualChunks: undefined,
+        // Function-based manualChunks keeps @emotion + @mui co-located to avoid
+        // the circular-dependency issue (https://github.com/mui/material-ui/issues/43817)
+        // while still splitting the bundle into sub-2 MiB pieces for PWA precache.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          // @emotion and @mui MUST stay in the same chunk
+          if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/'))
+            return 'vendor-react';
+          if (id.includes('react-router') || id.includes('@remix-run')) return 'vendor-router';
+          if (id.includes('i18next') || id.includes('react-i18next')) return 'vendor-i18n';
+          return 'vendor';
+        },
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name?.split('.');

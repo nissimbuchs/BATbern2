@@ -627,7 +627,8 @@
       "importData": "Gegevens importeren",
       "taskTemplates": "Taaksjablonen",
       "emailTemplates": "E-mailsjablonen",
-      "presentationSettings": "Presentatie"
+      "presentationSettings": "Presentatie",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Toegang geweigerd",
     "organizerOnly": "Deze pagina is alleen voor organisatoren.",
@@ -639,6 +640,31 @@
       "save": "Opslaan",
       "saved": "Instellingen opgeslagen.",
       "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Exporteren",
+      "exportJsonButton": "Alle gegevens exporteren (JSON)",
+      "exportAssetsButton": "Activamanifest ophalen",
+      "importSection": "Importeren",
+      "importJsonLabel": "JSON-bestand kiezen",
+      "importButton": "Importeren",
+      "successAlert": "Import succesvol voltooid.",
+      "resultEvents": "Evenementen",
+      "resultSessions": "Sessies",
+      "resultSpeakers": "Sprekers",
+      "resultCompanies": "Bedrijven",
+      "resultAttendees": "Deelnemers",
+      "resultErrors": "Fouten",
+      "errorAlert": "Import mislukt. Zie fouten hieronder.",
+      "importAssetsLabel": "Activa importeren (ZIP)",
+      "importAssetsChooseLabel": "ZIP-bestand kiezen",
+      "importAssetsButton": "Activa importeren",
+      "confirmTitle": "Import bevestigen",
+      "confirmMessage": "Dit voegt gegevens in of bij. Bestaande records worden bijgewerkt. Dit kan niet automatisch ongedaan worden gemaakt.",
+      "confirmAssetsTitle": "Activa-import bevestigen",
+      "confirmAssetsMessage": "Alle activa uit het ZIP-bestand worden geüpload naar S3. Dit kan niet automatisch ongedaan worden gemaakt.",
+      "confirmButton": "Doorgaan"
     },
     "taskTemplates": {
       "defaultSection": "Standaardsjablonen",

@@ -4910,8 +4910,341 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # ── Admin Export/Import Endpoints (Story 10.20) ─────────────────────────────
+
+  /admin/export/legacy:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export all data in legacy BAT JSON format
+      description: |
+        Exports all events, sessions, speakers, companies, and attendees in the legacy
+        BATspa JSON format for data migration or interoperability. Returns a downloadable
+        JSON file. Organizer role required.
+      operationId: exportLegacyData
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Legacy JSON file download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyExportEnvelope'
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename=batbern-export-2026-03-02.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/export/assets:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export asset presigned-URL manifest
+      description: |
+        Returns a JSON manifest with presigned S3 URLs for all binary assets
+        (speaker portraits, company logos, session materials). Each URL is valid for 1 hour.
+        Organizer role required.
+      operationId: exportAssetManifest
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Asset manifest with presigned URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetManifestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/legacy:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import data from legacy BAT JSON file
+      description: |
+        Accepts a multipart file upload of a legacy BAT JSON export. Upserts all entity
+        types (events, sessions, speakers, companies, attendees) idempotently — importing
+        the same file twice has no side effects. Returns import counts and error details.
+        Organizer role required.
+      operationId: importLegacyData
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Legacy BAT JSON export file
+      responses:
+        '200':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyImportResult'
+        '400':
+          description: Invalid JSON file or schema mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/assets:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import assets from ZIP file
+      description: |
+        Accepts a multipart ZIP file. Unpacks asset files to S3 under
+        `imports/{timestamp}/` prefix and links them to entities by filename convention.
+        Organizer role required.
+      operationId: importAssets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: ZIP archive containing asset files
+      responses:
+        '200':
+          description: Asset import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetImportResult'
+        '400':
+          description: Invalid ZIP file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+
+    # ── Admin Export/Import Schemas (Story 10.20) ─────────────────────────────
+
+    LegacyExportEnvelope:
+      type: object
+      description: Top-level envelope for a legacy BAT JSON export
+      required: [version, exportedAt, events, companies, speakers, attendees]
+      properties:
+        version:
+          type: string
+          example: "2.0"
+        exportedAt:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyEventDto'
+        companies:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyCompanyDto'
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacySpeakerDto'
+        attendees:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyAttendeeDto'
+
+    LegacyEventDto:
+      type: object
+      properties:
+        bat:
+          type: integer
+          description: Event number (legacy BAT number)
+        eventCode:
+          type: string
+          example: BATbern57
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacySessionDto'
+
+    LegacySessionDto:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        sessionType:
+          type: string
+        pdf:
+          type: string
+          description: Legacy PDF filename for session materials
+        referenten:
+          type: array
+          description: Session speakers (legacy field name)
+          items:
+            $ref: '#/components/schemas/LegacySpeakerDto'
+
+    LegacySpeakerDto:
+      type: object
+      properties:
+        speakerId:
+          type: string
+          description: Speaker username
+        name:
+          type: string
+          description: Full name (firstName + lastName)
+        bio:
+          type: string
+        company:
+          type: string
+        portrait:
+          type: string
+          description: Portrait filename or URL
+        linkedInUrl:
+          type: string
+        twitterHandle:
+          type: string
+
+    LegacyCompanyDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Company name/identifier
+        displayName:
+          type: string
+        logo:
+          type: string
+          description: Logo filename or URL
+        url:
+          type: string
+          description: Company website URL
+
+    LegacyAttendeeDto:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        username:
+          type: string
+        status:
+          type: string
+        registeredAt:
+          type: string
+          format: date-time
+
+    LegacyImportResult:
+      type: object
+      required: [imported]
+      properties:
+        imported:
+          type: object
+          properties:
+            events:
+              type: integer
+            sessions:
+              type: integer
+            speakers:
+              type: integer
+            companies:
+              type: integer
+            attendees:
+              type: integer
+        skipped:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+
+    AssetManifestResponse:
+      type: object
+      required: [exportedAt, assetCount, assets]
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        assetCount:
+          type: integer
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetEntry'
+
+    AssetEntry:
+      type: object
+      required: [type, entityId, filename, presignedUrl]
+      properties:
+        type:
+          type: string
+          description: Asset type (portrait, logo, material)
+          example: portrait
+        entityId:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        presignedUrl:
+          type: string
+          format: uri
+
+    AssetImportResult:
+      type: object
+      required: [importedAt, importedCount, s3Prefix]
+      properties:
+        importedAt:
+          type: string
+          format: date-time
+        importedCount:
+          type: integer
+        s3Prefix:
+          type: string
+          description: S3 key prefix where assets were uploaded
+          example: "imports/2026-03-03T10:00:00Z/"
+        errors:
+          type: array
+          items:
+            type: string
 
     # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
 

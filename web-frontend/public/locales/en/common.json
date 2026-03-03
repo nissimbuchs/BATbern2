@@ -689,7 +689,8 @@
       "importData": "Import Data",
       "taskTemplates": "Task Templates",
       "emailTemplates": "Email Templates",
-      "presentationSettings": "Presentation"
+      "presentationSettings": "Presentation",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Access Denied",
     "organizerOnly": "This page is for organizers only.",
@@ -701,6 +702,31 @@
       "save": "Save",
       "saved": "Settings saved.",
       "saveFailed": "Save failed. Please try again."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Export All Data (JSON)",
+      "exportAssetsButton": "Get Asset Manifest",
+      "importSection": "Import",
+      "importJsonLabel": "Choose JSON File",
+      "importButton": "Import",
+      "successAlert": "Import completed successfully.",
+      "resultEvents": "Events",
+      "resultSessions": "Sessions",
+      "resultSpeakers": "Speakers",
+      "resultCompanies": "Companies",
+      "resultAttendees": "Attendees",
+      "resultErrors": "Errors",
+      "errorAlert": "Import failed. See errors below.",
+      "importAssetsLabel": "Import Assets (ZIP)",
+      "importAssetsChooseLabel": "Choose ZIP File",
+      "importAssetsButton": "Import Assets",
+      "confirmTitle": "Confirm Import",
+      "confirmMessage": "This will upsert data. Existing records will be updated. This cannot be undone automatically.",
+      "confirmAssetsTitle": "Confirm Asset Import",
+      "confirmAssetsMessage": "This will upload all assets from the ZIP file to S3. This cannot be undone automatically.",
+      "confirmButton": "Proceed"
     },
     "taskTemplates": {
       "defaultSection": "Default Templates",

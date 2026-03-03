@@ -518,7 +518,8 @@
       "importData": "Date importiere",
       "taskTemplates": "Ufgabevorlagen",
       "emailTemplates": "E-Mail-Vorlagen",
-      "presentationSettings": "Präsentation"
+      "presentationSettings": "Präsentation",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Zuegriff verweigeret",
     "organizerOnly": "Die Syte isch nur für Organisatore.",
@@ -530,6 +531,31 @@
       "save": "Spychere",
       "saved": "Istellige gspycheret.",
       "saveFailed": "Spychere fehlgschlage. Bitte nomol versuche."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Alli Date exportiere (JSON)",
+      "exportAssetsButton": "Asset-Manifest hole",
+      "importSection": "Import",
+      "importJsonLabel": "JSON-Datei uuswähle",
+      "importButton": "Importiere",
+      "successAlert": "Import erfolgriich abgschlosse.",
+      "resultEvents": "Veraastaltige",
+      "resultSessions": "Sessione",
+      "resultSpeakers": "Referente",
+      "resultCompanies": "Firme",
+      "resultAttendees": "Teilnehmer",
+      "resultErrors": "Fehler",
+      "errorAlert": "Import fählgschlage. Lueg d'Fehler unge a.",
+      "importAssetsLabel": "Assets importiere (ZIP)",
+      "importAssetsChooseLabel": "ZIP-Datei uswähle",
+      "importAssetsButton": "Assets importiere",
+      "confirmTitle": "Import bestätige",
+      "confirmMessage": "Das füegt Date i oder aktualisiert si. Bstehendi Datensätz wärde überschribe. Das chann nit automatisch rückgängig gmacht wärde.",
+      "confirmAssetsTitle": "Asset-Import bestätige",
+      "confirmAssetsMessage": "Alli Assets us em ZIP wärde zu S3 ufeglade. Das chann nit automatisch rückgängig gmacht wärde.",
+      "confirmButton": "Wiiterfahre"
     },
     "taskTemplates": {
       "defaultSection": "Standard-Vorlagen",
