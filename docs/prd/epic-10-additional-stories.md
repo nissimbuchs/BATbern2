@@ -1559,65 +1559,72 @@ public/locales/de/events.json + en/events.json                      — photos.*
 
 ---
 
-### Story 10.22: Event Teaser Image on Moderator Presentation Page
+### Story 10.22: Event Teaser Images on Moderator Presentation Page
 
 **Status**: ready-for-dev
 **Prerequisite**: Story 10.8a (PresentationPage must exist)
+**Updated**: 2026-03-03 — expanded from single-image to multi-image design (IR review)
 
 **User Story:**
-As an **organizer**, I want to upload a teaser image for an event from the event detail page, so that it appears on the moderator presentation screen right after we introduce the topic and before the agenda slides — giving the audience a visual mood-setter.
+As an **organizer**, I want to upload one or more teaser images for an event from the event detail page, so that each image appears as its own full-screen slide on the moderator presentation screen — after the topic reveal and before the agenda — giving the audience a visual mood-setter sequence.
 
 **Background:**
-The moderator presentation page (`/present/:eventCode`) currently shows slides: intro → topic → agenda. This story inserts a dedicated full-screen image slide between the topic introduction and the first agenda slide. The image is stored in S3 and managed from the event detail Overview tab (same organizer panel used to edit event settings).
+The moderator presentation page (`/present/:eventCode`) currently shows slides: intro → topic → agenda. This story inserts one full-screen image slide per uploaded teaser image, consecutively between the topic introduction and the first agenda slide. Images are stored in S3 and managed from the event detail Settings tab. Maximum 10 images per event.
 
 **Scope:**
 
-**Backend — Teaser Image Field:**
-- Flyway **V76**: Add `teaser_image_s3_key (TEXT)` and `teaser_image_url (TEXT)` columns to the `events` table (both nullable) *(V75 is used by Story 10.21 — IR fix 2026-03-02)*
-- `EventResponse` DTO: add `teaserImageUrl: String` (null if not set)
-- `PatchEventRequest` / `UpdateEventRequest` DTO: no change needed — image managed via dedicated presigned-URL endpoints
-- New endpoints (organizer-only):
-  - `POST /api/v1/events/{eventCode}/teaser-image/upload-url` → returns presigned S3 PUT URL + expiry; S3 key: `events/{eventCode}/teaser/{uuid}.{ext}`
-  - `POST /api/v1/events/{eventCode}/teaser-image/confirm` (body: `{ s3Key }`) → stores `teaser_image_s3_key` + CloudFront `teaser_image_url` on event
-  - `DELETE /api/v1/events/{eventCode}/teaser-image` → clears both columns + deletes S3 object
+**Backend — Teaser Images (child table):**
+- Flyway migration: create `event_teaser_images` table (`id UUID PK`, `event_code TEXT FK → events`, `s3_key TEXT`, `image_url TEXT`, `display_order INTEGER`, `created_at TIMESTAMPTZ`) *(check latest migration version before coding)*
+- `EventResponse` DTO: add `teaserImages: List<TeaserImageItem>` (empty list if none set); `TeaserImageItem { id, imageUrl, displayOrder }`
+- New endpoints (organizer-only, max 10 images enforced at confirm):
+  - `POST /api/v1/events/{eventCode}/teaser-images/upload-url` → `{ uploadUrl, s3Key, expiresIn }`; S3 key: `events/{eventCode}/teaser/{uuid}.{ext}`
+  - `POST /api/v1/events/{eventCode}/teaser-images/confirm` (body: `{ s3Key }`) → `TeaserImageItem`; persists new row; returns 422 if already at 10 images
+  - `DELETE /api/v1/events/{eventCode}/teaser-images/{imageId}` → 204; deletes DB row + S3 object
 
 **Frontend — Event Settings Tab (Organizer):**
-- `EventSettingsTab.tsx`: new "Teaser Image" subsection below existing fields
-  - Shows current teaser image thumbnail if set (from `event.teaserImageUrl`)
-  - "Upload Teaser Image" button → presigned URL flow → on completion, refetch event
-  - "Remove" button (shown when image exists) → calls DELETE endpoint → clears preview
+- `EventSettingsTab.tsx`: new "Teaser Images" subsection (below Registration Capacity, above Notifications)
+  - Thumbnail gallery of all uploaded images; each thumbnail has a per-image remove button
+  - "+ Add Teaser Image" button → presigned URL flow → on completion, gallery refetches
+  - Upload button disabled when `isArchived` or image count ≥ 10; limit message shown at cap
+  - Inline error message on upload/remove failure; gallery state unchanged on error
 
 **Frontend — Presentation Page:**
-- `PresentationPage.tsx`: insert a new slide type `TEASER_IMAGE` in the slide sequence, positioned after the topic introduction slide and before the first agenda slot slide
-- The slide renders the `teaserImageUrl` as a full-screen background image (`object-fit: cover`) with no overlaid text
-- If `teaserImageUrl` is null/undefined, the slide is omitted (no empty slide shown)
-- Slide navigation and keyboard controls (`ArrowRight` / `ArrowLeft`) already handle dynamic slide counts
+- `usePresentationSections.ts`: loop over `event.teaserImages` array; push one `teaser-image` section per image (unique key: `teaser-image-{id}`, `imageUrl` on section object)
+- New `TeaserImageSlide.tsx`: full-screen `<img>` with `object-fit: cover`, no overlay, no animation
+- `PresentationPage.tsx` `SectionRenderer`: `case 'teaser-image'` → `<TeaserImageSlide imageUrl={section.imageUrl} />`
+- If `teaserImages` is empty, no slides inserted; existing behaviour preserved
+- Slide navigation (`ArrowRight` / `ArrowLeft`) already handles dynamic slide counts
 
 **Key new files:**
 ```
-services/event-management-service/src/main/resources/db/migration/V76__add_teaser_image_to_events.sql
+services/event-management-service/src/main/resources/db/migration/V??__create_event_teaser_images.sql
+services/event-management-service/.../domain/EventTeaserImage.java
+services/event-management-service/.../repository/EventTeaserImageRepository.java
 services/event-management-service/.../service/EventTeaserImageService.java
 services/event-management-service/.../controller/EventTeaserImageController.java
+web-frontend/src/pages/presentation/slides/TeaserImageSlide.tsx
 ```
 
 **Key modified files:**
 ```
-docs/api/events-api.openapi.yml                                 — teaser image endpoints + teaserImageUrl in EventResponse (FIRST)
-services/event-management-service/.../domain/Event.java         — teaserImageS3Key, teaserImageUrl fields
-services/event-management-service/.../dto/EventResponse.java    — teaserImageUrl field
-web-frontend/src/types/generated/events-api.types.ts            — regenerate after spec change
-web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx — teaser image upload UI
-web-frontend/src/pages/PresentationPage.tsx                     — insert TEASER_IMAGE slide
-public/locales/de/events.json + en/events.json                  — teaserImage.* keys
+docs/api/events-api.openapi.yml                                        — commit FIRST (ADR-006)
+services/event-management-service/.../service/EventService.java        — populate teaserImages in toDto()
+web-frontend/src/hooks/usePresentationSections.ts                      — PresentationSection.imageUrl + loop
+web-frontend/src/pages/PresentationPage.tsx                            — SectionRenderer case
+web-frontend/src/components/organizer/EventPage/EventSettingsTab.tsx   — gallery upload UI
+web-frontend/public/locales/de/events.json + en/events.json            — teaserImage.* keys
+web-frontend/src/types/generated/events-api.types.ts                   — regenerate after spec change
 ```
 
 **Definition of Done (Story 10.22):**
-- [ ] V76 migration runs cleanly; columns nullable; existing events unaffected
-- [ ] Organizer can upload teaser image via presigned URL; thumbnail shown in Settings tab
-- [ ] Organizer can remove teaser image; DB cleared, S3 object deleted
-- [ ] Presentation page shows full-screen teaser image slide between topic intro and first agenda slide when `teaserImageUrl` is set
-- [ ] When no teaser image set, presentation page renders identically to pre-story behavior
-- [ ] TDD: `EventTeaserImageServiceTest` covers upload-confirm, delete; integration test verifies DB state
+- [ ] Migration runs cleanly; `event_teaser_images` table created; existing events unaffected
+- [ ] Organizer can upload multiple teaser images via presigned URL; thumbnail gallery shown in Settings tab
+- [ ] Organizer can remove any individual teaser image by ID; DB row deleted, S3 object deleted
+- [ ] Presentation page shows one full-screen slide per teaser image (in displayOrder), between topic-reveal and agenda-preview
+- [ ] When `teaserImages` is empty, presentation page renders identically to pre-story behaviour
+- [ ] Max 10 images enforced: confirm returns 422 at limit; Upload button disabled and limit message shown in UI
+- [ ] Upload/remove failures show inline error; gallery state unchanged
+- [ ] TDD: `EventTeaserImageServiceTest` covers upload-URL generation, confirm, delete, limit enforcement; integration test verifies DB state
 - [ ] OpenAPI spec committed before implementation (ADR-006)
 - [ ] i18n: `teaserImage.*` keys in de/en; Type-check passes; Checkstyle passes
 

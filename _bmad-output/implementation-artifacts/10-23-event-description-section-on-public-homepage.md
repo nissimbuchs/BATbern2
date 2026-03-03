@@ -1,6 +1,6 @@
 # Story 10.23: Event Description Section on Public Homepage
 
-Status: review
+Status: done
 
 ## Story
 

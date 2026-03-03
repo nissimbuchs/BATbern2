@@ -29,10 +29,12 @@ import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
+import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { NewsletterSubscribeWidget } from '@/components/public/NewsletterSubscribeWidget';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { useEventPhotos } from '@/hooks/useEventPhotos';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
@@ -53,6 +55,9 @@ const HomePage = () => {
 
   // Check if we're in archive mode (Story 4.2)
   const isArchiveMode = location.pathname.startsWith('/archive');
+
+  // Event-specific photos for archive detail view (Story 10.21 — AC7)
+  const { data: eventPhotos } = useEventPhotos(eventCode ?? '', isArchiveMode);
 
   // Check if we're in preview mode
   const isPreview = searchParams.get('preview') === 'true';
@@ -141,9 +146,10 @@ const HomePage = () => {
       ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
       : null) || 'AGENDA';
 
-  // Archive mode (Story 4.2): Only show timeline, hide speakers/sessions/venue
+  // Archive mode (Story 4.2 / 10.21): Show timetable + speakers; hide logistics/venue/registration
+  // In archive mode always show speakers — event is fully published and done
   const showSpeakersAndSessions =
-    !isArchiveMode && (currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA');
+    isArchiveMode || currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
   const showTimetable = isArchiveMode || currentPhase === 'AGENDA'; // Always show in archive mode
   const showSessionList = !isArchiveMode && currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
   const showVenue = !isArchiveMode; // Hide venue in archive mode
@@ -292,10 +298,28 @@ const HomePage = () => {
         {/* Upcoming Events Section — hidden in archive mode */}
         {!isArchiveMode && <UpcomingEventsSection currentEventCode={event.eventCode} />}
 
-        {/* Testimonials Section */}
-        <div className="mt-16 pb-12">
-          <TestimonialSection />
-        </div>
+        {/* Event Photos Marquee — archive detail only (Story 10.21 — AC7) */}
+        {isArchiveMode && eventPhotos && eventPhotos.length > 0 && (
+          <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6 mt-12">
+            <InfiniteMarquee direction="left" speed="slow">
+              {eventPhotos.map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.displayUrl}
+                  alt={photo.filename || 'BATbern event photo'}
+                  className="rounded-lg object-cover h-48 w-64 shrink-0"
+                />
+              ))}
+            </InfiniteMarquee>
+          </section>
+        )}
+
+        {/* Testimonials / recent photos marquee — homepage & event pages only */}
+        {!isArchiveMode && (
+          <div className="mt-16 pb-12">
+            <TestimonialSection />
+          </div>
+        )}
 
         {/* Newsletter Subscribe Widget — footer */}
         <div className="border-t pt-4 pb-8">
