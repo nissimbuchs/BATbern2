@@ -22,6 +22,7 @@ import {
   IconButton,
   Typography,
   Alert,
+  LinearProgress,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -41,6 +42,9 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
+    null
+  );
 
   const { data: photos, isLoading } = useEventPhotos(eventCode);
   const uploadMutation = useUploadEventPhoto(eventCode);
@@ -51,25 +55,44 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
 
     setUploadError(null);
-    try {
-      await uploadMutation.mutateAsync({
-        file,
-        request: {
-          filename: file.name,
-          contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
-          fileSize: file.size,
-        },
-      });
-    } catch {
-      setUploadError(t('photos.uploadError', 'Upload failed. Please try again.'));
-    } finally {
-      // Reset file input so same file can be re-uploaded if needed
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    setUploadProgress({ done: 0, total: files.length });
+
+    let failed = 0;
+    await Promise.all(
+      files.map(async (file) => {
+        try {
+          await uploadMutation.mutateAsync({
+            file,
+            request: {
+              filename: file.name,
+              contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+              fileSize: file.size,
+            },
+          });
+        } catch {
+          failed++;
+        } finally {
+          setUploadProgress((prev) => prev && { ...prev, done: prev.done + 1 });
+        }
+      })
+    );
+
+    if (failed > 0) {
+      setUploadError(
+        t('photos.uploadErrorPartial', '{{failed}} of {{total}} uploads failed. Please retry.', {
+          failed,
+          total: files.length,
+        })
+      );
     }
+
+    setUploadProgress(null);
+    // Reset file input so same files can be re-uploaded if needed
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDeleteConfirm = async () => {
@@ -93,20 +116,31 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
           variant="contained"
           startIcon={<CloudUploadIcon />}
           onClick={handleUploadClick}
-          disabled={uploadMutation.isPending}
+          disabled={!!uploadProgress}
         >
-          {uploadMutation.isPending
-            ? t('photos.uploading', 'Uploading...')
-            : t('photos.uploadButton', 'Upload Photo')}
+          {uploadProgress
+            ? t('photos.uploadingProgress', 'Uploading {{done}}/{{total}}...', uploadProgress)
+            : t('photos.uploadButton', 'Upload Photos')}
         </Button>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          multiple
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
       </Box>
+
+      {/* Upload progress bar */}
+      {uploadProgress && (
+        <Box sx={{ mb: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={(uploadProgress.done / uploadProgress.total) * 100}
+          />
+        </Box>
+      )}
 
       {/* Upload error */}
       {uploadError && (
