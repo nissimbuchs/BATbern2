@@ -76,7 +76,8 @@ describe('EventParticipantsTab Component', () => {
     it('should render participant count badge', () => {
       const eventWithParticipants = {
         ...mockEvent,
-        currentAttendeeCount: 42,
+        confirmedCount: 42,
+        waitlistCount: 0,
       };
 
       renderWithProviders(<EventParticipantsTab event={eventWithParticipants} />);
