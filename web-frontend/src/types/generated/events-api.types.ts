@@ -2279,6 +2279,59 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/export/bundle': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export full bundle (data + binary assets) as ZIP
+     * @description Returns a single ZIP archive containing:
+     *     - `export.json` — full LegacyExportEnvelope (same as GET /admin/export/legacy)
+     *     - `manifest.json` — AssetManifestResponse with presigned URLs (for reference)
+     *     - `portraits/{speakerId}/{filename}` — speaker portrait images
+     *     - `logos/{logoId}/{filename}` — company/partner logos
+     *     - `materials/{materialId}/{filename}` — session materials
+     *     - `themes/{eventId}/{filename}` — event theme images
+     *
+     *     Symmetric counterpart to POST /admin/import/bundle.
+     *     S3 download failures are logged and skipped (partial bundle is still valid).
+     *     Organizer role required.
+     */
+    get: operations['exportBundle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/import/bundle': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import bundle ZIP (data + binary assets)
+     * @description Accepts a ZIP produced by GET /admin/export/bundle.
+     *     Restores data (upsert, idempotent) AND uploads binary assets to S3,
+     *     re-linking them to their entity records.
+     *     Organizer role required.
+     */
+    post: operations['importBundle'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2383,6 +2436,18 @@ export interface components {
        */
       s3Prefix: string;
       errors?: string[];
+    };
+    /** @description Result of a bundle ZIP import that restores both data and binary assets */
+    BundleImportResult: {
+      /** @description Result of the data (JSON) import phase */
+      dataResult: components['schemas']['LegacyImportResult'];
+      /**
+       * @description Number of binary assets successfully uploaded to S3 and linked to entities
+       * @example 12
+       */
+      assetsImported: number;
+      /** @description Per-asset error messages for assets that could not be restored */
+      assetErrors: string[];
     };
     EventPhotoResponse: {
       /** Format: uuid */
@@ -8711,6 +8776,69 @@ export interface operations {
         };
       };
       /** @description Invalid ZIP file */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  exportBundle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bundle ZIP file */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/zip': string;
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  importBundle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Bundle ZIP produced by GET /admin/export/bundle
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Bundle import completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BundleImportResult'];
+        };
+      };
+      /** @description Invalid or missing export.json in ZIP */
       400: {
         headers: {
           [name: string]: unknown;

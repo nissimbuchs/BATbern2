@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.dto.export.AssetImportResult;
 import ch.batbern.events.dto.export.AssetManifestResponse;
+import ch.batbern.events.dto.export.BundleImportResult;
 import ch.batbern.events.dto.export.LegacyExportEnvelope;
 import ch.batbern.events.dto.export.LegacyImportResult;
 import ch.batbern.events.service.LegacyExportService;
@@ -94,5 +95,32 @@ public class AdminExportImportController {
             @RequestParam("file") MultipartFile file) throws IOException {
         log.info("Admin: asset import requested, file={}, size={}", file.getOriginalFilename(), file.getSize());
         return ResponseEntity.ok(importService.importAssets(file));
+    }
+
+    /**
+     * Bundle export: returns a ZIP containing export.json + manifest.json + all binary assets.
+     * Symmetric counterpart to POST /import/bundle.
+     */
+    @GetMapping(value = "/export/bundle", produces = "application/zip")
+    public ResponseEntity<byte[]> exportBundle() throws IOException {
+        log.info("Admin: bundle export requested");
+        byte[] zip = exportService.exportBundle();
+        String filename = "batbern-bundle-" + LocalDate.now() + ".zip";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(filename).build().toString())
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(zip);
+    }
+
+    /**
+     * Bundle import: accepts a ZIP produced by GET /export/bundle.
+     * Restores data AND re-links binary assets to their entities.
+     */
+    @PostMapping(value = "/import/bundle", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BundleImportResult> importBundle(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        log.info("Admin: bundle import requested, file={}, size={}", file.getOriginalFilename(), file.getSize());
+        return ResponseEntity.ok(importService.importBundle(file));
     }
 }

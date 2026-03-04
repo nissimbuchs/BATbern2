@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.dto.export.AssetImportResult;
+import ch.batbern.events.dto.export.BundleImportResult;
 import ch.batbern.events.dto.export.LegacyAttendeeDto;
 import ch.batbern.events.dto.export.LegacyEventDto;
 import ch.batbern.events.dto.export.LegacyExportEnvelope;
@@ -12,9 +13,12 @@ import ch.batbern.events.dto.export.LegacyImportResult;
 import ch.batbern.events.dto.export.LegacySessionDto;
 import ch.batbern.events.dto.export.LegacySpeakerDto;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,10 +55,16 @@ public class LegacyImportService {
     private final SessionRepository sessionRepository;
     private final RegistrationRepository registrationRepository;
     private final SpeakerRepository speakerRepository;
+    private final LogoRepository logoRepository;
+    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final S3Client s3Client;
+    private final ObjectMapper objectMapper;
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
+
+    @Value("${aws.cloudfront.domain}")
+    private String cloudFrontDomain;
 
     @Transactional
     public LegacyImportResult importAll(LegacyExportEnvelope envelope) {
@@ -150,6 +160,156 @@ public class LegacyImportService {
                 .s3Prefix(prefix)
                 .errors(errors)
                 .build();
+    }
+
+    /**
+     * Imports a bundle ZIP produced by {@code GET /admin/export/bundle}.
+     * <p>
+     * Pass 1: extracts {@code export.json} and calls {@link #importAll} to restore data.
+     * Pass 2: uploads binary assets to S3 and links them back to their entities.
+     * Missing assets are logged and recorded in {@code assetErrors} — the bundle is still
+     * considered partially successful.
+     */
+    public BundleImportResult importBundle(MultipartFile zipFile) throws IOException {
+        // Pass 1 — find export.json, parse, and import data
+        LegacyExportEnvelope envelope = extractEnvelope(zipFile);
+        if (envelope == null) {
+            LegacyImportResult empty = LegacyImportResult.builder()
+                    .imported(LegacyImportResult.ImportCounts.builder().build())
+                    .skipped(List.of())
+                    .errors(List.of("Bundle ZIP does not contain export.json"))
+                    .build();
+            return BundleImportResult.builder()
+                    .dataResult(empty)
+                    .assetsImported(0)
+                    .assetErrors(List.of())
+                    .build();
+        }
+        LegacyImportResult dataResult = importAll(envelope);
+
+        // Pass 2 — upload assets and re-link entities
+        List<String> assetErrors = new ArrayList<>();
+        int assetsImported = 0;
+
+        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zis.closeEntry();
+                    continue;
+                }
+                String name = sanitizeEntryName(entry.getName());
+                if (name.isBlank() || "export.json".equals(name) || "manifest.json".equals(name)) {
+                    zis.closeEntry();
+                    continue;
+                }
+
+                // name format: {assetType}/{entityId}/{filename}
+                String[] parts = name.split("/", 3);
+                if (parts.length < 3) {
+                    zis.closeEntry();
+                    continue;
+                }
+                String assetType = parts[0];
+                UUID entityId;
+                try {
+                    entityId = UUID.fromString(parts[1]);
+                } catch (IllegalArgumentException e) {
+                    assetErrors.add(name + ": invalid entity ID");
+                    zis.closeEntry();
+                    continue;
+                }
+
+                byte[] bytes = readBounded(zis, MAX_ENTRY_SIZE, name);
+                if (bytes == null) {
+                    assetErrors.add(name + ": exceeds " + (MAX_ENTRY_SIZE / 1024 / 1024) + " MB limit");
+                    zis.closeEntry();
+                    continue;
+                }
+
+                try {
+                    s3Client.putObject(
+                            PutObjectRequest.builder().bucket(bucketName).key(name).build(),
+                            RequestBody.fromBytes(bytes));
+                    String cdnUrl = cloudFrontDomain + "/" + name;
+                    linkAssetToEntity(assetType, entityId, name, cdnUrl, assetErrors);
+                    assetsImported++;
+                } catch (Exception ex) {
+                    log.warn("Failed to upload bundle asset {}: {}", name, ex.getMessage());
+                    assetErrors.add(name + ": " + ex.getMessage());
+                }
+                zis.closeEntry();
+            }
+        }
+
+        return BundleImportResult.builder()
+                .dataResult(dataResult)
+                .assetsImported(assetsImported)
+                .assetErrors(assetErrors)
+                .build();
+    }
+
+    /** Reads the ZIP once to find and parse {@code export.json}. Returns {@code null} if not found. */
+    private LegacyExportEnvelope extractEnvelope(MultipartFile zipFile) throws IOException {
+        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if ("export.json".equals(entry.getName())) {
+                    byte[] bytes = readBounded(zis, MAX_ENTRY_SIZE * 10L, "export.json");
+                    if (bytes != null) {
+                        try {
+                            return objectMapper.readValue(bytes, LegacyExportEnvelope.class);
+                        } catch (Exception e) {
+                            log.warn("Failed to parse export.json in bundle: {}", e.getMessage());
+                            return null;
+                        }
+                    }
+                }
+                zis.closeEntry();
+            }
+        }
+        return null;
+    }
+
+    /** Links an uploaded S3 asset back to its entity by updating the relevant URL/key field. */
+    private void linkAssetToEntity(String assetType, UUID entityId, String s3Key, String cdnUrl,
+                                   List<String> errors) {
+        try {
+            switch (assetType) {
+                case "portraits" -> speakerRepository.findById(entityId).ifPresent(s -> {
+                    s.setProfilePictureUrl(cdnUrl);
+                    speakerRepository.save(s);
+                });
+                case "logos" -> logoRepository.findById(entityId).ifPresent(l -> {
+                    l.setS3Key(s3Key);
+                    l.setCloudFrontUrl(cdnUrl);
+                    logoRepository.save(l);
+                });
+                case "materials" -> sessionMaterialsRepository.findById(entityId).ifPresent(m -> {
+                    m.setS3Key(s3Key);
+                    m.setCloudFrontUrl(cdnUrl);
+                    sessionMaterialsRepository.save(m);
+                });
+                case "themes" -> eventRepository.findById(entityId).ifPresent(e -> {
+                    e.setThemeImageUrl(cdnUrl);
+                    eventRepository.save(e);
+                });
+                default -> {
+                    log.warn("Unknown asset type '{}' for entity {}", assetType, entityId);
+                    errors.add(s3Key + ": unknown asset type: " + assetType);
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to link {} asset {} to entity {}: {}", assetType, s3Key, entityId, ex.getMessage());
+            errors.add(s3Key + ": link failed: " + ex.getMessage());
+        }
+    }
+
+    /** Sanitizes a ZIP entry name to prevent ZIP Slip path traversal. */
+    private String sanitizeEntryName(String raw) {
+        return raw.replace("\\", "/")
+                .replaceAll("\\.{2,}/", "")
+                .replaceAll("^/+", "");
     }
 
     private int upsertEvents(List<LegacyEventDto> dtos, List<String> errors) {

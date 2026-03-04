@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.dto.export.BundleImportResult;
 import ch.batbern.events.dto.export.LegacyAttendeeDto;
 import ch.batbern.events.dto.export.LegacyEventDto;
 import ch.batbern.events.dto.export.LegacyExportEnvelope;
@@ -10,26 +11,42 @@ import ch.batbern.events.dto.export.LegacyImportResult;
 import ch.batbern.events.dto.export.LegacySessionDto;
 import ch.batbern.events.dto.export.LegacySpeakerDto;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,10 +67,24 @@ class LegacyImportServiceTest {
     @Mock
     SpeakerRepository speakerRepository;
     @Mock
+    LogoRepository logoRepository;
+    @Mock
+    SessionMaterialsRepository sessionMaterialsRepository;
+    @Mock
     S3Client s3Client;
+    @Spy
+    ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     @InjectMocks
     LegacyImportService service;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(service, "bucketName", "test-bucket");
+        ReflectionTestUtils.setField(service, "cloudFrontDomain", "https://cdn.test.ch");
+    }
 
     private LegacyExportEnvelope envelopeWithOneEvent(String eventCode) {
         LegacyEventDto event = LegacyEventDto.builder()
@@ -71,6 +102,19 @@ class LegacyImportServiceTest {
                 .speakers(List.of())
                 .attendees(List.of())
                 .build();
+    }
+
+    /** Builds a ZIP byte array with the given entries. */
+    private byte[] buildZip(java.util.Map<String, byte[]> entries) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (var e : entries.entrySet()) {
+                zos.putNextEntry(new ZipEntry(e.getKey()));
+                zos.write(e.getValue());
+                zos.closeEntry();
+            }
+        }
+        return baos.toByteArray();
     }
 
     @Test
@@ -281,5 +325,120 @@ class LegacyImportServiceTest {
         assertThat(result.getImported().getCompanies()).isEqualTo(0);
         assertThat(result.getSkipped()).anyMatch(s -> s.contains("companies"));
         assertThat(result.getSkipped()).anyMatch(s -> s.contains("company-user-management-service"));
+    }
+
+    // ── Bundle import tests (Story 10.20 symmetric round-trip) ───────────────
+
+    @Test
+    @DisplayName("importBundle() with valid bundle ZIP → imports data and links speaker portrait")
+    void importBundle_withValidBundle_restoresDataAndLinksAssets() throws IOException {
+        // Arrange — build a bundle ZIP with export.json + a portrait file
+        UUID speakerId = UUID.randomUUID();
+        Speaker speaker = Speaker.builder()
+                .id(speakerId)
+                .username("anna.schmidt")
+                .firstName("Anna")
+                .lastName("Schmidt")
+                .build();
+
+        LegacySpeakerDto speakerDto = LegacySpeakerDto.builder()
+                .speakerId("anna.schmidt")
+                .name("Anna Schmidt")
+                .build();
+
+        LegacyExportEnvelope envelope = LegacyExportEnvelope.builder()
+                .version("2.0").exportedAt(Instant.now())
+                .events(List.of()).companies(List.of())
+                .speakers(List.of(speakerDto)).attendees(List.of())
+                .build();
+
+        byte[] envelopeJson = objectMapper.writeValueAsBytes(envelope);
+        byte[] portraitBytes = "fake-image-bytes".getBytes();
+        String portraitPath = "portraits/" + speakerId + "/photo.jpg";
+
+        byte[] zipBytes = buildZip(java.util.Map.of(
+                "export.json", envelopeJson,
+                portraitPath, portraitBytes
+        ));
+        MockMultipartFile zipFile = new MockMultipartFile("file", "bundle.zip", "application/zip", zipBytes);
+
+        // Stub speaker lookup for importAll (data phase)
+        when(speakerRepository.findByUsername("anna.schmidt")).thenReturn(Optional.empty());
+        when(speakerRepository.save(any(Speaker.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Stub speaker lookup for asset linking phase
+        when(speakerRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
+
+        // Act
+        BundleImportResult result = service.importBundle(zipFile);
+
+        // Assert — data imported
+        assertThat(result.getDataResult()).isNotNull();
+        assertThat(result.getDataResult().getImported().getSpeakers()).isEqualTo(1);
+
+        // Assert — portrait uploaded to S3
+        verify(s3Client).putObject(
+                argThat((PutObjectRequest req) -> req.key().equals(portraitPath)),
+                any(RequestBody.class)
+        );
+
+        // Assert — speaker's profilePictureUrl updated
+        ArgumentCaptor<Speaker> speakerCaptor = ArgumentCaptor.forClass(Speaker.class);
+        verify(speakerRepository, times(2)).save(speakerCaptor.capture()); // once for import, once for linking
+        Speaker linkedSpeaker = speakerCaptor.getAllValues().stream()
+                .filter(s -> s.getId() != null && s.getId().equals(speakerId))
+                .findFirst().orElse(null);
+        assertThat(linkedSpeaker).isNotNull();
+        assertThat(linkedSpeaker.getProfilePictureUrl())
+                .isEqualTo("https://cdn.test.ch/" + portraitPath);
+
+        // Assert — no errors
+        assertThat(result.getAssetsImported()).isEqualTo(1);
+        assertThat(result.getAssetErrors()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("importBundle() with missing export.json → returns error, no S3 uploads")
+    void importBundle_withMissingExportJson_returnsError() throws IOException {
+        // Arrange — ZIP without export.json
+        byte[] zipBytes = buildZip(java.util.Map.of(
+                "some-other-file.txt", "content".getBytes()
+        ));
+        MockMultipartFile zipFile = new MockMultipartFile("file", "bundle.zip", "application/zip", zipBytes);
+
+        // Act
+        BundleImportResult result = service.importBundle(zipFile);
+
+        // Assert — data result has an error about missing export.json
+        assertThat(result.getDataResult().getErrors())
+                .anyMatch(e -> e.toLowerCase().contains("export.json"));
+        assertThat(result.getAssetsImported()).isEqualTo(0);
+
+        // No S3 uploads should happen
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    @DisplayName("importBundle() skips manifest.json and does not treat it as an asset")
+    void importBundle_skipsManifestJson() throws IOException {
+        // Arrange
+        LegacyExportEnvelope envelope = LegacyExportEnvelope.builder()
+                .version("2.0").exportedAt(Instant.now())
+                .events(List.of()).companies(List.of())
+                .speakers(List.of()).attendees(List.of())
+                .build();
+
+        byte[] zipBytes = buildZip(java.util.Map.of(
+                "export.json", objectMapper.writeValueAsBytes(envelope),
+                "manifest.json", "{\"assetCount\":0}".getBytes()
+        ));
+        MockMultipartFile zipFile = new MockMultipartFile("file", "bundle.zip", "application/zip", zipBytes);
+
+        // Act
+        BundleImportResult result = service.importBundle(zipFile);
+
+        // Assert — manifest.json not uploaded to S3, no asset errors
+        assertThat(result.getAssetsImported()).isEqualTo(0);
+        assertThat(result.getAssetErrors()).isEmpty();
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 }

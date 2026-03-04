@@ -29,6 +29,9 @@ public class LegacySessionDto {
     /** Legacy PDF filename for session materials */
     private String pdf;
 
+    /** Presigned S3 URLs for session materials (PDFs, presentations, etc.) */
+    private List<String> materialUrls;
+
     /** Session speakers — legacy field name preserved for interoperability */
     private List<LegacySpeakerDto> referenten;
 }

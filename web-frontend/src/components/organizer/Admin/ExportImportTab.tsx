@@ -32,6 +32,7 @@ import type { components } from '@/types/generated/events-api.types';
 type LegacyImportResult = components['schemas']['LegacyImportResult'];
 type AssetManifestResponse = components['schemas']['AssetManifestResponse'];
 type AssetImportResult = components['schemas']['AssetImportResult'];
+type BundleImportResult = components['schemas']['BundleImportResult'];
 
 export const ExportImportTab: React.FC = () => {
   const { t } = useTranslation('common');
@@ -54,6 +55,15 @@ export const ExportImportTab: React.FC = () => {
   const [assetImportResult, setAssetImportResult] = useState<AssetImportResult | null>(null);
   const [assetImportError, setAssetImportError] = useState<string | null>(null);
   const zipFileRef = useRef<HTMLInputElement>(null);
+
+  // ── Bundle export/import state ──────────────────────────────────────────
+  const [bundleExportLoading, setBundleExportLoading] = useState(false);
+  const [bundleImportFile, setBundleImportFile] = useState<File | null>(null);
+  const [bundleImportLoading, setBundleImportLoading] = useState(false);
+  const [bundleImportDialogOpen, setBundleImportDialogOpen] = useState(false);
+  const [bundleImportResult, setBundleImportResult] = useState<BundleImportResult | null>(null);
+  const [bundleImportError, setBundleImportError] = useState<string | null>(null);
+  const bundleFileRef = useRef<HTMLInputElement>(null);
 
   // ── JSON export ─────────────────────────────────────────────────────────
   const handleExportJson = async () => {
@@ -91,10 +101,7 @@ export const ExportImportTab: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      const response = await apiClient.post<LegacyImportResult>(
-        '/admin/import/legacy',
-        formData
-      );
+      const response = await apiClient.post<LegacyImportResult>('/admin/import/legacy', formData);
       setImportResult(response.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -115,6 +122,50 @@ export const ExportImportTab: React.FC = () => {
     }
   };
 
+  // ── Bundle export ───────────────────────────────────────────────────────
+  const handleExportBundle = async () => {
+    setBundleExportLoading(true);
+    try {
+      const response = await apiClient.get('/admin/export/bundle', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/zip' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `batbern-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setBundleExportLoading(false);
+    }
+  };
+
+  // ── Bundle import ───────────────────────────────────────────────────────
+  const handleBundleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBundleImportFile(e.target.files?.[0] ?? null);
+    setBundleImportResult(null);
+    setBundleImportError(null);
+  };
+
+  const handleBundleImportConfirm = async () => {
+    if (!bundleImportFile) return;
+    setBundleImportDialogOpen(false);
+    setBundleImportLoading(true);
+    setBundleImportResult(null);
+    setBundleImportError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', bundleImportFile);
+      const response = await apiClient.post<BundleImportResult>('/admin/import/bundle', formData);
+      setBundleImportResult(response.data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setBundleImportError(msg);
+    } finally {
+      setBundleImportLoading(false);
+    }
+  };
+
   // ── Asset ZIP import ────────────────────────────────────────────────────
   const handleAssetImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAssetImportFile(e.target.files?.[0] ?? null);
@@ -131,10 +182,7 @@ export const ExportImportTab: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', assetImportFile);
-      const response = await apiClient.post<AssetImportResult>(
-        '/admin/import/assets',
-        formData
-      );
+      const response = await apiClient.post<AssetImportResult>('/admin/import/assets', formData);
       setAssetImportResult(response.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -166,12 +214,21 @@ export const ExportImportTab: React.FC = () => {
               {t('admin.exportImport.exportJsonButton', 'Export All Data (JSON)')}
             </Button>
             <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportBundle}
+              disabled={bundleExportLoading}
+            >
+              {t('admin.exportImport.exportBundleButton', 'Export Bundle (JSON + Assets)')}
+            </Button>
+            <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={handleGetAssetManifest}
               disabled={assetManifestLoading}
             >
-              {t('admin.exportImport.exportAssetsButton', 'Get Asset Manifest')}
+              {t('admin.exportImport.exportAssetsButton', 'View Asset Manifest')}
             </Button>
           </Box>
 
@@ -292,6 +349,101 @@ export const ExportImportTab: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* ── Bundle Import ───────────────────────────────────────────────── */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            {t('admin.exportImport.importBundleLabel', 'Import Bundle (JSON + Assets)')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t(
+              'admin.exportImport.importBundleDescription',
+              'Restore data and binary assets from a bundle ZIP. Session materials (PDFs) are not embedded — download links are provided in material-links.json inside the ZIP.'
+            )}
+          </Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <input
+              ref={bundleFileRef}
+              type="file"
+              accept=".zip"
+              style={{ display: 'none' }}
+              onChange={handleBundleImportFileChange}
+            />
+            <Button variant="outlined" onClick={() => bundleFileRef.current?.click()}>
+              {t('admin.exportImport.importBundleChooseLabel', 'Choose Bundle ZIP')}
+            </Button>
+            {bundleImportFile && (
+              <Typography variant="body2" color="text.secondary">
+                {bundleImportFile.name}
+              </Typography>
+            )}
+            <Button
+              variant="contained"
+              color="warning"
+              startIcon={<UploadIcon />}
+              disabled={!bundleImportFile || bundleImportLoading}
+              onClick={() => setBundleImportDialogOpen(true)}
+            >
+              {t('admin.exportImport.importBundleButton', 'Import Bundle')}
+            </Button>
+          </Box>
+
+          {bundleImportResult && (
+            <Box sx={{ mt: 2 }}>
+              <Alert severity="success" sx={{ mb: 1 }}>
+                {t(
+                  'admin.exportImport.bundleSuccessAlert',
+                  'Bundle import completed successfully.'
+                )}
+              </Alert>
+              <Typography variant="body2">
+                {t('admin.exportImport.bundleAssetsImported', 'Assets imported')}:{' '}
+                {bundleImportResult.assetsImported}
+              </Typography>
+              <Table size="small" sx={{ mt: 1 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('admin.exportImport.resultEvents', 'Events')}</TableCell>
+                    <TableCell>{t('admin.exportImport.resultSessions', 'Sessions')}</TableCell>
+                    <TableCell>{t('admin.exportImport.resultSpeakers', 'Speakers')}</TableCell>
+                    <TableCell>{t('admin.exportImport.resultAttendees', 'Attendees')}</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>{bundleImportResult.dataResult?.imported?.events ?? 0}</TableCell>
+                    <TableCell>{bundleImportResult.dataResult?.imported?.sessions ?? 0}</TableCell>
+                    <TableCell>{bundleImportResult.dataResult?.imported?.speakers ?? 0}</TableCell>
+                    <TableCell>{bundleImportResult.dataResult?.imported?.attendees ?? 0}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              {bundleImportResult.assetErrors && bundleImportResult.assetErrors.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2" color="error">
+                    {t('admin.exportImport.resultErrors', 'Errors')}:
+                  </Typography>
+                  {bundleImportResult.assetErrors.map((err, i) => (
+                    <Typography key={i} variant="body2" color="error">
+                      {err}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {bundleImportError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {t('admin.exportImport.errorAlert', 'Import failed. See errors below.')}
+              {': '}
+              {bundleImportError}
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ── Asset Import ────────────────────────────────────────────────── */}
       <Card>
         <CardContent>
@@ -353,6 +505,29 @@ export const ExportImportTab: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setImportDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
           <Button onClick={handleImportConfirm} color="warning" variant="contained">
+            {t('admin.exportImport.confirmButton', 'Proceed')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Bundle Import Confirmation Dialog ───────────────────────────── */}
+      <Dialog open={bundleImportDialogOpen} onClose={() => setBundleImportDialogOpen(false)}>
+        <DialogTitle>
+          {t('admin.exportImport.confirmBundleTitle', 'Confirm Bundle Import')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t(
+              'admin.exportImport.confirmBundleMessage',
+              'This will restore all data and binary assets from the bundle. Existing records will be updated. This cannot be undone automatically.'
+            )}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBundleImportDialogOpen(false)}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleBundleImportConfirm} color="warning" variant="contained">
             {t('admin.exportImport.confirmButton', 'Proceed')}
           </Button>
         </DialogActions>
