@@ -61,36 +61,36 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
     setUploadError(null);
     setUploadProgress({ done: 0, total: files.length });
 
-    let failed = 0;
-    await Promise.all(
-      files.map(async (file) => {
-        try {
-          await uploadMutation.mutateAsync({
-            file,
-            request: {
-              filename: file.name,
-              contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
-              fileSize: file.size,
-            },
-          });
-        } catch {
-          failed++;
-        } finally {
-          setUploadProgress((prev) => prev && { ...prev, done: prev.done + 1 });
-        }
-      })
-    );
-
-    if (failed > 0) {
-      setUploadError(
-        t('photos.uploadErrorPartial', '{{failed}} of {{total}} uploads failed. Please retry.', {
-          failed,
-          total: files.length,
+    try {
+      const results = await Promise.allSettled(
+        files.map(async (file) => {
+          try {
+            await uploadMutation.mutateAsync({
+              file,
+              request: {
+                filename: file.name,
+                contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+                fileSize: file.size,
+              },
+            });
+          } finally {
+            setUploadProgress((prev) => prev && { ...prev, done: prev.done + 1 });
+          }
         })
       );
-    }
 
-    setUploadProgress(null);
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        setUploadError(
+          t('photos.uploadErrorPartial', '{{failed}} of {{total}} uploads failed. Please retry.', {
+            failed,
+            total: files.length,
+          })
+        );
+      }
+    } finally {
+      setUploadProgress(null);
+    }
     // Reset file input so same files can be re-uploaded if needed
     if (fileInputRef.current) fileInputRef.current.value = '';
   };

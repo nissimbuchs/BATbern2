@@ -49,6 +49,8 @@ public class EventPhotoController {
     public ResponseEntity<List<EventPhotoResponseDto>> getRecentPhotos(
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "5") int lastNEvents) {
+        limit = Math.min(Math.max(limit, 1), 100);
+        lastNEvents = Math.min(Math.max(lastNEvents, 1), 20);
         return ResponseEntity.ok(photoService.getRecentPhotos(limit, lastNEvents));
     }
 

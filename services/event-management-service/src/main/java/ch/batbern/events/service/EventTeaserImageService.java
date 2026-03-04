@@ -111,6 +111,12 @@ public class EventTeaserImageService {
      * same event serialize correctly (no over-limit bypass, no duplicate displayOrder).
      */
     public TeaserImageItem confirmUpload(String eventCode, String s3Key) {
+        // Validate s3Key belongs to this event (prevent cross-event key injection)
+        String expectedPrefix = String.format("events/%s/teaser/", eventCode);
+        if (s3Key == null || !s3Key.startsWith(expectedPrefix)) {
+            throw new IllegalArgumentException("s3Key must belong to event " + eventCode);
+        }
+
         // Lock existing teaser-image rows for this event so concurrent confirms serialize.
         List<EventTeaserImage> existing = teaserImageRepository.findByEventCodeForUpdate(eventCode);
 

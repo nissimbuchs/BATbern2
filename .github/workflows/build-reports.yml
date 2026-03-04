@@ -2,7 +2,7 @@ name: Build Test & Quality Reports
 
 on:
   workflow_run:
-    workflows: ["Build"]
+    workflows: ["Build Pipeline"]
     types:
       - completed
   workflow_dispatch:

@@ -35,6 +35,9 @@ public class AiAssistController {
     private final AiConfig aiConfig;
     private final EventRepository eventRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${aws.cloudfront.domain:https://cdn.batbern.ch}")
+    private String cloudFrontDomain;
+
     /** Public: no auth required — used by frontend feature flag check */
     @GetMapping("/public/settings/features")
     public ResponseEntity<FeatureFlagsResponse> getFeatureFlags() {
@@ -76,6 +79,9 @@ public class AiAssistController {
     public ResponseEntity<Void> applyThemeImage(
             @PathVariable String eventCode,
             @RequestBody ApplyThemeImageRequest request) {
+        if (request.imageUrl() == null || !request.imageUrl().startsWith(cloudFrontDomain)) {
+            return ResponseEntity.badRequest().build();
+        }
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         event.setThemeImageUrl(request.imageUrl());

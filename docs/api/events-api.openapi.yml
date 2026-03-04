@@ -5046,6 +5046,80 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /admin/export/bundle:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export full bundle (data + binary assets) as ZIP
+      description: |
+        Returns a single ZIP archive containing:
+        - `export.json` — full LegacyExportEnvelope (same as GET /admin/export/legacy)
+        - `manifest.json` — AssetManifestResponse with presigned URLs (for reference)
+        - `portraits/{speakerId}/{filename}` — speaker portrait images
+        - `logos/{logoId}/{filename}` — company/partner logos
+        - `materials/{materialId}/{filename}` — session materials
+        - `themes/{eventId}/{filename}` — event theme images
+
+        Symmetric counterpart to POST /admin/import/bundle.
+        S3 download failures are logged and skipped (partial bundle is still valid).
+        Organizer role required.
+      operationId: exportBundle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bundle ZIP file
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/bundle:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import bundle ZIP (data + binary assets)
+      description: |
+        Accepts a ZIP produced by GET /admin/export/bundle.
+        Restores data (upsert, idempotent) AND uploads binary assets to S3,
+        re-linking them to their entity records.
+        Organizer role required.
+      operationId: importBundle
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Bundle ZIP produced by GET /admin/export/bundle
+      responses:
+        '200':
+          description: Bundle import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleImportResult'
+        '400':
+          description: Invalid or missing export.json in ZIP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
 
@@ -5243,6 +5317,24 @@ components:
           example: "imports/2026-03-03T10:00:00Z/"
         errors:
           type: array
+          items:
+            type: string
+
+    BundleImportResult:
+      type: object
+      description: Result of a bundle ZIP import that restores both data and binary assets
+      required: [dataResult, assetsImported, assetErrors]
+      properties:
+        dataResult:
+          $ref: '#/components/schemas/LegacyImportResult'
+          description: Result of the data (JSON) import phase
+        assetsImported:
+          type: integer
+          description: Number of binary assets successfully uploaded to S3 and linked to entities
+          example: 12
+        assetErrors:
+          type: array
+          description: Per-asset error messages for assets that could not be restored
           items:
             type: string
 

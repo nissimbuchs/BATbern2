@@ -310,8 +310,21 @@ public class BatbernAiService {
         return resp.data().get(0).url();
     }
 
+    private static boolean isAllowedImageUrl(String url) {
+        if (url == null) {
+            return false;
+        }
+        return url.startsWith("https://oaidalleapiprodscus.blob.core.windows.net/")
+            || url.startsWith("https://dalleprodsec.blob.core.windows.net/")
+            || url.contains(".openai.com/");
+    }
+
     private byte[] downloadBytes(String url) {
         try {
+            if (!isAllowedImageUrl(url)) {
+                log.warn("Refusing to download from untrusted URL: {}", url);
+                return null;
+            }
             // Use HttpURLConnection (not HttpClient / URI.create) because DALL-E returns
             // Azure Blob SAS URLs whose signature contains base64 '+' characters.
             // URI.create() normalises those, corrupting the signature and causing
