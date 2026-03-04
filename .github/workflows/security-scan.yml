@@ -75,7 +75,7 @@ jobs:
           # explicit here ensures the correct environment is always targeted.
           target: ${{ env.API_BASE_URL }}
           format: openapi
-          file: ${{ matrix.spec }}
+          openapi_spec: ${{ matrix.spec }}
           rules_file_name: '.zap/rules.tsv'
           # -a  include alpha passive scan rules
           # -I  do not return failure on warnings (we use rules.tsv for that)
