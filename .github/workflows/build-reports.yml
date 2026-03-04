@@ -140,7 +140,7 @@ jobs:
       - name: Deploy to S3 (if on main/develop)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         working-directory: apps/projectdoc
-        run: npm run deploy
+        run: npm run deploy:ci
         env:
           AWS_REGION: eu-central-1
           S3_BUCKET_NAME: project.batbern.ch
