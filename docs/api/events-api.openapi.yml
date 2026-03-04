@@ -2337,10 +2337,10 @@ paths:
       summary: Get my registration status for an event
       description: |
         Returns the authenticated user's registration status for the specified event.
+        Always returns 200. Use the `registered` boolean to determine if a record exists.
 
         **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
         **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
-        Returns 404 when the authenticated user has no registration for this event.
 
         **ADR-003**: Uses eventCode (meaningful ID) not UUID.
         **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
@@ -2357,29 +2357,26 @@ paths:
             example: BATbern142
       responses:
         '200':
-          description: Registration found — returns status for the authenticated user
+          description: Registration status for the authenticated user (registered or not)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyRegistrationResponse'
-              example:
-                registrationCode: BATbern142-reg-ABC123
-                eventCode: BATbern142
-                status: CONFIRMED
-                registrationDate: '2025-11-01T10:30:00Z'
+              examples:
+                registered:
+                  summary: User has a registration
+                  value:
+                    registered: true
+                    registrationCode: BATbern142-reg-ABC123
+                    eventCode: BATbern142
+                    status: CONFIRMED
+                    registrationDate: '2025-11-01T10:30:00Z'
+                not_registered:
+                  summary: User has no registration
+                  value:
+                    registered: false
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: No registration found for this user and event
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: RESOURCE_NOT_FOUND
-                errorCode: NOT_FOUND
-                message: No registration found for event BATbern142
-                timestamp: '2025-11-01T10:30:00Z'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -6920,30 +6917,33 @@ components:
         Story 10.10: Minimal registration status for the authenticated user (AC1).
         ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
         ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+
+        Always returns 200. Use `registered` to determine if a record exists.
       required:
-        - registrationCode
-        - eventCode
-        - status
-        - registrationDate
+        - registered
       properties:
+        registered:
+          type: boolean
+          description: Whether the authenticated user has a registration record for this event.
+          example: true
         registrationCode:
           type: string
-          description: Unique registration code (public identifier)
+          description: Unique registration code (public identifier). Present when registered=true.
           example: BATbern142-reg-ABC123
         eventCode:
           type: string
-          description: Event code this registration belongs to
+          description: Event code this registration belongs to. Present when registered=true.
           pattern: '^BATbern[0-9]+$'
           example: BATbern142
         status:
           type: string
-          description: Registration status (uppercase)
+          description: Registration status (uppercase). Present when registered=true.
           enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED]
           example: CONFIRMED
         registrationDate:
           type: string
           format: date-time
-          description: ISO-8601 timestamp when registration was created
+          description: ISO-8601 timestamp when registration was created. Present when registered=true.
           example: '2025-11-01T10:30:00Z'
         waitlistPosition:
           type: integer

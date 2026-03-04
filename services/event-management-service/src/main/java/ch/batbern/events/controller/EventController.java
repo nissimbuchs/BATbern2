@@ -1552,15 +1552,18 @@ public class EventController {
      * Authentication: Required. @PreAuthorize("isAuthenticated()") provides method-level guard
      * (production URL-level security via SecurityConfig.anyRequest().authenticated() also applies).
      *
+     * Always returns 200. Use the {@code registered} boolean in the response to determine
+     * if the user has a registration record — avoids browser console 404 noise.
+     *
      * @param eventCode Event code to check registration for
-     * @return 200 with MyRegistrationResponse if registered, 404 if not registered
+     * @return 200 always — registered=true with full data if found, registered=false if not
      */
     @GetMapping("/{eventCode}/my-registration")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get my registration status for an event",
             description = "Returns the authenticated user's registration status. "
-                    + "Returns 404 when not registered. Requires authentication."
+                    + "Always 200 — use `registered` field to check enrollment. Requires authentication."
     )
     public ResponseEntity<MyRegistrationResponse> getMyRegistration(
             @PathVariable String eventCode) {
@@ -1569,10 +1572,7 @@ public class EventController {
         // ADR-001: Use custom:username claim (not sub UUID) — same pattern as all other endpoints
         String username = securityContextHelper.getCurrentUsername();
 
-        return registrationService.getMyRegistration(eventCode, username)
-                .map(response -> ResponseEntity.ok(response))
-                .orElseThrow(() -> new NoSuchElementException(
-                        "No registration found for event " + eventCode + " and user " + username));
+        return ResponseEntity.ok(registrationService.getMyRegistration(eventCode, username));
     }
 
     /**

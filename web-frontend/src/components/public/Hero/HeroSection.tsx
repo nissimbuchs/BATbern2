@@ -262,7 +262,7 @@ export const HeroSection = ({
                         </p>
                         <p className="text-sm text-zinc-300 mb-2">
                           {t(
-                            `registration:registrationStatusBanner.${myRegistration!.status.toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
+                            `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
                           )}
                         </p>
                         {eventCode && (

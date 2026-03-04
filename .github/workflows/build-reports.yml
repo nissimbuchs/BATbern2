@@ -130,14 +130,25 @@ jobs:
           path: apps/projectdoc/dist/
           retention-days: 7
 
-      - name: Deploy to S3 (if on main/develop)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        working-directory: apps/projectdoc
-        run: npm run deploy
-        env:
-          AWS_PROFILE: batbern-mgmt
-          AWS_REGION: eu-central-1
-          S3_BUCKET_NAME: project.batbern.ch
+      - name: Configure AWS credentials (staging — for ZAP report upload)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: eu-central-1
+
+      - name: Upload ZAP reports to staging S3
+        # Stores ZAP JSON under batbern-content-staging/ci-reports/zap/ so the
+        # local deploy script can fetch them with the batbern-staging AWS profile.
+        run: |
+          if [ -d "security-reports" ] && [ "$(ls -A security-reports)" ]; then
+            aws s3 sync security-reports/ \
+              s3://batbern-content-staging/ci-reports/zap/ \
+              --delete \
+              --region eu-central-1
+            echo "ZAP reports uploaded: $(ls security-reports/)"
+          else
+            echo "No ZAP reports found — skipping S3 upload"
+          fi
 
       - name: Create PR comment with report summary
         if: github.event_name == 'pull_request'

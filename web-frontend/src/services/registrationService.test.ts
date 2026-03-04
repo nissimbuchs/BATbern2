@@ -2,9 +2,9 @@
  * Registration Service Tests (Story 10.10)
  *
  * Tests for getMyRegistration:
- * - Returns registration data on success
- * - Returns null on 404 (not registered)
- * - Rethrows on other errors
+ * - Returns registration data when registered=true
+ * - Returns null when registered=false (not registered)
+ * - Rethrows on non-2xx errors
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -25,8 +25,13 @@ describe('registrationService', () => {
   });
 
   describe('getMyRegistration', () => {
-    it('should return registration data on success', async () => {
-      const mockReg = { registrationCode: 'ABC123', status: 'CONFIRMED', eventCode: 'BATbern142' };
+    it('should return registration data when registered=true', async () => {
+      const mockReg = {
+        registered: true,
+        registrationCode: 'ABC123',
+        status: 'CONFIRMED',
+        eventCode: 'BATbern142',
+      };
       mockApiClient.get.mockResolvedValue({ data: mockReg });
 
       const result = await getMyRegistration('BATbern142');
@@ -35,23 +40,22 @@ describe('registrationService', () => {
       expect(result).toEqual(mockReg);
     });
 
-    it('should return null when user is not registered (404)', async () => {
-      const notFoundError = { response: { status: 404 } };
-      mockApiClient.get.mockRejectedValue(notFoundError);
+    it('should return null when registered=false (user has no registration)', async () => {
+      mockApiClient.get.mockResolvedValue({ data: { registered: false } });
 
       const result = await getMyRegistration('BATbern142');
 
       expect(result).toBeNull();
     });
 
-    it('should rethrow non-404 errors', async () => {
+    it('should rethrow non-2xx errors', async () => {
       const serverError = { response: { status: 500 } };
       mockApiClient.get.mockRejectedValue(serverError);
 
       await expect(getMyRegistration('BATbern142')).rejects.toEqual(serverError);
     });
 
-    it('should rethrow errors without response', async () => {
+    it('should rethrow network errors', async () => {
       const networkError = new Error('Network failure');
       mockApiClient.get.mockRejectedValue(networkError);
 
