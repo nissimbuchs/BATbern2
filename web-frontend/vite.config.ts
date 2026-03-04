@@ -211,11 +211,18 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           // @emotion and @mui MUST stay in the same chunk
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          // Co-locate React and all CJS packages that import React to avoid
+          // cross-chunk initialization order errors (TDZ / "Cannot set properties
+          // of undefined") caused by Rollup's CJS-to-ESM factory pattern.
           if (
             id.includes('/react/') ||
             id.includes('/react-dom/') ||
             id.includes('/scheduler/') ||
-            id.includes('use-sync-external-store')
+            id.includes('use-sync-external-store') ||
+            id.includes('react-transition-group') ||
+            id.includes('react-is') ||
+            id.includes('hoist-non-react-statics') ||
+            id.includes('prop-types')
           )
             return 'vendor-react';
           if (id.includes('react-router') || id.includes('@remix-run')) return 'vendor-router';
