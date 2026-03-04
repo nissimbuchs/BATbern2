@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { glob } from 'glob';
 import mimeTypes from 'mime-types';
-import { fromIni } from '@aws-sdk/credential-providers';
+import { fromIni, fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import {
   S3Client,
   CreateBucketCommand,
@@ -40,16 +40,19 @@ import {
 import config from '../src/config/site-config.js';
 import awsConfig from '../src/config/aws-config.js';
 
-// Set AWS profile for deployment
-const AWS_PROFILE = process.env.AWS_PROFILE || 'batbern-mgmt';
+// Set AWS profile for deployment (local only — CI uses OIDC env vars)
+const AWS_PROFILE = process.env.AWS_PROFILE;
 
 class DocumentationDeployer {
   constructor() {
     this.config = config;
     this.awsConfig = awsConfig;
 
-    // Configure AWS credentials from profile
-    const credentials = fromIni({ profile: AWS_PROFILE });
+    // Use named profile locally; fall back to SDK default provider chain in CI
+    // (configure-aws-credentials sets AWS_ACCESS_KEY_ID/SECRET/SESSION_TOKEN)
+    const credentials = AWS_PROFILE
+      ? fromIni({ profile: AWS_PROFILE })
+      : fromNodeProviderChain();
 
     this.s3Client = new S3Client({
       region: awsConfig.region,
@@ -73,7 +76,7 @@ class DocumentationDeployer {
   async deploy() {
     console.log('☁️  BATbern Documentation Deployer');
     console.log('==================================\n');
-    console.log(`🔑 Using AWS Profile: ${AWS_PROFILE}\n`);
+    console.log(`🔑 ${AWS_PROFILE ? `Using AWS Profile: ${AWS_PROFILE}` : 'Using environment credentials (CI/OIDC)'}\n`);
 
     try {
       // Validate configuration
