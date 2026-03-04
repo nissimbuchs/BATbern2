@@ -101,6 +101,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin")) { // Story 10.20: Legacy export/import
+            return "event-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
         }

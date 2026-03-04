@@ -211,7 +211,12 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           // @emotion and @mui MUST stay in the same chunk
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
-          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/'))
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/') ||
+            id.includes('use-sync-external-store')
+          )
             return 'vendor-react';
           if (id.includes('react-router') || id.includes('@remix-run')) return 'vendor-router';
           if (id.includes('i18next') || id.includes('react-i18next')) return 'vendor-i18n';

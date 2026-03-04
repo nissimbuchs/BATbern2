@@ -59,7 +59,7 @@ export const ExportImportTab: React.FC = () => {
   const handleExportJson = async () => {
     setExportLoading(true);
     try {
-      const response = await apiClient.get('/api/v1/admin/export/legacy', {
+      const response = await apiClient.get('/admin/export/legacy', {
         responseType: 'blob',
       });
       const url = URL.createObjectURL(new Blob([response.data], { type: 'application/json' }));
@@ -92,7 +92,7 @@ export const ExportImportTab: React.FC = () => {
       const formData = new FormData();
       formData.append('file', importFile);
       const response = await apiClient.post<LegacyImportResult>(
-        '/api/v1/admin/import/legacy',
+        '/admin/import/legacy',
         formData
       );
       setImportResult(response.data);
@@ -108,7 +108,7 @@ export const ExportImportTab: React.FC = () => {
   const handleGetAssetManifest = async () => {
     setAssetManifestLoading(true);
     try {
-      const response = await apiClient.get<AssetManifestResponse>('/api/v1/admin/export/assets');
+      const response = await apiClient.get<AssetManifestResponse>('/admin/export/assets');
       setAssetManifest(response.data);
     } finally {
       setAssetManifestLoading(false);
@@ -132,7 +132,7 @@ export const ExportImportTab: React.FC = () => {
       const formData = new FormData();
       formData.append('file', assetImportFile);
       const response = await apiClient.post<AssetImportResult>(
-        '/api/v1/admin/import/assets',
+        '/admin/import/assets',
         formData
       );
       setAssetImportResult(response.data);

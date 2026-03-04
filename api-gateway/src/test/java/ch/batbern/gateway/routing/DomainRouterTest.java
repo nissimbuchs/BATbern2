@@ -181,6 +181,33 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
+    // Test Story 10.20: admin export/import must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_adminExportLegacyCalled")
+    void should_routeToEventService_when_adminExportLegacyCalled() {
+        // Given
+        String requestPath = "/api/v1/admin/export/legacy";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_adminImportLegacyCalled")
+    void should_routeToEventService_when_adminImportLegacyCalled() {
+        // Given
+        String requestPath = "/api/v1/admin/import/legacy";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
