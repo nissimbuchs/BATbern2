@@ -15,13 +15,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+import Alert from '@mui/material/Alert';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { useAuth } from '@/hooks/useAuth/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
-import { Loader2, CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -30,6 +38,8 @@ export interface RegistrationWizardProps {
   onCancel?: () => void;
   /** Whether wizard is displayed inline (vs dedicated page) */
   inline?: boolean;
+  /** AC8 (Story 10.11): Remaining spots. 0 = event full → waitlist flow. null/undefined = unlimited. */
+  spotsRemaining?: number | null;
 }
 
 /**
@@ -44,10 +54,22 @@ export const RegistrationWizard = ({
   eventCode,
   onCancel,
   inline = false,
+  spotsRemaining,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation(['registration', 'common']);
+  const queryClient = useQueryClient();
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
+
+  // AC6: Check if authenticated user already has a registration (Story 10.10, T11)
+  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(eventCode);
+
+  // Pre-fill form from user profile when authenticated
+  const { isAuthenticated } = useAuth();
+  const { userProfile } = useUserProfile({ enabled: isAuthenticated });
+
+  // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
+  const isEventFull = spotsRemaining === 0;
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -55,6 +77,9 @@ export const RegistrationWizard = ({
   const [error, setError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [waitlistAcknowledged, setWaitlistAcknowledged] = useState(false);
+  const [isWaitlistRegistration, setIsWaitlistRegistration] = useState(false);
+  const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState<CreateRegistrationRequest>({
@@ -70,6 +95,16 @@ export const RegistrationWizard = ({
     },
     specialRequests: '',
   });
+
+  // Pre-fill form fields from user profile once resolved (only fills still-empty fields)
+  useEffect(() => {
+    if (!userProfile || !step1Ref.current) return;
+    step1Ref.current.prefill({
+      firstName: userProfile.firstName,
+      lastName: userProfile.lastName,
+      email: userProfile.email,
+    });
+  }, [userProfile]);
 
   // Navigation handlers (Task 7)
   const handleNext = async () => {
@@ -161,8 +196,11 @@ export const RegistrationWizard = ({
 
       // Success: Show success message inline (Story 4.1.5c)
       setRegisteredEmail(response.email);
+      setIsWaitlistRegistration(isEventFull);
       setRegistrationSuccess(true);
       setIsSubmitting(false);
+      // AC7: Invalidate my-registration cache so banner/guard reflect new status immediately
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventCode] });
     } catch (err) {
       // Handle duplicate registration (409 Conflict)
       // Backend returns 409 only for confirmed/cancelled registrations
@@ -201,14 +239,97 @@ export const RegistrationWizard = ({
     </div>
   );
 
+  // AC6: Registration Wizard guard (Story 10.10, T11)
+  // When the authenticated user already has a non-null registration:
+  // - REGISTERED / CONFIRMED / WAITLIST → show guard with "Go back" button
+  // - CANCELLED → show guard with "Register again" button (backend T4.6 allows re-registration)
+  if (!isRegistrationLoading && myRegistration != null) {
+    const isCancelled = myRegistration.status === 'CANCELLED';
+    const formattedDate = myRegistration.registrationDate
+      ? new Date(myRegistration.registrationDate).toLocaleDateString()
+      : null;
+
+    return (
+      <div
+        className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}
+        data-testid="registration-status-guard"
+      >
+        <div className="text-center mb-6">
+          <AlertCircle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-light mb-2">
+            {t('registrationStatusGuard.alreadyRegistered')}
+          </h2>
+          {formattedDate && (
+            <p className="text-sm text-zinc-400">
+              {myRegistration.status} · {formattedDate}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-center gap-4 flex-wrap">
+          {isCancelled ? (
+            // CANCELLED: allow re-registration (backend deletes old record and creates new)
+            // Note: we can't reset myRegistration client-side, but the guard will dismiss
+            // once the query is invalidated after successful submission.
+            <Button
+              onClick={() => {
+                // Optimistically mark as not-registered so the wizard shows immediately.
+                // setQueryData (not removeQueries) avoids a re-fetch that would re-populate
+                // the guard before the user submits. The cache is properly invalidated on
+                // successful submission via queryClient.invalidateQueries in the success block.
+                queryClient.setQueryData(['my-registration', eventCode], null);
+              }}
+              data-testid="registration-guard-register-again-btn"
+            >
+              {t('registrationStatusGuard.registerAgain')}
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={onCancel ?? (() => navigate('/'))}
+                data-testid="registration-guard-go-back-btn"
+              >
+                {t('registrationStatusGuard.goBack')}
+              </Button>
+              {/* Story 10.12 (AC9, T19): Cancel my registration — shown for active registrations */}
+              <Button
+                variant="ghost"
+                onClick={() => setDeregisterModalOpen(true)}
+                className="text-red-400 hover:text-red-300"
+                data-testid="registration-guard-cancel-btn"
+              >
+                {t('deregistration.wizard.cancelButton')}
+              </Button>
+            </>
+          )}
+        </div>
+        {/* Story 10.12 (AC9): Deregistration by email modal */}
+        <DeregistrationByEmailModal
+          open={deregisterModalOpen}
+          onClose={() => setDeregisterModalOpen(false)}
+          eventCode={eventCode}
+        />
+      </div>
+    );
+  }
+
   // Success view
   if (registrationSuccess) {
     return (
       <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
         <div className="text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h2 className="text-3xl font-light mb-2">{t('success.title')}</h2>
-          <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+          {isWaitlistRegistration ? (
+            <>
+              <h2 className="text-3xl font-light mb-2">{t('wizard.waitlistSuccessTitle')}</h2>
+              <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-light mb-2">{t('success.title')}</h2>
+              <p className="text-xl text-zinc-400 mb-8">{t('success.subtitle')}</p>
+            </>
+          )}
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
@@ -324,6 +445,27 @@ export const RegistrationWizard = ({
         </RegistrationAccordion>
       </div>
 
+      {/* AC8 (Story 10.11): Waitlist acknowledgment — shown in Step 2 when event is full */}
+      {isEventFull && currentStep === 2 && (
+        <div className="mt-4">
+          <Alert severity="info" sx={{ mb: 1 }}>
+            {t('wizard.waitlistWarning')}
+          </Alert>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={waitlistAcknowledged}
+                onChange={(e) => setWaitlistAcknowledged(e.target.checked)}
+                data-testid="waitlist-acknowledge-checkbox"
+                sx={{ color: 'info.main' }}
+              />
+            }
+            label={t('wizard.waitlistAcknowledgeLabel')}
+            sx={{ color: 'text.secondary', mt: 0.5 }}
+          />
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg">
@@ -359,7 +501,9 @@ export const RegistrationWizard = ({
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={!formData.termsAccepted || isSubmitting}
+              disabled={
+                !formData.termsAccepted || isSubmitting || (isEventFull && !waitlistAcknowledged)
+              }
               className="min-w-[200px]"
               data-testid="registration-wizard-submit-btn"
             >

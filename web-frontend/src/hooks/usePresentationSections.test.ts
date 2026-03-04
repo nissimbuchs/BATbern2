@@ -143,6 +143,47 @@ describe('usePresentationSections', () => {
     const sessionSection = result.current.find((s) => s.type === 'session');
     expect(sessionSection?.session?.sessionSlug).toBe('session-1');
   });
+
+  test('inserts one teaser-image section per image after topic-reveal, before agenda-preview (Story 10.22 AC5)', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        { id: 'img-1', imageUrl: 'https://cdn.batbern.ch/t1.jpg', displayOrder: 0 },
+        { id: 'img-2', imageUrl: 'https://cdn.batbern.ch/t2.jpg', displayOrder: 1 },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+    const teaserIdx = types.indexOf('topic-reveal');
+    const agendaIdx = types.indexOf('agenda-preview');
+
+    expect(teaserIdx).toBeGreaterThan(-1);
+    expect(agendaIdx).toBeGreaterThan(teaserIdx);
+    // Two teaser-image sections between topic-reveal and agenda-preview
+    const between = types.slice(teaserIdx + 1, agendaIdx);
+    expect(between).toEqual(['teaser-image', 'teaser-image']);
+
+    // Sections carry imageUrl
+    const teaserSections = result.current.filter((s) => s.type === 'teaser-image');
+    expect(teaserSections[0].imageUrl).toBe('https://cdn.batbern.ch/t1.jpg');
+    expect(teaserSections[1].imageUrl).toBe('https://cdn.batbern.ch/t2.jpg');
+  });
+
+  test('teaser-image sections are sorted by displayOrder ascending', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        { id: 'img-b', imageUrl: 'https://cdn.batbern.ch/b.jpg', displayOrder: 1 },
+        { id: 'img-a', imageUrl: 'https://cdn.batbern.ch/a.jpg', displayOrder: 0 },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const teaserSections = result.current.filter((s) => s.type === 'teaser-image');
+    expect(teaserSections[0].imageUrl).toBe('https://cdn.batbern.ch/a.jpg');
+    expect(teaserSections[1].imageUrl).toBe('https://cdn.batbern.ch/b.jpg');
+  });
 });
 
 describe('getPreBreakSessionSlugs', () => {

@@ -86,6 +86,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                // Story 10.21: Public event photo endpoints (AC4, AC5)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()
+
                 // Story 4.2 (BAT-109): Public archive browsing endpoint
                 .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
 
@@ -144,6 +148,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
+                // Story 10.12: Self-service deregistration (token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister/by-email").permitAll()
+
+                // Story 10.16: AI feature flag endpoint (public — no auth required)
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()

@@ -440,5 +440,29 @@
   },
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
+  },
+  "newsletter": {
+    "templateSelect": {
+      "label": "[MISSING] Vorlage",
+      "createNew": "[MISSING] Neue Vorlage erstellen"
+    }
+  },
+  "aiAssist": {
+    "generateDescription": "✨ Beschreibung generieren",
+    "regenerateDescription": "↻ Neu generieren",
+    "generateImage": "✨ Titelbild generieren",
+    "regenerateImage": "↻ Neu generieren",
+    "analyzeAbstract": "Abstract analysieren",
+    "reanalyze": "Neu analysieren",
+    "useImage": "Bild verwenden",
+    "cancelImage": "Abbrechen",
+    "error": "KI-Generierung fehlgeschlagen, bitte manuell eingeben",
+    "disabled": "KI-Funktion ist deaktiviert",
+    "generating": "Generieren...",
+    "noPromotion": "Keine Produktwerbung",
+    "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
+    "shortenedAbstract": "Gekürzter Abstract",
+    "words": "Wörter",
+    "copyShortened": "Gekürzten Abstract kopieren"
   }
 }

@@ -2,6 +2,7 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.EventTask;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -89,6 +90,19 @@ public interface EventTaskRepository extends JpaRepository<EventTask, UUID> {
      * @return list of tasks due in the window, not completed, with an assignee
      */
     @Query("SELECT t FROM EventTask t WHERE t.dueDate >= :from AND t.dueDate < :to "
-            + "AND t.status != 'completed' AND t.assignedOrganizerUsername IS NOT NULL")
+            + "AND t.status NOT IN ('completed', 'cancelled') AND t.assignedOrganizerUsername IS NOT NULL")
     List<EventTask> findTasksDueForReminder(@Param("from") Instant from, @Param("to") Instant to);
+
+    /**
+     * Bulk-cancel all non-completed, non-cancelled tasks for an event being archived.
+     * Story 10.18: Event Archival Task &amp; Notification Cleanup (AC1).
+     *
+     * @param eventId the event UUID
+     * @return number of tasks updated
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE EventTask t SET t.status = 'cancelled', t.cancelledReason = 'Event archived', "
+            + "t.cancelledAt = CURRENT_TIMESTAMP WHERE t.eventId = :eventId "
+            + "AND t.status NOT IN ('completed', 'cancelled')")
+    int cancelOpenTasksForEvent(@Param("eventId") UUID eventId);
 }

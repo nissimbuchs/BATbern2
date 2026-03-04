@@ -266,6 +266,45 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    @DisplayName("POST /events/{code}/newsletter/preview — with templateKey → 404 not 400 (field is accepted)")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void previewNewsletter_withTemplateKey_fieldAccepted_returns404() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de", "templateKey", "custom-newsletter");
+
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound()); // 404 = event not found, NOT 400 = field rejected
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/send — with templateKey → 404 not 400 (field is accepted)")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void sendNewsletter_withTemplateKey_fieldAccepted_returns404() throws Exception {
+        Map<String, Object> body = Map.of("isReminder", false, "locale", "de", "templateKey", "custom-newsletter");
+
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound()); // 404 = event not found, NOT 400 = field rejected
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/preview — null templateKey accepted (backward compat)")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void previewNewsletter_withNullTemplateKey_backwardCompatible_returns404() throws Exception {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("isReminder", false);
+        body.put("locale", "de");
+        body.put("templateKey", null);
+
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound()); // null templateKey accepted → uses default
+    }
+
+    @Test
     @DisplayName("GET /events/{code}/newsletter/history — non-organizer → 403")
     @WithMockUser(username = "user", roles = "USER")
     void getHistory_nonOrganizer_returns403() throws Exception {

@@ -82,7 +82,11 @@
       "acceptTerms": "Sinun täytyy hyväksyä käyttöehdot rekisteröityäksesi.",
       "failed": "Rekisteröinti epäonnistui. Yritä uudelleen."
     },
-    "cancelConfirm": "Haluatko varmasti peruuttaa rekisteröinnin?"
+    "cancelConfirm": "Haluatko varmasti peruuttaa rekisteröinnin?",
+    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
+    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
+    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
+    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
   },
   "personalDetails": {
     "title": "Henkilökohtaiset tiedot",
@@ -186,5 +190,46 @@
     "noResults": "Olemassa olevaa yritystä ei löydy",
     "createNew": "Voit jatkaa \"{{value}}\" uutena yrityksenä",
     "minChars": "Kirjoita vähintään 2 merkkiä hakua varten"
+  },
+  "registrationStatusBanner": {
+    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
+    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
+    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
+    "cancelled": "[MISSING] Your registration was cancelled.",
+    "manageLink": "[MISSING] Manage Registration",
+    "registerAgain": "[MISSING] Register again",
+    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "[MISSING] You are already registered for this event",
+    "goBack": "[MISSING] Go back",
+    "registerAgain": "[MISSING] Register again"
+  },
+  "deregistration": {
+    "page": {
+      "verifying": "[MISSING] Verifying your cancellation link…",
+      "title": "[MISSING] Cancel Registration",
+      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
+      "confirmButton": "[MISSING] Yes, cancel my registration",
+      "goBack": "[MISSING] Go back",
+      "successTitle": "[MISSING] Registration Cancelled",
+      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
+      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
+      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+    },
+    "modal": {
+      "title": "[MISSING] Cancel Registration",
+      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
+      "emailLabel": "[MISSING] Email address",
+      "emailError": "[MISSING] Please enter a valid email address",
+      "submitButton": "[MISSING] Send cancellation link",
+      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+    },
+    "homepage": {
+      "cancelLink": "[MISSING] Cancel your registration"
+    },
+    "wizard": {
+      "cancelButton": "[MISSING] Cancel my registration"
+    }
   }
 }

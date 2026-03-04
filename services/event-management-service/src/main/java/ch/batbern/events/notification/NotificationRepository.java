@@ -3,6 +3,9 @@ package ch.batbern.events.notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -45,4 +48,16 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
      * Find notifications by status created before a certain time (for cleanup jobs)
      */
     java.util.List<Notification> findByStatusAndCreatedAtBefore(String status, java.time.Instant createdAt);
+
+    /**
+     * Bulk-dismiss all unread notifications for an event being archived.
+     * Story 10.18: Event Archival Task &amp; Notification Cleanup (AC4).
+     *
+     * @param eventCode the event code (e.g. "BATbern42")
+     * @return number of notifications updated
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Notification n SET n.status = 'READ' WHERE n.eventCode = :eventCode "
+            + "AND n.status != 'READ'")
+    int dismissNotificationsForEvent(@Param("eventCode") String eventCode);
 }

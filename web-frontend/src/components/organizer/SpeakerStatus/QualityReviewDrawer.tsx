@@ -27,24 +27,27 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Stack,
+  Snackbar,
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
   AttachFile as AttachFileIcon,
+  AutoAwesome,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
+import { useAiAnalyzeAbstract } from '@/hooks/useAiAssist';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { ReviewRequest, SpeakerContentResponse } from '@/services/speakerContentService';
 
@@ -55,7 +58,11 @@ interface QualityReviewDrawerProps {
   eventCode: string;
 }
 
-const MAX_ABSTRACT_LENGTH = 1000;
+function getScoreColor(score: number): 'error' | 'warning' | 'success' {
+  if (score <= 4) return 'error';
+  if (score <= 7) return 'warning';
+  return 'success';
+}
 
 export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
   open,
@@ -69,6 +76,11 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackError, setFeedbackError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
+
+  const { aiContentEnabled } = useFeatureFlags();
+  const analysisMutation = useAiAnalyzeAbstract(speaker?.id ?? '');
 
   // Fetch speaker content when drawer opens
   const { data: content, isLoading } = useQuery<SpeakerContentResponse>({
@@ -83,6 +95,9 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
       setRejecting(false);
       setFeedback('');
       setFeedbackError('');
+      setCopied(false);
+      setAiErrorMessage(null);
+      analysisMutation.reset();
     }
   }, [open]);
 
@@ -127,246 +142,322 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
     });
   };
 
-  // Quality criteria checks (null-safe: API may return null for presentationAbstract)
+  const handleAnalyze = () => {
+    setAiErrorMessage(null);
+    analysisMutation.mutate(
+      { abstract: abstract, speakerName: speaker?.speakerName },
+      {
+        onError: (err) => {
+          setAiErrorMessage(err.message);
+        },
+      }
+    );
+  };
+
+  const handleCopyShortened = () => {
+    if (analysisMutation.data?.shortenedAbstract) {
+      navigator.clipboard.writeText(analysisMutation.data.shortenedAbstract).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
+
   const abstract = content?.presentationAbstract || '';
-  const qualityCriteria = content
-    ? [
-        {
-          label: t('qualityReview.criteria.abstractLength'),
-          passed: abstract.length <= MAX_ABSTRACT_LENGTH,
-          value: `${abstract.length} / ${MAX_ABSTRACT_LENGTH} ${t('qualityReview.characters')}`,
-        },
-        {
-          label: t('qualityReview.criteria.lessonsLearned'),
-          // English: lessons learned, lesson learned
-          // German: Erkenntnisse, Lerneffekte, Erfahrungen, Lehren
-          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract),
-          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract)
-            ? t('qualityReview.detected')
-            : t('qualityReview.notDetected'),
-        },
-        {
-          label: t('qualityReview.criteria.noPromotion'),
-          // English: buy, purchase, discount, sale, order now, contact us
-          // German: kaufen, erwerben, bestellen, rabatt, ermäßigung, verkauf, angebot, jetzt bestellen, kontaktieren
-          passed:
-            !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              abstract
-            ),
-          value:
-            !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              abstract
-            )
-              ? t('qualityReview.passed')
-              : t('qualityReview.promotionDetected'),
-        },
-      ]
-    : [];
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: 600 },
-          p: 3,
-        },
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">{t('qualityReview.title')}</Typography>
-        <IconButton onClick={onClose} edge="end">
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <BATbernLoader size={96} />
+    <>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 600 },
+            p: 3,
+          },
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5">{t('qualityReview.title')}</Typography>
+          <IconButton onClick={onClose} edge="end">
+            <CloseIcon />
+          </IconButton>
         </Box>
-      ) : content ? (
-        <>
-          {/* Speaker Information */}
-          <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t('common:role.speaker')}
-            </Typography>
-            <Typography variant="h6">{speaker?.speakerName}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {speaker?.company}
-            </Typography>
-            <Chip
-              label={speaker?.status?.replace(/_/g, ' ')}
-              size="small"
-              color="primary"
-              sx={{ mt: 1 }}
-            />
-          </Paper>
 
-          {/* Presentation Information */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t('qualityReview.presentationTitle')}
-            </Typography>
-            <Typography variant="h6" gutterBottom>
-              {content.presentationTitle || t('qualityReview.noTitle', 'Untitled')}
-            </Typography>
+        <Divider sx={{ mb: 3 }} />
 
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              {t('qualityReview.abstract')}
-            </Typography>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {content.presentationAbstract ||
-                t('qualityReview.noAbstract', 'No abstract provided')}
-            </Typography>
-          </Paper>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <BATbernLoader size={96} />
+          </Box>
+        ) : content ? (
+          <>
+            {/* Speaker Information */}
+            <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {t('common:role.speaker')}
+              </Typography>
+              <Typography variant="h6">{speaker?.speakerName}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {speaker?.company}
+              </Typography>
+              <Chip
+                label={speaker?.status?.replace(/_/g, ' ')}
+                size="small"
+                color="primary"
+                sx={{ mt: 1 }}
+              />
+            </Paper>
 
-          {/* Material Upload */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t('qualityReview.material', 'Presentation Material')}
-            </Typography>
-            {content.hasMaterial && content.materialUrl ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                <AttachFileIcon color="primary" fontSize="small" />
-                <Button
-                  variant="text"
-                  href={content.materialUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ textTransform: 'none' }}
-                >
-                  {content.materialFileName ||
-                    t('qualityReview.downloadMaterial', 'Download Material')}
-                </Button>
+            {/* Presentation Information */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {t('qualityReview.presentationTitle')}
+              </Typography>
+              <Typography variant="h6" gutterBottom>
+                {content.presentationTitle || t('qualityReview.noTitle', 'Untitled')}
+              </Typography>
+
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
+                {t('qualityReview.abstract')}
+              </Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {content.presentationAbstract ||
+                  t('qualityReview.noAbstract', 'No abstract provided')}
+              </Typography>
+            </Paper>
+
+            {/* Material Upload */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {t('qualityReview.material', 'Presentation Material')}
+              </Typography>
+              {content.hasMaterial && content.materialUrl ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <AttachFileIcon color="primary" fontSize="small" />
+                  <Button
+                    variant="text"
+                    href={content.materialUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ textTransform: 'none' }}
+                  >
+                    {content.materialFileName ||
+                      t('qualityReview.downloadMaterial', 'Download Material')}
+                  </Button>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  {t('qualityReview.noMaterial', 'No material uploaded yet')}
+                </Typography>
+              )}
+            </Paper>
+
+            {/* Quality Criteria */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography variant="subtitle2">{t('qualityReview.qualityCriteria')}</Typography>
+                {aiContentEnabled && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={
+                      analysisMutation.isPending ? (
+                        <CircularProgress size={14} color="inherit" />
+                      ) : (
+                        <AutoAwesome fontSize="small" />
+                      )
+                    }
+                    disabled={analysisMutation.isPending || !abstract}
+                    onClick={handleAnalyze}
+                  >
+                    {analysisMutation.isPending
+                      ? t('aiAssist.generating', 'Generieren...')
+                      : analysisMutation.isSuccess
+                        ? t('aiAssist.reanalyze', 'Neu analysieren')
+                        : t('aiAssist.analyzeAbstract', 'Abstract analysieren')}
+                  </Button>
+                )}
+              </Box>
+
+              {analysisMutation.isSuccess && analysisMutation.data ? (
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  {/* No-promotion score */}
+                  <Box>
+                    <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                      <Chip
+                        label={`${analysisMutation.data.noPromotionScore}/10`}
+                        color={getScoreColor(analysisMutation.data.noPromotionScore)}
+                        size="small"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('aiAssist.noPromotion', 'Keine Produktwerbung')}
+                      </Typography>
+                    </Stack>
+                    {analysisMutation.data.noPromotionFeedback && (
+                      <Typography variant="body2" sx={{ pl: 0.5 }}>
+                        {analysisMutation.data.noPromotionFeedback}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Lessons-learned score */}
+                  <Box>
+                    <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                      <Chip
+                        label={`${analysisMutation.data.lessonsLearnedScore}/10`}
+                        color={getScoreColor(analysisMutation.data.lessonsLearnedScore)}
+                        size="small"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('aiAssist.lessonsLearned', 'Lessons Learned aus Praxis')}
+                      </Typography>
+                    </Stack>
+                    {analysisMutation.data.lessonsLearnedFeedback && (
+                      <Typography variant="body2" sx={{ pl: 0.5 }}>
+                        {analysisMutation.data.lessonsLearnedFeedback}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Word count + shortened abstract */}
+                  {analysisMutation.data.shortenedAbstract && (
+                    <Accordion disableGutters>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography variant="subtitle2">
+                          {t('aiAssist.shortenedAbstract', 'Gekürzter Abstract')}{' '}
+                          <Typography component="span" variant="caption" color="text.secondary">
+                            ({analysisMutation.data.wordCount} {t('aiAssist.words', 'Wörter')} →
+                            max. 150)
+                          </Typography>
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>
+                          {analysisMutation.data.shortenedAbstract}
+                        </Typography>
+                        <Button size="small" variant="outlined" onClick={handleCopyShortened}>
+                          {copied
+                            ? '✓ Kopiert'
+                            : t('aiAssist.copyShortened', 'Gekürzten Abstract kopieren')}
+                        </Button>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
+                </Stack>
+              ) : null}
+            </Paper>
+
+            {/* Error Message */}
+            {reviewMutation.isError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {reviewMutation.error instanceof Error
+                  ? reviewMutation.error.message
+                  : t('qualityReview.errors.unknown')}
+              </Alert>
+            )}
+
+            {/* Reject Feedback Form */}
+            {rejecting ? (
+              <Box sx={{ mb: 2 }}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  {t('qualityReview.rejectInstructions')}
+                </Alert>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label={t('qualityReview.feedbackLabel')}
+                  value={feedback}
+                  onChange={(e) => {
+                    setFeedback(e.target.value);
+                    setFeedbackError('');
+                  }}
+                  error={!!feedbackError}
+                  helperText={feedbackError}
+                  placeholder={t('qualityReview.feedbackPlaceholder')}
+                  sx={{ mb: 2 }}
+                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={handleSubmitReject}
+                    disabled={reviewMutation.isPending}
+                    startIcon={
+                      reviewMutation.isPending ? <CircularProgress size={20} /> : <ThumbDownIcon />
+                    }
+                    fullWidth
+                  >
+                    {reviewMutation.isPending
+                      ? t('qualityReview.submitting')
+                      : t('qualityReview.confirmReject')}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={handleCancelReject}
+                    disabled={reviewMutation.isPending}
+                    fullWidth
+                  >
+                    {t('common:actions.cancel')}
+                  </Button>
+                </Box>
               </Box>
             ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                {t('qualityReview.noMaterial', 'No material uploaded yet')}
-              </Typography>
-            )}
-          </Paper>
-
-          {/* Quality Criteria */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('qualityReview.qualityCriteria')}
-            </Typography>
-            <List dense>
-              {qualityCriteria.map((criterion, index) => (
-                <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    {criterion.passed ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <WarningIcon color="warning" fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={criterion.label}
-                    secondary={criterion.value}
-                    primaryTypographyProps={{ variant: 'body2' }}
-                    secondaryTypographyProps={{ variant: 'caption' }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-
-          {/* Error Message */}
-          {reviewMutation.isError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {reviewMutation.error instanceof Error
-                ? reviewMutation.error.message
-                : t('qualityReview.errors.unknown')}
-            </Alert>
-          )}
-
-          {/* Reject Feedback Form */}
-          {rejecting ? (
-            <Box sx={{ mb: 2 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                {t('qualityReview.rejectInstructions')}
-              </Alert>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label={t('qualityReview.feedbackLabel')}
-                value={feedback}
-                onChange={(e) => {
-                  setFeedback(e.target.value);
-                  setFeedbackError('');
-                }}
-                error={!!feedbackError}
-                helperText={feedbackError}
-                placeholder={t('qualityReview.feedbackPlaceholder')}
-                sx={{ mb: 2 }}
-              />
+              /* Action Buttons */
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   variant="contained"
-                  color="error"
-                  onClick={handleSubmitReject}
+                  color="success"
+                  onClick={handleApprove}
                   disabled={reviewMutation.isPending}
                   startIcon={
-                    reviewMutation.isPending ? <CircularProgress size={20} /> : <ThumbDownIcon />
+                    reviewMutation.isPending ? <CircularProgress size={20} /> : <ThumbUpIcon />
                   }
                   fullWidth
+                  data-testid="approve-content-button"
                 >
                   {reviewMutation.isPending
-                    ? t('qualityReview.submitting')
-                    : t('qualityReview.confirmReject')}
+                    ? t('qualityReview.approving')
+                    : t('qualityReview.approve')}
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={handleCancelReject}
+                  color="error"
+                  onClick={handleRejectClick}
                   disabled={reviewMutation.isPending}
+                  startIcon={<ThumbDownIcon />}
                   fullWidth
                 >
-                  {t('common:actions.cancel')}
+                  {t('qualityReview.reject')}
                 </Button>
               </Box>
-            </Box>
-          ) : (
-            /* Action Buttons */
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={handleApprove}
-                disabled={reviewMutation.isPending}
-                startIcon={
-                  reviewMutation.isPending ? <CircularProgress size={20} /> : <ThumbUpIcon />
-                }
-                fullWidth
-                data-testid="approve-content-button"
-              >
-                {reviewMutation.isPending
-                  ? t('qualityReview.approving')
-                  : t('qualityReview.approve')}
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleRejectClick}
-                disabled={reviewMutation.isPending}
-                startIcon={<ThumbDownIcon />}
-                fullWidth
-              >
-                {t('qualityReview.reject')}
-              </Button>
-            </Box>
-          )}
-        </>
-      ) : (
-        <Alert severity="warning">{t('qualityReview.noContent')}</Alert>
-      )}
-    </Drawer>
+            )}
+          </>
+        ) : (
+          <Alert severity="warning">{t('qualityReview.noContent')}</Alert>
+        )}
+      </Drawer>
+
+      <Snackbar
+        open={!!aiErrorMessage}
+        autoHideDuration={6000}
+        onClose={() => setAiErrorMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setAiErrorMessage(null)}>
+          {aiErrorMessage ?? t('aiAssist.error', 'AI generation failed, please write manually')}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };

@@ -8,6 +8,8 @@ import ch.batbern.events.dto.generated.BatchRegistrationRequest;
 import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.generated.FailedRegistration;
+import ch.batbern.events.dto.generated.MyRegistrationResponse;
+import ch.batbern.events.dto.generated.MyRegistrationResponse.StatusEnum;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -21,11 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +58,8 @@ public class RegistrationService {
     @SuppressWarnings("unused") // Story 2.2a Task B12 - Will be used when email confirmation is implemented
     private final RegistrationEmailService registrationEmailService;
     private final NewsletterSubscriberService newsletterSubscriberService;
+    private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
+    private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -104,8 +111,24 @@ public class RegistrationService {
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
                 return registration;
+            } else if ("waitlist".equalsIgnoreCase(registration.getStatus())) {
+                // Story 10.11 (T10.4): Duplicate waitlist registration — do NOT create another entry.
+                // Return existing and resend waitlist-confirmation email.
+                log.info("Found waitlist registration for event: {} by user: {},"
+                        + " will resend waitlist-confirmation email", eventCode, username);
+                registration.setEventCode(eventCode);
+                waitlistPromotionEmailService.sendWaitlistConfirmationEmail(registration);
+                return registration;
+            } else if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
+                // Story 10.10 (T4.6): Allow re-registration for cancelled users.
+                // Delete the cancelled record and fall through to create a new registration.
+                // This replaces the confusing IllegalStateException that users previously experienced.
+                registrationRepository.delete(registration);
+                log.info("Deleted cancelled registration for event: {} by user: {}, allowing re-registration",
+                        eventCode, username);
+                // Fall through to create a new registration below
             } else {
-                // Registration exists and is confirmed/cancelled - reject duplicate
+                // confirmed — reject duplicate
                 log.warn("Duplicate registration attempt for event: {} by user: {} (status: {})",
                         eventCode, username, registration.getStatus());
                 throw new IllegalStateException(
@@ -117,8 +140,26 @@ public class RegistrationService {
         String registrationCode = generateUniqueRegistrationCode(eventCode);
         log.debug("Generated registration code: {}", registrationCode);
 
+        // Story 10.11 (T10.1): Capacity enforcement
+        // Count active (registered + confirmed) registrations; if full → place on waitlist
+        Integer capacity = event.getRegistrationCapacity();
+        String registrationStatus = "registered"; // default
+        Integer waitlistPosition = null;
+        if (capacity != null) {
+            long activeCount = registrationRepository.countByEventIdAndStatusIn(
+                    event.getId(), List.of("registered", "confirmed"));
+            if (activeCount >= capacity) {
+                registrationStatus = "waitlist";
+                waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());
+                log.info("Event {} is at capacity ({}/{}), placing {} on waitlist at position {}",
+                        eventCode, activeCount, capacity, username, waitlistPosition);
+            }
+        }
+
         // 4. Create and save registration (ADR-004: No denormalized user data)
         // Story 4.1.5c: Status starts as "registered", becomes "confirmed" after email confirmation
+        // Story 10.11: Status may be "waitlist" when event is full
+        // Story 10.12: Generate deregistration token (non-expiring, never rotated)
         // Performance: Populate search cache fields for database-level filtering
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
@@ -130,7 +171,9 @@ public class RegistrationService {
                 .attendeeLastName(userResponse.getUser().getLastName())
                 .attendeeEmail(userResponse.getUser().getEmail())
                 .attendeeCompanyId(userResponse.getUser().getCompanyId())
-                .status("registered") // Status before email confirmation (lowercase per DB constraint)
+                .status(registrationStatus) // "registered" or "waitlist" (lowercase per DB constraint)
+                .waitlistPosition(waitlistPosition) // null for registered, 1-based for waitlist
+                .deregistrationToken(UUID.randomUUID()) // Story 10.12: self-service deregistration token
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();
 
@@ -149,6 +192,12 @@ public class RegistrationService {
                 // Already subscribed — silently ignore (AC6)
                 log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
             }
+        }
+
+        // Story 10.11 (T10.3): For waitlist registrations, send waitlist-confirmation email now.
+        // Normal registrations: confirmation email sent by controller after token generation.
+        if ("waitlist".equals(saved.getStatus())) {
+            waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
         }
 
         // Story 4.1.5c: Email sending moved to EventController (needs JWT token)
@@ -228,6 +277,42 @@ public class RegistrationService {
                     .attendeeCompany(null)
                     .build();
         }
+    }
+
+    /**
+     * Get the authenticated user's registration status for a specific event.
+     * <p>
+     * Story 10.10: GET /events/{eventCode}/my-registration (AC1)
+     * <p>
+     * ADR-004: Response is minimal — no user profile fields (firstName, lastName, email).
+     * ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     *
+     * @param eventCode             Event code (e.g., "BATbern142")
+     * @param authenticatedUsername Username extracted from SecurityContext
+     * @return Optional containing MyRegistrationResponse if a registration exists, empty if not
+     */
+    @Transactional(readOnly = true)
+    public Optional<MyRegistrationResponse> getMyRegistration(String eventCode, String authenticatedUsername) {
+        log.debug("Getting registration for event: {} and user: {}", eventCode, authenticatedUsername);
+
+        return registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, authenticatedUsername)
+                .map(registration -> {
+                    // Map DB status to API enum. DB uses 'waitlisted'; API enum uses WAITLIST.
+                    String dbStatus = registration.getStatus() != null
+                            ? registration.getStatus().toUpperCase() : null;
+                    if ("WAITLISTED".equals(dbStatus)) {
+                        dbStatus = "WAITLIST";
+                    }
+                    StatusEnum statusEnum = dbStatus != null ? StatusEnum.fromValue(dbStatus) : null;
+                    OffsetDateTime registrationDate = registration.getRegistrationDate() != null
+                            ? registration.getRegistrationDate().atOffset(ZoneOffset.UTC) : null;
+                    return new MyRegistrationResponse(
+                            registration.getRegistrationCode(),
+                            eventCode,
+                            statusEnum,
+                            registrationDate)
+                            .waitlistPosition(registration.getWaitlistPosition()); // AC13 (Story 10.11)
+                });
     }
 
     /**
@@ -340,6 +425,30 @@ public class RegistrationService {
                 response.getFailedRegistrations().size());
 
         return response;
+    }
+
+    /**
+     * Soft-cancel a registration and trigger waitlist promotion.
+     * <p>
+     * Story 10.12 (AC4, AC5): Cancels a registration by setting status = "cancelled"
+     * (no hard delete). After persisting, calls WaitlistPromotionService to promote
+     * the next waitlisted attendee if one exists.
+     * <p>
+     * Called by:
+     * - DeregistrationService (token-based self-service flow)
+     * - DeregistrationService (by-email flow — sends link, promotion happens on actual cancel)
+     * - EventController (organizer cancel — replaces hard-delete)
+     * - EventController JWT-token cancel endpoint (anonymous cancellation flow)
+     *
+     * @param registration The registration to cancel (must not be null, must have eventId)
+     */
+    @Transactional
+    public void cancelRegistration(Registration registration) {
+        registration.setStatus("cancelled");
+        registrationRepository.save(registration);
+        waitlistPromotionService.promoteFromWaitlist(registration.getEventId());
+        log.info("Registration {} cancelled; waitlist promotion triggered for event {}",
+                registration.getRegistrationCode(), registration.getEventId());
     }
 
     /**

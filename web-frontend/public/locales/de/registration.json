@@ -82,7 +82,11 @@
       "acceptTerms": "Sie müssen den Nutzungsbedingungen zustimmen, um sich anzumelden.",
       "failed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
     },
-    "cancelConfirm": "Möchten Sie die Anmeldung wirklich abbrechen?"
+    "cancelConfirm": "Möchten Sie die Anmeldung wirklich abbrechen?",
+    "waitlistWarning": "Diese Veranstaltung ist ausgebucht. Sie werden auf die Warteliste gesetzt.",
+    "waitlistAcknowledgeLabel": "Ich verstehe, dass ich auf der Warteliste stehe",
+    "waitlistSuccessTitle": "Sie stehen auf der Warteliste!",
+    "waitlistSuccessBody": "Sie sind auf Platz #{{position}} der Warteliste. Wir informieren Sie, falls ein Platz frei wird."
   },
   "personalDetails": {
     "title": "Persönliche Informationen",
@@ -186,5 +190,46 @@
     "noResults": "Kein bestehendes Unternehmen gefunden",
     "createNew": "Sie können mit \"{{value}}\" als neuem Unternehmen fortfahren",
     "minChars": "Mindestens 2 Zeichen eingeben, um zu suchen"
+  },
+  "registrationStatusBanner": {
+    "confirmed": "Ihre Anmeldung ist bestätigt. Wir freuen uns auf Sie!",
+    "registered": "Sie sind für diese Veranstaltung angemeldet. Prüfen Sie Ihre E-Mail für die Bestätigung.",
+    "waitlist": "Sie stehen auf der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
+    "waitlistWithPosition": "Sie stehen auf Platz #{{position}} der Warteliste. Wir benachrichtigen Sie, falls ein Platz frei wird.",
+    "cancelled": "Ihre Anmeldung wurde storniert.",
+    "manageLink": "Anmeldung verwalten",
+    "registerAgain": "Erneut anmelden"
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "Sie sind bereits für diese Veranstaltung angemeldet",
+    "goBack": "Zurück",
+    "registerAgain": "Erneut anmelden"
+  },
+  "deregistration": {
+    "page": {
+      "verifying": "Ihr Abmelde-Link wird überprüft…",
+      "title": "Anmeldung stornieren",
+      "confirmQuestion": "Hallo {{name}}, möchten Sie Ihre Anmeldung für {{eventTitle}} am {{eventDate}} wirklich stornieren?",
+      "confirmButton": "Ja, Anmeldung stornieren",
+      "goBack": "Zurück",
+      "successTitle": "Anmeldung storniert",
+      "successBody": "Ihre Anmeldung wurde storniert. Ihr Platz wurde für die nächste Person auf der Warteliste freigegeben.",
+      "invalidToken": "Dieser Abmelde-Link ist ungültig oder wurde bereits verwendet. Bitte kontaktieren Sie uns, wenn Sie Hilfe benötigen.",
+      "alreadyCancelled": "Ihre Anmeldung wurde bereits storniert."
+    },
+    "modal": {
+      "title": "Anmeldung stornieren",
+      "body": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Abmelde-Link.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "submitButton": "Abmelde-Link senden",
+      "successMessage": "Falls Sie für diese Veranstaltung angemeldet sind, erhalten Sie in Kürze eine E-Mail mit einem Abmelde-Link."
+    },
+    "homepage": {
+      "cancelLink": "Anmeldung stornieren"
+    },
+    "wizard": {
+      "cancelButton": "Anmeldung stornieren"
+    }
   }
 }

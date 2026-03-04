@@ -44,6 +44,7 @@ public class EventWorkflowStateMachine {
     private final DomainEventPublisher eventPublisher;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
+    private final EventArchivalCleanupService eventArchivalCleanupService;
 
     /**
      * Transitions an event to a target workflow state (backward compatible).
@@ -116,6 +117,11 @@ public class EventWorkflowStateMachine {
 
         // Persist
         Event savedEvent = eventRepository.save(event);
+
+        // Run archival cleanup when transitioning to ARCHIVED (Story 10.18)
+        if (targetState == EventWorkflowState.ARCHIVED) {
+            eventArchivalCleanupService.cleanup(savedEvent.getId(), eventCode);
+        }
 
         // Publish domain event with override metadata
         EventWorkflowTransitionEvent transitionEvent = new EventWorkflowTransitionEvent(

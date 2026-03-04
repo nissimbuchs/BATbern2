@@ -80,6 +80,14 @@ public class Event {
     @Column(name = "venue_capacity", nullable = false)
     private Integer venueCapacity;
 
+    /**
+     * Story 10.11: Optional organizer-configured registration limit.
+     * NULL = unlimited. Distinct from venueCapacity (fire-code limit).
+     * Can be ≤ venueCapacity. Enforced at registration creation time.
+     */
+    @Column(name = "registration_capacity")
+    private Integer registrationCapacity;
+
     @NotBlank(message = "Organizer username is required")
     @Column(name = "organizer_username", nullable = false, length = 100)
     private String organizerUsername;

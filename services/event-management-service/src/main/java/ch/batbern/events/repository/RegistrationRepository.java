@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -128,6 +129,99 @@ public interface RegistrationRepository
     @Query("SELECT r.attendeeUsername FROM Registration r JOIN Event e "
             + "ON r.eventId = e.id WHERE e.eventCode = :eventCode")
     List<String> findUsernamesByEventCode(@Param("eventCode") String eventCode);
+
+    /**
+     * Find registration for a specific event (by event code) and authenticated user.
+     * Story 10.10: GET /events/{eventCode}/my-registration (AC1)
+     *
+     * Uses existing indices:
+     * - idx_registrations_event_id (via JOIN to events table on event code)
+     * - idx_registrations_attendee_username
+     *
+     * @param eventCode Event code (e.g., "BATbern142")
+     * @param username  Authenticated user's username (Cognito sub or username)
+     * @return Registration if found for this event and user
+     */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE e.eventCode = :eventCode AND r.attendeeUsername = :username")
+    Optional<Registration> findByEventCodeAndAttendeeUsername(
+            @Param("eventCode") String eventCode,
+            @Param("username") String username);
+
+    // ── Story 10.12: Deregistration Methods ───────────────────────────────────
+
+    /**
+     * Find a registration by its self-service deregistration token.
+     * Story 10.12 (T4.1): Token-based lookup for the public deregistration flow.
+     *
+     * @param token Deregistration UUID token
+     * @return Registration if found (may be cancelled)
+     */
+    Optional<Registration> findByDeregistrationToken(UUID token);
+
+    /**
+     * Find a registration by attendee email and event code.
+     * Story 10.12 (T4.2): Used for the by-email deregistration flow.
+     *
+     * @param email     Attendee email (denormalized search field)
+     * @param eventCode Event code (joined from events table)
+     * @return Registration if found for this email and event
+     */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE r.attendeeEmail = :email AND e.eventCode = :eventCode")
+    Optional<Registration> findByAttendeeEmailAndEventCode(
+            @Param("email") String email,
+            @Param("eventCode") String eventCode);
+
+    // ── Story 10.11: Waitlist & Capacity Methods ───────────────────────────────
+
+    /**
+     * Count active registrations (registered + confirmed) for an event.
+     * T5.1 — Used for capacity enforcement in RegistrationService.createRegistration().
+     */
+    long countByEventIdAndStatusIn(UUID eventId, List<String> statuses);
+
+    /**
+     * Find all waitlisted registrations for an event ordered by position (FIFO).
+     * T5.2 — Used for waitlist display and management.
+     */
+    @Query("SELECT r FROM Registration r WHERE r.eventId = :eventId AND r.status = 'waitlist' "
+            + "ORDER BY r.waitlistPosition ASC")
+    List<Registration> findWaitlistByEventIdOrdered(@Param("eventId") UUID eventId);
+
+    /**
+     * Find the first waitlisted registration (lowest waitlistPosition) for promotion.
+     * T5.3 — Spring Data derived query: finds lowest-position waitlist entry.
+     */
+    Optional<Registration> findTopByEventIdAndStatusOrderByWaitlistPositionAsc(UUID eventId, String status);
+
+    /**
+     * Get the next sequential waitlist position for an event.
+     * T5.4 — MAX(waitlist_position) + 1, or 1 if no waitlist entries exist yet.
+     */
+    @Query("SELECT COALESCE(MAX(r.waitlistPosition), 0) + 1 FROM Registration r "
+            + "WHERE r.eventId = :eventId AND r.status = 'waitlist'")
+    int getNextWaitlistPosition(@Param("eventId") UUID eventId);
+
+    /**
+     * Count registrations by event and single status.
+     * T5.5 — Used to compute waitlistCount for event responses.
+     */
+    long countByEventIdAndStatus(UUID eventId, String status);
+
+    /**
+     * Bulk-cancel all waitlisted registrations for an event being archived.
+     * Story 10.18: Event Archival Task &amp; Notification Cleanup (AC3).
+     *
+     * @param eventId       the event UUID
+     * @param waitlistStatus the exact waitlist status string (e.g. "waitlist")
+     * @return number of registrations updated
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Registration r SET r.status = 'cancelled' WHERE r.eventId = :eventId "
+            + "AND r.status = :waitlistStatus")
+    int cancelWaitlistRegistrationsForEvent(@Param("eventId") UUID eventId,
+                                             @Param("waitlistStatus") String waitlistStatus);
 
     /**
      * Attendance summary per event for a given company.

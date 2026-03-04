@@ -32,6 +32,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock useMyRegistration — default: not registered (no API call side effects)
+vi.mock('@/hooks/useMyRegistration', () => ({
+  useMyRegistration: () => ({ data: null, isLoading: false }),
+}));
+
 // Mock RegistrationWizard component
 vi.mock('@/components/public/Registration/RegistrationWizard', () => ({
   RegistrationWizard: ({

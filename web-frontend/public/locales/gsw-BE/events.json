@@ -11,7 +11,8 @@
       "participants": "Teilnähmer",
       "publishing": "Veröffentlichig",
       "newsletter": "Newsletter",
-      "settings": "Istellige"
+      "settings": "Istellige",
+      "photos": "Fotos"
     },
     "tabsAriaLabel": "Veranstautigsnavigation",
     "overview": {
@@ -32,7 +33,22 @@
       "previewPublic": "Öffentligi Syte vorschau"
     },
     "participantsTab": {
-      "title": "Veranstautigsteilnähmer"
+      "title": "Veranstautigsteilnähmer",
+      "confirmed": "[MISSING] confirmed",
+      "onWaitlist": "[MISSING] on waitlist",
+      "capacityBar": "[MISSING] {{confirmed}} / {{capacity}} confirmed",
+      "waitlistSection": "[MISSING] Waitlist ({{count}})",
+      "waitlistPromote": "[MISSING] Promote to Registered",
+      "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
+      "waitlistPromoteError": "[MISSING] Failed to promote",
+      "waitlistEmpty": "[MISSING] No one on the waitlist",
+      "waitlistTablePosition": "[MISSING] #",
+      "waitlistTableName": "[MISSING] Name",
+      "waitlistTableEmail": "[MISSING] Email",
+      "waitlistTableCompany": "[MISSING] Company",
+      "waitlistTableRegisteredOn": "[MISSING] Registered On",
+      "waitlistTableActions": "[MISSING] Actions",
+      "statusCancelled": "[MISSING] Cancelled"
     },
     "participantTable": {
       "headers": {
@@ -85,7 +101,9 @@
       "moderatorDesc": "Dr Organisator, wo für d'Moderierig vo dere Veranstatig zuständig isch.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgriich aktualisiert",
-      "moderatorUpdateError": "Moderator chöne nid aktualisiert werde."
+      "moderatorUpdateError": "Moderator chöne nid aktualisiert werde.",
+      "capacityLabel": "[MISSING] Registration Capacity",
+      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -112,7 +130,7 @@
       "sendNewsletter": "Newsletter versände",
       "sendReminder": "Erinnerig schicke",
       "confirmSendTitle": "Versand bestätige",
-      "confirmSendBody": "{{type}} an {{count}} Abonnente für d'Veranstatig «{{eventTitle}}» schicke?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter an {{count}} Empfänger gschickt.",
       "sendError": "Versand fehlgschlage. Bitte nomol versuche.",
       "historyDate": "Datum",
@@ -743,5 +761,33 @@
   },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
+  },
+  "eventCard": {
+    "statusChip": {
+      "confirmed": "[MISSING] Confirmed",
+      "registered": "[MISSING] Registered",
+      "waitlist": "[MISSING] Waitlist",
+      "cancelled": "[MISSING] Cancelled"
+    }
+  },
+  "capacity": {
+    "spotsRemaining": "[MISSING] {{count}} spots remaining",
+    "spotsRemaining_one": "[MISSING] 1 spot remaining",
+    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
+    "waitlistCount": "[MISSING] {{count}} on waitlist"
+  },
+  "description": {
+    "heading": "Über disi Veranstautig"
+  },
+  "photos": {
+    "title": "Eventfotos",
+    "uploadButton": "Foto hochladen",
+    "deleteConfirmTitle": "Foto löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Foto löschen möchten? Dies kann nicht rückgängig gemacht werden.",
+    "deleteConfirm": "Löschen",
+    "deleteCancel": "Abbrechen",
+    "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
   }
 }

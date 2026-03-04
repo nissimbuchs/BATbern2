@@ -18,6 +18,7 @@ import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,18 +78,21 @@ public class NewsletterEmailService {
     /**
      * Builds a preview of the newsletter email without sending.
      *
-     * @param event      the event to preview for
-     * @param isReminder whether to render as a reminder (adds "Erinnerung: " prefix)
-     * @param locale     "de" or "en"
+     * @param event       the event to preview for
+     * @param isReminder  whether to render as a reminder (adds "Erinnerung: " prefix)
+     * @param locale      "de" or "en"
+     * @param templateKey optional template key override; null → uses default 'newsletter-event'
      * @return preview with rendered subject and HTML
      */
     @Transactional(readOnly = true)
-    public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale) {
+    public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
+                                              @Nullable String templateKey) {
+        String effectiveKey = resolveTemplateKey(templateKey);
         Map<String, String> vars = buildVariables(event, locale, isReminder, baseUrl + "/unsubscribe?token=PREVIEW");
-        String contentHtml = renderContent(locale, vars);
+        String contentHtml = renderContent(locale, vars, effectiveKey);
         String mergedHtml = emailService.replaceVariables(
                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
-        String subject = buildSubject(event, isReminder, locale, vars);
+        String subject = buildSubject(event, isReminder, locale, vars, effectiveKey);
         int count = (int) subscriberService.getActiveCount();
         return NewsletterPreviewResponse.builder()
                 .subject(subject)
@@ -110,17 +114,20 @@ public class NewsletterEmailService {
      * @param isReminder      whether to use "Reminder: " prefix
      * @param locale          "de" or "en"
      * @param sentByUsername  organizer's username for audit log
+     * @param templateKey     optional template key override; null → uses default 'newsletter-event'
      * @return summary of the send operation
      */
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
-                                                  String locale, String sentByUsername) {
+                                                  String locale, String sentByUsername,
+                                                  @Nullable String templateKey) {
+        String effectiveKey = resolveTemplateKey(templateKey);
         List<NewsletterSubscriber> subscribers = subscriberService.findActiveSubscribers();
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-        String subject = buildSubject(event, isReminder, locale, baseVars);
+        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
 
         // Persist send audit record first (committed immediately — own transaction)
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
-                subscribers.size());
+                subscribers.size(), effectiveKey);
 
         // Per-recipient send + recipient audit row (outside main transaction)
         for (NewsletterSubscriber subscriber : subscribers) {
@@ -129,7 +136,7 @@ public class NewsletterEmailService {
                 String unsubscribeLink = baseUrl + "/unsubscribe?token=" + subscriber.getUnsubscribeToken();
                 Map<String, String> recipientVars = new HashMap<>(baseVars);
                 recipientVars.put("unsubscribeLink", unsubscribeLink);
-                String contentHtml = renderContent(locale, recipientVars);
+                String contentHtml = renderContent(locale, recipientVars, effectiveKey);
                 String mergedHtml = emailService.replaceVariables(
                         emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), recipientVars);
                 emailService.sendHtmlEmail(subscriber.getEmail(), subject, mergedHtml);
@@ -149,10 +156,11 @@ public class NewsletterEmailService {
     /** Saves the newsletter_sends audit row in its own transaction. */
     @Transactional
     protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
-                                                   String sentByUsername, int recipientCount) {
+                                                   String sentByUsername, int recipientCount,
+                                                   String templateKey) {
         NewsletterSend send = NewsletterSend.builder()
                 .eventId(event.getId())
-                .templateKey(TEMPLATE_KEY)
+                .templateKey(templateKey)
                 .reminder(isReminder)
                 .locale(locale)
                 .sentAt(Instant.now())
@@ -369,19 +377,23 @@ public class NewsletterEmailService {
         return sb.toString();
     }
 
-    private String renderContent(String locale, Map<String, String> vars) {
+    private String resolveTemplateKey(@Nullable String templateKey) {
+        return (templateKey != null && !templateKey.isBlank()) ? templateKey : TEMPLATE_KEY;
+    }
+
+    private String renderContent(String locale, Map<String, String> vars, String templateKey) {
         Optional<ch.batbern.events.domain.EmailTemplate> templateOpt =
-                emailTemplateService.findByKeyAndLocale(TEMPLATE_KEY, locale);
+                emailTemplateService.findByKeyAndLocale(templateKey, locale);
         if (templateOpt.isEmpty()) {
-            log.warn("Newsletter template '{}' locale '{}' not found in DB", TEMPLATE_KEY, locale);
+            log.warn("Newsletter template '{}' locale '{}' not found in DB", templateKey, locale);
             return "<p>Newsletter template not available.</p>";
         }
         return emailService.replaceVariables(templateOpt.get().getHtmlBody(), vars);
     }
 
     private String buildSubject(Event event, boolean isReminder, String locale,
-                                Map<String, String> vars) {
-        Optional<String> subjectTemplate = emailTemplateService.resolveSubject(TEMPLATE_KEY, locale);
+                                Map<String, String> vars, String templateKey) {
+        Optional<String> subjectTemplate = emailTemplateService.resolveSubject(templateKey, locale);
         String subject = subjectTemplate.orElseGet(() ->
                 (isReminder ? vars.get("reminderPrefix") : "") + event.getTitle() + " — BATbern");
         return emailService.replaceVariables(subject, vars);

@@ -16,12 +16,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import ch.batbern.events.domain.EmailTemplate;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -231,6 +238,56 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("Mustapha Bouaaoud, postfinance; Philippe Halbeisen, postfinance");
         // Only one data row in tbody (one session → one row)
         assertThat(result).containsOnlyOnce("</tr></tbody>");
+    }
+
+    // ── templateKey: custom key routing ──────────────────────────────────────
+
+    @Test
+    @DisplayName("preview: when templateKey provided → renderContent uses that key")
+    void preview_withCustomTemplateKey_usesCustomTemplate() {
+        testEvent.setId(UUID.randomUUID());
+
+        when(emailTemplateService.findByKeyAndLocale("custom-newsletter", "de"))
+                .thenReturn(Optional.of(mockTemplate("custom-newsletter", "de", "Custom content")));
+        when(emailTemplateService.mergeWithLayout(any(), eq("batbern-default"), eq("de")))
+                .thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject("custom-newsletter", "de"))
+                .thenReturn(Optional.of("Custom Subject"));
+        when(subscriberService.getActiveCount()).thenReturn(5L);
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.preview(testEvent, false, "de", "custom-newsletter");
+
+        verify(emailTemplateService).findByKeyAndLocale("custom-newsletter", "de");
+        verify(emailTemplateService, never()).findByKeyAndLocale("newsletter-event", "de");
+    }
+
+    @Test
+    @DisplayName("preview: when templateKey null → renderContent uses default 'newsletter-event'")
+    void preview_withNullTemplateKey_usesDefaultTemplate() {
+        testEvent.setId(UUID.randomUUID());
+
+        when(emailTemplateService.findByKeyAndLocale("newsletter-event", "de"))
+                .thenReturn(Optional.of(mockTemplate("newsletter-event", "de", "Default content")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject("newsletter-event", "de"))
+                .thenReturn(Optional.of("Subject"));
+        when(subscriberService.getActiveCount()).thenReturn(3L);
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.preview(testEvent, false, "de", null);
+
+        verify(emailTemplateService).findByKeyAndLocale("newsletter-event", "de");
+    }
+
+    private EmailTemplate mockTemplate(String key, String locale, String html) {
+        EmailTemplate tpl = new EmailTemplate();
+        tpl.setTemplateKey(key);
+        tpl.setLocale(locale);
+        tpl.setHtmlBody(html);
+        return tpl;
     }
 
     @Test

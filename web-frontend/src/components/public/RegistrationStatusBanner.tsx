@@ -1,0 +1,153 @@
+/**
+ * RegistrationStatusBanner Component
+ * Story 10.10: Registration Status Indicator for Logged-in Users (T8, AC2, AC3, AC4)
+ *
+ * Shows a status banner below the hero section when an authenticated user has a
+ * registration for the current event. Includes a loading skeleton to prevent CLS.
+ */
+
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import Alert from '@mui/material/Alert';
+import Skeleton from '@mui/material/Skeleton';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HourglassTopIcon from '@mui/icons-material/HourglassTop';
+import QueueIcon from '@mui/icons-material/Queue';
+import CancelIcon from '@mui/icons-material/Cancel';
+
+export type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+
+interface RegistrationStatusBannerProps {
+  /** Registration status. null = not registered (render nothing). undefined = loading/no data. */
+  status: RegistrationStatus | null | undefined;
+  /** Event code used to build the manage-registration link */
+  eventCode: string;
+  /** When true, renders a skeleton placeholder instead of the banner */
+  isLoading: boolean;
+  /** AC13 (Story 10.11): Position on the waitlist (1-based). Only relevant when status=WAITLIST. */
+  waitlistPosition?: number | null;
+}
+
+/**
+ * RegistrationStatusBanner
+ *
+ * AC4: While loading, shows a skeleton div with the same dimensions as the banner.
+ *      This prevents cumulative layout shift after the banner resolves.
+ * AC3: Banner includes a "Manage Registration" link (or "Register again" for CANCELLED).
+ */
+export function RegistrationStatusBanner({
+  status,
+  eventCode,
+  isLoading,
+  waitlistPosition,
+}: RegistrationStatusBannerProps) {
+  const { t } = useTranslation('registration');
+
+  // AC4: Loading skeleton — same height as the banner, prevents CLS
+  if (isLoading) {
+    return (
+      <Skeleton
+        variant="rectangular"
+        height={56}
+        sx={{ borderRadius: 1, my: 2 }}
+        data-testid="registration-status-banner-skeleton"
+      />
+    );
+  }
+
+  // No banner when not registered or no data
+  if (status === null || status === undefined) {
+    return null;
+  }
+
+  const manageLink = `/register/${eventCode}`;
+
+  // AC2: CANCELLED = grey banner. MUI Alert defaults severity to 'success' when omitted,
+  // so render a custom div for CANCELLED to avoid severity-class pollution.
+  if (status === 'CANCELLED') {
+    return (
+      <div
+        data-testid="registration-status-banner"
+        data-status="CANCELLED"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: 'rgba(113,113,122,0.15)',
+          color: 'rgb(161,161,170)',
+          borderRadius: 4,
+          padding: '10px 16px',
+          margin: '16px 0',
+        }}
+      >
+        <CancelIcon fontSize="small" style={{ color: 'rgb(113,113,122)', flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>{t('registrationStatusBanner.cancelled')}</span>
+        <Link
+          to={manageLink}
+          style={{ color: 'inherit', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+        >
+          {t('registrationStatusBanner.registerAgain')}
+        </Link>
+      </div>
+    );
+  }
+
+  const config: Record<
+    Exclude<RegistrationStatus, 'CANCELLED'>,
+    {
+      severity: 'success' | 'warning' | 'info';
+      icon: React.ReactElement;
+      textKey: string;
+      linkKey: string;
+    }
+  > = {
+    CONFIRMED: {
+      severity: 'success',
+      icon: <CheckCircleIcon fontSize="small" />,
+      textKey: 'registrationStatusBanner.confirmed',
+      linkKey: 'registrationStatusBanner.manageLink',
+    },
+    REGISTERED: {
+      severity: 'warning',
+      icon: <HourglassTopIcon fontSize="small" />,
+      textKey: 'registrationStatusBanner.registered',
+      linkKey: 'registrationStatusBanner.manageLink',
+    },
+    WAITLIST: {
+      severity: 'info',
+      icon: <QueueIcon fontSize="small" />,
+      textKey:
+        waitlistPosition != null
+          ? 'registrationStatusBanner.waitlistWithPosition'
+          : 'registrationStatusBanner.waitlist',
+      linkKey: 'registrationStatusBanner.manageLink',
+    },
+  };
+
+  const { severity, icon, textKey, linkKey } = config[status];
+
+  // AC13: interpolate position for WAITLIST when available
+  const bannerText =
+    status === 'WAITLIST' && waitlistPosition != null
+      ? t(textKey, { position: waitlistPosition })
+      : t(textKey);
+
+  return (
+    <Alert
+      severity={severity}
+      icon={icon}
+      data-testid="registration-status-banner"
+      sx={{ my: 2 }}
+      action={
+        <Link
+          to={manageLink}
+          style={{ color: 'inherit', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+        >
+          {t(linkKey)}
+        </Link>
+      }
+    >
+      {bannerText}
+    </Alert>
+  );
+}

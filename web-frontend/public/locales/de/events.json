@@ -11,7 +11,8 @@
       "participants": "Teilnehmer",
       "publishing": "Veröffentlichung",
       "newsletter": "Newsletter",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "photos": "Fotos"
     },
     "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
     "overview": {
@@ -32,7 +33,29 @@
       "previewPublic": "Öffentliche Seite vorschauen"
     },
     "participantsTab": {
-      "title": "Veranstaltungsteilnehmer"
+      "title": "Veranstaltungsteilnehmer",
+      "confirmed": "bestätigt",
+      "onWaitlist": "auf Warteliste",
+      "capacityBar": "{{confirmed}} / {{capacity}} bestätigt · {{waitlist}} auf Warteliste",
+      "waitlistSection": "Warteliste ({{count}})",
+      "waitlistPromote": "Auf «Angemeldet» hochstufen",
+      "waitlistPromoteSuccess": "Erfolgreich hochgestuft",
+      "waitlistPromoteError": "Hochstufung fehlgeschlagen",
+      "waitlistEmpty": "Niemand auf der Warteliste",
+      "waitlistTablePosition": "#",
+      "waitlistTableName": "Name",
+      "waitlistTableEmail": "E-Mail",
+      "waitlistTableCompany": "Unternehmen",
+      "waitlistTableRegisteredOn": "Angemeldet am",
+      "waitlistTableActions": "Aktionen",
+      "statusCancelled": "Abgemeldet"
+    },
+    "settings": {
+      "moderator": "Veranstaltungsmoderation",
+      "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator erfolgreich aktualisiert",
+      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
     },
     "participantTable": {
       "headers": {
@@ -75,13 +98,6 @@
         "retry": "Erneut versuchen"
       }
     },
-    "settings": {
-      "moderator": "Veranstaltungsmoderation",
-      "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
-      "moderatorLabel": "Moderator",
-      "moderatorUpdated": "Moderator erfolgreich aktualisiert",
-      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
-    },
     "speakers": {
       "progress": "Fortschritt",
       "confirmed": "bestätigt",
@@ -106,7 +122,7 @@
       "sendNewsletter": "Newsletter senden",
       "sendReminder": "Erinnerung senden",
       "confirmSendTitle": "Senden bestätigen",
-      "confirmSendBody": "{{type}} an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
+      "confirmSendBody": "{{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Newsletter an {{count}} Empfänger gesendet.",
       "sendError": "Senden fehlgeschlagen. Bitte versuche es erneut.",
       "historyDate": "Datum",
@@ -741,5 +757,42 @@
   },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
+  },
+  "eventCard": {
+    "statusChip": {
+      "confirmed": "Bestätigt",
+      "registered": "Angemeldet",
+      "waitlist": "Warteliste",
+      "cancelled": "Storniert"
+    }
+  },
+  "capacity": {
+    "spotsRemaining": "{{count}} Plätze verfügbar",
+    "spotsRemaining_one": "1 Platz verfügbar",
+    "fullJoinWaitlist": "Ausgebucht — Warteliste beitreten",
+    "waitlistCount": "{{count}} auf Warteliste"
+  },
+  "description": {
+    "heading": "Über diese Veranstaltung"
+  },
+  "photos": {
+    "title": "Eventfotos",
+    "uploadButton": "Foto hochladen",
+    "deleteConfirmTitle": "Foto löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Foto löschen möchten? Dies kann nicht rückgängig gemacht werden.",
+    "deleteConfirm": "Löschen",
+    "deleteCancel": "Abbrechen",
+    "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "teaserImage": {
+    "title": "Teaser-Bilder",
+    "description": "Bilder, die auf der Präsentationsseite als Vollbild-Folien zwischen Themenbekanntgabe und Agenda-Vorschau angezeigt werden.",
+    "uploadButton": "Teaser-Bild hinzufügen",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "removeError": "Entfernen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "limitReached": "Maximum von {{max}} Teaser-Bildern erreicht."
   }
 }

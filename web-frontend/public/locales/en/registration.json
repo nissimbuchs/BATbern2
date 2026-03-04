@@ -82,7 +82,11 @@
       "acceptTerms": "You must accept the terms and conditions to register.",
       "failed": "Registration failed. Please try again."
     },
-    "cancelConfirm": "Are you sure you want to cancel registration?"
+    "cancelConfirm": "Are you sure you want to cancel registration?",
+    "waitlistWarning": "This event is full. Submitting will add you to the waitlist.",
+    "waitlistAcknowledgeLabel": "I understand I will be on the waitlist",
+    "waitlistSuccessTitle": "You're on the waitlist!",
+    "waitlistSuccessBody": "You are #{{position}} on the waitlist. We'll email you if a spot opens."
   },
   "personalDetails": {
     "title": "Personal Information",
@@ -185,6 +189,47 @@
       "useLatestEmail": "Make sure you're using the latest confirmation email",
       "contactSupport": "Contact support if the problem persists",
       "registerAgain": "Register Again"
+    }
+  },
+  "registrationStatusBanner": {
+    "confirmed": "Your registration is confirmed. We'll see you there!",
+    "registered": "You are registered for this event. Check your email for confirmation.",
+    "waitlist": "You are on the waitlist. We'll notify you if a spot opens.",
+    "waitlistWithPosition": "You are #{{position}} on the waitlist. We'll notify you if a spot opens.",
+    "cancelled": "Your registration was cancelled.",
+    "manageLink": "Manage Registration",
+    "registerAgain": "Register again"
+  },
+  "registrationStatusGuard": {
+    "alreadyRegistered": "You are already registered for this event",
+    "goBack": "Go back",
+    "registerAgain": "Register again"
+  },
+  "deregistration": {
+    "page": {
+      "verifying": "Verifying your cancellation link…",
+      "title": "Cancel Registration",
+      "confirmQuestion": "Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
+      "confirmButton": "Yes, cancel my registration",
+      "goBack": "Go back",
+      "successTitle": "Registration Cancelled",
+      "successBody": "Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
+      "invalidToken": "This cancellation link is invalid or has already been used. Please contact us if you need help.",
+      "alreadyCancelled": "Your registration was already cancelled."
+    },
+    "modal": {
+      "title": "Cancel Registration",
+      "body": "Enter your email address and we'll send you a cancellation link.",
+      "emailLabel": "Email address",
+      "emailError": "Please enter a valid email address",
+      "submitButton": "Send cancellation link",
+      "successMessage": "If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+    },
+    "homepage": {
+      "cancelLink": "Cancel your registration"
+    },
+    "wizard": {
+      "cancelButton": "Cancel my registration"
     }
   }
 }

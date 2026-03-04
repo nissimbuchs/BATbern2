@@ -929,6 +929,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/my-registration': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get my registration status for an event
+     * @description Returns the authenticated user's registration status for the specified event.
+     *
+     *     **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
+     *     **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
+     *     Returns 404 when the authenticated user has no registration for this event.
+     *
+     *     **ADR-003**: Uses eventCode (meaningful ID) not UUID.
+     *     **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
+     */
+    get: operations['getMyRegistration'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/registrations/{registrationCode}': {
     parameters: {
       query?: never;
@@ -962,6 +989,29 @@ export interface paths {
      *     **Story**: 4.1.6 - Uses registrationCode
      */
     patch: operations['updateRegistration'];
+    trace?: never;
+  };
+  '/events/{eventCode}/registrations/{registrationCode}/promote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Manually promote a waitlisted registration
+     * @description Organizer-only action to manually promote a waitlisted registration to registered status.
+     *
+     *     **Story**: 10.11 — Venue Capacity Enforcement & Waitlist Management (AC3, AC5)
+     *     **Security**: ORGANIZER role required
+     */
+    post: operations['promoteFromWaitlist'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/events/{eventCode}/registrations/confirm': {
@@ -1022,6 +1072,79 @@ export interface paths {
      *     **Deletion**: Permanently removes registration from database. Cannot be undone.
      */
     post: operations['cancelRegistration'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/registrations/deregister/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verify deregistration token (public)
+     * @description Verifies a deregistration token and returns registration details for confirmation.
+     *     Returns 404 if token is unknown or registration is already cancelled.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — UUID token provides authentication
+     */
+    get: operations['verifyDeregistrationToken'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/registrations/deregister': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel registration via deregistration token (public)
+     * @description Cancels a registration using the self-service deregistration token.
+     *     Sets registration status to "cancelled" and triggers waitlist promotion.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — UUID token provides authentication
+     */
+    post: operations['deregisterByToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/registrations/deregister/by-email': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request deregistration link via email (public, anti-enumeration)
+     * @description Sends a deregistration link to the provided email address if a matching registration is found.
+     *     Always returns 200 to prevent email enumeration — the caller cannot determine whether
+     *     a registration exists from the response.
+     *
+     *     **Story**: 10.12 — Self-Service Deregistration
+     *     **Security**: Public endpoint — anti-enumeration design
+     */
+    post: operations['requestDeregistrationByEmail'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1846,10 +1969,555 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/settings/features': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get feature flags (public, no auth required) */
+    get: operations['getFeatureFlags'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/description': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate AI event description (GPT-4o, German, 150-200 words) */
+    post: operations['generateEventDescription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/theme-image': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate AI theme image (DALL-E 3), upload to S3 */
+    post: operations['generateThemeImage'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/theme-image/apply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Persist an AI-generated theme image URL on the event record */
+    post: operations['applyThemeImage'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/speakers/{speakerId}/ai/analyze-abstract': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Analyze speaker abstract quality (GPT-4o) */
+    post: operations['analyzeAbstract'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/recent-photos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent photos from last N events (homepage use) */
+    get: operations['getRecentEventPhotos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/photos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List photos for an event */
+    get: operations['listEventPhotos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/photos/upload-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Request presigned URL for photo upload */
+    post: operations['requestEventPhotoUploadUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/photos/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Confirm photo upload and persist record */
+    post: operations['confirmEventPhotoUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/photos/{photoId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a photo (DB record + S3 object) */
+    delete: operations['deleteEventPhoto'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/teaser-images/upload-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Get presigned S3 PUT URL for teaser image upload (organizer-only) */
+    post: operations['generateTeaserImageUploadUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/teaser-images/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Confirm upload and persist new teaser image */
+    post: operations['confirmTeaserImageUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/teaser-images/{imageId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a specific teaser image by ID */
+    delete: operations['deleteTeaserImage'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/export/legacy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export all data in legacy BAT JSON format
+     * @description Exports all events, sessions, speakers, companies, and attendees in the legacy
+     *     BATspa JSON format for data migration or interoperability. Returns a downloadable
+     *     JSON file. Organizer role required.
+     */
+    get: operations['exportLegacyData'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/export/assets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export asset presigned-URL manifest
+     * @description Returns a JSON manifest with presigned S3 URLs for all binary assets
+     *     (speaker portraits, company logos, session materials). Each URL is valid for 1 hour.
+     *     Organizer role required.
+     */
+    get: operations['exportAssetManifest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/import/legacy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import data from legacy BAT JSON file
+     * @description Accepts a multipart file upload of a legacy BAT JSON export. Upserts all entity
+     *     types (events, sessions, speakers, companies, attendees) idempotently — importing
+     *     the same file twice has no side effects. Returns import counts and error details.
+     *     Organizer role required.
+     */
+    post: operations['importLegacyData'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/import/assets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Import assets from ZIP file
+     * @description Accepts a multipart ZIP file. Unpacks asset files to S3 under
+     *     `imports/{timestamp}/` prefix and links them to entities by filename convention.
+     *     Organizer role required.
+     */
+    post: operations['importAssets'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Top-level envelope for a legacy BAT JSON export */
+    LegacyExportEnvelope: {
+      /** @example 2.0 */
+      version: string;
+      /** Format: date-time */
+      exportedAt: string;
+      events: components['schemas']['LegacyEventDto'][];
+      companies: components['schemas']['LegacyCompanyDto'][];
+      speakers: components['schemas']['LegacySpeakerDto'][];
+      attendees: components['schemas']['LegacyAttendeeDto'][];
+    };
+    LegacyEventDto: {
+      /** @description Event number (legacy BAT number) */
+      bat?: number;
+      /** @example BATbern57 */
+      eventCode?: string;
+      title?: string;
+      /** Format: date-time */
+      date?: string;
+      venueName?: string;
+      venueAddress?: string;
+      sessions?: components['schemas']['LegacySessionDto'][];
+    };
+    LegacySessionDto: {
+      sessionSlug?: string;
+      title?: string;
+      description?: string;
+      sessionType?: string;
+      /** @description Legacy PDF filename for session materials */
+      pdf?: string;
+      /** @description Session speakers (legacy field name) */
+      referenten?: components['schemas']['LegacySpeakerDto'][];
+    };
+    LegacySpeakerDto: {
+      /** @description Speaker username */
+      speakerId?: string;
+      /** @description Full name (firstName + lastName) */
+      name?: string;
+      bio?: string;
+      company?: string;
+      /** @description Portrait filename or URL */
+      portrait?: string;
+      linkedInUrl?: string;
+      twitterHandle?: string;
+    };
+    LegacyCompanyDto: {
+      /** @description Company name/identifier */
+      id?: string;
+      displayName?: string;
+      /** @description Logo filename or URL */
+      logo?: string;
+      /** @description Company website URL */
+      url?: string;
+    };
+    LegacyAttendeeDto: {
+      eventCode?: string;
+      username?: string;
+      status?: string;
+      /** Format: date-time */
+      registeredAt?: string;
+    };
+    LegacyImportResult: {
+      imported: {
+        events?: number;
+        sessions?: number;
+        speakers?: number;
+        companies?: number;
+        attendees?: number;
+      };
+      skipped?: string[];
+      errors?: string[];
+    };
+    AssetManifestResponse: {
+      /** Format: date-time */
+      exportedAt: string;
+      assetCount: number;
+      assets: components['schemas']['AssetEntry'][];
+    };
+    AssetEntry: {
+      /**
+       * @description Asset type (portrait, logo, material)
+       * @example portrait
+       */
+      type: string;
+      /** Format: uuid */
+      entityId: string;
+      filename: string;
+      /** Format: uri */
+      presignedUrl: string;
+    };
+    AssetImportResult: {
+      /** Format: date-time */
+      importedAt: string;
+      importedCount: number;
+      /**
+       * @description S3 key prefix where assets were uploaded
+       * @example imports/2026-03-03T10:00:00Z/
+       */
+      s3Prefix: string;
+      errors?: string[];
+    };
+    EventPhotoResponse: {
+      /** Format: uuid */
+      id: string;
+      eventCode: string;
+      displayUrl: string;
+      filename?: string;
+      uploadedBy?: string;
+      /** Format: date-time */
+      uploadedAt: string;
+      sortOrder?: number;
+    };
+    EventPhotoUploadRequest: {
+      filename: string;
+      /** @enum {string} */
+      contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+      /** Format: int64 */
+      fileSize: number;
+    };
+    EventPhotoUploadResponse: {
+      /** Format: uuid */
+      photoId: string;
+      uploadUrl: string;
+      s3Key: string;
+      expiresIn: number;
+    };
+    EventPhotoConfirmRequest: {
+      /** Format: uuid */
+      photoId: string;
+      s3Key: string;
+    };
+    /** @description A single teaser image for the moderator presentation page. */
+    TeaserImageItem: {
+      /**
+       * Format: uuid
+       * @description Unique identifier for the teaser image.
+       */
+      id: string;
+      /**
+       * Format: uri
+       * @description CloudFront URL for the teaser image.
+       * @example https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg
+       */
+      imageUrl: string;
+      /**
+       * @description Order in which the image is displayed (ascending).
+       * @example 0
+       */
+      displayOrder: number;
+    };
+    TeaserImageUploadUrlRequest: {
+      /**
+       * @description MIME type of the image (image/jpeg, image/png, image/webp).
+       * @example image/jpeg
+       */
+      contentType: string;
+      /**
+       * @description Original filename.
+       * @example teaser.jpg
+       */
+      fileName: string;
+    };
+    TeaserImageUploadUrlResponse: {
+      /**
+       * Format: uri
+       * @description Presigned S3 PUT URL for direct upload.
+       */
+      uploadUrl: string;
+      /**
+       * @description S3 object key to use in the confirm step.
+       * @example events/BATbern57/teaser/abc123-def456.jpg
+       */
+      s3Key: string;
+      /**
+       * @description URL expiry in seconds.
+       * @example 900
+       */
+      expiresIn: number;
+    };
+    TeaserImageConfirmRequest: {
+      /**
+       * @description S3 object key returned by the upload-url step.
+       * @example events/BATbern57/teaser/abc123-def456.jpg
+       */
+      s3Key: string;
+    };
+    FeatureFlagsResponse: {
+      aiContentEnabled?: boolean;
+    };
+    AiDescriptionRequest: {
+      topicTitle: string;
+      topicCategory: string;
+      /** @description The specific session/event title (e.g. "Importance of DevOps in vibe coding") */
+      eventTitle?: string;
+      /**
+       * Format: date
+       * @description The event date (ISO 8601, e.g. 2026-04-04)
+       */
+      eventDate?: string;
+    };
+    AiDescriptionResponse: {
+      description?: string;
+    };
+    AiThemeImageRequest: {
+      topicTitle: string;
+      topicCategory: string;
+      /** @description The specific session/event title for a more accurate image */
+      eventTitle?: string;
+    };
+    AiThemeImageResponse: {
+      imageUrl?: string;
+      s3Key?: string;
+    };
+    ApplyThemeImageRequest: {
+      /** @description CloudFront URL of the AI-generated image to persist on the event */
+      imageUrl: string;
+    };
+    AnalyzeAbstractRequest: {
+      abstract: string;
+      speakerName?: string;
+    };
+    AbstractAnalysisResponse: {
+      /** @description 1=heavy product promotion, 10=no promotion at all */
+      noPromotionScore?: number;
+      /** @description Brief German explanation of the noPromotionScore */
+      noPromotionFeedback?: string;
+      /** @description 1=no real-world experience mentioned, 10=clearly practical lessons learned */
+      lessonsLearnedScore?: number;
+      /** @description Brief German explanation of the lessonsLearnedScore */
+      lessonsLearnedFeedback?: string;
+      /** @description Number of words in the original abstract */
+      wordCount?: number;
+      /** @description Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null */
+      shortenedAbstract?: string | null;
+    };
     NewsletterSubscribeRequest: {
       /** Format: email */
       email: string;
@@ -1871,6 +2539,8 @@ export interface components {
       isReminder: boolean;
       /** @enum {string} */
       locale: 'de' | 'en';
+      /** @description Optional template key override. If omitted, uses default 'newsletter-event'. Must be a NEWSLETTER category template key present in DB. */
+      templateKey?: string | null;
     };
     NewsletterSendResponse: {
       /** Format: uuid */
@@ -2410,6 +3080,27 @@ export interface components {
       /** @example 500 */
       venueCapacity: number;
       /**
+       * @description Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
+       *     Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
+       * @example 60
+       */
+      registrationCapacity?: number | null;
+      /**
+       * @description Story 10.11 — Count of registrations with status registered or confirmed.
+       * @example 42
+       */
+      confirmedCount?: number;
+      /**
+       * @description Story 10.11 — Count of registrations with status waitlist.
+       * @example 3
+       */
+      waitlistCount?: number;
+      /**
+       * @description Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
+       * @example 18
+       */
+      spotsRemaining?: number | null;
+      /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
@@ -2447,6 +3138,12 @@ export interface components {
        * @example abc123-def456
        */
       themeImageUploadId?: string | null;
+      /**
+       * @description Ordered list of teaser images shown as individual slides on the moderator
+       *     presentation page (between topic-reveal and agenda-preview).
+       *     Story 10.22: Event Teaser Images.
+       */
+      teaserImages?: components['schemas']['TeaserImageItem'][] | null;
       /**
        * @description Topic code (slug-format identifier) of the selected topic.
        *     Story 5.2: Topic Selection & Speaker Brainstorming
@@ -2810,6 +3507,41 @@ export interface components {
       sessionSlug?: string | null;
     };
     /**
+     * @description Story 10.10: Minimal registration status for the authenticated user (AC1).
+     *     ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
+     *     ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     */
+    MyRegistrationResponse: {
+      /**
+       * @description Unique registration code (public identifier)
+       * @example BATbern142-reg-ABC123
+       */
+      registrationCode: string;
+      /**
+       * @description Event code this registration belongs to
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (uppercase)
+       * @example CONFIRMED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      /**
+       * Format: date-time
+       * @description ISO-8601 timestamp when registration was created
+       * @example 2025-11-01T10:30:00Z
+       */
+      registrationDate: string;
+      /**
+       * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
+       *     Backward-compatible addition — null for non-waitlist registrations.
+       * @example 3
+       */
+      waitlistPosition?: number | null;
+    };
+    /**
      * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
      *     All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
      */
@@ -2851,7 +3583,12 @@ export interface components {
       /** @description Company name from user_profiles.company_id (FK to companies table) */
       company?: string;
       /** @enum {string} */
-      status: 'REGISTERED' | 'WAITLISTED' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
+      status: 'REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
+      /**
+       * @description Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+       * @example 2
+       */
+      waitlistPosition?: number | null;
       /** Format: date-time */
       registrationDate?: string;
       /** @description Event-level registration - sessions are preferences only, not commitments */
@@ -2879,6 +3616,8 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited. */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -2910,6 +3649,8 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -2936,6 +3677,8 @@ export interface components {
       venueName?: string;
       venueAddress?: string;
       venueCapacity?: number;
+      /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
+      registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
@@ -3178,6 +3921,118 @@ export interface components {
        *     ]
        */
       errors: string[];
+    };
+    /**
+     * @description Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
+     *     Returns registration summary so the user can confirm they want to cancel.
+     */
+    DeregistrationVerifyResponse: {
+      /**
+       * @description Public registration code
+       * @example BATbern142-reg-A3X9K2
+       */
+      registrationCode: string;
+      /**
+       * @description Event code
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Event title
+       * @example BATbern — Berner Architekten Treffen
+       */
+      eventTitle: string;
+      /**
+       * Format: date-time
+       * @description Event date as ISO-8601
+       * @example 2026-06-15T18:00:00Z
+       */
+      eventDate: string;
+      /**
+       * @description Attendee first name for personalised confirmation message
+       * @example Max
+       */
+      attendeeFirstName: string;
+    };
+    /** @description Story 10.12 (AC3): Body for POST /registrations/deregister. */
+    DeregistrationRequest: {
+      /**
+       * Format: uuid
+       * @description Deregistration UUID token from confirmation email
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      token: string;
+    };
+    /** @description Story 10.12 (AC3): Body for POST /registrations/deregister/by-email. */
+    DeregistrationByEmailRequest: {
+      /**
+       * Format: email
+       * @description Email address of the registrant
+       * @example max.muster@example.com
+       */
+      email: string;
+      /**
+       * @description Event code the user is registered for
+       * @example BATbern142
+       */
+      eventCode: string;
+    };
+    /**
+     * @description Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
+     *     such as deregistrationToken. Schema separation is the security control — do NOT add
+     *     deregistrationToken to RegistrationResponse (public schema).
+     *     ADR-003: Uses registrationCode/eventCode as public identifiers.
+     */
+    RegistrationAdminResponse: {
+      /**
+       * @description Unique registration code (public identifier)
+       * @example BATbern142-reg-ABC123
+       */
+      registrationCode: string;
+      /**
+       * @description Event code this registration belongs to
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (uppercase)
+       * @example CONFIRMED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      /**
+       * @description Cross-service reference to user_profiles.username
+       * @example max.muster
+       */
+      attendeeUsername: string;
+      /** @example Max */
+      attendeeFirstName?: string;
+      /** @example Muster */
+      attendeeLastName?: string;
+      /**
+       * Format: email
+       * @example max.muster@example.com
+       */
+      attendeeEmail?: string;
+      /** @example Acme AG */
+      attendeeCompany?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-01-15T10:30:00Z
+       */
+      registrationDate?: string;
+      /**
+       * @description Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
+       * @example 3
+       */
+      waitlistPosition?: number | null;
+      /**
+       * Format: uuid
+       * @description Story 10.12: UUID token used for self-service deregistration link.
+       *     ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      readonly deregistrationToken?: string;
     };
     /** @description Details of a failed registration within a batch */
     FailedRegistration: {
@@ -5647,6 +6502,56 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getMyRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration found — returns status for the authenticated user */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "registrationCode": "BATbern142-reg-ABC123",
+           *       "eventCode": "BATbern142",
+           *       "status": "CONFIRMED",
+           *       "registrationDate": "2025-11-01T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['MyRegistrationResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No registration found for this user and event */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "RESOURCE_NOT_FOUND",
+           *       "errorCode": "NOT_FOUND",
+           *       "message": "No registration found for event BATbern142",
+           *       "timestamp": "2025-11-01T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
   getRegistration: {
     parameters: {
       query?: never;
@@ -5734,6 +6639,54 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  promoteFromWaitlist: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbernXXX */
+        eventCode: string;
+        /** @description Registration code of the waitlisted registration */
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration successfully promoted from waitlist to registered */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Registration not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration exists but is not on the waitlist */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Registration is not on the waitlist"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -5852,6 +6805,125 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  verifyDeregistrationToken: {
+    parameters: {
+      query: {
+        /** @description UUID deregistration token */
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Token valid — returns registration summary for confirmation */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeregistrationVerifyResponse'];
+        };
+      };
+      /** @description Token not found or registration already cancelled */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "invalid_token",
+           *       "message": "Deregistration token not found or already used"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deregisterByToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeregistrationRequest'];
+      };
+    };
+    responses: {
+      /** @description Registration cancelled successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration cancelled successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Token not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration already cancelled */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "already_cancelled",
+           *       "message": "This registration has already been cancelled"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  requestDeregistrationByEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeregistrationByEmailRequest'];
+      };
+    };
+    responses: {
+      /**
+       * @description Always 200 regardless of whether registration was found.
+       *     "If you are registered, you'll receive a deregistration email."
+       */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example If you are registered for this event, you'll receive a cancellation link by email. */
+            message?: string;
+          };
+        };
+      };
     };
   };
   createBatchRegistrations: {
@@ -7124,6 +8196,531 @@ export interface operations {
         };
         content?: never;
       };
+    };
+  };
+  getFeatureFlags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Feature flags */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FeatureFlagsResponse'];
+        };
+      };
+    };
+  };
+  generateEventDescription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AiDescriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description Generated description */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiDescriptionResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  generateThemeImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AiThemeImageRequest'];
+      };
+    };
+    responses: {
+      /** @description Generated theme image URL and S3 key */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiThemeImageResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  applyThemeImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApplyThemeImageRequest'];
+      };
+    };
+    responses: {
+      /** @description Image URL persisted on the event */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  analyzeAbstract: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnalyzeAbstractRequest'];
+      };
+    };
+    responses: {
+      /** @description Abstract analysis result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AbstractAnalysisResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description AI service disabled or unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getRecentEventPhotos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        lastNEvents?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Random sample of recent photos */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventPhotoResponse'][];
+        };
+      };
+    };
+  };
+  listEventPhotos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of event photos */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventPhotoResponse'][];
+        };
+      };
+    };
+  };
+  requestEventPhotoUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventPhotoUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned URL + photoId */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventPhotoUploadResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmEventPhotoUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventPhotoConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Photo confirmed and stored */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventPhotoResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  deleteEventPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        photoId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Photo deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  generateTeaserImageUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TeaserImageUploadUrlRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned URL + s3Key */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageUploadUrlResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmTeaserImageUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TeaserImageConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Teaser image confirmed and persisted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageItem'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Max image limit reached */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deleteTeaserImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+        imageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Teaser image deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Teaser image not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  exportLegacyData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Legacy JSON file download */
+      200: {
+        headers: {
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LegacyExportEnvelope'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  exportAssetManifest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Asset manifest with presigned URLs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssetManifestResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  importLegacyData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Legacy BAT JSON export file
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Import completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LegacyImportResult'];
+        };
+      };
+      /** @description Invalid JSON file or schema mismatch */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  importAssets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description ZIP archive containing asset files
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Asset import completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssetImportResult'];
+        };
+      };
+      /** @description Invalid ZIP file */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }

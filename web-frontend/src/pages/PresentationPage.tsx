@@ -48,6 +48,7 @@ import { BreakSlide } from './presentation/slides/BreakSlide';
 import { AgendaRecapSlide } from './presentation/slides/AgendaRecapSlide';
 import { UpcomingEventsSlide } from './presentation/slides/UpcomingEventsSlide';
 import { AperoSlide } from './presentation/slides/AperoSlide';
+import { TeaserImageSlide } from './presentation/slides/TeaserImageSlide';
 import type { PresentationSection } from '@/hooks/usePresentationSections';
 
 // --------------------------------------------------------------------------
@@ -422,6 +423,9 @@ function SectionRenderer({
 
     case 'topic-reveal':
       return data.event ? <TopicRevealSlide event={data.event} /> : null;
+
+    case 'teaser-image':
+      return section.imageUrl ? <TeaserImageSlide imageUrl={section.imageUrl} /> : null;
 
     case 'agenda-preview':
       // AgendaView rendered by page-level layoutId="agenda-view" — slide shows heading only
