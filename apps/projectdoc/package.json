@@ -10,7 +10,6 @@
     "build:reports": "node scripts/build-reports.js",
     "migrate-history": "node scripts/migrate-history.js",
     "deploy": "AWS_PROFILE=batbern-mgmt node scripts/deploy.js",
-    "deploy:ci": "node scripts/deploy.js",
     "dev": "npm run build && npx http-server dist -p 3099 -o",
     "clean": "rm -rf dist/*"
   },

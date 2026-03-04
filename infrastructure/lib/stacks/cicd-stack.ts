@@ -278,9 +278,12 @@ export class CICDStack extends cdk.Stack {
         // CDK asset buckets in all regions (wildcards because CDK creates buckets in multiple regions)
         `arn:aws:s3:::cdk-*-assets-${this.account}-*`,
         `arn:aws:s3:::cdk-*-assets-${this.account}-*/*`,
-        // Application buckets
+        // Application buckets (CamelCase CDK logical names)
         `arn:aws:s3:::BATbern-${config.envName}-*`,
         `arn:aws:s3:::BATbern-${config.envName}-*/*`,
+        // Application buckets (lowercase physical names, e.g. batbern-content-staging)
+        `arn:aws:s3:::batbern-*-${config.envName}`,
+        `arn:aws:s3:::batbern-*-${config.envName}/*`,
       ],
     }));
 
