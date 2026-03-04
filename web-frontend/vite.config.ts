@@ -325,12 +325,30 @@ export default defineConfig({
         'src/hooks/useNewsletter/**',
         // React error boundary — framework code tested via E2E
         'src/components/ErrorBoundary.tsx',
+        // SEO schema component — JSON-LD output verified via E2E, no branching logic
+        'src/components/SEO/EventSchema.tsx',
+        // Skeleton loader placeholders — structural only, E2E tested
+        'src/components/public/Event/skeletons/**',
+        'src/components/public/ui/skeleton.tsx',
+        // Dev-only email utility — never runs in production
+        'src/services/devEmailService.ts',
+        // BlobTopicSelector service — used only by already-excluded BlobTopicSelector component
+        'src/services/blobTopicService.ts',
+        // WebSocket client & hook — native browser API, E2E tested
+        'src/services/notificationWebSocketClient.ts',
+        'src/hooks/useNotificationWebSocket.ts',
+        // Trivial token getter — no branching logic
+        'src/services/speakerAuthService.ts',
+        // Routing HOC — tested via E2E
+        'src/components/auth/ProtectedRoute/withProtectedRoute.tsx',
+        // Side-effect-only i18n sync component — fires language change, no testable logic
+        'src/components/shared/LanguageSync/LanguageSync.tsx',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
       include: ['src/**/*.{ts,tsx}'], // Explicitly include source files in coverage
       thresholds: {
-        statements: 70, // Only check overall statement coverage
+        statements: 73, // Only check overall statement coverage
       },
     },
     deps: {
