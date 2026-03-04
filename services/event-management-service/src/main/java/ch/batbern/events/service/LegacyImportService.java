@@ -96,28 +96,50 @@ public class LegacyImportService {
                 .build();
     }
 
+    private static final long MAX_ENTRY_SIZE = 50 * 1024 * 1024; // 50 MB per ZIP entry
+
     public AssetImportResult importAssets(MultipartFile zipFile) throws IOException {
         String prefix = "imports/" + Instant.now().toEpochMilli() + "/";
         List<String> errors = new ArrayList<>();
         int count = 0;
 
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipFile.getBytes()))) {
+        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 if (entry.isDirectory()) {
                     zis.closeEntry();
                     continue;
                 }
-                String s3Key = prefix + entry.getName();
-                byte[] bytes = zis.readAllBytes();
+
+                // Sanitize entry name to prevent ZIP Slip path traversal
+                String entryName = entry.getName()
+                        .replace("\\", "/")
+                        .replaceAll("\\.{2,}/", "")
+                        .replaceAll("^/+", "");
+                if (entryName.isBlank() || entryName.contains("..")) {
+                    log.warn("Skipping suspicious ZIP entry: {}", entry.getName());
+                    zis.closeEntry();
+                    continue;
+                }
+
+                String s3Key = prefix + entryName;
+
+                // Guard against ZIP bomb: cap per-entry read at MAX_ENTRY_SIZE
+                byte[] bytes = readBounded(zis, MAX_ENTRY_SIZE, entryName);
+                if (bytes == null) {
+                    errors.add(entryName + ": exceeds " + (MAX_ENTRY_SIZE / 1024 / 1024) + " MB limit");
+                    zis.closeEntry();
+                    continue;
+                }
+
                 try {
                     s3Client.putObject(
                             PutObjectRequest.builder().bucket(bucketName).key(s3Key).build(),
                             RequestBody.fromBytes(bytes));
                     count++;
                 } catch (Exception ex) {
-                    log.warn("Failed to upload asset {}: {}", entry.getName(), ex.getMessage());
-                    errors.add(entry.getName() + ": " + ex.getMessage());
+                    log.warn("Failed to upload asset {}: {}", entryName, ex.getMessage());
+                    errors.add(entryName + ": " + ex.getMessage());
                 }
                 zis.closeEntry();
             }
@@ -313,6 +335,25 @@ public class LegacyImportService {
                 .venueAddress(dto.getVenueAddress() != null ? dto.getVenueAddress() : "Unknown")
                 .venueCapacity(0)
                 .build();
+    }
+
+    /**
+     * Read up to maxBytes from the stream; return null if the entry exceeds the limit.
+     */
+    private byte[] readBounded(ZipInputStream zis, long maxBytes, String entryName) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        long total = 0;
+        int n;
+        while ((n = zis.read(buf)) != -1) {
+            total += n;
+            if (total > maxBytes) {
+                log.warn("ZIP entry {} exceeds {} byte limit, skipping", entryName, maxBytes);
+                return null;
+            }
+            baos.write(buf, 0, n);
+        }
+        return baos.toByteArray();
     }
 
     private Registration buildNewRegistration(LegacyAttendeeDto dto, UUID eventId) {
