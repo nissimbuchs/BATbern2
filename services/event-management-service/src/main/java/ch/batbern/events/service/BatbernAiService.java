@@ -311,7 +311,9 @@ public class BatbernAiService {
     }
 
     private static boolean isAllowedImageUrl(String url) {
-        if (url == null) return false;
+        if (url == null) {
+            return false;
+        }
         return url.startsWith("https://oaidalleapiprodscus.blob.core.windows.net/")
             || url.startsWith("https://dalleprodsec.blob.core.windows.net/")
             || url.contains(".openai.com/");
