@@ -201,32 +201,18 @@ export default defineConfig({
       },
     },
     // Chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // Function-based manualChunks keeps @emotion + @mui co-located to avoid
-        // the circular-dependency issue (https://github.com/mui/material-ui/issues/43817)
-        // while still splitting the bundle into sub-2 MiB pieces for PWA precache.
+        // Only split @emotion + @mui into their own chunk — required to avoid the
+        // @emotion/@mui circular-dependency issue (https://github.com/mui/material-ui/issues/43817).
+        // Everything else (React, router, i18n, misc deps) goes into one vendor chunk
+        // (~1.84 MB, under Workbox's 2 MB precache limit) so there is never a
+        // cross-chunk CJS-to-ESM factory boundary that causes initialization-order
+        // errors (TDZ / "Cannot set properties of undefined").
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
-          // @emotion and @mui MUST stay in the same chunk
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
-          // Co-locate React and all CJS packages that import React to avoid
-          // cross-chunk initialization order errors (TDZ / "Cannot set properties
-          // of undefined") caused by Rollup's CJS-to-ESM factory pattern.
-          if (
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('/scheduler/') ||
-            id.includes('use-sync-external-store') ||
-            id.includes('react-transition-group') ||
-            id.includes('react-is') ||
-            id.includes('hoist-non-react-statics') ||
-            id.includes('prop-types')
-          )
-            return 'vendor-react';
-          if (id.includes('react-router') || id.includes('@remix-run')) return 'vendor-router';
-          if (id.includes('i18next') || id.includes('react-i18next')) return 'vendor-i18n';
           return 'vendor';
         },
         // Asset file naming for better caching
