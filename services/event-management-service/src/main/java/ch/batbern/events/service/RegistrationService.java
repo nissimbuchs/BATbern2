@@ -286,13 +286,16 @@ public class RegistrationService {
      * <p>
      * ADR-004: Response is minimal — no user profile fields (firstName, lastName, email).
      * ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     * <p>
+     * Always returns a response (never throws). Use {@code registered} field to determine
+     * if a record exists — avoids browser console 404 errors on unenrolled events.
      *
      * @param eventCode             Event code (e.g., "BATbern142")
      * @param authenticatedUsername Username extracted from SecurityContext
-     * @return Optional containing MyRegistrationResponse if a registration exists, empty if not
+     * @return MyRegistrationResponse with registered=true if found, registered=false if not
      */
     @Transactional(readOnly = true)
-    public Optional<MyRegistrationResponse> getMyRegistration(String eventCode, String authenticatedUsername) {
+    public MyRegistrationResponse getMyRegistration(String eventCode, String authenticatedUsername) {
         log.debug("Getting registration for event: {} and user: {}", eventCode, authenticatedUsername);
 
         return registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, authenticatedUsername)
@@ -306,13 +309,14 @@ public class RegistrationService {
                     StatusEnum statusEnum = dbStatus != null ? StatusEnum.fromValue(dbStatus) : null;
                     OffsetDateTime registrationDate = registration.getRegistrationDate() != null
                             ? registration.getRegistrationDate().atOffset(ZoneOffset.UTC) : null;
-                    return new MyRegistrationResponse(
-                            registration.getRegistrationCode(),
-                            eventCode,
-                            statusEnum,
-                            registrationDate)
+                    return new MyRegistrationResponse(true)
+                            .registrationCode(registration.getRegistrationCode())
+                            .eventCode(eventCode)
+                            .status(statusEnum)
+                            .registrationDate(registrationDate)
                             .waitlistPosition(registration.getWaitlistPosition()); // AC13 (Story 10.11)
-                });
+                })
+                .orElse(new MyRegistrationResponse(false));
     }
 
     /**

@@ -939,10 +939,10 @@ export interface paths {
     /**
      * Get my registration status for an event
      * @description Returns the authenticated user's registration status for the specified event.
+     *     Always returns 200. Use the `registered` boolean to determine if a record exists.
      *
      *     **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
      *     **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
-     *     Returns 404 when the authenticated user has no registration for this event.
      *
      *     **ADR-003**: Uses eventCode (meaningful ID) not UUID.
      *     **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
@@ -3575,30 +3575,37 @@ export interface components {
      * @description Story 10.10: Minimal registration status for the authenticated user (AC1).
      *     ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
      *     ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+     *
+     *     Always returns 200. Use `registered` to determine if a record exists.
      */
     MyRegistrationResponse: {
       /**
-       * @description Unique registration code (public identifier)
+       * @description Whether the authenticated user has a registration record for this event.
+       * @example true
+       */
+      registered: boolean;
+      /**
+       * @description Unique registration code (public identifier). Present when registered=true.
        * @example BATbern142-reg-ABC123
        */
-      registrationCode: string;
+      registrationCode?: string;
       /**
-       * @description Event code this registration belongs to
+       * @description Event code this registration belongs to. Present when registered=true.
        * @example BATbern142
        */
-      eventCode: string;
+      eventCode?: string;
       /**
-       * @description Registration status (uppercase)
+       * @description Registration status (uppercase). Present when registered=true.
        * @example CONFIRMED
        * @enum {string}
        */
-      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
       /**
        * Format: date-time
-       * @description ISO-8601 timestamp when registration was created
+       * @description ISO-8601 timestamp when registration was created. Present when registered=true.
        * @example 2025-11-01T10:30:00Z
        */
-      registrationDate: string;
+      registrationDate?: string;
       /**
        * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
        *     Backward-compatible addition — null for non-waitlist registrations.
@@ -6579,41 +6586,16 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Registration found — returns status for the authenticated user */
+      /** @description Registration status for the authenticated user (registered or not) */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "registrationCode": "BATbern142-reg-ABC123",
-           *       "eventCode": "BATbern142",
-           *       "status": "CONFIRMED",
-           *       "registrationDate": "2025-11-01T10:30:00Z"
-           *     }
-           */
           'application/json': components['schemas']['MyRegistrationResponse'];
         };
       };
       401: components['responses']['Unauthorized'];
-      /** @description No registration found for this user and event */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "error": "RESOURCE_NOT_FOUND",
-           *       "errorCode": "NOT_FOUND",
-           *       "message": "No registration found for event BATbern142",
-           *       "timestamp": "2025-11-01T10:30:00Z"
-           *     }
-           */
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
       500: components['responses']['InternalServerError'];
     };
   };

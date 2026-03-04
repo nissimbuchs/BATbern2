@@ -14,28 +14,17 @@ export type MyRegistrationResponse = components['schemas']['MyRegistrationRespon
 /**
  * Fetch the authenticated user's registration status for an event.
  *
- * Returns null on 404 (user not registered).
- * Throws on all other non-2xx errors.
+ * Returns null when the user has no registration (registered=false).
+ * Returns the full response when registered=true.
+ * Throws on non-2xx errors.
  *
  * @param eventCode Event code (e.g., "BATbern142")
  */
 export const getMyRegistration = async (
   eventCode: string
 ): Promise<MyRegistrationResponse | null> => {
-  try {
-    const response = await apiClient.get<MyRegistrationResponse>(
-      `/events/${eventCode}/my-registration`
-    );
-    return response.data;
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'response' in error &&
-      (error as { response?: { status?: number } }).response?.status === 404
-    ) {
-      return null;
-    }
-    throw error;
-  }
+  const response = await apiClient.get<MyRegistrationResponse>(
+    `/events/${eventCode}/my-registration`
+  );
+  return response.data.registered ? response.data : null;
 };

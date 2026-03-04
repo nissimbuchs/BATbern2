@@ -10,7 +10,21 @@
  * Synths are created once and kept alive — only the destination is toggled.
  */
 import { useRef, useCallback, useEffect, useState } from 'react';
-import * as Tone from 'tone';
+// Type-only import: elided at compile time, causes no runtime execution.
+// This keeps Tone namespace types available without triggering standardized-audio-context
+// capability tests (which create AudioContexts before a user gesture).
+import type * as Tone from 'tone';
+
+// Tone.js is lazy-loaded on first unmute (user gesture) to avoid AudioContext
+// autoplay-policy warnings from standardized-audio-context capability tests.
+type ToneModule = typeof import('tone');
+let _tone: ToneModule | null = null;
+async function loadTone(): Promise<ToneModule> {
+  if (!_tone) {
+    _tone = await import('tone');
+  }
+  return _tone;
+}
 
 const STORAGE_KEY = 'batbern_blob_sound_muted';
 
@@ -91,9 +105,10 @@ export function useBlobSounds(): BlobSounds {
   const createSynths = useCallback(async () => {
     if (synthsInitializedRef.current) return;
 
-    // Tone.start() resumes the AudioContext — requires prior user gesture.
-    // toggleMute() is always triggered by a click, so this is safe.
-    await Tone.start();
+    // loadTone() dynamically imports Tone.js — this is always called from a click handler,
+    // satisfying the browser autoplay policy for AudioContext creation.
+    const tone = await loadTone();
+    await tone.start();
 
     // Guard: user may have re-muted while we were waiting for AudioContext
     if (isMutedRef.current) return;
@@ -103,9 +118,9 @@ export function useBlobSounds(): BlobSounds {
     // ── Ambient space pad ────────────────────────────────────────────────────
     // A minor chord across two octaves (A1 E2 A2 E3), filtered through a long reverb.
     // Volume fades in from -60 dB to -28 dB over 3 s (barely audible — background atmosphere).
-    const reverb = new Tone.Reverb({ decay: 8, wet: 0.6 });
+    const reverb = new tone.Reverb({ decay: 8, wet: 0.6 });
     reverb.toDestination();
-    const pad = new Tone.PolySynth(Tone.Synth, {
+    const pad = new tone.PolySynth(tone.Synth, {
       oscillator: { type: 'sine' },
       envelope: { attack: 3, decay: 0.1, sustain: 1, release: 3 },
     });
@@ -119,7 +134,7 @@ export function useBlobSounds(): BlobSounds {
     // ── Slosh (green→blue absorption) ────────────────────────────────────────
     // PluckSynth uses Karplus-Strong string synthesis — naturally produces a
     // water-drop / liquid pluck sound with no manual frequency ramping needed.
-    const slosh = new Tone.PluckSynth({
+    const slosh = new tone.PluckSynth({
       attackNoise: 1,
       dampening: 3000,
       resonance: 0.96,
@@ -130,7 +145,7 @@ export function useBlobSounds(): BlobSounds {
 
     // ── Sting (red star→blue absorption) ─────────────────────────────────────
     // FM synthesis: dissonant harmonic ratio gives a tense "virus-entering" sound.
-    const sting = new Tone.FMSynth({
+    const sting = new tone.FMSynth({
       harmonicity: 1.5,
       modulationIndex: 12,
       oscillator: { type: 'sine' },
@@ -144,7 +159,7 @@ export function useBlobSounds(): BlobSounds {
 
     // ── Flop (blue+blue merge) ────────────────────────────────────────────────
     // MembraneSynth: classic kick-drum pitch sweep — deep satisfying thud.
-    const flop = new Tone.MembraneSynth({
+    const flop = new tone.MembraneSynth({
       pitchDecay: 0.15,
       octaves: 4,
       envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.2 },
@@ -156,7 +171,7 @@ export function useBlobSounds(): BlobSounds {
     // ── Kling (blue blob selected) ────────────────────────────────────────────
     // MetalSynth with inharmonic partials — bell-like ping.
     // frequency is a Signal — must be set after construction, not in options.
-    const kling = new Tone.MetalSynth({
+    const kling = new tone.MetalSynth({
       envelope: { attack: 0.001, decay: 0.3, release: 0.2, sustain: 0 },
       harmonicity: 5.1,
       modulationIndex: 32,
@@ -170,7 +185,7 @@ export function useBlobSounds(): BlobSounds {
 
     // ── Shutdown (blue blob deleted) ──────────────────────────────────────────
     // Sawtooth oscillator sweeping from ~D3 (146 Hz) down to 28 Hz over 1.8 s.
-    const shutdown = new Tone.Synth({
+    const shutdown = new tone.Synth({
       oscillator: { type: 'sawtooth' },
       envelope: { attack: 0.001, decay: 0.1, sustain: 0.8, release: 0.3 },
     });
@@ -194,21 +209,25 @@ export function useBlobSounds(): BlobSounds {
 
     if (next) {
       // Mute: silence Tone.js destination immediately.
+      // _tone may be null if user never unmuted — in that case nothing to mute.
       // Tone.getDestination().mute bypasses the reverb-tail issue —
       // ConvolverNode keeps its buffer for ~8 s if we only ramp source volume.
-      try {
-        Tone.getDestination().mute = true;
-      } catch {
-        /* ignore */
+      if (_tone) {
+        try {
+          _tone.getDestination().mute = true;
+        } catch {
+          /* ignore */
+        }
       }
     } else {
-      // Unmute: resume AudioContext (this click IS the user gesture), then init
+      // Unmute: dynamically load Tone (this click IS the user gesture), then init
       void (async () => {
-        await Tone.start();
+        const tone = await loadTone();
+        await tone.start();
         // Guard: user re-muted while AudioContext was resuming
         if (isMutedRef.current) return;
         try {
-          Tone.getDestination().mute = false;
+          tone.getDestination().mute = false;
         } catch {
           /* ignore */
         }
@@ -221,10 +240,12 @@ export function useBlobSounds(): BlobSounds {
   useEffect(() => {
     return () => {
       disposeSynths();
-      try {
-        Tone.getDestination().mute = false;
-      } catch {
-        /* ignore */
+      if (_tone) {
+        try {
+          _tone.getDestination().mute = false;
+        } catch {
+          /* ignore */
+        }
       }
     };
   }, [disposeSynths]);
@@ -262,19 +283,19 @@ export function useBlobSounds(): BlobSounds {
   }, []);
 
   const playKling = useCallback(() => {
-    if (isMutedRef.current || !klingSynthRef.current) return;
+    if (isMutedRef.current || !klingSynthRef.current || !_tone) return;
     try {
-      klingSynthRef.current.triggerAttackRelease('8n', Tone.now());
+      klingSynthRef.current.triggerAttackRelease('8n', _tone.now());
     } catch {
       /* ignore */
     }
   }, []);
 
   const playShutdown = useCallback(() => {
-    if (isMutedRef.current || !shutdownSynthRef.current) return;
+    if (isMutedRef.current || !shutdownSynthRef.current || !_tone) return;
     try {
       const synth = shutdownSynthRef.current;
-      const now = Tone.now();
+      const now = _tone.now();
       synth.triggerAttack('D3', now);
       synth.frequency.exponentialRampToValueAtTime(28, now + 1.8);
       setTimeout(() => {

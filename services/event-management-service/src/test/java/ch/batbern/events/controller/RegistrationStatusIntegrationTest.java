@@ -45,11 +45,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses Testcontainers PostgreSQL for production parity.
  *
  * Test coverage:
- * - T5.2: 200 CONFIRMED status
- * - T5.3: 200 REGISTERED status
- * - T5.4: 200 WAITLIST status
- * - T5.5: 200 CANCELLED status
- * - T5.6: 404 when user has no registration
+ * - T5.2: 200 CONFIRMED status, registered=true
+ * - T5.3: 200 REGISTERED status, registered=true
+ * - T5.4: 200 WAITLIST status, registered=true
+ * - T5.5: 200 CANCELLED status, registered=true
+ * - T5.6: 200 registered=false when user has no registration (no 404)
  * - T5.7: 403/401 for unauthenticated (TestSecurityConfig uses permitAll at HTTP level;
  *          @PreAuthorize("isAuthenticated()") returns 403 in tests, 401 in production)
  * - T4.6.2: POST registrations allows re-registration when existing status is CANCELLED
@@ -121,6 +121,7 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
                 .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
                 .andExpect(jsonPath("$.status", is("CONFIRMED")))
                 .andExpect(jsonPath("$.registrationCode", notNullValue()))
@@ -137,6 +138,7 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
                 .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
                 .andExpect(jsonPath("$.status", is("REGISTERED")));
     }
@@ -152,6 +154,7 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
                 .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
                 .andExpect(jsonPath("$.status", is("WAITLIST")));
     }
@@ -166,29 +169,32 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
                 .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
                 .andExpect(jsonPath("$.status", is("CANCELLED")));
     }
 
-    // ── T5.6: 404 no registration ─────────────────────────────────────────────
+    // ── T5.6: 200 registered=false when no registration ──────────────────────
 
     @Test
-    @DisplayName("should return 404 when authenticated user has no registration for event")
+    @DisplayName("should return 200 with registered=false when authenticated user has no registration for event")
     @WithMockUser(username = USERNAME)
-    void should_return404_when_noRegistrationForUser() throws Exception {
-        // Save a registration for a DIFFERENT user — alice should still get 404
+    void should_return200_with_registeredFalse_when_noRegistrationForUser() throws Exception {
+        // Save a registration for a DIFFERENT user — alice should still get registered=false
         saveRegistration(testEvent, OTHER_USERNAME, "confirmed");
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(false)));
     }
 
     @Test
-    @DisplayName("should return 404 when event code does not exist")
+    @DisplayName("should return 200 with registered=false when event code does not exist")
     @WithMockUser(username = USERNAME)
-    void should_return404_when_eventNotFound() throws Exception {
+    void should_return200_with_registeredFalse_when_eventNotFound() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", "BATbern000"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(false)));
     }
 
     // ── T5.7: unauthenticated ─────────────────────────────────────────────────
