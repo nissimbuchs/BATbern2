@@ -28,6 +28,10 @@ import {
   Snackbar,
   TextField,
   CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -44,7 +48,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
-import { useUploadTeaserImage, useDeleteTeaserImage } from '@/hooks/useEventTeaserImages';
+import {
+  useUploadTeaserImage,
+  useDeleteTeaserImage,
+  useUpdateTeaserImagePosition,
+} from '@/hooks/useEventTeaserImages';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import type { components } from '@/types/generated/events-api.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
@@ -92,9 +100,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const MAX_TEASER_IMAGES = 10;
   const uploadTeaserImageMutation = useUploadTeaserImage(eventCode);
   const deleteTeaserImageMutation = useDeleteTeaserImage(eventCode);
+  const updateTeaserImagePositionMutation = useUpdateTeaserImagePosition(eventCode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [teaserUploadError, setTeaserUploadError] = useState<string | null>(null);
   const [teaserRemoveError, setTeaserRemoveError] = useState<string | null>(null);
+  const [teaserPositionError, setTeaserPositionError] = useState<string | null>(null);
 
   // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
@@ -225,6 +235,22 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     }
   };
 
+  const handleTeaserImagePositionChange = async (imageId: string, position: string) => {
+    setTeaserPositionError(null);
+    try {
+      await updateTeaserImagePositionMutation.mutateAsync({
+        imageId,
+        request: { presentationPosition: position as TeaserImageItem['presentationPosition'] },
+      });
+    } catch (err) {
+      setTeaserPositionError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.positionError', 'Failed to update slide position. Please try again.')
+      );
+    }
+  };
+
   return (
     <Stack spacing={3}>
       {/* Event Moderator */}
@@ -336,7 +362,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         <Typography variant="body2" color="text.secondary" mb={2}>
           {t(
             'teaserImage.description',
-            'Images shown as full-screen slides on the presentation page between topic reveal and agenda preview.'
+            'Images shown as full-screen slides on the presentation page.'
           )}
         </Typography>
 
@@ -350,13 +376,18 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             {teaserRemoveError}
           </Alert>
         )}
+        {teaserPositionError && (
+          <Alert severity="error" onClose={() => setTeaserPositionError(null)} sx={{ mb: 2 }}>
+            {teaserPositionError}
+          </Alert>
+        )}
 
         {/* Gallery */}
         {teaserImages.length > 0 && (
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
               gap: 1.5,
               mb: 2,
             }}
@@ -364,37 +395,64 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             {[...teaserImages]
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((img) => (
-                <Box
-                  key={img.id}
-                  sx={{
-                    position: 'relative',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    aspectRatio: '16/9',
-                    bgcolor: 'grey.100',
-                  }}
-                >
-                  <img
-                    src={img.imageUrl}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => void handleDeleteTeaserImage(img.id)}
-                    disabled={isArchived || deleteTeaserImageMutation.isPending}
+                <Stack key={img.id} spacing={0.75}>
+                  <Box
                     sx={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      bgcolor: 'rgba(0,0,0,0.55)',
-                      color: '#fff',
-                      '&:hover': { bgcolor: 'rgba(200,0,0,0.75)' },
+                      position: 'relative',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      aspectRatio: '16/9',
+                      bgcolor: 'grey.100',
                     }}
                   >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
+                    <img
+                      src={img.imageUrl}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => void handleDeleteTeaserImage(img.id)}
+                      disabled={isArchived || deleteTeaserImageMutation.isPending}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        bgcolor: 'rgba(0,0,0,0.55)',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'rgba(200,0,0,0.75)' },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <FormControl size="small" fullWidth disabled={isArchived}>
+                    <InputLabel>{t('teaserImage.position.label', 'Show after')}</InputLabel>
+                    <Select
+                      value={img.presentationPosition}
+                      label={t('teaserImage.position.label', 'Show after')}
+                      onChange={(e) => void handleTeaserImagePositionChange(img.id, e.target.value)}
+                    >
+                      <MenuItem value="AFTER_WELCOME">
+                        {t('teaserImage.position.afterWelcome', 'Welcome slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_COMMITTEE">
+                        {t('teaserImage.position.afterCommittee', 'Committee slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_TOPIC_REVEAL">
+                        {t('teaserImage.position.afterTopicReveal', 'Topic Reveal slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_UPCOMING_EVENTS">
+                        {t('teaserImage.position.afterUpcomingEvents', 'Upcoming Events slide')}
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
               ))}
           </Box>
         )}
@@ -470,6 +528,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             >
               <ListItemText
                 primary={rule.name}
+                secondaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Typography variant="caption" color="text.secondary">

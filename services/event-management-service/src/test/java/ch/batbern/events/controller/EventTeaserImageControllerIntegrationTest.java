@@ -38,6 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -142,7 +143,8 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.imageUrl").isNotEmpty())
-                .andExpect(jsonPath("$.displayOrder").value(0));
+                .andExpect(jsonPath("$.displayOrder").value(0))
+                .andExpect(jsonPath("$.presentationPosition").value("AFTER_TOPIC_REVEAL"));
 
         // AC8: verify actual DB state
         assertThat(teaserImageRepository.findByEventCodeOrderByDisplayOrderAsc(EVENT_CODE)).hasSize(1);
@@ -193,6 +195,7 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
                 .andExpect(jsonPath("$.teaserImages").isArray())
                 .andExpect(jsonPath("$.teaserImages.length()").value(2))
                 .andExpect(jsonPath("$.teaserImages[0].displayOrder").value(0))
+                .andExpect(jsonPath("$.teaserImages[0].presentationPosition").value("AFTER_TOPIC_REVEAL"))
                 .andExpect(jsonPath("$.teaserImages[1].displayOrder").value(1));
     }
 
@@ -203,6 +206,45 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
         mockMvc.perform(get("/api/v1/events/{code}", EVENT_CODE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.teaserImages").isEmpty());
+    }
+
+    // ── patch (presentation position) ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("PATCH teaser image updates presentationPosition in DB and response - AC (position)")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchTeaserImage_asOrganizer_updatesPresentationPosition() throws Exception {
+        EventTeaserImage image = createTeaserImage("events/" + EVENT_CODE + "/teaser/img.jpg", 0);
+
+        mockMvc.perform(patch("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, image.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"presentationPosition\":\"AFTER_WELCOME\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(image.getId().toString()))
+                .andExpect(jsonPath("$.presentationPosition").value("AFTER_WELCOME"));
+
+        // Verify DB state
+        EventTeaserImage dbState = teaserImageRepository.findById(image.getId()).orElseThrow();
+        assertThat(dbState.getPresentationPosition()).isEqualTo("AFTER_WELCOME");
+    }
+
+    @Test
+    @DisplayName("PATCH unknown imageId returns 404")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchTeaserImage_withUnknownId_returns404() throws Exception {
+        mockMvc.perform(patch("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"presentationPosition\":\"AFTER_WELCOME\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PATCH as anonymous returns 403")
+    void patchTeaserImage_asAnonymous_returns403() throws Exception {
+        mockMvc.perform(patch("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"presentationPosition\":\"AFTER_WELCOME\"}"))
+                .andExpect(status().isForbidden());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────

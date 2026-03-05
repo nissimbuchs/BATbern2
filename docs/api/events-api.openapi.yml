@@ -4878,6 +4878,44 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   /events/{eventCode}/teaser-images/{imageId}:
+    patch:
+      tags: [Events]
+      operationId: updateTeaserImage
+      summary: Update presentation position of a teaser image
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUpdateRequest'
+      responses:
+        '200':
+          description: Teaser image updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     delete:
       tags: [Events]
       operationId: deleteTeaserImage
@@ -5397,9 +5435,18 @@ components:
 
     # ── Event Teaser Image Schemas (Story 10.22) ──────────────────────────────
 
+    TeaserImagePresentationPosition:
+      type: string
+      description: Controls which slide the image appears after in the moderator presentation.
+      enum:
+        - AFTER_WELCOME
+        - AFTER_COMMITTEE
+        - AFTER_TOPIC_REVEAL
+        - AFTER_UPCOMING_EVENTS
+
     TeaserImageItem:
       type: object
-      required: [id, imageUrl, displayOrder]
+      required: [id, imageUrl, displayOrder, presentationPosition]
       description: A single teaser image for the moderator presentation page.
       properties:
         id:
@@ -5415,6 +5462,15 @@ components:
           type: integer
           description: Order in which the image is displayed (ascending).
           example: 0
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
+
+    TeaserImageUpdateRequest:
+      type: object
+      required: [presentationPosition]
+      properties:
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
 
     TeaserImageUploadUrlRequest:
       type: object

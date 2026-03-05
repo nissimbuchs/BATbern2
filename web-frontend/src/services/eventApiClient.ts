@@ -35,6 +35,7 @@ type TeaserImageItem = components['schemas']['TeaserImageItem'];
 type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
 type TeaserImageUploadUrlResponse = components['schemas']['TeaserImageUploadUrlResponse'];
 type TeaserImageConfirmRequest = components['schemas']['TeaserImageConfirmRequest'];
+type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
@@ -551,6 +552,22 @@ class EventApiClient {
     try {
       const response = await apiClient.post<TeaserImageItem>(
         `${EVENT_API_PATH}/${eventCode}/teaser-images/confirm`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async updateTeaserImage(
+    eventCode: string,
+    imageId: string,
+    request: TeaserImageUpdateRequest
+  ): Promise<TeaserImageItem> {
+    try {
+      const response = await apiClient.patch<TeaserImageItem>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`,
         request
       );
       return response.data;

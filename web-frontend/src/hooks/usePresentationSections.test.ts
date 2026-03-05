@@ -148,8 +148,18 @@ describe('usePresentationSections', () => {
     const eventWithTeaser = {
       ...MOCK_EVENT,
       teaserImages: [
-        { id: 'img-1', imageUrl: 'https://cdn.batbern.ch/t1.jpg', displayOrder: 0 },
-        { id: 'img-2', imageUrl: 'https://cdn.batbern.ch/t2.jpg', displayOrder: 1 },
+        {
+          id: 'img-1',
+          imageUrl: 'https://cdn.batbern.ch/t1.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_TOPIC_REVEAL' as const,
+        },
+        {
+          id: 'img-2',
+          imageUrl: 'https://cdn.batbern.ch/t2.jpg',
+          displayOrder: 1,
+          presentationPosition: 'AFTER_TOPIC_REVEAL' as const,
+        },
       ],
     } as PresentationEventDetail;
 
@@ -174,8 +184,18 @@ describe('usePresentationSections', () => {
     const eventWithTeaser = {
       ...MOCK_EVENT,
       teaserImages: [
-        { id: 'img-b', imageUrl: 'https://cdn.batbern.ch/b.jpg', displayOrder: 1 },
-        { id: 'img-a', imageUrl: 'https://cdn.batbern.ch/a.jpg', displayOrder: 0 },
+        {
+          id: 'img-b',
+          imageUrl: 'https://cdn.batbern.ch/b.jpg',
+          displayOrder: 1,
+          presentationPosition: 'AFTER_TOPIC_REVEAL' as const,
+        },
+        {
+          id: 'img-a',
+          imageUrl: 'https://cdn.batbern.ch/a.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_TOPIC_REVEAL' as const,
+        },
       ],
     } as PresentationEventDetail;
 
@@ -183,6 +203,155 @@ describe('usePresentationSections', () => {
     const teaserSections = result.current.filter((s) => s.type === 'teaser-image');
     expect(teaserSections[0].imageUrl).toBe('https://cdn.batbern.ch/a.jpg');
     expect(teaserSections[1].imageUrl).toBe('https://cdn.batbern.ch/b.jpg');
+  });
+
+  test('places teaser image at AFTER_WELCOME between welcome and about', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        {
+          id: 'img-w',
+          imageUrl: 'https://cdn.batbern.ch/welcome.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_WELCOME' as const,
+        },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+    const welcomeIdx = types.indexOf('welcome');
+    const aboutIdx = types.indexOf('about');
+
+    expect(types[welcomeIdx + 1]).toBe('teaser-image');
+    expect(aboutIdx).toBe(welcomeIdx + 2);
+  });
+
+  test('places teaser image at AFTER_COMMITTEE between committee and topic-reveal', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        {
+          id: 'img-c',
+          imageUrl: 'https://cdn.batbern.ch/committee.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_COMMITTEE' as const,
+        },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+    const committeeIdx = types.indexOf('committee');
+    const topicIdx = types.indexOf('topic-reveal');
+
+    expect(types[committeeIdx + 1]).toBe('teaser-image');
+    expect(topicIdx).toBe(committeeIdx + 2);
+  });
+
+  test('places teaser image at AFTER_UPCOMING_EVENTS between upcoming-events and apero', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        {
+          id: 'img-u',
+          imageUrl: 'https://cdn.batbern.ch/upcoming.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_UPCOMING_EVENTS' as const,
+        },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+    const upcomingIdx = types.indexOf('upcoming-events');
+    const aperoIdx = types.indexOf('apero');
+
+    expect(types[upcomingIdx + 1]).toBe('teaser-image');
+    expect(aperoIdx).toBe(upcomingIdx + 2);
+  });
+
+  test('handles mixed positions — each image at correct slot', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        {
+          id: 'img-w',
+          imageUrl: 'https://cdn.batbern.ch/welcome.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_WELCOME' as const,
+        },
+        {
+          id: 'img-t',
+          imageUrl: 'https://cdn.batbern.ch/topic.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_TOPIC_REVEAL' as const,
+        },
+        {
+          id: 'img-u',
+          imageUrl: 'https://cdn.batbern.ch/upcoming.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_UPCOMING_EVENTS' as const,
+        },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+
+    // welcome → teaser → about → committee → topic-reveal → teaser → agenda-preview → upcoming-events → teaser → apero
+    expect(types[0]).toBe('welcome');
+    expect(types[1]).toBe('teaser-image'); // AFTER_WELCOME
+    expect(types[2]).toBe('about');
+    const topicIdx = types.indexOf('topic-reveal');
+    expect(types[topicIdx + 1]).toBe('teaser-image'); // AFTER_TOPIC_REVEAL
+    const upcomingIdx = types.indexOf('upcoming-events');
+    expect(types[upcomingIdx + 1]).toBe('teaser-image'); // AFTER_UPCOMING_EVENTS
+    expect(types[types.length - 1]).toBe('apero');
+  });
+
+  test('respects displayOrder within same position', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        {
+          id: 'img-2',
+          imageUrl: 'https://cdn.batbern.ch/second.jpg',
+          displayOrder: 1,
+          presentationPosition: 'AFTER_WELCOME' as const,
+        },
+        {
+          id: 'img-1',
+          imageUrl: 'https://cdn.batbern.ch/first.jpg',
+          displayOrder: 0,
+          presentationPosition: 'AFTER_WELCOME' as const,
+        },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const teaserSections = result.current.filter((s) => s.type === 'teaser-image');
+    expect(teaserSections[0].imageUrl).toBe('https://cdn.batbern.ch/first.jpg');
+    expect(teaserSections[1].imageUrl).toBe('https://cdn.batbern.ch/second.jpg');
+  });
+
+  test('defaults missing presentationPosition to AFTER_TOPIC_REVEAL', () => {
+    const eventWithTeaser = {
+      ...MOCK_EVENT,
+      teaserImages: [
+        // presentationPosition intentionally omitted to test fallback
+        { id: 'img-x', imageUrl: 'https://cdn.batbern.ch/x.jpg', displayOrder: 0 },
+      ],
+    } as PresentationEventDetail;
+
+    const { result } = renderHook(() => usePresentationSections(eventWithTeaser, []));
+    const types = result.current.map((s) => s.type);
+    const topicIdx = types.indexOf('topic-reveal');
+    const agendaIdx = types.indexOf('agenda-preview');
+
+    // Should appear between topic-reveal and agenda-preview (default)
+    expect(types[topicIdx + 1]).toBe('teaser-image');
+    expect(agendaIdx).toBe(topicIdx + 2);
   });
 });
 

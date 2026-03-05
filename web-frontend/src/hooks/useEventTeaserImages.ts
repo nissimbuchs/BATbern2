@@ -13,6 +13,7 @@ import { eventApiClient } from '@/services/eventApiClient';
 import type { components } from '@/types/generated/events-api.types';
 
 type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
+type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
 
 /**
  * 3-phase upload mutation.
@@ -40,6 +41,18 @@ export const useDeleteTeaserImage = (eventCode: string) => {
 
   return useMutation({
     mutationFn: (imageId: string) => eventApiClient.deleteTeaserImage(eventCode, imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+    },
+  });
+};
+
+export const useUpdateTeaserImagePosition = (eventCode: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ imageId, request }: { imageId: string; request: TeaserImageUpdateRequest }) =>
+      eventApiClient.updateTeaserImage(eventCode, imageId, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
     },

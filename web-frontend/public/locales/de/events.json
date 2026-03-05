@@ -788,11 +788,19 @@
   },
   "teaserImage": {
     "title": "Teaser-Bilder",
-    "description": "Bilder, die auf der Präsentationsseite als Vollbild-Folien zwischen Themenbekanntgabe und Agenda-Vorschau angezeigt werden.",
+    "description": "Bilder, die auf der Präsentationsseite als Vollbild-Folien angezeigt werden.",
     "uploadButton": "Teaser-Bild hinzufügen",
     "uploading": "Wird hochgeladen...",
     "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "removeError": "Entfernen fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "limitReached": "Maximum von {{max}} Teaser-Bildern erreicht."
+    "positionError": "Folienposition konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+    "limitReached": "Maximum von {{max}} Teaser-Bildern erreicht.",
+    "position": {
+      "label": "Anzeigen nach",
+      "afterWelcome": "Willkommens-Folie",
+      "afterCommittee": "Komitee-Folie",
+      "afterTopicReveal": "Themenbekanntgabe-Folie",
+      "afterUpcomingEvents": "Kommende Events-Folie"
+    }
   }
 }
