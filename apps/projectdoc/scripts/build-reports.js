@@ -15,6 +15,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import Handlebars from 'handlebars';
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { fromIni } from '@aws-sdk/credential-providers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +50,9 @@ class ReportsBuilder {
     console.log('\n=== BATbern Reports Builder ===\n');
 
     try {
+      // Step 0: Fetch ZAP reports from staging S3 if not already present locally
+      await this.fetchZapReports();
+
       // Step 1: Aggregate all reports
       console.log('Step 1: Aggregating reports...');
       const aggregator = new ReportAggregator({
@@ -563,6 +568,56 @@ class ReportsBuilder {
       if (value === null || value === undefined) return '0';
       return parseInt(value).toLocaleString('en-US');
     });
+  }
+
+  /**
+   * Fetch ZAP reports from staging S3 into security-reports/ if not already present.
+   * Uses the batbern-staging AWS profile (same as deploy.js).
+   * Skips silently when credentials are unavailable (CI sets its own reports via workflow).
+   */
+  async fetchZapReports() {
+    const ZAP_BUCKET = 'batbern-content-staging';
+    const ZAP_PREFIX = 'ci-reports/zap/';
+    const profile = process.env.STAGING_PROFILE || 'batbern-staging';
+    const outDir = path.resolve(__dirname, '..', 'security-reports');
+
+    // Already populated — skip
+    const existing = await fs.readdir(outDir).catch(() => []);
+    if (existing.some(f => f.startsWith('zap-') && f.endsWith('.json'))) {
+      console.log('Step 0: ZAP reports already present locally — skipping S3 fetch.\n');
+      return;
+    }
+
+    console.log(`Step 0: Fetching ZAP reports from s3://${ZAP_BUCKET}/${ZAP_PREFIX} ...`);
+    let s3;
+    try {
+      s3 = new S3Client({ region: 'eu-central-1', credentials: fromIni({ profile }) });
+    } catch {
+      console.warn('  ⚠️  Could not initialise S3 client — ZAP section will be hidden.\n');
+      return;
+    }
+
+    let listed;
+    try {
+      listed = await s3.send(new ListObjectsV2Command({ Bucket: ZAP_BUCKET, Prefix: ZAP_PREFIX }));
+    } catch (err) {
+      console.warn(`  ⚠️  Could not list ZAP reports (${err.message}) — ZAP section will be hidden.\n`);
+      return;
+    }
+
+    const objects = (listed.Contents || []).filter(o => o.Key !== ZAP_PREFIX);
+    if (objects.length === 0) {
+      console.warn('  ℹ️  No ZAP reports found in S3 — ZAP section will be hidden.\n');
+      return;
+    }
+
+    await fs.ensureDir(outDir);
+    for (const obj of objects) {
+      const filename = obj.Key.replace(ZAP_PREFIX, '');
+      const res = await s3.send(new GetObjectCommand({ Bucket: ZAP_BUCKET, Key: obj.Key }));
+      await fs.writeFile(path.join(outDir, filename), Buffer.from(await res.Body.transformToByteArray()));
+    }
+    console.log(`  ✅ Downloaded ${objects.length} ZAP report(s) to security-reports/\n`);
   }
 }
 
