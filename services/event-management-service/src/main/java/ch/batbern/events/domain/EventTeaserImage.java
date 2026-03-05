@@ -43,6 +43,9 @@ public class EventTeaserImage {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    @Column(name = "presentation_position", nullable = false, length = 30)
+    private String presentationPosition = "AFTER_TOPIC_REVEAL";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 }

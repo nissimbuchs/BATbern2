@@ -2187,7 +2187,8 @@ export interface paths {
     delete: operations['deleteTeaserImage'];
     options?: never;
     head?: never;
-    patch?: never;
+    /** Update presentation position of a teaser image */
+    patch: operations['updateTeaserImage'];
     trace?: never;
   };
   '/admin/export/legacy': {
@@ -2479,6 +2480,15 @@ export interface components {
       photoId: string;
       s3Key: string;
     };
+    /**
+     * @description Controls which slide the image appears after in the moderator presentation.
+     * @enum {string}
+     */
+    TeaserImagePresentationPosition:
+      | 'AFTER_WELCOME'
+      | 'AFTER_COMMITTEE'
+      | 'AFTER_TOPIC_REVEAL'
+      | 'AFTER_UPCOMING_EVENTS';
     /** @description A single teaser image for the moderator presentation page. */
     TeaserImageItem: {
       /**
@@ -2497,6 +2507,10 @@ export interface components {
        * @example 0
        */
       displayOrder: number;
+      presentationPosition: components['schemas']['TeaserImagePresentationPosition'];
+    };
+    TeaserImageUpdateRequest: {
+      presentationPosition: components['schemas']['TeaserImagePresentationPosition'];
     };
     TeaserImageUploadUrlRequest: {
       /**
@@ -8631,6 +8645,43 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Teaser image not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  updateTeaserImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern57 */
+        eventCode: string;
+        imageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TeaserImageUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description Teaser image updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TeaserImageItem'];
+        };
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];

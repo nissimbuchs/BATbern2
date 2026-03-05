@@ -3,6 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.dto.generated.TeaserImageConfirmRequest;
 import ch.batbern.events.dto.generated.TeaserImageItem;
+import ch.batbern.events.dto.generated.TeaserImageUpdateRequest;
 import ch.batbern.events.dto.generated.TeaserImageUploadUrlRequest;
 import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.service.EventTeaserImageService;
@@ -12,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,6 +65,21 @@ public class EventTeaserImageController {
             @RequestBody TeaserImageConfirmRequest request) {
         return ResponseEntity.ok(
                 teaserImageService.confirmUpload(eventCode, request.getS3Key())
+        );
+    }
+
+    /**
+     * Update the presentation position of a teaser image.
+     */
+    @PatchMapping("/events/{eventCode}/teaser-images/{imageId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<TeaserImageItem> updateTeaserImage(
+            @PathVariable String eventCode,
+            @PathVariable UUID imageId,
+            @RequestBody TeaserImageUpdateRequest request) {
+        return ResponseEntity.ok(
+                teaserImageService.updatePresentationPosition(eventCode, imageId, request.getPresentationPosition())
         );
     }
 

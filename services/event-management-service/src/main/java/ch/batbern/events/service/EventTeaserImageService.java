@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.dto.generated.TeaserImageItem;
+import ch.batbern.events.dto.generated.TeaserImagePresentationPosition;
 import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.exception.TeaserImageLimitExceededException;
 import ch.batbern.events.exception.TeaserImageNotFoundException;
@@ -187,13 +188,28 @@ public class EventTeaserImageService {
                 .toList();
     }
 
+    /**
+     * Update the presentation position of an existing teaser image.
+     * The position controls which slide the image appears after in the moderator presentation.
+     */
+    public TeaserImageItem updatePresentationPosition(String eventCode, UUID imageId,
+                                                      TeaserImagePresentationPosition position) {
+        EventTeaserImage image = teaserImageRepository.findByIdAndEventCode(imageId, eventCode)
+                .orElseThrow(() -> new TeaserImageNotFoundException(imageId.toString()));
+        image.setPresentationPosition(position.getValue());
+        EventTeaserImage saved = teaserImageRepository.save(image);
+        log.info("Teaser image {} position updated to {} for event {}", imageId, position.getValue(), eventCode);
+        return toItem(saved);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────────
 
     private TeaserImageItem toItem(EventTeaserImage entity) {
         return new TeaserImageItem(
                 entity.getId(),
                 URI.create(entity.getImageUrl()),
-                entity.getDisplayOrder()
+                entity.getDisplayOrder(),
+                TeaserImagePresentationPosition.fromValue(entity.getPresentationPosition())
         );
     }
 

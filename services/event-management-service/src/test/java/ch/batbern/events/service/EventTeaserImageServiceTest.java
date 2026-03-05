@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.dto.generated.TeaserImageItem;
+import ch.batbern.events.dto.generated.TeaserImagePresentationPosition;
 import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.exception.TeaserImageLimitExceededException;
 import ch.batbern.events.exception.TeaserImageNotFoundException;
@@ -182,6 +183,7 @@ class EventTeaserImageServiceTest {
             verify(teaserImageRepository).save(any(EventTeaserImage.class));
             assertThat(result.getId()).isEqualTo(saved.getId());
             assertThat(result.getDisplayOrder()).isEqualTo(0);
+            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.TOPIC_REVEAL);
         }
 
         @Test
@@ -255,6 +257,63 @@ class EventTeaserImageServiceTest {
             img.setDisplayOrder(displayOrder);
             img.setCreatedAt(OffsetDateTime.now());
             return img;
+        }
+    }
+
+    // ── updatePresentationPosition ───────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("updatePresentationPosition")
+    class UpdatePresentationPositionTests {
+
+        @Test
+        @DisplayName("should update position and return updated TeaserImageItem")
+        void should_updatePresentationPosition_returnsUpdatedItem() {
+            // Given
+            UUID imageId = UUID.randomUUID();
+            EventTeaserImage existing = new EventTeaserImage();
+            existing.setId(imageId);
+            existing.setEventCode(EVENT_CODE);
+            existing.setS3Key("events/" + EVENT_CODE + "/teaser/img.jpg");
+            existing.setImageUrl(CLOUDFRONT_DOMAIN + "/events/" + EVENT_CODE + "/teaser/img.jpg");
+            existing.setDisplayOrder(0);
+            existing.setPresentationPosition("AFTER_TOPIC_REVEAL");
+
+            EventTeaserImage updated = new EventTeaserImage();
+            updated.setId(imageId);
+            updated.setEventCode(EVENT_CODE);
+            updated.setS3Key(existing.getS3Key());
+            updated.setImageUrl(existing.getImageUrl());
+            updated.setDisplayOrder(0);
+            updated.setPresentationPosition("AFTER_WELCOME");
+
+            when(teaserImageRepository.findByIdAndEventCode(imageId, EVENT_CODE))
+                    .thenReturn(Optional.of(existing));
+            when(teaserImageRepository.save(any(EventTeaserImage.class))).thenReturn(updated);
+
+            // When
+            TeaserImageItem result = service.updatePresentationPosition(EVENT_CODE, imageId,
+                    TeaserImagePresentationPosition.WELCOME);
+
+            // Then
+            verify(teaserImageRepository).save(any(EventTeaserImage.class));
+            assertThat(result.getPresentationPosition()).isEqualTo(TeaserImagePresentationPosition.WELCOME);
+        }
+
+        @Test
+        @DisplayName("should throw TeaserImageNotFoundException when image not found")
+        void should_throw_TeaserImageNotFoundException_whenImageNotFound() {
+            // Given
+            UUID imageId = UUID.randomUUID();
+            when(teaserImageRepository.findByIdAndEventCode(imageId, EVENT_CODE))
+                    .thenReturn(Optional.empty());
+
+            // When / Then
+            assertThatThrownBy(() -> service.updatePresentationPosition(EVENT_CODE, imageId,
+                    TeaserImagePresentationPosition.WELCOME))
+                    .isInstanceOf(TeaserImageNotFoundException.class);
+
+            verify(teaserImageRepository, never()).save(any());
         }
     }
 
