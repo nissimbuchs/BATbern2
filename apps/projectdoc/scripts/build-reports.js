@@ -579,7 +579,8 @@ class ReportsBuilder {
     const ZAP_BUCKET = 'batbern-content-staging';
     const ZAP_PREFIX = 'ci-reports/zap/';
     const profile = process.env.STAGING_PROFILE || 'batbern-staging';
-    const outDir = path.resolve(__dirname, '..', 'security-reports');
+    // Must match baseDir used by ReportAggregator (repo root) + pattern 'security-reports/zap-*.json'
+    const outDir = path.join(this.baseDir, 'security-reports');
 
     // Already populated — skip
     const existing = await fs.readdir(outDir).catch(() => []);
