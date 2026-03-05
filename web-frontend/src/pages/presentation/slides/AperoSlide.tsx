@@ -27,16 +27,17 @@ export function AperoSlide(): JSX.Element {
       }}
     >
       {/* BATbern spinner (AC #14) */}
-      <div className={animStyles.loaderWrap} style={{ width: '6.25vw', height: '6.25vw', marginBottom: '1.667vw' }}>
-        <BATbernLoader size={120} speed="slow" />
+      <div className={animStyles.loaderWrap} style={{ width: '9.375vw', height: '9.375vw', marginBottom: '2.083vw' }}>
+        <BATbernLoader size={180} speed="slow" />
       </div>
 
       <div
         style={{
-          fontSize: '2.5vw',
-          fontWeight: 700,
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '0.833vw',
+          fontSize: '5vw',
+          fontWeight: 800,
+          color: '#4f9cf9',
+          marginBottom: '1.25vw',
+          letterSpacing: '-0.02em',
         }}
       >
         Apéro
@@ -44,8 +45,8 @@ export function AperoSlide(): JSX.Element {
 
       <div
         style={{
-          fontSize: '1.25vw',
-          color: 'rgba(255,255,255,0.55)',
+          fontSize: '1.667vw',
+          color: 'rgba(255,255,255,0.7)',
         }}
       >
         Vielen Dank für euren Besuch!
