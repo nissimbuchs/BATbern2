@@ -40,8 +40,8 @@ export default {
       // Vitest JUnit test results
       testResultsPattern: 'web-frontend/test-results/junit.xml',
 
-      // LCOV coverage reports
-      coveragePattern: '**/coverage/lcov.info',
+      // LCOV coverage reports — explicit path avoids matching node_modules/pngjs/coverage/lcov.info
+      coveragePattern: 'web-frontend/coverage/lcov.info',
 
       // HTML coverage reports
       htmlCoveragePattern: '**/coverage/index.html',
