@@ -582,13 +582,6 @@ class ReportsBuilder {
     // Must match baseDir used by ReportAggregator (repo root) + pattern 'security-reports/zap-*.json'
     const outDir = path.join(this.baseDir, 'security-reports');
 
-    // Already populated — skip
-    const existing = await fs.readdir(outDir).catch(() => []);
-    if (existing.some(f => f.startsWith('zap-') && f.endsWith('.json'))) {
-      console.log('Step 0: ZAP reports already present locally — skipping S3 fetch.\n');
-      return;
-    }
-
     console.log(`Step 0: Fetching ZAP reports from s3://${ZAP_BUCKET}/${ZAP_PREFIX} ...`);
     let s3;
     try {
