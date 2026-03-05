@@ -27,16 +27,16 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
-        padding: '3rem',
+        height: '100%',
+        padding: '2.5vw',
         color: '#ffffff',
       }}
     >
       <h2
         style={{
-          fontSize: '3rem',
+          fontSize: '2.5vw',
           fontWeight: 700,
-          marginBottom: '3rem',
+          marginBottom: '2.5vw',
           color: '#4f9cf9',
         }}
       >
@@ -47,9 +47,9 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(400px, 560px))',
-          gap: '1.5rem',
-          maxWidth: '1200px',
+          gridTemplateColumns: 'repeat(2, minmax(20.833vw, 29.167vw))',
+          gap: '1.25vw',
+          maxWidth: '62.5vw',
           width: '100%',
         }}
       >
@@ -62,8 +62,8 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '12px',
-              padding: '1.25rem 1.5rem',
+              borderRadius: '0.625vw',
+              padding: '1.042vw 1.25vw',
             }}
           >
             <OrganizerDisplay organizer={org} showBio={false} />

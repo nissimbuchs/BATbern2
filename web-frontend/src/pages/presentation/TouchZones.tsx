@@ -46,7 +46,7 @@ export function TouchZones({
       <TapZone
         onTap={onPrev}
         icon="‹"
-        iconFontSize="3rem"
+        iconFontSize="2.5vw"
         style={{
           position: 'fixed',
           zIndex: 10,
@@ -62,7 +62,7 @@ export function TouchZones({
       <TapZone
         onTap={onNext}
         icon="›"
-        iconFontSize="3rem"
+        iconFontSize="2.5vw"
         style={{
           position: 'fixed',
           zIndex: 10,
@@ -78,7 +78,7 @@ export function TouchZones({
       <TapZone
         onTap={onToggleBlank}
         icon={isBlankActive ? '▶' : '⏸'}
-        iconFontSize="1.4rem"
+        iconFontSize="1.167vw"
         style={{
           position: 'fixed',
           zIndex: 10,
@@ -88,7 +88,7 @@ export function TouchZones({
           height: '15%',
         }}
         alignItems="flex-start"
-        paddingTop="0.6rem"
+        paddingTop="0.5vw"
         aria-label={isBlankActive ? 'Resume presentation' : 'Show break'}
       />
     </>
@@ -112,7 +112,7 @@ interface TapZoneProps {
 function TapZone({
   onTap,
   icon,
-  iconFontSize = '2rem',
+  iconFontSize = '1.667vw',
   style,
   alignItems = 'center',
   paddingTop = '0',
