@@ -31,7 +31,7 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         textAlign: 'center',
         padding: '2rem',
         color: '#ffffff',

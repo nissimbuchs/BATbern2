@@ -21,7 +21,7 @@ export function AboutSlide({ aboutText, partnerCount }: AboutSlideProps): JSX.El
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         textAlign: 'center',
         padding: '4rem',
         color: '#ffffff',

@@ -30,7 +30,7 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         padding: '3rem',
         color: '#ffffff',
         textAlign: 'center',

@@ -28,7 +28,7 @@ export function UpcomingEventsSlide({ events }: UpcomingEventsSlideProps): JSX.E
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         color: '#ffffff',
         textAlign: 'center',
         padding: '3rem',

@@ -27,7 +27,7 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         padding: '3rem',
         color: '#ffffff',
       }}
