@@ -33,18 +33,18 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '1rem',
+        gap: '0.833vw',
         textAlign: 'center',
       }}
     >
       {/* Speaker photo */}
       <div
         style={{
-          width: '160px',
-          height: '160px',
+          width: '8.333vw',
+          height: '8.333vw',
           borderRadius: '50%',
           overflow: 'hidden',
-          border: '3px solid rgba(255,255,255,0.3)',
+          border: '0.156vw solid rgba(255,255,255,0.3)',
           flexShrink: 0,
         }}
       >
@@ -63,7 +63,7 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '3rem',
+              fontSize: '2.5vw',
               color: 'rgba(255,255,255,0.5)',
             }}
           >
@@ -73,12 +73,12 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
       </div>
 
       <div
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625vw' }}
       >
         <p
           style={{
             margin: 0,
-            fontSize: '2rem',
+            fontSize: '1.667vw',
             fontWeight: 600,
             color: '#ffffff',
           }}
@@ -90,8 +90,8 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
             src={logoUrl}
             alt={speaker.company ?? ''}
             style={{
-              height: '48px',
-              maxWidth: '180px',
+              height: '2.5vw',
+              maxWidth: '9.375vw',
               objectFit: 'contain',
             }}
           />

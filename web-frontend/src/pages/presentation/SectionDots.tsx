@@ -16,11 +16,11 @@ export function SectionDots({ count, current }: SectionDotsProps): JSX.Element {
     <div
       style={{
         position: 'fixed',
-        bottom: '1.5rem',
+        bottom: '1.25vw',
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
-        gap: '0.4rem',
+        gap: '0.333vw',
         zIndex: 10,
       }}
     >
@@ -28,8 +28,8 @@ export function SectionDots({ count, current }: SectionDotsProps): JSX.Element {
         <div
           key={i}
           style={{
-            width: i === current ? '0.6rem' : '0.4rem',
-            height: i === current ? '0.6rem' : '0.4rem',
+            width: i === current ? '0.5vw' : '0.333vw',
+            height: i === current ? '0.5vw' : '0.333vw',
             borderRadius: '50%',
             backgroundColor: i === current ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
             transition: 'all 0.2s',

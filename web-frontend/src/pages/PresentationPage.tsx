@@ -20,7 +20,7 @@
  * ACs: all (orchestration)
  */
 
-import React, { type JSX, useState, useCallback, useEffect } from 'react';
+import React, { type JSX, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,35 +50,7 @@ import { UpcomingEventsSlide } from './presentation/slides/UpcomingEventsSlide';
 import { AperoSlide } from './presentation/slides/AperoSlide';
 import { TeaserImageSlide } from './presentation/slides/TeaserImageSlide';
 import type { PresentationSection } from '@/hooks/usePresentationSections';
-
-// --------------------------------------------------------------------------
-// Viewport scaling — design canvas
-// --------------------------------------------------------------------------
-
-/**
- * Design dimensions: the presentation was laid out for 1920×1080 (16:9).
- * On any other resolution we scale the entire canvas uniformly so that
- * font sizes, spacings, and element sizes always appear the same physical
- * size to the audience — including 4K projectors.
- */
-const DESIGN_WIDTH = 1920;
-const DESIGN_HEIGHT = 1080;
-
-/** Returns a uniform scale factor that fits the design canvas into the viewport. */
-function usePresentationScale(): number {
-  const compute = () =>
-    Math.min(window.innerWidth / DESIGN_WIDTH, window.innerHeight / DESIGN_HEIGHT);
-
-  const [scale, setScale] = useState(compute);
-
-  useEffect(() => {
-    const onResize = () => setScale(compute());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  return scale;
-}
+import animStyles from './presentation/presentation-animations.module.css';
 
 // --------------------------------------------------------------------------
 // Animation constants
@@ -87,15 +59,14 @@ function usePresentationScale(): number {
 /** Spring used for FLIP agenda ↔ sidebar (ACs #1-4) */
 const AGENDA_FLIP_SPRING = { type: 'spring' as const, stiffness: 100, damping: 22, mass: 1 };
 
-/** Width of the center-stage AgendaView — shared by both layouts so FLIP only animates position */
-// Fixed px value (design canvas is always 1920px wide — no need for vw fallback)
-const AGENDA_CENTER_WIDTH = '1100px';
+/** Width of the center-stage AgendaView — vw so it scales natively at any resolution */
+const AGENDA_CENTER_WIDTH = '57.292vw'; /* 1100px @ 1920px */
 
 /** Slide enter/exit variants for directional spring (ACs #5-7) */
 const slideVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+  enter: (dir: number) => ({ x: dir > 0 ? '4.167vw' : '-4.167vw', opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+  exit: (dir: number) => ({ x: dir > 0 ? '-4.167vw' : '4.167vw', opacity: 0 }),
 };
 const slideTransition = { type: 'spring' as const, stiffness: 120, damping: 20 };
 
@@ -106,8 +77,6 @@ const slideTransition = { type: 'spring' as const, stiffness: 120, damping: 20 }
 export function PresentationPage(): JSX.Element {
   const { eventCode } = useParams<{ eventCode: string }>();
   const { t } = useTranslation();
-
-  const scale = usePresentationScale();
 
   const { data, isLoading, isInitialLoadError, refetch } = usePresentationData(eventCode ?? '');
   const sections = usePresentationSections(data.event, data.sessions);
@@ -150,28 +119,25 @@ export function PresentationPage(): JSX.Element {
   // -- Loading state --
   if (isLoading) {
     return (
-      <div style={fullscreenStyle('#0a0d14')}>
+      <div
+        style={{
+          ...fullscreenStyle('#0a0d14'),
+          flexDirection: 'column',
+          gap: '2vw',
+        }}
+      >
+        <div className={animStyles.loaderWrap} style={{ width: '6.25vw', height: '6.25vw' }}>
+          <BATbernLoader size={120} speed="slow" />
+        </div>
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '2rem',
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
+            fontSize: '2.5vw',
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            color: '#4f9cf9',
           }}
         >
-          <BATbernLoader size={120} speed="slow" />
-          <div
-            style={{
-              fontSize: '3rem',
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
-              color: '#4f9cf9',
-            }}
-          >
-            BAT<span style={{ color: 'rgba(255,255,255,0.7)' }}>bern</span>
-          </div>
+          BAT<span style={{ color: 'rgba(255,255,255,0.7)' }}>bern</span>
         </div>
       </div>
     );
@@ -182,21 +148,13 @@ export function PresentationPage(): JSX.Element {
     const hashtag = eventCode ? `#${eventCode}` : '';
     return (
       <div style={fullscreenStyle('#0a0d14')}>
-        <div
-          style={{
-            textAlign: 'center',
-            color: '#ffffff',
-            maxWidth: '600px',
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
-          }}
-        >
+        <div style={{ textAlign: 'center', color: '#ffffff', maxWidth: '31.25vw' }}>
           <div
             style={{
-              fontSize: '3rem',
+              fontSize: '2.5vw',
               fontWeight: 800,
               color: '#4f9cf9',
-              marginBottom: '0.5rem',
+              marginBottom: '0.417vw',
             }}
           >
             BATbern
@@ -204,27 +162,35 @@ export function PresentationPage(): JSX.Element {
           {hashtag && (
             <div
               style={{
-                fontSize: '1.5rem',
+                fontSize: '1.25vw',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '1.5rem',
+                marginBottom: '1.25vw',
               }}
             >
               {hashtag}
             </div>
           )}
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{t('presentation.errorTitle')}</h1>
-          <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '1.667vw', marginBottom: '0.833vw' }}>
+            {t('presentation.errorTitle')}
+          </h1>
+          <p
+            style={{
+              fontSize: '1.042vw',
+              color: 'rgba(255,255,255,0.6)',
+              marginBottom: '1.667vw',
+            }}
+          >
             {t('presentation.errorMessage')}
           </p>
           <button
             onClick={refetch}
             style={{
-              fontSize: '1.25rem',
-              padding: '0.75rem 2rem',
+              fontSize: '1.042vw',
+              padding: '0.625vw 1.667vw',
               background: '#4f9cf9',
               color: '#ffffff',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '0.417vw',
               cursor: 'pointer',
             }}
           >
@@ -271,27 +237,13 @@ export function PresentationPage(): JSX.Element {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0d14',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         overflow: 'hidden',
+        background: '#0a0d14',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       }}
     >
-      <div
-        style={{
-          width: DESIGN_WIDTH,
-          height: DESIGN_HEIGHT,
-          flexShrink: 0,
-          position: 'relative',
-          overflow: 'hidden',
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        }}
-      >
-        {/* Persistent full-bleed background with Ken Burns zoom (ACs #33-36, #8) */}
+      {/* Persistent full-bleed background with Ken Burns zoom (ACs #33-36, #8) */}
         <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
 
         {/* ----------------------------------------------------------------
@@ -313,7 +265,7 @@ export function PresentationPage(): JSX.Element {
               style={{
                 position: 'fixed',
                 zIndex: 3,
-                top: 'calc(50% - 13rem)',
+                top: 'calc(50vh - 10.833vw)',
                 left: 0,
                 right: 0,
                 display: 'flex',
@@ -324,7 +276,7 @@ export function PresentationPage(): JSX.Element {
               <h2
                 style={{
                   margin: 0,
-                  fontSize: '3rem',
+                  fontSize: '2.5vw',
                   fontWeight: 700,
                   color: '#4f9cf9',
                 }}
@@ -381,7 +333,7 @@ export function PresentationPage(): JSX.Element {
               zIndex: 2,
               display: 'flex',
               alignItems: 'center',
-              paddingLeft: '2rem',
+              paddingLeft: '1.667vw',
             }}
           >
             <motion.div
@@ -390,7 +342,7 @@ export function PresentationPage(): JSX.Element {
               data-layout="sidebar"
               transition={AGENDA_FLIP_SPRING}
               style={{ width: AGENDA_CENTER_WIDTH }}
-              animate={{ width: '280px' }}
+              animate={{ width: '14.583vw' }}
             >
               <AgendaView
                 sessions={data.sessions}
@@ -406,7 +358,7 @@ export function PresentationPage(): JSX.Element {
           style={{
             position: 'absolute',
             inset: 0,
-            paddingLeft: isSession ? '320px' : 0,
+            paddingLeft: isSession ? '16.667vw' : 0,
             boxSizing: 'border-box',
           }}
         >
@@ -453,7 +405,6 @@ export function PresentationPage(): JSX.Element {
             {!isBreakSection && <BreakSlide />}
           </div>
         </BlankOverlay>
-      </div>
     </div>
   );
 }

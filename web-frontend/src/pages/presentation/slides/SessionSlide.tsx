@@ -31,7 +31,7 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        padding: '3rem',
+        padding: '2.5vw',
         color: '#ffffff',
         textAlign: 'center',
       }}
@@ -39,11 +39,11 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
       {/* Session title */}
       <h1
         style={{
-          fontSize: '3.5rem',
+          fontSize: '2.917vw',
           fontWeight: 700,
-          maxWidth: '900px',
+          maxWidth: '46.875vw',
           lineHeight: 1.2,
-          marginBottom: '3rem',
+          marginBottom: '2.5vw',
         }}
       >
         {session.title}

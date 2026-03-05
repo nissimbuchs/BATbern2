@@ -9,6 +9,7 @@ import { type JSX } from 'react';
 import { format } from 'date-fns';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import type { PresentationEventDetail } from '@/services/presentationService';
+import animStyles from '../presentation-animations.module.css';
 
 interface WelcomeSlideProps {
   event: PresentationEventDetail;
@@ -33,22 +34,24 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
         justifyContent: 'center',
         height: '100%',
         textAlign: 'center',
-        padding: '2rem',
+        padding: '2.083vw',
         color: '#ffffff',
       }}
     >
       {/* BATbern animated logo */}
-      <BATbernLoader size={180} speed="slow" />
+      <div className={animStyles.loaderWrap} style={{ width: '9.375vw', height: '9.375vw' }}>
+        <BATbernLoader size={180} speed="slow" />
+      </div>
 
       {/* BATbern wordmark */}
       <div
         style={{
-          fontSize: '5rem',
+          fontSize: '4.167vw',
           fontWeight: 800,
           letterSpacing: '-0.02em',
           color: '#4f9cf9',
-          marginTop: '1.5rem',
-          marginBottom: '0.5rem',
+          marginTop: '1.25vw',
+          marginBottom: '0.417vw',
         }}
       >
         BAT<span style={{ color: 'rgba(255,255,255,0.9)' }}>bern</span>
@@ -57,9 +60,9 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       {/* Hashtag */}
       <div
         style={{
-          fontSize: '2rem',
+          fontSize: '1.667vw',
           color: 'rgba(255,255,255,0.7)',
-          marginBottom: '2rem',
+          marginBottom: '1.667vw',
         }}
       >
         {hashtag}
@@ -69,10 +72,10 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       {eventTitle && (
         <h1
           style={{
-            fontSize: '4.5rem',
+            fontSize: '3.75vw',
             fontWeight: 700,
-            margin: '0 0 2rem',
-            maxWidth: '900px',
+            margin: `0 0 1.667vw`,
+            maxWidth: '46.875vw',
             lineHeight: 1.15,
           }}
         >
@@ -83,7 +86,7 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       {/* Date and venue */}
       <div
         style={{
-          fontSize: '1.75rem',
+          fontSize: '1.458vw',
           color: 'rgba(255,255,255,0.75)',
         }}
       >

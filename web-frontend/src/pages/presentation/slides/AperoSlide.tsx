@@ -8,6 +8,7 @@
  */
 import { type JSX } from 'react';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
+import animStyles from '../presentation-animations.module.css';
 
 export function AperoSlide(): JSX.Element {
   return (
@@ -22,20 +23,20 @@ export function AperoSlide(): JSX.Element {
         height: '100%',
         color: '#ffffff',
         textAlign: 'center',
-        padding: '3rem',
+        padding: '2.5vw',
       }}
     >
       {/* BATbern spinner (AC #14) */}
-      <div style={{ marginBottom: '2rem' }}>
+      <div className={animStyles.loaderWrap} style={{ width: '6.25vw', height: '6.25vw', marginBottom: '1.667vw' }}>
         <BATbernLoader size={120} speed="slow" />
       </div>
 
       <div
         style={{
-          fontSize: '3rem',
+          fontSize: '2.5vw',
           fontWeight: 700,
           color: 'rgba(255,255,255,0.9)',
-          marginBottom: '1rem',
+          marginBottom: '0.833vw',
         }}
       >
         Apéro
@@ -43,7 +44,7 @@ export function AperoSlide(): JSX.Element {
 
       <div
         style={{
-          fontSize: '1.5rem',
+          fontSize: '1.25vw',
           color: 'rgba(255,255,255,0.55)',
         }}
       >
