@@ -156,7 +156,7 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      *
      * @param startDate Start of the date range (inclusive)
      * @param endDate End of the date range (inclusive)
-     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, AGENDA_FINALIZED, EVENT_LIVE)
+     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, EVENT_LIVE)
      * @return List of active events ordered by date ascending
      */
     @Query("SELECT e FROM Event e "
@@ -200,4 +200,12 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     default Optional<Event> findByEventCodeWithAllResources(String eventCode) {
         return findByEventCode(eventCode);
     }
+
+    /**
+     * Find the N most recent events ordered by event date descending.
+     * Used by EventPhotoService.getRecentPhotos() for homepage marquee.
+     * Story 10.21
+     */
+    // Note: do NOT use findTopBy — Top without a number means 1, overriding Pageable.
+    List<Event> findAllByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
 }

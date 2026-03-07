@@ -24,7 +24,7 @@ export function TwoSpeakerCard({ speakers }: TwoSpeakerCardProps): JSX.Element {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
-        gap: '6rem',
+        gap: '5vw',
       }}
     >
       {speakers.map((speaker) => (

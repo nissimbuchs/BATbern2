@@ -355,6 +355,54 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle TeaserImageLimitExceededException (max teaser images reached)
+     * Returns HTTP 422 Unprocessable Entity
+     * Story 10.22: Event Teaser Images — AC6
+     */
+    @ExceptionHandler(TeaserImageLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleTeaserImageLimitExceededException(
+            TeaserImageLimitExceededException ex,
+            HttpServletRequest request) {
+        log.warn("Teaser image limit exceeded: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
+     * Handle InvalidFileTypeException (unsupported file type for photo upload)
+     * Returns HTTP 422 Unprocessable Entity
+     * Story 10.21: Event Photos Gallery
+     */
+    @ExceptionHandler(InvalidFileTypeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFileTypeException(
+            InvalidFileTypeException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid file type: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
      * Handle MaterialNotFoundException (session material not found)
      * Returns HTTP 404 Not Found
      *

@@ -24,6 +24,7 @@ export interface NewsletterSubscriptionStatusResponse {
 export interface NewsletterSendRequest {
   isReminder: boolean;
   locale: 'de' | 'en';
+  templateKey?: string; // Optional override; service defaults to 'newsletter-event' if omitted
 }
 
 export interface NewsletterSendResponse {

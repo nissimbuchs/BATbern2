@@ -55,4 +55,7 @@ public class UpdateEventRequest {
     private String eventType;
 
     private EventWorkflowState workflowState;
+
+    // Story 10.11: nullable — null means unlimited
+    private Integer registrationCapacity;
 }

@@ -172,16 +172,48 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({
-        rows: [],
-        rowCount: 0,
-      } as any);
+      // Both cognitoId and email lookups return empty (user truly does not exist)
+      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
 
       // Act
       const result = await handler(event, context, () => {});
 
       // Assert - Should handle gracefully with empty roles string
       expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
+    });
+
+    it('should_fetchRolesByEmailFallback_when_cognitoIdNotLinkedYet', async () => {
+      // Arrange: pre-existing user created by organizer (cognito_user_id=NULL in DB)
+      const event = createPreTokenGenerationEvent({
+        request: {
+          userAttributes: {
+            sub: 'new-cognito-sub-uuid',
+            email: 'partner@sbb.ch',
+            email_verified: 'true',
+          },
+          groupConfiguration: { groupsToOverride: [], iamRolesToOverride: [], preferredRole: undefined },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // First call (cognitoId lookup) returns nothing — account not linked yet
+      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+      // Second call (email fallback) returns the pre-existing record with PARTNER role
+      mockDbClient.query.mockResolvedValueOnce({
+        rows: [{ username: 'partner.sbb', role: 'PARTNER' }],
+        rowCount: 1,
+      } as any);
+
+      // Act
+      const result = await handler(event, context, () => {});
+
+      // Assert — partner role is correctly included in the token on first login
+      expect(mockDbClient.query).toHaveBeenCalledTimes(2);
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
+      expect(roles).toBe('PARTNER');
+      const username = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:username'];
+      expect(username).toBe('partner.sbb');
     });
 
     it('should_joinWithUsers_when_fetchingRoles', async () => {

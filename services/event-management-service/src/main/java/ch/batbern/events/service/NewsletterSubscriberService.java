@@ -45,7 +45,7 @@ public class NewsletterSubscriberService {
      * @param username  cognito username for authenticated users; null for anonymous
      * @return saved subscriber entity
      */
-    @Transactional
+    @Transactional(noRollbackFor = DuplicateSubscriberException.class)
     public NewsletterSubscriber subscribe(String email, String firstName, String language,
                                           String source, String username) {
         Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmail(email);

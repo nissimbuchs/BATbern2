@@ -1,4 +1,10 @@
 {
+  "newsletter": {
+    "templateSelect": {
+      "label": "Template",
+      "createNew": "Create new template"
+    }
+  },
   "navigation": {
     "partners": "Partners",
     "topicManagement": "Topic Management"
@@ -441,5 +447,23 @@
   },
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
+  },
+  "aiAssist": {
+    "generateDescription": "✨ Generate description",
+    "regenerateDescription": "↻ Regenerate",
+    "generateImage": "✨ Generate theme image",
+    "regenerateImage": "↻ Regenerate",
+    "analyzeAbstract": "Analyze abstract",
+    "reanalyze": "Re-analyze",
+    "useImage": "Use this image",
+    "cancelImage": "Cancel",
+    "error": "AI generation failed, please write manually",
+    "disabled": "AI feature is disabled",
+    "generating": "Generating...",
+    "noPromotion": "No product promotion",
+    "lessonsLearned": "Contains real-world lessons learned",
+    "shortenedAbstract": "Shortened abstract",
+    "words": "words",
+    "copyShortened": "Copy shortened abstract"
   }
 }

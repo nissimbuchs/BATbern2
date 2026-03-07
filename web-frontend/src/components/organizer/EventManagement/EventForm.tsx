@@ -41,10 +41,18 @@ import {
   Tab,
   useMediaQuery,
   useTheme,
+  IconButton,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
+import { AutoAwesome } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
+import { useAiGenerateDescription } from '@/hooks/useAiAssist';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { topicService } from '@/services/topicService';
+import type { Topic } from '@/types/topic.types';
 import type { Event, EventUI, CreateEventRequest, PatchEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
@@ -103,7 +111,6 @@ const createEventSchema = (t: (key: string) => string) =>
         'SPEAKER_IDENTIFICATION',
         'SLOT_ASSIGNMENT',
         'AGENDA_PUBLISHED',
-        'AGENDA_FINALIZED',
         'EVENT_LIVE',
         'EVENT_COMPLETED',
         'ARCHIVED',
@@ -152,6 +159,7 @@ interface EventFormProps {
 
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
+  const { t: tOrg } = useTranslation('organizer');
   const { user, isLoading: isAuthLoading } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -288,7 +296,39 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     watch,
     getValues,
     reset,
+    setValue,
   } = form;
+
+  // AI description generation (Story 10.16)
+  const { aiContentEnabled } = useFeatureFlags();
+  const [aiTopic, setAiTopic] = useState<Topic | null>(null);
+  const descriptionMutation = useAiGenerateDescription(event?.eventCode ?? '');
+
+  useEffect(() => {
+    if (mode === 'edit' && event?.topicCode) {
+      topicService
+        .getTopicById(event.topicCode)
+        .then(setAiTopic)
+        .catch(() => setAiTopic(null));
+    } else {
+      setAiTopic(null);
+    }
+  }, [mode, event?.topicCode]);
+
+  const handleAiGenerateDescription = () => {
+    if (!aiTopic) return;
+    descriptionMutation.mutate(
+      {
+        topicTitle: aiTopic.title,
+        topicCategory: aiTopic.category,
+        eventTitle: getValues('title'),
+        eventDate: getValues('date'),
+      },
+      {
+        onSuccess: (data) => setValue('description', data.description, { shouldDirty: true }),
+      }
+    );
+  };
 
   // Reset form when modal opens in create mode
   useEffect(() => {
@@ -716,23 +756,44 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 />
               </Box>
 
-              <Controller
-                name="description"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={t('common:labels.description')}
-                    fullWidth
-                    multiline
-                    rows={4}
-                    error={!!errors.description}
-                    helperText={errors.description?.message}
-                    margin="normal"
-                    data-testid="event-description-field"
-                  />
+              <Box sx={{ position: 'relative' }}>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('common:labels.description')}
+                      fullWidth
+                      multiline
+                      rows={4}
+                      error={!!errors.description}
+                      helperText={errors.description?.message}
+                      margin="normal"
+                      data-testid="event-description-field"
+                    />
+                  )}
+                />
+                {aiContentEnabled && mode === 'edit' && event?.topicCode && (
+                  <Tooltip title={tOrg('aiAssist.generateDescription', '✨ Generate with AI')}>
+                    <span style={{ position: 'absolute', top: 20, right: 4 }}>
+                      <IconButton
+                        size="small"
+                        onClick={handleAiGenerateDescription}
+                        disabled={descriptionMutation.isPending || !aiTopic}
+                        color="primary"
+                        data-testid="ai-generate-description-btn"
+                      >
+                        {descriptionMutation.isPending ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : (
+                          <AutoAwesome fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 )}
-              />
+              </Box>
 
               {/* Event Date and Registration Deadline side-by-side */}
               <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -839,12 +900,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                         data-testid="status-option-AGENDA_PUBLISHED"
                       >
                         {t('workflow.states.agenda_published')}
-                      </MenuItem>
-                      <MenuItem
-                        value="AGENDA_FINALIZED"
-                        data-testid="status-option-AGENDA_FINALIZED"
-                      >
-                        {t('workflow.states.agenda_finalized')}
                       </MenuItem>
                       <MenuItem value="EVENT_LIVE" data-testid="status-option-EVENT_LIVE">
                         {t('workflow.states.event_live')}

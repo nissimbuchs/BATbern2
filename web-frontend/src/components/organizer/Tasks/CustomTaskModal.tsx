@@ -52,7 +52,6 @@ const WORKFLOW_STATE_VALUES = [
   'speaker_brainstorming',
   'speaker_outreach',
   'agenda_published',
-  'agenda_finalized',
   'event_live',
   'post_event_wrap_up',
   'archived',

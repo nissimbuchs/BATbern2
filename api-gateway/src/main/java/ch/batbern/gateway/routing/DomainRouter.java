@@ -86,7 +86,9 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/e2e-test") // Story 6.3: E2E test endpoints
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
                 || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard
-                || cleanPath.startsWith("/api/v1/newsletter")) { // Story 10.7: Newsletter
+                || cleanPath.startsWith("/api/v1/newsletter") // Story 10.7: Newsletter
+                || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
+                || cleanPath.equals("/api/v1/public/settings/features")) { // Story 10.16: Feature flags
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
                 || cleanPath.startsWith("/api/v1/partner-meetings")) {
@@ -99,6 +101,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin")) { // Story 10.20: Legacy export/import
+            return "event-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
         }

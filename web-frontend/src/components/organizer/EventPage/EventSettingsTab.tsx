@@ -4,7 +4,7 @@
  * Event settings, notifications, and danger zone
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box,
   Paper,
@@ -26,6 +26,12 @@ import {
   DialogActions,
   IconButton,
   Snackbar,
+  TextField,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -34,13 +40,24 @@ import {
   Delete as DeleteIcon,
   Cancel as CancelIcon,
   Person as PersonIcon,
+  Group as GroupIcon,
+  Image as ImageIcon,
+  AddPhotoAlternate as AddPhotoAlternateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
+import {
+  useUploadTeaserImage,
+  useDeleteTeaserImage,
+  useUpdateTeaserImagePosition,
+} from '@/hooks/useEventTeaserImages';
 import type { Event, EventDetailUI } from '@/types/event.types';
+import type { components } from '@/types/generated/events-api.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
+
+type TeaserImageItem = components['schemas']['TeaserImageItem'];
 
 interface EventSettingsTabProps {
   event: Event | EventDetailUI;
@@ -65,9 +82,29 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [moderatorUpdateError, setModeratorUpdateError] = useState<string | null>(null);
   const [moderatorUpdateSuccess, setModeratorUpdateSuccess] = useState(false);
 
+  // AC6 (Story 10.11): Registration Capacity field
+  const [capacityValue, setCapacityValue] = useState<string>(
+    event.registrationCapacity?.toString() ?? ''
+  );
+  const [capacityError, setCapacityError] = useState<string | null>(null);
+  const [capacitySuccess, setCapacitySuccess] = useState(false);
+  const isArchived = event.workflowState === 'ARCHIVED';
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Teaser images (Story 10.22)
+  const teaserImages: TeaserImageItem[] =
+    (event as Event & { teaserImages?: TeaserImageItem[] }).teaserImages ?? [];
+  const MAX_TEASER_IMAGES = 10;
+  const uploadTeaserImageMutation = useUploadTeaserImage(eventCode);
+  const deleteTeaserImageMutation = useDeleteTeaserImage(eventCode);
+  const updateTeaserImagePositionMutation = useUpdateTeaserImagePosition(eventCode);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [teaserUploadError, setTeaserUploadError] = useState<string | null>(null);
+  const [teaserRemoveError, setTeaserRemoveError] = useState<string | null>(null);
+  const [teaserPositionError, setTeaserPositionError] = useState<string | null>(null);
 
   // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
@@ -98,6 +135,28 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       scheduledDate: '2025-03-15',
     },
   ]);
+
+  const handleCapacitySave = async () => {
+    setCapacityError(null);
+    const parsed = capacityValue.trim() === '' ? null : parseInt(capacityValue, 10);
+    if (parsed !== null && (isNaN(parsed) || parsed <= 0)) {
+      setCapacityError(t('create.form.capacityPositive', 'Capacity must be a positive number'));
+      return;
+    }
+    try {
+      await updateEventMutation.mutateAsync({
+        eventCode,
+        data: { registrationCapacity: parsed },
+      });
+      setCapacitySuccess(true);
+    } catch (error) {
+      setCapacityError(
+        error instanceof Error
+          ? error.message
+          : t('eventPage.settings.capacityUpdateError', 'Failed to update capacity.')
+      );
+    }
+  };
 
   const handleOrganizerChange = async (newOrganizer: string) => {
     const previous = selectedOrganizer;
@@ -144,6 +203,54 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     setCancelDialogOpen(false);
   };
 
+  const handleTeaserImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setTeaserUploadError(null);
+    try {
+      await uploadTeaserImageMutation.mutateAsync({
+        file,
+        request: { contentType: file.type, fileName: file.name },
+      });
+    } catch (err) {
+      setTeaserUploadError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.uploadError', 'Upload failed. Please try again.')
+      );
+    }
+  };
+
+  const handleDeleteTeaserImage = async (imageId: string) => {
+    setTeaserRemoveError(null);
+    try {
+      await deleteTeaserImageMutation.mutateAsync(imageId);
+    } catch (err) {
+      setTeaserRemoveError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.removeError', 'Remove failed. Please try again.')
+      );
+    }
+  };
+
+  const handleTeaserImagePositionChange = async (imageId: string, position: string) => {
+    setTeaserPositionError(null);
+    try {
+      await updateTeaserImagePositionMutation.mutateAsync({
+        imageId,
+        request: { presentationPosition: position as TeaserImageItem['presentationPosition'] },
+      });
+    } catch (err) {
+      setTeaserPositionError(
+        err instanceof Error
+          ? err.message
+          : t('teaserImage.positionError', 'Failed to update slide position. Please try again.')
+      );
+    }
+  };
+
   return (
     <Stack spacing={3}>
       {/* Event Moderator */}
@@ -188,6 +295,207 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         message={t('eventPage.settings.moderatorUpdated', 'Moderator updated successfully')}
       />
 
+      {/* Registration Capacity (AC6 — Story 10.11) */}
+      <Paper sx={{ p: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <GroupIcon color="action" />
+          <Typography variant="h6">
+            {t('eventPage.settings.capacityLabel', 'Registration Capacity')}
+          </Typography>
+        </Stack>
+        <Divider sx={{ mb: 2 }} />
+        <Stack spacing={2}>
+          <TextField
+            label={t('eventPage.settings.capacityLabel', 'Registration Capacity')}
+            helperText={t(
+              'eventPage.settings.capacityHelperText',
+              'Leave blank for unlimited registrations. Cannot exceed venue capacity.'
+            )}
+            type="number"
+            value={capacityValue}
+            onChange={(e) => setCapacityValue(e.target.value)}
+            disabled={isArchived || updateEventMutation.isPending}
+            inputProps={{ min: 1 }}
+            sx={{ maxWidth: 300 }}
+            data-testid="registration-capacity-field"
+            error={!!capacityError}
+          />
+          {capacityError && (
+            <Alert severity="error" onClose={() => setCapacityError(null)}>
+              {capacityError}
+            </Alert>
+          )}
+          <Box>
+            <Button
+              variant="contained"
+              onClick={handleCapacitySave}
+              disabled={isArchived || updateEventMutation.isPending}
+              data-testid="registration-capacity-save-btn"
+            >
+              {t('common:actions.save', 'Save')}
+            </Button>
+          </Box>
+        </Stack>
+      </Paper>
+
+      <Snackbar
+        open={capacitySuccess}
+        autoHideDuration={3000}
+        onClose={() => setCapacitySuccess(false)}
+        message={t('eventPage.settings.capacityUpdated', 'Capacity updated successfully')}
+      />
+
+      {/* Teaser Images (Story 10.22) */}
+      <Paper sx={{ p: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <ImageIcon color="action" />
+          <Typography variant="h6">{t('teaserImage.title', 'Teaser Images')}</Typography>
+          <Chip
+            label={`${teaserImages.length} / ${MAX_TEASER_IMAGES}`}
+            size="small"
+            color={teaserImages.length >= MAX_TEASER_IMAGES ? 'error' : 'default'}
+            variant="outlined"
+          />
+        </Stack>
+        <Divider sx={{ mb: 2 }} />
+
+        <Typography variant="body2" color="text.secondary" mb={2}>
+          {t(
+            'teaserImage.description',
+            'Images shown as full-screen slides on the presentation page.'
+          )}
+        </Typography>
+
+        {teaserUploadError && (
+          <Alert severity="error" onClose={() => setTeaserUploadError(null)} sx={{ mb: 2 }}>
+            {teaserUploadError}
+          </Alert>
+        )}
+        {teaserRemoveError && (
+          <Alert severity="error" onClose={() => setTeaserRemoveError(null)} sx={{ mb: 2 }}>
+            {teaserRemoveError}
+          </Alert>
+        )}
+        {teaserPositionError && (
+          <Alert severity="error" onClose={() => setTeaserPositionError(null)} sx={{ mb: 2 }}>
+            {teaserPositionError}
+          </Alert>
+        )}
+
+        {/* Gallery */}
+        {teaserImages.length > 0 && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
+            {[...teaserImages]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((img) => (
+                <Stack key={img.id} spacing={0.75}>
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      aspectRatio: '16/9',
+                      bgcolor: 'grey.100',
+                    }}
+                  >
+                    <img
+                      src={img.imageUrl}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => void handleDeleteTeaserImage(img.id)}
+                      disabled={isArchived || deleteTeaserImageMutation.isPending}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        bgcolor: 'rgba(0,0,0,0.55)',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'rgba(200,0,0,0.75)' },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <FormControl size="small" fullWidth disabled={isArchived}>
+                    <InputLabel>{t('teaserImage.position.label', 'Show after')}</InputLabel>
+                    <Select
+                      value={img.presentationPosition}
+                      label={t('teaserImage.position.label', 'Show after')}
+                      onChange={(e) => void handleTeaserImagePositionChange(img.id, e.target.value)}
+                    >
+                      <MenuItem value="AFTER_WELCOME">
+                        {t('teaserImage.position.afterWelcome', 'Welcome slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_COMMITTEE">
+                        {t('teaserImage.position.afterCommittee', 'Committee slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_TOPIC_REVEAL">
+                        {t('teaserImage.position.afterTopicReveal', 'Topic Reveal slide')}
+                      </MenuItem>
+                      <MenuItem value="AFTER_UPCOMING_EVENTS">
+                        {t('teaserImage.position.afterUpcomingEvents', 'Upcoming Events slide')}
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
+              ))}
+          </Box>
+        )}
+
+        {/* Upload button */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/svg+xml"
+          style={{ display: 'none' }}
+          onChange={handleTeaserImageFileChange}
+        />
+        <Button
+          variant="outlined"
+          startIcon={
+            uploadTeaserImageMutation.isPending ? (
+              <CircularProgress size={16} />
+            ) : (
+              <AddPhotoAlternateIcon />
+            )
+          }
+          disabled={
+            isArchived ||
+            teaserImages.length >= MAX_TEASER_IMAGES ||
+            uploadTeaserImageMutation.isPending
+          }
+          onClick={() => fileInputRef.current?.click()}
+          data-testid="teaser-image-upload-btn"
+        >
+          {uploadTeaserImageMutation.isPending
+            ? t('teaserImage.uploading', 'Uploading...')
+            : t('teaserImage.uploadButton', 'Add Teaser Image')}
+        </Button>
+
+        {teaserImages.length >= MAX_TEASER_IMAGES && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+            {t('teaserImage.limitReached', 'Maximum of {{max}} teaser images reached.', {
+              max: MAX_TEASER_IMAGES,
+            })}
+          </Typography>
+        )}
+      </Paper>
+
       {/* Notifications */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -220,6 +528,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             >
               <ListItemText
                 primary={rule.name}
+                secondaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Typography variant="caption" color="text.secondary">

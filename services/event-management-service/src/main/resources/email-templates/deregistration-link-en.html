@@ -1,0 +1,34 @@
+<!-- subject: Cancel Your Registration for {{eventTitle}} -->
+<h2>Your Cancellation Request</h2>
+
+<p>Hello {{recipientName}},</p>
+
+<p>You requested to cancel your registration for the following event:</p>
+
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span class="detail-value">{{eventDate}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Event Code:</span>
+        <span class="detail-value">{{eventCode}}</span>
+    </div>
+</div>
+
+<p>Click the button below to cancel your registration:</p>
+
+<div style="text-align: center;">
+    <a href="{{deregistrationLink}}" class="cta-button" style="background-color: #d32f2f;">Cancel Registration</a>
+</div>
+
+<p style="font-size: 12px; color: #666; margin-top: 20px;">
+    If the button doesn't work, copy and paste this link into your browser:<br>
+    <a href="{{deregistrationLink}}" style="color: #d32f2f; word-break: break-all;">{{deregistrationLink}}</a>
+</p>
+
+<p><strong>Note:</strong> This link can only be used once. If you did not request a cancellation, you can safely ignore this email.</p>
+
+<p>Best regards,<br>
+<strong>The BATbern Team</strong></p>

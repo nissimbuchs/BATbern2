@@ -106,8 +106,9 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
       case 'ATTENDED':
         return 'info';
       case 'CANCELLED':
-        return 'error';
-      case 'WAITLISTED':
+        // Story 10.12 (AC11): Cancelled registrations shown with grey chip (soft-cancel, not delete)
+        return 'default';
+      case 'WAITLIST':
         return 'warning';
       default:
         return 'default';

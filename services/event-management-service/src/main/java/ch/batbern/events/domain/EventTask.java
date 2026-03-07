@@ -43,7 +43,7 @@ public class EventTask {
 
     /**
      * Event workflow state that triggered this task's creation.
-     * Values: 'topic_selection', 'agenda_published', 'agenda_finalized', etc.
+     * Values: 'topic_selection', 'agenda_published', 'event_live', etc.
      */
     @Column(name = "trigger_state", nullable = false, length = 50)
     private String triggerState;
@@ -55,7 +55,8 @@ public class EventTask {
     private String assignedOrganizerUsername;
 
     /**
-     * Task status: 'todo', 'in_progress', 'completed'
+     * Task status: 'pending', 'todo', 'in_progress', 'completed', 'cancelled'
+     * (V78 migration added 'cancelled' for archived-event cleanup, Story 10.18)
      */
     @Column(name = "status", nullable = false, length = 20)
     private String status = "todo";
@@ -68,6 +69,12 @@ public class EventTask {
 
     @Column(name = "completed_by_username", length = 100)
     private String completedByUsername;
+
+    @Column(name = "cancelled_reason", length = 255)
+    private String cancelledReason;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
 
     /**
      * Version field for optimistic locking (AC35).
@@ -178,6 +185,22 @@ public class EventTask {
 
     public void setCompletedByUsername(String completedByUsername) {
         this.completedByUsername = completedByUsername;
+    }
+
+    public String getCancelledReason() {
+        return cancelledReason;
+    }
+
+    public void setCancelledReason(String cancelledReason) {
+        this.cancelledReason = cancelledReason;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 
     public Long getVersion() {

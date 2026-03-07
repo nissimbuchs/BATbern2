@@ -178,6 +178,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                        // Story 10.21: Public event photo endpoints (AC4, AC5)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()
+
                         // Story 4.2 (BAT-109): Public archive browsing endpoint
                         .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
 
@@ -222,6 +226,9 @@ public class SecurityConfig {
                         // Story 10.8a: Public presentation settings (moderator page)
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
 
+                        // Story 10.16: AI feature flags (public, no auth required)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
+
                         // Story 6.1a/6.2a/6.2b: Speaker portal endpoints (token-protected, no JWT auth)
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
@@ -252,6 +259,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
+                        // Story 10.12: Self-service deregistration (token-protected)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/registrations/deregister/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/deregister/by-email").permitAll()
 
                         // W2.2: Watch pairing — unauthenticated (Watch has no JWT yet; exchanges pairing code for JWT)
                         .requestMatchers(HttpMethod.POST, "/api/v1/watch/pair").permitAll()

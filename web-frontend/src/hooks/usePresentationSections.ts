@@ -14,11 +14,31 @@ import type { User } from '@/types/user.types';
 import type { components } from '@/types/generated/events-api.types';
 import type { PresentationSettings } from '@/services/presentationService';
 
+type TeaserImageItem = components['schemas']['TeaserImageItem'];
+
+function insertTeaserImages(
+  sections: PresentationSection[],
+  images: TeaserImageItem[],
+  position: string
+): void {
+  [...images]
+    .filter((img) => (img.presentationPosition ?? 'AFTER_TOPIC_REVEAL') === position)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .forEach((img) => {
+      sections.push({
+        type: 'teaser-image',
+        key: `teaser-image-${img.id}`,
+        imageUrl: img.imageUrl,
+      });
+    });
+}
+
 export type SectionType =
   | 'welcome'
   | 'about'
   | 'committee'
   | 'topic-reveal'
+  | 'teaser-image'
   | 'agenda-preview'
   | 'session'
   | 'break'
@@ -30,6 +50,8 @@ export interface PresentationSection {
   type: SectionType;
   key: string;
   session?: PresentationSession;
+  /** Present only for type === 'teaser-image' (Story 10.22) */
+  imageUrl?: string;
 }
 
 // Session types that become individual speaker slides
@@ -48,18 +70,23 @@ export function usePresentationSections(
     }
 
     const sections: PresentationSection[] = [];
+    const teaserImages = event.teaserImages ?? [];
 
     // §1 Welcome
     sections.push({ type: 'welcome', key: 'welcome' });
+    insertTeaserImages(sections, teaserImages, 'AFTER_WELCOME');
 
     // §2 About
     sections.push({ type: 'about', key: 'about' });
 
     // §3 Committee
     sections.push({ type: 'committee', key: 'committee' });
+    insertTeaserImages(sections, teaserImages, 'AFTER_COMMITTEE');
 
     // §4 Topic Reveal
     sections.push({ type: 'topic-reveal', key: 'topic-reveal' });
+    // §4.5 Teaser Images at AFTER_TOPIC_REVEAL (Story 10.22 AC5; default position)
+    insertTeaserImages(sections, teaserImages, 'AFTER_TOPIC_REVEAL');
 
     // §5 Agenda Preview
     sections.push({ type: 'agenda-preview', key: 'agenda-preview' });
@@ -126,6 +153,7 @@ export function usePresentationSections(
 
     // Upcoming Events
     sections.push({ type: 'upcoming-events', key: 'upcoming-events' });
+    insertTeaserImages(sections, teaserImages, 'AFTER_UPCOMING_EVENTS');
 
     // Apéro
     sections.push({ type: 'apero', key: 'apero' });

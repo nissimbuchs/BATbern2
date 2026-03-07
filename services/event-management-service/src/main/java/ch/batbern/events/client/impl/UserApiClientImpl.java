@@ -1,12 +1,15 @@
 package ch.batbern.events.client.impl;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +44,7 @@ import org.springframework.web.client.RestTemplate;
 public class UserApiClientImpl implements UserApiClient {
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
@@ -591,6 +595,137 @@ public class UserApiClientImpl implements UserApiClient {
                     "Unexpected error updating profile picture for user: " + username,
                     e
             );
+        }
+    }
+
+    /**
+     * Get all speaker usernames.
+     * Story 10.20: AC1 — used for legacy export speaker metadata enrichment.
+     */
+    @Override
+    public java.util.List<String> getSpeakerUsernames() {
+        log.debug("Fetching speaker usernames");
+
+        String url = userServiceBaseUrl + "/api/v1/users?role=SPEAKER&limit=1000";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    PaginatedUserResponse.class
+            );
+
+            PaginatedUserResponse body = response.getBody();
+            if (body == null || body.getData() == null) {
+                log.debug("No speakers found");
+                return java.util.List.of();
+            }
+
+            java.util.List<String> usernames = body.getData().stream()
+                    .map(UserResponse::getId)
+                    .collect(java.util.stream.Collectors.toList());
+
+            log.debug("Successfully fetched {} speaker usernames", usernames.size());
+            return usernames;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching speaker list: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching speaker list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for speaker list: {} - {}",
+                    e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error fetching speaker list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for speaker list: {}",
+                    e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for speaker list",
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching speaker list: {}", e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching speaker list",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Get all companies (basic info) from company-user-management-service.
+     * Story 10.20: AC1 — companies[] list in legacy BAT export envelope.
+     */
+    @Override
+    public java.util.List<CompanyBasicDto> getAllCompanies() {
+        log.debug("Fetching all companies for legacy export");
+
+        String url = userServiceBaseUrl + "/api/v1/companies?limit=1000";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    String.class
+            );
+
+            String body = response.getBody();
+            if (body == null || body.isBlank()) {
+                log.debug("No companies found");
+                return java.util.List.of();
+            }
+
+            // Parse paginated response: { "data": [...], "pagination": {...} }
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+            com.fasterxml.jackson.databind.JsonNode dataNode = root.path("data");
+
+            if (dataNode.isMissingNode() || !dataNode.isArray()) {
+                log.debug("No companies data in response");
+                return java.util.List.of();
+            }
+
+            CollectionType listType = objectMapper.getTypeFactory()
+                    .constructCollectionType(java.util.List.class, CompanyBasicDto.class);
+            java.util.List<CompanyBasicDto> companies = objectMapper.convertValue(dataNode, listType);
+
+            log.debug("Successfully fetched {} companies", companies.size());
+            return companies;
+
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error fetching companies (non-fatal for export): {} - {}",
+                    e.getStatusCode(), e.getMessage());
+            return java.util.List.of();
+
+        } catch (HttpServerErrorException e) {
+            log.warn("Server error fetching companies (non-fatal for export): {} - {}",
+                    e.getStatusCode(), e.getMessage());
+            return java.util.List.of();
+
+        } catch (ResourceAccessException e) {
+            log.warn("Network error fetching companies (non-fatal for export): {}", e.getMessage());
+            return java.util.List.of();
+
+        } catch (Exception e) {
+            log.warn("Unexpected error fetching companies (non-fatal for export): {}", e.getMessage());
+            return java.util.List.of();
         }
     }
 

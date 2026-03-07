@@ -14,7 +14,9 @@ import {
   PutPublicAccessBlockCommand,
   PutObjectCommand,
   HeadBucketCommand,
-  GetBucketLocationCommand
+  GetBucketLocationCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import {
   CloudFrontClient,
@@ -40,32 +42,43 @@ import {
 import config from '../src/config/site-config.js';
 import awsConfig from '../src/config/aws-config.js';
 
-// Set AWS profile for deployment
-const AWS_PROFILE = process.env.AWS_PROFILE || 'batbern-mgmt';
+// AWS profiles for each concern
+const STAGING_PROFILE = process.env.STAGING_PROFILE || 'batbern-staging';
+const MGMT_PROFILE    = process.env.AWS_PROFILE      || 'batbern-mgmt';
+
+// S3 path where CI uploads ZAP JSON reports
+const ZAP_SOURCE_BUCKET = 'batbern-content-staging';
+const ZAP_SOURCE_PREFIX = 'ci-reports/zap/';
 
 class DocumentationDeployer {
   constructor() {
     this.config = config;
     this.awsConfig = awsConfig;
 
-    // Configure AWS credentials from profile
-    const credentials = fromIni({ profile: AWS_PROFILE });
+    // Staging credentials — used to download ZAP reports from CI bucket
+    const stagingCredentials = fromIni({ profile: STAGING_PROFILE });
+    this.stagingS3Client = new S3Client({
+      region: 'eu-central-1',
+      credentials: stagingCredentials,
+    });
 
+    // Management credentials — used for the project.batbern.ch deploy
+    const mgmtCredentials = fromIni({ profile: MGMT_PROFILE });
     this.s3Client = new S3Client({
       region: awsConfig.region,
-      credentials
+      credentials: mgmtCredentials,
     });
     this.cloudFrontClient = new CloudFrontClient({
-      region: 'us-east-1', // CloudFront is global
-      credentials
+      region: 'us-east-1',
+      credentials: mgmtCredentials,
     });
     this.route53Client = new Route53Client({
-      region: 'us-east-1', // Route53 is global
-      credentials
+      region: 'us-east-1',
+      credentials: mgmtCredentials,
     });
     this.acmClient = new ACMClient({
-      region: 'us-east-1', // ACM for CloudFront must be in us-east-1
-      credentials
+      region: 'us-east-1',
+      credentials: mgmtCredentials,
     });
     this.deploymentInfo = {};
   }
@@ -73,9 +86,13 @@ class DocumentationDeployer {
   async deploy() {
     console.log('☁️  BATbern Documentation Deployer');
     console.log('==================================\n');
-    console.log(`🔑 Using AWS Profile: ${AWS_PROFILE}\n`);
+    console.log(`🔑 Staging profile : ${STAGING_PROFILE} (ZAP report download)`);
+    console.log(`🔑 Mgmt profile    : ${MGMT_PROFILE} (project.batbern.ch deploy)\n`);
 
     try {
+      // Download latest ZAP reports from staging S3 (written by CI)
+      await this.downloadZapReports();
+
       // Validate configuration
       await this.validateConfiguration();
 
@@ -108,6 +125,42 @@ class DocumentationDeployer {
       }
       process.exit(1);
     }
+  }
+
+  async downloadZapReports() {
+    console.log('🔒 Downloading ZAP reports from staging S3...');
+    const outDir = path.resolve('security-reports');
+    await fs.ensureDir(outDir);
+
+    let listed;
+    try {
+      listed = await this.stagingS3Client.send(new ListObjectsV2Command({
+        Bucket: ZAP_SOURCE_BUCKET,
+        Prefix: ZAP_SOURCE_PREFIX,
+      }));
+    } catch (err) {
+      console.warn(`   ⚠️  Could not list ZAP reports (${err.message}) — skipping`);
+      return;
+    }
+
+    const objects = (listed.Contents || []).filter(o => o.Key !== ZAP_SOURCE_PREFIX);
+    if (objects.length === 0) {
+      console.log('   ℹ️  No ZAP reports found in S3 — ZAP section will be empty');
+      return;
+    }
+
+    for (const obj of objects) {
+      const filename = obj.Key.replace(ZAP_SOURCE_PREFIX, '');
+      const res = await this.stagingS3Client.send(new GetObjectCommand({
+        Bucket: ZAP_SOURCE_BUCKET,
+        Key: obj.Key,
+      }));
+      const dest = path.join(outDir, filename);
+      await fs.ensureDir(path.dirname(dest));
+      await fs.writeFile(dest, Buffer.from(await res.Body.transformToByteArray()));
+    }
+
+    console.log(`   ✅ Downloaded ${objects.length} ZAP report(s) to security-reports/\n`);
   }
 
   async validateConfiguration() {

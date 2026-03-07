@@ -1,0 +1,21 @@
+<!-- subject: You've been promoted from the waitlist – {{eventTitle}} -->
+<h2>Great news, {{recipientName}}!</h2>
+<p>A spot has opened up and you've been moved from the waitlist to registered for:</p>
+<p><strong>{{eventTitle}}</strong><br>
+Date: {{eventDate}}<br>
+Venue: {{venueAddress}}</p>
+<p>Your registration code: <strong>{{registrationCode}}</strong></p>
+<p><strong>Important:</strong> Please confirm your registration within 48 hours:</p>
+<div style="text-align: center;">
+    <a href="{{confirmationUrl}}" class="cta-button">✓ Confirm Registration Now</a>
+</div>
+<p style="font-size: 12px; color: #666; margin-top: 20px;">
+    If the button doesn't work, copy and paste this link into your browser:<br>
+    <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
+</p>
+<p>We look forward to seeing you at the event!</p>
+<p>For any questions, visit: <a href="{{eventUrl}}">{{eventUrl}}</a></p>
+<p style="font-size: 12px; color: #666; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
+    Need to cancel? <a href="{{deregistrationUrl}}" style="color: #666;">Cancel your registration</a>
+</p>
+<p>Best regards,<br>The BATbern Team</p>

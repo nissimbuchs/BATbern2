@@ -61,14 +61,15 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
         </div>
       )}
 
-      {/* Capacity */}
-      {event.venueCapacity && (
+      {/* Capacity — show registrationCapacity only (venueCapacity is organizer-internal) */}
+      {event.registrationCapacity != null && (
         <div className="flex items-start gap-3">
           <Users className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
             <p className="text-sm text-zinc-400">{t('public.logistics.capacity')}</p>
             <p className="text-lg font-light text-zinc-100">
-              {event.currentAttendeeCount || 0} / {event.venueCapacity}
+              {(event.confirmedCount || 0) + (event.waitlistCount || 0)} /{' '}
+              {event.registrationCapacity}
             </p>
           </div>
         </div>

@@ -239,7 +239,7 @@ class TaskTemplateControllerIntegrationTest extends AbstractIntegrationTest {
         // Given: Custom template exists
         TaskTemplate customTemplate = new TaskTemplate();
         customTemplate.setName("My Custom Template");
-        customTemplate.setTriggerState("agenda_finalized");
+        customTemplate.setTriggerState("agenda_published");
         customTemplate.setDueDateType("relative_to_event");
         customTemplate.setDueDateOffsetDays(-14);
         customTemplate.setIsDefault(false);

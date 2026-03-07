@@ -59,7 +59,10 @@ public class UserService {
     public UserResponse getCurrentUser() {
         log.debug("Fetching current authenticated user");
         String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
+        // Fallback to cognitoUserId lookup when custom:username is not yet in JWT
+        // (e.g. first login after organizer pre-registered the user; Cognito account just linked via JIT)
         User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByCognitoUserId(securityContext.getCurrentUserId()))
                 .orElseThrow(() -> new UserNotFoundException(username));
         return responseMapper.mapToResponse(user);
     }

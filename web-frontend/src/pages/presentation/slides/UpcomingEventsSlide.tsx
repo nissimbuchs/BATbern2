@@ -28,17 +28,17 @@ export function UpcomingEventsSlide({ events }: UpcomingEventsSlideProps): JSX.E
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         color: '#ffffff',
         textAlign: 'center',
-        padding: '3rem',
+        padding: '2.5vw',
       }}
     >
       <h2
         style={{
-          fontSize: '3rem',
+          fontSize: '2.5vw',
           fontWeight: 700,
-          marginBottom: '3rem',
+          marginBottom: '2.5vw',
           color: '#4f9cf9',
         }}
       >
@@ -48,14 +48,14 @@ export function UpcomingEventsSlide({ events }: UpcomingEventsSlideProps): JSX.E
       <div
         style={{
           display: 'flex',
-          gap: '2rem',
+          gap: '1.667vw',
           justifyContent: 'center',
           flexWrap: 'wrap',
-          maxWidth: '1200px',
+          maxWidth: '62.5vw',
         }}
       >
         {upcoming.length === 0 ? (
-          <p style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.6)' }}>
+          <p style={{ fontSize: '1.25vw', color: 'rgba(255,255,255,0.6)' }}>
             Keine weiteren Events geplant.
           </p>
         ) : (
@@ -75,19 +75,19 @@ function EventCard({ event }: { event: Event }): JSX.Element {
       style={{
         background: 'rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: '12px',
-        padding: '2rem',
-        minWidth: '280px',
-        maxWidth: '340px',
+        borderRadius: '0.625vw',
+        padding: '1.667vw',
+        minWidth: '14.583vw',
+        maxWidth: '17.708vw',
         textAlign: 'center',
       }}
     >
       <div
         style={{
-          fontSize: '2rem',
+          fontSize: '1.667vw',
           fontWeight: 800,
           color: '#4f9cf9',
-          marginBottom: '0.75rem',
+          marginBottom: '0.625vw',
         }}
       >
         #{event.eventNumber}
@@ -95,9 +95,9 @@ function EventCard({ event }: { event: Event }): JSX.Element {
 
       <div
         style={{
-          fontSize: '1.25rem',
+          fontSize: '1.042vw',
           color: 'rgba(255,255,255,0.7)',
-          marginBottom: '0.5rem',
+          marginBottom: '0.417vw',
         }}
       >
         {dateStr}
@@ -105,7 +105,7 @@ function EventCard({ event }: { event: Event }): JSX.Element {
 
       <div
         style={{
-          fontSize: '1.1rem',
+          fontSize: '0.917vw',
           color: 'rgba(255,255,255,0.5)',
           fontStyle: titleDisplay === 'TBD' ? 'italic' : 'normal',
         }}

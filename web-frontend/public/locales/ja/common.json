@@ -552,7 +552,8 @@
       "activeCount": "{{count}}件のアクティブなフィルター"
     },
     "detail": {
-      "backToArchive": "← アーカイブに戻る"
+      "backToArchive": "← アーカイブに戻る",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,8 @@
       "importData": "データをインポート",
       "taskTemplates": "タスクテンプレート",
       "emailTemplates": "メールテンプレート",
-      "presentationSettings": "プレゼンテーション"
+      "presentationSettings": "プレゼンテーション",
+      "exportImport": "エクスポート / インポート"
     },
     "accessDenied": "アクセス拒否",
     "organizerOnly": "このページは主催者専用です。",
@@ -638,6 +640,31 @@
       "save": "保存",
       "saved": "設定が保存されました。",
       "saveFailed": "保存に失敗しました。再試行してください。"
+    },
+    "exportImport": {
+      "title": "エクスポート / インポート",
+      "exportSection": "エクスポート",
+      "exportJsonButton": "全データをエクスポート (JSON)",
+      "exportAssetsButton": "アセットマニフェストを取得",
+      "importSection": "インポート",
+      "importJsonLabel": "JSONファイルを選択",
+      "importButton": "インポート",
+      "successAlert": "インポートが正常に完了しました。",
+      "resultEvents": "イベント",
+      "resultSessions": "セッション",
+      "resultSpeakers": "登壇者",
+      "resultCompanies": "企業",
+      "resultAttendees": "参加者",
+      "resultErrors": "エラー",
+      "errorAlert": "インポートに失敗しました。以下のエラーを確認してください。",
+      "importAssetsLabel": "アセットをインポート (ZIP)",
+      "importAssetsChooseLabel": "ZIPファイルを選択",
+      "importAssetsButton": "アセットをインポート",
+      "confirmTitle": "インポートの確認",
+      "confirmMessage": "このデータは挿入・更新されます。既存のレコードが更新されます。この操作は自動的に元に戻すことができません。",
+      "confirmAssetsTitle": "アセットインポートの確認",
+      "confirmAssetsMessage": "ZIPファイル内のすべてのアセットがS3にアップロードされます。この操作は自動的に元に戻すことができません。",
+      "confirmButton": "続行"
     },
     "taskTemplates": {
       "defaultSection": "デフォルトテンプレート",

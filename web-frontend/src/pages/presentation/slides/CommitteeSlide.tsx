@@ -6,12 +6,13 @@
  * AC #9: All active organizers with photo, name, company logo, email — no bio.
  * AC #10: Each card animates: y: 30→0, opacity: 0→1, delay = index × 0.12s
  *
- * Uses OrganizerDisplay (same component as public /about page) with showBio={false}.
+ * Uses a presentation-specific vw-scaled card instead of OrganizerDisplay
+ * (which uses fixed Tailwind px classes unsuitable for 4K projection).
  */
 import { type JSX } from 'react';
 import { motion } from 'framer-motion';
 import type { User } from '@/types/user.types';
-import { OrganizerDisplay } from '@/components/public/About/OrganizerDisplay';
+import { useCompany } from '@/hooks/useCompany/useCompany';
 
 interface CommitteeSlideProps {
   organizers: User[];
@@ -27,16 +28,16 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
-        padding: '3rem',
+        height: '100%',
+        padding: '2.5vw',
         color: '#ffffff',
       }}
     >
       <h2
         style={{
-          fontSize: '3rem',
+          fontSize: '2.5vw',
           fontWeight: 700,
-          marginBottom: '3rem',
+          marginBottom: '2.5vw',
           color: '#4f9cf9',
         }}
       >
@@ -47,9 +48,9 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(400px, 560px))',
-          gap: '1.5rem',
-          maxWidth: '1200px',
+          gridTemplateColumns: 'repeat(2, minmax(20.833vw, 29.167vw))',
+          gap: '1.25vw',
+          maxWidth: '62.5vw',
           width: '100%',
         }}
       >
@@ -62,14 +63,72 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '12px',
-              padding: '1.25rem 1.5rem',
+              borderRadius: '0.625vw',
+              padding: '1.042vw 1.25vw',
             }}
           >
-            <OrganizerDisplay organizer={org} showBio={false} />
+            <OrganizerCard organizer={org} />
           </motion.div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** vw-scaled organizer card for the presentation canvas. */
+function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
+  const { data: company } = useCompany(organizer.companyId || '', { expand: ['logo'] });
+  const logoUrl = company?.logo?.url;
+  const companyName = company?.displayName || company?.name;
+  const initials = `${organizer.firstName?.[0] ?? ''}${organizer.lastName?.[0] ?? ''}`;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25vw' }}>
+      {/* Profile photo */}
+      <div
+        style={{
+          width: '4.167vw',
+          height: '4.167vw',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          flexShrink: 0,
+          background: 'rgba(255,255,255,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {organizer.profilePictureUrl ? (
+          <img
+            src={organizer.profilePictureUrl}
+            alt={`${organizer.firstName} ${organizer.lastName}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span style={{ fontSize: '1.667vw', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+            {initials}
+          </span>
+        )}
+      </div>
+
+      {/* Name + company */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '1.25vw', fontWeight: 500, color: '#ffffff', marginBottom: '0.313vw' }}>
+          {organizer.firstName} {organizer.lastName}
+        </div>
+        {companyName && (
+          <div style={{ fontSize: '0.938vw', color: 'rgba(255,255,255,0.55)' }}>{companyName}</div>
+        )}
+      </div>
+
+      {/* Company logo */}
+      {logoUrl && (
+        <img
+          src={logoUrl}
+          alt={companyName ?? ''}
+          style={{ maxHeight: '2.5vw', maxWidth: '5.208vw', objectFit: 'contain', flexShrink: 0 }}
+        />
+      )}
     </div>
   );
 }

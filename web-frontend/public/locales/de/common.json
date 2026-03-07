@@ -553,7 +553,8 @@
       "activeCount": "{{count}} aktiver Filter"
     },
     "detail": {
-      "backToArchive": "← Zurück zum Archiv"
+      "backToArchive": "← Zurück zum Archiv",
+      "photos": "Fotos"
     }
   },
   "notifications": {
@@ -599,7 +600,9 @@
     "preview": "Vorschau",
     "editTitle": "Vorlage bearbeiten",
     "createTitle": "Neue Vorlage",
+    "duplicateTitle": "Vorlage duplizieren",
     "newTemplate": "+ Neue Vorlage",
+    "duplicateTemplate": "Duplizieren",
     "noLayouts": "Keine Layout-Vorlagen gefunden.",
     "noTemplates": "Keine Vorlagen für diesen Filter gefunden.",
     "missingContentPlaceholder": "{{content}}-Platzhalter fehlt — E-Mail-Inhalt wird leer sein",
@@ -627,7 +630,8 @@
       "importData": "Daten importieren",
       "taskTemplates": "Aufgabenvorlagen",
       "emailTemplates": "E-Mail-Vorlagen",
-      "presentationSettings": "Präsentation"
+      "presentationSettings": "Präsentation",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Zugang verweigert",
     "organizerOnly": "Diese Seite ist nur für Organisatoren.",
@@ -639,6 +643,31 @@
       "save": "Speichern",
       "saved": "Einstellungen gespeichert.",
       "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Alle Daten exportieren (JSON)",
+      "exportAssetsButton": "Asset-Manifest abrufen",
+      "importSection": "Import",
+      "importJsonLabel": "JSON-Datei auswählen",
+      "importButton": "Importieren",
+      "successAlert": "Import erfolgreich abgeschlossen.",
+      "resultEvents": "Veranstaltungen",
+      "resultSessions": "Sessions",
+      "resultSpeakers": "Referenten",
+      "resultCompanies": "Unternehmen",
+      "resultAttendees": "Teilnehmer",
+      "resultErrors": "Fehler",
+      "errorAlert": "Import fehlgeschlagen. Siehe Fehler unten.",
+      "importAssetsLabel": "Assets importieren (ZIP)",
+      "importAssetsChooseLabel": "ZIP-Datei auswählen",
+      "importAssetsButton": "Assets importieren",
+      "confirmTitle": "Import bestätigen",
+      "confirmMessage": "Dabei werden Daten eingefügt oder aktualisiert. Bestehende Datensätze werden überschrieben. Dies kann nicht automatisch rückgängig gemacht werden.",
+      "confirmAssetsTitle": "Asset-Import bestätigen",
+      "confirmAssetsMessage": "Alle Assets aus der ZIP-Datei werden nach S3 hochgeladen. Dies kann nicht automatisch rückgängig gemacht werden.",
+      "confirmButton": "Fortfahren"
     },
     "taskTemplates": {
       "defaultSection": "Standard-Vorlagen",

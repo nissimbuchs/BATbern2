@@ -49,7 +49,7 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100%',
         color: '#ffffff',
         textAlign: 'center',
         overflow: 'hidden',
@@ -82,13 +82,13 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       ))}
 
       {/* BATbern spinner (AC #11) */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div className={animStyles.loaderWrap} style={{ width: '4.167vw', height: '4.167vw', marginBottom: '1.25vw' }}>
         <BATbernLoader size={80} speed="slow" />
       </div>
 
       <h1
         style={{
-          fontSize: '6rem',
+          fontSize: '5vw',
           fontWeight: 800,
           color: '#4f9cf9',
           margin: 0,
@@ -101,9 +101,9 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       {resumeTime && (
         <p
           style={{
-            fontSize: '2.5rem',
+            fontSize: '2.083vw',
             color: 'rgba(255,255,255,0.8)',
-            marginTop: '2rem',
+            marginTop: '1.667vw',
             fontWeight: 400,
           }}
         >
@@ -114,36 +114,36 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       {/* Animated coffee cup with steam (AC #12) */}
       <div
         style={{
-          marginTop: '3rem',
+          marginTop: '2.5vw',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '0.2rem',
+          gap: '0.167vw',
         }}
       >
         {/* Steam lines */}
-        <div style={{ display: 'flex', gap: '0.5rem', height: '24px', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '0.417vw', height: '1.25vw', alignItems: 'flex-end' }}>
           <span
             className={animStyles.steamLine}
-            style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)' }}
+            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
           >
             〜
           </span>
           <span
             className={animStyles.steamLine}
-            style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)' }}
+            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
           >
             〜
           </span>
           <span
             className={animStyles.steamLine}
-            style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)' }}
+            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
           >
             〜
           </span>
         </div>
         {/* Coffee cup */}
-        <div style={{ fontSize: '8rem' }}>☕</div>
+        <div style={{ fontSize: '6.667vw' }}>☕</div>
       </div>
     </div>
   );

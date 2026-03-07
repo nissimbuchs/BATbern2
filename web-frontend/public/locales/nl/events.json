@@ -11,7 +11,8 @@
       "participants": "Deelnemers",
       "publishing": "Publicatie",
       "newsletter": "Nieuwsbrief",
-      "settings": "Instellingen"
+      "settings": "Instellingen",
+      "photos": "Photos"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -32,7 +33,22 @@
       "previewPublic": "Openbare pagina bekijken"
     },
     "participantsTab": {
-      "title": "Evenementdeelnemers"
+      "title": "Evenementdeelnemers",
+      "confirmed": "[MISSING] confirmed",
+      "onWaitlist": "[MISSING] on waitlist",
+      "capacityBar": "[MISSING] {{confirmed}} / {{capacity}} confirmed",
+      "waitlistSection": "[MISSING] Waitlist ({{count}})",
+      "waitlistPromote": "[MISSING] Promote to Registered",
+      "waitlistPromoteSuccess": "[MISSING] Successfully promoted",
+      "waitlistPromoteError": "[MISSING] Failed to promote",
+      "waitlistEmpty": "[MISSING] No one on the waitlist",
+      "waitlistTablePosition": "[MISSING] #",
+      "waitlistTableName": "[MISSING] Name",
+      "waitlistTableEmail": "[MISSING] Email",
+      "waitlistTableCompany": "[MISSING] Company",
+      "waitlistTableRegisteredOn": "[MISSING] Registered On",
+      "waitlistTableActions": "[MISSING] Actions",
+      "statusCancelled": "[MISSING] Cancelled"
     },
     "participantTable": {
       "headers": {
@@ -80,7 +96,9 @@
       "moderatorDesc": "De organisator die verantwoordelijk is voor het modereren van dit evenement.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator succesvol bijgewerkt",
-      "moderatorUpdateError": "Bijwerken van moderator mislukt."
+      "moderatorUpdateError": "Bijwerken van moderator mislukt.",
+      "capacityLabel": "[MISSING] Registration Capacity",
+      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
     },
     "speakers": {
       "progress": "Voortgang",
@@ -106,7 +124,7 @@
       "sendNewsletter": "Nieuwsbrief verzenden",
       "sendReminder": "Herinnering verzenden",
       "confirmSendTitle": "Verzending bevestigen",
-      "confirmSendBody": "{{type}} verzenden naar {{count}} abonnees voor evenement «{{eventTitle}}»?",
+      "confirmSendBody": "[MISSING] {{type}} mit Vorlage '{{templateKey}}' an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
       "sendSuccess": "Nieuwsbrief verzonden naar {{count}} ontvangers.",
       "sendError": "Verzenden mislukt. Probeer opnieuw.",
       "historyDate": "Datum",
@@ -201,7 +219,6 @@
       "speaker_brainstorming": "Sprekersbrainstorm",
       "speaker_outreach": "Sprekersbenadering",
       "agenda_published": "Agenda gepubliceerd",
-      "agenda_finalized": "Agenda gefinaliseerd",
       "event_live": "Evenement live",
       "post_event_wrap_up": "Afsluiting na evenement",
       "archived": "Gearchiveerd"
@@ -352,7 +369,6 @@
       "speaker_identification": "Sprekeridentificatie",
       "slot_assignment": "Slottoewijzing",
       "agenda_published": "Agenda gepubliceerd",
-      "agenda_finalized": "Agenda gefinaliseerd",
       "event_live": "Evenement live",
       "event_completed": "Evenement voltooid",
       "archived": "Gearchiveerd"
@@ -741,5 +757,33 @@
   },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
+  },
+  "eventCard": {
+    "statusChip": {
+      "confirmed": "[MISSING] Confirmed",
+      "registered": "[MISSING] Registered",
+      "waitlist": "[MISSING] Waitlist",
+      "cancelled": "[MISSING] Cancelled"
+    }
+  },
+  "capacity": {
+    "spotsRemaining": "[MISSING] {{count}} spots remaining",
+    "spotsRemaining_one": "[MISSING] 1 spot remaining",
+    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
+    "waitlistCount": "[MISSING] {{count}} on waitlist"
+  },
+  "description": {
+    "heading": "Over dit evenement"
+  },
+  "photos": {
+    "title": "Event Photos",
+    "uploadButton": "Upload Photo",
+    "deleteConfirmTitle": "Delete Photo",
+    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "emptyState": "No photos yet. Upload the first one!",
+    "uploading": "Uploading...",
+    "uploadError": "Upload failed. Please try again."
   }
 }

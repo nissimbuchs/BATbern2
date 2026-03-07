@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.dto.generated.TeaserImageItem;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,11 +48,22 @@ public class EventResponse {
     private String workflowState;
     private String currentPublishedPhase;
 
+    // Teaser images for moderator presentation page (Story 10.22)
+    // Populated by EventController after base DTO construction (N+1 acceptable at BATbern scale).
+    // TODO: If list performance degrades, switch to batch-load: findByEventCodeInOrderByDisplayOrderAsc(codes).
+    private List<TeaserImageItem> teaserImages;
+
     // Optional expanded resources (Story BAT-109: Archive browsing)
     // These fields are populated only when requested via ?include parameter
     private Map<String, Object> topic;        // Populated with include=topics
     private Map<String, Object> venue;        // Populated with include=venue
     private List<Map<String, Object>> sessions; // Populated with include=sessions (includes speakers)
+
+    // Registration capacity fields (Story 10.11)
+    private Integer registrationCapacity; // null = unlimited
+    private Integer confirmedCount;       // active registrations (registered + confirmed)
+    private Integer waitlistCount;        // registrations with status=waitlist
+    private Integer spotsRemaining;       // null when registrationCapacity is null
 
     // Optional metrics fields (populated with include=metrics)
     private Integer confirmedSpeakersCount;

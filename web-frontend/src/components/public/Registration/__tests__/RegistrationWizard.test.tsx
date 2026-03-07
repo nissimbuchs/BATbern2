@@ -19,6 +19,19 @@ vi.mock('@/services/eventApiClient', () => ({
   },
 }));
 
+// Mock useMyRegistration — vi.fn() so guard tests can override per test (Story 10.10, T11)
+vi.mock('@/hooks/useMyRegistration');
+import { useMyRegistration } from '@/hooks/useMyRegistration';
+const mockUseMyRegistration = vi.mocked(useMyRegistration);
+
+// Mock useAuth + useUserProfile for prefill tests
+vi.mock('@/hooks/useAuth/useAuth');
+vi.mock('@/hooks/useUserProfile/useUserProfile');
+import { useAuth } from '@/hooks/useAuth/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
+const mockUseAuth = vi.mocked(useAuth);
+const mockUseUserProfile = vi.mocked(useUserProfile);
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -135,6 +148,13 @@ describe('RegistrationWizard Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: not registered → guard doesn't show, wizard renders normally
+    mockUseMyRegistration.mockReturnValue({ data: null, isLoading: false });
+    // Default: anonymous user, no profile
+    mockUseAuth.mockReturnValue({ isAuthenticated: false } as ReturnType<typeof useAuth>);
+    mockUseUserProfile.mockReturnValue({ userProfile: undefined } as ReturnType<
+      typeof useUserProfile
+    >);
   });
 
   describe('Initial Rendering', () => {
@@ -538,6 +558,157 @@ describe('RegistrationWizard Component', () => {
       fireEvent.click(screen.getByTestId('registration-wizard-cancel-btn'));
 
       expect(mockOnCancel).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Story 10.10, T11: Registration Wizard Guard (AC6) ──────────────────────
+
+  describe('Registration Status Guard (AC6)', () => {
+    test('should_showGuard_when_userIsAlreadyConfirmed', () => {
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'CONFIRMED',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-status-guard')).toBeInTheDocument();
+      expect(screen.getByText('registrationStatusGuard.alreadyRegistered')).toBeInTheDocument();
+      // Wizard form step 1 must NOT render
+      expect(screen.queryByRole('heading', { name: /Step 1/i })).not.toBeInTheDocument();
+    });
+
+    test('should_showGuard_when_userIsRegistered', () => {
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'REGISTERED',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-status-guard')).toBeInTheDocument();
+    });
+
+    test('should_showGuard_when_userIsOnWaitlist', () => {
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'WAITLIST',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-status-guard')).toBeInTheDocument();
+    });
+
+    test('should_showGoBackButton_when_userHasActiveRegistration', () => {
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'CONFIRMED',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-guard-go-back-btn')).toBeInTheDocument();
+      expect(screen.queryByTestId('registration-guard-register-again-btn')).not.toBeInTheDocument();
+    });
+
+    test('should_showRegisterAgainButton_when_userIsCancelled', () => {
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'CANCELLED',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-guard-register-again-btn')).toBeInTheDocument();
+      expect(screen.queryByTestId('registration-guard-go-back-btn')).not.toBeInTheDocument();
+    });
+
+    test('should_showWizard_when_registrationIsLoading', () => {
+      mockUseMyRegistration.mockReturnValue({ data: undefined, isLoading: true });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      // Guard condition requires !isRegistrationLoading — while loading, show wizard
+      expect(screen.queryByTestId('registration-status-guard')).not.toBeInTheDocument();
+    });
+
+    test('should_showWizard_when_notRegistered', () => {
+      mockUseMyRegistration.mockReturnValue({ data: null, isLoading: false });
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.queryByTestId('registration-status-guard')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Step 1: Your Details/i })).toBeInTheDocument();
+    });
+
+    test('should_prefillFormFields_when_userProfileLoads', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true } as ReturnType<typeof useAuth>);
+      mockUseUserProfile.mockReturnValue({
+        userProfile: {
+          firstName: 'Alice',
+          lastName: 'Tester',
+          email: 'alice@example.com',
+        },
+      } as ReturnType<typeof useUserProfile>);
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Alice')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Tester')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('alice@example.com')).toBeInTheDocument();
+      });
+    });
+
+    test('should_callSetQueryData_with_null_when_registerAgainClicked', () => {
+      // The guard dismiss works by calling queryClient.setQueryData(null) to optimistically
+      // mark the user as not-registered. This avoids a race condition where removeQueries
+      // would trigger a re-fetch returning CANCELLED before the user submits the new form.
+      mockUseMyRegistration.mockReturnValue({
+        data: {
+          registrationCode: 'BATbern999-reg-alice',
+          eventCode: 'BAT2025',
+          status: 'CANCELLED',
+          registrationDate: '2025-11-01T10:00:00Z',
+        },
+        isLoading: false,
+      });
+
+      const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      expect(screen.getByTestId('registration-status-guard')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('registration-guard-register-again-btn'));
+
+      // Verify the cache is set to null (not-registered) — not removed (which would race)
+      expect(setQueryDataSpy).toHaveBeenCalledWith(['my-registration', 'BAT2025'], null);
     });
   });
 });

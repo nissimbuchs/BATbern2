@@ -246,6 +246,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     contentBucket: storageStack.contentBucket,
     cloudFrontDistribution: storageStack.distribution,
     alarmTopic: monitoringStack.alarmTopic,
+    // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
+    aiEnabled: config.envName === 'staging' || config.envName === 'production',
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,

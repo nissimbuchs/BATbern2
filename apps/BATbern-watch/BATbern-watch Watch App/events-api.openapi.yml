@@ -662,7 +662,7 @@ paths:
         9. OVERFLOW_MANAGEMENT - Managing speaker overflow
         10. SLOT_ASSIGNMENT - Assigning speakers to time slots
         11. AGENDA_PUBLISHED - Publishing agenda
-        12. AGENDA_FINALIZED - Finalizing agenda
+        12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
         13. NEWSLETTER_SENT - Newsletter sent to attendees
         14. EVENT_READY - Event ready to start
         15. PARTNER_MEETING_COMPLETE - Partner meetings completed
@@ -4606,7 +4606,6 @@ components:
         - SPEAKER_IDENTIFICATION
         - SLOT_ASSIGNMENT
         - AGENDA_PUBLISHED
-        - AGENDA_FINALIZED
         - EVENT_LIVE
         - EVENT_COMPLETED
         - ARCHIVED

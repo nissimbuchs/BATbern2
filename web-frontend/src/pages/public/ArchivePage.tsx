@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { EventCard } from '@/components/public/EventCard';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { FilterSidebar } from '@/components/public/FilterSidebar';
 import { FilterSheet } from '@/components/public/FilterSheet';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
@@ -21,6 +22,25 @@ import type { ArchiveFilters, EventDetailUI } from '@/types/event.types';
 import type { Topic } from '@/types/topic.types';
 
 type ViewMode = 'grid' | 'list';
+
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * ArchiveEventCardWithStatus — per-card wrapper calling useMyRegistration per event.
+ * Only fetches status for events within the past 12 months (Story 10.10, T10.5).
+ * Hook is only called per-component instance, satisfying rules of hooks.
+ */
+function ArchiveEventCardWithStatus({
+  event,
+  viewMode,
+}: {
+  event: EventDetailUI;
+  viewMode: ViewMode;
+}) {
+  const isWithin12Months = Date.now() - new Date(event.date).getTime() < ONE_YEAR_MS;
+  const { data: myReg } = useMyRegistration(isWithin12Months ? event.eventCode : undefined);
+  return <EventCard event={event} viewMode={viewMode} myRegistrationStatus={myReg?.status} />;
+}
 
 export default function ArchivePage() {
   const { t } = useTranslation();
@@ -277,7 +297,7 @@ export default function ArchivePage() {
                     }
                   >
                     {events.map((event) => (
-                      <EventCard
+                      <ArchiveEventCardWithStatus
                         key={event.eventCode}
                         event={
                           {

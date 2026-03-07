@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtro activo"
     },
     "detail": {
-      "backToArchive": "← Volver al archivo"
+      "backToArchive": "← Volver al archivo",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,8 @@
       "importData": "Importar datos",
       "taskTemplates": "Plantillas de tareas",
       "emailTemplates": "Plantillas de correo",
-      "presentationSettings": "Presentación"
+      "presentationSettings": "Presentación",
+      "exportImport": "Export / Import"
     },
     "accessDenied": "Acceso denegado",
     "organizerOnly": "Esta página es solo para organizadores.",
@@ -638,6 +640,31 @@
       "save": "Guardar",
       "saved": "Configuración guardada.",
       "saveFailed": "Error al guardar. Por favor, inténtalo de nuevo."
+    },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Exportar",
+      "exportJsonButton": "Exportar todos los datos (JSON)",
+      "exportAssetsButton": "Obtener manifiesto de recursos",
+      "importSection": "Importar",
+      "importJsonLabel": "Elegir archivo JSON",
+      "importButton": "Importar",
+      "successAlert": "Importación completada con éxito.",
+      "resultEvents": "Eventos",
+      "resultSessions": "Sesiones",
+      "resultSpeakers": "Ponentes",
+      "resultCompanies": "Empresas",
+      "resultAttendees": "Asistentes",
+      "resultErrors": "Errores",
+      "errorAlert": "La importación falló. Ver errores a continuación.",
+      "importAssetsLabel": "Importar recursos (ZIP)",
+      "importAssetsChooseLabel": "Elegir archivo ZIP",
+      "importAssetsButton": "Importar recursos",
+      "confirmTitle": "Confirmar importación",
+      "confirmMessage": "Esto insertará o actualizará datos. Los registros existentes serán actualizados. No se puede deshacer automáticamente.",
+      "confirmAssetsTitle": "Confirmar importación de recursos",
+      "confirmAssetsMessage": "Se subirán todos los recursos del archivo ZIP a S3. No se puede deshacer automáticamente.",
+      "confirmButton": "Continuar"
     },
     "taskTemplates": {
       "defaultSection": "Plantillas predeterminadas",

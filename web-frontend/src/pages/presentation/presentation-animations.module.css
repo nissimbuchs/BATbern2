@@ -6,6 +6,22 @@
  * Spinner (ACs #11, #14): uses <BATbernLoader> SVG component, not CSS here.
  */
 
+/* ---- BATbernLoader vw-scale wrapper ---- */
+
+/* Wrap BATbernLoader in a vw-sized div; this class forces the inner SVG to fill it.
+   BATbernLoader sets width/height as HTML attributes — CSS wins with specificity. */
+.loaderWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.loaderWrap > svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* ---- Coffee steam lines (AC #12) ---- */
 
 @keyframes steam {
@@ -16,7 +32,7 @@
   }
   50% {
     opacity: 0.6;
-    transform: translateY(-12px) scaleX(1.2);
+    transform: translateY(-0.625vw) scaleX(1.2);
   }
 }
 
@@ -40,7 +56,7 @@
     opacity: 0.8;
   }
   100% {
-    transform: translateY(-60px) rotate(30deg);
+    transform: translateY(-3.125vw) rotate(30deg);
     opacity: 0;
   }
 }
@@ -48,6 +64,6 @@
 .coffeeBean {
   animation: floatBean linear infinite;
   position: absolute;
-  font-size: 1.2rem;
+  font-size: 1vw;
   pointer-events: none;
 }

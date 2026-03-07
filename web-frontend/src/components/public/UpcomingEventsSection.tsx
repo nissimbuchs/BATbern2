@@ -8,11 +8,30 @@
 
 import { useTranslation } from 'react-i18next';
 import { useEvents } from '@/hooks/useEvents';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { EventCard } from '@/components/public/EventCard';
 import type { EventDetailUI } from '@/types/event.types';
 
 interface UpcomingEventsSectionProps {
   currentEventCode: string | undefined;
+}
+
+/**
+ * EventCardWithStatus — per-card wrapper that calls useMyRegistration individually.
+ * Avoids calling hooks in a loop (rules of hooks) by extracting into a component.
+ * Story 10.10, AC5 / T10.5.
+ */
+function UpcomingEventCardWithStatus({ event }: { event: EventDetailUI }) {
+  const { data: myReg } = useMyRegistration(event.eventCode);
+  return (
+    <EventCard
+      key={event.eventCode}
+      event={event}
+      viewMode="grid"
+      linkPrefix="/events/"
+      myRegistrationStatus={myReg?.status}
+    />
+  );
 }
 
 export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectionProps) {
@@ -37,11 +56,9 @@ export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectio
       <h2 className="text-2xl font-light text-zinc-100 mb-6">{t('public.upcomingEvents.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {upcomingEvents.map((event) => (
-          <EventCard
+          <UpcomingEventCardWithStatus
             key={event.eventCode}
             event={{ ...event, sessions: event.sessions ?? undefined } as EventDetailUI}
-            viewMode="grid"
-            linkPrefix="/events/"
           />
         ))}
       </div>

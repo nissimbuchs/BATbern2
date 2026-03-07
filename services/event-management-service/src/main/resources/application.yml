@@ -8,6 +8,10 @@ server:
 spring:
   application:
     name: event-management-service
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
   security:
     oauth2:
       resourceserver:
@@ -95,7 +99,7 @@ workflow:
   scheduled:
     events-going-live:
       # Daily at 00:01 (1 minute past midnight, Europe/Zurich timezone)
-      # Transitions AGENDA_FINALIZED → EVENT_LIVE when event date is reached
+      # Transitions AGENDA_PUBLISHED → EVENT_LIVE when event date is reached (V82: AGENDA_FINALIZED removed)
       cron: "0 1 0 * * *"
     events-completed:
       # Daily at 23:59 (1 minute before midnight, Europe/Zurich timezone)
@@ -104,6 +108,8 @@ workflow:
 
 # Speaker Deadline Reminders Configuration (Story 6.5)
 batbern:
+  ai:
+    enabled: ${AI_ENABLED:false}
   reminders:
     enabled: true
     cron: "0 0 8 * * *"  # Daily at 8 AM (before 9 AM registration reminder)
@@ -164,3 +170,7 @@ spring:
         jwt:
           issuer-uri: http://localhost:9999/oauth2/default
           jwk-set-uri: http://localhost:9999/oauth2/default/v1/keys
+
+batbern:
+  ai:
+    enabled: false

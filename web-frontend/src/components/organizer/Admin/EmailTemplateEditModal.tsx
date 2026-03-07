@@ -42,6 +42,10 @@ interface Props {
   /** When provided: edit mode. When undefined: create mode. */
   template?: EmailTemplateResponse;
   isLayoutMode: boolean;
+  /** Category to assign when creating a new template (defaults to 'SPEAKER'). */
+  initialCategory?: string;
+  /** When set, pre-fills content/subject/layout from this template (create mode only). */
+  cloneFrom?: EmailTemplateResponse;
   onClose: () => void;
 }
 
@@ -55,18 +59,28 @@ function extractVariables(html: string): string[] {
   return Array.from(matches);
 }
 
-export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode, onClose }) => {
+export const EmailTemplateEditModal: React.FC<Props> = ({
+  template,
+  isLayoutMode,
+  initialCategory,
+  cloneFrom,
+  onClose,
+}) => {
   const { t } = useTranslation();
   const isEdit = Boolean(template);
 
   // Create-mode fields
   const [newTemplateKey, setNewTemplateKey] = useState('');
-  const [newLocale, setNewLocale] = useState<'de' | 'en'>('de');
+  const [newLocale, setNewLocale] = useState<'de' | 'en'>(
+    (cloneFrom?.locale as 'de' | 'en') ?? 'de'
+  );
 
-  // Shared fields
-  const [subject, setSubject] = useState(template?.subject ?? '');
-  const [htmlBody, setHtmlBody] = useState(template?.htmlBody ?? '');
-  const [layoutKey, setLayoutKey] = useState(template?.layoutKey ?? 'batbern-default');
+  // Shared fields (pre-fill from cloneFrom in create mode)
+  const [subject, setSubject] = useState(template?.subject ?? cloneFrom?.subject ?? '');
+  const [htmlBody, setHtmlBody] = useState(template?.htmlBody ?? cloneFrom?.htmlBody ?? '');
+  const [layoutKey, setLayoutKey] = useState(
+    template?.layoutKey ?? cloneFrom?.layoutKey ?? 'batbern-default'
+  );
   const [error, setError] = useState<string | null>(null);
 
   const { data: layouts = [] } = useLayoutTemplates();
@@ -116,10 +130,24 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
           setError(t('emailTemplates.validation.templateKeyRequired', 'Template key is required.'));
           return;
         }
+        if (/\s/.test(newTemplateKey)) {
+          setError(
+            t(
+              'emailTemplates.validation.templateKeyNoSpaces',
+              'Template key must not contain spaces.'
+            )
+          );
+          return;
+        }
         await createMutation.mutateAsync({
           templateKey: newTemplateKey.trim(),
           locale: newLocale,
-          category: 'SPEAKER',
+          category: (initialCategory ?? 'SPEAKER') as
+            | 'SPEAKER'
+            | 'REGISTRATION'
+            | 'TASK_REMINDER'
+            | 'LAYOUT'
+            | 'NEWSLETTER',
           isLayout: false,
           subject,
           htmlBody,
@@ -127,14 +155,26 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
         });
       }
       onClose();
-    } catch {
-      setError(t('emailTemplates.saveFailed', 'Failed to save template. Please try again.'));
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setError(
+          t(
+            'emailTemplates.validation.duplicateKey',
+            'A template with this key already exists for this locale. Please choose a different key.'
+          )
+        );
+      } else {
+        setError(t('emailTemplates.saveFailed', 'Failed to save template. Please try again.'));
+      }
     }
   };
 
   const title = isEdit
     ? t('emailTemplates.editTitle', 'Edit Template')
-    : t('emailTemplates.createTitle', 'New Template');
+    : cloneFrom
+      ? t('emailTemplates.duplicateTitle', 'Duplicate Template')
+      : t('emailTemplates.createTitle', 'New Template');
 
   return (
     <Dialog open onClose={onClose} maxWidth="lg" fullWidth>

@@ -11,21 +11,21 @@
 .center {
   /* Width is controlled by the parent motion.div in PresentationPage */
   width: 100%;
-  font-size: 1.4rem;
+  font-size: 1.167vw; /* 1.4rem @ 1920px */
 }
 
 .sidebar {
-  /* Width is animated by the parent motion.div in PresentationPage (wide → 280px FLIP) */
+  /* Width is animated by the parent motion.div in PresentationPage (wide → sidebar FLIP) */
   width: 100%;
-  font-size: 0.82rem;
+  font-size: 0.682vw; /* 0.82rem @ 1920px */
   opacity: 0.85;
 }
 
 .sessionRow {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.35rem 0;
+  gap: 0.417vw; /* 0.5rem */
+  padding: 0.292vw 0; /* 0.35rem */
   color: rgba(255, 255, 255, 0.6);
   transition: color 0.15s;
 }
@@ -46,7 +46,7 @@
 
 .sessionTime {
   white-space: nowrap;
-  min-width: 3.5rem;
+  min-width: 2.917vw; /* 3.5rem @ 1920px */
   font-variant-numeric: tabular-nums;
   /* Keep time pinned to top when title wraps */
   align-self: flex-start;
@@ -63,13 +63,13 @@
 .breakRow {
   color: rgba(255, 255, 255, 0.4);
   font-style: italic;
-  padding: 0.25rem 0;
-  font-size: 0.7rem;
+  padding: 0.208vw 0; /* 0.25rem */
+  font-size: 0.583vw; /* 0.7rem @ 1920px */
   letter-spacing: 0.05em;
 }
 
 .checkmark {
-  margin-left: 0.25rem;
+  margin-left: 0.208vw; /* 0.25rem */
   color: rgba(255, 255, 255, 0.3);
   align-self: flex-start;
 }

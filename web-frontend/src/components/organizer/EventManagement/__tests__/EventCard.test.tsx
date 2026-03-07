@@ -38,7 +38,6 @@ vi.mock('react-i18next', () => ({
         'workflow.states.speaker_identification': 'Speaker Identification',
         'workflow.states.slot_assignment': 'Slot Assignment',
         'workflow.states.agenda_published': 'Agenda Published',
-        'workflow.states.agenda_finalized': 'Agenda Finalized',
         'workflow.states.event_live': 'Event Live',
         'workflow.states.event_completed': 'Event Completed',
         'workflow.states.archived': 'Archived',
@@ -72,7 +71,7 @@ describe('EventCard Component', () => {
     eventDate: '2025-03-15T18:00:00Z',
     eventType: 'full_day',
     status: 'active',
-    workflowState: 'SLOT_ASSIGNMENT', // Step 4 of 9 = 44% progress
+    workflowState: 'SLOT_ASSIGNMENT', // Step 4 of 8 = 50% progress
     registrationDeadline: '2025-03-08T23:59:59Z',
     capacity: 200,
     currentAttendeeCount: 50,
@@ -135,7 +134,7 @@ describe('EventCard Component', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
       // Progress should be shown via aria-label on progressbar
-      const progressBar = screen.getByRole('progressbar', { name: /workflow progress.*44/i });
+      const progressBar = screen.getByRole('progressbar', { name: /workflow progress.*50/i });
       expect(progressBar).toBeInTheDocument();
     });
 
@@ -143,11 +142,11 @@ describe('EventCard Component', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar', { name: /workflow progress/i });
-      expect(progressBar).toHaveAttribute('aria-valuenow', '44');
+      expect(progressBar).toHaveAttribute('aria-valuenow', '50');
     });
 
     it('should_colorProgressBar_when_progressBelow30', () => {
-      const earlyEvent = { ...mockEvent, workflowState: 'TOPIC_SELECTION' as const }; // Step 2/9 = 22%
+      const earlyEvent = { ...mockEvent, workflowState: 'TOPIC_SELECTION' as const }; // Step 2/8 = 25%
       render(<EventCard event={earlyEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -155,7 +154,7 @@ describe('EventCard Component', () => {
     });
 
     it('should_colorProgressBar_when_progressAbove70', () => {
-      const advancedEvent = { ...mockEvent, workflowState: 'EVENT_LIVE' as const }; // Step 7/9 = 78%
+      const advancedEvent = { ...mockEvent, workflowState: 'EVENT_LIVE' as const }; // Step 6/8 = 75%
       render(<EventCard event={advancedEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -167,8 +166,8 @@ describe('EventCard Component', () => {
     it('should_displayWorkflowStep_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Should display "Step 4/9" format
-      expect(screen.getByText(/step.*4.*9/i)).toBeInTheDocument();
+      // Should display "Step 4/8" format
+      expect(screen.getByText(/step.*4.*8/i)).toBeInTheDocument();
     });
 
     it('should_displayWorkflowStepName_when_rendered', () => {
@@ -184,12 +183,12 @@ describe('EventCard Component', () => {
     it('should_updateStep_when_differentWorkflowState', () => {
       const { rerender } = render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/step.*4.*9/i)).toBeInTheDocument();
+      expect(screen.getByText(/step.*4.*8/i)).toBeInTheDocument();
 
-      const updatedEvent = { ...mockEvent, workflowState: 'SPEAKER_IDENTIFICATION' as const }; // Step 3/9
+      const updatedEvent = { ...mockEvent, workflowState: 'SPEAKER_IDENTIFICATION' as const }; // Step 3/8
       rerender(<EventCard event={updatedEvent} />);
 
-      expect(screen.getByText(/step.*3.*9/i)).toBeInTheDocument();
+      expect(screen.getByText(/step.*3.*8/i)).toBeInTheDocument();
     });
   });
 
@@ -305,7 +304,7 @@ describe('EventCard Component', () => {
 
       const progressBar = screen.getByRole('progressbar', { name: /workflow progress/i });
       expect(progressBar).toHaveAttribute('aria-label');
-      expect(progressBar.getAttribute('aria-label')).toMatch(/workflow progress.*44%/i);
+      expect(progressBar.getAttribute('aria-label')).toMatch(/workflow progress.*50%/i);
     });
 
     it('should_supportKeyboardNavigation_when_focused', () => {
