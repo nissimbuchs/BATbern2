@@ -161,8 +161,16 @@ public class DomainRouter {
      * Forwards all headers (except Host), query parameters, and request body.
      */
     public CompletableFuture<ResponseEntity<byte[]>> routeRequest(String targetService, HttpServletRequest request) {
-        String requestUri = request.getRequestURI();
+        final String rawUri = request.getRequestURI();
         String method = request.getMethod();
+
+        // Normalize trailing slashes: /api/v1/events/ → /api/v1/events to prevent downstream 500 errors
+        final String requestUri = (rawUri.length() > 1 && rawUri.endsWith("/"))
+                ? rawUri.substring(0, rawUri.length() - 1)
+                : rawUri;
+        if (!requestUri.equals(rawUri)) {
+            log.debug("Normalized trailing slash: {} -> {}", rawUri, requestUri);
+        }
 
         log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
 

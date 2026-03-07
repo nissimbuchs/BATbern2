@@ -628,7 +628,8 @@
       "taskTemplates": "タスクテンプレート",
       "emailTemplates": "メールテンプレート",
       "presentationSettings": "プレゼンテーション",
-      "exportImport": "エクスポート / インポート"
+      "exportImport": "エクスポート / インポート",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "アクセス拒否",
     "organizerOnly": "このページは主催者専用です。",
@@ -674,6 +675,21 @@
       "noCustom": "カスタムテンプレートはまだありません。",
       "confirmDelete": "テンプレートを削除しますか？",
       "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。"
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "labels": {

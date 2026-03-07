@@ -7,10 +7,12 @@
 //
 //  STOMP 1.2 over raw WebSocket (no SockJS, no external library):
 //  - Endpoint: {baseURL}/api/v1/watch/ws
-//  - CONNECT with Bearer JWT in headers
+//  - CONNECT with Bearer JWT + heart-beat:20000,0 headers
 //  - Subscribe to /topic/events/{eventCode}/state and /topic/events/{eventCode}/arrivals
 //  - Send JOIN to /app/watch/events/{eventCode}/join after CONNECTED
-//  - Exponential backoff reconnect: 2s, 4s, 8s, ..., 60s max
+//  - Heartbeat: sends STOMP \n every 20s to keep ALB (120s idle timeout) connection alive
+//  - Exponential backoff reconnect: 1s, 2s, 4s, ..., 60s max; retries indefinitely until
+//    disconnect() is called (Fix: reconnect loop no longer stops on first failed attempt)
 //
 //  Thread safety: All public methods are called from @MainActor. The receive loop runs
 //  in a background Task but only writes to AsyncStream continuations (safe by design).
@@ -47,6 +49,7 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
     private var reconnectAttempt: Int = 0
     private var reconnectTask: Task<Void, Never>?
     private var receiveTask: Task<Void, Never>?
+    private var heartbeatTask: Task<Void, Never>?
 
     // MARK: - Dependencies: Offline Queue
 
@@ -97,11 +100,14 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         webSocketTask = task
         task.resume()
 
-        // Send STOMP CONNECT frame
+        // Send STOMP CONNECT frame.
+        // heart-beat:20000,0 — client sends a \n ping every 20s; no server pings expected.
+        // This keeps the ALB connection alive (ALB idle timeout = 120s). Fix for GH-551.
         let connectFrame = buildFrame(
             command: "CONNECT",
             headers: [
                 "accept-version": "1.2",
+                "heart-beat": "20000,0",
                 "Authorization": "Bearer \(accessToken)"
             ]
         )
@@ -158,6 +164,7 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         logger.info("WebSocketClient connected to event \(eventCode, privacy: .public)")
 
         startReceiveLoop()
+        startHeartbeat()
     }
 
     /// STOMP DISCONNECT + close WebSocket task, finish AsyncStream continuations.
@@ -167,6 +174,8 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         reconnectTask = nil
         receiveTask?.cancel()
         receiveTask = nil
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
 
         if let task = webSocketTask {
             // Notify server of explicit leave before STOMP DISCONNECT (M5: wire leave endpoint)
@@ -221,6 +230,28 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
             body: bodyString
         )
         try await task.send(.string(frame))
+    }
+
+    // MARK: - Private: STOMP Heartbeat (Fix GH-551)
+
+    /// Sends a STOMP 1.2 heartbeat (\n) every 20 seconds to keep the ALB connection alive.
+    /// The ALB idle timeout is 120s; 20s gives 6× margin. Cancelled by disconnect() or
+    /// handleUnexpectedDisconnect().
+    private func startHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task { [weak self] in
+            while let self, !Task.isCancelled, self.webSocketTask != nil {
+                do {
+                    try await Task.sleep(nanoseconds: 20_000_000_000) // 20 seconds
+                    guard !Task.isCancelled, let wsTask = self.webSocketTask else { break }
+                    // STOMP 1.2 heartbeat frame: a single newline
+                    try? await wsTask.send(.string("\n"))
+                    logger.debug("WebSocketClient: heartbeat sent")
+                } catch {
+                    break
+                }
+            }
+        }
     }
 
     // MARK: - Private: Receive Loop
@@ -331,6 +362,8 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         isConnected = false
         webSocketTask = nil
         receiveTask = nil
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
 
         guard let eventCode = currentEventCode,
               let jwt = currentAccessToken else { return }
@@ -349,7 +382,10 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
                 guard !Task.isCancelled, let self else { return }
                 try await self.connect(eventCode: eventCode, accessToken: jwt)
             } catch {
+                guard !Task.isCancelled, let self else { return }
                 logger.warning("WebSocketClient: reconnect failed: \(error.localizedDescription, privacy: .public)")
+                // Fix GH-551: retry indefinitely until disconnect() is called (which cancels this Task).
+                self.scheduleReconnect(eventCode: eventCode, jwt: jwt)
             }
         }
     }

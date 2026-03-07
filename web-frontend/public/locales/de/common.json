@@ -631,7 +631,8 @@
       "taskTemplates": "Aufgabenvorlagen",
       "emailTemplates": "E-Mail-Vorlagen",
       "presentationSettings": "Präsentation",
-      "exportImport": "Export / Import"
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Zugang verweigert",
     "organizerOnly": "Diese Seite ist nur für Organisatoren.",
@@ -677,6 +678,21 @@
       "noCustom": "Noch keine benutzerdefinierten Vorlagen.",
       "confirmDelete": "Vorlage löschen?",
       "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "aiPrompts": {
+      "description": "Diese Prompts werden an OpenAI gesendet, wenn Veranstaltungsbeschreibungen, Titelbilder oder Qualitätsbewertungen von Abstracts generiert werden. Verwenden Sie {{VARIABLE_NAME}}-Platzhalter — die verfügbaren Variablen sind unter jedem Prompt aufgeführt.",
+      "variablesLabel": "Variablen:",
+      "save": "Speichern",
+      "saved": "Prompt gespeichert.",
+      "saveFailed": "Prompt konnte nicht gespeichert werden.",
+      "resetToDefault": "Auf Standard zurücksetzen",
+      "resetDialogTitle": "Prompt auf Standard zurücksetzen?",
+      "resetDialogText": "Dies überschreibt Ihre Änderungen mit dem Originaltext. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "resetDialogCancel": "Abbrechen",
+      "resetDialogConfirm": "Zurücksetzen",
+      "resetDone": "Prompt auf Standard zurückgesetzt.",
+      "resetFailed": "Prompt konnte nicht zurückgesetzt werden.",
+      "loadFailed": "KI-Prompts konnten nicht geladen werden."
     }
   },
   "labels": {

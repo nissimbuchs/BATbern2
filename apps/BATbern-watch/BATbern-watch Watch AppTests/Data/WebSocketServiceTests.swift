@@ -473,6 +473,38 @@ struct WebSocketServiceTests {
         #expect(service.sessionDelayedEvent == nil)
     }
 
+    // MARK: - JWT rotation triggers reconnect even when offline (Fix GH-551 Bug 3)
+
+    @Test("jwtObservation: reconnects with new JWT even when offline (GH-551)")
+    func jwtObservation_reconnectsWhenOfflineAndJWTRotates() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "old-jwt")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        // Connect, then simulate unexpected drop (isConnected = false)
+        await service.connect(eventCode: "BATbern56")
+        #expect(wsClient.connectCalls.count == 1)
+
+        wsClient.simulateDisconnect()
+
+        // Yield to the @MainActor event loop so jwtObservationTask can run and register
+        // its withObservationTracking before we mutate currentJWT. Without this yield the
+        // mutation happens before the observation is registered and onChange never fires.
+        try await Task.sleep(for: .milliseconds(20))
+
+        // JWT rotates (AuthManager background refresh succeeded)
+        auth.currentJWT = "new-jwt"
+
+        // WebSocketService must reconnect with the new JWT even though isConnected == false
+        try await waitFor(
+            { wsClient.connectCalls.count >= 2 },
+            description: "second connect with new JWT after offline JWT rotation"
+        )
+
+        #expect(wsClient.connectCalls.last?.accessToken == "new-jwt")
+    }
+
     // MARK: - disconnect() cancels tasks
 
     @Test("disconnect: resets presence state")

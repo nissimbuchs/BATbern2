@@ -43,8 +43,8 @@ tests {
       expect(contact.email).to.exist;        // From User Service
       expect(contact.firstName).to.exist;    // From User Service
       expect(contact.lastName).to.exist;     // From User Service
-      expect(contact.contactRole).to.be.oneOf(['PRIMARY', 'BILLING', 'TECHNICAL', 'MARKETING']);
-      expect(contact.isPrimary).to.be.a('boolean');
+      // contactRole/isPrimary removed: contacts are auto-derived from User Service
+      // (any user with PARTNER role + matching companyId is a contact)
     }
   });
 

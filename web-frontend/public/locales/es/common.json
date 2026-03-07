@@ -628,7 +628,8 @@
       "taskTemplates": "Plantillas de tareas",
       "emailTemplates": "Plantillas de correo",
       "presentationSettings": "Presentación",
-      "exportImport": "Export / Import"
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Acceso denegado",
     "organizerOnly": "Esta página es solo para organizadores.",
@@ -674,6 +675,21 @@
       "noCustom": "Aún no hay plantillas personalizadas.",
       "confirmDelete": "¿Eliminar plantilla?",
       "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo."
+    },
+    "aiPrompts": {
+      "description": "Estos prompts se envían a OpenAI para generar descripciones de eventos, imágenes temáticas y evaluaciones de calidad de resúmenes. Use variables {{VARIABLE_NAME}} — las variables disponibles se listan bajo cada prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Guardar",
+      "saved": "Prompt guardado.",
+      "saveFailed": "Error al guardar el prompt.",
+      "resetToDefault": "Restablecer predeterminado",
+      "resetDialogTitle": "¿Restablecer el prompt predeterminado?",
+      "resetDialogText": "Esto sobrescribirá sus cambios con el texto original. Esta acción no se puede deshacer.",
+      "resetDialogCancel": "Cancelar",
+      "resetDialogConfirm": "Restablecer",
+      "resetDone": "Prompt restablecido al valor predeterminado.",
+      "resetFailed": "Error al restablecer el prompt.",
+      "loadFailed": "No se pudieron cargar los prompts de IA."
     }
   },
   "labels": {

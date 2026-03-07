@@ -136,6 +136,9 @@ const DevEmailInboxPage = React.lazy(() => import('@pages/dev/DevEmailInboxPage'
 // Story 10.8a: Fullscreen moderator presentation page (no auth, no layout wrapper)
 const PresentationPage = React.lazy(() => import('@pages/PresentationPage'));
 
+// Fullscreen organizer live session control page (no layout wrapper, mobile-optimized)
+const LiveControlPage = React.lazy(() => import('@pages/LiveControlPage/LiveControlPage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -397,6 +400,15 @@ function App() {
                           <AuthLayout>
                             <SlotAssignmentPage />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Live session control — fullscreen, mobile-optimized, no AuthLayout */}
+                    <Route
+                      path="/organizer/events/:eventCode/live-control"
+                      element={
+                        <ProtectedRoute>
+                          <LiveControlPage />
                         </ProtectedRoute>
                       }
                     />

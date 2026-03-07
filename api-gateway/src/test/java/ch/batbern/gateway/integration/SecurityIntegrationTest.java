@@ -301,6 +301,35 @@ class SecurityIntegrationTest {
     }
 
     // ========================================
+    // CORP header (ZAP fix P5)
+    // ========================================
+
+    @Test
+    @DisplayName("should_includeCORPHeader_when_responseReturned")
+    void should_includeCORPHeader_when_responseReturned() throws Exception {
+        // When: Making a request
+        MvcResult result = mockMvc.perform(get("/api/v1/health"))
+                .andReturn();
+
+        // Then: Cross-Origin-Resource-Policy header must be set to same-site
+        assertThat(result.getResponse().getHeader("Cross-Origin-Resource-Policy"))
+                .as("CORP header must prevent cross-origin reads of API responses")
+                .isEqualTo("same-site");
+    }
+
+    // ========================================
+    // Actuator access control (ZAP fix P1)
+    // ========================================
+
+    @Test
+    @DisplayName("should_allowPublicAccess_when_actuatorHealthCalled")
+    void should_allowPublicAccess_when_actuatorHealthCalled() throws Exception {
+        // /actuator/health must remain public for load balancer health checks
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk());
+    }
+
+    // ========================================
     // AC10: Audit Logging Tests (E2E)
     // ========================================
 

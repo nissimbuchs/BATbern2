@@ -13,7 +13,11 @@
  * ACs: #1, #37, #38, #42
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import { useConfig } from '@/contexts/useConfig';
 import {
   getPresentationData,
   getPublicOrganizers,
@@ -46,6 +50,45 @@ const DEFAULT_ABOUT_TEXT =
   'BATbern ist eine unabhängige Plattform, die Berner Architekten und Ingenieure vernetzt.';
 
 export function usePresentationData(eventCode: string): UsePresentationDataResult {
+  const { apiBaseUrl } = useConfig();
+  const queryClient = useQueryClient();
+  const clientRef = useRef<Client | null>(null);
+
+  // WebSocket sync — invalidates the event cache on any STATE_UPDATE so session
+  // times (extend/delay) are reflected immediately without waiting for the 60s poll.
+  // Connects anonymously: JwtStompInterceptor passes through frames with no auth header.
+  useEffect(() => {
+    if (!eventCode) return;
+
+    const url = new URL(apiBaseUrl);
+    const wsBase =
+      url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+        ? `http://localhost:${parseInt(url.port || '8000', 10) + 2}`
+        : `${url.protocol}//${url.host}`;
+
+    let isMounted = true;
+    const client = new Client({
+      webSocketFactory: () => new SockJS(`${wsBase}/ws`) as WebSocket,
+      debug: () => {},
+      reconnectDelay: 5000,
+      onConnect: () => {
+        client.subscribe(`/topic/events/${eventCode}/state`, () => {
+          if (!isMounted) return;
+          void queryClient.invalidateQueries({ queryKey: ['presentation-event', eventCode] });
+        });
+      },
+    });
+
+    clientRef.current = client;
+    client.activate();
+
+    return () => {
+      isMounted = false;
+      void client.deactivate();
+      clientRef.current = null;
+    };
+  }, [eventCode, apiBaseUrl, queryClient]);
+
   // Single event call — includes topics, venue, sessions and speakers.
   // Polled every 60 s to pick up session updates (replaces separate sessions poll).
   const eventQuery = useQuery({

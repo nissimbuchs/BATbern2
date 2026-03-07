@@ -690,7 +690,8 @@
       "taskTemplates": "Task Templates",
       "emailTemplates": "Email Templates",
       "presentationSettings": "Presentation",
-      "exportImport": "Export / Import"
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Access Denied",
     "organizerOnly": "This page is for organizers only.",
@@ -736,6 +737,21 @@
       "noCustom": "No custom templates yet.",
       "confirmDelete": "Delete template?",
       "deleteFailed": "Failed to delete template. Please try again."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "userAccount": {
