@@ -53,45 +53,70 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 }
 
 /**
- * Fetch user data (username and roles) from database by Cognito ID
- * Returns username and all assigned roles from role_assignments table
+ * Fetch user data (username and roles) from database by Cognito ID.
+ * Falls back to email lookup when the record was pre-created by an organizer
+ * (cognito_user_id is NULL until the JIT interceptor links it on the first API call).
+ * Returns username and all assigned roles from role_assignments table.
  * Story 1.16.2: Username is the public meaningful identifier
  */
-async function fetchUserData(cognitoId: string): Promise<UserData[]> {
+async function fetchUserData(cognitoId: string, email?: string): Promise<UserData[]> {
   const client = await getDbClient();
 
   try {
-    // Query for username and all assigned roles
-    // - Filter by cognito_user_id for performance (indexed column)
-    // - Username from user_profiles (Story 1.16.2: meaningful ID)
-    // - All roles in role_assignments are active global roles
-    // - Order by priority: ORGANIZER > SPEAKER > PARTNER > ATTENDEE
-    //   This ensures highest-privilege role appears first in JWT custom:role claim
+    const roleOrderSql = `
+      ORDER BY
+        CASE ra.role
+          WHEN 'ORGANIZER' THEN 1
+          WHEN 'SPEAKER' THEN 2
+          WHEN 'PARTNER' THEN 3
+          WHEN 'ATTENDEE' THEN 4
+          ELSE 5
+        END
+    `;
+
+    // Primary lookup: by cognito_user_id (fast path — indexed column)
     const result = await client.query(
-      `
-        SELECT u.username, ra.role
-        FROM user_profiles u
-        LEFT JOIN role_assignments ra ON ra.user_id = u.id
-        WHERE u.cognito_user_id = $1
-        ORDER BY
-          CASE ra.role
-            WHEN 'ORGANIZER' THEN 1
-            WHEN 'SPEAKER' THEN 2
-            WHEN 'PARTNER' THEN 3
-            WHEN 'ATTENDEE' THEN 4
-            ELSE 5
-          END
-      `,
+      `SELECT u.username, ra.role
+       FROM user_profiles u
+       LEFT JOIN role_assignments ra ON ra.user_id = u.id
+       WHERE u.cognito_user_id = $1
+       ${roleOrderSql}`,
       [cognitoId]
     );
 
-    console.log('Fetched user data from database', {
-      cognitoId,
-      rowCount: result.rows.length,
-      username: result.rows[0]?.username,
-    });
+    if (result.rows.length > 0) {
+      console.log('Fetched user data from database by cognitoId', {
+        cognitoId,
+        rowCount: result.rows.length,
+        username: result.rows[0]?.username,
+      });
+      return result.rows;
+    }
 
-    return result.rows;
+    // Fallback: email lookup for pre-existing records created by an organizer
+    // (cognito_user_id is NULL until the JIT interceptor links it on first API call)
+    if (email) {
+      const emailResult = await client.query(
+        `SELECT u.username, ra.role
+         FROM user_profiles u
+         LEFT JOIN role_assignments ra ON ra.user_id = u.id
+         WHERE u.email = $1
+         ${roleOrderSql}`,
+        [email]
+      );
+
+      console.log('Fetched user data from database by email fallback', {
+        cognitoId,
+        email,
+        rowCount: emailResult.rows.length,
+        username: emailResult.rows[0]?.username,
+      });
+
+      return emailResult.rows;
+    }
+
+    console.log('No user data found in database', { cognitoId, email });
+    return [];
   } catch (error) {
     console.error('Failed to fetch user data from database', {
       cognitoId,
@@ -120,8 +145,9 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
   });
 
   try {
-    // Extract Cognito ID from user attributes
+    // Extract Cognito ID and email from user attributes
     const cognitoId = event.request.userAttributes.sub;
+    const email = event.request.userAttributes.email;
 
     if (!cognitoId) {
       console.error('Missing sub attribute in user attributes');
@@ -129,10 +155,11 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
       return event;
     }
 
-    // Fetch user data (username + roles) from database
+    // Fetch user data (username + roles) from database.
+    // Email fallback handles pre-existing records where cognito_user_id is still NULL.
     let userData: UserData[];
     try {
-      userData = await fetchUserData(cognitoId);
+      userData = await fetchUserData(cognitoId, email);
     } catch (error) {
       // Fallback to empty data on database error (graceful degradation)
       console.error('Database fetch failed, falling back to empty data', { error });
