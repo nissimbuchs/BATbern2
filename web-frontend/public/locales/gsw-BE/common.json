@@ -519,7 +519,8 @@
       "taskTemplates": "Ufgabevorlagen",
       "emailTemplates": "E-Mail-Vorlagen",
       "presentationSettings": "Präsentation",
-      "exportImport": "Export / Import"
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Zuegriff verweigeret",
     "organizerOnly": "Die Syte isch nur für Organisatore.",
@@ -565,6 +566,21 @@
       "noCustom": "No kei eigeni Vorlagen.",
       "confirmDelete": "Vorlage lösche?",
       "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use %s (string) and %d (integer) as positional placeholders — their meaning is documented below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "userAccount": {

@@ -4097,6 +4097,135 @@ paths:
       security:
         - BearerAuth: []
 
+  # ── AI Prompt Management Endpoints (Story 10.x) ──────────────────────────────
+
+  /ai-prompts:
+    get:
+      tags:
+        - AI Prompts
+      summary: List all AI prompts
+      description: |
+        Returns all three organizer-editable OpenAI prompts (event_description, theme_image, abstract_quality).
+
+        **Authorization**: ORGANIZER role required.
+      operationId: listAiPrompts
+      responses:
+        '200':
+          description: List of AI prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}:
+    get:
+      tags:
+        - AI Prompts
+      summary: Get a single AI prompt
+      description: |
+        Returns a single AI prompt by its key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: getAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AI prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - AI Prompts
+      summary: Update an AI prompt
+      description: |
+        Updates the prompt text for the given key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: updateAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiPromptRequest'
+      responses:
+        '200':
+          description: Updated prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}/reset:
+    post:
+      tags:
+        - AI Prompts
+      summary: Reset an AI prompt to its default text
+      description: |
+        Copies the original default prompt text back to prompt_text.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: resetAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Prompt after reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
   # ── Analytics Dashboard Endpoints (Story 10.5) ───────────────────────────────
 
   /analytics/overview:
@@ -6068,6 +6197,45 @@ components:
           nullable: true
           description: Updated layout key (null = standalone)
           maxLength: 100
+
+    # ── AI Prompt Schemas (Story 10.x) ───────────────────────────────────────
+
+    AiPromptResponse:
+      type: object
+      description: Organizer-editable OpenAI prompt configuration
+      required:
+        - promptKey
+        - displayName
+        - promptText
+        - defaultText
+        - updatedAt
+      properties:
+        promptKey:
+          type: string
+          description: Prompt identifier (event_description, theme_image, abstract_quality)
+        displayName:
+          type: string
+          description: Human-readable name shown in Admin UI
+        promptText:
+          type: string
+          description: Current prompt text (editable by organizer)
+        defaultText:
+          type: string
+          description: Original default prompt text (used to reset)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    UpdateAiPromptRequest:
+      type: object
+      description: Request to update an AI prompt's text
+      required:
+        - promptText
+      properties:
+        promptText:
+          type: string
+          description: New prompt text
 
     # ── Partner Analytics Schemas (Story 8.1) ────────────────────────────────
 

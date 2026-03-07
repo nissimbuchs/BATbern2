@@ -37,6 +37,7 @@ public class BatbernAiService {
     private final AiGenerationLogRepository logRepository;
     private final S3Client s3Client;
     private final ObjectMapper objectMapper;
+    private final AiPromptService aiPromptService;
 
     @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}")
     private String cloudfrontDomain;
@@ -48,18 +49,21 @@ public class BatbernAiService {
     public BatbernAiService(AiConfig aiConfig,
                             AiGenerationLogRepository logRepository,
                             S3Client s3Client,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            AiPromptService aiPromptService) {
         this.aiConfig = aiConfig;
         this.logRepository = logRepository;
         this.s3Client = s3Client;
         this.objectMapper = objectMapper;
+        this.aiPromptService = aiPromptService;
     }
 
     /** Constructor for unit tests — no ObjectMapper needed since no JSON parsing exercised. */
     BatbernAiService(AiConfig aiConfig,
                      AiGenerationLogRepository logRepository,
-                     S3Client s3Client) {
-        this(aiConfig, logRepository, s3Client, new ObjectMapper());
+                     S3Client s3Client,
+                     AiPromptService aiPromptService) {
+        this(aiConfig, logRepository, s3Client, new ObjectMapper(), aiPromptService);
     }
 
     // Caffeine cache: 1-hour TTL, max 500 entries
@@ -107,22 +111,7 @@ public class BatbernAiService {
                 ? "Event date: " + eventDate + "."
                 : "";
             String prompt = String.format(
-                "Write a German event description for BATbern#%d, the Berner Architekten Treffen – "
-                    + "a community evening event in Bern where local IT professionals and companies "
-                    + "share hands-on experience with current hot topics in software architecture and engineering.\n\n"
-                    + "This BATbern event is entirely dedicated to the topic: \"%s\" (category: %s).\n"
-                    + "%s\n\n"
-                    + "Structure (2-3 paragraphs, 120-160 words total, in professional German):\n"
-                    + "1. Set the industry context: what is happening in the field, what trends/challenges/tools "
-                    + "   are relevant to this topic right now.\n"
-                    + "2. Describe what will happen at THIS BATbern: local companies and speakers present their "
-                    + "   real-world approaches, practical experience, and lessons learned – "
-                    + "   not academic talks, but practitioner insights.\n"
-                    + "3. End with a sentence in this style (adapt to the topic): "
-                    + "   'An diesem BAT stellen unsere Referenten ihre Ansätze und Lessons Learned vor.'\n\n"
-                    + "Important: use only the exact date provided (do not invent or omit dates). "
-                    + "The event is a single evening, not a multi-day conference. "
-                    + "Do not say 'Konferenz' or 'Session' – say 'Veranstaltung' or 'BAT'.",
+                aiPromptService.getPromptText("event_description"),
                 eventNumber, eventLabel, topicCategory, dateLine);
 
             String content = callChatCompletions("gpt-4o", prompt);
@@ -159,16 +148,7 @@ public class BatbernAiService {
                 ? "Context: " + eventDescription.substring(0, Math.min(eventDescription.length(), 300)) + " "
                 : "";
             String dallePrompt = String.format(
-                "Abstract digital artwork that visually represents the IT topic: \"%s\" (category: %s). "
-                    + "%s"
-                    + "Use abstract visual metaphors, symbols, and imagery that are directly related to "
-                    + "this specific topic and category — not generic circuit boards. "
-                    + "Style: dark midnight navy-to-black background, glowing neon cyan and electric blue "
-                    + "abstract digital elements covering the full frame uniformly from corner to corner. "
-                    + "Flat 2D digital illustration – no 3D perspective, no room, no floor, no staging, "
-                    + "no display panel, no frame, no spotlights, no shadow on a surface. "
-                    + "The image fills the entire 16:9 rectangle edge-to-edge. "
-                    + "No text. No logos. No people.",
+                aiPromptService.getPromptText("theme_image"),
                 effectiveTitle, topicCategory, contextLine);
 
             String dalleImageUrl = callImageGeneration(dallePrompt);
@@ -216,27 +196,7 @@ public class BatbernAiService {
 
         try {
             String prompt = String.format(
-                "Analyze this speaker abstract for BATbern – a Swiss IT architecture community event "
-                    + "where practitioners share real-world experience and lessons learned "
-                    + "(NOT product demos or service sales pitches). "
-                    + "Speaker: %s. Abstract: \"%s\".\n\n"
-                    + "Evaluate these two criteria, rate each from 1 to 10 "
-                    + "(10 = perfectly aligned, 1 = completely misaligned):\n"
-                    + "1. noPromotion: Does the abstract avoid promoting an IT product, tool, or service? "
-                    + "(10 = purely about experience/knowledge; 1 = reads like a product advertisement)\n"
-                    + "2. lessonsLearned: Does the abstract suggest the speaker will share practical "
-                    + "lessons learned from real-world experience? "
-                    + "(10 = clearly hands-on experience and lessons; 1 = no indication of practical experience)\n\n"
-                    + "Also count the words in the abstract. "
-                    + "If the word count exceeds 160, provide a shortened German version of maximum 150 words "
-                    + "that preserves the key message. If 160 or fewer words, set shortenedAbstract to null.\n\n"
-                    + "Return JSON only (no other text):\n"
-                    + "{\"noPromotionScore\": <1-10>, "
-                    + "\"noPromotionFeedback\": \"<brief German explanation, 1-2 sentences>\", "
-                    + "\"lessonsLearnedScore\": <1-10>, "
-                    + "\"lessonsLearnedFeedback\": \"<brief German explanation, 1-2 sentences>\", "
-                    + "\"wordCount\": <number>, "
-                    + "\"shortenedAbstract\": \"<shortened German text or null>\"}",
+                aiPromptService.getPromptText("abstract_quality"),
                 speakerName != null ? speakerName : "Unknown", abstractText);
 
             String content = callChatCompletionsJson("gpt-4o", prompt);

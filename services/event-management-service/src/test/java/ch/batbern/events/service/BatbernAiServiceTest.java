@@ -26,12 +26,14 @@ class BatbernAiServiceTest {
     private AiGenerationLogRepository logRepository;
     @Mock
     private S3Client s3Client;
+    @Mock
+    private AiPromptService aiPromptService;
 
     private BatbernAiService aiService;
 
     @BeforeEach
     void setUp() {
-        aiService = new BatbernAiService(aiConfig, logRepository, s3Client);
+        aiService = new BatbernAiService(aiConfig, logRepository, s3Client, aiPromptService);
     }
 
     @Nested
