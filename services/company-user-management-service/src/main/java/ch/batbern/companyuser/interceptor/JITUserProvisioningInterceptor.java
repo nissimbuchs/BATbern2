@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.HashSet;
@@ -61,7 +60,6 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
      * @return true to continue request, false to stop
      */
     @Override
-    @Transactional
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {
             // Get authentication from security context
@@ -82,21 +80,34 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                 return true;
             }
 
-            // Check if user already exists
-            Optional<User> existingUser = userRepository.findByCognitoUserId(cognitoUserId);
-            if (existingUser.isPresent()) {
-                // User exists, continue request
+            // Check if user already exists by Cognito ID
+            if (userRepository.findByCognitoUserId(cognitoUserId).isPresent()) {
                 return true;
             }
-
-            // User doesn't exist - perform JIT provisioning
-            log.info("User not found in database, performing JIT provisioning",
-                    mapOf("cognitoUserId", cognitoUserId));
 
             // Extract user information from JWT
             String email = jwt.getClaimAsString("email");
             String firstName = jwt.getClaimAsString("given_name");
             String lastName = jwt.getClaimAsString("family_name");
+
+            // Check if a pre-existing user record exists for this email (e.g. added by organizer
+            // before the user self-registered in Cognito). If so, link the Cognito ID to that record
+            // instead of creating a duplicate.
+            if (email != null && !email.isEmpty()) {
+                Optional<User> existingByEmail = userRepository.findByEmail(email);
+                if (existingByEmail.isPresent()) {
+                    User existing = existingByEmail.get();
+                    existing.setCognitoUserId(cognitoUserId);
+                    userRepository.save(existing);
+                    log.info("Linked Cognito user to existing DB record via email",
+                            mapOf("cognitoUserId", cognitoUserId, "username", existing.getUsername(), "email", email));
+                    return true;
+                }
+            }
+
+            // No record at all — perform JIT provisioning (create new user)
+            log.info("User not found in database, performing JIT provisioning",
+                    mapOf("cognitoUserId", cognitoUserId));
 
             // Generate username from first/last name or email (firstname.lastname format required)
             String username = generateUsername(firstName, lastName, email);
@@ -115,7 +126,6 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                     .isActive(true)
                     .build();
 
-            // Save user to database
             User savedUser = userRepository.save(newUser);
 
             log.info("JIT provisioning completed successfully",
@@ -126,7 +136,6 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                         "roles", roles
                     ));
 
-            // Publish UserCreatedEvent for observability
             publishUserCreatedEvent(savedUser, "JIT_PROVISIONING");
 
         } catch (Exception e) {
