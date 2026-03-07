@@ -22,11 +22,6 @@ import {
 
 interface AiAssistDrawerProps {
   eventCode: string;
-  topicTitle: string;
-  topicCategory: string;
-  eventTitle?: string;
-  eventDate?: string;
-  eventDescription?: string;
   open: boolean;
   onClose: () => void;
   onDescriptionGenerated: (text: string) => void;
@@ -35,11 +30,6 @@ interface AiAssistDrawerProps {
 
 export function AiAssistDrawer({
   eventCode,
-  topicTitle,
-  topicCategory,
-  eventTitle,
-  eventDate,
-  eventDescription,
   open,
   onClose,
   onDescriptionGenerated,
@@ -60,18 +50,15 @@ export function AiAssistDrawer({
     setErrorMessage(null);
     setGeneratedDescription(null);
     setCopied(false);
-    descriptionMutation.mutate(
-      { topicTitle, topicCategory, eventTitle, eventDate },
-      {
-        onSuccess: (data) => {
-          setGeneratedDescription(data.description);
-          onDescriptionGenerated(data.description);
-        },
-        onError: (err) => {
-          setErrorMessage(err.message);
-        },
-      }
-    );
+    descriptionMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        setGeneratedDescription(data.description);
+        onDescriptionGenerated(data.description);
+      },
+      onError: (err) => {
+        setErrorMessage(err.message);
+      },
+    });
   };
 
   const handleCopyDescription = () => {
@@ -88,13 +75,7 @@ export function AiAssistDrawer({
     setGeneratedImageUrl(null);
     setGeneratedImageS3Key(null);
     imageMutation.mutate(
-      {
-        topicTitle,
-        topicCategory,
-        eventTitle,
-        eventDescription,
-        seed: regenerate ? crypto.randomUUID() : undefined,
-      },
+      { seed: regenerate ? crypto.randomUUID() : undefined },
       {
         onSuccess: (data) => {
           setGeneratedImageUrl(data.imageUrl);
@@ -154,7 +135,7 @@ export function AiAssistDrawer({
                   <AutoAwesome />
                 )
               }
-              disabled={descriptionMutation.isPending || !topicTitle}
+              disabled={descriptionMutation.isPending}
               onClick={handleGenerateDescription}
               fullWidth
             >
@@ -206,7 +187,7 @@ export function AiAssistDrawer({
                   <AutoAwesome />
                 )
               }
-              disabled={imageMutation.isPending || !topicTitle}
+              disabled={imageMutation.isPending}
               onClick={() => handleGenerateImage()}
               fullWidth
             >

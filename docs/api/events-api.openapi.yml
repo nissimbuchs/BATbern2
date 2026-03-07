@@ -4649,7 +4649,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: generateEventDescription
-      summary: Generate AI event description (GPT-4o, German, 150-200 words)
+      summary: Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode.
       security:
         - BearerAuth: []
       parameters:
@@ -4659,12 +4659,6 @@ paths:
           schema:
             type: string
           example: "BATbern56"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AiDescriptionRequest'
       responses:
         '200':
           description: Generated description
@@ -4687,7 +4681,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: generateThemeImage
-      summary: Generate AI theme image (DALL-E 3), upload to S3
+      summary: Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode.
       security:
         - BearerAuth: []
       parameters:
@@ -4697,12 +4691,12 @@ paths:
           schema:
             type: string
           example: "BATbern56"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AiThemeImageRequest'
+        - name: seed
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional seed string for cache-busting a re-generation
       responses:
         '200':
           description: Generated theme image URL and S3 key
@@ -4759,7 +4753,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: analyzeAbstract
-      summary: Analyze speaker abstract quality (GPT-4o)
+      summary: Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract.
       security:
         - BearerAuth: []
       parameters:
@@ -4768,12 +4762,7 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnalyzeAbstractRequest'
+            format: uuid
       responses:
         '200':
           description: Abstract analysis result
@@ -5648,39 +5637,11 @@ components:
         aiContentEnabled:
           type: boolean
 
-    AiDescriptionRequest:
-      type: object
-      required: [topicTitle, topicCategory]
-      properties:
-        topicTitle:
-          type: string
-        topicCategory:
-          type: string
-        eventTitle:
-          type: string
-          description: The specific session/event title (e.g. "Importance of DevOps in vibe coding")
-        eventDate:
-          type: string
-          format: date
-          description: The event date (ISO 8601, e.g. 2026-04-04)
-
     AiDescriptionResponse:
       type: object
       properties:
         description:
           type: string
-
-    AiThemeImageRequest:
-      type: object
-      required: [topicTitle, topicCategory]
-      properties:
-        topicTitle:
-          type: string
-        topicCategory:
-          type: string
-        eventTitle:
-          type: string
-          description: The specific session/event title for a more accurate image
 
     AiThemeImageResponse:
       type: object
@@ -5697,15 +5658,6 @@ components:
         imageUrl:
           type: string
           description: "CloudFront URL of the AI-generated image to persist on the event"
-
-    AnalyzeAbstractRequest:
-      type: object
-      required: [abstract]
-      properties:
-        abstract:
-          type: string
-        speakerName:
-          type: string
 
     AbstractAnalysisResponse:
       type: object

@@ -677,19 +677,19 @@
       "deleteFailed": "Eliminazione del modello non riuscita. Riprova."
     },
     "aiPrompts": {
-      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use %s (string) and %d (integer) as positional placeholders — their meaning is documented below each prompt.",
-      "variablesLabel": "Variables:",
-      "save": "Save",
-      "saved": "Prompt saved.",
-      "saveFailed": "Failed to save prompt.",
-      "resetToDefault": "Reset to default",
-      "resetDialogTitle": "Reset prompt to default?",
-      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
-      "resetDialogCancel": "Cancel",
-      "resetDialogConfirm": "Reset",
-      "resetDone": "Prompt reset to default.",
-      "resetFailed": "Failed to reset prompt.",
-      "loadFailed": "Failed to load AI prompts."
+      "description": "Questi prompt vengono inviati a OpenAI per generare descrizioni di eventi, immagini tematiche e valutazioni della qualità degli abstract. Utilizzare variabili {{VARIABLE_NAME}} — le variabili disponibili sono elencate sotto ogni prompt.",
+      "variablesLabel": "Variabili:",
+      "save": "Salva",
+      "saved": "Prompt salvato.",
+      "saveFailed": "Salvataggio del prompt non riuscito.",
+      "resetToDefault": "Ripristina predefinito",
+      "resetDialogTitle": "Ripristinare il prompt predefinito?",
+      "resetDialogText": "Questo sovrascriverà le modifiche con il testo originale. L'operazione non può essere annullata.",
+      "resetDialogCancel": "Annulla",
+      "resetDialogConfirm": "Ripristina",
+      "resetDone": "Prompt ripristinato al valore predefinito.",
+      "resetFailed": "Ripristino del prompt non riuscito.",
+      "loadFailed": "Impossibile caricare i prompt IA."
     }
   },
   "labels": {

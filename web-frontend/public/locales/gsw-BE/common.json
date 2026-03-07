@@ -568,19 +568,19 @@
       "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
     },
     "aiPrompts": {
-      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use %s (string) and %d (integer) as positional placeholders — their meaning is documented below each prompt.",
-      "variablesLabel": "Variables:",
-      "save": "Save",
-      "saved": "Prompt saved.",
-      "saveFailed": "Failed to save prompt.",
-      "resetToDefault": "Reset to default",
-      "resetDialogTitle": "Reset prompt to default?",
-      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
-      "resetDialogCancel": "Cancel",
-      "resetDialogConfirm": "Reset",
-      "resetDone": "Prompt reset to default.",
-      "resetFailed": "Failed to reset prompt.",
-      "loadFailed": "Failed to load AI prompts."
+      "description": "Die Prompts wärde a OpenAI gschickt, wenn Veröutigsbeschriebige, Titelbilder oder Qualitätsbewertunge vo Abstracts generiert wärde. Verwänded {{VARIABLE_NAME}}-Platzhalter — d verfügbare Variablen sind under jedem Prompt ufgliistet.",
+      "variablesLabel": "Variablen:",
+      "save": "Spichere",
+      "saved": "Prompt gspicheret.",
+      "saveFailed": "Prompt hät nid chönne gspicheret wärde.",
+      "resetToDefault": "Uf Standard zrüggsetze",
+      "resetDialogTitle": "Prompt uf Standard zrüggsetze?",
+      "resetDialogText": "Das überschribt Ihri Änderige mit em Originaltext. Die Aktion chann nid rückgängig gmacht wärde.",
+      "resetDialogCancel": "Abbräche",
+      "resetDialogConfirm": "Zrüggsetze",
+      "resetDone": "Prompt uf Standard zrügggsetzt.",
+      "resetFailed": "Prompt hät nid chönne zrügggsetzt wärde.",
+      "loadFailed": "KI-Prompts chönnte nid glade wärde."
     }
   },
   "userAccount": {

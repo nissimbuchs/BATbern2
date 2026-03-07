@@ -2067,7 +2067,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate AI event description (GPT-4o, German, 150-200 words) */
+    /** Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode. */
     post: operations['generateEventDescription'];
     delete?: never;
     options?: never;
@@ -2084,7 +2084,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate AI theme image (DALL-E 3), upload to S3 */
+    /** Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode. */
     post: operations['generateThemeImage'];
     delete?: never;
     options?: never;
@@ -2118,7 +2118,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Analyze speaker abstract quality (GPT-4o) */
+    /** Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract. */
     post: operations['analyzeAbstract'];
     delete?: never;
     options?: never;
@@ -2623,25 +2623,8 @@ export interface components {
     FeatureFlagsResponse: {
       aiContentEnabled?: boolean;
     };
-    AiDescriptionRequest: {
-      topicTitle: string;
-      topicCategory: string;
-      /** @description The specific session/event title (e.g. "Importance of DevOps in vibe coding") */
-      eventTitle?: string;
-      /**
-       * Format: date
-       * @description The event date (ISO 8601, e.g. 2026-04-04)
-       */
-      eventDate?: string;
-    };
     AiDescriptionResponse: {
       description?: string;
-    };
-    AiThemeImageRequest: {
-      topicTitle: string;
-      topicCategory: string;
-      /** @description The specific session/event title for a more accurate image */
-      eventTitle?: string;
     };
     AiThemeImageResponse: {
       imageUrl?: string;
@@ -2650,10 +2633,6 @@ export interface components {
     ApplyThemeImageRequest: {
       /** @description CloudFront URL of the AI-generated image to persist on the event */
       imageUrl: string;
-    };
-    AnalyzeAbstractRequest: {
-      abstract: string;
-      speakerName?: string;
     };
     AbstractAnalysisResponse: {
       /** @description 1=heavy product promotion, 10=no promotion at all */
@@ -8483,11 +8462,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AiDescriptionRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Generated description */
       200: {
@@ -8513,7 +8488,10 @@ export interface operations {
   };
   generateThemeImage: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Optional seed string for cache-busting a re-generation */
+        seed?: string;
+      };
       header?: never;
       path: {
         /** @example BATbern56 */
@@ -8521,11 +8499,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AiThemeImageRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Generated theme image URL and S3 key */
       200: {
@@ -8594,11 +8568,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AnalyzeAbstractRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Abstract analysis result */
       200: {

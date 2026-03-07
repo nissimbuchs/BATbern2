@@ -317,18 +317,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   }, [mode, event?.topicCode]);
 
   const handleAiGenerateDescription = () => {
-    if (!aiTopic) return;
-    descriptionMutation.mutate(
-      {
-        topicTitle: aiTopic.title,
-        topicCategory: aiTopic.category,
-        eventTitle: getValues('title'),
-        eventDate: getValues('date'),
-      },
-      {
-        onSuccess: (data) => setValue('description', data.description, { shouldDirty: true }),
-      }
-    );
+    descriptionMutation.mutate(undefined, {
+      onSuccess: (data) => setValue('description', data.description, { shouldDirty: true }),
+    });
   };
 
   // Reset form when modal opens in create mode

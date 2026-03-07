@@ -3,18 +3,22 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.AiConfig;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.generated.AbstractAnalysisResponse;
-import ch.batbern.events.dto.generated.AiDescriptionRequest;
 import ch.batbern.events.dto.generated.AiDescriptionResponse;
-import ch.batbern.events.dto.generated.AiThemeImageRequest;
 import ch.batbern.events.dto.generated.AiThemeImageResponse;
-import ch.batbern.events.dto.generated.AnalyzeAbstractRequest;
 import ch.batbern.events.dto.generated.FeatureFlagsResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.service.BatbernAiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +26,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -34,6 +42,9 @@ public class AiAssistController {
     private final BatbernAiService aiService;
     private final AiConfig aiConfig;
     private final EventRepository eventRepository;
+    private final TopicRepository topicRepository;
+    private final SessionRepository sessionRepository;
+    private final SpeakerPoolRepository speakerPoolRepository;
 
     @org.springframework.beans.factory.annotation.Value("${aws.cloudfront.domain:https://cdn.batbern.ch}")
     private String cloudFrontDomain;
@@ -46,12 +57,25 @@ public class AiAssistController {
 
     @PostMapping("/events/{eventCode}/ai/description")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AiDescriptionResponse> generateDescription(
-            @PathVariable String eventCode,
-            @RequestBody AiDescriptionRequest request) {
+    public ResponseEntity<AiDescriptionResponse> generateDescription(@PathVariable String eventCode) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        Topic topic = resolveTopicForEvent(event);
+
+        String eventDate = event.getDate() != null
+                ? event.getDate().atZone(ZoneOffset.UTC).toLocalDate().toString()
+                : "";
+
         Optional<String> desc = aiService.generateEventDescription(
-            eventCode, request.getTopicTitle(), request.getTopicCategory(), extractEventNumber(eventCode),
-            request.getEventTitle(), request.getEventDate() != null ? request.getEventDate().toString() : null);
+                eventCode,
+                safeStr(event.getTitle()),
+                topicTitle(topic),
+                topicDescription(topic),
+                topicCategory(topic),
+                event.getEventNumber() != null ? event.getEventNumber() : 0,
+                eventDate,
+                safeStr(event.getDescription()));
+
         return desc.map(d -> ResponseEntity.ok(new AiDescriptionResponse().description(d)))
                    .orElse(ResponseEntity.status(503).build());
     }
@@ -60,13 +84,22 @@ public class AiAssistController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<AiThemeImageResponse> generateThemeImage(
             @PathVariable String eventCode,
-            @RequestBody AiThemeImageRequest request,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String seed,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String description) {
+            @RequestParam(required = false) String seed) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        Topic topic = resolveTopicForEvent(event);
+
         Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
-            eventCode, request.getTopicTitle(), request.getTopicCategory(), request.getEventTitle(), description, seed);
+                eventCode,
+                topicTitle(topic),
+                topicDescription(topic),
+                topicCategory(topic),
+                safeStr(event.getTitle()),
+                safeStr(event.getDescription()),
+                seed);
+
         return result.map(r -> ResponseEntity.ok(
-                    new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
+                        new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
                      .orElse(ResponseEntity.status(503).build());
     }
 
@@ -91,24 +124,56 @@ public class AiAssistController {
 
     @PostMapping("/speakers/{speakerId}/ai/analyze-abstract")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(
-            @PathVariable String speakerId,
-            @RequestBody AnalyzeAbstractRequest request) {
+    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(@PathVariable UUID speakerId) {
+        SpeakerPool pool = speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Speaker pool entry not found: " + speakerId));
+
+        String sessionTitle = "";
+        String abstractText = "";
+        if (pool.getSessionId() != null) {
+            Optional<Session> session = sessionRepository.findById(pool.getSessionId());
+            if (session.isPresent()) {
+                sessionTitle = safeStr(session.get().getTitle());
+                abstractText = safeStr(session.get().getDescription());
+            }
+        }
+
         Optional<BatbernAiService.AbstractAnalysisResult> result =
-            aiService.analyzeAbstract(request.getAbstract(), request.getSpeakerName());
+                aiService.analyzeAbstract(safeStr(pool.getSpeakerName()), sessionTitle, abstractText);
+
         return result.map(r -> ResponseEntity.ok(new AbstractAnalysisResponse()
-                    .noPromotionScore(r.noPromotionScore())
-                    .noPromotionFeedback(r.noPromotionFeedback())
-                    .lessonsLearnedScore(r.lessonsLearnedScore())
-                    .lessonsLearnedFeedback(r.lessonsLearnedFeedback())
-                    .wordCount(r.wordCount())
-                    .shortenedAbstract(r.shortenedAbstract())))
+                        .noPromotionScore(r.noPromotionScore())
+                        .noPromotionFeedback(r.noPromotionFeedback())
+                        .lessonsLearnedScore(r.lessonsLearnedScore())
+                        .lessonsLearnedFeedback(r.lessonsLearnedFeedback())
+                        .wordCount(r.wordCount())
+                        .shortenedAbstract(r.shortenedAbstract())))
                      .orElse(ResponseEntity.status(503).build());
     }
 
-    private int extractEventNumber(String eventCode) {
-        // e.g. "BATbern42" → 42
-        String digits = eventCode.replaceAll("[^0-9]", "");
-        return digits.isEmpty() ? 0 : Integer.parseInt(digits);
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private Topic resolveTopicForEvent(Event event) {
+        if (event.getTopicCode() == null) {
+            return null;
+        }
+        return topicRepository.findByTopicCode(event.getTopicCode()).orElse(null);
+    }
+
+    private static String topicTitle(Topic topic) {
+        return topic != null ? safeStr(topic.getTitle()) : "";
+    }
+
+    private static String topicDescription(Topic topic) {
+        return topic != null ? safeStr(topic.getDescription()) : "";
+    }
+
+    private static String topicCategory(Topic topic) {
+        return topic != null ? safeStr(topic.getCategory()) : "";
+    }
+
+    private static String safeStr(String s) {
+        return s != null ? s : "";
     }
 }

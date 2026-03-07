@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -91,28 +92,29 @@ public class BatbernAiService {
     }
 
     /** Returns empty if AI disabled, API key absent, or call fails. */
-    public Optional<String> generateEventDescription(String eventCode, String topicTitle, String topicCategory,
-                                                     int eventNumber,
-                                                     String eventTitle, String eventDate) {
+    public Optional<String> generateEventDescription(String eventCode, String eventTitle, String topicTitle,
+                                                     String topicDescription, String topicCategory,
+                                                     int eventNumber, String eventDate, String eventDescription) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String cacheKey = "desc:" + hash(topicTitle + topicCategory + eventNumber
-                + (eventTitle != null ? eventTitle : "") + (eventDate != null ? eventDate : ""));
+        String cacheKey = "desc:" + hash(eventCode + eventTitle + topicTitle + topicCategory + eventNumber + eventDate);
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof String s) {
             return Optional.of(s);
         }
 
         try {
-            String eventLabel = (eventTitle != null && !eventTitle.isBlank()) ? eventTitle : topicTitle;
-            String dateLine = (eventDate != null && !eventDate.isBlank())
-                ? "Event date: " + eventDate + "."
-                : "";
-            String prompt = String.format(
-                aiPromptService.getPromptText("event_description"),
-                eventNumber, eventLabel, topicCategory, dateLine);
+            Map<String, String> vars = new LinkedHashMap<>();
+            vars.put("EVENT_NR", String.valueOf(eventNumber));
+            vars.put("EVENT_TITLE", eventTitle);
+            vars.put("TOPIC_TITLE", topicTitle);
+            vars.put("TOPIC_DESCRIPTION", topicDescription);
+            vars.put("TOPIC_CATEGORY", topicCategory);
+            vars.put("EVENT_DATE", eventDate);
+            vars.put("EVENT_DESCRIPTION", eventDescription);
+            String prompt = applyVariables(aiPromptService.getPromptText("event_description"), vars);
 
             String content = callChatCompletions("gpt-4o", prompt);
             if (content == null) {
@@ -129,27 +131,27 @@ public class BatbernAiService {
     }
 
     /** Downloads DALL-E image and uploads to S3. Returns empty on any failure. */
-    public Optional<ThemeImageResult> generateThemeImage(String eventCode, String topicTitle, String topicCategory,
-                                                         String eventTitle, String eventDescription,
-                                                         String seed) {
+    public Optional<ThemeImageResult> generateThemeImage(String eventCode, String topicTitle, String topicDescription,
+                                                         String topicCategory, String eventTitle,
+                                                         String eventDescription, String seed) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String effectiveTitle = (eventTitle != null && !eventTitle.isBlank()) ? eventTitle : topicTitle;
-        String cacheKey = "img:" + hash(effectiveTitle + topicCategory + (seed != null ? seed : ""));
+        String cacheKey = "img:" + hash(eventCode + topicTitle + topicCategory + (seed != null ? seed : ""));
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof ThemeImageResult r) {
             return Optional.of(r);
         }
 
         try {
-            String contextLine = (eventDescription != null && !eventDescription.isBlank())
-                ? "Context: " + eventDescription.substring(0, Math.min(eventDescription.length(), 300)) + " "
-                : "";
-            String dallePrompt = String.format(
-                aiPromptService.getPromptText("theme_image"),
-                effectiveTitle, topicCategory, contextLine);
+            Map<String, String> vars = new LinkedHashMap<>();
+            vars.put("TOPIC_TITLE", topicTitle);
+            vars.put("TOPIC_DESCRIPTION", topicDescription);
+            vars.put("TOPIC_CATEGORY", topicCategory);
+            vars.put("EVENT_TITLE", eventTitle);
+            vars.put("EVENT_DESCRIPTION", eventDescription);
+            String dallePrompt = applyVariables(aiPromptService.getPromptText("theme_image"), vars);
 
             String dalleImageUrl = callImageGeneration(dallePrompt);
             if (dalleImageUrl == null) {
@@ -183,7 +185,8 @@ public class BatbernAiService {
     }
 
     /** Returns empty if AI disabled, API key absent, or call fails. */
-    public Optional<AbstractAnalysisResult> analyzeAbstract(String abstractText, String speakerName) {
+    public Optional<AbstractAnalysisResult> analyzeAbstract(String speakerName, String sessionTitle,
+                                                             String abstractText) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
@@ -195,9 +198,11 @@ public class BatbernAiService {
         }
 
         try {
-            String prompt = String.format(
-                aiPromptService.getPromptText("abstract_quality"),
-                speakerName != null ? speakerName : "Unknown", abstractText);
+            Map<String, String> vars = new LinkedHashMap<>();
+            vars.put("SPEAKER_NAME", speakerName != null ? speakerName : "Unknown");
+            vars.put("SESSION_TITLE", sessionTitle != null ? sessionTitle : "");
+            vars.put("ABSTRACT", abstractText);
+            String prompt = applyVariables(aiPromptService.getPromptText("abstract_quality"), vars);
 
             String content = callChatCompletionsJson("gpt-4o", prompt);
             if (content == null) {
@@ -215,6 +220,19 @@ public class BatbernAiService {
     }
 
     // ==================== Private helpers ====================
+
+    /**
+     * Replaces all {{VAR_NAME}} placeholders in template with values from vars map.
+     * Missing or null values are replaced with an empty string.
+     */
+    static String applyVariables(String template, Map<String, String> vars) {
+        String result = template;
+        for (Map.Entry<String, String> entry : vars.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}",
+                    entry.getValue() != null ? entry.getValue() : "");
+        }
+        return result;
+    }
 
     private String callChatCompletions(String model, String prompt) {
         Map<String, Object> body = Map.of(

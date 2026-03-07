@@ -33,9 +33,10 @@ import type { AiPromptResponse } from '@/services/aiPromptService';
 /** Variables documented per prompt key — shown as a hint below the textarea. */
 const PROMPT_VARIABLES: Record<string, string> = {
   event_description:
-    '%1 = event number (integer), %2 = topic/event title, %3 = category, %4 = date line',
-  theme_image: '%1 = topic/event title, %2 = category, %3 = context line (optional)',
-  abstract_quality: '%1 = speaker name, %2 = abstract text',
+    '{{EVENT_NR}}, {{EVENT_TITLE}}, {{TOPIC_TITLE}}, {{TOPIC_DESCRIPTION}}, {{TOPIC_CATEGORY}}, {{EVENT_DATE}}, {{EVENT_DESCRIPTION}}',
+  theme_image:
+    '{{TOPIC_TITLE}}, {{TOPIC_DESCRIPTION}}, {{TOPIC_CATEGORY}}, {{EVENT_TITLE}}, {{EVENT_DESCRIPTION}}',
+  abstract_quality: '{{SPEAKER_NAME}}, {{SESSION_TITLE}}, {{ABSTRACT}}',
 };
 
 interface PromptCardProps {

@@ -48,7 +48,7 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty")
         void generateDescription_disabled_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "Cloud Native", "DEVOPS", 99, null, null);
+            Optional<String> result = aiService.generateEventDescription("BATbern99", "BATbern 99", "Cloud Native", "Topic desc", "DEVOPS", 99, "2026-04-04", "");
             assertThat(result).isEmpty();
             verifyNoInteractions(logRepository);
         }
@@ -56,14 +56,14 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty")
         void generateThemeImage_disabled_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "DEVOPS", null, null, null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "Topic desc", "DEVOPS", "BATbern 99", "", null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("analyzeAbstract returns empty")
         void analyzeAbstract_disabled_returnsEmpty() {
-            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("My abstract text", "Alice");
+            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("Alice", "My Session", "My abstract text");
             assertThat(result).isEmpty();
         }
     }
@@ -84,21 +84,21 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty gracefully")
         void generateDescription_noApiKey_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "Cloud Native", "DEVOPS", 99, null, null);
+            Optional<String> result = aiService.generateEventDescription("BATbern99", "BATbern 99", "Cloud Native", "Topic desc", "DEVOPS", 99, "2026-04-04", "");
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("generateThemeImage returns empty gracefully")
         void generateThemeImage_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "DEVOPS", null, null, null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "Topic desc", "DEVOPS", "BATbern 99", "", null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("analyzeAbstract returns empty gracefully")
         void analyzeAbstract_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("My abstract text", "Alice");
+            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("Alice", "My Session", "My abstract text");
             assertThat(result).isEmpty();
         }
     }

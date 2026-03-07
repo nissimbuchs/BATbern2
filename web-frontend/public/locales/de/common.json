@@ -680,19 +680,19 @@
       "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
     },
     "aiPrompts": {
-      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use %s (string) and %d (integer) as positional placeholders — their meaning is documented below each prompt.",
-      "variablesLabel": "Variables:",
-      "save": "Save",
-      "saved": "Prompt saved.",
-      "saveFailed": "Failed to save prompt.",
-      "resetToDefault": "Reset to default",
-      "resetDialogTitle": "Reset prompt to default?",
-      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
-      "resetDialogCancel": "Cancel",
-      "resetDialogConfirm": "Reset",
-      "resetDone": "Prompt reset to default.",
-      "resetFailed": "Failed to reset prompt.",
-      "loadFailed": "Failed to load AI prompts."
+      "description": "Diese Prompts werden an OpenAI gesendet, wenn Veranstaltungsbeschreibungen, Titelbilder oder Qualitätsbewertungen von Abstracts generiert werden. Verwenden Sie {{VARIABLE_NAME}}-Platzhalter — die verfügbaren Variablen sind unter jedem Prompt aufgeführt.",
+      "variablesLabel": "Variablen:",
+      "save": "Speichern",
+      "saved": "Prompt gespeichert.",
+      "saveFailed": "Prompt konnte nicht gespeichert werden.",
+      "resetToDefault": "Auf Standard zurücksetzen",
+      "resetDialogTitle": "Prompt auf Standard zurücksetzen?",
+      "resetDialogText": "Dies überschreibt Ihre Änderungen mit dem Originaltext. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "resetDialogCancel": "Abbrechen",
+      "resetDialogConfirm": "Zurücksetzen",
+      "resetDone": "Prompt auf Standard zurückgesetzt.",
+      "resetFailed": "Prompt konnte nicht zurückgesetzt werden.",
+      "loadFailed": "KI-Prompts konnten nicht geladen werden."
     }
   },
   "labels": {

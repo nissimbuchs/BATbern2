@@ -677,7 +677,7 @@
       "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。"
     },
     "aiPrompts": {
-      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use %s (string) and %d (integer) as positional placeholders — their meaning is documented below each prompt.",
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
       "variablesLabel": "Variables:",
       "save": "Save",
       "saved": "Prompt saved.",
