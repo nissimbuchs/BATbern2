@@ -168,6 +168,8 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
   const clientRef = useRef<Client | null>(null);
   const eventCodeRef = useRef(eventCode);
   eventCodeRef.current = eventCode;
+  // Action queued while disconnected — flushed on next onConnect
+  const pendingActionRef = useRef<WatchActionPayload | null>(null);
 
   // 1-second ticker to drive countdown and re-derive statuses
   useEffect(() => {
@@ -250,26 +252,40 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
               // Ignore malformed messages
             }
           });
+
+          // Flush any action that was queued while the connection was down
+          const pending = pendingActionRef.current;
+          if (pending) {
+            pendingActionRef.current = null;
+            client.publish({
+              destination: `/app/watch/events/${eventCode}/action`,
+              body: JSON.stringify(pending),
+            });
+          }
         },
 
         onStompError: () => {
           if (!isMounted) return;
+          // STOMP-level error (auth / protocol) — reconnect won't help
           setConnectionStatus('offline');
         },
 
         onWebSocketClose: () => {
           if (!isMounted) return;
+          // Transient drop — client will auto-reconnect via reconnectDelay
           setConnectionStatus((prev) => (prev === 'connected' ? 'reconnecting' : prev));
         },
 
         onWebSocketError: () => {
           if (!isMounted) return;
-          setConnectionStatus('offline');
+          // Network error — client will auto-reconnect
+          setConnectionStatus('reconnecting');
         },
 
         onDisconnect: () => {
           if (!isMounted) return;
-          setConnectionStatus('offline');
+          // Server-initiated disconnect — client will auto-reconnect
+          setConnectionStatus('reconnecting');
         },
       });
 
@@ -324,42 +340,49 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
   // Delay button: first 10 minutes of session (mirrors Watch W4.3)
   const shouldShowDelay = activeSession !== null && elapsedSeconds < 600;
 
-  const sendExtend = useCallback(
-    (minutes: number) => {
-      if (!clientRef.current || !activeSession) return;
-      // No isActionInFlight for extend/reduce — user can adjust repeatedly
-      const payload: WatchActionPayload = {
-        type: 'EXTEND_SESSION',
-        sessionSlug: activeSession.sessionSlug,
-        minutes,
-      };
-      const destination = `/app/watch/events/${eventCodeRef.current}/action`;
-      clientRef.current.publish({
-        destination,
+  /**
+   * Publish a STOMP action, or queue it for the next reconnect if currently disconnected.
+   * Calls client.activate() to ensure reconnection is in progress.
+   */
+  const publishOrQueue = useCallback((payload: WatchActionPayload) => {
+    const client = clientRef.current;
+    if (!client) return;
+    if (client.connected) {
+      client.publish({
+        destination: `/app/watch/events/${eventCodeRef.current}/action`,
         body: JSON.stringify(payload),
       });
+    } else {
+      // Queue — will be flushed in onConnect after the next successful reconnect
+      pendingActionRef.current = payload;
+      // Ensure reconnect is in progress (activate() is idempotent)
+      client.activate();
+      setConnectionStatus('reconnecting');
+    }
+  }, []);
+
+  const sendExtend = useCallback(
+    (minutes: number) => {
+      if (!activeSession) return;
+      // No isActionInFlight for extend/reduce — user can adjust repeatedly
+      publishOrQueue({ type: 'EXTEND_SESSION', sessionSlug: activeSession.sessionSlug, minutes });
     },
-    [activeSession]
+    [activeSession, publishOrQueue]
   );
 
   const sendDelay = useCallback(
     (minutes: number) => {
-      if (!clientRef.current || !activeSession) return;
+      if (!activeSession) return;
       setIsActionInFlight(true);
       // Safety reset: re-enable if no STATE_UPDATE arrives within 5 s
       setTimeout(() => setIsActionInFlight(false), 5000);
-      const payload: WatchActionPayload = {
+      publishOrQueue({
         type: 'DELAY_TO_PREVIOUS',
         sessionSlug: activeSession.sessionSlug,
         minutes,
-      };
-      const destination = `/app/watch/events/${eventCodeRef.current}/action`;
-      clientRef.current.publish({
-        destination,
-        body: JSON.stringify(payload),
       });
     },
-    [activeSession]
+    [activeSession, publishOrQueue]
   );
 
   return {
