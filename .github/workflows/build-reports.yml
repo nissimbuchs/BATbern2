@@ -15,6 +15,7 @@ jobs:
     permissions:
       id-token: write   # Required for OIDC AWS authentication
       contents: read
+      actions: read     # Required to download artifacts from other workflow runs
 
     steps:
       - name: Checkout code
@@ -38,6 +39,7 @@ jobs:
         with:
           path: build-artifacts
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Restore build reports from workspace
