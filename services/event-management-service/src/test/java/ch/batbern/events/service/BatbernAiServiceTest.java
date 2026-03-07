@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +49,9 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty")
         void generateDescription_disabled_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "BATbern 99", "Cloud Native", "Topic desc", "DEVOPS", 99, "2026-04-04", "");
+            Optional<String> result = aiService.generateEventDescription("BATbern99", Map.of(
+                    "EVENT_NR", "99", "EVENT_TITLE", "BATbern 99",
+                    "TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"));
             assertThat(result).isEmpty();
             verifyNoInteractions(logRepository);
         }
@@ -56,7 +59,8 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty")
         void generateThemeImage_disabled_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "Topic desc", "DEVOPS", "BATbern 99", "", null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
+                    "BATbern99", Map.of("TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"), null);
             assertThat(result).isEmpty();
         }
 
@@ -84,14 +88,17 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty gracefully")
         void generateDescription_noApiKey_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "BATbern 99", "Cloud Native", "Topic desc", "DEVOPS", 99, "2026-04-04", "");
+            Optional<String> result = aiService.generateEventDescription("BATbern99", Map.of(
+                    "EVENT_NR", "99", "EVENT_TITLE", "BATbern 99",
+                    "TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"));
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("generateThemeImage returns empty gracefully")
         void generateThemeImage_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "Topic desc", "DEVOPS", "BATbern 99", "", null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
+                    "BATbern99", Map.of("TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"), null);
             assertThat(result).isEmpty();
         }
 

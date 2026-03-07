@@ -91,29 +91,27 @@ public class BatbernAiService {
         return aiConfig.getApiKey();
     }
 
-    /** Returns empty if AI disabled, API key absent, or call fails. */
-    public Optional<String> generateEventDescription(String eventCode, String eventTitle, String topicTitle,
-                                                     String topicDescription, String topicCategory,
-                                                     int eventNumber, String eventDate, String eventDescription) {
+    /**
+     * Generates an event description using GPT-4o.
+     *
+     * @param eventCode event code used for cache key and log
+     * @param vars      template variables: EVENT_NR, EVENT_TITLE, TOPIC_TITLE,
+     *                  TOPIC_DESCRIPTION, TOPIC_CATEGORY, EVENT_DATE, EVENT_DESCRIPTION
+     */
+    public Optional<String> generateEventDescription(String eventCode, Map<String, String> vars) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String cacheKey = "desc:" + hash(eventCode + eventTitle + topicTitle + topicCategory + eventNumber + eventDate);
+        String cacheKey = "desc:" + hash(eventCode + vars.getOrDefault("EVENT_TITLE", "")
+                + vars.getOrDefault("TOPIC_TITLE", "") + vars.getOrDefault("TOPIC_CATEGORY", "")
+                + vars.getOrDefault("EVENT_NR", "") + vars.getOrDefault("EVENT_DATE", ""));
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof String s) {
             return Optional.of(s);
         }
 
         try {
-            Map<String, String> vars = new LinkedHashMap<>();
-            vars.put("EVENT_NR", String.valueOf(eventNumber));
-            vars.put("EVENT_TITLE", eventTitle);
-            vars.put("TOPIC_TITLE", topicTitle);
-            vars.put("TOPIC_DESCRIPTION", topicDescription);
-            vars.put("TOPIC_CATEGORY", topicCategory);
-            vars.put("EVENT_DATE", eventDate);
-            vars.put("EVENT_DESCRIPTION", eventDescription);
             String prompt = applyVariables(aiPromptService.getPromptText("event_description"), vars);
 
             String content = callChatCompletions("gpt-4o", prompt);
@@ -130,27 +128,28 @@ public class BatbernAiService {
         }
     }
 
-    /** Downloads DALL-E image and uploads to S3. Returns empty on any failure. */
-    public Optional<ThemeImageResult> generateThemeImage(String eventCode, String topicTitle, String topicDescription,
-                                                         String topicCategory, String eventTitle,
-                                                         String eventDescription, String seed) {
+    /**
+     * Downloads a DALL-E image and uploads to S3. Returns empty on any failure.
+     *
+     * @param eventCode event code used for cache key and log
+     * @param vars      template variables: TOPIC_TITLE, TOPIC_DESCRIPTION, TOPIC_CATEGORY,
+     *                  EVENT_TITLE, EVENT_DESCRIPTION
+     * @param seed      optional seed for cache-busting a re-generation
+     */
+    public Optional<ThemeImageResult> generateThemeImage(String eventCode, Map<String, String> vars, String seed) {
         if (!aiConfig.isAiEnabled() || openAiClient == null) {
             return Optional.empty();
         }
 
-        String cacheKey = "img:" + hash(eventCode + topicTitle + topicCategory + (seed != null ? seed : ""));
+        String cacheKey = "img:" + hash(eventCode
+                + vars.getOrDefault("TOPIC_TITLE", "") + vars.getOrDefault("TOPIC_CATEGORY", "")
+                + (seed != null ? seed : ""));
         Object cached = resultCache.getIfPresent(cacheKey);
         if (cached instanceof ThemeImageResult r) {
             return Optional.of(r);
         }
 
         try {
-            Map<String, String> vars = new LinkedHashMap<>();
-            vars.put("TOPIC_TITLE", topicTitle);
-            vars.put("TOPIC_DESCRIPTION", topicDescription);
-            vars.put("TOPIC_CATEGORY", topicCategory);
-            vars.put("EVENT_TITLE", eventTitle);
-            vars.put("EVENT_DESCRIPTION", eventDescription);
             String dallePrompt = applyVariables(aiPromptService.getPromptText("theme_image"), vars);
 
             String dalleImageUrl = callImageGeneration(dallePrompt);

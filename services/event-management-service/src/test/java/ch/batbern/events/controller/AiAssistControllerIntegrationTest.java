@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -85,8 +84,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateDescription_whenAiReturnsEmpty_returns503() throws Exception {
         when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
         when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
-        when(aiService.generateEventDescription(anyString(), anyString(), anyString(), anyString(),
-                anyString(), anyInt(), anyString(), anyString()))
+        when(aiService.generateEventDescription(anyString(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description"))
@@ -98,8 +96,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateDescription_whenAiReturnsResult_returns200() throws Exception {
         when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
         when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
-        when(aiService.generateEventDescription(anyString(), anyString(), anyString(), anyString(),
-                anyString(), anyInt(), anyString(), anyString()))
+        when(aiService.generateEventDescription(anyString(), any()))
             .thenReturn(Optional.of("BATbern#99 widmet sich dem Thema Cloud Native..."));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/description"))
@@ -112,8 +109,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
         when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
         when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
-        when(aiService.generateThemeImage(anyString(), anyString(), anyString(), anyString(),
-                anyString(), anyString(), any()))
+        when(aiService.generateThemeImage(anyString(), any(), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image"))
@@ -127,8 +123,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
         when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
         var result = new BatbernAiService.ThemeImageResult(
             "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
-        when(aiService.generateThemeImage(anyString(), anyString(), anyString(), anyString(),
-                anyString(), anyString(), any()))
+        when(aiService.generateThemeImage(anyString(), any(), any()))
             .thenReturn(Optional.of(result));
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image"))

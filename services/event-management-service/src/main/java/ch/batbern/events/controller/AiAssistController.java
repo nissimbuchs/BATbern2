@@ -31,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,16 +67,16 @@ public class AiAssistController {
         String eventDate = event.getDate() != null
                 ? event.getDate().atZone(ZoneOffset.UTC).toLocalDate().toString()
                 : "";
+        Map<String, String> vars = new LinkedHashMap<>();
+        vars.put("EVENT_NR", String.valueOf(event.getEventNumber() != null ? event.getEventNumber() : 0));
+        vars.put("EVENT_TITLE", safeStr(event.getTitle()));
+        vars.put("TOPIC_TITLE", topicTitle(topic));
+        vars.put("TOPIC_DESCRIPTION", topicDescription(topic));
+        vars.put("TOPIC_CATEGORY", topicCategory(topic));
+        vars.put("EVENT_DATE", eventDate);
+        vars.put("EVENT_DESCRIPTION", safeStr(event.getDescription()));
 
-        Optional<String> desc = aiService.generateEventDescription(
-                eventCode,
-                safeStr(event.getTitle()),
-                topicTitle(topic),
-                topicDescription(topic),
-                topicCategory(topic),
-                event.getEventNumber() != null ? event.getEventNumber() : 0,
-                eventDate,
-                safeStr(event.getDescription()));
+        Optional<String> desc = aiService.generateEventDescription(eventCode, vars);
 
         return desc.map(d -> ResponseEntity.ok(new AiDescriptionResponse().description(d)))
                    .orElse(ResponseEntity.status(503).build());
@@ -89,14 +91,14 @@ public class AiAssistController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
         Topic topic = resolveTopicForEvent(event);
 
-        Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
-                eventCode,
-                topicTitle(topic),
-                topicDescription(topic),
-                topicCategory(topic),
-                safeStr(event.getTitle()),
-                safeStr(event.getDescription()),
-                seed);
+        Map<String, String> vars = new LinkedHashMap<>();
+        vars.put("TOPIC_TITLE", topicTitle(topic));
+        vars.put("TOPIC_DESCRIPTION", topicDescription(topic));
+        vars.put("TOPIC_CATEGORY", topicCategory(topic));
+        vars.put("EVENT_TITLE", safeStr(event.getTitle()));
+        vars.put("EVENT_DESCRIPTION", safeStr(event.getDescription()));
+
+        Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(eventCode, vars, seed);
 
         return result.map(r -> ResponseEntity.ok(
                         new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
