@@ -109,6 +109,8 @@ failed=0
 skipped=0
 
 # Test collection directories
+# speaker-portal-api requires the E2E token helper endpoint (@Profile dev/local/test only)
+# and is therefore excluded on staging/production
 collections=(
     "file-upload-api"
     "companies-api"
@@ -116,9 +118,11 @@ collections=(
     "events-api"
     "partners-api"
     "speakers-api"
-    "speaker-portal-api"
     "tasks-api"
 )
+if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
+    collections+=("speaker-portal-api")
+fi
 
 # Run tests for each collection
 for collection in "${collections[@]}"; do
