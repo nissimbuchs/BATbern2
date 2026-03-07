@@ -1,0 +1,51 @@
+meta {
+  name: Suggest Topic - Organizer Missing companyName (400)
+  type: http
+  seq: 14
+}
+
+docs {
+  POST /partners/topics - organizer must supply companyName.
+  Returns 400 if companyName is absent or blank.
+  TopicController @ /api/v1/partners/topics
+}
+
+post {
+  url: {{baseUrl}}/partners/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Topic without company",
+    "description": "This should fail because organizer did not supply companyName"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 when organizer omits companyName", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

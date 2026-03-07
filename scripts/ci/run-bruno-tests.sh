@@ -59,7 +59,7 @@ load_role_token() {
     local role="$1"
     local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
     if [ -f "$role_config" ]; then
-        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" 2>/dev/null || true
+        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" >/dev/null 2>&1 || true
         local token
         token=$(jq -r '.idToken' "$role_config" 2>/dev/null)
         if [ "$token" != "null" ] && [ -n "$token" ]; then

@@ -43,7 +43,8 @@ tests {
       const body = res.getBody();
       expect(body.data).to.be.an('array');
   
-      // Verify returned users contain search term in name or email
+      // Verify returned users contain search term in name, email, username, or companyId
+      // (backend searches all 5 fields: username, email, firstName, lastName, companyId)
       if (body.data.length > 0) {
         body.data.forEach(user => {
           const searchTerm = 'test';
@@ -51,8 +52,9 @@ tests {
           const matchesLastName = user.lastName && user.lastName.toLowerCase().includes(searchTerm);
           const matchesEmail = user.email && user.email.toLowerCase().includes(searchTerm);
           const matchesUsername = user.id && user.id.toLowerCase().includes(searchTerm);
-  
-          const matches = matchesFirstName || matchesLastName || matchesEmail || matchesUsername;
+          const matchesCompanyId = user.companyId && user.companyId.toLowerCase().includes(searchTerm);
+
+          const matches = matchesFirstName || matchesLastName || matchesEmail || matchesUsername || matchesCompanyId;
           expect(matches).to.be.true;
         });
   

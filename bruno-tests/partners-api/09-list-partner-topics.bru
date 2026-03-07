@@ -1,11 +1,16 @@
 meta {
-  name: List Partner Suggestions
+  name: List Partner Topics
   type: http
-  seq: 12
+  seq: 9
+}
+
+docs {
+  GET /partners/topics - list all topic suggestions with vote counts.
+  Accessible by PARTNER and ORGANIZER. TopicController @ /api/v1/partners/topics
 }
 
 get {
-  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/suggestions
+  url: {{baseUrl}}/partners/topics
   body: none
   auth: bearer
 }
@@ -30,24 +35,22 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return array of suggestions", function() {
+  test("should return array of topics", function() {
     const body = res.getBody();
     expect(body).to.be.an('array');
   });
 
-  test("suggestions should have required fields", function() {
+  test("topics should have required TopicDTO fields", function() {
     const body = res.getBody();
     if (body && body.length > 0) {
-      const suggestion = body[0];
-      expect(suggestion.suggestedTopic).to.exist;
-      expect(suggestion.description).to.exist;
-      expect(suggestion.status).to.be.oneOf(['submitted', 'under_review', 'accepted', 'rejected', 'implemented']);
-      expect(suggestion.suggestedAt).to.exist;
+      const topic = body[0];
+      expect(topic.id).to.exist;
+      expect(topic.title).to.exist;
+      expect(topic.suggestedByCompany).to.exist;
+      expect(topic.voteCount).to.be.a('number');
+      expect(topic.status).to.exist;
+      expect(topic.createdAt).to.exist;
     }
-  });
-
-  test("should accept X-Correlation-ID header", function() {
-    expect(res.getStatus()).to.equal(200);
   });
 
   test("should have CORS headers", function() {
