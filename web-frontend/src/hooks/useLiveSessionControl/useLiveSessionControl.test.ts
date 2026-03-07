@@ -31,7 +31,11 @@ vi.mock('@/services/api/apiClient', () => ({
   default: { get: vi.fn() },
 }));
 
-vi.mock('sockjs-client', () => ({ default: vi.fn(() => ({})) }));
+vi.mock('sockjs-client', () => ({
+  default: vi.fn(function () {
+    return {};
+  }),
+}));
 
 // ─── STOMP Client mock ───────────────────────────────────────────────────────
 // We use a "spy container" object so the factory closure always captures the
@@ -54,39 +58,36 @@ const stomp = {
 };
 
 vi.mock('@stomp/stompjs', () => ({
-  Client: vi
-    .fn()
-    .mockImplementation(
-      (options: {
-        webSocketFactory: () => unknown;
-        onConnect: () => void;
-        onStompError: () => void;
-        onWebSocketClose: () => void;
-        onWebSocketError: () => void;
-        onDisconnect: () => void;
-      }) => {
-        stomp.onConnect = options.onConnect;
-        stomp.onStompError = options.onStompError;
-        stomp.onWebSocketClose = options.onWebSocketClose;
-        stomp.onWebSocketError = options.onWebSocketError;
-        stomp.onDisconnect = options.onDisconnect;
-        stomp.webSocketFactory = options.webSocketFactory;
+  Client: vi.fn().mockImplementation(function (options: {
+    webSocketFactory: () => unknown;
+    onConnect: () => void;
+    onStompError: () => void;
+    onWebSocketClose: () => void;
+    onWebSocketError: () => void;
+    onDisconnect: () => void;
+  }) {
+    stomp.onConnect = options.onConnect;
+    stomp.onStompError = options.onStompError;
+    stomp.onWebSocketClose = options.onWebSocketClose;
+    stomp.onWebSocketError = options.onWebSocketError;
+    stomp.onDisconnect = options.onDisconnect;
+    stomp.webSocketFactory = options.webSocketFactory;
 
-        const client = {
-          activate: vi.fn(),
-          deactivate: vi.fn(() => Promise.resolve()),
-          publish: vi.fn(),
-          subscribe: vi
-            .fn()
-            .mockImplementation((_topic: string, cb: (msg: { body: string }) => void) => {
-              stomp.subscribeCallback = cb;
-            }),
-          connected: false,
-        };
-        stomp.client = client;
-        return client;
-      }
-    ),
+    const client = {
+      activate: vi.fn(),
+      deactivate: vi.fn(() => Promise.resolve()),
+      publish: vi.fn(),
+      subscribe: vi.fn().mockImplementation(function (
+        _topic: string,
+        cb: (msg: { body: string }) => void
+      ) {
+        stomp.subscribeCallback = cb;
+      }),
+      connected: false,
+    };
+    stomp.client = client;
+    return client;
+  }),
 }));
 
 // ─── Imports after mocks ─────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ describe('useLiveSessionControl', () => {
     mockGet.mockResolvedValue({ data: { activeEvents: [] } });
 
     // Re-set Client implementation in case it was cleared
-    MockClient.mockImplementation((options: Parameters<typeof Client>[0]) => {
+    MockClient.mockImplementation(function (options: any) {
       stomp.onConnect = options.onConnect!;
       stomp.onStompError = options.onStompError!;
       stomp.onWebSocketClose = options.onWebSocketClose!;
@@ -155,11 +156,12 @@ describe('useLiveSessionControl', () => {
         activate: vi.fn(),
         deactivate: vi.fn(() => Promise.resolve()),
         publish: vi.fn(),
-        subscribe: vi
-          .fn()
-          .mockImplementation((_topic: string, cb: (msg: { body: string }) => void) => {
-            stomp.subscribeCallback = cb;
-          }),
+        subscribe: vi.fn().mockImplementation(function (
+          _topic: string,
+          cb: (msg: { body: string }) => void
+        ) {
+          stomp.subscribeCallback = cb;
+        }),
         connected: false,
       };
       stomp.client = client;
@@ -175,7 +177,7 @@ describe('useLiveSessionControl', () => {
     } as Awaited<ReturnType<typeof fetchAuthSession>>);
     mockGet.mockResolvedValue({ data: { activeEvents: [] } });
 
-    MockClient.mockImplementation((options: Parameters<typeof Client>[0]) => {
+    MockClient.mockImplementation(function (options: any) {
       stomp.onConnect = options.onConnect!;
       stomp.onStompError = options.onStompError!;
       stomp.onWebSocketClose = options.onWebSocketClose!;
@@ -187,11 +189,12 @@ describe('useLiveSessionControl', () => {
         activate: vi.fn(),
         deactivate: vi.fn(() => Promise.resolve()),
         publish: vi.fn(),
-        subscribe: vi
-          .fn()
-          .mockImplementation((_topic: string, cb: (msg: { body: string }) => void) => {
-            stomp.subscribeCallback = cb;
-          }),
+        subscribe: vi.fn().mockImplementation(function (
+          _topic: string,
+          cb: (msg: { body: string }) => void
+        ) {
+          stomp.subscribeCallback = cb;
+        }),
         connected: false,
       };
       stomp.client = client;
