@@ -73,6 +73,18 @@ jobs:
           flags: shared-kernel
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Upload test reports artifact
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-reports-shared-kernel
+          path: |
+            shared-kernel/build/test-results/
+            shared-kernel/build/reports/jacoco/
+            shared-kernel/build/reports/checkstyle/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Domain Services (Parallel)
   # ═══════════════════════════════════════════════════════════
@@ -175,7 +187,7 @@ jobs:
           SHOULD_BUILD="false"
 
           # Build if infrastructure changed (deploy will deploy all)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
             echo "✓ Infrastructure changes detected - building all services"
             SHOULD_BUILD="true"
           # Build if shared-kernel changed (deploy will deploy all)
@@ -234,6 +246,18 @@ jobs:
           else
             ./gradlew :services:${{ matrix.service }}:clean :services:${{ matrix.service }}:build :services:${{ matrix.service }}:test --no-daemon
           fi
+
+      - name: Upload test reports artifact
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-reports-${{ matrix.service }}
+          path: |
+            ${{ steps.service-dir.outputs.dir }}/build/test-results/
+            ${{ steps.service-dir.outputs.dir }}/build/reports/jacoco/
+            ${{ steps.service-dir.outputs.dir }}/build/reports/checkstyle/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Set up Docker Buildx
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
@@ -442,6 +466,17 @@ jobs:
         # Coverage threshold enforced: 80% for statements
         # Configured in vite.config.ts - tests will fail if coverage drops below threshold
 
+      - name: Upload test reports artifact
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-reports-frontend
+          path: |
+            web-frontend/coverage/
+            web-frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Build frontend
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
@@ -527,7 +562,7 @@ jobs:
           CHANGED_SERVICES=""
 
           # If infrastructure or shared-kernel changed, analyze everything
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package|^shared-kernel/"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package|^shared-kernel/"; then
             echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"
             ANALYZE_ALL="true"
           fi

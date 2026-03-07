@@ -219,7 +219,6 @@
       "speaker_brainstorming": "スピーカーブレインストーミング",
       "speaker_outreach": "スピーカー招致",
       "agenda_published": "アジェンダ公開済み",
-      "agenda_finalized": "アジェンダ確定済み",
       "event_live": "イベント開催中",
       "post_event_wrap_up": "イベント後まとめ",
       "archived": "アーカイブ済み"
@@ -370,7 +369,6 @@
       "speaker_identification": "スピーカー特定",
       "slot_assignment": "スロット割り当て",
       "agenda_published": "アジェンダ公開済み",
-      "agenda_finalized": "アジェンダ確定済み",
       "event_live": "イベント開催中",
       "event_completed": "イベント完了",
       "archived": "アーカイブ済み"

@@ -10,14 +10,13 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30). Defines the current state of an event in the organizer workflow. Previous 16-state workflow was consolidated to improve clarity and automation.  */
+/** Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed). Defines the current state of an event in the organizer workflow.  */
 public enum EventWorkflowState: String, Codable, CaseIterable {
     case created = "CREATED"
     case topicSelection = "TOPIC_SELECTION"
     case speakerIdentification = "SPEAKER_IDENTIFICATION"
     case slotAssignment = "SLOT_ASSIGNMENT"
     case agendaPublished = "AGENDA_PUBLISHED"
-    case agendaFinalized = "AGENDA_FINALIZED"
     case eventLive = "EVENT_LIVE"
     case eventCompleted = "EVENT_COMPLETED"
     case archived = "ARCHIVED"

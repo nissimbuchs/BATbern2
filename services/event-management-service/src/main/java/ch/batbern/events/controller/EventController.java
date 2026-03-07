@@ -769,12 +769,11 @@ public class EventController {
         // Find the next event with active workflow states (V17: changed from status to workflowState)
         // Returns the event nearest to current date, but only if it occurs today or in the future.
         // Events whose date was yesterday or earlier are no longer shown on the homepage.
-        // 9-State Model: NEWSLETTER_SENT and EVENT_READY consolidated into AGENDA_FINALIZED
+        // 8-State Model (V82): AGENDA_FINALIZED removed, scheduler transitions AGENDA_PUBLISHED → EVENT_LIVE
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
                 EventWorkflowState.SLOT_ASSIGNMENT,
                 EventWorkflowState.AGENDA_PUBLISHED,
-                EventWorkflowState.AGENDA_FINALIZED,
                 EventWorkflowState.EVENT_LIVE,
                 EventWorkflowState.EVENT_COMPLETED
         );

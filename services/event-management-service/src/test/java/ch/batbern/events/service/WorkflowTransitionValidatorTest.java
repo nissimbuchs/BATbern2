@@ -22,13 +22,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * This validator defines the state transition matrix and ensures only valid
  * transitions are allowed based on the 9-step workflow.
  *
- * Valid Transitions (9-State Model):
+ * Valid Transitions (8-State Model):
  * - CREATED → TOPIC_SELECTION or SPEAKER_IDENTIFICATION
  * - TOPIC_SELECTION → SPEAKER_IDENTIFICATION
  * - SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
  * - SLOT_ASSIGNMENT → AGENDA_PUBLISHED
- * - AGENDA_PUBLISHED → AGENDA_FINALIZED
- * - AGENDA_FINALIZED → EVENT_LIVE
+ * - AGENDA_PUBLISHED → EVENT_LIVE (auto via scheduler)
  * - EVENT_LIVE → EVENT_COMPLETED
  * - EVENT_COMPLETED → ARCHIVED
  *
@@ -53,7 +52,7 @@ class WorkflowTransitionValidatorTest {
                 .build();
     }
 
-    // Test: Valid sequential transitions (9-State Model)
+    // Test: Valid sequential transitions (8-State Model)
     @ParameterizedTest
     @CsvSource({
         "CREATED, TOPIC_SELECTION",
@@ -61,8 +60,7 @@ class WorkflowTransitionValidatorTest {
         "TOPIC_SELECTION, SPEAKER_IDENTIFICATION",
         "SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT",
         "SLOT_ASSIGNMENT, AGENDA_PUBLISHED",
-        "AGENDA_PUBLISHED, AGENDA_FINALIZED",
-        "AGENDA_FINALIZED, EVENT_LIVE",
+        "AGENDA_PUBLISHED, EVENT_LIVE",           // Direct scheduler transition (AGENDA_FINALIZED removed)
         "EVENT_LIVE, EVENT_COMPLETED",
         "EVENT_COMPLETED, ARCHIVED"
     })
@@ -77,15 +75,15 @@ class WorkflowTransitionValidatorTest {
         ).doesNotThrowAnyException();
     }
 
-    // Test: Invalid non-sequential transitions (9-State Model)
+    // Test: Invalid non-sequential transitions (8-State Model)
     @ParameterizedTest
     @CsvSource({
         "CREATED, ARCHIVED",                       // Skip all intermediate steps
         "CREATED, SLOT_ASSIGNMENT",                // Skip multiple steps
         "TOPIC_SELECTION, SLOT_ASSIGNMENT",        // Jump ahead multiple steps
         "SPEAKER_IDENTIFICATION, AGENDA_PUBLISHED", // Jump ahead multiple steps
-        "SLOT_ASSIGNMENT, EVENT_LIVE",             // Skip agenda phases
-        "AGENDA_PUBLISHED, EVENT_COMPLETED"        // Skip multiple steps
+        "SLOT_ASSIGNMENT, EVENT_LIVE",             // Skip AGENDA_PUBLISHED
+        "AGENDA_PUBLISHED, EVENT_COMPLETED"        // Skip EVENT_LIVE (normal path)
     })
     @DisplayName("Should reject invalid non-sequential state transitions")
     void should_rejectTransition_when_invalidNonSequentialTransition(EventWorkflowState fromState, EventWorkflowState toState) {
@@ -100,15 +98,14 @@ class WorkflowTransitionValidatorTest {
                 .hasMessageContaining("Invalid state transition from '" + fromState + "' to '" + toState + "'");
     }
 
-    // Test: Backwards transitions are not allowed (9-State Model)
+    // Test: Backwards transitions are not allowed (8-State Model)
     @ParameterizedTest
     @CsvSource({
         "TOPIC_SELECTION, CREATED",
         "SPEAKER_IDENTIFICATION, TOPIC_SELECTION",
         "SLOT_ASSIGNMENT, SPEAKER_IDENTIFICATION",
         "AGENDA_PUBLISHED, SLOT_ASSIGNMENT",
-        "AGENDA_FINALIZED, AGENDA_PUBLISHED",
-        "EVENT_LIVE, AGENDA_FINALIZED",
+        "EVENT_LIVE, AGENDA_PUBLISHED",
         "EVENT_COMPLETED, EVENT_LIVE"
     })
     @DisplayName("Should reject backwards state transitions")

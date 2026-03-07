@@ -120,7 +120,7 @@ jobs:
           fi
 
           # Check for infrastructure changes (requires full deployment)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
             echo "✓ Infrastructure code changes detected - will deploy all stacks"
             INFRASTRUCTURE_CHANGED=true
             echo "infrastructure=true" >> $GITHUB_OUTPUT

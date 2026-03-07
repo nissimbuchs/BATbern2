@@ -55,7 +55,6 @@ public class NewsletterEmailService {
     /** Workflow states where speaker section is considered published. */
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
-            EventWorkflowState.AGENDA_FINALIZED,
             EventWorkflowState.EVENT_LIVE,
             EventWorkflowState.EVENT_COMPLETED,
             EventWorkflowState.ARCHIVED

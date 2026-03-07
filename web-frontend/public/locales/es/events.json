@@ -219,7 +219,6 @@
       "speaker_brainstorming": "Lluvia de ideas de ponentes",
       "speaker_outreach": "Contacto con ponentes",
       "agenda_published": "Agenda publicada",
-      "agenda_finalized": "Agenda finalizada",
       "event_live": "Evento en vivo",
       "post_event_wrap_up": "Resumen post-evento",
       "archived": "Archivado"
@@ -370,7 +369,6 @@
       "speaker_identification": "Identificación de ponentes",
       "slot_assignment": "Asignación de espacios",
       "agenda_published": "Agenda publicada",
-      "agenda_finalized": "Agenda finalizada",
       "event_live": "Evento en vivo",
       "event_completed": "Evento completado",
       "archived": "Archivado"

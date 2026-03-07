@@ -582,6 +582,15 @@ class ReportsBuilder {
     // Must match baseDir used by ReportAggregator (repo root) + pattern 'security-reports/zap-*.json'
     const outDir = path.join(this.baseDir, 'security-reports');
 
+    // Skip S3 download if files were already pre-populated (e.g. by CI's gh run download step)
+    const existingFiles = (await fs.pathExists(outDir))
+      ? (await fs.readdir(outDir)).filter(f => f.endsWith('.json'))
+      : [];
+    if (existingFiles.length > 0) {
+      console.log(`  ℹ️  ZAP reports already present locally (${existingFiles.length} file(s)) — skipping S3 fetch.\n`);
+      return;
+    }
+
     console.log(`Step 0: Fetching ZAP reports from s3://${ZAP_BUCKET}/${ZAP_PREFIX} ...`);
     let s3;
     try {

@@ -219,7 +219,6 @@
       "speaker_brainstorming": "Sprekersbrainstorm",
       "speaker_outreach": "Sprekersbenadering",
       "agenda_published": "Agenda gepubliceerd",
-      "agenda_finalized": "Agenda gefinaliseerd",
       "event_live": "Evenement live",
       "post_event_wrap_up": "Afsluiting na evenement",
       "archived": "Gearchiveerd"
@@ -370,7 +369,6 @@
       "speaker_identification": "Sprekeridentificatie",
       "slot_assignment": "Slottoewijzing",
       "agenda_published": "Agenda gepubliceerd",
-      "agenda_finalized": "Agenda gefinaliseerd",
       "event_live": "Evenement live",
       "event_completed": "Evenement voltooid",
       "archived": "Gearchiveerd"

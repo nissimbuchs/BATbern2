@@ -15,6 +15,7 @@ jobs:
     permissions:
       id-token: write   # Required for OIDC AWS authentication
       contents: read
+      actions: read     # Required to download artifacts from other workflow runs
 
     steps:
       - name: Checkout code
@@ -38,6 +39,7 @@ jobs:
         with:
           path: build-artifacts
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Restore build reports from workspace
@@ -75,30 +77,33 @@ jobs:
           echo "Report collection completed."
           find report-collection -type f | head -20
 
-      - name: Download latest ZAP DAST reports (optional)
+      - name: Configure AWS credentials (staging)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: eu-central-1
+
+      - name: Fetch latest ZAP DAST reports from security-scan artifact
+        # Pre-populates security-reports/ so build-reports.js skips the S3 download and uses
+        # the freshest data. Falls back to S3 (fetched by build-reports.js) if no artifact found.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Looking for latest successful ZAP security scan..."
           mkdir -p security-reports
-
-          # Find the most recent successful security-scan run
           RUN_ID=$(gh run list \
             --workflow=security-scan.yml \
             --status=success \
             --limit=1 \
             --json databaseId \
             -q '.[0].databaseId' 2>/dev/null || echo "")
-
           if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-            echo "Downloading ZAP JSON reports from run $RUN_ID..."
             gh run download "$RUN_ID" \
               --name zap-reports \
               --dir security-reports/ 2>/dev/null \
-              && echo "ZAP reports downloaded: $(ls security-reports/)" \
-              || echo "No zap-reports artifact found in run $RUN_ID — ZAP section will be hidden"
+              && echo "ZAP reports fetched from run $RUN_ID: $(ls security-reports/)" \
+              || echo "No zap-reports artifact in run $RUN_ID — build-reports.js will fall back to S3"
           else
-            echo "No recent successful security-scan run found — ZAP section will be hidden"
+            echo "No recent successful security-scan run found — build-reports.js will fall back to S3"
           fi
 
       - name: Install projectdoc dependencies
@@ -106,6 +111,9 @@ jobs:
         run: npm ci
 
       - name: Build test & quality reports
+        # ZAP reports are fetched from staging S3 by build-reports.js (batbern-staging credentials
+        # are now available via OIDC above). Security-scan.yml uploads zap-reports artifact which
+        # gets synced to S3 by the "Upload ZAP reports to staging S3" step at the end of this job.
         working-directory: apps/projectdoc
         run: npm run build:reports
         env:
@@ -132,12 +140,6 @@ jobs:
           name: projectdoc-site
           path: apps/projectdoc/dist/
           retention-days: 7
-
-      - name: Configure AWS credentials (staging — for ZAP report upload)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
-          aws-region: eu-central-1
 
       - name: Upload ZAP reports to staging S3
         # Stores ZAP JSON under batbern-content-staging/ci-reports/zap/ so the

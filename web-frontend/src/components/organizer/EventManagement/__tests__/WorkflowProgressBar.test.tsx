@@ -49,7 +49,6 @@ vi.mock('react-i18next', () => ({
           'workflow.states.speaker_identification': 'Speaker Identification',
           'workflow.states.slot_assignment': 'Slot Assignment',
           'workflow.states.agenda_published': 'Agenda Published',
-          'workflow.states.agenda_finalized': 'Agenda Finalized',
           'workflow.states.event_live': 'Event Live',
           'workflow.states.event_completed': 'Event Completed',
           'workflow.states.archived': 'Archived',
@@ -100,7 +99,7 @@ describe('WorkflowProgressBar Component', () => {
         isRequired: true,
       },
       {
-        stepNumber: 9,
+        stepNumber: 8,
         name: 'Archived',
         status: 'pending',
         isRequired: false,

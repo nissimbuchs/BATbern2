@@ -153,12 +153,9 @@ public class EventWorkflowStateMachine {
      */
     private void validateBusinessRules(Event event, EventWorkflowState targetState) {
         switch (targetState) {
-            // 9-State Model: Removed SPEAKER_OUTREACH and QUALITY_REVIEW (consolidated into SPEAKER_IDENTIFICATION)
+            // 8-State Model: AGENDA_FINALIZED removed (V82)
             case SLOT_ASSIGNMENT:
                 validateMinimumThresholdMet(event);
-                break;
-            case AGENDA_FINALIZED:
-                validateAllSlotsAssigned(event);
                 break;
             case AGENDA_PUBLISHED:
                 validateQualityReviewComplete(event);
@@ -259,42 +256,6 @@ public class EventWorkflowStateMachine {
         }
 
         log.debug("Threshold validation passed: {} speakers ready for slot assignment", totalReadyForSlots);
-    }
-
-    /**
-     * Validates that all slots have been assigned.
-     *
-     * Required for transition to AGENDA_FINALIZED.
-     *
-     * Story 5.7 (BAT-11): Checks that all sessions have timing assigned
-     * before finalizing the agenda.
-     *
-     * @param event Event being validated
-     * @throws WorkflowValidationException if slots not assigned
-     */
-    private void validateAllSlotsAssigned(Event event) {
-        long totalSessions = sessionRepository.countByEventId(event.getId());
-        long sessionsWithTiming = sessionRepository.countByEventIdAndStartTimeNotNull(event.getId());
-
-        if (totalSessions == 0) {
-            throw new WorkflowValidationException(
-                    "Cannot finalize agenda - no sessions exist for this event",
-                    Map.of("totalSessions", 0)
-            );
-        }
-
-        if (sessionsWithTiming < totalSessions) {
-            throw new WorkflowValidationException(
-                    "Cannot finalize agenda - not all sessions have timing assigned",
-                    Map.of(
-                            "totalSessions", totalSessions,
-                            "sessionsWithTiming", sessionsWithTiming,
-                            "unassigned", totalSessions - sessionsWithTiming
-                    )
-            );
-        }
-
-        log.debug("All {} sessions have timing assigned - agenda can be finalized", totalSessions);
     }
 
     /**

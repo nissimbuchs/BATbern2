@@ -156,7 +156,7 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      *
      * @param startDate Start of the date range (inclusive)
      * @param endDate End of the date range (inclusive)
-     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, AGENDA_FINALIZED, EVENT_LIVE)
+     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, EVENT_LIVE)
      * @return List of active events ordered by date ascending
      */
     @Query("SELECT e FROM Event e "

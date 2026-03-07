@@ -282,7 +282,7 @@ export interface paths {
      *     9. OVERFLOW_MANAGEMENT - Managing speaker overflow
      *     10. SLOT_ASSIGNMENT - Assigning speakers to time slots
      *     11. AGENDA_PUBLISHED - Publishing agenda
-     *     12. AGENDA_FINALIZED - Finalizing agenda
+     *     12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
      *     13. NEWSLETTER_SENT - Newsletter sent to attendees
      *     14. EVENT_READY - Event ready to start
      *     15. PARTNER_MEETING_COMPLETE - Partner meetings completed
@@ -1585,7 +1585,7 @@ export interface paths {
     /**
      * Get active events for authenticated organizer
      * @description Returns active events assigned to the authenticated organizer.
-     *     Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+     *     Events within ±3 days with workflow state AGENDA_PUBLISHED or EVENT_LIVE.
      *
      *     **Story W2.3**: Event Join & Schedule Sync
      *     - AC#1: Full schedule including sessions and speaker metadata
@@ -4409,9 +4409,9 @@ export interface components {
     /** @description Standard error response from shared-kernel */
     ErrorResponse: Record<string, never>;
     /**
-     * @description Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
+     * @description Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed).
      *     Defines the current state of an event in the organizer workflow.
-     *     Previous 16-state workflow was consolidated to improve clarity and automation.
+     *     The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.
      * @example SPEAKER_IDENTIFICATION
      * @enum {string}
      */
@@ -4421,7 +4421,6 @@ export interface components {
       | 'SPEAKER_IDENTIFICATION'
       | 'SLOT_ASSIGNMENT'
       | 'AGENDA_PUBLISHED'
-      | 'AGENDA_FINALIZED'
       | 'EVENT_LIVE'
       | 'EVENT_COMPLETED'
       | 'ARCHIVED';

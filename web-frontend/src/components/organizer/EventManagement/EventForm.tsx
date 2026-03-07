@@ -111,7 +111,6 @@ const createEventSchema = (t: (key: string) => string) =>
         'SPEAKER_IDENTIFICATION',
         'SLOT_ASSIGNMENT',
         'AGENDA_PUBLISHED',
-        'AGENDA_FINALIZED',
         'EVENT_LIVE',
         'EVENT_COMPLETED',
         'ARCHIVED',
@@ -892,12 +891,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                         data-testid="status-option-AGENDA_PUBLISHED"
                       >
                         {t('workflow.states.agenda_published')}
-                      </MenuItem>
-                      <MenuItem
-                        value="AGENDA_FINALIZED"
-                        data-testid="status-option-AGENDA_FINALIZED"
-                      >
-                        {t('workflow.states.agenda_finalized')}
                       </MenuItem>
                       <MenuItem value="EVENT_LIVE" data-testid="status-option-EVENT_LIVE">
                         {t('workflow.states.event_live')}
