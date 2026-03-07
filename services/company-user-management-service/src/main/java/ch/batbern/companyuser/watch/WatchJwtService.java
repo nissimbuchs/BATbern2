@@ -7,8 +7,10 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -32,15 +34,32 @@ import java.util.Date;
 public class WatchJwtService {
 
     private static final long JWT_TTL_SECONDS = 3600L;
+    private static final String DEV_DEFAULT_SECRET = "batbern-watch-dev-secret-key-min-32-chars";
 
     private final byte[] signingKey;
+    private final String rawSecret;
+    private final Environment environment;
 
     public WatchJwtService(
-            @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}") String secret) {
+            @Value("${watch.jwt.secret:" + DEV_DEFAULT_SECRET + "}") String secret,
+            Environment environment) {
         // M4: Use explicit UTF-8 charset — platform default varies across systems
         this.signingKey = secret.getBytes(StandardCharsets.UTF_8);
+        this.rawSecret = secret;
+        this.environment = environment;
         if (this.signingKey.length < 32) {
             log.warn("Watch JWT secret is shorter than recommended 32 bytes");
+        }
+    }
+
+    @PostConstruct
+    void validateSecretInProduction() {
+        boolean isDevProfile = java.util.Arrays.asList(environment.getActiveProfiles()).contains("local")
+                || java.util.Arrays.asList(environment.getActiveProfiles()).contains("test");
+        if (!isDevProfile && DEV_DEFAULT_SECRET.equals(rawSecret)) {
+            throw new IllegalStateException(
+                "Watch JWT secret is set to the well-known development default. "
+                + "Inject a strong secret via 'watch.jwt.secret' in non-dev environments.");
         }
     }
 

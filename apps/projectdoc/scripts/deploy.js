@@ -46,9 +46,9 @@ import awsConfig from '../src/config/aws-config.js';
 const STAGING_PROFILE = process.env.STAGING_PROFILE || 'batbern-staging';
 const MGMT_PROFILE    = process.env.AWS_PROFILE      || 'batbern-mgmt';
 
-// S3 path where CI uploads ZAP JSON reports
-const ZAP_SOURCE_BUCKET = 'batbern-content-staging';
-const ZAP_SOURCE_PREFIX = 'ci-reports/zap/';
+// S3 path where CI uploads ZAP JSON reports (configurable per environment via env vars)
+const ZAP_SOURCE_BUCKET = process.env.ZAP_SOURCE_BUCKET || 'batbern-content-staging';
+const ZAP_SOURCE_PREFIX = process.env.ZAP_SOURCE_PREFIX || 'ci-reports/zap/';
 
 class DocumentationDeployer {
   constructor() {

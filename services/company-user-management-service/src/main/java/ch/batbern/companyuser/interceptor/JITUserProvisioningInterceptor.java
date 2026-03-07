@@ -178,13 +178,8 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                 username = "user." + emailLocal;
             }
         } else {
-            // Last resort: generate timestamp-based username
-            username = "user." + System.currentTimeMillis();
-        }
-
-        // Ensure username matches required pattern
-        if (!username.matches("^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")) {
-            log.warn("Generated username '{}' doesn't match pattern, using fallback", username);
+            // Last resort: no name or email available — use 'user.unknown' base; uniqueness enforced below
+            log.warn("No first name, last name, or email available during JIT provisioning; using 'user.unknown' base");
             username = "user.unknown";
         }
 
