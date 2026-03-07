@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "ユーザー {{name}} を表示",
     "headers": {
-      "roles": "役割"
+      "roles": "役割",
+      "company": "会社"
     },
     "empty": "ユーザーが見つかりません"
   },

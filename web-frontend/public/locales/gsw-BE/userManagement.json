@@ -11,5 +11,11 @@
     "tabs": {
       "ariaLabel": "User detail tabs"
     }
+  },
+  "table": {
+    "headers": {
+      "company": "Firma",
+      "roles": "Rolle"
+    }
   }
 }

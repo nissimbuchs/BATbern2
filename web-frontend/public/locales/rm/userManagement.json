@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Mussar utilisader {{name}}",
     "headers": {
-      "roles": "Rollas"
+      "roles": "Rollas",
+      "company": "Interpresa"
     },
     "empty": "Nagin utilisader chattà"
   },

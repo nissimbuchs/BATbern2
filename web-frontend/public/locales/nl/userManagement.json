@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Gebruiker {{name}} bekijken",
     "headers": {
-      "roles": "Rollen"
+      "roles": "Rollen",
+      "company": "Bedrijf"
     },
     "empty": "Geen gebruikers gevonden"
   },
