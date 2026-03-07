@@ -187,7 +187,7 @@ jobs:
           SHOULD_BUILD="false"
 
           # Build if infrastructure changed (deploy will deploy all)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
             echo "✓ Infrastructure changes detected - building all services"
             SHOULD_BUILD="true"
           # Build if shared-kernel changed (deploy will deploy all)
@@ -562,7 +562,7 @@ jobs:
           CHANGED_SERVICES=""
 
           # If infrastructure or shared-kernel changed, analyze everything
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package|^shared-kernel/"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package|^shared-kernel/"; then
             echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"
             ANALYZE_ALL="true"
           fi
