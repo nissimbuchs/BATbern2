@@ -144,7 +144,7 @@ const HomePage = () => {
   const currentPhase =
     ('currentPublishedPhase' in event
       ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
-      : null) || 'AGENDA';
+      : null) ?? null;
 
   // Archive mode (Story 4.2 / 10.21): Show timetable + speakers; hide logistics/venue/registration
   // In archive mode always show speakers — event is fully published and done
@@ -194,10 +194,12 @@ const HomePage = () => {
         spotsRemaining={event.spotsRemaining}
       />
 
-      {/* Event Description Section (Story 10.23) — shown below hero, hidden when null/empty */}
-      <div className="container mx-auto px-4">
-        <EventDescriptionSection description={event?.description} />
-      </div>
+      {/* Event Description Section (Story 10.23) — shown below hero, hidden when null/empty or no phase published */}
+      {currentPhase !== null && (
+        <div className="container mx-auto px-4">
+          <EventDescriptionSection description={event?.description} />
+        </div>
+      )}
 
       {/* Event Content */}
       <div className="container mx-auto px-4">
