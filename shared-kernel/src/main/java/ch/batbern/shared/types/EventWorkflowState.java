@@ -1,9 +1,9 @@
 package ch.batbern.shared.types;
 
 /**
- * Event Workflow State Enum - Consolidated 9-State Model
+ * Event Workflow State Enum - 8-State Model
  *
- * Represents the 9-step event workflow state machine for the BATbern platform.
+ * Represents the 8-step event workflow state machine for the BATbern platform.
  * This enum tracks the complete lifecycle of an event from creation to archival.
  *
  * Workflow Phases:
@@ -11,24 +11,24 @@ package ch.batbern.shared.types;
  * 2. Topic Selection (TOPIC_SELECTION)
  * 3. Speaker Identification (SPEAKER_IDENTIFICATION) - Consolidated phase for speaker management
  * 4. Slot Assignment (SLOT_ASSIGNMENT)
- * 5. Agenda Publishing (AGENDA_PUBLISHED, AGENDA_FINALIZED)
+ * 5. Agenda Publishing (AGENDA_PUBLISHED)
  * 6. Event Execution (EVENT_LIVE, EVENT_COMPLETED)
  * 7. Archival (ARCHIVED)
  *
- * State Consolidation (from 16-state model):
+ * State Consolidation (from 16-state model via V30, then V82):
  * - SPEAKER_IDENTIFICATION consolidates: SPEAKER_BRAINSTORMING, SPEAKER_OUTREACH,
  *   SPEAKER_CONFIRMATION, CONTENT_COLLECTION, QUALITY_REVIEW, THRESHOLD_CHECK, OVERFLOW_MANAGEMENT
- * - AGENDA_FINALIZED consolidates: NEWSLETTER_SENT, EVENT_READY
  * - ARCHIVED consolidates: PARTNER_MEETING_COMPLETE
- * - EVENT_LIVE and EVENT_COMPLETED added for automated cron-based transitions
+ * - AGENDA_FINALIZED removed (V82): was a manual gate that blocked automated lifecycle;
+ *   scheduler now transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day
  *
  * Automatic Transitions:
  * - Topic selection → SPEAKER_IDENTIFICATION (via TopicService)
  * - Speaker added to pool → SPEAKER_IDENTIFICATION (via SpeakerAddedToPoolEventListener)
  * - Speaker accepted → SLOT_ASSIGNMENT (via SpeakerAcceptedEventListener)
  * - All sessions timed + phase ready → AGENDA_PUBLISHED (via SessionTimingAssignedEventListener)
- * - Event date reached → EVENT_LIVE (via cron job - future)
- * - Event date passed → EVENT_COMPLETED (via cron job - future)
+ * - Event date reached → EVENT_LIVE (via cron job, daily 00:01 Bern time)
+ * - Event date passed → EVENT_COMPLETED (via cron job, daily 23:59 Bern time)
  *
  * Enum Value Flow (per coding-standards.md):
  * - Java/JSON/API: SPEAKER_IDENTIFICATION (UPPER_CASE with underscores)
@@ -93,22 +93,9 @@ public enum EventWorkflowState {
      * Accepting registrations, agenda is public.
      *
      * Next States:
-     * - AGENDA_FINALIZED (manual, typically 14 days before event)
+     * - EVENT_LIVE (automatic when event date reached via cron, daily 00:01 Bern time)
      */
     AGENDA_PUBLISHED,
-
-    /**
-     * Agenda is finalized, no more changes allowed.
-     * Locks agenda for final preparation.
-     *
-     * Consolidates previous task-based states:
-     * - NEWSLETTER_SENT (newsletter distribution task)
-     * - EVENT_READY (event readiness task)
-     *
-     * Next States:
-     * - EVENT_LIVE (automatic when event date reached via cron)
-     */
-    AGENDA_FINALIZED,
 
     /**
      * Event is currently happening.

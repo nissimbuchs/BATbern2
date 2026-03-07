@@ -219,7 +219,6 @@
       "speaker_brainstorming": "Puhujien ideointi",
       "speaker_outreach": "Puhujien kontaktointi",
       "agenda_published": "Ohjelma julkaistu",
-      "agenda_finalized": "Ohjelma viimeistelty",
       "event_live": "Tapahtuma live",
       "post_event_wrap_up": "Tapahtuman jälkikokoelma",
       "archived": "Arkistoitu"
@@ -370,7 +369,6 @@
       "speaker_identification": "Puhujien tunnistaminen",
       "slot_assignment": "Paikkamäärittely",
       "agenda_published": "Ohjelma julkaistu",
-      "agenda_finalized": "Ohjelma viimeistelty",
       "event_live": "Tapahtuma live",
       "event_completed": "Tapahtuma suoritettu",
       "archived": "Arkistoitu"

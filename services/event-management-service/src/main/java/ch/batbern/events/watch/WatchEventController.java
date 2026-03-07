@@ -61,7 +61,6 @@ public class WatchEventController {
     /** Active workflow states for Watch organizer access (W2.3: AC#1, AC#4, AC#5) */
     private static final List<EventWorkflowState> ACTIVE_STATES = List.of(
             EventWorkflowState.AGENDA_PUBLISHED,
-            EventWorkflowState.AGENDA_FINALIZED,
             EventWorkflowState.EVENT_LIVE
     );
 
@@ -72,7 +71,7 @@ public class WatchEventController {
 
     /**
      * Returns active events assigned to the authenticated organizer.
-     * Events within ±3 days with AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE state.
+     * Events within ±3 days with AGENDA_PUBLISHED or EVENT_LIVE state.
      * AC#1: Full schedule sync; AC#4: No active event; AC#5: Event preview >1h away.
      */
     @GetMapping("/organizers/me/active-events")

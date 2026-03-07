@@ -167,28 +167,6 @@ class EventWorkflowStateMachineTest {
         verify(eventRepository, never()).save(any(Event.class));
     }
 
-    // Test 2.6: AC5 - should_throwValidationException_when_slotsNotAssigned_forAgendaFinalization
-    @Test
-    @DisplayName("Test 2.6: Should throw validation exception when slots not assigned for AGENDA_FINALIZED")
-    void should_throwValidationException_when_slotsNotAssigned_forAgendaFinalization() {
-        // Given: Event with unassigned slots
-        testEvent.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
-        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
-        // Mock session repository: 5 total sessions, 3 with timing assigned
-        when(sessionRepository.countByEventId(any(UUID.class))).thenReturn(5L);
-        when(sessionRepository.countByEventIdAndStartTimeNotNull(any(UUID.class))).thenReturn(3L);
-
-        // When/Then: Transition to AGENDA_FINALIZED should fail
-        assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_FINALIZED, organizerUsername)
-        )
-                .isInstanceOf(WorkflowValidationException.class)
-                .hasMessageContaining("not all sessions have timing assigned");
-
-        // Verify event was NOT saved
-        verify(eventRepository, never()).save(any(Event.class));
-    }
-
     // Test 2.7: AC4 - should_publishDomainEvent_when_successfulStateTransition_occurs
     @Test
     @DisplayName("Test 2.7: Should publish domain event on successful state transition")

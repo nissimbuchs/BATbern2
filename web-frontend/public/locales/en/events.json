@@ -217,7 +217,6 @@
       "speaker_brainstorming": "Speaker Brainstorming",
       "speaker_outreach": "Speaker Outreach",
       "agenda_published": "Agenda Published",
-      "agenda_finalized": "Agenda Finalized",
       "event_live": "Event Live",
       "post_event_wrap_up": "Post Event Wrap-Up",
       "archived": "Archived"
@@ -368,7 +367,6 @@
       "speaker_identification": "Speaker Identification",
       "slot_assignment": "Slot Assignment",
       "agenda_published": "Agenda Published",
-      "agenda_finalized": "Agenda Finalized",
       "event_live": "Event Live",
       "event_completed": "Event Completed",
       "archived": "Archived"

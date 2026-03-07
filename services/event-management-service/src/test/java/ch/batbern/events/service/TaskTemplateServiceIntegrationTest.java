@@ -96,7 +96,7 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
     void should_createCustomTemplate_when_validDataProvided() {
         // Given: Valid template data
         String templateName = "Photography Booking";
-        String triggerState = "agenda_finalized";
+        String triggerState = "agenda_published";
         String dueDateType = "relative_to_event";
         Integer offsetDays = -21; // 3 weeks before event
 

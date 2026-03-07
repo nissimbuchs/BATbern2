@@ -15,16 +15,15 @@ import java.util.Set;
  * Defines the state transition matrix that determines which transitions are valid.
  * The 9-step workflow follows a mostly sequential pattern with automatic and manual transitions.
  *
- * Valid Transitions (9-State Model):
+ * Valid Transitions (8-State Model):
  * 1. CREATED → TOPIC_SELECTION (manual)
  * 2. CREATED → SPEAKER_IDENTIFICATION (automatic when speaker added, skip TOPIC_SELECTION)
  * 3. TOPIC_SELECTION → SPEAKER_IDENTIFICATION (automatic when topic selected)
  * 4. SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT (automatic when speaker accepted)
  * 5. SLOT_ASSIGNMENT → AGENDA_PUBLISHED (automatic when all sessions timed + phase ready)
- * 6. AGENDA_PUBLISHED → AGENDA_FINALIZED (manual, typically 14 days before event)
- * 7. AGENDA_FINALIZED → EVENT_LIVE (automatic via cron when event date reached)
- * 8. EVENT_LIVE → EVENT_COMPLETED (automatic via cron when event date passed)
- * 9. EVENT_COMPLETED → ARCHIVED (manual archival)
+ * 6. AGENDA_PUBLISHED → EVENT_LIVE (automatic via cron when event date reached, daily 00:01 Bern time)
+ * 7. EVENT_LIVE → EVENT_COMPLETED (automatic via cron when event date passed, daily 23:59 Bern time)
+ * 8. EVENT_COMPLETED → ARCHIVED (manual archival)
  *
  * Special Rules:
  * - Idempotent transitions (same state to same state) are allowed
@@ -36,8 +35,8 @@ import java.util.Set;
  * - SPEAKER_IDENTIFICATION consolidates 7 previous states: SPEAKER_BRAINSTORMING,
  *   SPEAKER_OUTREACH, SPEAKER_CONFIRMATION, CONTENT_COLLECTION, QUALITY_REVIEW,
  *   THRESHOLD_CHECK, OVERFLOW_MANAGEMENT
- * - AGENDA_FINALIZED consolidates: NEWSLETTER_SENT, EVENT_READY
  * - ARCHIVED consolidates: PARTNER_MEETING_COMPLETE
+ * - AGENDA_FINALIZED removed (V82): scheduler now transitions AGENDA_PUBLISHED directly to EVENT_LIVE
  *
  * Story 5.7: Slot Assignment & Progressive Publishing - Workflow Reconciliation
  *
@@ -71,11 +70,7 @@ public class WorkflowTransitionValidator {
             )),
             Map.entry(EventWorkflowState.AGENDA_PUBLISHED, EnumSet.of(
                     EventWorkflowState.AGENDA_PUBLISHED,  // Idempotent
-                    EventWorkflowState.AGENDA_FINALIZED   // Manual transition (typically 14 days before event)
-            )),
-            Map.entry(EventWorkflowState.AGENDA_FINALIZED, EnumSet.of(
-                    EventWorkflowState.AGENDA_FINALIZED,  // Idempotent
-                    EventWorkflowState.EVENT_LIVE         // Auto-transition via cron when event date reached
+                    EventWorkflowState.EVENT_LIVE         // Auto-transition via cron when event date reached (daily 00:01 Bern time)
             )),
             Map.entry(EventWorkflowState.EVENT_LIVE, EnumSet.of(
                     EventWorkflowState.EVENT_LIVE,        // Idempotent

@@ -217,7 +217,6 @@
       "speaker_brainstorming": "Referenten-Brainstorming",
       "speaker_outreach": "Referentenansprache",
       "agenda_published": "Agenda veröffentlicht",
-      "agenda_finalized": "Agenda abgeschlossen",
       "event_live": "Veranstaltung live",
       "post_event_wrap_up": "Nachbereitung",
       "archived": "Archiviert"
@@ -368,7 +367,6 @@
       "speaker_identification": "Referenten-Identifikation",
       "slot_assignment": "Slot-Zuweisung",
       "agenda_published": "Agenda veröffentlicht",
-      "agenda_finalized": "Agenda finalisiert",
       "event_live": "Veranstaltung läuft",
       "event_completed": "Veranstaltung abgeschlossen",
       "archived": "Archiviert"

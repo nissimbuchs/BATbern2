@@ -11,22 +11,22 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test for EventWorkflowState enum (9-state model)
- * Tests the consolidated 9-state event workflow state machine enum.
+ * Test for EventWorkflowState enum (8-state model)
+ * Tests the consolidated 8-state event workflow state machine enum.
+ * V82: AGENDA_FINALIZED removed — scheduler drives AGENDA_PUBLISHED → EVENT_LIVE directly.
  */
 class EventWorkflowStateTest {
 
     @Test
-    @DisplayName("should_containAllNineStates_when_EventWorkflowStateEnum_verified")
-    void should_containAllNineStates_when_EventWorkflowStateEnum_verified() {
-        // Given: Expected 9 workflow states as defined in workflow systems reconciliation plan
+    @DisplayName("should_containAllEightStates_when_EventWorkflowStateEnum_verified")
+    void should_containAllEightStates_when_EventWorkflowStateEnum_verified() {
+        // Given: Expected 8 workflow states (V82: AGENDA_FINALIZED removed)
         List<String> expectedStates = Arrays.asList(
             "CREATED",
             "TOPIC_SELECTION",
             "SPEAKER_IDENTIFICATION",
             "SLOT_ASSIGNMENT",
             "AGENDA_PUBLISHED",
-            "AGENDA_FINALIZED",
             "EVENT_LIVE",
             "EVENT_COMPLETED",
             "ARCHIVED"
@@ -38,8 +38,8 @@ class EventWorkflowStateTest {
             .map(Enum::name)
             .collect(Collectors.toList());
 
-        // Then: All 9 states should exist
-        assertThat(actualStates).hasSize(9);
+        // Then: All 8 states should exist
+        assertThat(actualStates).hasSize(8);
         assertThat(actualStateNames).containsExactlyInAnyOrderElementsOf(expectedStates);
     }
 
@@ -83,16 +83,15 @@ class EventWorkflowStateTest {
     @Test
     @DisplayName("should_containAllWorkflowPhases_when_enumeratingStates")
     void should_containAllWorkflowPhases_when_enumeratingStates() {
-        // Given: Workflow phases from 9-state model
+        // Given: Workflow phases from 8-state model (V82)
         // Phase 1: Event Creation (CREATED)
         // Phase 2: Topic Selection (TOPIC_SELECTION)
         // Phase 3: Speaker Identification (SPEAKER_IDENTIFICATION)
         // Phase 4: Slot Assignment (SLOT_ASSIGNMENT)
         // Phase 5: Agenda Published (AGENDA_PUBLISHED)
-        // Phase 6: Agenda Finalized (AGENDA_FINALIZED)
-        // Phase 7: Event Live (EVENT_LIVE)
-        // Phase 8: Event Completed (EVENT_COMPLETED)
-        // Phase 9: Archived (ARCHIVED)
+        // Phase 6: Event Live (EVENT_LIVE) — auto-transition by scheduler on event day
+        // Phase 7: Event Completed (EVENT_COMPLETED)
+        // Phase 8: Archived (ARCHIVED)
 
         // When: Get all states
         EventWorkflowState[] states = EventWorkflowState.values();
@@ -102,13 +101,12 @@ class EventWorkflowStateTest {
             .map(Enum::name)
             .collect(Collectors.toList());
 
-        // All 9 states
+        // All 8 states
         assertThat(stateNames).contains("CREATED");
         assertThat(stateNames).contains("TOPIC_SELECTION");
         assertThat(stateNames).contains("SPEAKER_IDENTIFICATION");
         assertThat(stateNames).contains("SLOT_ASSIGNMENT");
         assertThat(stateNames).contains("AGENDA_PUBLISHED");
-        assertThat(stateNames).contains("AGENDA_FINALIZED");
         assertThat(stateNames).contains("EVENT_LIVE");
         assertThat(stateNames).contains("EVENT_COMPLETED");
         assertThat(stateNames).contains("ARCHIVED");

@@ -16,7 +16,7 @@ import jakarta.persistence.Converter;
  * Example conversions:
  * - CREATED ↔ 'created'
  * - SPEAKER_OUTREACH ↔ 'speaker_outreach'
- * - AGENDA_FINALIZED ↔ 'agenda_finalized'
+ * - AGENDA_PUBLISHED ↔ 'agenda_published'
  *
  * Story 5.1a: Workflow State Machine Foundation - AC8
  *

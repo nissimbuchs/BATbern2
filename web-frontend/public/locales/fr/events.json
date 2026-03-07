@@ -219,7 +219,6 @@
       "speaker_brainstorming": "Brainstorming des intervenants",
       "speaker_outreach": "Démarchage des intervenants",
       "agenda_published": "Agenda publié",
-      "agenda_finalized": "Agenda finalisé",
       "event_live": "Événement en direct",
       "post_event_wrap_up": "Bilan post-événement",
       "archived": "Archivé"
@@ -370,7 +369,6 @@
       "speaker_identification": "Identification des intervenants",
       "slot_assignment": "Attribution des créneaux",
       "agenda_published": "Agenda publié",
-      "agenda_finalized": "Agenda finalisé",
       "event_live": "Événement en direct",
       "event_completed": "Événement terminé",
       "archived": "Archivé"

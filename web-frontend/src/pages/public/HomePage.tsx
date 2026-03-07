@@ -42,7 +42,7 @@ import { RegistrationStatusBanner } from '@/components/public/RegistrationStatus
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
 
-const DEREGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'AGENDA_FINALIZED', 'EVENT_LIVE'];
+const DEREGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
 const HomePage = () => {
   const { t } = useTranslation('events');
@@ -87,7 +87,7 @@ const HomePage = () => {
 
   // AC2/AC4: Registration status banner (Story 10.10)
   // Hook returns undefined immediately for unauthenticated users — no API call made (AC8)
-  const BANNER_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'AGENDA_FINALIZED', 'EVENT_LIVE'];
+  const BANNER_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
     !isArchiveMode &&
       event &&
@@ -203,7 +203,7 @@ const HomePage = () => {
       <div className="container mx-auto px-4">
         {/* Registration Status Banner (Story 10.10) — AC2, AC4
             Shown below hero when authenticated user has a registration for the current event.
-            Only for events in AGENDA_PUBLISHED / AGENDA_FINALIZED / EVENT_LIVE states. */}
+            Only for events in AGENDA_PUBLISHED / EVENT_LIVE states. */}
         {!isArchiveMode && (
           <RegistrationStatusBanner
             status={myRegistration?.status ?? null}
