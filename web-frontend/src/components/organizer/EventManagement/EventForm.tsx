@@ -553,11 +553,29 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           overrideReason || undefined
         );
 
-        // Invalidate React Query caches to reflect workflow state change in UI
-        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
-        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
-        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
-        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
+        // Immediately update all cached event objects with the new workflowState so the
+        // UI reflects the change without waiting for a background refetch.
+        queryClient.setQueriesData(
+          { queryKey: ['event', event.eventCode] },
+          (old: Event | undefined) => (old ? { ...old, workflowState: newWorkflowState } : old)
+        );
+        queryClient.setQueriesData({ queryKey: ['events'] }, (old: unknown) => {
+          if (!old || typeof old !== 'object') return old;
+          const list = old as { data?: Event[] };
+          if (!list.data) return old;
+          return {
+            ...list,
+            data: list.data.map((e: Event) =>
+              e.eventCode === event.eventCode ? { ...e, workflowState: newWorkflowState } : e
+            ),
+          };
+        });
+
+        // Invalidate to trigger background refetches for fully fresh data
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] });
+        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] });
+        queryClient.invalidateQueries({ queryKey: ['events', 'current'] });
       }
 
       // Create tasks from selected templates (Story 5.5 AC21)

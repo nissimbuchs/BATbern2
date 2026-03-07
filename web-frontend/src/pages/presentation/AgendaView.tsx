@@ -43,21 +43,15 @@ export function AgendaView({
   const completedSet = new Set(completedSessionSlugs);
 
   // Sort sessions and filter to visible ones (speaker + break, no moderation/networking)
+  // Exclude sessions without a startTime — they are unscheduled placeholders
   const visible = [...sessions]
     .filter(
       (s) =>
+        s.startTime &&
         s.sessionType &&
         (SPEAKER_SESSION_TYPES.has(s.sessionType) || BREAK_SESSION_TYPES.has(s.sessionType))
     )
-    .sort((a, b) => {
-      if (!a.startTime) {
-        return 1;
-      }
-      if (!b.startTime) {
-        return -1;
-      }
-      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-    });
+    .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
 
   return (
     <div className={layout === 'center' ? styles.center : styles.sidebar}>
