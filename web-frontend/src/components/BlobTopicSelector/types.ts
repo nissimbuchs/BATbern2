@@ -65,6 +65,17 @@ export interface AbsorbedLogo {
   orbitAngle: number;
   orbitRadius: number;
   orbitSpeed: number;
+  /** Original ghost type this green came from — used to determine orbit rendering and respawn type */
+  sourceGhostType: 'ghost-partner' | 'ghost-backlog' | 'ghost-trend';
+  /** Minimal snapshot of the original ghost node — used to respawn it on blue deletion */
+  ghostSnapshot: {
+    name: string;
+    r: number;
+    topicCode?: string;
+    companyName?: string;
+    logoUrl?: string;
+    cluster?: string;
+  };
 }
 
 export interface AbsorbedRedStar {
@@ -130,6 +141,17 @@ export interface GreenBlobNode extends d3.SimulationNodeDatum {
    * Used to show the attraction reason in the topic tree panel.
    */
   topicsByCluster: Record<string, string[]>;
+  /** Original ghost type this green was dynamically converted from */
+  sourceGhostType: 'ghost-partner' | 'ghost-backlog' | 'ghost-trend';
+  /** Full ghost data snapshot for respawning on blue deletion */
+  originalGhostSnapshot: {
+    name: string;
+    r: number;
+    topicCode?: string;
+    companyName?: string;
+    logoUrl?: string;
+    cluster?: string;
+  };
 }
 
 export interface GhostNode extends d3.SimulationNodeDatum {
@@ -145,6 +167,10 @@ export interface GhostNode extends d3.SimulationNodeDatum {
   topicCode?: string;
   /** Present only for ghost-partner nodes — the company that submitted this topic. */
   companyName?: string;
+  /** Company logo URL — present on ghost-partner nodes */
+  logoUrl?: string;
+  /** BatbernCluster this ghost topic belongs to — used for matching to blue blobs */
+  cluster?: string;
 }
 
 export interface RedStarNode extends d3.SimulationNodeDatum {
