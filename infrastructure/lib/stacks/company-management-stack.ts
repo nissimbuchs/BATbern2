@@ -106,7 +106,10 @@ export class CompanyManagementStack extends cdk.Stack {
 
     this.service = domainService.service;
 
-    // Grant execution role read access to Watch JWT secret
+    // Grant execution role read access to Watch JWT secret.
+    // secretsKey uses trustAccountIdentities:true so grantRead() only adds an IAM
+    // policy on this role — it does NOT modify the KMS key policy in SecretsStack,
+    // avoiding the cyclic cross-stack dependency.
     if (props.watchJwtSecret) {
       props.watchJwtSecret.grantRead(domainService.service.taskDefinition.executionRole!);
     }

@@ -51,11 +51,16 @@ export class SecretsStack extends cdk.Stack {
       },
     });
 
-    // Watch JWT signing secret for Apple Watch organizer authentication
+    // Watch JWT signing secret for Apple Watch organizer authentication.
+    // Intentionally uses the default AWS-managed aws/secretsmanager key (no encryptionKey).
+    // Using the customer-managed secretsKey causes a CDK cyclic cross-stack dependency:
+    // secret.grantRead() wraps the grantee in a ViaServicePrincipal which cannot receive
+    // an IAM policy, so CDK falls back to modifying the KMS key policy in SecretsStack
+    // with the ECS execution role ARN from CompanyManagementStack — creating a back-reference.
+    // The AWS-managed key is sufficient here; HMAC-SHA256 strength comes from the secret value.
     this.watchJwtSecret = new secretsmanager.Secret(this, 'WatchJWTSecret', {
       secretName: `batbern/${props.config.envName}/watch/jwt-secret`,
       description: 'Watch JWT signing secret for Apple Watch organizer authentication',
-      encryptionKey: this.secretsKey,
       generateSecretString: {
         excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
         passwordLength: 64,
