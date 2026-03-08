@@ -4,6 +4,7 @@
  * Coverage for:
  * - fetchAll: GET /dev/emails
  * - clearAll: DELETE /dev/emails
+ * - replyToEmail: POST /dev/emails/{id}/reply
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -80,6 +81,35 @@ describe('devEmailService', () => {
       mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
       await expect(devEmailService.clearAll()).rejects.toThrow('Failed to clear inbox: 500');
+    });
+  });
+
+  describe('replyToEmail', () => {
+    it('should POST to /dev/emails/{id}/reply with the reply body', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        text: async () => 'Reply routed: CANCEL',
+      });
+
+      const result = await devEmailService.replyToEmail('email-1', 'CANCEL');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/dev/emails/email-1/reply'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ replyBody: 'CANCEL' }),
+        })
+      );
+      expect(result).toBe('Reply routed: CANCEL');
+    });
+
+    it('should throw on non-ok response', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 404 });
+
+      await expect(devEmailService.replyToEmail('unknown-id', 'CANCEL')).rejects.toThrow(
+        'Reply failed: 404'
+      );
     });
   });
 });

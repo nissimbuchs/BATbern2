@@ -2,21 +2,24 @@
  * Dev-only email inbox page.
  * Accessible at http://localhost:8100/dev/emails (local development only).
  *
- * Two-panel layout: left = email list, right = header + HTML preview.
+ * Two-panel layout: left = email list, right = header + HTML preview + reply simulation.
  * Talks directly to EMS /dev/emails (no auth needed, @Profile("local") on server).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   AppBar,
   Box,
   Button,
+  ButtonGroup,
   Chip,
   Divider,
   IconButton,
   List,
   ListItemButton,
   ListItemText,
+  TextField,
   Toolbar,
   Tooltip,
   Typography,
@@ -24,6 +27,7 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import EmailIcon from '@mui/icons-material/Email';
+import ReplyIcon from '@mui/icons-material/Reply';
 import { CapturedEmail, devEmailService } from '@/services/devEmailService';
 
 function formatTime(isoString: string): string {
@@ -49,6 +53,10 @@ export default function DevEmailInboxPage() {
   const [selected, setSelected] = useState<CapturedEmail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [replyBody, setReplyBody] = useState('');
+  const [replySending, setReplySending] = useState(false);
+  const [replyResult, setReplyResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const replyTextRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +88,28 @@ export default function DevEmailInboxPage() {
     } catch (e) {
       setError(`Clear failed: ${e}`);
     }
+  };
+
+  const handleReply = async () => {
+    if (!selected || !replyBody.trim()) return;
+    setReplySending(true);
+    setReplyResult(null);
+    try {
+      const msg = await devEmailService.replyToEmail(selected.id, replyBody.trim());
+      setReplyResult({ ok: true, message: msg });
+      // Refresh inbox so the resulting confirmation email appears
+      void load();
+    } catch (e) {
+      setReplyResult({ ok: false, message: String(e) });
+    } finally {
+      setReplySending(false);
+    }
+  };
+
+  const fillReply = (text: string) => {
+    setReplyBody(text);
+    setReplyResult(null);
+    replyTextRef.current?.focus();
   };
 
   return (
@@ -219,13 +249,71 @@ export default function DevEmailInboxPage() {
               </Box>
 
               {/* HTML preview */}
-              <Box sx={{ flex: 1, overflow: 'hidden' }}>
+              <Box sx={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
                 <iframe
                   srcDoc={selected.htmlBody}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Email preview"
                   sandbox="allow-same-origin"
                 />
+              </Box>
+
+              {/* Simulate Reply panel */}
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  borderTop: 1,
+                  borderColor: 'divider',
+                  p: 2,
+                  bgcolor: 'grey.50',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <ReplyIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography variant="caption" fontWeight={600} color="text.secondary">
+                    Simulate Reply
+                  </Typography>
+                  <ButtonGroup size="small" variant="outlined" sx={{ ml: 'auto' }}>
+                    <Button onClick={() => fillReply('UNSUBSCRIBE')}>UNSUBSCRIBE</Button>
+                    <Button onClick={() => fillReply('CANCEL')}>CANCEL</Button>
+                    <Button onClick={() => fillReply('ACCEPT')}>ACCEPT</Button>
+                  </ButtonGroup>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    inputRef={replyTextRef}
+                    value={replyBody}
+                    onChange={(e) => {
+                      setReplyBody(e.target.value);
+                      setReplyResult(null);
+                    }}
+                    placeholder="Reply body..."
+                    size="small"
+                    fullWidth
+                    inputProps={{ style: { fontFamily: 'monospace' } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleReply();
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={replySending || !replyBody.trim()}
+                    onClick={() => void handleReply()}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    {replySending ? 'Sending…' : 'Send Reply'}
+                  </Button>
+                </Box>
+                {replyResult && (
+                  <Alert
+                    severity={replyResult.ok ? 'success' : 'error'}
+                    sx={{ mt: 1, py: 0 }}
+                    onClose={() => setReplyResult(null)}
+                  >
+                    {replyResult.message}
+                  </Alert>
+                )}
               </Box>
             </>
           ) : (

@@ -22,6 +22,7 @@ import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
 import { BastionStack } from '../lib/stacks/bastion-stack';
 import { AutoShutdownStack } from '../lib/stacks/auto-shutdown-stack';
+import { InboundEmailStack } from '../lib/stacks/inbound-email-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -233,6 +234,17 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   });
   clusterStack.addDependency(networkStack);
 
+  // 10a-i. Inbound Email Stack (Story 10.17) — eu-west-1 only (SES inbound not in eu-central-1)
+  // Created BEFORE EMS so that queue URL and bucket name can be passed as env vars to EMS.
+  const inboundEmailStack = new InboundEmailStack(app, `${stackPrefix}-InboundEmail`, {
+    config,
+    env: { account: env.account, region: 'eu-west-1' }, // SES inbound requires eu-west-1
+    crossRegionReferences: true, // required: SQS in eu-west-1 referenced by EMS in eu-central-1
+    description: `BATbern Inbound Email Pipeline - ${config.envName}`,
+    tags: config.tags,
+  });
+  inboundEmailStack.addDependency(sesStack);
+
   // 10a. Event Management Service
   eventManagementStack = new EventManagementStack(app, `${stackPrefix}-EventManagement`, {
     config,
@@ -248,9 +260,13 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     alarmTopic: monitoringStack.alarmTopic,
     // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
+    // Story 10.17: Inbound email SQS queue URL and S3 bucket name (cross-region: eu-west-1)
+    inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
+    inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
+    crossRegionReferences: true, // Required to reference InboundEmailStack resources from eu-west-1
   });
   eventManagementStack.addDependency(clusterStack);
   eventManagementStack.addDependency(databaseStack);
@@ -258,6 +274,15 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(cognitoStack);
   eventManagementStack.addDependency(storageStack);
   eventManagementStack.addDependency(monitoringStack);
+  eventManagementStack.addDependency(inboundEmailStack);
+
+  // Grant EMS task role permissions on inbound email resources (Story 10.17)
+  inboundEmailStack.inboundQueue.grantConsumeMessages(
+    eventManagementStack.service.taskDefinition.taskRole,
+  );
+  inboundEmailStack.inboundBucket.grantRead(
+    eventManagementStack.service.taskDefinition.taskRole,
+  );
 
   // 10b. Speaker Coordination Service
   speakerCoordinationStack = new SpeakerCoordinationStack(app, `${stackPrefix}-SpeakerCoordination`, {
@@ -340,6 +365,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     cloudFrontDistribution: storageStack.distribution,
     eventBus: eventBusStack.eventBus,
     alarmTopic: monitoringStack.alarmTopic,
+    watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
@@ -351,6 +377,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(storageStack);
   companyManagementStack.addDependency(eventBusStack);
   companyManagementStack.addDependency(monitoringStack);
+  companyManagementStack.addDependency(secretsStack);
 
   // 10f. API Gateway Service (Spring Boot)
   // Uses Service Connect DNS names for microservice communication (no ALB URLs needed)

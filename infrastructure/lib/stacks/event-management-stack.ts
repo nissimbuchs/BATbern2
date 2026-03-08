@@ -27,6 +27,10 @@ export interface EventManagementStackProps extends cdk.StackProps {
   alarmTopic?: sns.ITopic;
   /** When true, injects AI_ENABLED=true and the OpenAI key into the container (Story 10.16). */
   aiEnabled?: boolean;
+  /** Story 10.17: SQS queue URL for inbound email processing (in eu-west-1). */
+  inboundEmailQueueUrl?: string;
+  /** Story 10.17: S3 bucket name for raw inbound emails. */
+  inboundEmailBucketName?: string;
 }
 
 /**
@@ -86,6 +90,14 @@ export class EventManagementStack extends cdk.Stack {
           }),
           // Story 10.16: AI content generation feature flag
           ...(props.aiEnabled && { AI_ENABLED: 'true' }),
+          // Story 10.17: Inbound email processing via SQS (queue in eu-west-1)
+          ...(props.inboundEmailQueueUrl && {
+            AWS_INBOUND_EMAIL_QUEUE_URL: props.inboundEmailQueueUrl,
+            AWS_INBOUND_EMAIL_ENABLED: 'true',
+          }),
+          ...(props.inboundEmailBucketName && {
+            AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
+          }),
         },
         // Story 10.16: Inject OpenAI API key from Secrets Manager
         ...(openAiSecret && {

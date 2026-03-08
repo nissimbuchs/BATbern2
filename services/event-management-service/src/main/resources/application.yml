@@ -64,6 +64,9 @@ aws:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
+  inbound-email:
+    queue-url: ${AWS_INBOUND_EMAIL_QUEUE_URL:}
+    enabled: ${AWS_INBOUND_EMAIL_ENABLED:false}
 
 # User Service Configuration (API-based user data access)
 # Uses ECS Service Connect DNS for service-to-service communication in AWS
