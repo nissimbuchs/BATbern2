@@ -21,6 +21,7 @@ export interface SecretsStackProps extends cdk.StackProps {
 export class SecretsStack extends cdk.Stack {
   // Redis secret removed - Redis disabled for cost optimization
   public readonly jwtSecret: secretsmanager.Secret;
+  public readonly watchJwtSecret: secretsmanager.Secret;
   public readonly secretsKey: kms.Key;
 
   constructor(scope: Construct, id: string, props: SecretsStackProps) {
@@ -42,6 +43,18 @@ export class SecretsStack extends cdk.Stack {
     this.jwtSecret = new secretsmanager.Secret(this, 'JWTSecret', {
       secretName: `batbern/${props.config.envName}/jwt/signing-key`,
       description: 'JWT token signing secret',
+      encryptionKey: this.secretsKey,
+      generateSecretString: {
+        excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
+        passwordLength: 64,
+        excludePunctuation: true,
+      },
+    });
+
+    // Watch JWT signing secret for Apple Watch organizer authentication
+    this.watchJwtSecret = new secretsmanager.Secret(this, 'WatchJWTSecret', {
+      secretName: `batbern/${props.config.envName}/watch/jwt-secret`,
+      description: 'Watch JWT signing secret for Apple Watch organizer authentication',
       encryptionKey: this.secretsKey,
       generateSecretString: {
         excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',

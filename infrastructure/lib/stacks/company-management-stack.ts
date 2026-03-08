@@ -28,6 +28,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   cloudFrontDistribution?: cloudfront.IDistribution;
   eventBus?: events.IEventBus;
   alarmTopic?: sns.ITopic;
+  watchJwtSecret?: secretsmanager.ISecret;
 }
 
 /**
@@ -76,6 +77,12 @@ export class CompanyManagementStack extends cdk.Stack {
       }),
     };
 
+    // Secrets from Secrets Manager
+    const additionalSecrets: Record<string, ecs.Secret> = {};
+    if (props.watchJwtSecret) {
+      additionalSecrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
+    }
+
     // Create domain service using reusable helper function
     const domainService = createDomainService(this, {
       config: props.config,
@@ -86,6 +93,7 @@ export class CompanyManagementStack extends cdk.Stack {
         cpu: 256,
         memoryLimitMiB: 1024, // Increased from 512 MB (Priority 4: ECS Right-Sizing - was at 93-99% utilization)
         additionalEnvironment,
+        additionalSecrets,
       },
       cluster: props.cluster,
       vpc: props.vpc,
@@ -97,6 +105,11 @@ export class CompanyManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Grant execution role read access to Watch JWT secret
+    if (props.watchJwtSecret) {
+      props.watchJwtSecret.grantRead(domainService.service.taskDefinition.executionRole!);
+    }
 
     // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
     if (props.alarmTopic) {
