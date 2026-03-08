@@ -11,7 +11,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.events.service.EventWorkflowStateMachine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
