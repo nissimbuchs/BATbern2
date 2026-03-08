@@ -158,9 +158,24 @@ open http://localhost:8002/dev/emails/<id>/preview
 # Or use the React inbox UI (two-panel, select email to preview HTML)
 open http://localhost:8100/dev/emails
 
+# Simulate an inbound reply (triggers InboundEmailRouter — see reply body keywords below)
+curl -X POST http://localhost:8002/dev/emails/<id>/reply \
+  -H "Content-Type: application/json" \
+  -d '{"replyBody": "CANCEL"}'
+
 # Clear all captured emails
 curl -X DELETE http://localhost:8002/dev/emails
 ```
+
+**Reply simulation** (Story 10.17): The React inbox UI includes a "Simulate Reply" panel below each email preview. Use the quick-fill buttons or type freely:
+
+| Reply body | Action |
+|---|---|
+| `UNSUBSCRIBE` / `abmelden` / `désinscription` | Unsubscribes sender from newsletter |
+| `CANCEL` / `deregister` / `absagen` + event code in subject | Cancels event registration |
+| `ACCEPT` / `bestätigen` / `confirmer` / `bevestigen` + event code in subject | Sends attendance confirmation |
+
+The resulting confirmation email will appear in the inbox automatically after a successful reply.
 
 **How it works:** `EmailService` (shared-kernel) detects `sesClient == null` on the `local` Spring profile and routes emails to `LocalEmailCapture` (in-memory ring buffer, max 200). `DevEmailController` (`@Profile("local")`) exposes them at `/dev/emails`. The endpoint is not registered in staging/production.
 
