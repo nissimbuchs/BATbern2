@@ -33,19 +33,20 @@ public class InboundEmailConfirmationEmailService {
      * Send unsubscribe confirmation email to the given address.
      * Best-effort: failures are logged, not thrown.
      *
-     * @param email recipient address
+     * @param email  recipient address
+     * @param locale BCP 47 locale code detected from reply keyword (e.g. "de", "fr", "en")
      */
-    public void sendUnsubscribeConfirmation(String email) {
+    public void sendUnsubscribeConfirmation(String email, String locale) {
         try {
-            String locale = "en"; // default; could be resolved from subscriber record in future
-            String html = loadHtml("unsubscribe-confirmation", locale,
-                    "email-templates/unsubscribe-confirmation-" + locale + ".html");
+            String resolvedLocale = resolveLocale(locale, "unsubscribe-confirmation");
+            String html = loadHtml("unsubscribe-confirmation", resolvedLocale,
+                    "email-templates/unsubscribe-confirmation-" + resolvedLocale + ".html");
             if (html.isBlank()) {
                 log.warn("unsubscribe-confirmation template not found — skipping confirmation email to: {}***",
                         email.substring(0, Math.min(5, email.length())));
                 return;
             }
-            String subject = locale.equals("de")
+            String subject = resolvedLocale.equals("de")
                     ? "Newsletter Abmeldung bestätigt"
                     : "Newsletter Unsubscribe Confirmed";
             emailService.sendHtmlEmail(email, subject, html);
@@ -61,19 +62,20 @@ public class InboundEmailConfirmationEmailService {
      *
      * @param email     recipient address
      * @param eventCode event code (e.g. "BATbern42")
+     * @param locale    BCP 47 locale code detected from reply keyword
      */
-    public void sendCancelConfirmation(String email, String eventCode) {
+    public void sendCancelConfirmation(String email, String eventCode, String locale) {
         try {
-            String locale = "en"; // default
-            String html = loadHtml("cancel-confirmation", locale,
-                    "email-templates/cancel-confirmation-" + locale + ".html");
+            String resolvedLocale = resolveLocale(locale, "cancel-confirmation");
+            String html = loadHtml("cancel-confirmation", resolvedLocale,
+                    "email-templates/cancel-confirmation-" + resolvedLocale + ".html");
             if (html.isBlank()) {
                 log.warn("cancel-confirmation template not found — skipping confirmation email to: {}***",
                         email.substring(0, Math.min(5, email.length())));
                 return;
             }
             html = emailService.replaceVariables(html, Map.of("eventCode", eventCode));
-            String subject = locale.equals("de")
+            String subject = resolvedLocale.equals("de")
                     ? "Abmeldung für " + eventCode + " bestätigt"
                     : "Deregistration for " + eventCode + " Confirmed";
             emailService.sendHtmlEmail(email, subject, html);
@@ -84,31 +86,17 @@ public class InboundEmailConfirmationEmailService {
     }
 
     /**
-     * Send attendance acceptance confirmation email to the given address.
-     * Best-effort: failures are logged, not thrown.
-     *
-     * @param email     recipient address
-     * @param eventCode event code (e.g. "BATbern42")
+     * Resolves the locale to use for the given template key.
+     * Falls back to "en" if the requested locale has no template on the classpath.
      */
-    public void sendAcceptConfirmation(String email, String eventCode) {
-        try {
-            String locale = "en"; // default
-            String html = loadHtml("accept-confirmation", locale,
-                    "email-templates/accept-confirmation-" + locale + ".html");
-            if (html.isBlank()) {
-                log.warn("accept-confirmation template not found — skipping confirmation email to: {}***",
-                        email.substring(0, Math.min(5, email.length())));
-                return;
-            }
-            html = emailService.replaceVariables(html, Map.of("eventCode", eventCode));
-            String subject = locale.equals("de")
-                    ? "Teilnahme an " + eventCode + " bestätigt"
-                    : "Attendance at " + eventCode + " Confirmed";
-            emailService.sendHtmlEmail(email, subject, html);
-        } catch (Exception e) {
-            log.warn("Failed to send accept confirmation to: {}*** — {}",
-                    email.substring(0, Math.min(5, email.length())), e.getMessage());
+    private String resolveLocale(String requestedLocale, String templateKey) {
+        if ("en".equals(requestedLocale)) {
+            return "en";
         }
+        // Check if a classpath template exists for the requested locale; fall back to "en" if not
+        ClassPathResource resource = new ClassPathResource(
+                "email-templates/" + templateKey + "-" + requestedLocale + ".html");
+        return resource.exists() ? requestedLocale : "en";
     }
 
     private String loadHtml(String templateKey, String locale, String classpathPath) {

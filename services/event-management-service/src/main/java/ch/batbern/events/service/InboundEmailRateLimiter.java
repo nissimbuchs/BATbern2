@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Rate limiter for inbound email processing (Story 10.17 — AC6).
  *
  * Prevents abuse by discarding excess messages from the same sender.
- * Limit: 10 messages per sender address per hour (sliding window via Caffeine expiry).
+ * Limit: 10 messages per sender address per hour (fixed window — counter resets 1 hour after first message).
  *
  * Caffeine is already in the project ({@code com.github.ben-manes.caffeine:caffeine:3.2.3}).
  */

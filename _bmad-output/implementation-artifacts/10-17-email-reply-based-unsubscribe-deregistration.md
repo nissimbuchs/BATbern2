@@ -1,6 +1,6 @@
 # Story 10.17: Email Reply-based Unsubscribe, Deregistration & Acceptance (Inbound Email Handler)
 
-Status: review
+Status: done
 
 <!-- Prerequisites: Story 10.12 (DeregistrationService.deregisterByEmail()) and Story 10.7 (NewsletterSubscriberService) MUST be done first -->
 
@@ -512,3 +512,13 @@ claude-sonnet-4-6
 - `web-frontend/src/services/devEmailService.ts` — added `replyToEmail()` method
 - `web-frontend/src/services/devEmailService.test.ts` — added 2 tests for `replyToEmail()`
 - `web-frontend/src/pages/dev/DevEmailInboxPage.tsx` — added Simulate Reply panel (quick-fill buttons + textarea + auto-refresh)
+
+**Code Review fixes (2026-03-08):**
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRouter.java` — added `ä` to normalization charset; locale detection from keyword; removed dead split-word checks
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailConfirmationEmailService.java` — added `locale` param to all 3 send methods; `resolveLocale()` with classpath fallback to "en"
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailListenerService.java` — inject `ObjectMapper` bean; use `${aws.inbound-email.bucket-name:}` YAML property
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRateLimiter.java` — corrected Javadoc: fixed window, not sliding
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/DevEmailController.java` — removed dead `@CrossOrigin` (superseded by `LocalDevCorsConfig`)
+- `services/event-management-service/src/main/java/ch/batbern/events/config/LocalDevCorsConfig.java` — added POST to allowed methods (CORS fix for `/dev/emails/{id}/reply`)
+- `services/event-management-service/src/main/resources/application.yml` — added `aws.inbound-email.bucket-name` property
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailRouterTest.java` — `@BeforeEach` rate limiter default; locale assertions; new test for CANCEL-without-event-code

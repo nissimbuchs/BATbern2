@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +44,7 @@ class InboundEmailListenerServiceTest {
 
     @BeforeEach
     void setUp() {
-        listenerService = new InboundEmailListenerService(s3Client, router, BUCKET_NAME);
+        listenerService = new InboundEmailListenerService(s3Client, router, BUCKET_NAME, new ObjectMapper());
     }
 
     /**

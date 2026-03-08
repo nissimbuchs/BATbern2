@@ -142,6 +142,7 @@ public class RegistrationEmailService {
                 Map.entry("attendeeFirstName", userProfile.getFirstName()),
                 Map.entry("attendeeLastName", userProfile.getLastName()),
                 Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
+                Map.entry("eventCode", event.getEventCode()),
                 Map.entry("eventTitle", event.getTitle()),
                 Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
                 Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
@@ -164,8 +165,8 @@ public class RegistrationEmailService {
         String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
                 .map(s -> emailService.replaceVariables(s, variables))
                 .orElseGet(() -> localeStr.equals("de")
-                        ? "Registrierungsbestätigung - " + event.getTitle()
-                        : "Registration Confirmation - " + event.getTitle());
+                        ? "Registrierungsbestätigung - " + event.getEventCode() + " - " + event.getTitle()
+                        : "Registration Confirmation - " + event.getEventCode() + " - " + event.getTitle());
         return new EmailContent(html, subject);
     }
 

@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>Rate limit check: {@link InboundEmailRateLimiter}</li>
  *   <li>Unsubscribe keywords → {@link NewsletterSubscriberService#unsubscribeByEmail}</li>
- *   <li>Cancel keywords + event code → {@link DeregistrationService#deregisterByEmail}</li>
- *   <li>Accept keywords + event code → {@link InboundEmailConfirmationEmailService#sendAcceptConfirmation}</li>
+ *   <li>Cancel keywords + event code → {@link RegistrationService#cancelByEmail}</li>
+ *   <li>Accept keywords + event code → {@link RegistrationService#confirmByEmail}</li>
  *   <li>Unknown body → silent discard (WARN log)</li>
  * </ul>
  */
@@ -27,7 +27,7 @@ public class InboundEmailRouter {
     private static final Pattern EVENT_CODE_PATTERN = Pattern.compile("BATbern\\d+");
 
     private final NewsletterSubscriberService newsletterSubscriberService;
-    private final DeregistrationService deregistrationService;
+    private final RegistrationService registrationService;
     private final InboundEmailConfirmationEmailService confirmationEmailService;
     private final InboundEmailRateLimiter rateLimiter;
 
@@ -51,19 +51,20 @@ public class InboundEmailRouter {
             return; // warn already logged in rateLimiter
         }
 
-        // 2. Normalize body (lowercase, strip special chars except accented letters)
+        // 2. Normalize body (lowercase, strip special chars except accented letters incl. German umlauts)
         String body = email.bodyFirstLine()
                 .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9éàèêëîïôùûüéàèêëîïôùûü\\s]", " ")
+                .replaceAll("[^a-z0-9äöüéàèêëîïôùûü\\s]", " ")
                 .strip();
 
         String senderPrefix = email.senderEmail().substring(0, Math.min(5, email.senderEmail().length()));
 
         // 3. Unsubscribe variants: unsubscribe, abmelden, désinscription
-        if (body.contains("unsubscribe") || body.contains("abmelden") || body.contains("d sinscription")
-                || body.contains("désinscription")) {
+        if (body.contains("unsubscribe") || body.contains("abmelden") || body.contains("désinscription")) {
+            String locale = body.contains("abmelden") ? "de"
+                    : body.contains("désinscription") ? "fr" : "en";
             newsletterSubscriberService.unsubscribeByEmail(email.senderEmail());
-            confirmationEmailService.sendUnsubscribeConfirmation(email.senderEmail());
+            confirmationEmailService.sendUnsubscribeConfirmation(email.senderEmail(), locale);
             log.info("Processed unsubscribe reply from: {}***", senderPrefix);
             return;
         }
@@ -71,10 +72,11 @@ public class InboundEmailRouter {
         // 4. Deregistration variants: cancel, deregister, absagen
         //    Note: "abmelden" matches both unsubscribe and deregistration — unsubscribe takes priority
         if (body.contains("cancel") || body.contains("deregister") || body.contains("absagen")) {
+            String locale = body.contains("absagen") ? "de" : "en";
             String eventCode = extractEventCode(email.subject());
             if (eventCode != null) {
-                deregistrationService.deregisterByEmail(email.senderEmail(), eventCode);
-                confirmationEmailService.sendCancelConfirmation(email.senderEmail(), eventCode);
+                registrationService.cancelByEmail(email.senderEmail(), eventCode);
+                confirmationEmailService.sendCancelConfirmation(email.senderEmail(), eventCode, locale);
                 log.info("Processed deregistration reply from: {}*** for event: {}", senderPrefix, eventCode);
             } else {
                 log.warn("Deregistration keyword but no event code in subject from: {}*** subject: {}",
@@ -84,11 +86,11 @@ public class InboundEmailRouter {
         }
 
         // 5. Acceptance variants: accept, bestätigen, confirmer, bevestigen
-        if (body.contains("accept") || body.contains("best tigen") || body.contains("bestätigen")
+        if (body.contains("accept") || body.contains("bestätigen")
                 || body.contains("confirmer") || body.contains("bevestigen")) {
             String eventCode = extractEventCode(email.subject());
             if (eventCode != null) {
-                confirmationEmailService.sendAcceptConfirmation(email.senderEmail(), eventCode);
+                registrationService.confirmByEmail(email.senderEmail(), eventCode);
                 log.info("Processed acceptance reply from: {}*** for event: {}", senderPrefix, eventCode);
             } else {
                 log.warn("Acceptance keyword but no event code in subject from: {}*** subject: {}",

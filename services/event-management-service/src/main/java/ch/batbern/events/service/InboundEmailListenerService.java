@@ -46,16 +46,17 @@ public class InboundEmailListenerService {
     private final S3Client s3Client;
     private final InboundEmailRouter router;
     private final String bucketName;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public InboundEmailListenerService(
             S3Client s3Client,
             InboundEmailRouter router,
-            @Value("${AWS_INBOUND_EMAIL_BUCKET_NAME:}") String bucketName) {
+            @Value("${aws.inbound-email.bucket-name:}") String bucketName,
+            ObjectMapper objectMapper) {
         this.s3Client = s3Client;
         this.router = router;
         this.bucketName = bucketName;
+        this.objectMapper = objectMapper;
     }
 
     /**

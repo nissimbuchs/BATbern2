@@ -66,6 +66,7 @@ aws:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
   inbound-email:
     queue-url: ${AWS_INBOUND_EMAIL_QUEUE_URL:}
+    bucket-name: ${AWS_INBOUND_EMAIL_BUCKET_NAME:}
     enabled: ${AWS_INBOUND_EMAIL_ENABLED:false}
 
 # User Service Configuration (API-based user data access)
