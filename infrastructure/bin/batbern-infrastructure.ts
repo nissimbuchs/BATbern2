@@ -263,6 +263,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     // Story 10.17: Inbound email SQS queue URL and S3 bucket name (cross-region: eu-west-1)
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
+    watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
@@ -275,6 +276,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(storageStack);
   eventManagementStack.addDependency(monitoringStack);
   eventManagementStack.addDependency(inboundEmailStack);
+  eventManagementStack.addDependency(secretsStack);
 
   // Grant EMS task role permissions on inbound email resources (Story 10.17)
   inboundEmailStack.inboundQueue.grantConsumeMessages(
@@ -391,6 +393,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     alarmTopic: monitoringStack.alarmTopic,
+    watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
     tags: config.tags,
@@ -400,6 +403,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   apiGatewayServiceStack.addDependency(cicdStack);
   apiGatewayServiceStack.addDependency(cognitoStack);
   apiGatewayServiceStack.addDependency(monitoringStack);
+  apiGatewayServiceStack.addDependency(secretsStack);
   // No microservice dependencies - uses Service Connect for runtime discovery
 }
 
