@@ -177,6 +177,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const draggingNodeIdRef = useRef<string | null>(null);
   /** Green nodes currently in a fade transition — tick handler skips opacity updates for these */
   const fadingGreenIds = useRef<Set<string>>(new Set());
+  /** Ghost nodes currently in a fade transition — tick handler skips opacity updates for these */
+  const fadingGhostIds = useRef<Set<string>>(new Set());
   /** ID of the currently selected blue blob — shown with a yellow ring; Delete/Backspace removes it */
   const selectedBlobIdRef = useRef<string | null>(null);
   /** Which ghost types are currently visible — read by the tick handler without stale closure */
@@ -503,24 +505,38 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           return {
             id: blue.id,
             name: blue.name,
-            companies: blue.absorbedLogos.map((l) => {
-              // Dynamically spawned greens are removed from nodesRef on absorption;
-              // read score/reason from the snapshot stored at absorption time.
-              const green = nodesRef.current.find(
-                (g) => g.type === 'green' && (g as GreenBlobNode).companyName === l.companyName
-              ) as GreenBlobNode | undefined;
-              const score =
-                blue.cluster && green
-                  ? (green.clusterAttractions[blue.cluster] ?? null)
-                  : blue.cluster
-                    ? 1.0 // dynamic greens always have full attraction to their triggering cluster
-                    : null;
-              const reason =
-                blue.cluster && green?.topicsByCluster
-                  ? (green.topicsByCluster[blue.cluster] ?? []).join(', ') || null
-                  : (l.ghostSnapshot?.name ?? null);
-              return { name: l.companyName, score, reason };
-            }),
+            companies: Object.values(
+              blue.absorbedLogos.reduce<
+                Record<string, { name: string; score: number | null; reason: string | null }>
+              >((acc, l) => {
+                // Dynamically spawned greens are removed from nodesRef on absorption;
+                // read score/reason from the snapshot stored at absorption time.
+                const green = nodesRef.current.find(
+                  (g) => g.type === 'green' && (g as GreenBlobNode).companyName === l.companyName
+                ) as GreenBlobNode | undefined;
+                const score =
+                  blue.cluster && green
+                    ? (green.clusterAttractions[blue.cluster] ?? null)
+                    : blue.cluster
+                      ? 1.0 // dynamic greens always have full attraction to their triggering cluster
+                      : null;
+                const thisReason =
+                  blue.cluster && green?.topicsByCluster
+                    ? (green.topicsByCluster[blue.cluster] ?? []).join(', ') || null
+                    : (l.ghostSnapshot?.name ?? null);
+                if (acc[l.companyName]) {
+                  // Same company absorbed multiple topics — combine reasons
+                  if (thisReason && !acc[l.companyName].reason?.includes(thisReason)) {
+                    acc[l.companyName].reason = acc[l.companyName].reason
+                      ? `${acc[l.companyName].reason}, ${thisReason}`
+                      : thisReason;
+                  }
+                } else {
+                  acc[l.companyName] = { name: l.companyName, score, reason: thisReason };
+                }
+                return acc;
+              }, {})
+            ),
             pastEvents: blue.absorbedRedStars.map((r) => ({
               eventNumber: r.eventNumber,
               topicName: r.topicName,
@@ -687,7 +703,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       });
 
     // Ghost visibility — show/hide based on toggle state (opacity 0 = hidden but orbit continues)
+    // Skip nodes currently in a fade-out transition (absorbed into blue blob)
     g.selectAll<SVGGElement, SimNode>('.ghost-group')
+      .filter((d) => !fadingGhostIds.current.has(d.id))
       .attr('opacity', (d) => (visibleGhostTypesRef.current.has(d.type) ? 1 : 0))
       .attr('pointer-events', (d) => (visibleGhostTypesRef.current.has(d.type) ? 'auto' : 'none'));
 
@@ -1340,7 +1358,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
             green.absorbed = true;
             soundsRef.current.playSlosh();
-            if (!blueTarget.absorbedLogos.some((l) => l.companyName === green.companyName)) {
+            // Deduplicate by topic name (ghostSnapshot.name), not company — a company may have
+            // submitted multiple topics for the same cluster and both should appear in the side card.
+            if (
+              !blueTarget.absorbedLogos.some(
+                (l) => l.ghostSnapshot.name === green.originalGhostSnapshot.name
+              )
+            ) {
               blueTarget.absorbedLogos.push({
                 companyName: green.companyName,
                 logoUrl: green.logoUrl,
@@ -1389,7 +1413,78 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           return Math.sqrt(dx * dx + dy * dy) < a.r + b.r + threshold;
         };
 
-        if (d.type === 'blue') {
+        if (d.type === 'ghost-backlog' || d.type === 'ghost-partner' || d.type === 'ghost-trend') {
+          // Ghost dropped on blue → absorb directly (logo or spinner appears inside blue)
+          const ghost = d as GhostNode;
+          const blueTarget = nodesRef.current.find((n) => {
+            if (n.type !== 'blue') return false;
+            const dx = (ghost.x ?? 0) - (n.x ?? 0);
+            const dy = (ghost.y ?? 0) - (n.y ?? 0);
+            return Math.sqrt(dx * dx + dy * dy) < ghost.r + n.r;
+          }) as BlueBlobNode | undefined;
+          if (blueTarget) {
+            blueTarget.fx = blueTarget.x ?? 0;
+            blueTarget.fy = blueTarget.y ?? 0;
+            blueTarget.vx = 0;
+            blueTarget.vy = 0;
+            setTimeout(() => {
+              blueTarget.vx = 0;
+              blueTarget.vy = 0;
+              blueTarget.fx = null;
+              blueTarget.fy = null;
+            }, 400);
+            const isDuplicate = blueTarget.absorbedLogos.some(
+              (l) => l.ghostSnapshot.name === ghost.name
+            );
+            if (!isDuplicate) {
+              blueTarget.absorbedLogos.push({
+                companyName: ghost.companyName ?? ghost.name,
+                logoUrl: ghost.logoUrl ?? '',
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: blueTarget.r * (0.2 + Math.random() * 0.45),
+                orbitSpeed: (0.0013 + Math.random() * 0.0027) * (Math.random() < 0.5 ? 1 : -1),
+                sourceGhostType: ghost.type,
+                ghostSnapshot: {
+                  name: ghost.name,
+                  r: ghost.r,
+                  topicCode: ghost.topicCode,
+                  companyName: ghost.companyName,
+                  logoUrl: ghost.logoUrl,
+                  cluster: ghost.cluster,
+                },
+              });
+              soundsRef.current.playSlosh();
+              resizeBlue(blueTarget);
+            }
+            // Pin ghost at drop position so physics doesn't fling it during fade
+            ghost.fx = ghost.x ?? 0;
+            ghost.fy = ghost.y ?? 0;
+            fadingGhostIds.current.add(ghost.id);
+            // Fade out and remove the ghost node
+            gRef.current
+              ?.selectAll<SVGGElement, GhostNode>('.ghost-group')
+              .filter((gd) => gd.id === ghost.id)
+              .transition()
+              .duration(1000)
+              .attr('opacity', 0)
+              .on('end', () => {
+                nodesRef.current = nodesRef.current.filter((n) => n.id !== ghost.id);
+                simRef.current?.nodes(nodesRef.current);
+                // Remove DOM element before clearing fadingGhostIds — prevents the tick handler
+                // from resetting opacity to 1 on the orphaned element between the clear and next tick.
+                gRef.current
+                  ?.selectAll<SVGGElement, SimNode>('.node-group')
+                  .filter((nd) => nd.id === ghost.id)
+                  .remove();
+                fadingGhostIds.current.delete(ghost.id);
+              });
+            syncTreeSummary();
+            clearMergeHalos();
+            d.fx = null;
+            d.fy = null;
+            return;
+          }
+        } else if (d.type === 'blue') {
           // Blue dropped on blue → merge (search specifically for another blue)
           const nearbyBlue = nodesRef.current.find(
             (n) => n.id !== d.id && n.type === 'blue' && withinRange(d, n, 30)
