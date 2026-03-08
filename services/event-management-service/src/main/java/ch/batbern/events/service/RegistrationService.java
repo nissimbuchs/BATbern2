@@ -469,7 +469,7 @@ public class RegistrationService {
                         },
                         () -> log.info("cancelByEmail: no active registration found for {}*** / {}",
                                 email.substring(0, Math.min(5, email.length())), eventCode)
-                );
+            );
     }
 
     /**
@@ -497,7 +497,7 @@ public class RegistrationService {
                         },
                         () -> log.info("confirmByEmail: no active registration found for {}*** / {}",
                                 email.substring(0, Math.min(5, email.length())), eventCode)
-                );
+            );
     }
 
     @Transactional
