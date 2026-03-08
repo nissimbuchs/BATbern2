@@ -1,11 +1,13 @@
 package ch.batbern.events.watch;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class WatchSessionService {
     private final SessionRepository sessionRepository;
     private final EventRepository eventRepository;
     private final WatchPresenceService watchPresenceService;
+    private final CacheManager cacheManager;
 
     /**
      * Marks a session as completed by the given organizer.
@@ -155,6 +158,7 @@ public class WatchSessionService {
             sessionRepository.saveAll(downstream);
         }
 
+        evictEventCache();
         watchPresenceService.buildAndBroadcastState(eventCode, "SESSION_EXTENDED", sessionSlug, requestedBy);
         log.debug("Session {} extended by {} min (requested by {})", sessionSlug, minutesAdded, requestedBy);
     }
@@ -193,6 +197,7 @@ public class WatchSessionService {
                 s.setEndTime(s.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
             }
             sessionRepository.saveAll(toShift);
+            evictEventCache();
             watchPresenceService.buildAndBroadcastState(
                     eventCode, "SESSION_DELAYED", currentSlug, requestedBy);
             log.debug("First session {} delayed by {} min — all sessions shifted forward",
@@ -233,9 +238,18 @@ public class WatchSessionService {
         }
         sessionRepository.saveAll(toShift);
 
+        evictEventCache();
         watchPresenceService.buildAndBroadcastStateWithPreviousSlug(
                 eventCode, "SESSION_DELAYED", currentSlug, requestedBy, previous.getSessionSlug());
         log.debug("Delayed to previous session {} (+{} min), current {} reset to SCHEDULED",
                 previous.getSessionSlug(), minutesAdded, currentSlug);
+    }
+
+    /** Evicts the event-with-includes cache so REST clients see updated session times immediately. */
+    private void evictEventCache() {
+        var cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+        if (cache != null) {
+            cache.clear();
+        }
     }
 }

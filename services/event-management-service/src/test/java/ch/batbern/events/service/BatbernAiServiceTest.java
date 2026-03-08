@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,12 +27,14 @@ class BatbernAiServiceTest {
     private AiGenerationLogRepository logRepository;
     @Mock
     private S3Client s3Client;
+    @Mock
+    private AiPromptService aiPromptService;
 
     private BatbernAiService aiService;
 
     @BeforeEach
     void setUp() {
-        aiService = new BatbernAiService(aiConfig, logRepository, s3Client);
+        aiService = new BatbernAiService(aiConfig, logRepository, s3Client, aiPromptService);
     }
 
     @Nested
@@ -46,7 +49,9 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty")
         void generateDescription_disabled_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "Cloud Native", "DEVOPS", 99, null, null);
+            Optional<String> result = aiService.generateEventDescription("BATbern99", Map.of(
+                    "EVENT_NR", "99", "EVENT_TITLE", "BATbern 99",
+                    "TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"));
             assertThat(result).isEmpty();
             verifyNoInteractions(logRepository);
         }
@@ -54,14 +59,15 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateThemeImage returns empty")
         void generateThemeImage_disabled_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "DEVOPS", null, null, null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
+                    "BATbern99", Map.of("TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"), null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("analyzeAbstract returns empty")
         void analyzeAbstract_disabled_returnsEmpty() {
-            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("My abstract text", "Alice");
+            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("Alice", "My Session", "My abstract text");
             assertThat(result).isEmpty();
         }
     }
@@ -82,21 +88,24 @@ class BatbernAiServiceTest {
         @Test
         @DisplayName("generateEventDescription returns empty gracefully")
         void generateDescription_noApiKey_returnsEmpty() {
-            Optional<String> result = aiService.generateEventDescription("BATbern99", "Cloud Native", "DEVOPS", 99, null, null);
+            Optional<String> result = aiService.generateEventDescription("BATbern99", Map.of(
+                    "EVENT_NR", "99", "EVENT_TITLE", "BATbern 99",
+                    "TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"));
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("generateThemeImage returns empty gracefully")
         void generateThemeImage_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage("BATbern99", "Cloud Native", "DEVOPS", null, null, null);
+            Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(
+                    "BATbern99", Map.of("TOPIC_TITLE", "Cloud Native", "TOPIC_CATEGORY", "DEVOPS"), null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("analyzeAbstract returns empty gracefully")
         void analyzeAbstract_noApiKey_returnsEmpty() {
-            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("My abstract text", "Alice");
+            Optional<BatbernAiService.AbstractAnalysisResult> result = aiService.analyzeAbstract("Alice", "My Session", "My abstract text");
             assertThat(result).isEmpty();
         }
     }

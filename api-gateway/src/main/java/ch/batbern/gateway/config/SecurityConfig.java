@@ -169,8 +169,11 @@ public class SecurityConfig {
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // System health endpoints
-                        .requestMatchers("/actuator/health", "/actuator/info", "/api/v1/config").permitAll()
+                        // System health endpoint (needed for load balancer health checks)
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Other actuator endpoints require auth (metrics, info, prometheus expose internals)
+                        .requestMatchers("/actuator/**").authenticated()
+                        .requestMatchers("/api/v1/config").permitAll()
 
                         // Story 4.1.3: Public event discovery endpoints (no auth required)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()

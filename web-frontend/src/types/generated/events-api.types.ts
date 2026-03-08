@@ -1704,6 +1704,78 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/ai-prompts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all AI prompts
+     * @description Returns all three organizer-editable OpenAI prompts (event_description, theme_image, abstract_quality).
+     *
+     *     **Authorization**: ORGANIZER role required.
+     */
+    get: operations['listAiPrompts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/ai-prompts/{promptKey}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single AI prompt
+     * @description Returns a single AI prompt by its key.
+     *
+     *     **Authorization**: ORGANIZER role required.
+     */
+    get: operations['getAiPrompt'];
+    /**
+     * Update an AI prompt
+     * @description Updates the prompt text for the given key.
+     *
+     *     **Authorization**: ORGANIZER role required.
+     */
+    put: operations['updateAiPrompt'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/ai-prompts/{promptKey}/reset': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reset an AI prompt to its default text
+     * @description Copies the original default prompt text back to prompt_text.
+     *
+     *     **Authorization**: ORGANIZER role required.
+     */
+    post: operations['resetAiPrompt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/analytics/overview': {
     parameters: {
       query?: never;
@@ -1995,7 +2067,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate AI event description (GPT-4o, German, 150-200 words) */
+    /** Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode. */
     post: operations['generateEventDescription'];
     delete?: never;
     options?: never;
@@ -2012,7 +2084,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate AI theme image (DALL-E 3), upload to S3 */
+    /** Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode. */
     post: operations['generateThemeImage'];
     delete?: never;
     options?: never;
@@ -2046,7 +2118,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Analyze speaker abstract quality (GPT-4o) */
+    /** Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract. */
     post: operations['analyzeAbstract'];
     delete?: never;
     options?: never;
@@ -2551,25 +2623,8 @@ export interface components {
     FeatureFlagsResponse: {
       aiContentEnabled?: boolean;
     };
-    AiDescriptionRequest: {
-      topicTitle: string;
-      topicCategory: string;
-      /** @description The specific session/event title (e.g. "Importance of DevOps in vibe coding") */
-      eventTitle?: string;
-      /**
-       * Format: date
-       * @description The event date (ISO 8601, e.g. 2026-04-04)
-       */
-      eventDate?: string;
-    };
     AiDescriptionResponse: {
       description?: string;
-    };
-    AiThemeImageRequest: {
-      topicTitle: string;
-      topicCategory: string;
-      /** @description The specific session/event title for a more accurate image */
-      eventTitle?: string;
     };
     AiThemeImageResponse: {
       imageUrl?: string;
@@ -2578,10 +2633,6 @@ export interface components {
     ApplyThemeImageRequest: {
       /** @description CloudFront URL of the AI-generated image to persist on the event */
       imageUrl: string;
-    };
-    AnalyzeAbstractRequest: {
-      abstract: string;
-      speakerName?: string;
     };
     AbstractAnalysisResponse: {
       /** @description 1=heavy product promotion, 10=no promotion at all */
@@ -2892,6 +2943,27 @@ export interface components {
       htmlBody?: string;
       /** @description Updated layout key (null = standalone) */
       layoutKey?: string | null;
+    };
+    /** @description Organizer-editable OpenAI prompt configuration */
+    AiPromptResponse: {
+      /** @description Prompt identifier (event_description, theme_image, abstract_quality) */
+      promptKey: string;
+      /** @description Human-readable name shown in Admin UI */
+      displayName: string;
+      /** @description Current prompt text (editable by organizer) */
+      promptText: string;
+      /** @description Original default prompt text (used to reset) */
+      defaultText: string;
+      /**
+       * Format: date-time
+       * @description Last update timestamp
+       */
+      updatedAt: string;
+    };
+    /** @description Request to update an AI prompt's text */
+    UpdateAiPromptRequest: {
+      /** @description New prompt text */
+      promptText: string;
     };
     /** @description Per-event attendance summary for a given company (Story 8.1) */
     AttendanceSummaryDTO: {
@@ -7848,6 +7920,107 @@ export interface operations {
       404: components['responses']['NotFound'];
     };
   };
+  listAiPrompts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of AI prompts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiPromptResponse'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAiPrompt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        promptKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description AI prompt */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiPromptResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  updateAiPrompt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        promptKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAiPromptRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated prompt */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiPromptResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  resetAiPrompt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        promptKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Prompt after reset */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiPromptResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
   getAnalyticsOverview: {
     parameters: {
       query?: never;
@@ -8288,11 +8461,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AiDescriptionRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Generated description */
       200: {
@@ -8318,7 +8487,10 @@ export interface operations {
   };
   generateThemeImage: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Optional seed string for cache-busting a re-generation */
+        seed?: string;
+      };
       header?: never;
       path: {
         /** @example BATbern56 */
@@ -8326,11 +8498,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AiThemeImageRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Generated theme image URL and S3 key */
       200: {
@@ -8399,11 +8567,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AnalyzeAbstractRequest'];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Abstract analysis result */
       200: {

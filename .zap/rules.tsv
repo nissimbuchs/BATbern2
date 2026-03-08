@@ -32,6 +32,32 @@
 # Private IP Disclosure: internal AWS VPC IPs that may appear in error traces
 2	IGNORE	.*
 
+# Sec-Fetch-Dest/Mode/Site/User Headers Missing: browser-only headers that cannot be
+# set server-side; ZAP does not send them during automated scanning (not a vulnerability)
+90005	IGNORE	.*
+
+# Non-Storable Content: API responses correctly must not be cached (correct behavior)
+10049	IGNORE	.*
+
+# A Client Error response code was returned: 401/403/404 are correct for probe requests
+100000	IGNORE	.*
+
+# Unexpected Content-Type: JSON API correctly returns JSON errors (ZAP expects HTML)
+100001	IGNORE	.*
+
+# User Agent Fuzzer: app behaves consistently across User-Agent variants (informational)
+10104	IGNORE	.*
+
+# Storable and Cacheable Content: static assets (JS/CSS) are correctly cacheable
+10049	IGNORE	.*
+
+# Re-examine Cache-control Directives: CloudFront manages caching at CDN level
+10015	IGNORE	.*
+
+# Spring Actuator Information Leak (/actuator/health): health endpoint is intentionally
+# public for AWS load balancer checks; show-details=when-authorized prevents info leak
+40042	IGNORE	.*
+
 # ─── INFORMATIONAL — WARN (non-blocking, report only) ─────────────────────────
 
 # Cookie No HttpOnly Flag: Cognito auth cookies managed by AWS SDK, not us

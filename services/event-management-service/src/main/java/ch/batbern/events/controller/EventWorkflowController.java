@@ -68,7 +68,10 @@ public class EventWorkflowController {
      */
     @PutMapping("/{code}/workflow/transition")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @CacheEvict(value = "eventWithIncludes", allEntries = true)
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "eventWithIncludes", allEntries = true),
+        @CacheEvict(value = "archiveEvents", allEntries = true)
+    })
     @Operation(summary = "Transition event to target workflow state",
                description = "Requires ORGANIZER role. Rate limited to 10 transitions/min.")
     public ResponseEntity<Map<String, Object>> transitionEventWorkflowState(

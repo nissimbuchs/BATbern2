@@ -1,0 +1,43 @@
+meta {
+  name: Remove Topic Vote (Partner)
+  type: http
+  seq: 12
+}
+
+docs {
+  DELETE /partners/topics/{topicId}/vote - partner removes their vote (toggle off).
+  PARTNER role required. Returns 204 No Content.
+  TopicController @ /api/v1/partners/topics/{topicId}/vote
+}
+
+delete {
+  url: {{baseUrl}}/partners/topics/{{testCreatedTopicId}}/vote
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 No Content on vote removal", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

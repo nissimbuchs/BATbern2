@@ -173,6 +173,30 @@ function handler(event) {
           override: true,
         },
       },
+      customHeadersBehavior: {
+        customHeaders: [
+          // Cross-Origin-Embedder-Policy: CREDENTIALLESS allows third-party iframes (Google Maps)
+          // while still providing Spectre isolation benefits
+          {
+            header: 'Cross-Origin-Embedder-Policy',
+            value: 'credentialless',
+            override: true,
+          },
+          // Cross-Origin-Opener-Policy: isolates the browsing context from cross-origin openers
+          // SAME_ORIGIN_ALLOW_POPUPS allows OAuth popups (Cognito)
+          {
+            header: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+            override: true,
+          },
+          // Cross-Origin-Resource-Policy: prevents cross-origin reads of frontend assets
+          {
+            header: 'Cross-Origin-Resource-Policy',
+            value: 'same-site',
+            override: true,
+          },
+        ],
+      },
     });
 
     // Get certificate if domain provided

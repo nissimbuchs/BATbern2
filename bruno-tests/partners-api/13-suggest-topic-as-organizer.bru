@@ -1,0 +1,66 @@
+meta {
+  name: Suggest Topic (Organizer on behalf of partner)
+  type: http
+  seq: 13
+}
+
+docs {
+  POST /partners/topics - organizer suggests a topic on behalf of a partner company.
+  Organizer MUST supply companyName; returns 400 if missing.
+  TopicController @ /api/v1/partners/topics
+}
+
+post {
+  url: {{baseUrl}}/partners/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Bruno Test Topic - Organizer Submitted",
+    "description": "Organizer recording topic on behalf of partner",
+    "companyName": "{{testPartnerCompanyName}}"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const body = res.getBody();
+    bru.setEnvVar("testOrganizerCreatedTopicId", body.id);
+    console.log("Organizer created topic:", body.id);
+  }
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should have correct suggestedByCompany", function() {
+    const body = res.getBody();
+    expect(body.suggestedByCompany).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

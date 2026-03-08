@@ -1,0 +1,70 @@
+meta {
+  name: Suggest Topic (Partner)
+  type: http
+  seq: 10
+}
+
+docs {
+  POST /partners/topics - partner suggests a new topic.
+  Company is resolved from JWT (no companyName field needed).
+  TopicController @ /api/v1/partners/topics
+}
+
+post {
+  url: {{baseUrl}}/partners/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Bruno Test Topic - Digital Transformation in Architecture",
+    "description": "Exploring how AI and automation are changing architectural workflows"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.title: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const body = res.getBody();
+    bru.setEnvVar("testCreatedTopicId", body.id);
+    console.log("Created test topic:", body.id);
+  }
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return TopicDTO with correct fields", function() {
+    const body = res.getBody();
+    expect(body.id).to.exist;
+    expect(body.title).to.equal('Bruno Test Topic - Digital Transformation in Architecture');
+    expect(body.voteCount).to.equal(0);
+    expect(body.status).to.exist;
+    expect(body.suggestedByCompany).to.exist;
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

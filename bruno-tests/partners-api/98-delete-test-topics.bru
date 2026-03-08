@@ -1,0 +1,39 @@
+meta {
+  name: Delete Test Topics (Cleanup)
+  type: http
+  seq: 98
+}
+
+docs {
+  Cleanup: deletes the topic created by the partner in test 10.
+  Runs before partner/company deletion (seq 99/99a).
+}
+
+delete {
+  url: {{baseUrl}}/partners/topics/{{testCreatedTopicId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: in [204, 404]
+}
+
+script:post-response {
+  console.log("Deleted test topic:", bru.getEnvVar("testCreatedTopicId"), "status:", res.getStatus());
+}
+
+tests {
+  test("should delete or not find test topic", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+}
