@@ -150,6 +150,10 @@ Organisers can see all topics and voting data. To update a topic's status:
 
 Organisers can also suggest topics on behalf of a partner, or delete spam/duplicate suggestions.
 
+When suggesting a topic on behalf of a partner, the `companyName` field is **required** in the request body. Omitting it returns `400 Bad Request`.
+
+Organisers **cannot** cast or remove votes — the vote endpoints (`POST /api/v1/partners/topics/{id}/vote`) are restricted to the PARTNER role and return `403 Forbidden` for organisers.
+
 ## Troubleshooting
 
 ### "My vote isn't showing"
