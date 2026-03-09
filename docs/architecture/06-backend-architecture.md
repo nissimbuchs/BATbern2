@@ -56,10 +56,27 @@ sequenceDiagram
 
 ### Role-Based Security Configuration
 
+> **Important:** Domain services do **not** validate JWTs themselves. JWT signature verification is performed exclusively by the API Gateway. Domain services trust all requests forwarded by the gateway and do not call `jwtDecoder()` or validate token signatures. Role-based access control at the service level is enforced via method-level annotations (`@PreAuthorize`) where needed, using the user context header injected by the gateway.
+
+#### Public Endpoints (no authentication required)
+
+The following endpoints are accessible without any token at the domain-service level:
+
+| Pattern | Notes |
+|---|---|
+| `/actuator/health`, `/actuator/info` | Health probes |
+| `/swagger-ui/**`, `/v3/api-docs/**` | API documentation |
+| `GET /api/v1/events/**` | Event details, including `/current` |
+| `GET /api/v1/events/{code}/sessions/**` | Session listings |
+| `GET /api/v1/events/{code}/speakers/**` | Speaker listings (read-only) |
+| `POST /api/v1/events/{code}/registrations` | Attendee registration creation |
+| `POST /api/v1/events/{code}/registrations/confirm` | Registration confirmation |
+
+Role-gated endpoints (e.g. `POST /api/v1/events`, organizer-only mutations) are enforced at the **API Gateway** layer before requests reach domain services.
+
 ```java
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfiguration {
 
     @Bean
@@ -68,21 +85,21 @@ public class SecurityConfiguration {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Health & docs — always public
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                .requestMatchers("/api/v1/events").hasAnyRole("ORGANIZER", "ATTENDEE", "SPEAKER", "PARTNER")
-                .requestMatchers(HttpMethod.POST, "/api/v1/events").hasRole("ORGANIZER")
-                .requestMatchers("/api/v1/speakers/**").hasAnyRole("ORGANIZER", "SPEAKER")
-                .requestMatchers("/api/v1/partners/**").hasAnyRole("ORGANIZER", "PARTNER")
-                .requestMatchers("/api/v1/companies").hasAnyRole("ORGANIZER", "SPEAKER", "PARTNER")
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                    .jwtDecoder(jwtDecoder())
-                )
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public read endpoints — no auth required
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/speakers/**").permitAll()
+                // Public write endpoints — registration flow
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
+                // Everything else: trust the gateway-injected user context
+                .anyRequest().permitAll()
             )
             .build();
+        // No oauth2ResourceServer / jwtDecoder — JWT validation is the gateway's responsibility
     }
 
     @Bean
@@ -240,40 +257,31 @@ public class GlobalExceptionHandler {
 
 ### Circuit Breaker Pattern Implementation
 
+The platform uses **Resilience4j** circuit breakers (not a bespoke `CircuitBreakerService`). Configuration is rate-based, not count-based:
+
+```yaml
+# application-shared.yml (shared across services)
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventBridgePublisher:
+        failureRateThreshold: 60          # open after 60% failure rate (not a fixed count)
+        waitDurationInOpenState: 10s       # 10 seconds in open state (not 60 000 ms)
+        permittedNumberOfCallsInHalfOpenState: 5
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+```
+
 ```java
-@Component
-@Slf4j
-public class CircuitBreakerService {
-
-    private final Map<String, CircuitBreaker> circuitBreakers = new ConcurrentHashMap<>();
-    private final MetricRegistry metricRegistry;
-
-    @Value("${circuit-breaker.failure-threshold:5}")
-    private int failureThreshold;
-
-    @Value("${circuit-breaker.timeout:60000}")
-    private long timeoutMs;
-
-    public <T> T executeWithCircuitBreaker(String serviceName, Supplier<T> operation, Supplier<T> fallback) {
-        // Implementation details - see source code
-    }
-
-    private CircuitBreaker getOrCreateCircuitBreaker(String serviceName) {
-        // Implementation details - see source code
-    }
+// Usage via Resilience4j annotation
+@CircuitBreaker(name = "eventBridgePublisher", fallbackMethod = "storeForRetry")
+public void publishEvent(DomainEvent event) {
+    // Implementation details - see source code
 }
 
-// Usage in service classes
-@Service
-@Slf4j
-public class ExternalEmailService {
-
-    private final CircuitBreakerService circuitBreakerService;
-    private final EmailClient emailClient;
-
-    public void sendEmail(EmailRequest request) {
-        // Implementation details - see source code
-    }
+private void storeForRetry(DomainEvent event, Exception ex) {
+    // Store event for later retry
+    failedEventStore.store(event);
 }
 ```
 
@@ -420,6 +428,16 @@ public class EventBusinessRules {
 }
 ```
 
+#### Conflict Detection Severities
+
+The `ConflictDetectionService` distinguishes between hard errors and soft warnings:
+
+| Conflict Type | Severity | Blocking |
+|---|---|---|
+| `ROOM_OVERLAP` — two sessions in the same room at overlapping times | `ERROR` | Yes — slot assignment is rejected |
+| `SPEAKER_DOUBLE_BOOKED` — same speaker assigned to overlapping sessions | `ERROR` | Yes — slot assignment is rejected |
+| `PREFERENCE_MISMATCH` — session scheduled outside speaker's preferred time window | `WARNING` | No — informational only, assignment proceeds |
+
 ## Workflow State Management
 
 The BATbern platform implements sophisticated state machines to manage the complex 9-state event workflow. These include:
@@ -441,7 +459,7 @@ The platform maintains user data across AWS Cognito (authentication) and Postgre
 3. **Spring Security** - Extracts roles from JWT for authorization
 4. **Unidirectional Sync** - Cognito → Database only (NO Cognito Groups, NO reverse sync)
 
-**Key Point**: Roles stored exclusively in PostgreSQL `role_assignments` table. Roles synced to JWT at login time, cached for request duration. Role updates take effect on next login.
+**Key Point**: Roles are stored as a `Set<Role>` directly on the `User` entity (not in a separate `role_assignments` table). Roles are synced to the JWT at login time, cached for request duration. Role updates take effect on the next login.
 
 **See [User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md) for complete implementation details.**
 
@@ -449,7 +467,13 @@ The platform maintains user data across AWS Cognito (authentication) and Postgre
 
 Handles user role promotion, demotion, and approval workflows while enforcing business rules.
 
-### Role Management Service Implementation
+**Deployed implementation:** The production `RoleService` stores roles as a `Set<Role>` on the `User` entity and injects `UserRepository` only — there is no separate `UserRoleRepository` or `role_assignments` table. Role lookups use `userRepository.findByRolesContaining(Role.ORGANIZER)`.
+
+**Idempotency:** `addRole` and `removeRole` are idempotent. A `UserRoleChangedEvent` is only published when the role set actually changes (i.e. if the role was already present on add, or already absent on remove, no event is published).
+
+> **Note:** The snippet below is a design reference that documents the intended approval-workflow shape. The deployed `RoleService` is simpler; refer to source for the exact implementation.
+
+### Role Management Service Implementation (design reference)
 
 ```java
 @Service
@@ -559,7 +583,7 @@ public class RoleManagementService {
      */
     public boolean canDemoteOrganizer(String username, String eventCode) {
         long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventCode);
-        return activeOrganizerCount > 2;
+        return activeOrganizerCount >= 2;
     }
 
     // syncRoleToCognito removed - per ADR-001, roles NOT synced to Cognito
