@@ -1,0 +1,43 @@
+meta {
+  name: Cast Topic Vote (Partner)
+  type: http
+  seq: 11
+}
+
+docs {
+  POST /partners/topics/{topicId}/vote - partner casts a vote (toggle on).
+  PARTNER role required. Returns 204 No Content.
+  TopicController @ /api/v1/partners/topics/{topicId}/vote
+}
+
+post {
+  url: {{baseUrl}}/partners/topics/{{testCreatedTopicId}}/vote
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 No Content on successful vote", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

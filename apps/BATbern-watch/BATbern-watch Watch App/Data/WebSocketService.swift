@@ -249,7 +249,10 @@ final class WebSocketService {
                 }
                 guard !Task.isCancelled else { return }
                 let newJWT = self.authManager.currentJWT
-                if newJWT != previousJWT, let jwt = newJWT, self.isConnected {
+                if newJWT != previousJWT, let jwt = newJWT {
+                    // Fix GH-551: reconnect with fresh JWT even when offline (isConnected == false).
+                    // Previously, the isConnected guard meant a JWT rotation after a drop was ignored,
+                    // leaving the reconnect loop stuck with the expired token forever.
                     previousJWT = newJWT
                     await self.reconnect(with: jwt)
                 } else {

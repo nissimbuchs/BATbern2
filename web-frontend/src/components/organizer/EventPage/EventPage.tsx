@@ -38,6 +38,7 @@ import {
   EmailOutlined as NewsletterIcon,
   Slideshow as SlideshowIcon,
   PhotoLibrary as PhotosIcon,
+  LiveTv as LiveTvIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -218,15 +219,25 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<SlideshowIcon />}
-            href={`/present/${eventCode}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Präsentation starten
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<SlideshowIcon />}
+              href={`/present/${eventCode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Präsentation starten
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<LiveTvIcon />}
+              onClick={() => navigate(`/organizer/events/${eventCode}/live-control`)}
+            >
+              Live Steuerung
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Desktop Tabs */}

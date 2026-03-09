@@ -66,6 +66,9 @@ public class SecurityHeadersFilter implements Filter {
         String permissionsPolicy = buildPermissionsPolicy();
         httpResponse.setHeader("Permissions-Policy", permissionsPolicy);
 
+        // Cross-Origin-Resource-Policy - prevent cross-origin reads of API responses
+        httpResponse.setHeader("Cross-Origin-Resource-Policy", "same-site");
+
         log.debug("Security headers applied to request: {}", LogSanitizer.sanitize(httpRequest.getRequestURI()));
 
         // Continue filter chain

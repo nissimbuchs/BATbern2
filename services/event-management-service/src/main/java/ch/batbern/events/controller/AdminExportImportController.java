@@ -80,7 +80,7 @@ public class AdminExportImportController {
             @RequestParam("file") MultipartFile file) throws IOException {
         log.info("Admin: legacy data import requested, file={}, size={}", file.getOriginalFilename(), file.getSize());
         try {
-            LegacyExportEnvelope envelope = objectMapper.readValue(file.getBytes(), LegacyExportEnvelope.class);
+            LegacyExportEnvelope envelope = objectMapper.readValue(file.getInputStream(), LegacyExportEnvelope.class);
             return ResponseEntity.ok(importService.importAll(envelope));
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Invalid import file: " + e.getOriginalMessage());

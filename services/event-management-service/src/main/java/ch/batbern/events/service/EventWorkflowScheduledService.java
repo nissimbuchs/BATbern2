@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -201,6 +202,70 @@ public class EventWorkflowScheduledService {
         }
 
         log.info("Completed processCompletedEvents: {}/{} events transitioned", transitioned, total);
+    }
+
+    /**
+     * Scheduled job: Auto-archive EVENT_COMPLETED events after the 14-day post-event window.
+     *
+     * Runs daily at 02:00 (2 AM Bern time).
+     * Cron: "0 0 2 * * *" = second:0, minute:0, hour:2
+     *
+     * Finds all EVENT_COMPLETED events whose date is more than 14 days in the past
+     * and transitions them to ARCHIVED. This keeps the public homepage clear of
+     * stale completed events after the post-event grace period expires.
+     *
+     * EVENT_COMPLETED → ARCHIVED is a normal allowed transition (no override needed).
+     *
+     * ShedLock configuration:
+     * - lockAtMostFor: 5 minutes (failsafe)
+     * - lockAtLeastFor: 30 seconds (prevents re-execution on very fast completion)
+     */
+    @Scheduled(cron = "${workflow.scheduled.events-to-archive.cron:0 0 2 * * *}")
+    @SchedulerLock(
+            name = "processEventsToArchive",
+            lockAtMostFor = "5m",
+            lockAtLeastFor = "30s"
+    )
+    @Transactional
+    public void processEventsToArchive() {
+        log.info("Starting scheduled job: processEventsToArchive");
+
+        ZoneId bernZone = ZoneId.of("Europe/Zurich");
+        Instant archiveThreshold = LocalDate.now(bernZone)
+                .atStartOfDay(bernZone)
+                .toInstant()
+                .minus(14, ChronoUnit.DAYS);
+
+        // Find all EVENT_COMPLETED events older than 14 days
+        List<Event> eventsToArchive = eventRepository.findByWorkflowStateAndDateBefore(
+                EventWorkflowState.EVENT_COMPLETED,
+                archiveThreshold
+        );
+
+        if (eventsToArchive.isEmpty()) {
+            log.info("No events found to archive (14-day post-event window not expired)");
+            return;
+        }
+
+        log.info("Found {} events to auto-archive (date < {})", eventsToArchive.size(), archiveThreshold);
+
+        int transitioned = 0;
+        for (Event event : eventsToArchive) {
+            try {
+                workflowStateMachine.transitionToState(
+                        event.getEventCode(),
+                        EventWorkflowState.ARCHIVED,
+                        "scheduler"
+                );
+                log.info("Auto-archived event {} (date: {})", event.getEventCode(), event.getDate());
+                transitioned++;
+            } catch (Exception e) {
+                log.error("Failed to auto-archive event {}", event.getEventCode(), e);
+                // Continue with next event — don't let one failure stop the batch
+            }
+        }
+
+        log.info("Completed processEventsToArchive: {}/{} events archived", transitioned, eventsToArchive.size());
     }
 
     /**

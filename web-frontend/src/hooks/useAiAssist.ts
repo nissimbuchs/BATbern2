@@ -2,29 +2,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import apiClient from '@/services/api/apiClient';
 
-interface DescriptionRequest {
-  topicTitle: string;
-  topicCategory: string;
-  eventTitle?: string;
-  eventDate?: string;
-}
 interface DescriptionResponse {
   description: string;
 }
 interface ThemeImageRequest {
-  topicTitle: string;
-  topicCategory: string;
-  eventTitle?: string;
-  eventDescription?: string;
   seed?: string;
 }
 interface ThemeImageResponse {
   imageUrl: string;
   s3Key: string;
-}
-interface AbstractRequest {
-  abstract: string;
-  speakerName?: string;
 }
 interface AbstractResponse {
   noPromotionScore: number;
@@ -38,12 +24,11 @@ interface AbstractResponse {
 export function useAiGenerateDescription(eventCode: string) {
   const { t } = useTranslation('organizer');
 
-  return useMutation<DescriptionResponse, Error, DescriptionRequest>({
-    mutationFn: async (req) => {
+  return useMutation<DescriptionResponse, Error, void>({
+    mutationFn: async () => {
       try {
         const response = await apiClient.post<DescriptionResponse>(
-          `/events/${eventCode}/ai/description`,
-          req
+          `/events/${eventCode}/ai/description`
         );
         return response.data;
       } catch (err: unknown) {
@@ -61,14 +46,9 @@ export function useAiGenerateThemeImage(eventCode: string) {
   return useMutation<ThemeImageResponse, Error, ThemeImageRequest>({
     mutationFn: async (req) => {
       try {
-        const { seed, eventDescription, ...body } = req;
-        const params = new URLSearchParams();
-        if (seed) params.set('seed', seed);
-        if (eventDescription) params.set('description', eventDescription);
-        const qs = params.toString();
+        const qs = req.seed ? `?seed=${encodeURIComponent(req.seed)}` : '';
         const response = await apiClient.post<ThemeImageResponse>(
-          `/events/${eventCode}/ai/theme-image${qs ? `?${qs}` : ''}`,
-          body
+          `/events/${eventCode}/ai/theme-image${qs}`
         );
         return response.data;
       } catch {
@@ -96,15 +76,14 @@ export function useAiApplyThemeImage(eventCode: string) {
   });
 }
 
-export function useAiAnalyzeAbstract(speakerId: string) {
+export function useAiAnalyzeAbstract(speakerPoolId: string) {
   const { t } = useTranslation('organizer');
 
-  return useMutation<AbstractResponse, Error, AbstractRequest>({
-    mutationFn: async (req) => {
+  return useMutation<AbstractResponse, Error, void>({
+    mutationFn: async () => {
       try {
         const response = await apiClient.post<AbstractResponse>(
-          `/speakers/${speakerId}/ai/analyze-abstract`,
-          req
+          `/speakers/${speakerPoolId}/ai/analyze-abstract`
         );
         return response.data;
       } catch {

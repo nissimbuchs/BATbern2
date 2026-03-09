@@ -29,7 +29,9 @@ import java.time.ZoneOffset;
  * - IllegalStateException  → 409
  * <p>
  * Rate limiting: No rate limiting infrastructure (bucket4j) exists in this service.
- * TODO: add per-IP rate limiting to /by-email to prevent email spam abuse — see Issue #XXX
+ * TODO: add per-IP rate limiting to /by-email to prevent email spam abuse.
+ * Per-IP throttle: max 5 requests/hour per source IP (bucket4j or Spring rate-limiter).
+ * Track in backlog as "Rate-limit deregistration-by-email endpoint"
  */
 @RestController
 @RequestMapping("/api/v1/registrations/deregister")

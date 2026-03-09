@@ -446,6 +446,60 @@ public class RegistrationService {
      *
      * @param registration The registration to cancel (must not be null, must have eventId)
      */
+    /**
+     * Cancel a registration by email address and event code.
+     * Called when an attendee replies with a CANCEL keyword (Story 10.17).
+     * Replicates the same status change as clicking the deregistration link in the email,
+     * including waitlist promotion.
+     * <p>
+     * Anti-enumeration: silent no-op if no matching active registration is found.
+     *
+     * @param email     attendee email address
+     * @param eventCode event code (e.g. "BATbern42")
+     */
+    @Transactional
+    public void cancelByEmail(String email, String eventCode) {
+        registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
+                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+                .ifPresentOrElse(
+                        registration -> {
+                            cancelRegistration(registration);
+                            log.info("Registration cancelled via email reply: {} for event: {}",
+                                    registration.getRegistrationCode(), eventCode);
+                        },
+                        () -> log.info("cancelByEmail: no active registration found for {}*** / {}",
+                                email.substring(0, Math.min(5, email.length())), eventCode)
+            );
+    }
+
+    /**
+     * Confirm a registration by email address and event code.
+     * Called when an attendee replies with an ACCEPT keyword (Story 10.17).
+     * Replicates the same status change as clicking the confirmation link in the email.
+     * <p>
+     * Anti-enumeration: silent no-op if no matching active registration is found.
+     *
+     * @param email     attendee email address
+     * @param eventCode event code (e.g. "BATbern42")
+     */
+    @Transactional
+    public void confirmByEmail(String email, String eventCode) {
+        registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
+                .filter(r -> !"confirmed".equalsIgnoreCase(r.getStatus())
+                          && !"cancelled".equalsIgnoreCase(r.getStatus()))
+                .ifPresentOrElse(
+                        registration -> {
+                            registration.setStatus("confirmed");
+                            registration.setUpdatedAt(java.time.Instant.now());
+                            registrationRepository.save(registration);
+                            log.info("Registration confirmed via email reply: {} for event: {}",
+                                    registration.getRegistrationCode(), eventCode);
+                        },
+                        () -> log.info("confirmByEmail: no active registration found for {}*** / {}",
+                                email.substring(0, Math.min(5, email.length())), eventCode)
+            );
+    }
+
     @Transactional
     public void cancelRegistration(Registration registration) {
         registration.setStatus("cancelled");

@@ -52,6 +52,9 @@ class EventArchivalCleanupIntegrationTest extends AbstractIntegrationTest {
     private EventArchivalCleanupService eventArchivalCleanupService;
 
     @Autowired
+    private EventWorkflowStateMachine stateMachine;
+
+    @Autowired
     private EventRepository eventRepository;
 
     @Autowired
@@ -227,6 +230,35 @@ class EventArchivalCleanupIntegrationTest extends AbstractIntegrationTest {
 
         List<EventTask> tasks = eventTaskRepository.findByEventId(testEvent.getId());
         assertThat(tasks).allMatch(t -> "cancelled".equals(t.getStatus()));
+    }
+
+    @Test
+    @DisplayName("regression: ARCHIVED state persists to DB when open tasks exist during archival (flushAutomatically bug)")
+    void transitionToArchived_persistsEventState_whenOpenTasksExist() {
+        // Regression test for: @Modifying(clearAutomatically = true) on cancelOpenTasksForEvent()
+        // was evicting the pending event state change from the JPA first-level cache before the
+        // transaction committed, causing the workflowState update to be silently lost.
+        // Fix: flushAutomatically = true forces JPA to flush the event UPDATE before clearing the cache.
+
+        // Given: event in EVENT_COMPLETED with one open task
+        testEvent.setWorkflowState(EventWorkflowState.EVENT_COMPLETED);
+        testEvent = eventRepository.save(testEvent);
+        createAndSaveTask("todo");
+
+        // When: transition to ARCHIVED via state machine (override=true so no validation needed)
+        // This is the full transaction boundary — stateMachine.transitionToState() commits on return
+        stateMachine.transitionToState(
+                testEvent.getEventCode(),
+                EventWorkflowState.ARCHIVED,
+                "test.organizer",
+                true,
+                "regression test");
+
+        // Then: event state persisted to DB (not just held in memory)
+        Event reloaded = eventRepository.findByEventCode(testEvent.getEventCode()).orElseThrow();
+        assertThat(reloaded.getWorkflowState())
+                .as("workflow_state must be ARCHIVED in DB after transaction commits")
+                .isEqualTo(EventWorkflowState.ARCHIVED);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

@@ -20,8 +20,8 @@ describe('SecretsStack', () => {
       const template = Template.fromStack(stack);
 
       // Verify secrets are created
-      // Note: Only JWT secret here. DB managed by RDS stack, Redis removed (disabled for cost optimization)
-      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+      // Note: JWT secret + Watch JWT secret. DB managed by RDS stack, Redis removed (disabled for cost optimization)
+      template.resourceCountIs('AWS::SecretsManager::Secret', 2);
     });
 
     test('should_enableKMSKeyRotation_when_productionEnvironment', () => {
