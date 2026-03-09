@@ -34,7 +34,10 @@
   "epic-6-speaker-portal": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-epic-6-speaker-portal.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-6-speaker-portal.md",
+    "fixed_at": "2026-03-09T14:39:58.762737"
   },
   "epic-8-partner": {
     "status": "done",
