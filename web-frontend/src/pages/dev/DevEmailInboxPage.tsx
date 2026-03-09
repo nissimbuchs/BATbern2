@@ -70,7 +70,7 @@ export default function DevEmailInboxPage() {
         setSelected(updated ?? null);
       }
     } catch (e) {
-      setError(`Could not reach EMS at localhost:8002 — is the service running? (${e})`);
+      setError(`Could not load emails — are the services running? (${e})`);
     } finally {
       setLoading(false);
     }

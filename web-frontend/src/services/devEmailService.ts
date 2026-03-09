@@ -1,11 +1,13 @@
 /**
  * Dev-only email service for the local email inbox.
- * Talks directly to the Event Management Service — no auth, no API gateway needed.
+ * Aggregates captured emails from all services that have a DevEmailController.
  *
+ * Currently: Event Management Service (EMS, :8002) + Partner Coordination Service (PCS, :8004).
  * Only used by DevEmailInboxPage (accessible at /dev/emails in local dev).
  */
 
 const EMS_BASE = `http://localhost:${import.meta.env.VITE_EMS_PORT ?? 8002}`;
+const PCS_BASE = `http://localhost:${import.meta.env.VITE_PCS_PORT ?? 8004}`;
 
 export interface CapturedEmail {
   id: string;
@@ -22,20 +24,34 @@ export interface CapturedEmail {
   }>;
 }
 
+async function fetchFromService(baseUrl: string): Promise<CapturedEmail[]> {
+  try {
+    const response = await fetch(`${baseUrl}/dev/emails`);
+    if (!response.ok) return [];
+    return response.json();
+  } catch {
+    // Service may not be running — silently return empty
+    return [];
+  }
+}
+
 export const devEmailService = {
   fetchAll: async (): Promise<CapturedEmail[]> => {
-    const response = await fetch(`${EMS_BASE}/dev/emails`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch emails: ${response.status}`);
-    }
-    return response.json();
+    const [emsEmails, pcsEmails] = await Promise.all([
+      fetchFromService(EMS_BASE),
+      fetchFromService(PCS_BASE),
+    ]);
+    // Merge and sort newest first
+    return [...emsEmails, ...pcsEmails].sort(
+      (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
+    );
   },
 
   clearAll: async (): Promise<void> => {
-    const response = await fetch(`${EMS_BASE}/dev/emails`, { method: 'DELETE' });
-    if (!response.ok && response.status !== 204) {
-      throw new Error(`Failed to clear inbox: ${response.status}`);
-    }
+    await Promise.all([
+      fetch(`${EMS_BASE}/dev/emails`, { method: 'DELETE' }),
+      fetch(`${PCS_BASE}/dev/emails`, { method: 'DELETE' }).catch(() => undefined),
+    ]);
   },
 
   /**
