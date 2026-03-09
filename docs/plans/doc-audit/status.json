@@ -42,7 +42,10 @@
   "epic-8-partner": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-epic-8-partner.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-8-partner.md",
+    "fixed_at": "2026-03-09T14:41:29.673505"
   },
   "epic-9-speaker-auth": {
     "status": "done",
