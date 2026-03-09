@@ -234,12 +234,12 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   });
   clusterStack.addDependency(networkStack);
 
-  // 10a-i. Inbound Email Stack (Story 10.17) — eu-west-1 only (SES inbound not in eu-central-1)
+  // 10a-i. Inbound Email Stack (Story 10.17) — same region as all other stacks (eu-central-1).
+  // SES inbound email expanded to eu-central-1 in Sept 2023; no cross-region deployment needed.
   // Created BEFORE EMS so that queue URL and bucket name can be passed as env vars to EMS.
   const inboundEmailStack = new InboundEmailStack(app, `${stackPrefix}-InboundEmail`, {
     config,
-    env: { account: env.account, region: 'eu-west-1' }, // SES inbound requires eu-west-1
-    crossRegionReferences: true, // required: SQS in eu-west-1 referenced by EMS in eu-central-1
+    env,
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
   });
@@ -260,14 +260,13 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     alarmTopic: monitoringStack.alarmTopic,
     // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
-    // Story 10.17: Inbound email SQS queue URL and S3 bucket name (cross-region: eu-west-1)
+    // Story 10.17: Inbound email SQS queue URL and S3 bucket name
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
     watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
-    crossRegionReferences: true, // Required to reference InboundEmailStack resources from eu-west-1
   });
   eventManagementStack.addDependency(clusterStack);
   eventManagementStack.addDependency(databaseStack);

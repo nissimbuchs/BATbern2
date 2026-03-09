@@ -20,9 +20,8 @@ export interface InboundEmailStackProps extends cdk.StackProps {
  *   replies@batbern.ch → SES receipt rule → S3 bucket → S3 event notification
  *   → SQS queue → @SqsListener in EMS → MIME parse → route (unsubscribe/cancel)
  *
- * IMPORTANT: This stack MUST be deployed to eu-west-1 because AWS SES inbound email
- * receiving is only supported in us-east-1, us-west-2, and eu-west-1.
- * BATbern's primary region (eu-central-1) does NOT support SES inbound.
+ * Deployed to eu-central-1 (same region as all other stacks). SES inbound email receiving
+ * expanded to eu-central-1 in September 2023 — no cross-region deployment required.
  */
 export class InboundEmailStack extends cdk.Stack {
   public readonly inboundQueue: sqs.IQueue;
