@@ -74,7 +74,10 @@
   "user-guide-workflow": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-user-guide-workflow.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-guide-workflow.md",
+    "fixed_at": "2026-03-09T14:56:42.488366"
   },
   "user-guide-speaker-portal": {
     "status": "done",
