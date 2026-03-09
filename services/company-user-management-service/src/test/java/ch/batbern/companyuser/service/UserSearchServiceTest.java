@@ -110,7 +110,7 @@ class UserSearchServiceTest {
             User user = invocation.getArgument(0);
             UserResponse response = new UserResponse();
             response.setId(user.getUsername());  // Story 1.16.2: id contains username
-            response.setCognitoUserId(user.getCognitoUserId());
+            response.setHasCognitoAccount(user.getCognitoUserId() != null);
             response.setEmail(user.getEmail());
             response.setFirstName(user.getFirstName());
             response.setLastName(user.getLastName());

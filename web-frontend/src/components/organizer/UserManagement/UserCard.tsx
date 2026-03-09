@@ -115,8 +115,8 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
                   color={user.active ? 'success' : 'default'}
                   sx={{ height: 20, fontSize: '0.7rem' }}
                 />
-                {user.cognitoUserId && (
-                  <Tooltip title={t('cognito.tooltip', { id: user.cognitoUserId })}>
+                {user.hasCognitoAccount && (
+                  <Tooltip title={t('cognito.tooltip')}>
                     <CloudIcon
                       sx={{ fontSize: 14, color: 'info.main' }}
                       aria-label={t('cognito.linked')}

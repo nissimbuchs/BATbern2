@@ -246,7 +246,7 @@
   "cognito": {
     "linked": "Cognito linked",
     "notLinked": "No Cognito account",
-    "tooltip": "Cognito ID: {{id}}"
+    "tooltip": "Has Cognito account"
   },
   "userDetail": {
     "tabs": {

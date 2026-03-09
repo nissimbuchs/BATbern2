@@ -1537,9 +1537,10 @@ components:
           description: Username (unique identifier) - Story 1.16.2
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
           example: john.doe
-        cognitoUserId:
-          type: string
-          example: cognito-user-123
+        hasCognitoAccount:
+          type: boolean
+          description: True if this user has a linked Cognito account (UUID not exposed per ADR-003)
+          example: true
         email:
           type: string
           format: email

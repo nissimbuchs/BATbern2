@@ -32,6 +32,7 @@ public class UserResponseMapper {
 
         return new UserResponse()
                 .id(user.getUsername())  // Story 1.16.2: username as id
+                .hasCognitoAccount(user.getCognitoUserId() != null)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())

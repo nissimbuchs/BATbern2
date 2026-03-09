@@ -21,6 +21,6 @@
   "cognito": {
     "linked": "Cognito verchüpft",
     "notLinked": "Kei Cognito-Konto",
-    "tooltip": "Cognito-ID: {{id}}"
+    "tooltip": "Cognito-Konto verknüpft"
   }
 }

@@ -272,6 +272,6 @@
   "cognito": {
     "linked": "Cognito gekoppeld",
     "notLinked": "Geen Cognito-account",
-    "tooltip": "Cognito ID: {{id}}"
+    "tooltip": "Cognito-account gekoppeld"
   }
 }

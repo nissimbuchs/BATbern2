@@ -272,6 +272,6 @@
   "cognito": {
     "linked": "Cognito yhdistetty",
     "notLinked": "Ei Cognito-tiliä",
-    "tooltip": "Cognito-tunnus: {{id}}"
+    "tooltip": "Cognito-tili yhdistetty"
   }
 }

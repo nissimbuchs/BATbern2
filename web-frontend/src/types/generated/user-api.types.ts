@@ -689,8 +689,11 @@ export interface components {
        * @example john.doe
        */
       id: string;
-      /** @example cognito-user-123 */
-      cognitoUserId?: string;
+      /**
+       * @description True if this user has a linked Cognito account (UUID not exposed per ADR-003)
+       * @example true
+       */
+      hasCognitoAccount?: boolean;
       /**
        * Format: email
        * @example john.doe@example.com

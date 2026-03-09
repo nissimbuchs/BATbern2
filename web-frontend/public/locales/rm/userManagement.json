@@ -272,6 +272,6 @@
   "cognito": {
     "linked": "Cognito collià",
     "notLinked": "Nagin conto Cognito",
-    "tooltip": "ID Cognito: {{id}}"
+    "tooltip": "Conto Cognito collià"
   }
 }
