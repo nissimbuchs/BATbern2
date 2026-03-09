@@ -276,7 +276,7 @@ def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
             [
                 "claude",
                 "--print",
-                "--allowedTools", "Read,Edit,Write,Glob,Grep",
+                "--dangerously-skip-permissions",
                 "--model", "claude-sonnet-4-6",
                 prompt,
             ],
@@ -418,7 +418,7 @@ def run_fix(target: dict, status: dict, dry_run: bool = False) -> bool:
             [
                 "claude",
                 "--print",
-                "--allowedTools", "Read,Edit,Write,Glob,Grep",
+                "--dangerously-skip-permissions",
                 "--model", "claude-sonnet-4-6",
                 prompt,
             ],
