@@ -32,7 +32,7 @@ while IFS= read -r sha; do
   [[ -z "$sha" ]] && continue
 
   msg=$(git log -1 --format="%s" "$sha")
-  commit_type=$(echo "$msg" | grep -oP '^[a-z]+(?=[\(:!])' || echo "unknown")
+  commit_type=$(echo "$msg" | sed -E 's/^([a-z]+)[(:!].*/\1/' | grep -E '^[a-z]+$' || echo "unknown")
 
   # Skip [no-doc] commits
   if echo "$msg" | grep -q "\[no-doc\]"; then

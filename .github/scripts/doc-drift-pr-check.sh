@@ -17,7 +17,7 @@ if echo "$PR_TITLE" | grep -q "\[no-doc\]"; then
 fi
 
 # ── 2. Commit type filter ────────────────────────────────────────────────────
-commit_type=$(echo "$PR_TITLE" | grep -oP '^[a-z]+(?=[\(:!])' || echo "unknown")
+commit_type=$(echo "$PR_TITLE" | sed -E 's/^([a-z]+)[(:!].*/\1/' | grep -E '^[a-z]+$' || echo "unknown")
 
 SKIP_TYPES=$(python3 -c "
 import yaml
