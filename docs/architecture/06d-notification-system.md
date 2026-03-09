@@ -16,7 +16,7 @@ The notification system provides multi-channel communication (email, SMS) with d
 
 ## Database Schema
 
-**Location**: `services/event-management-service/src/main/resources/db/migration/V25__Create_notifications_table.sql`
+**Location**: `services/event-management-service/src/main/resources/db/migration/V33__Create_notifications_table.sql`
 
 ```sql
 CREATE TABLE IF NOT EXISTS notifications (
@@ -80,7 +80,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
-    private final UserServiceClient userServiceClient;
+    private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
 
     /**
@@ -112,7 +112,7 @@ public class NotificationService {
     @Transactional
     public void createAndSendEmailNotification(NotificationRequest request) {
         // Check user preferences (via HTTP call to User Service)
-        UserPreferences prefs = userServiceClient
+        UserPreferences prefs = userApiClient
             .getPreferences(request.getRecipientUsername());
 
         if (!shouldSend(prefs, request)) {
@@ -132,7 +132,9 @@ public class NotificationService {
 
         // Send via AWS SES
         try {
-            emailService.send(notification);
+            String recipientEmail = userApiClient.getEmailByUsername(notification.getRecipientUsername());
+            String htmlContent = buildEmailContent(notification);
+            emailService.sendHtmlEmail(recipientEmail, notification.getSubject(), htmlContent);
 
             // Update status after delivery
             notification.setStatus("SENT");
@@ -153,9 +155,9 @@ public class NotificationService {
      */
     public List<InAppNotification> getInAppNotifications(String username) {
         // Find events published since user's last login
-        Instant lastLogin = userServiceClient.getLastLogin(username);
+        Instant lastLogin = userApiClient.getLastLogin(username);
 
-        List<Event> newEvents = eventRepository.findPublishedAfter(lastLogin);
+        List<Event> newEvents = eventRepository.findByPublishedAtAfter(lastLogin);
 
         // Convert to notifications on-the-fly
         return newEvents.stream()
@@ -229,10 +231,13 @@ public enum NotificationType {
     QUALITY_REVIEW_APPROVED,
     QUALITY_REVIEW_REQUIRES_CHANGES,
     SLOT_ASSIGNED,
-    DEADLINE_WARNING,
+    DEADLINE_WARNING,       // Used by DeadlineReminderJob for registration deadline reminders
+    DEADLINE_REMINDER,      // Used in NotificationControllerIntegrationTest (VARCHAR column allows this value)
     OVERFLOW_DETECTED,
     VOTING_REQUIRED,
     EVENT_PUBLISHED
+    // Note: TASK_DEADLINE_WARNING is NOT written to the notifications table —
+    // TaskDeadlineReminderScheduler delegates directly to TaskReminderEmailService, bypassing this system.
 }
 
 public enum NotificationPriority {
@@ -324,14 +329,14 @@ public class EscalationNotification {
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private final UserServiceClient userServiceClient;
+    private final UserApiClient userApiClient;
 
     /**
      * Check if notification should be sent based on user preferences
      */
     private boolean shouldSend(String username, NotificationRequest request) {
         // Fetch user preferences via HTTP (Company-User Management Service)
-        UserPreferences prefs = userServiceClient.getPreferences(username);
+        UserPreferences prefs = userApiClient.getPreferences(username);
 
         // Check if channel is enabled
         if (request.getChannel().equals("EMAIL") && !prefs.isEmailNotificationsEnabled()) {
@@ -362,12 +367,12 @@ public class NotificationService {
 }
 ```
 
-### UserServiceClient (HTTP Integration)
+### UserApiClient (HTTP Integration)
 
 ```java
 @Component
 @RequiredArgsConstructor
-public class UserServiceClient {
+public class UserApiClient {
 
     private final RestTemplate restTemplate;
 
@@ -397,9 +402,9 @@ public class UserServiceClient {
 }
 ```
 
-## Real-Time Notifications (Future Work)
+## Real-Time Notifications (Partial — WebSocket Infrastructure Wired)
 
-**Status**: Not implemented in Story 1.15a.10 (deferred to future story)
+**Status**: `SimpMessagingTemplate` (`org.springframework.messaging.simp.SimpMessagingTemplate`) is already injected into the `NotificationService` constructor, indicating WebSocket infrastructure is in place. Full real-time push to connected clients is not yet exercised in production flows and remains a future story.
 
 **Planned Approach**: WebSocket integration using Spring WebSocket + STOMP for real-time in-app notifications
 
@@ -427,31 +432,27 @@ public class EmailService {
 
     private final AmazonSimpleEmailService sesClient;
     private final TemplateEngine templateEngine;
-    private final UserServiceClient userServiceClient;
 
     /**
-     * Send email and track in notifications table
-     * Called by NotificationService after creating audit trail record
+     * Send HTML email via AWS SES.
+     * Called by NotificationService after creating the audit trail record.
+     *
+     * @param recipientEmail resolved email address of the recipient
+     * @param subject        email subject line
+     * @param htmlContent    rendered HTML body
      */
-    public void send(Notification notification) {
-        // Fetch user email via HTTP (Company-User Management Service)
-        String email = userServiceClient.getEmailByUsername(notification.getRecipientUsername());
-
-        // Build email content from template
-        String htmlContent = buildEmailContent(notification);
-
+    public void sendHtmlEmail(String recipientEmail, String subject, String htmlContent) {
         // Send via AWS SES
         SendEmailRequest request = new SendEmailRequest()
-            .withDestination(new Destination().withToAddresses(email))
+            .withDestination(new Destination().withToAddresses(recipientEmail))
             .withMessage(new Message()
-                .withSubject(new Content().withData(notification.getSubject()))
+                .withSubject(new Content().withData(subject))
                 .withBody(new Body().withHtml(new Content().withData(htmlContent))))
             .withSource("notifications@batbern.ch");
 
         sesClient.sendEmail(request);
 
-        log.info("Email notification sent to {} ({}): {}",
-            notification.getRecipientUsername(), email, notification.getSubject());
+        log.info("Email sent to {}: {}", recipientEmail, subject);
     }
 
     private String buildEmailContent(Notification notification) {
@@ -544,7 +545,7 @@ public class Notification {
 
     // Delivery tracking
     @Column(name = "status", nullable = false, length = 20)
-    private String status;  // PENDING, SENT, FAILED, READ
+    private String status;  // PENDING, UNREAD, SENT, FAILED, READ
 
     @Column(name = "sent_at")
     private Instant sentAt;
@@ -683,49 +684,49 @@ public class DeadlineReminderJob {
 
 ### Task Deadline Reminder (Integration with Task System)
 
+**Note**: This scheduler bypasses `NotificationService` entirely — it delegates directly to `TaskReminderEmailService`, so **no record is written to the notifications table** for task reminders.
+
+**Locale**: All task reminder emails are rendered in `Locale.GERMAN`; user language preference is not consulted.
+
+**Timezone**: The tomorrow-only window is computed in `Europe/Zurich` timezone.
+
+**Error handling**: The scheduler catches and logs all `RuntimeException` from the repository; the job does not fail the Spring scheduler thread.
+
 ```java
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TaskDeadlineReminderJob {
+public class TaskDeadlineReminderScheduler {
 
-    private final EventTaskRepository taskRepository;
-    private final NotificationService notificationService;
+    private final EventTaskRepository eventTaskRepository;
+    private final TaskReminderEmailService taskReminderEmailService;
 
     @Scheduled(cron = "0 0 9 * * *") // 9 AM daily
     public void sendTaskDeadlineReminders() {
-        log.info("Starting task deadline reminder job");
+        log.info("Starting task deadline reminder scheduler");
 
-        Instant threeDaysFromNow = Instant.now().plus(Duration.ofDays(3));
+        ZoneId swissZone = ZoneId.of("Europe/Zurich");
+        ZonedDateTime startOfTomorrow = LocalDate.now(swissZone).plusDays(1).atStartOfDay(swissZone);
+        ZonedDateTime startOfDayAfterTomorrow = startOfTomorrow.plusDays(1);
 
-        // Find tasks due soon (Story 5.5 integration)
-        List<EventTask> upcomingTasks = taskRepository
-            .findByDueDateBeforeAndStatusNot(threeDaysFromNow, "completed");
+        try {
+            // Find tasks due tomorrow only (tomorrow-only window, Swiss timezone)
+            List<EventTask> upcomingTasks = eventTaskRepository
+                .findTasksDueForReminder(
+                    startOfTomorrow.toInstant(),
+                    startOfDayAfterTomorrow.toInstant()
+                );
 
-        for (EventTask task : upcomingTasks) {
-            notificationService.createAndSendEmailNotification(
-                NotificationRequest.builder()
-                    .recipientUsername(task.getAssignedOrganizerUsername())  // ADR-003
-                    .eventCode(task.getEventCode())  // ADR-003
-                    .type("TASK_DEADLINE_WARNING")
-                    .channel("EMAIL")
-                    .priority("HIGH")
-                    .subject("Task due soon: " + task.getTaskName())
-                    .body(String.format(
-                        "Your task '%s' for event %s is due on %s.",
-                        task.getTaskName(),
-                        task.getEventCode(),
-                        task.getDueDate()
-                    ))
-                    .metadata(Map.of(
-                        "taskId", task.getId().toString(),
-                        "dueDate", task.getDueDate().toString()
-                    ))
-                    .build()
-            );
+            for (EventTask task : upcomingTasks) {
+                // Delegate to email service (bypasses NotificationService/notifications table)
+                taskReminderEmailService.sendTaskDeadlineReminder(task, Locale.GERMAN);
+            }
+
+            log.info("Task deadline reminder scheduler completed: {} reminders sent", upcomingTasks.size());
+        } catch (RuntimeException e) {
+            // Catches and logs all repository exceptions; does not fail the Spring scheduler thread
+            log.error("Task deadline reminder scheduler failed", e);
         }
-
-        log.info("Task deadline reminder job completed: {} reminders sent", upcomingTasks.size());
     }
 }
 ```
