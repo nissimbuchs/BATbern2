@@ -41,8 +41,24 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 | **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Manually finalized (2 weeks before) |
 | **AGENDA_FINALIZED** | Agenda locked for printing | Manually finalized | Event day |
 | **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
-| **EVENT_COMPLETED** | Event finished, post-processing | After event | Manual trigger |
-| **ARCHIVED** | Event archived | Archival trigger | Terminal state |
+| **EVENT_COMPLETED** | Event finished, post-processing | After event | Auto: daily scheduler 02:00 Bern time, 14 days after event date |
+| **ARCHIVED** | Event archived | 14 days after event date (auto) or manual trigger | Terminal state |
+
+### Post-Event Window (14-Day Rule)
+
+After an event transitions to **EVENT_COMPLETED**, it enters a 14-day public-visibility window before being auto-archived:
+
+- **During the window (days 0–14 after event date):**
+  - `getCurrentEvent()` query: Phase 1 checks for upcoming/live events; Phase 2 falls back to the most recent EVENT_COMPLETED event within the 14-day window.
+  - The homepage renders the event with an **archive-style UI**: timetable and speakers visible; no registration form, no logistics/venue block.
+  - A 404 is NOT returned — the event is still surfaced to the public.
+
+- **After 14 days:**
+  - `processEventsToArchive()` runs at **02:00 Bern time** via a daily ShedLock-guarded scheduler.
+  - It transitions all qualifying EVENT_COMPLETED events to ARCHIVED.
+  - From this point, `getCurrentEvent()` returns 404 if no future event is active.
+
+**Implementation note:** The scheduler lives in `event-management-service` and is guarded by ShedLock to prevent duplicate execution across ECS tasks. The archive-style homepage UI is determined in the frontend by checking `event.workflowState === 'EVENT_COMPLETED'`.
 
 ### Implementation
 

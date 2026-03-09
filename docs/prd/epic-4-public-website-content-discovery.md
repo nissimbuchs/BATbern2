@@ -92,6 +92,9 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 6. **Registration Confirmation**: QR code for check-in, calendar export (iCal), email confirmation
 7. **Session Details Modal**: Deep dive into individual sessions with speaker bios
 
+**Post-Event 14-Day Display Rule:**
+After an event finishes, the homepage continues to show it for **14 days** using an archive-style layout: timetable and speaker list are visible, but registration, logistics, and venue blocks are hidden. After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
+
 ---
 
 ### Wireframe References
