@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtro activo"
     },
     "detail": {
-      "backToArchive": "← Volver al archivo"
+      "backToArchive": "← Volver al archivo",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Importar datos",
       "taskTemplates": "Plantillas de tareas",
       "emailTemplates": "Plantillas de correo",
-      "presentationSettings": "Presentación"
+      "presentationSettings": "Presentación",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Acceso denegado",
     "organizerOnly": "Esta página es solo para organizadores.",
@@ -639,6 +642,31 @@
       "saved": "Configuración guardada.",
       "saveFailed": "Error al guardar. Por favor, inténtalo de nuevo."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Exportar",
+      "exportJsonButton": "Exportar todos los datos (JSON)",
+      "exportAssetsButton": "Obtener manifiesto de recursos",
+      "importSection": "Importar",
+      "importJsonLabel": "Elegir archivo JSON",
+      "importButton": "Importar",
+      "successAlert": "Importación completada con éxito.",
+      "resultEvents": "Eventos",
+      "resultSessions": "Sesiones",
+      "resultSpeakers": "Ponentes",
+      "resultCompanies": "Empresas",
+      "resultAttendees": "Asistentes",
+      "resultErrors": "Errores",
+      "errorAlert": "La importación falló. Ver errores a continuación.",
+      "importAssetsLabel": "Importar recursos (ZIP)",
+      "importAssetsChooseLabel": "Elegir archivo ZIP",
+      "importAssetsButton": "Importar recursos",
+      "confirmTitle": "Confirmar importación",
+      "confirmMessage": "Esto insertará o actualizará datos. Los registros existentes serán actualizados. No se puede deshacer automáticamente.",
+      "confirmAssetsTitle": "Confirmar importación de recursos",
+      "confirmAssetsMessage": "Se subirán todos los recursos del archivo ZIP a S3. No se puede deshacer automáticamente.",
+      "confirmButton": "Continuar"
+    },
     "taskTemplates": {
       "defaultSection": "Plantillas predeterminadas",
       "customSection": "Plantillas personalizadas",
@@ -647,6 +675,21 @@
       "noCustom": "Aún no hay plantillas personalizadas.",
       "confirmDelete": "¿Eliminar plantilla?",
       "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo."
+    },
+    "aiPrompts": {
+      "description": "Estos prompts se envían a OpenAI para generar descripciones de eventos, imágenes temáticas y evaluaciones de calidad de resúmenes. Use variables {{VARIABLE_NAME}} — las variables disponibles se listan bajo cada prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Guardar",
+      "saved": "Prompt guardado.",
+      "saveFailed": "Error al guardar el prompt.",
+      "resetToDefault": "Restablecer predeterminado",
+      "resetDialogTitle": "¿Restablecer el prompt predeterminado?",
+      "resetDialogText": "Esto sobrescribirá sus cambios con el texto original. Esta acción no se puede deshacer.",
+      "resetDialogCancel": "Cancelar",
+      "resetDialogConfirm": "Restablecer",
+      "resetDone": "Prompt restablecido al valor predeterminado.",
+      "resetFailed": "Error al restablecer el prompt.",
+      "loadFailed": "No se pudieron cargar los prompts de IA."
     }
   },
   "labels": {

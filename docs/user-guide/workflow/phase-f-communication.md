@@ -38,11 +38,20 @@ BATbern includes 7 pre-configured tasks that automatically create when events re
 6. **Newsletter: Final** - Due: 14 days before event
 7. **Catering** - Due: 30 days before event
 
-### Task States
+### Task Lifecycle
+
+Tasks use a **two-phase creation model**:
+
+1. **PENDING** (internal, pre-activation) — All default task templates are silently pre-created with `status = "pending"` when the event is first created. These tasks are not shown on the task dashboard.
+2. **Activated** — When the event transitions to a task's configured trigger state, the pending tasks activate and become visible in the organizer task dashboard.
+
+This means tasks "appear" at the right workflow moment without requiring manual action — they were already prepared in the background.
+
+### Task States (User-Visible)
 
 All tasks progress through 4 states:
 
-- **TODO** - Not started (overdue tasks highlighted in red)
+- **TODO** - Not started (overdue tasks highlighted in red; tasks due within 3 calendar days appear highlighted as critical alongside overdue tasks)
 - **IN_PROGRESS** - Currently working on
 - **COMPLETED** - Finished with completion notes
 - **CANCELLED** - Not needed (event cancelled or task no longer relevant)

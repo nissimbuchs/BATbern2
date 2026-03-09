@@ -8,7 +8,7 @@
 - **2026-02-06:** Stories 6.0-6.3, 6.5 deployed (PR #430, Build Pipeline #21559151095)
 - **2026-02-16:** Story 6.4 implementation complete with WCAG 2.1 AA accessibility (QA review)
 
-**Architecture:** Speaker portal functionality implemented in `event-management-service` with magic link authentication, invitation workflow, response handling, content submission, dashboard, and automated reminders.
+**Architecture:** Speaker portal functionality implemented in `speaker-coordination-service` with magic link authentication, invitation workflow, response handling, content submission, dashboard, and automated reminders.
 
 ---
 
@@ -423,6 +423,15 @@ As an **organizer**, I want automated deadline reminders sent to speakers, so th
 ---
 
 ## Implementation Considerations
+
+### Operational Requirements
+
+The `speaker-coordination-service` exposes Spring Boot Actuator endpoints for operational monitoring:
+
+- `GET /actuator/health` — returns HTTP 200 with `{"status":"UP"}` when service is healthy
+- `GET /actuator/info` — returns HTTP 200 with service metadata
+
+These endpoints are unauthenticated and used by the load balancer health checks and monitoring tooling.
 
 ### Prerequisites
 

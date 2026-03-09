@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtre actif"
     },
     "detail": {
-      "backToArchive": "← Retour aux archives"
+      "backToArchive": "← Retour aux archives",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Importer des données",
       "taskTemplates": "Modèles de tâches",
       "emailTemplates": "Modèles d'e-mail",
-      "presentationSettings": "Présentation"
+      "presentationSettings": "Présentation",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Accès refusé",
     "organizerOnly": "Cette page est réservée aux organisateurs.",
@@ -639,6 +642,31 @@
       "saved": "Paramètres enregistrés.",
       "saveFailed": "Échec de l'enregistrement. Veuillez réessayer."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Exporter",
+      "exportJsonButton": "Exporter toutes les données (JSON)",
+      "exportAssetsButton": "Obtenir le manifeste des ressources",
+      "importSection": "Importer",
+      "importJsonLabel": "Choisir un fichier JSON",
+      "importButton": "Importer",
+      "successAlert": "Import terminé avec succès.",
+      "resultEvents": "Événements",
+      "resultSessions": "Sessions",
+      "resultSpeakers": "Conférenciers",
+      "resultCompanies": "Entreprises",
+      "resultAttendees": "Participants",
+      "resultErrors": "Erreurs",
+      "errorAlert": "L'import a échoué. Voir les erreurs ci-dessous.",
+      "importAssetsLabel": "Importer les ressources (ZIP)",
+      "importAssetsChooseLabel": "Choisir un fichier ZIP",
+      "importAssetsButton": "Importer les ressources",
+      "confirmTitle": "Confirmer l'import",
+      "confirmMessage": "Cela va insérer ou mettre à jour des données. Les enregistrements existants seront mis à jour. Cette opération ne peut pas être annulée automatiquement.",
+      "confirmAssetsTitle": "Confirmer l'import de ressources",
+      "confirmAssetsMessage": "Cela téléversera toutes les ressources du fichier ZIP vers S3. Cette opération ne peut pas être annulée automatiquement.",
+      "confirmButton": "Continuer"
+    },
     "taskTemplates": {
       "defaultSection": "Modèles par défaut",
       "customSection": "Modèles personnalisés",
@@ -647,6 +675,21 @@
       "noCustom": "Aucun modèle personnalisé pour le moment.",
       "confirmDelete": "Supprimer le modèle ?",
       "deleteFailed": "Échec de la suppression du modèle. Veuillez réessayer."
+    },
+    "aiPrompts": {
+      "description": "Ces prompts sont envoyés à OpenAI lors de la génération des descriptions d'événements, des images thématiques et des évaluations de la qualité des résumés. Utilisez des variables {{VARIABLE_NAME}} — les variables disponibles sont listées sous chaque prompt.",
+      "variablesLabel": "Variables :",
+      "save": "Enregistrer",
+      "saved": "Prompt enregistré.",
+      "saveFailed": "Échec de l'enregistrement du prompt.",
+      "resetToDefault": "Réinitialiser",
+      "resetDialogTitle": "Réinitialiser le prompt ?",
+      "resetDialogText": "Cela remplacera vos modifications par le texte original. Cette action est irréversible.",
+      "resetDialogCancel": "Annuler",
+      "resetDialogConfirm": "Réinitialiser",
+      "resetDone": "Prompt réinitialisé.",
+      "resetFailed": "Échec de la réinitialisation du prompt.",
+      "loadFailed": "Impossible de charger les prompts IA."
     }
   },
   "labels": {

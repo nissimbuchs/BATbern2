@@ -24,6 +24,7 @@ import {
   Edit as EditIcon,
   Visibility as PreviewIcon,
   Topic as TopicIcon,
+  AutoAwesome,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -31,7 +32,6 @@ import { de, enUS } from 'date-fns/locale';
 import { WorkflowProgressBar } from '@/components/organizer/EventManagement';
 import type { Event, EventDetailUI, WorkflowStep } from '@/types/event.types';
 import {
-  isEarlyStage,
   getWorkflowStateLabel,
   getWorkflowStepNumber,
   getWorkflowProgress,
@@ -39,6 +39,8 @@ import {
 } from '@/utils/workflow/workflowState';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { AiAssistDrawer } from './AiAssistDrawer';
 
 interface EventOverviewTabProps {
   event: Event | EventDetailUI;
@@ -49,13 +51,16 @@ interface EventOverviewTabProps {
 export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, eventCode, onEdit }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('events');
+  const { t: tOrg } = useTranslation('organizer');
   const locale = i18n.language === 'de' ? de : enUS;
+  const { aiContentEnabled } = useFeatureFlags();
 
   // Type assertion for extended properties
   const eventUI = event as EventDetailUI;
 
   // State for topic details
   const [topic, setTopic] = useState<Topic | null>(null);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
   // Fetch topic details if topicCode is available
   useEffect(() => {
@@ -165,11 +170,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               compact
             />
           </Box>
-          {isEarlyStage(event.workflowState || 'CREATED') && (
-            <Button variant="outlined" size="small">
-              {t('workflow.advanceWorkflow', 'Advance Workflow')} →
-            </Button>
-          )}
         </Stack>
       </Paper>
 
@@ -242,6 +242,20 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                     {event.description}
                   </Typography>
+                </Box>
+              )}
+
+              {/* AI description/image generation button (Story 10.16) */}
+              {aiContentEnabled && event.topicCode && (
+                <Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AutoAwesome />}
+                    onClick={() => setAiDrawerOpen(true)}
+                  >
+                    {tOrg('aiAssist.generateDescription', '✨ Generate with AI')}
+                  </Button>
                 </Box>
               )}
 
@@ -404,6 +418,19 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           </Button>
         </Stack>
       </Paper>
+
+      {/* AI Assist Drawer (Story 10.16) */}
+      <AiAssistDrawer
+        eventCode={eventCode}
+        open={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        onDescriptionGenerated={() => {
+          // text is displayed inside the drawer with a copy button; no auto-close needed
+        }}
+        onImageGenerated={() => {
+          setAiDrawerOpen(false);
+        }}
+      />
     </Stack>
   );
 };

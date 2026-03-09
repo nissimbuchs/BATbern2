@@ -13,14 +13,31 @@ import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
+type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+
 interface EventCardProps {
   event: EventDetailUI;
   viewMode: 'grid' | 'list';
   linkPrefix?: string;
+  /** Optional registration status for this event (Story 10.10, AC5) */
+  myRegistrationStatus?: RegistrationStatus;
 }
 
-export function EventCard({ event, viewMode, linkPrefix = '/archive/' }: EventCardProps) {
+const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
+  CONFIRMED: 'bg-green-400/20 text-green-400 border-green-400/30',
+  REGISTERED: 'bg-amber-400/20 text-amber-400 border-amber-400/30',
+  WAITLIST: 'bg-blue-400/20 text-blue-400 border-blue-400/30',
+  CANCELLED: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
+};
+
+export function EventCard({
+  event,
+  viewMode,
+  linkPrefix = '/archive/',
+  myRegistrationStatus,
+}: EventCardProps) {
   const { t } = useTranslation();
+  const { t: tEvents } = useTranslation('events');
 
   const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
@@ -76,6 +93,17 @@ export function EventCard({ event, viewMode, linkPrefix = '/archive/' }: EventCa
               {/* Topic Badge */}
               {event.topic && typeof event.topic === 'object' && (
                 <Badge className="bg-zinc-800 text-zinc-300">{event.topic.name}</Badge>
+              )}
+
+              {/* Registration Status Chip (Story 10.10, AC5) */}
+              {myRegistrationStatus && (
+                <Badge
+                  variant="outline"
+                  className={STATUS_CHIP_STYLES[myRegistrationStatus]}
+                  data-testid="event-card-status-chip"
+                >
+                  {tEvents(`eventCard.statusChip.${myRegistrationStatus.toLowerCase()}`)}
+                </Badge>
               )}
             </div>
 

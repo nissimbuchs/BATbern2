@@ -92,10 +92,13 @@ As a **partner**, I want to suggest topics for future BATbern events and vote on
 **Scope (what it is):**
 - Topic list: all proposed topics with title, description, suggesting company, vote count — sorted by votes descending
 - Simple toggle vote: one vote per partner per topic (on/off), no weighting, no allocation
-- Topic suggestion: title (required) + short description (optional) — no mandatory justification
+- Topic suggestion: title (required, minimum 5 characters) + short description (optional) — no mandatory justification
 - Organizer review: set status to **Selected** or **Declined**, with optional "planned for event" free text
 - Status visibility: all partners see **Proposed / Selected / Declined** + planned event if set
 - Role-based: partners suggest and vote; only organizers change status
+- Organizers may suggest topics on behalf of a partner company by supplying `companyName` in the request body; omitting `companyName` as an organizer returns 400
+- Organizers may NOT cast votes (403 Forbidden); only PARTNER users may vote
+- For PARTNER users, `companyName` in the request body is ignored; the company is always resolved from the authenticated user's JWT. Only ORGANIZER users may specify `companyName` explicitly.
 
 **What was cut:**
 - Tier-based vote weighting and 30% influence cap
@@ -188,10 +191,12 @@ PartnerMeetingController (202 Accepted immediately)
 As an **organizer**, I want to record and manage private notes about a partner company, so that I can track relationship history and internal context that should not be visible to the partner.
 
 **Scope (what it is):**
-- Organizer CRUD for notes scoped to a partner company: title + free-text content
+- Organizer CRUD for notes scoped to a partner company: title (required) + content (required, free-text)
+- Title has a 500-character maximum length
 - Author username auto-captured from JWT
 - Notes tab completely hidden for PARTNER users (not just read-only — invisible)
 - Notes list sorted by creation date descending
+- Note PATCH/DELETE validate that the noteId belongs to the companyName in the URL path; cross-partner access returns 404
 
 **What is cut:**
 - Partner-visible notes, note pinning, attachments, categories, @-mentions, full-text search

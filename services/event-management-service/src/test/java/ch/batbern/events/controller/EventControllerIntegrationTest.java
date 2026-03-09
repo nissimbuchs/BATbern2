@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -190,6 +191,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private Event createTestEvent(String title, String dateStr, String workflowStateStr) {
+        return createTestEvent(title, dateStr, workflowStateStr, null);
+    }
+
+    private Event createTestEvent(String title, String dateStr, String workflowStateStr, String currentPublishedPhase) {
         int eventNumber = eventNumberCounter++;
         String eventCode = "BATbern" + eventNumber;
 
@@ -210,6 +215,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .description("Test event for " + title)
                 .eventType(EventType.EVENING)
                 .workflowState(workflowState)
+                .currentPublishedPhase(currentPublishedPhase)
                 .build();
         return eventRepository.save(event);
     }
@@ -1671,7 +1677,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnPublishedEvent_when_onlyPublishedExists() throws Exception {
         // Given - clean all and create only one AGENDA_PUBLISHED event (future date required)
         eventRepository.deleteAll();
-        Event agendaPublishedEvent = createTestEvent("Current Published Event", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event agendaPublishedEvent = createTestEvent("Current Published Event", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
@@ -1684,29 +1690,29 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_returnRegistrationOpenEvent_when_exists")
     void should_returnRegistrationOpenEvent_when_exists() throws Exception {
-        // Given - clean all and create AGENDA_FINALIZED event (equivalent to registration_open)
+        // Given - clean all and create AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2027-11-20T09:00:00Z", "AGENDA_FINALIZED");
+        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2027-11-20T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationOpenEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
     }
 
     @Test
     @DisplayName("should_returnRegistrationClosedEvent_when_exists")
     void should_returnRegistrationClosedEvent_when_exists() throws Exception {
-        // Given - clean all and create AGENDA_FINALIZED event (equivalent to registration_closed)
+        // Given - clean all and create AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2027-10-10T09:00:00Z", "AGENDA_FINALIZED");
+        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2027-10-10T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationClosedEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
     }
 
     @Test
@@ -1716,16 +1722,16 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         eventRepository.deleteAll();
 
         // Create events with different dates and statuses (all future dates required)
-        createTestEvent("Future Event 1", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED");
-        Event nearestEvent = createTestEvent("Nearest Event", "2027-08-10T09:00:00Z", "AGENDA_FINALIZED");
-        createTestEvent("Future Event 2", "2028-01-20T09:00:00Z", "AGENDA_FINALIZED");
+        createTestEvent("Future Event 1", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        Event nearestEvent = createTestEvent("Nearest Event", "2027-08-10T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        createTestEvent("Future Event 2", "2028-01-20T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
 
         // When/Then - should return the event with the earliest date
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(nearestEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Nearest Event"))
-                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
     }
 
     @Test
@@ -1768,7 +1774,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_includeExpansions_when_includeParamProvided() throws Exception {
         // Given - clean all and create a AGENDA_PUBLISHED event (future date required)
         eventRepository.deleteAll();
-        Event agendaPublishedEvent = createTestEvent("Event with Expansions", "2027-11-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event agendaPublishedEvent = createTestEvent("Event with Expansions", "2027-11-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
 
         // When/Then - request with include parameter
         // Note: speakers removed from top-level, now accessed via sessions.speakers
@@ -1780,33 +1786,35 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_returnCurrentEvent_when_completedEventDateIsToday")
-    void should_returnCurrentEvent_when_completedEventDateIsToday() throws Exception {
-        // Given - EVENT_COMPLETED event whose date is today (should still be visible today)
+    @DisplayName("should_returnCurrentEvent_when_liveEventDateIsToday")
+    void should_returnCurrentEvent_when_liveEventDateIsToday() throws Exception {
+        // Given - EVENT_LIVE event whose date is today — on the actual event day the scheduler
+        // transitions the event to EVENT_LIVE (not EVENT_COMPLETED), so Phase 1 picks it up.
         eventRepository.deleteAll();
         ZoneId bernZone = ZoneId.of("Europe/Zurich");
         String todayStr = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant().toString();
-        Event todayEvent = createTestEvent("Today Completed Event", todayStr, "EVENT_COMPLETED");
+        Event todayEvent = createTestEvent("Today Live Event", todayStr, "EVENT_LIVE", "agenda");
 
-        // When/Then - event day-of should still be shown as current
+        // When/Then - event day-of should be shown as current (Phase 1: EVENT_LIVE, published)
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(todayEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
+                .andExpect(jsonPath("$.workflowState").value("EVENT_LIVE"));
     }
 
     @Test
-    @DisplayName("should_return404_when_completedEventDateWasYesterday")
-    void should_return404_when_completedEventDateWasYesterday() throws Exception {
-        // Given - EVENT_COMPLETED event whose date was yesterday (should no longer be shown)
+    @DisplayName("should_returnCompletedEvent_when_completedEventDateWasYesterday")
+    void should_returnCompletedEvent_when_completedEventDateWasYesterday() throws Exception {
+        // Given - EVENT_COMPLETED event whose date was yesterday (within 14-day post-event window)
         eventRepository.deleteAll();
         ZoneId bernZone = ZoneId.of("Europe/Zurich");
         String yesterdayStr = LocalDate.now(bernZone).minusDays(1).atStartOfDay(bernZone).toInstant().toString();
         createTestEvent("Yesterday Completed Event", yesterdayStr, "EVENT_COMPLETED");
 
-        // When/Then - event from yesterday should not appear as current
+        // When/Then - event from yesterday IS within 14-day window and should be returned (Story 4.2)
         mockMvc.perform(get("/api/v1/events/current"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
     }
 
     // ============================================================================
@@ -2234,5 +2242,101 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.topicSelectionNote").value("Test selection note"));
+    }
+
+    // ============================================================================
+    // GET /events/current — two-phase logic (14-day post-event window)
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_returnUpcomingEvent_when_getCurrentEventCalled")
+    void should_returnUpcomingEvent_when_getCurrentEventCalled() throws Exception {
+        // Given: upcoming AGENDA_PUBLISHED event tomorrow with a published phase
+        eventRepository.deleteAll();
+        String tomorrow = Instant.now().plus(1, ChronoUnit.DAYS).toString();
+        createTestEvent("Tomorrow Event", tomorrow, "AGENDA_PUBLISHED", "agenda");
+
+        // When / Then: current event returns the upcoming one
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Tomorrow Event"))
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
+    }
+
+    @Test
+    @DisplayName("should_returnRecentlyCompletedEvent_when_noUpcomingButCompletedWithin14Days")
+    void should_returnRecentlyCompletedEvent_when_noUpcomingButCompletedWithin14Days() throws Exception {
+        // Given: no upcoming events, but EVENT_COMPLETED 7 days ago
+        eventRepository.deleteAll();
+        String sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS).toString();
+        createTestEvent("Recent Completed", sevenDaysAgo, "EVENT_COMPLETED");
+
+        // When / Then: fallback shows the recently completed event
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Recent Completed"))
+                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("should_preferUpcomingEvent_when_bothUpcomingAndRecentlyCompletedExist")
+    void should_preferUpcomingEvent_when_bothUpcomingAndRecentlyCompletedExist() throws Exception {
+        // Given: a recently completed event AND an upcoming published event
+        eventRepository.deleteAll();
+        String sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS).toString();
+        String tomorrow = Instant.now().plus(1, ChronoUnit.DAYS).toString();
+        createTestEvent("Recent Completed", sevenDaysAgo, "EVENT_COMPLETED");
+        createTestEvent("Upcoming Event", tomorrow, "AGENDA_PUBLISHED", "agenda");
+
+        // When / Then: upcoming event is preferred
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Upcoming Event"));
+    }
+
+    @Test
+    @DisplayName("should_showRecentlyCompletedEvent_when_upcomingEventIsUnpublished")
+    void should_showRecentlyCompletedEvent_when_upcomingEventIsUnpublished() throws Exception {
+        // Regression test for bug where an upcoming event in SPEAKER_IDENTIFICATION (no publication
+        // phase) was shown on the public homepage instead of the recently completed event within
+        // the 14-day post-event window.
+        //
+        // Rule: only events with currentPublishedPhase != null qualify for Phase 1 (upcoming).
+        // An unpublished future event must NOT block the Phase 2 fallback.
+        eventRepository.deleteAll();
+        String sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS).toString();
+        String inSummer = Instant.now().plus(100, ChronoUnit.DAYS).toString();
+        createTestEvent("Recent Completed", sevenDaysAgo, "EVENT_COMPLETED"); // no published phase
+        createTestEvent("Unpublished Future", inSummer, "SPEAKER_IDENTIFICATION"); // no published phase
+
+        // When / Then: Phase 2 fallback returns recently completed event
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Recent Completed"))
+                .andExpect(jsonPath("$.workflowState").value("EVENT_COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("should_return404_when_completedEventOlderThan14Days")
+    void should_return404_when_completedEventOlderThan14Days() throws Exception {
+        // Given: EVENT_COMPLETED event 15 days ago (outside 14-day window)
+        eventRepository.deleteAll();
+        String fifteenDaysAgo = Instant.now().minus(15, ChronoUnit.DAYS).toString();
+        createTestEvent("Old Completed", fifteenDaysAgo, "EVENT_COMPLETED");
+
+        // When / Then: no current event found
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("should_return404_when_noCurrentOrRecentEvent")
+    void should_return404_when_noCurrentOrRecentEvent() throws Exception {
+        // Given: only old archived events, nothing recent
+        eventRepository.deleteAll();
+
+        // When / Then
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isNotFound());
     }
 }

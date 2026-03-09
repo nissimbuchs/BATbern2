@@ -34,7 +34,10 @@ describe('EventLogistics', () => {
     venueName: 'Bern TechHub',
     venueAddress: 'Waisenhausplatz 30, 3011 Bern',
     venueCapacity: 120,
+    registrationCapacity: 120,
     currentAttendeeCount: 87,
+    confirmedCount: 87,
+    waitlistCount: 0,
     status: 'PUBLISHED',
     organizerId: 'org-1',
     typicalStartTime: '16:00',
@@ -73,7 +76,11 @@ describe('EventLogistics', () => {
   });
 
   it('should render capacity with 0 when no currentAttendeeCount', () => {
-    const eventWithoutAttendees = { ...mockEvent, currentAttendeeCount: undefined };
+    const eventWithoutAttendees = {
+      ...mockEvent,
+      confirmedCount: undefined,
+      waitlistCount: undefined,
+    };
     render(<EventLogistics event={eventWithoutAttendees} />);
     expect(screen.getByText('0 / 120')).toBeInTheDocument();
   });
@@ -91,7 +98,7 @@ describe('EventLogistics', () => {
   });
 
   it('should not render capacity section when venueCapacity is missing', () => {
-    const eventWithoutCapacity = { ...mockEvent, venueCapacity: undefined };
+    const eventWithoutCapacity = { ...mockEvent, registrationCapacity: undefined };
     render(<EventLogistics event={eventWithoutCapacity} />);
     expect(screen.queryByText('Capacity')).not.toBeInTheDocument();
   });

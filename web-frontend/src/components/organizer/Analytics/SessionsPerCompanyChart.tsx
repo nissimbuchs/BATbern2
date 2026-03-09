@@ -81,17 +81,35 @@ const SessionsPerCompanyChart = ({ data, topN, partnerCompany, isLoading }: Prop
           />
           <YAxis allowDecimals={false} />
           <Tooltip
-            labelFormatter={(v) => displayNameMap[v as string] ?? v}
-            formatter={(value, name) => [
-              value,
-              name === 'sessionCount'
-                ? t('analytics.labels.sessions')
-                : t('common:navigation.speakers'),
-            ]}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const item = payload[0].payload as CompanySessionItem;
+              return (
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    padding: '8px 12px',
+                    fontSize: 12,
+                  }}
+                >
+                  <p style={{ fontWeight: 600, marginBottom: 4 }}>
+                    {displayNameMap[label as string] ?? label}
+                  </p>
+                  <p>
+                    {t('analytics.labels.sessions')}: {item.sessionCount}
+                  </p>
+                  <p>
+                    {t('common:navigation.speakers')}: {item.uniqueSpeakers}
+                  </p>
+                </div>
+              );
+            }}
           />
           <Bar dataKey="sessionCount" name="sessionCount">
             <LabelList
-              dataKey="uniqueSpeakers"
+              dataKey="sessionCount"
               position="top"
               style={{ fontSize: 10, fill: '#555' }}
             />

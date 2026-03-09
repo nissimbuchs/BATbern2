@@ -588,7 +588,8 @@
       "activeCount": "{{count}} active filter"
     },
     "detail": {
-      "backToArchive": "← Back to Archive"
+      "backToArchive": "← Back to Archive",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -634,7 +635,9 @@
     "preview": "Preview",
     "editTitle": "Edit Template",
     "createTitle": "New Template",
+    "duplicateTitle": "Duplicate Template",
     "newTemplate": "+ New Template",
+    "duplicateTemplate": "Duplicate",
     "noLayouts": "No layout templates found.",
     "noTemplates": "No templates found for this filter.",
     "missingContentPlaceholder": "{{content}} placeholder missing — email body will be empty",
@@ -686,7 +689,9 @@
       "importData": "Import Data",
       "taskTemplates": "Task Templates",
       "emailTemplates": "Email Templates",
-      "presentationSettings": "Presentation"
+      "presentationSettings": "Presentation",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Access Denied",
     "organizerOnly": "This page is for organizers only.",
@@ -699,6 +704,31 @@
       "saved": "Settings saved.",
       "saveFailed": "Save failed. Please try again."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Export All Data (JSON)",
+      "exportAssetsButton": "Get Asset Manifest",
+      "importSection": "Import",
+      "importJsonLabel": "Choose JSON File",
+      "importButton": "Import",
+      "successAlert": "Import completed successfully.",
+      "resultEvents": "Events",
+      "resultSessions": "Sessions",
+      "resultSpeakers": "Speakers",
+      "resultCompanies": "Companies",
+      "resultAttendees": "Attendees",
+      "resultErrors": "Errors",
+      "errorAlert": "Import failed. See errors below.",
+      "importAssetsLabel": "Import Assets (ZIP)",
+      "importAssetsChooseLabel": "Choose ZIP File",
+      "importAssetsButton": "Import Assets",
+      "confirmTitle": "Confirm Import",
+      "confirmMessage": "This will upsert data. Existing records will be updated. This cannot be undone automatically.",
+      "confirmAssetsTitle": "Confirm Asset Import",
+      "confirmAssetsMessage": "This will upload all assets from the ZIP file to S3. This cannot be undone automatically.",
+      "confirmButton": "Proceed"
+    },
     "taskTemplates": {
       "defaultSection": "Default Templates",
       "customSection": "Custom Templates",
@@ -707,6 +737,21 @@
       "noCustom": "No custom templates yet.",
       "confirmDelete": "Delete template?",
       "deleteFailed": "Failed to delete template. Please try again."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "userAccount": {

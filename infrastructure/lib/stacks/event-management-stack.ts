@@ -25,6 +25,14 @@ export interface EventManagementStackProps extends cdk.StackProps {
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
   alarmTopic?: sns.ITopic;
+  /** When true, injects AI_ENABLED=true and the OpenAI key into the container (Story 10.16). */
+  aiEnabled?: boolean;
+  /** Story 10.17: SQS queue URL for inbound email processing. */
+  inboundEmailQueueUrl?: string;
+  /** Story 10.17: S3 bucket name for raw inbound emails. */
+  inboundEmailBucketName?: string;
+  /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
+  watchJwtSecret?: secretsmanager.ISecret;
 }
 
 /**
@@ -42,6 +50,16 @@ export class EventManagementStack extends cdk.Stack {
 
     const envName = props.config.envName;
     const serviceName = 'event-management';
+
+    // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
+    let openAiSecret: secretsmanager.ISecret | undefined;
+    if (props.aiEnabled) {
+      openAiSecret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        'OpenAiApiKeySecret',
+        `batbern/${envName}/openai/api-key`,
+      );
+    }
 
     // Create domain service using reusable helper function
     const domainService = createDomainService(this, {
@@ -72,6 +90,20 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.config.domain && {
             APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
           }),
+          // Story 10.16: AI content generation feature flag
+          ...(props.aiEnabled && { AI_ENABLED: 'true' }),
+          // Story 10.17: Inbound email processing via SQS
+          ...(props.inboundEmailQueueUrl && {
+            AWS_INBOUND_EMAIL_QUEUE_URL: props.inboundEmailQueueUrl,
+            AWS_INBOUND_EMAIL_ENABLED: 'true',
+          }),
+          ...(props.inboundEmailBucketName && {
+            AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
+          }),
+        },
+        additionalSecrets: {
+          ...(openAiSecret && { OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret) }),
+          ...(props.watchJwtSecret && { WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
         },
       },
       cluster: props.cluster,
@@ -84,6 +116,20 @@ export class EventManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Grant Secrets Manager read access for OpenAI key to the ECS execution role (Story 10.16)
+    if (openAiSecret) {
+      openAiSecret.grantRead(this.service.taskDefinition.executionRole!);
+    }
+    if (props.watchJwtSecret) {
+      props.watchJwtSecret.grantRead(this.service.taskDefinition.executionRole!);
+    }
+
+    // Override desiredCount for Event Management specifically (3 tasks for HA + load capacity)
+    // 2048 MiB / 256 CPU per task; auto-scaling floor is 2, ceiling is 6
+    const cfnService = this.service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('DesiredCount', 3);
+
 
     // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
     if (props.alarmTopic) {

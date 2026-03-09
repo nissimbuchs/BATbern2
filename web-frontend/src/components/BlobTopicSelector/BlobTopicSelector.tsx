@@ -32,7 +32,6 @@ import type {
   AbsorbedRedStar,
   TopicSessionData,
   TopicSimilarityResponse,
-  PartnerTopicItem,
 } from './types';
 import { blobTopicService } from '@/services/blobTopicService';
 import { topicService } from '@/services/topicService';
@@ -135,45 +134,18 @@ const GROW_PER_LOGO = 6;
 const SHRINK_PER_RED_STAR = GROW_PER_LOGO;
 
 /**
- * Compute per-cluster forceLink attraction strengths for a partner company
- * from their list of submitted topic suggestions.
- *
- * Strength formula per cluster:
- *   rawStrength = Σ (1 + voteCount) × recencyDecay(createdAt)
- *   recencyDecay = max(0.2, 1.0 - ageMonths × 0.05)   ← linear, floor 0.2 at ~16 months
- *   normalizedStrength = min(1.0, rawStrength / 3.0)
- *
- * BUSINESS_OTHER topics are excluded — they carry no cluster signal.
- * Clusters with a computed strength below 0.05 are also excluded to avoid spurious links.
+ * Generate ghost orbit state for a respawned or ejected ghost node.
+ * Uses a random angle and a moderate orbit radius so the ghost drifts naturally.
  */
-/** Map cluster name → topic titles submitted by this partner for that cluster. */
-function computeTopicsByCluster(topics: PartnerTopicItem[]): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
-  for (const t of topics) {
-    if (t.cluster === 'BUSINESS_OTHER') continue;
-    if (!result[t.cluster]) result[t.cluster] = [];
-    result[t.cluster].push(t.title);
-  }
-  return result;
-}
-
-function computeClusterAttractions(topics: PartnerTopicItem[]): Record<string, number> {
-  const now = Date.now();
-  const raw: Record<string, number> = {};
-
-  for (const t of topics) {
-    if (t.cluster === 'BUSINESS_OTHER') continue;
-    const ageMonths = (now - new Date(t.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30);
-    const recency = Math.max(0.2, 1.0 - ageMonths * 0.05);
-    raw[t.cluster] = (raw[t.cluster] ?? 0) + (1 + t.voteCount) * recency;
-  }
-
-  const result: Record<string, number> = {};
-  for (const [cluster, val] of Object.entries(raw)) {
-    const normalized = Math.min(1.0, val / 3.0);
-    if (normalized >= 0.05) result[cluster] = normalized;
-  }
-  return result;
+function makeRandomGhostOrbit() {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 300 + Math.random() * 200;
+  const speed = (0.002 + Math.random() * 0.003) * (Math.random() < 0.5 ? 1 : -1);
+  return {
+    ghostOrbitAngle: angle,
+    ghostOrbitRadius: radius,
+    ghostOrbitSpeed: speed,
+  };
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -205,6 +177,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const draggingNodeIdRef = useRef<string | null>(null);
   /** Green nodes currently in a fade transition — tick handler skips opacity updates for these */
   const fadingGreenIds = useRef<Set<string>>(new Set());
+  /** Ghost nodes currently in a fade transition — tick handler skips opacity updates for these */
+  const fadingGhostIds = useRef<Set<string>>(new Set());
   /** ID of the currently selected blue blob — shown with a yellow ring; Delete/Backspace removes it */
   const selectedBlobIdRef = useRef<string | null>(null);
   /** Which ghost types are currently visible — read by the tick handler without stale closure */
@@ -437,9 +411,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       } as GhostNode);
     });
 
-    // Partner ghosts + green blobs
+    // Partner ghosts — one per partner topic submission (up to 3 per partner).
+    // Green blobs are no longer pre-created; they spawn dynamically when a blue topic appears
+    // in the same cluster as the ghost.
     sessionData.partnerTopics.slice(0, 20).forEach((partner, pi) => {
-      // Ghost for each partner topic (up to 3) — radius scaled by vote count (more votes = bigger)
       partner.topics.slice(0, 3).forEach((topic, ti) => {
         const orb = makeGhostOrbit();
         const r = Math.max(28, Math.min(55, 28 + topic.voteCount * 4));
@@ -448,28 +423,12 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           type: 'ghost-partner',
           name: topic.title,
           companyName: partner.companyName,
+          logoUrl: partner.logoUrl,
+          cluster: topic.cluster,
           r,
           ...orb,
         } as GhostNode);
       });
-
-      // Green blob for partner interest
-      newNodes.push({
-        id: `green-${pi}`,
-        type: 'green',
-        companyName: partner.companyName,
-        logoUrl: partner.logoUrl,
-        topicName: partner.topics[0]?.title ?? '',
-        r: 45,
-        absorbed: false,
-        wobblePhase: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.007 + Math.random() * 0.04,
-        clusterAttractions: computeClusterAttractions(partner.topics),
-        topicsByCluster: computeTopicsByCluster(partner.topics),
-        linkedBlobsByCluster: {},
-        x: 100 + Math.random() * (w - 200),
-        y: 100 + Math.random() * (h - 200),
-      } as GreenBlobNode);
     });
 
     // Trend ghosts (gold shimmer)
@@ -546,20 +505,38 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           return {
             id: blue.id,
             name: blue.name,
-            companies: blue.absorbedLogos.map((l) => {
-              // Find the green blob (may already be removed if fully absorbed)
-              const green = nodesRef.current.find(
-                (g) => g.type === 'green' && (g as GreenBlobNode).companyName === l.companyName
-              ) as GreenBlobNode | undefined;
-              const score =
-                blue.cluster && green ? (green.clusterAttractions[blue.cluster] ?? null) : null;
-              const matchingTopics =
-                blue.cluster && green?.topicsByCluster
-                  ? (green.topicsByCluster[blue.cluster] ?? [])
-                  : [];
-              const reason = matchingTopics.length > 0 ? matchingTopics.join(', ') : null;
-              return { name: l.companyName, score, reason };
-            }),
+            companies: Object.values(
+              blue.absorbedLogos.reduce<
+                Record<string, { name: string; score: number | null; reason: string | null }>
+              >((acc, l) => {
+                // Dynamically spawned greens are removed from nodesRef on absorption;
+                // read score/reason from the snapshot stored at absorption time.
+                const green = nodesRef.current.find(
+                  (g) => g.type === 'green' && (g as GreenBlobNode).companyName === l.companyName
+                ) as GreenBlobNode | undefined;
+                const score =
+                  blue.cluster && green
+                    ? (green.clusterAttractions[blue.cluster] ?? null)
+                    : blue.cluster
+                      ? 1.0 // dynamic greens always have full attraction to their triggering cluster
+                      : null;
+                const thisReason =
+                  blue.cluster && green?.topicsByCluster
+                    ? (green.topicsByCluster[blue.cluster] ?? []).join(', ') || null
+                    : (l.ghostSnapshot?.name ?? null);
+                if (acc[l.companyName]) {
+                  // Same company absorbed multiple topics — combine reasons
+                  if (thisReason && !acc[l.companyName].reason?.includes(thisReason)) {
+                    acc[l.companyName].reason = acc[l.companyName].reason
+                      ? `${acc[l.companyName].reason}, ${thisReason}`
+                      : thisReason;
+                  }
+                } else {
+                  acc[l.companyName] = { name: l.companyName, score, reason: thisReason };
+                }
+                return acc;
+              }, {})
+            ),
             pastEvents: blue.absorbedRedStars.map((r) => ({
               eventNumber: r.eventNumber,
               topicName: r.topicName,
@@ -726,7 +703,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       });
 
     // Ghost visibility — show/hide based on toggle state (opacity 0 = hidden but orbit continues)
+    // Skip nodes currently in a fade-out transition (absorbed into blue blob)
     g.selectAll<SVGGElement, SimNode>('.ghost-group')
+      .filter((d) => !fadingGhostIds.current.has(d.id))
       .attr('opacity', (d) => (visibleGhostTypesRef.current.has(d.type) ? 1 : 0))
       .attr('pointer-events', (d) => (visibleGhostTypesRef.current.has(d.type) ? 'auto' : 'none'));
 
@@ -799,12 +778,112 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       }
     });
 
-    // Update absorbed logos inside blue blobs — scattered orbit positions
+    // Update absorbed logos inside blue blobs — scattered orbit positions.
+    // Company logos (ghost-partner) orbit as <image> elements.
+    // Organizer spinners (ghost-backlog) orbit as <g> elements with the BATbern spinner.
+    // Trend items absorb silently (no orbit element).
     g.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group').each(function (d) {
       const grp = d3.select(this);
+
+      // ── Organizer (backlog) spinner orbit ──────────────────────────────────
+      const orgLogos = d.absorbedLogos.filter((l) => l.sourceGhostType === 'ghost-backlog');
+      const orgSpinners = grp
+        .selectAll<SVGGElement, AbsorbedLogo>('.absorbed-org-spinner')
+        .data(orgLogos, (l) => l.ghostSnapshot.name);
+
+      const enteredOrg = orgSpinners
+        .enter()
+        .append('g')
+        .attr('class', 'absorbed-org-spinner')
+        .attr('opacity', 0)
+        .style('cursor', 'pointer')
+        .on('click', (event, logo) => {
+          event.stopPropagation();
+          d3.select(event.currentTarget as SVGGElement)
+            .transition()
+            .duration(1200)
+            .attr('opacity', 0)
+            .on('end', () => {
+              d.absorbedLogos = d.absorbedLogos.filter(
+                (l) => l.ghostSnapshot.name !== logo.ghostSnapshot.name
+              );
+              resizeBlue(d as BlueBlobNode);
+              syncTreeSummary();
+              const snap = logo.ghostSnapshot;
+              const ejectDist = d.r + (snap.r ?? 38) + 15;
+              const orb = makeRandomGhostOrbit();
+              const ghost: GhostNode = {
+                id: `${logo.sourceGhostType}-ejected-${Date.now()}`,
+                type: logo.sourceGhostType,
+                name: snap.name,
+                r: snap.r ?? 38,
+                topicCode: snap.topicCode,
+                companyName: snap.companyName,
+                logoUrl: snap.logoUrl,
+                cluster: snap.cluster,
+                x: (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle),
+                y: (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle),
+                ...orb,
+              };
+              nodesRef.current.push(ghost);
+              simRef.current?.nodes(nodesRef.current);
+              renderAll();
+              gRef.current
+                ?.selectAll<SVGGElement, GhostNode>('.ghost-group')
+                .filter((gd) => gd.id === ghost.id)
+                .attr('opacity', 0)
+                .transition()
+                .duration(1200)
+                .attr('opacity', 1);
+              simRef.current?.alpha(0.2).restart();
+            });
+        })
+        .call((entered) => {
+          // Render a small BATbern spinner (same paths as ghost, scaled down to orbit size)
+          const s = 0.25; // scale 100x100 viewBox to ~25px
+          entered
+            .append('g')
+            .attr('class', 'bat-org-spinner')
+            .attr('transform', `translate(-12,-12) scale(${s})`)
+            .attr('pointer-events', 'none')
+            .call((spinnerG) => {
+              spinnerG
+                .append('g')
+                .attr('class', 'ghost-org-arrow ghost-org-arrow-1')
+                .attr('fill', 'rgba(52,152,219,0.9)')
+                .append('path')
+                .attr(
+                  'd',
+                  'M35.822,21.061c8.877,0.261,16.278,3.112,22.344,9.105c1.02,1.007,1.862,1.383,3.196,0.678  c1.135-0.6,2.4-0.948,3.584-1.46c1.17-0.506,1.687-0.421,1.453,1.086c-0.744,4.796-1.39,9.607-2.081,14.411  c-0.306,2.128-0.647,4.251-0.936,6.381c-0.143,1.055-0.554,1.309-1.425,0.62c-5.598-4.425-11.193-8.855-16.804-13.262  c-1.002-0.787-0.533-1.142,0.32-1.479c0.972-0.384,1.941-0.774,2.907-1.172c0.489-0.202,1.214-0.249,1.232-0.898  c0.014-0.504-0.622-0.706-1.017-0.981c-7.132-4.97-17.108-5.073-24.534-0.159c-6.465,4.279-9.702,10.438-10.144,18.109  c-0.18,3.131-1.942,5.125-4.643,5.087c-2.693-0.038-4.588-2.316-4.527-5.442c0.299-15.337,12.257-28.445,27.624-30.27  C33.651,21.262,34.936,21.151,35.822,21.061z'
+                );
+              spinnerG
+                .append('g')
+                .attr('class', 'ghost-org-arrow ghost-org-arrow-2')
+                .attr('fill', 'rgba(26,111,168,0.9)')
+                .append('path')
+                .attr(
+                  'd',
+                  'M63.149,76.87c-7.916-0.206-15.29-3.125-21.373-9.075c-1.033-1.01-1.879-1.349-3.197-0.648  c-1.079,0.573-2.291,0.888-3.415,1.384c-1.282,0.565-1.851,0.323-1.622-1.184c0.665-4.373,1.302-8.749,1.945-13.125  c0.33-2.248,0.654-4.498,0.97-6.748c0.296-2.105,0.518-2.219,2.137-0.944c5.268,4.146,10.511,8.324,15.794,12.452  c1.139,0.89,1.436,1.475-0.233,1.994c-0.935,0.291-1.812,0.768-2.741,1.083c-1.481,0.503-1.182,1.077-0.141,1.764  c5.296,3.493,11.052,4.59,17.262,3.319c9.38-1.92,17.277-10.642,17.434-20.875c0.05-3.239,1.767-5.249,4.389-5.391  c2.683-0.145,4.711,1.851,4.785,4.709c0.337,13.023-8.736,25.494-21.634,29.705C70.331,76.326,67.061,76.839,63.149,76.87z'
+                );
+            });
+        });
+      enteredOrg.transition().duration(1500).attr('opacity', 1);
+      orgSpinners.exit().remove();
+
+      // Every tick: advance orbit angle and reposition organizer spinners
+      grp.selectAll<SVGGElement, AbsorbedLogo>('.absorbed-org-spinner').each(function (l) {
+        l.orbitAngle += l.orbitSpeed;
+        d3.select(this).attr(
+          'transform',
+          `translate(${l.orbitRadius * Math.cos(l.orbitAngle)},${l.orbitRadius * Math.sin(l.orbitAngle)})`
+        );
+      });
+
+      // ── Company logo orbit ─────────────────────────────────────────────────
+      const companyLogos = d.absorbedLogos.filter((l) => l.sourceGhostType === 'ghost-partner');
       const logos = grp
         .selectAll<SVGImageElement, AbsorbedLogo>('.absorbed-logo')
-        .data(d.absorbedLogos, (l) => l.companyName);
+        .data(companyLogos, (l) => l.companyName);
 
       // Enter: add new logo images with click-to-eject handler; fade in on appear
       const enteredLogos = logos
@@ -818,7 +897,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         .style('cursor', 'pointer')
         .on('click', (event, logo) => {
           event.stopPropagation();
-          // Fade out the logo, then restore the green blob with a matching fade-in
+          // Fade out the logo, then respawn the original ghost node at the eject position
           d3.select(event.currentTarget as SVGImageElement)
             .transition()
             .duration(1200)
@@ -827,37 +906,34 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               d.absorbedLogos = d.absorbedLogos.filter((l) => l.companyName !== logo.companyName);
               resizeBlue(d as BlueBlobNode);
               syncTreeSummary();
-              const green = nodesRef.current.find(
-                (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
-              ) as GreenBlobNode | undefined;
-              if (green) {
-                green.absorbed = false;
-                green.linkedBlobsByCluster = {};
-                const ejectDist = d.r + green.r + 15;
-                green.x = (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle);
-                green.y = (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle);
-                green.vx = Math.cos(logo.orbitAngle) * 3;
-                green.vy = Math.sin(logo.orbitAngle) * 3;
-                green.fx = null;
-                green.fy = null;
-                linksRef.current = linksRef.current.filter((l) => {
-                  const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
-                  return src !== green.id;
-                });
-                (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
-                  linksRef.current
-                );
-                // Fade in the restored green blob
-                fadingGreenIds.current.add(green.id);
-                gRef.current
-                  ?.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
-                  .filter((gd) => gd.id === green.id)
-                  .attr('opacity', 0)
-                  .transition()
-                  .duration(1200)
-                  .attr('opacity', 1)
-                  .on('end', () => fadingGreenIds.current.delete(green.id));
-              }
+              // Respawn as the original ghost type at the eject position
+              const snap = logo.ghostSnapshot;
+              const ejectDist = d.r + (snap.r ?? 38) + 15;
+              const orb = makeRandomGhostOrbit();
+              const ghost: GhostNode = {
+                id: `${logo.sourceGhostType}-ejected-${Date.now()}`,
+                type: logo.sourceGhostType,
+                name: snap.name,
+                r: snap.r ?? 38,
+                topicCode: snap.topicCode,
+                companyName: snap.companyName,
+                logoUrl: snap.logoUrl,
+                cluster: snap.cluster,
+                x: (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle),
+                y: (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle),
+                ...orb,
+              };
+              nodesRef.current.push(ghost);
+              simRef.current?.nodes(nodesRef.current);
+              renderAll();
+              // Fade the new ghost in
+              gRef.current
+                ?.selectAll<SVGGElement, GhostNode>('.ghost-group')
+                .filter((gd) => gd.id === ghost.id)
+                .attr('opacity', 0)
+                .transition()
+                .duration(1200)
+                .attr('opacity', 1);
               simRef.current?.alpha(0.2).restart();
             });
         });
@@ -1087,7 +1163,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .attr('r', ghost.r)
           .attr('fill', fillColor)
           .attr('opacity', fillOpacity);
-        // BATbern spinner — organizer (backlog) ghosts only, sits between circle and text label
+        // BATbern spinner for organizer ghosts; company logo for partner ghosts
         if (node.type === 'ghost-backlog') {
           const s = ghost.r * 0.014; // scale 100x100 viewBox to ~70% of ghost diameter
           group
@@ -1116,6 +1192,19 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
                   'M63.149,76.87c-7.916-0.206-15.29-3.125-21.373-9.075c-1.033-1.01-1.879-1.349-3.197-0.648  c-1.079,0.573-2.291,0.888-3.415,1.384c-1.282,0.565-1.851,0.323-1.622-1.184c0.665-4.373,1.302-8.749,1.945-13.125  c0.33-2.248,0.654-4.498,0.97-6.748c0.296-2.105,0.518-2.219,2.137-0.944c5.268,4.146,10.511,8.324,15.794,12.452  c1.139,0.89,1.436,1.475-0.233,1.994c-0.935,0.291-1.812,0.768-2.741,1.083c-1.481,0.503-1.182,1.077-0.141,1.764  c5.296,3.493,11.052,4.59,17.262,3.319c9.38-1.92,17.277-10.642,17.434-20.875c0.05-3.239,1.767-5.249,4.389-5.391  c2.683-0.145,4.711,1.851,4.785,4.709c0.337,13.023-8.736,25.494-21.634,29.705C70.331,76.326,67.061,76.839,63.149,76.87z'
                 );
             });
+        } else if (node.type === 'ghost-partner' && ghost.logoUrl) {
+          // Company logo — faint background image so topic text remains readable
+          const imgSize = ghost.r * 0.85;
+          group
+            .append('image')
+            .attr('class', 'ghost-company-logo')
+            .attr('href', ghost.logoUrl)
+            .attr('width', imgSize)
+            .attr('height', imgSize)
+            .attr('x', -imgSize / 2)
+            .attr('y', -imgSize / 2)
+            .attr('opacity', 0.25)
+            .attr('pointer-events', 'none');
         }
         wrapSvgText(
           group
@@ -1269,16 +1358,32 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
             green.absorbed = true;
             soundsRef.current.playSlosh();
-            if (!blueTarget.absorbedLogos.some((l) => l.companyName === green.companyName)) {
+            // Deduplicate by topic name (ghostSnapshot.name), not company — a company may have
+            // submitted multiple topics for the same cluster and both should appear in the side card.
+            if (
+              !blueTarget.absorbedLogos.some(
+                (l) => l.ghostSnapshot.name === green.originalGhostSnapshot.name
+              )
+            ) {
               blueTarget.absorbedLogos.push({
                 companyName: green.companyName,
                 logoUrl: green.logoUrl,
                 orbitAngle: Math.random() * Math.PI * 2,
                 orbitRadius: blueTarget.r * (0.2 + Math.random() * 0.45),
                 orbitSpeed: (0.0013 + Math.random() * 0.0027) * (Math.random() < 0.5 ? 1 : -1),
+                sourceGhostType: green.sourceGhostType,
+                ghostSnapshot: { ...green.originalGhostSnapshot },
               });
               resizeBlue(blueTarget);
             }
+            // Remove forceLinks originating from this green
+            linksRef.current = linksRef.current.filter((l) => {
+              const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
+              return src !== green.id;
+            });
+            (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
+              linksRef.current
+            );
             // Pin the green blob at its drop position so physics doesn't move it during fade
             green.fx = green.x ?? 0;
             green.fy = green.y ?? 0;
@@ -1291,8 +1396,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               .attr('opacity', 0)
               .on('end', () => {
                 fadingGreenIds.current.delete(green.id);
-                green.fx = null;
-                green.fy = null;
+                // Remove the green node from simulation — it will be respawned as a ghost
+                // if the blue blob is later deleted.
+                nodesRef.current = nodesRef.current.filter((n) => n.id !== green.id);
+                simRef.current?.nodes(nodesRef.current);
               });
             syncTreeSummary();
             clearMergeHalos();
@@ -1306,7 +1413,78 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           return Math.sqrt(dx * dx + dy * dy) < a.r + b.r + threshold;
         };
 
-        if (d.type === 'blue') {
+        if (d.type === 'ghost-backlog' || d.type === 'ghost-partner' || d.type === 'ghost-trend') {
+          // Ghost dropped on blue → absorb directly (logo or spinner appears inside blue)
+          const ghost = d as GhostNode;
+          const blueTarget = nodesRef.current.find((n) => {
+            if (n.type !== 'blue') return false;
+            const dx = (ghost.x ?? 0) - (n.x ?? 0);
+            const dy = (ghost.y ?? 0) - (n.y ?? 0);
+            return Math.sqrt(dx * dx + dy * dy) < ghost.r + n.r;
+          }) as BlueBlobNode | undefined;
+          if (blueTarget) {
+            blueTarget.fx = blueTarget.x ?? 0;
+            blueTarget.fy = blueTarget.y ?? 0;
+            blueTarget.vx = 0;
+            blueTarget.vy = 0;
+            setTimeout(() => {
+              blueTarget.vx = 0;
+              blueTarget.vy = 0;
+              blueTarget.fx = null;
+              blueTarget.fy = null;
+            }, 400);
+            const isDuplicate = blueTarget.absorbedLogos.some(
+              (l) => l.ghostSnapshot.name === ghost.name
+            );
+            if (!isDuplicate) {
+              blueTarget.absorbedLogos.push({
+                companyName: ghost.companyName ?? ghost.name,
+                logoUrl: ghost.logoUrl ?? '',
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: blueTarget.r * (0.2 + Math.random() * 0.45),
+                orbitSpeed: (0.0013 + Math.random() * 0.0027) * (Math.random() < 0.5 ? 1 : -1),
+                sourceGhostType: ghost.type,
+                ghostSnapshot: {
+                  name: ghost.name,
+                  r: ghost.r,
+                  topicCode: ghost.topicCode,
+                  companyName: ghost.companyName,
+                  logoUrl: ghost.logoUrl,
+                  cluster: ghost.cluster,
+                },
+              });
+              soundsRef.current.playSlosh();
+              resizeBlue(blueTarget);
+            }
+            // Pin ghost at drop position so physics doesn't fling it during fade
+            ghost.fx = ghost.x ?? 0;
+            ghost.fy = ghost.y ?? 0;
+            fadingGhostIds.current.add(ghost.id);
+            // Fade out and remove the ghost node
+            gRef.current
+              ?.selectAll<SVGGElement, GhostNode>('.ghost-group')
+              .filter((gd) => gd.id === ghost.id)
+              .transition()
+              .duration(1000)
+              .attr('opacity', 0)
+              .on('end', () => {
+                nodesRef.current = nodesRef.current.filter((n) => n.id !== ghost.id);
+                simRef.current?.nodes(nodesRef.current);
+                // Remove DOM element before clearing fadingGhostIds — prevents the tick handler
+                // from resetting opacity to 1 on the orphaned element between the clear and next tick.
+                gRef.current
+                  ?.selectAll<SVGGElement, SimNode>('.node-group')
+                  .filter((nd) => nd.id === ghost.id)
+                  .remove();
+                fadingGhostIds.current.delete(ghost.id);
+              });
+            syncTreeSummary();
+            clearMergeHalos();
+            d.fx = null;
+            d.fy = null;
+            return;
+          }
+        } else if (d.type === 'blue') {
           // Blue dropped on blue → merge (search specifically for another blue)
           const nearbyBlue = nodesRef.current.find(
             (n) => n.id !== d.id && n.type === 'blue' && withinRange(d, n, 30)
@@ -1483,8 +1661,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           node.similarityScore = sim.similarityScore;
           node.relatedPastEventNumbers = sim.relatedPastEventNumbers;
 
-          // Update forceLink strengths for green → blue
-          updateGreenLinks(id, sim.cluster);
+          // Convert matching ghost blobs into green blobs attracted to this blue
+          convertGhostsToGreen(id, sim.cluster);
 
           // Activate matching red stars
           activateRedStars(sim.relatedPastEventNumbers, id);
@@ -1501,46 +1679,80 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   );
 
   /**
-   * Wire green blobs toward a newly spawned blue blob.
+   * When a blue blob receives its cluster assignment, find all ghost nodes whose cluster
+   * matches and convert them into live green blobs attracted to this blue.
    *
-   * Each green can hold one forceLink per cluster simultaneously (multi-link).
-   * When a new blue appears for cluster X, every green that has submitted topics
-   * in cluster X gets a link with strength = clusterAttractions[X].
-   * If the green was already linked to an older blue for the same cluster,
-   * that link is replaced (only one blue per cluster per green at a time).
+   * - ghost-partner → green blob with company logo; can be dragged into blue for logo absorption
+   * - ghost-backlog → green blob with BATbern spinner; same drag mechanic
+   * - ghost-trend   → green blob (no logo); absorbs silently
    *
    * BUSINESS_OTHER blue blobs attract nobody — they represent unclassified topics.
    */
-  const updateGreenLinks = (blueBlobId: string, blueCluster: string) => {
+  const convertGhostsToGreen = (blueBlobId: string, blueCluster: string) => {
     if (blueCluster === 'BUSINESS_OTHER') return;
 
-    nodesRef.current.forEach((n) => {
-      if (n.type !== 'green') return;
-      const green = n as GreenBlobNode;
+    const toConvert = nodesRef.current.filter((n): n is GhostNode => {
+      if (n.type !== 'ghost-partner' && n.type !== 'ghost-backlog' && n.type !== 'ghost-trend')
+        return false;
+      const ghost = n as GhostNode;
+      if (n.type === 'ghost-partner') return ghost.cluster === blueCluster;
+      // ghost-backlog: topicCode IS the cluster enum value
+      if (n.type === 'ghost-backlog') return ghost.topicCode === blueCluster;
+      if (n.type === 'ghost-trend') return ghost.cluster === blueCluster;
+      return false;
+    });
 
-      const strength = green.clusterAttractions[blueCluster] ?? 0;
-      if (strength < 0.05) return;
+    if (toConvert.length === 0) return;
 
-      // Remove existing link for this cluster (replaced by the new blue)
-      const oldBlueid = green.linkedBlobsByCluster[blueCluster];
-      if (oldBlueid) {
-        linksRef.current = linksRef.current.filter((l) => {
-          const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
-          const tgt = typeof l.target === 'string' ? l.target : (l.target as SimNode).id;
-          return !(src === green.id && tgt === oldBlueid);
-        });
-      }
+    // Remove matched ghosts from the simulation
+    const convertedIds = new Set(toConvert.map((g) => g.id));
+    nodesRef.current = nodesRef.current.filter((n) => !convertedIds.has(n.id));
 
-      // Add link toward this blue blob for this cluster.
-      // Scale strength down so attraction is a slow drift, not a jump (D3 link strength 1.0
-      // satisfies the constraint almost instantly — 0.15 makes it drift over many ticks).
-      linksRef.current.push({ source: green.id, target: blueBlobId, strength: strength * 0.1 });
+    toConvert.forEach((ghost) => {
+      const r = ghost.r ?? 38;
+      const green: GreenBlobNode = {
+        id: `green-${ghost.id}`,
+        type: 'green',
+        companyName: ghost.companyName ?? ghost.name,
+        logoUrl: ghost.logoUrl ?? '',
+        topicName: ghost.name,
+        r,
+        absorbed: false,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.007 + Math.random() * 0.04,
+        // Full attraction toward the triggering cluster
+        clusterAttractions: { [blueCluster]: 1.0 },
+        topicsByCluster: { [blueCluster]: [ghost.name] },
+        linkedBlobsByCluster: {},
+        sourceGhostType: ghost.type,
+        originalGhostSnapshot: {
+          name: ghost.name,
+          r: ghost.r,
+          topicCode: ghost.topicCode,
+          companyName: ghost.companyName,
+          logoUrl: ghost.logoUrl,
+          cluster: ghost.cluster ?? (ghost.topicCode === blueCluster ? blueCluster : undefined),
+        },
+        x: ghost.x ?? 0,
+        y: ghost.y ?? 0,
+        vx: 0,
+        vy: 0,
+      };
+
+      nodesRef.current.push(green);
+
+      // Wire forceLink: green → blue with scaled-down strength for slow drift
+      linksRef.current.push({ source: green.id, target: blueBlobId, strength: 0.1 });
       green.linkedBlobsByCluster[blueCluster] = blueBlobId;
     });
 
+    simRef.current?.nodes(nodesRef.current);
     (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
       linksRef.current
     );
+
+    // Re-render: removes ghost SVG elements, adds green blob elements
+    renderAll();
   };
 
   /**
@@ -1588,36 +1800,50 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   // ─── REMOVE BLUE BLOB BY ID ───────────────────────────────────────────────
 
   const removeBlueBlobById = useCallback(
-    (targetId: string, options?: { animateGreenRestore?: boolean }) => {
-      const animateGreenRestore = options?.animateGreenRestore ?? false;
+    (targetId: string) => {
       const removedBlob = nodesRef.current.find((n) => n.id === targetId) as
         | BlueBlobNode
         | undefined;
       const removedRelated = removedBlob?.relatedPastEventNumbers ?? [];
 
-      // Restore any absorbed green blobs so they re-enter the simulation
-      const restoredGreenIds: string[] = [];
+      // Respawn absorbed logos/ghosts as ghost nodes of their original type
+      const respawnedIds: string[] = [];
       if (removedBlob) {
-        removedBlob.absorbedLogos.forEach((logo) => {
-          const green = nodesRef.current.find(
-            (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
-          ) as GreenBlobNode | undefined;
-          if (green) {
-            green.absorbed = false;
-            green.linkedBlobsByCluster = {};
-            green.fx = null;
-            green.fy = null;
-            const angle = Math.random() * Math.PI * 2;
-            const dist = (removedBlob.r ?? 60) + green.r + 20;
-            green.x = (removedBlob.x ?? 0) + dist * Math.cos(angle);
-            green.y = (removedBlob.y ?? 0) + dist * Math.sin(angle);
-            green.vx = Math.cos(angle) * 2;
-            green.vy = Math.sin(angle) * 2;
-            if (animateGreenRestore) {
-              // Park them in fadingGreenIds so tick doesn't snap them to opacity 1
-              fadingGreenIds.current.add(green.id);
-              restoredGreenIds.push(green.id);
-            }
+        const bx = removedBlob.x ?? 0;
+        const by = removedBlob.y ?? 0;
+        removedBlob.absorbedLogos.forEach((logo, i) => {
+          const snap = logo.ghostSnapshot;
+          const angle = (i / Math.max(removedBlob.absorbedLogos.length, 1)) * Math.PI * 2;
+          const dist = (removedBlob.r ?? 60) + (snap.r ?? 38) + 25;
+          const orb = makeRandomGhostOrbit();
+          const ghost: GhostNode = {
+            id: `${logo.sourceGhostType}-respawn-${Date.now()}-${i}`,
+            type: logo.sourceGhostType,
+            name: snap.name,
+            r: snap.r ?? 38,
+            topicCode: snap.topicCode,
+            companyName: snap.companyName,
+            logoUrl: snap.logoUrl,
+            cluster: snap.cluster,
+            x: bx + dist * Math.cos(angle),
+            y: by + dist * Math.sin(angle),
+            ...orb,
+          };
+          nodesRef.current.push(ghost);
+          respawnedIds.push(ghost.id);
+        });
+
+        // Deactivate absorbed red stars — return them to the dormant constellation
+        removedBlob.absorbedRedStars.forEach((absorbed) => {
+          const red = nodesRef.current.find(
+            (n) => n.type === 'red-star' && (n as RedStarNode).eventNumber === absorbed.eventNumber
+          ) as RedStarNode | undefined;
+          if (red) {
+            red.isActive = false;
+            red.absorbed = false;
+            red.attractedToBlueId = undefined;
+            red.orbiting = undefined;
+            red.r = 42;
           }
         });
       }
@@ -1628,17 +1854,38 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         return tgt !== targetId;
       });
 
-      // Clear green blob links pointing at the removed blue
-      nodesRef.current.forEach((n) => {
-        if (n.type === 'green') {
-          const green = n as GreenBlobNode;
-          for (const cluster of Object.keys(green.linkedBlobsByCluster)) {
-            if (green.linkedBlobsByCluster[cluster] === targetId) {
-              delete green.linkedBlobsByCluster[cluster];
-            }
-          }
-        }
+      // Convert in-transit greens that were attracted to the deleted blue back to ghost nodes
+      const inTransitGreens = nodesRef.current.filter((n) => {
+        if (n.type !== 'green') return false;
+        const g = n as GreenBlobNode;
+        return !g.absorbed && Object.values(g.linkedBlobsByCluster).includes(targetId);
+      }) as GreenBlobNode[];
+
+      inTransitGreens.forEach((green, i) => {
+        const snap = green.originalGhostSnapshot;
+        const angle = (i / Math.max(inTransitGreens.length, 1)) * Math.PI * 2;
+        const dist = (removedBlob?.r ?? 60) + green.r + 20;
+        const orb = makeRandomGhostOrbit();
+        const ghost: GhostNode = {
+          id: `${green.sourceGhostType}-restored-${Date.now()}-${i}`,
+          type: green.sourceGhostType,
+          name: snap.name,
+          r: snap.r ?? 38,
+          topicCode: snap.topicCode,
+          companyName: snap.companyName,
+          logoUrl: snap.logoUrl,
+          cluster: snap.cluster,
+          x: (green.x ?? 0) + dist * Math.cos(angle),
+          y: (green.y ?? 0) + dist * Math.sin(angle),
+          ...orb,
+        };
+        nodesRef.current.push(ghost);
+        respawnedIds.push(ghost.id);
       });
+
+      // Remove in-transit greens from simulation
+      const inTransitIds = new Set(inTransitGreens.map((g) => g.id));
+      nodesRef.current = nodesRef.current.filter((n) => !inTransitIds.has(n.id));
 
       // Deactivate red stars whose only activator was the removed blue
       if (removedRelated.length > 0) {
@@ -1671,21 +1918,21 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         }
       });
 
+      simRef.current?.nodes(nodesRef.current);
       setBlueBlobIds((ids) => ids.filter((id) => id !== targetId));
       syncTreeSummary();
       renderAll();
 
-      // Fade restored green blobs in from opacity 0 (same animation as logo eject)
-      if (animateGreenRestore && restoredGreenIds.length > 0) {
-        restoredGreenIds.forEach((greenId) => {
+      // Fade in respawned ghost nodes
+      if (respawnedIds.length > 0) {
+        respawnedIds.forEach((gid) => {
           gRef.current
-            ?.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
-            .filter((gd) => gd.id === greenId)
+            ?.selectAll<SVGGElement, GhostNode>('.ghost-group')
+            .filter((gd) => gd.id === gid)
             .attr('opacity', 0)
             .transition()
             .duration(1200)
-            .attr('opacity', 1)
-            .on('end', () => fadingGreenIds.current.delete(greenId));
+            .attr('opacity', 1);
         });
       }
     },
@@ -1722,7 +1969,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .attr('opacity', 0)
           .on('end', () => {
             selectedBlobIdRef.current = null;
-            removeBlueBlobById(idToRemove, { animateGreenRestore: true });
+            removeBlueBlobById(idToRemove);
           });
         return;
       }

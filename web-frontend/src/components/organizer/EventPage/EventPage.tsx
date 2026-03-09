@@ -37,6 +37,8 @@ import {
   Settings as SettingsIcon,
   EmailOutlined as NewsletterIcon,
   Slideshow as SlideshowIcon,
+  PhotoLibrary as PhotosIcon,
+  LiveTv as LiveTvIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -52,6 +54,7 @@ import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
 import { EventNewsletterTab } from './EventNewsletterTab';
+import { EventPhotosTab } from './EventPhotosTab';
 import { EventForm } from '@/components/organizer/EventManagement';
 
 // Tab configuration
@@ -63,6 +66,7 @@ const TABS = [
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
   { id: 'newsletter', labelKey: 'eventPage.tabs.newsletter', icon: <NewsletterIcon /> },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
+  { id: 'photos', labelKey: 'eventPage.tabs.photos', icon: <PhotosIcon /> },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -189,6 +193,8 @@ export const EventPage: React.FC = () => {
         return <EventNewsletterTab eventCode={eventCode!} eventTitle={event.title || ''} />;
       case 'settings':
         return <EventSettingsTab event={event} eventCode={eventCode!} />;
+      case 'photos':
+        return <EventPhotosTab eventCode={eventCode!} />;
       default:
         return <EventOverviewTab event={event} eventCode={eventCode!} />;
     }
@@ -213,15 +219,25 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<SlideshowIcon />}
-            href={`/present/${eventCode}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Präsentation starten
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<SlideshowIcon />}
+              href={`/present/${eventCode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Präsentation starten
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<LiveTvIcon />}
+              onClick={() => navigate(`/organizer/events/${eventCode}/live-control`)}
+            >
+              Live Steuerung
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Desktop Tabs */}

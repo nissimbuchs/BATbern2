@@ -22,6 +22,8 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
   alarmTopic?: sns.ITopic;
+  /** Watch JWT signing secret — same value used by CUMS to sign, API Gateway to verify (SecurityConfig). */
+  watchJwtSecret?: secretsmanager.ISecret;
   // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
   // (e.g., http://event-management:8080) configured in environment variables below
 }
@@ -64,6 +66,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     if (props.databaseSecret) {
       secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
       secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
+    }
+    if (props.watchJwtSecret) {
+      secrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
     }
 
     // Create stable log group for API Gateway
@@ -151,6 +156,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Grant Secrets Manager permissions to task execution role
     if (props.databaseSecret) {
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
+    }
+    if (props.watchJwtSecret) {
+      props.watchJwtSecret.grantRead(taskDefinition.executionRole!);
     }
 
     // Create explicit security group with restricted egress

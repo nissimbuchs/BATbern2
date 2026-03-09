@@ -315,6 +315,73 @@ export class ZapParser {
   }
 
   /**
+   * Build the per-category findings matrix from parsed JSON reports (no log files needed).
+   * Rules that fired appear with their risk level; untested/passing rules are omitted.
+   * Uses the same SCAN_GROUPS and structure as buildCategoryMatrix so the template works for both.
+   */
+  static buildCategoryMatrixFromJson(reports) {
+    if (!reports || reports.length === 0) return null;
+
+    const scanNames = reports.map(r => r.scanName);
+
+    // Map: pluginId → { scanName → riskCode }
+    const ruleHits = new Map();
+    for (const report of reports) {
+      for (const alert of report.findings.alerts) {
+        if (!ruleHits.has(alert.pluginId)) ruleHits.set(alert.pluginId, {});
+        const existing = ruleHits.get(alert.pluginId);
+        // Keep worst risk per scan
+        if (!existing[report.scanName] || parseInt(alert.riskCode) > parseInt(existing[report.scanName])) {
+          existing[report.scanName] = alert.riskCode;
+        }
+      }
+    }
+
+    const categories = [];
+    let totalWarn = 0, totalFail = 0;
+
+    for (const group of SCAN_GROUPS) {
+      const triggered = group.rules.filter(id => ruleHits.has(id));
+      if (triggered.length === 0) continue;
+
+      const rules = triggered.map(ruleId => {
+        const cells = scanNames.map(scan => {
+          const rc = ruleHits.get(ruleId)?.[scan];
+          const status = rc === '3' ? 'FAIL' : rc === '2' ? 'WARN' : rc ? 'INFO' : '–';
+          return { scanName: scan, status, instances: [] };
+        });
+
+        const worst = cells.some(c => c.status === 'FAIL') ? 'FAIL'
+          : cells.some(c => c.status === 'WARN') ? 'WARN'
+          : cells.some(c => c.status === 'INFO') ? 'INFO' : '–';
+
+        if (worst === 'FAIL') totalFail++;
+        else if (worst === 'WARN') totalWarn++;
+
+        return { ruleId, friendlyName: RULE_NAMES[ruleId] || ruleId, cells, worst };
+      });
+
+      const catStatus = rules.some(r => r.worst === 'FAIL') ? 'FAIL'
+        : rules.some(r => r.worst === 'WARN') ? 'WARN' : 'INFO';
+
+      categories.push({
+        name: group.name,
+        status: catStatus,
+        icon: catStatus === 'FAIL' ? '❌' : catStatus === 'WARN' ? '⚠️' : 'ℹ️',
+        rules,
+        scanNames
+      });
+    }
+
+    return {
+      scans: scanNames,
+      categories,
+      totals: { pass: 0, warn: totalWarn, fail: totalFail, rulesPerScan: ruleHits.size },
+      fromJson: true   // flag so template can show appropriate label
+    };
+  }
+
+  /**
    * Build the per-category PASS/WARN/FAIL matrix from parsed log scans.
    * Returns an array of category objects ready for the Handlebars template.
    *
@@ -381,7 +448,8 @@ export class ZapParser {
       scans: scanNames,
       categories,
       totals: { pass: totalPass, warn: totalWarn, fail: totalFail,
-                rulesPerScan: scans[0] ? Object.keys(scans[0].rules).length : 0 }
+                rulesPerScan: scans[0] ? Object.keys(scans[0].rules).length : 0 },
+      fromLogs: true   // flag so template/debug can distinguish log-based vs JSON-based matrix
     };
   }
 }

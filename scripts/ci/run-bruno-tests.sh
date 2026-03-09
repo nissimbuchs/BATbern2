@@ -59,7 +59,7 @@ load_role_token() {
     local role="$1"
     local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
     if [ -f "$role_config" ]; then
-        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" 2>/dev/null || true
+        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" >/dev/null 2>&1 || true
         local token
         token=$(jq -r '.idToken' "$role_config" 2>/dev/null)
         if [ "$token" != "null" ] && [ -n "$token" ]; then
@@ -109,6 +109,8 @@ failed=0
 skipped=0
 
 # Test collection directories
+# speaker-portal-api requires the E2E token helper endpoint (@Profile dev/local/test only)
+# and is therefore excluded on staging/production
 collections=(
     "file-upload-api"
     "companies-api"
@@ -116,9 +118,11 @@ collections=(
     "events-api"
     "partners-api"
     "speakers-api"
-    "speaker-portal-api"
     "tasks-api"
 )
+if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
+    collections+=("speaker-portal-api")
+fi
 
 # Run tests for each collection
 for collection in "${collections[@]}"; do

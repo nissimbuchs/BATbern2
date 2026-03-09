@@ -86,7 +86,9 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/e2e-test") // Story 6.3: E2E test endpoints
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
                 || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard
-                || cleanPath.startsWith("/api/v1/newsletter")) { // Story 10.7: Newsletter
+                || cleanPath.startsWith("/api/v1/newsletter") // Story 10.7: Newsletter
+                || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
+                || cleanPath.equals("/api/v1/public/settings/features")) { // Story 10.16: Feature flags
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
                 || cleanPath.startsWith("/api/v1/partner-meetings")) {
@@ -99,6 +101,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin")) { // Story 10.20: Legacy export/import
+            return "event-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
         }
@@ -157,8 +161,16 @@ public class DomainRouter {
      * Forwards all headers (except Host), query parameters, and request body.
      */
     public CompletableFuture<ResponseEntity<byte[]>> routeRequest(String targetService, HttpServletRequest request) {
-        String requestUri = request.getRequestURI();
+        final String rawUri = request.getRequestURI();
         String method = request.getMethod();
+
+        // Normalize trailing slashes: /api/v1/events/ → /api/v1/events to prevent downstream 500 errors
+        final String requestUri = (rawUri.length() > 1 && rawUri.endsWith("/"))
+                ? rawUri.substring(0, rawUri.length() - 1)
+                : rawUri;
+        if (!requestUri.equals(rawUri)) {
+            log.debug("Normalized trailing slash: {} -> {}", rawUri, requestUri);
+        }
 
         log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
 

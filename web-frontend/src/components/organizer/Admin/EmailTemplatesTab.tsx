@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Box,
+  Button,
   Chip,
   Divider,
   IconButton,
@@ -24,6 +25,8 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  Add as AddIcon,
+  ContentCopy as DuplicateIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   InfoOutlined as InfoIcon,
@@ -66,6 +69,10 @@ export const EmailTemplatesTab: React.FC = () => {
   const [localeFilter, setLocaleFilter] = useState<'de' | 'en'>('de');
 
   const [editTemplate, setEditTemplate] = useState<EmailTemplateResponse | undefined>(undefined);
+  const [cloneFromTemplate, setCloneFromTemplate] = useState<EmailTemplateResponse | undefined>(
+    undefined
+  );
+  const [createCategory, setCreateCategory] = useState<Category>('SPEAKER');
   const [isLayoutEdit, setIsLayoutEdit] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplateResponse | null>(null);
@@ -77,7 +84,24 @@ export const EmailTemplatesTab: React.FC = () => {
 
   const handleEdit = (tmpl: EmailTemplateResponse, layoutMode: boolean) => {
     setEditTemplate(tmpl);
+    setCloneFromTemplate(undefined);
     setIsLayoutEdit(layoutMode);
+    setEditOpen(true);
+  };
+
+  const handleCreate = () => {
+    setEditTemplate(undefined);
+    setCloneFromTemplate(undefined);
+    setCreateCategory(categoryFilter);
+    setIsLayoutEdit(false);
+    setEditOpen(true);
+  };
+
+  const handleDuplicate = (tmpl: EmailTemplateResponse) => {
+    setEditTemplate(undefined);
+    setCloneFromTemplate(tmpl);
+    setCreateCategory(tmpl.category as Category);
+    setIsLayoutEdit(false);
     setEditOpen(true);
   };
 
@@ -168,10 +192,19 @@ export const EmailTemplatesTab: React.FC = () => {
       <Divider sx={{ my: 3 }} />
 
       {/* ── Content Templates ── */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h6">
           {t('emailTemplates.contentTemplates', 'Email Content')}
         </Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleCreate}
+          data-testid="new-template-button"
+        >
+          {t('emailTemplates.newTemplate', '+ New Template')}
+        </Button>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
@@ -264,30 +297,46 @@ export const EmailTemplatesTab: React.FC = () => {
               }
             />
             <ListItemSecondaryAction sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={() => setPreviewTemplate(tmpl)}
-                aria-label={`Preview ${tmpl.templateKey}`}
-              >
-                <PreviewIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handleEdit(tmpl, false)}
-                aria-label={`Edit ${tmpl.templateKey}`}
-                data-testid={`edit-email-template-${tmpl.templateKey}`}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-              {!tmpl.isSystemTemplate && (
+              <Tooltip title={t('emailTemplates.preview', 'Preview')}>
                 <IconButton
                   size="small"
-                  onClick={() => handleDelete(tmpl)}
-                  aria-label={`Delete ${tmpl.templateKey}`}
-                  data-testid={`delete-email-template-${tmpl.templateKey}`}
+                  onClick={() => setPreviewTemplate(tmpl)}
+                  aria-label={`Preview ${tmpl.templateKey}`}
                 >
-                  <DeleteIcon fontSize="small" />
+                  <PreviewIcon fontSize="small" />
                 </IconButton>
+              </Tooltip>
+              <Tooltip title={t('emailTemplates.duplicateTemplate', 'Duplicate')}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDuplicate(tmpl)}
+                  aria-label={`Duplicate ${tmpl.templateKey}`}
+                  data-testid={`duplicate-email-template-${tmpl.templateKey}`}
+                >
+                  <DuplicateIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('emailTemplates.editTitle', 'Edit')}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleEdit(tmpl, false)}
+                  aria-label={`Edit ${tmpl.templateKey}`}
+                  data-testid={`edit-email-template-${tmpl.templateKey}`}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              {!tmpl.isSystemTemplate && (
+                <Tooltip title={t('common:actions.delete', 'Delete')}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDelete(tmpl)}
+                    aria-label={`Delete ${tmpl.templateKey}`}
+                    data-testid={`delete-email-template-${tmpl.templateKey}`}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               )}
             </ListItemSecondaryAction>
           </ListItem>
@@ -306,7 +355,12 @@ export const EmailTemplatesTab: React.FC = () => {
         <EmailTemplateEditModal
           template={editTemplate}
           isLayoutMode={isLayoutEdit}
-          onClose={() => setEditOpen(false)}
+          initialCategory={createCategory}
+          cloneFrom={cloneFromTemplate}
+          onClose={() => {
+            setEditOpen(false);
+            setCloneFromTemplate(undefined);
+          }}
         />
       )}
 

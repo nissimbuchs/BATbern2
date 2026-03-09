@@ -37,7 +37,7 @@ describe('PartnerShowcaseCard', () => {
     expect(screen.getByText('TE')).toBeDefined();
   });
 
-  it('should_displayTierAndDate_horizontally', () => {
+  it('should_displayDate', () => {
     render(
       <PartnerShowcaseCard
         companyName="Test Company"
@@ -47,7 +47,6 @@ describe('PartnerShowcaseCard', () => {
       />
     );
 
-    expect(screen.getByText(/🏆 Strategic/)).toBeDefined();
     expect(screen.getByText(/since Jun 2023/)).toBeDefined();
   });
 

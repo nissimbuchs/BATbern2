@@ -55,7 +55,13 @@ export interface UploadedFile {
 
 interface FileUploadProps {
   currentFileUrl?: string;
-  onUploadSuccess?: (data: { uploadId: string; tempFileUrl?: string }) => void;
+  onUploadSuccess?: (data: {
+    uploadId: string;
+    tempFileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    fileType?: string;
+  }) => void;
   onUploadError?: (error: { type: string; message: string }) => void;
   onFileRemove?: (uploadId?: string) => void; // Callback when file is removed (Story 2.5.3a, 5.9)
   maxFileSize?: number; // in bytes, default 5MB
@@ -157,8 +163,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         for (const file of acceptedFiles) {
           const uploadId = await uploadFile(file);
           if (uploadId && onUploadSuccess) {
-            // Call with only the properties expected by the callback signature
-            onUploadSuccess({ uploadId, tempFileUrl: undefined });
+            onUploadSuccess({
+              uploadId,
+              tempFileUrl: undefined,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            });
           }
         }
       } else {

@@ -675,6 +675,16 @@ When implementing new microservices, refer to these reusable implementation guid
 
 These guides consolidate implementation patterns from across all BATbern microservices and should be consulted when implementing new services or features.
 
+## Doc Drift Prevention
+
+When implementing any `feat` or `fix` that changes business logic, scheduler behaviour, state machine transitions, or API contracts:
+
+1. Consult `.github/doc-drift-mappings.yml` to identify which docs are associated with the paths you changed.
+2. Update those docs in the **same commit** as the code change.
+3. If no doc update is needed (e.g. pure internal refactor), add `[no-doc]` to the commit message.
+
+This prevents the weekly doc-drift-auditor from flagging the commit and keeps documentation in sync with the code.
+
 ## Quality Standards
 
 **Never take shortcuts** when implementing or trying to get tests to work. Always take the time to do the work at highest quality.

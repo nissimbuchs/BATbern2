@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtro attivo"
     },
     "detail": {
-      "backToArchive": "← Torna all'archivio"
+      "backToArchive": "← Torna all'archivio",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Importa dati",
       "taskTemplates": "Modelli attività",
       "emailTemplates": "Modelli email",
-      "presentationSettings": "Presentazione"
+      "presentationSettings": "Presentazione",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Accesso negato",
     "organizerOnly": "Questa pagina è riservata agli organizzatori.",
@@ -639,6 +642,31 @@
       "saved": "Impostazioni salvate.",
       "saveFailed": "Salvataggio non riuscito. Riprova."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Esporta",
+      "exportJsonButton": "Esporta tutti i dati (JSON)",
+      "exportAssetsButton": "Ottieni manifesto delle risorse",
+      "importSection": "Importa",
+      "importJsonLabel": "Scegli file JSON",
+      "importButton": "Importa",
+      "successAlert": "Importazione completata con successo.",
+      "resultEvents": "Eventi",
+      "resultSessions": "Sessioni",
+      "resultSpeakers": "Relatori",
+      "resultCompanies": "Aziende",
+      "resultAttendees": "Partecipanti",
+      "resultErrors": "Errori",
+      "errorAlert": "Importazione fallita. Vedere gli errori di seguito.",
+      "importAssetsLabel": "Importa risorse (ZIP)",
+      "importAssetsChooseLabel": "Scegli file ZIP",
+      "importAssetsButton": "Importa risorse",
+      "confirmTitle": "Conferma importazione",
+      "confirmMessage": "Verranno inseriti o aggiornati i dati. I record esistenti verranno aggiornati. Questa operazione non può essere annullata automaticamente.",
+      "confirmAssetsTitle": "Conferma importazione risorse",
+      "confirmAssetsMessage": "Tutti gli asset del file ZIP verranno caricati su S3. Questa operazione non può essere annullata automaticamente.",
+      "confirmButton": "Procedi"
+    },
     "taskTemplates": {
       "defaultSection": "Modelli predefiniti",
       "customSection": "Modelli personalizzati",
@@ -647,6 +675,21 @@
       "noCustom": "Nessun modello personalizzato ancora.",
       "confirmDelete": "Eliminare il modello?",
       "deleteFailed": "Eliminazione del modello non riuscita. Riprova."
+    },
+    "aiPrompts": {
+      "description": "Questi prompt vengono inviati a OpenAI per generare descrizioni di eventi, immagini tematiche e valutazioni della qualità degli abstract. Utilizzare variabili {{VARIABLE_NAME}} — le variabili disponibili sono elencate sotto ogni prompt.",
+      "variablesLabel": "Variabili:",
+      "save": "Salva",
+      "saved": "Prompt salvato.",
+      "saveFailed": "Salvataggio del prompt non riuscito.",
+      "resetToDefault": "Ripristina predefinito",
+      "resetDialogTitle": "Ripristinare il prompt predefinito?",
+      "resetDialogText": "Questo sovrascriverà le modifiche con il testo originale. L'operazione non può essere annullata.",
+      "resetDialogCancel": "Annulla",
+      "resetDialogConfirm": "Ripristina",
+      "resetDone": "Prompt ripristinato al valore predefinito.",
+      "resetFailed": "Ripristino del prompt non riuscito.",
+      "loadFailed": "Impossibile caricare i prompt IA."
     }
   },
   "labels": {

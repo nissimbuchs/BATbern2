@@ -10,12 +10,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -74,6 +79,12 @@ public class TestAwsConfig {
         when(mockS3Client.copyObject(any(CopyObjectRequest.class)))
                 .thenReturn(successResponse);
 
+        // Configure mock for putObject (used by LegacyImportService.importAssets)
+        PutObjectResponse putResponse = PutObjectResponse.builder().build();
+        when(mockS3Client.putObject(
+                any(PutObjectRequest.class), any(software.amazon.awssdk.core.sync.RequestBody.class)))
+                .thenReturn(putResponse);
+
         return mockS3Client;
     }
 
@@ -97,6 +108,16 @@ public class TestAwsConfig {
         when(mockS3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
 
+        // Configure mock for presignGetObject (used by LegacyExportService.exportAssetManifest)
+        PresignedGetObjectRequest mockGetPresignedRequest = Mockito.mock(PresignedGetObjectRequest.class);
+        try {
+            when(mockGetPresignedRequest.url()).thenReturn(new URL("https://presigned.s3.amazonaws.com/test-asset"));
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to create test presigned GET URL", e);
+        }
+        when(mockS3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
+                .thenReturn(mockGetPresignedRequest);
+
         return mockS3Presigner;
     }
 
@@ -110,5 +131,17 @@ public class TestAwsConfig {
         EmailService mockEmailService = Mockito.mock(EmailService.class);
         // sendEmail is void, no need to configure
         return mockEmailService;
+    }
+
+    /**
+     * Mock SqsAsyncClient for testing (Story 10.17).
+     * spring-cloud-aws-starter-sqs auto-configures SqsAsyncClient which requires
+     * real AWS credentials. This mock prevents integration test startup failures
+     * when no AWS SQS is configured in the test environment.
+     */
+    @Bean
+    @Primary
+    public SqsAsyncClient sqsAsyncClient() {
+        return Mockito.mock(SqsAsyncClient.class);
     }
 }

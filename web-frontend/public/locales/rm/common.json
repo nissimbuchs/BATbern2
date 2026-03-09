@@ -552,7 +552,8 @@
       "activeCount": "{{count}} filtel activ"
     },
     "detail": {
-      "backToArchive": "← Enavos a l'archiv"
+      "backToArchive": "← Enavos a l'archiv",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Importar datas",
       "taskTemplates": "Moduls d'incumbensas",
       "emailTemplates": "Moduls d'e-mail",
-      "presentationSettings": "Presentaziun"
+      "presentationSettings": "Presentaziun",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Access refusà",
     "organizerOnly": "Questa pagina è mo per organisaders.",
@@ -639,6 +642,31 @@
       "saved": "Parameters guardads.",
       "saveFailed": "Guardar n'è betg reussì. Empruvai danovamain."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Exportar tut ils datas (JSON)",
+      "exportAssetsButton": "Obtegnair il manifest d'aviers",
+      "importSection": "Import",
+      "importJsonLabel": "Tscherner fichier JSON",
+      "importButton": "Importar",
+      "successAlert": "Import terminà cun success.",
+      "resultEvents": "Occurrenzas",
+      "resultSessions": "Sessiuns",
+      "resultSpeakers": "Referents",
+      "resultCompanies": "Firmas",
+      "resultAttendees": "Participonts",
+      "resultErrors": "Errurs",
+      "errorAlert": "Import chaschunà in'errur. Vesair ils errurs sutvart.",
+      "importAssetsLabel": "Importar aviers (ZIP)",
+      "importAssetsChooseLabel": "Tscherner datoteca ZIP",
+      "importAssetsButton": "Importar aviers",
+      "confirmTitle": "Confermar l'import",
+      "confirmMessage": "Quai importescha u actualisescha las datas. Records existents vegnan actualisads. Quest process na po betg vegnir revocà automaticamain.",
+      "confirmAssetsTitle": "Confermar l'import d'aviers",
+      "confirmAssetsMessage": "Tuts aviers dal datoteca ZIP vegnan chargads sin S3. Quest process na po betg vegnir revocà automaticamain.",
+      "confirmButton": "Cuntinuar"
+    },
     "taskTemplates": {
       "defaultSection": "Moduls da standard",
       "customSection": "Moduls persunalisads",
@@ -647,6 +675,21 @@
       "noCustom": "Nagins moduls persunalisads fin uss.",
       "confirmDelete": "Stizzar il modul?",
       "deleteFailed": "Stizzar il modul n'è betg reussì. Empruvai danovamain."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "labels": {

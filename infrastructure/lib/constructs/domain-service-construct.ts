@@ -17,6 +17,8 @@ export interface DomainServiceConfig {
   cpu: number;
   memoryLimitMiB: number;
   additionalEnvironment?: Record<string, string>;
+  /** Additional secrets from AWS Secrets Manager to inject as environment variables. */
+  additionalSecrets?: Record<string, ecs.Secret>;
   /** Override auto-scaling minimum task count. Defaults to isProd ? 2 : 1. */
   minCapacity?: number;
   /** Override auto-scaling maximum task count. Defaults to minCapacity * 4. */
@@ -83,6 +85,9 @@ export function createDomainService(
     if (props.databaseSecret) {
       secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
       secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
+    }
+    if (props.serviceConfig.additionalSecrets) {
+      Object.assign(secrets, props.serviceConfig.additionalSecrets);
     }
 
     // Create stable log group

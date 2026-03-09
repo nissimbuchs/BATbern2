@@ -9,7 +9,7 @@ Per **[ADR-001: Invitation-Based User Registration Architecture](./ADR-001-invit
 - **Database as Single Source of Truth**: All user data and roles stored in PostgreSQL
 - **Cognito for Authentication Only**: JWT generation and validation only
 - **NO Cognito Groups**: Roles managed exclusively via `role_assignments` table
-- **Unidirectional Sync**: Cognito → Database only (via Lambda triggers)
+- **Unidirectional Sync**: Cognito → Database (via Lambda triggers and reconciliation job; no reverse DB→Cognito writes)
 
 ## Problem Statement
 
@@ -66,9 +66,9 @@ sequenceDiagram
 **Design Principles:**
 - **Cognito as Auth Source of Truth** - Credentials, verification status, MFA settings
 - **Database as Business Source of Truth** - User profiles, roles, relationships, audit trails
-- **Unidirectional Sync** - Cognito → Database only (no reverse sync)
-- **No Drift Possible** - Single direction eliminates consistency issues
-- **Simplified Operations** - No reconciliation jobs, no compensation logs
+- **Unidirectional Sync** - Cognito → Database (no DB→Cognito writes; a reconciliation job reads Cognito to deactivate orphaned DB users)
+- **No Drift** - Reconciliation job detects and resolves divergence
+- **Simplified Operations** - No compensation logs
 
 ## Pattern 1: PostConfirmation Lambda - User Creation
 
@@ -195,9 +195,9 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
   const client = await getDbClient();
 
   try {
-    // Fetch user roles from database
+    // Fetch user roles, username, and companyId from database
     const result = await client.query(
-      `SELECT DISTINCT r.role
+      `SELECT DISTINCT r.role, u.username, u.company_id
        FROM role_assignments r
        JOIN user_profiles u ON r.user_id = u.id
        WHERE u.cognito_user_id = $1
@@ -206,17 +206,23 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
     );
 
     const roles = result.rows.map(row => row.role);
+    const username = result.rows[0]?.username ?? null;
+    const companyId = result.rows[0]?.company_id ?? null;
 
-    // Add roles to JWT as custom claim (comma-separated string)
+    // Add roles, username, and companyId to JWT as custom claims (ADR-001)
+    const claimsToAdd: Record<string, string> = {
+      'custom:role': roles.join(',') // e.g., "ATTENDEE,SPEAKER"
+    };
+    if (username) claimsToAdd['custom:username'] = username;   // DB username (e.g. "john.doe")
+    if (companyId) claimsToAdd['custom:companyId'] = companyId;
+
     event.response = {
       claimsOverrideDetails: {
-        claimsToAddOrOverride: {
-          'custom:role': roles.join(',') // e.g., "ATTENDEE,SPEAKER"
-        }
+        claimsToAddOrOverride: claimsToAdd
       }
     };
 
-    console.log('Roles added to JWT', { cognitoUserId, roles });
+    console.log('Claims added to JWT', { cognitoUserId, roles, username, companyId });
 
   } catch (error) {
     console.error('Failed to fetch roles from database', {
@@ -229,7 +235,8 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
     event.response = {
       claimsOverrideDetails: {
         claimsToAddOrOverride: {
-          'custom:role': ''
+          'custom:role': '',
+          // custom:username and custom:companyId omitted on error
         }
       }
     };
@@ -246,7 +253,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
 **Key Characteristics**:
 - **Performance**: Completes within 500ms (p95 latency requirement)
 - **Graceful Degradation**: Returns empty roles on database errors (allows login)
-- **JWT Claim Format**: `custom:role` with comma-separated values
+- **JWT Claim Format**: `custom:role` (comma-separated), `custom:username` (DB username), `custom:companyId` (optional)
 - **NO Cognito Groups**: Roles stored exclusively in database
 
 **JWT Token Example**:
@@ -257,12 +264,19 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
   "cognito:username": "john.doe@example.com",
   "email": "john.doe@example.com",
   "custom:role": "ATTENDEE,SPEAKER",
+  "custom:username": "john.doe",
+  "custom:companyId": "COMP-0001",
   "custom:language": "de",
   "iss": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_XXXXXXXXX",
   "exp": 1698765432,
   "iat": 1698761832
 }
 ```
+
+**JWT Claim Notes**:
+- `custom:username` — DB-assigned username (e.g., `"john.doe"`); set by PreTokenGeneration from `user_profiles.username` (ADR-001). Application falls back to `sub` when absent.
+- `custom:companyId` — optional; present only when user is linked to a company.
+- `custom:role` — comma-separated role list (e.g., `"ORGANIZER,SPEAKER"`); whitespace around values is trimmed by Spring Security.
 
 ## Pattern 3: Spring Security - Role Extraction from JWT
 
@@ -300,6 +314,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                .requestMatchers("/api/v1/companies/search").permitAll()  // Story 4.1.5: public for registration autocomplete
                 .requestMatchers("/api/v1/admin/**").hasRole("ORGANIZER")
                 .anyRequest().authenticated()
             )
@@ -385,20 +400,40 @@ public class EventController {
 
 **Alternative**: JWT `custom:role` claim populated from database.
 
-### ❌ No Bidirectional Sync (Database → Cognito)
+### ❌ No Reverse Sync (Database → Cognito)
 **Reason**: Cognito is for authentication only. User data changes (roles, profiles) stay in database.
+
+**Clarification**: The reconciliation job reads Cognito state to deactivate orphaned DB users — this is still Cognito→DB direction. There is no path that writes business data from the DB back to Cognito.
 
 **Alternative**: Roles updated in database only. Next login fetches updated roles via PreTokenGeneration.
 
-### ❌ No JIT (Just-In-Time) Provisioning
-**Reason**: PostConfirmation Lambda creates database users automatically. No users exist in Cognito without database records.
+### ✅ JIT (Just-In-Time) Provisioning Interceptor — Safety Net
 
-**Alternative**: PostConfirmation handles all user creation.
+**Pattern 1b**: `JITUserProvisioningInterceptor` runs on every authenticated API request. If a valid JWT is present but no DB user record is found (`findByCognitoUserId()` returns empty), the interceptor provisions a new DB user from the JWT claims.
 
-### ❌ No Reconciliation Jobs
-**Reason**: Unidirectional sync eliminates drift. Database never needs to sync back to Cognito.
+**Role assignment**: Roles are extracted from the JWT `GrantedAuthority` list. If the JWT carries no roles, the user defaults to `ATTENDEE`. Multi-role JWTs produce multi-role DB entries.
 
-**Alternative**: None needed.
+**Link on first login**: Pre-invited users (created via Admin API with `cognito_user_id = NULL`) are linked to their Cognito ID on first login when the interceptor detects an existing record with the same email but no Cognito ID.
+
+**Error handling**: JIT provisioning errors are non-blocking — the request continues even if DB user creation fails.
+
+**Event publishing**: Successful JIT provisioning publishes a domain event with `source = "JIT_PROVISIONING"`.
+
+**Relationship to PostConfirmation**: PostConfirmation Lambda is the **primary** user creation path (self-registration). The JIT interceptor is the **safety net** — it handles edge cases such as PostConfirmation failures or invitation-based users logging in for the first time.
+
+### ✅ Reconciliation Job — `UserReconciliationService`
+
+`UserReconciliationService` provides `reconcileUsers()` and `checkSyncStatus()` to detect and resolve divergence between the DB and Cognito.
+
+**Orphan detection**: Iterates all active DB users with a non-null `cognito_user_id`, calls `adminGetUser` on each, and deactivates any whose Cognito account no longer exists — setting `is_active = false` and `deactivation_reason = "Cognito user deleted"`.
+
+**Missing user detection**: Identifies users present in Cognito but absent from the DB (typically PostConfirmation failures) and creates the missing DB records.
+
+**Skip rule**: Users with `cognito_user_id = NULL` (pre-invited users not yet linked) are **excluded** from the orphan check — `adminGetUser` is never called for them.
+
+**Sync direction**: Cognito remains the authoritative source. The reconciliation job reads Cognito state and mutates the DB only — there is no reverse sync (DB→Cognito).
+
+**Metrics**: Progress and results (`orphanedUsers`, `missingUsers`, duration, errors) are published via `UserSyncMetricsService`.
 
 ### ❌ No Compensation Logs
 **Reason**: No bidirectional sync means no partial failure scenarios requiring compensation.
@@ -419,7 +454,7 @@ public class EventController {
 CREATE TABLE user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL UNIQUE,
-    cognito_user_id VARCHAR(255) NOT NULL UNIQUE,  -- Populated by PostConfirmation
+    cognito_user_id VARCHAR(255) UNIQUE,  -- NULL for pre-invited users; linked on first login via JIT interceptor
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -432,14 +467,20 @@ CREATE TABLE user_profiles (
     pref_theme VARCHAR(10) DEFAULT 'auto',
     pref_language VARCHAR(2) DEFAULT 'de',
     pref_email_notifications BOOLEAN DEFAULT TRUE,
+    pref_in_app_notifications BOOLEAN DEFAULT TRUE,
+    pref_push_notifications BOOLEAN DEFAULT FALSE,
+    pref_notification_frequency VARCHAR(20) DEFAULT 'instant',
 
     -- Settings (embedded)
     settings_profile_visibility VARCHAR(20) DEFAULT 'public',
     settings_timezone VARCHAR(50) DEFAULT 'Europe/Zurich',
     settings_two_factor_enabled BOOLEAN DEFAULT FALSE,
+    settings_show_email BOOLEAN DEFAULT FALSE,
+    settings_show_company BOOLEAN DEFAULT TRUE,
 
     -- Status
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    deactivation_reason VARCHAR(255),  -- e.g. "Cognito user deleted" (set by reconciliation job)
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP WITH TIME ZONE
@@ -459,10 +500,35 @@ CREATE TABLE role_assignments (
 );
 ```
 
+### activity_history Table
+
+```sql
+-- Created by Flyway migrations
+CREATE TABLE activity_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    activity_type VARCHAR(100) NOT NULL,
+    details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 **Key Points**:
-- `cognito_user_id` is `NOT NULL` for self-registered users (always populated by PostConfirmation)
+- `cognito_user_id` is nullable — pre-invited users (created via Admin API) have it set to `NULL` until first login; the JIT interceptor links the Cognito ID then
+- Users with `cognito_user_id = NULL` are skipped during the reconciliation orphan check
 - `role_assignments` supports multiple roles per user
 - `granted_by` is `NULL` for system-assigned roles (e.g., ATTENDEE on registration)
+- `deactivation_reason` is set by the reconciliation job (e.g., `"Cognito user deleted"`) when a DB user's Cognito account no longer exists
+
+## Business Rules
+
+### Minimum 2 Organizers
+
+The platform enforces a hard constraint that **at least 2 organizers must exist at all times**. `RoleService` throws `MinimumOrganizersException` (message: `"minimum of 2 organizers"`) when either:
+- `removeRole()` would remove the last organizer, or
+- `setRoles()` would result in fewer than 2 organizers.
+
+This constraint is enforced at the service layer during both single-role removal and full role replacement operations.
 
 ## Monitoring and Observability
 
@@ -610,11 +676,11 @@ Per ADR-001, a future invitation-based flow will allow admins to create users vi
    - Frontend validates token, allows registration
    - User completes Cognito signup
 
-3. **PreTokenGeneration links Cognito ID to existing user**:
-   - Check if user with same email exists with `cognito_user_id = NULL`
-   - Update `cognito_user_id` field to link accounts
+3. **JIT interceptor links Cognito ID to existing user**:
+   - On first authenticated request, interceptor detects email match with `cognito_user_id = NULL`
+   - Updates `cognito_user_id` field to link accounts
 
-**Migration needed**: Change `cognito_user_id NOT NULL` to nullable for this flow.
+**Note**: `cognito_user_id` is already nullable in the current schema — invitation-based flow is supported.
 
 ### EventBridge Integration (Optional)
 

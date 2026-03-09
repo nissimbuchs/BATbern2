@@ -11,7 +11,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   Event,
   EventDetail,
@@ -24,6 +24,18 @@ import type {
   CreateRegistrationRequest,
   Registration,
 } from '@/types/event.types';
+import type { components } from '@/types/generated/events-api.types';
+
+type EventPhotoResponse = components['schemas']['EventPhotoResponse'];
+type EventPhotoUploadRequest = components['schemas']['EventPhotoUploadRequest'];
+type EventPhotoUploadResponse = components['schemas']['EventPhotoUploadResponse'];
+type EventPhotoConfirmRequest = components['schemas']['EventPhotoConfirmRequest'];
+
+type TeaserImageItem = components['schemas']['TeaserImageItem'];
+type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
+type TeaserImageUploadUrlResponse = components['schemas']['TeaserImageUploadUrlResponse'];
+type TeaserImageConfirmRequest = components['schemas']['TeaserImageConfirmRequest'];
+type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
@@ -447,11 +459,133 @@ class EventApiClient {
     }
   }
 
+  // ── Event Photos (Story 10.21) ────────────────────────────────────────────────
+
+  async listEventPhotos(eventCode: string): Promise<EventPhotoResponse[]> {
+    try {
+      const response = await apiClient.get<EventPhotoResponse[]>(
+        `${EVENT_API_PATH}/${eventCode}/photos`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async requestEventPhotoUploadUrl(
+    eventCode: string,
+    request: EventPhotoUploadRequest
+  ): Promise<EventPhotoUploadResponse> {
+    try {
+      const response = await apiClient.post<EventPhotoUploadResponse>(
+        `${EVENT_API_PATH}/${eventCode}/photos/upload-url`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async uploadPhotoToS3(uploadUrl: string, file: File): Promise<void> {
+    await axios.put(uploadUrl, file, {
+      headers: { 'Content-Type': file.type },
+    });
+  }
+
+  async confirmEventPhotoUpload(
+    eventCode: string,
+    request: EventPhotoConfirmRequest
+  ): Promise<EventPhotoResponse> {
+    try {
+      const response = await apiClient.post<EventPhotoResponse>(
+        `${EVENT_API_PATH}/${eventCode}/photos/confirm`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async deleteEventPhoto(eventCode: string, photoId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/photos/${photoId}`);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async getRecentEventPhotos(limit = 20, lastNEvents = 5): Promise<EventPhotoResponse[]> {
+    try {
+      const response = await apiClient.get<EventPhotoResponse[]>(
+        `${EVENT_API_PATH}/recent-photos`,
+        { params: { limit, lastNEvents } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
+
+  async requestTeaserImageUploadUrl(
+    eventCode: string,
+    request: TeaserImageUploadUrlRequest
+  ): Promise<TeaserImageUploadUrlResponse> {
+    try {
+      const response = await apiClient.post<TeaserImageUploadUrlResponse>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/upload-url`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async confirmTeaserImageUpload(
+    eventCode: string,
+    request: TeaserImageConfirmRequest
+  ): Promise<TeaserImageItem> {
+    try {
+      const response = await apiClient.post<TeaserImageItem>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/confirm`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async updateTeaserImage(
+    eventCode: string,
+    imageId: string,
+    request: TeaserImageUpdateRequest
+  ): Promise<TeaserImageItem> {
+    try {
+      const response = await apiClient.patch<TeaserImageItem>(
+        `${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  async deleteTeaserImage(eventCode: string, imageId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
   /**
    * Get presigned download URL for session material
-   * Story 5.9: Session Materials Upload
-   *
-   * @param eventCode Event code identifier
    * @param sessionSlug Session identifier
    * @param materialId Material UUID
    * @returns Presigned S3 URL valid for 1 hour

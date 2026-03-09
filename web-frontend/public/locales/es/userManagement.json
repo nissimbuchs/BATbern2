@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Ver usuario {{name}}",
     "headers": {
-      "roles": "Roles"
+      "roles": "Roles",
+      "company": "Empresa"
     },
     "empty": "No se encontraron usuarios"
   },
@@ -267,5 +268,10 @@
     "removeTooltip": "Eliminar foto",
     "verified": "Verificado",
     "memberSince": "Miembro desde {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito vinculado",
+    "notLinked": "Sin cuenta Cognito",
+    "tooltip": "ID de Cognito: {{id}}"
   }
 }

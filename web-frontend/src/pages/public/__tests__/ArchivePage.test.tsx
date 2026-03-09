@@ -73,6 +73,11 @@ vi.mock('@/components/public/EventCard', () => ({
   ),
 }));
 
+// Mock useMyRegistration — return null (not registered) so status chip doesn't interfere (Story 10.10)
+vi.mock('@/hooks/useMyRegistration', () => ({
+  useMyRegistration: () => ({ data: null, isLoading: false }),
+}));
+
 // Note: FilterSidebar and FilterSheet are now real components (Task 2b GREEN phase)
 // No longer mocking them - tests now use the real implementation
 

@@ -201,14 +201,20 @@ export default defineConfig({
       },
     },
     // Chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // DISABLED manual chunks to avoid circular dependency issues with @emotion
-        // https://github.com/mui/material-ui/issues/43817
-        // https://github.com/emotion-js/emotion/issues/3322
-        // Vite will automatically split chunks based on dependencies
-        manualChunks: undefined,
+        // Only split @emotion + @mui into their own chunk — required to avoid the
+        // @emotion/@mui circular-dependency issue (https://github.com/mui/material-ui/issues/43817).
+        // Everything else (React, router, i18n, misc deps) goes into one vendor chunk
+        // (~1.84 MB, under Workbox's 2 MB precache limit) so there is never a
+        // cross-chunk CJS-to-ESM factory boundary that causes initialization-order
+        // errors (TDZ / "Cannot set properties of undefined").
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          return 'vendor';
+        },
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name?.split('.');
@@ -317,12 +323,30 @@ export default defineConfig({
         'src/hooks/useNewsletter/**',
         // React error boundary — framework code tested via E2E
         'src/components/ErrorBoundary.tsx',
+        // SEO schema component — JSON-LD output verified via E2E, no branching logic
+        'src/components/SEO/EventSchema.tsx',
+        // Skeleton loader placeholders — structural only, E2E tested
+        'src/components/public/Event/skeletons/**',
+        'src/components/public/ui/skeleton.tsx',
+        // Dev-only email utility — never runs in production
+        'src/services/devEmailService.ts',
+        // BlobTopicSelector service — used only by already-excluded BlobTopicSelector component
+        'src/services/blobTopicService.ts',
+        // WebSocket client & hook — native browser API, E2E tested
+        'src/services/notificationWebSocketClient.ts',
+        'src/hooks/useNotificationWebSocket.ts',
+        // Trivial token getter — no branching logic
+        'src/services/speakerAuthService.ts',
+        // Routing HOC — tested via E2E
+        'src/components/auth/ProtectedRoute/withProtectedRoute.tsx',
+        // Side-effect-only i18n sync component — fires language change, no testable logic
+        'src/components/shared/LanguageSync/LanguageSync.tsx',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
       include: ['src/**/*.{ts,tsx}'], // Explicitly include source files in coverage
       thresholds: {
-        statements: 70, // Only check overall statement coverage
+        statements: 73, // Only check overall statement coverage
       },
     },
     deps: {

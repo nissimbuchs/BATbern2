@@ -77,6 +77,20 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
             List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
 
     /**
+     * Find the next upcoming published event (date >= fromDate, currentPublishedPhase not null).
+     * Used by getCurrentEvent Phase 1: only events that have been explicitly published at some
+     * level (topics / speakers / agenda) are shown on the public homepage — unpublished events
+     * in early organizer states (SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT) must not block the
+     * Phase 2 fallback that shows a recently completed event.
+     *
+     * @param workflowStates List of workflow states to match
+     * @param fromDate Only include events whose date is >= this instant (start of today)
+     * @return Optional containing the next qualifying published event if found
+     */
+    Optional<Event> findFirstByWorkflowStateInAndDateGreaterThanEqualAndCurrentPublishedPhaseIsNotNullOrderByDateAsc(
+            List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
+
+    /**
      * Find an event by its event number
      *
      * @param eventNumber The event number to search for
@@ -112,6 +126,22 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     List<Event> findByWorkflowStateAndDateBefore(
             ch.batbern.shared.types.EventWorkflowState workflowState,
             Instant beforeDate
+    );
+
+    /**
+     * Find the most recent event in the given state within a date window [fromDate, toDate).
+     * Used as fallback in getCurrentEvent: shows EVENT_COMPLETED events for up to 14 days
+     * after the event date when no upcoming event exists.
+     *
+     * @param workflowState The workflow state to match (EVENT_COMPLETED)
+     * @param fromDate Inclusive lower bound (today - 14 days)
+     * @param toDate Exclusive upper bound (start of today)
+     * @return The most recent qualifying event, if any
+     */
+    Optional<Event> findFirstByWorkflowStateAndDateGreaterThanEqualAndDateBeforeOrderByDateDesc(
+            ch.batbern.shared.types.EventWorkflowState workflowState,
+            Instant fromDate,
+            Instant toDate
     );
 
     /**
@@ -156,7 +186,7 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      *
      * @param startDate Start of the date range (inclusive)
      * @param endDate End of the date range (inclusive)
-     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, AGENDA_FINALIZED, EVENT_LIVE)
+     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, EVENT_LIVE)
      * @return List of active events ordered by date ascending
      */
     @Query("SELECT e FROM Event e "
@@ -200,4 +230,12 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     default Optional<Event> findByEventCodeWithAllResources(String eventCode) {
         return findByEventCode(eventCode);
     }
+
+    /**
+     * Find the N most recent events ordered by event date descending.
+     * Used by EventPhotoService.getRecentPhotos() for homepage marquee.
+     * Story 10.21
+     */
+    // Note: do NOT use findTopBy — Top without a number means 1, overriding Pageable.
+    List<Event> findAllByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
 }

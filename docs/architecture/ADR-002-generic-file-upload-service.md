@@ -570,6 +570,35 @@ Examples:
 ❌ POST /api/v1/companies/{name}/logo/confirm
 ```
 
+## Scope Clarification (2026-03-03)
+
+### When to Use GenericLogoService vs Entity-Specific Presigned URL
+
+**ADR-002 was designed to solve one specific problem: circular dependency between entity creation and file upload.** The three-phase PENDING → CONFIRMED → ASSOCIATED state machine is the right tool when a file must be uploaded *before* the entity it belongs to has been created.
+
+#### Use `GenericLogoService` (ADR-002 pattern) when:
+- Uploading a file **at entity-creation time** — the entity does not yet exist in the DB
+- Example: uploading a company logo while filling out the "Create Company" form
+- Example: uploading a profile picture during new user registration
+
+#### Use **entity-specific presigned URL pattern** (direct `S3Presigner` + `S3Client`) when:
+- Uploading or managing files **on an existing entity** — the entity is already persisted
+- The circular dependency problem does not apply
+- Example: `SpeakerProfilePhotoService` — speaker already exists, organizer adds/replaces photo
+- Example: `EventPhotoService` (Story 10.21) — event already exists, organizer uploads post-event photos
+- Example: `EventTeaserImageService` (Story 10.22) — event already exists, organizer uploads teaser images
+
+The entity-specific pattern for existing-entity uploads is **compliant with the spirit of ADR-002** — it is not a workaround or drift. The `GenericLogoService` should not be called cross-service from `event-management-service` or `speaker-coordination-service` purely for uploads to already-persisted entities.
+
+#### Pattern summary
+
+| Scenario | Pattern | Service |
+|----------|---------|---------|
+| Create entity + upload file atomically | GenericLogoService (PENDING → CONFIRMED → ASSOCIATED) | company-user-management-service |
+| Add/replace file on existing entity | Direct S3Presigner + S3Client in domain service | Domain service (e.g. event-management-service) |
+
+This clarification is retroactively valid for `SpeakerProfilePhotoService` and is the governing rule for all future file upload stories involving existing entities.
+
 ## Consequences
 
 ### Positive

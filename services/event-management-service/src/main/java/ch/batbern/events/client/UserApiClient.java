@@ -1,5 +1,6 @@
 package ch.batbern.events.client;
 
+import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -101,6 +102,25 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     List<String> getOrganizerUsernames();
+
+    /**
+     * Get all speaker usernames.
+     * Used for legacy export — speaker metadata enrichment.
+     *
+     * @return List of speaker usernames
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    List<String> getSpeakerUsernames();
+
+    /**
+     * Get all companies (basic info) from the company-user-management-service.
+     * Used for the companies[] list in the legacy BAT export envelope.
+     * Story 10.20: AC1
+     *
+     * @return List of companies with name, displayName, website
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    List<CompanyBasicDto> getAllCompanies();
 
     // Profile update methods (Story 6.2b)
 

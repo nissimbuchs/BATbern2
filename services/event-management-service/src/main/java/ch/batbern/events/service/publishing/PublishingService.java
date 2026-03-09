@@ -550,90 +550,9 @@ public class PublishingService {
         }
     }
 
-    /**
-     * Finalize the agenda for an event
-     * Story BAT-16 (AC7): Agenda Finalization Controls
-     *
-     * Prerequisites:
-     * - Event must be in AGENDA_PUBLISHED state
-     * - Event date must be at least 14 days in the future
-     *
-     * Effects:
-     * - Transitions event to AGENDA_FINALIZED state
-     * - Records finalization timestamp and user
-     * - Locks agenda for major changes (minor edits still allowed)
-     */
-    public Event finalizeAgenda(String eventCode, String organizerUsername) {
-        log.info("Finalizing agenda for event {}", eventCode);
-
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        // Validate prerequisites
-        if (event.getWorkflowState() != EventWorkflowState.AGENDA_PUBLISHED) {
-            throw new IllegalStateException(
-                    "Cannot finalize agenda: event must be in AGENDA_PUBLISHED state (current: "
-                            + event.getWorkflowState() + ")");
-        }
-
-        // Check that event is at least 14 days away
-        long daysUntilEvent = ChronoUnit.DAYS.between(Instant.now(), event.getDate());
-        if (daysUntilEvent < 14) {
-            throw new IllegalStateException(
-                    "Cannot finalize agenda: event must be at least 14 days in the future (currently: "
-                            + daysUntilEvent + " days)");
-        }
-
-        // Update event state
-        event.setWorkflowState(EventWorkflowState.AGENDA_FINALIZED);
-        // TODO: Add agendaFinalizedAt and agendaFinalizedBy fields to Event entity in future story
-
-        eventRepository.save(event);
-
-        log.info("Agenda finalized for event {} by {}", eventCode, organizerUsername);
-
-        return event;
-    }
-
-    /**
-     * Unfinalize the agenda for an event
-     * Story BAT-16 (AC7): Agenda Finalization Controls
-     *
-     * Requires explicit reason for audit trail.
-     * Allows emergency unlocking of agenda after finalization.
-     *
-     * @param eventCode Event code
-     * @param reason Required reason for unfinalizing
-     * @param organizerUsername Username of organizer
-     * @return Updated event
-     */
-    public Event unfinalizeAgenda(String eventCode, String reason, String organizerUsername) {
-        log.info("Unfinalizing agenda for event {} by {} (reason: {})", eventCode, organizerUsername, reason);
-
-        if (reason == null || reason.trim().isEmpty()) {
-            throw new IllegalArgumentException("Reason is required for unfinalizing agenda");
-        }
-
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        // Validate state
-        if (event.getWorkflowState() != EventWorkflowState.AGENDA_FINALIZED) {
-            throw new IllegalStateException(
-                    "Cannot unfinalize agenda: event is not in AGENDA_FINALIZED state (current: "
-                            + event.getWorkflowState() + ")");
-        }
-
-        // Revert to AGENDA_PUBLISHED state
-        event.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
-        // Keep finalization record for audit trail (don't clear agendaFinalizedAt/By)
-
-        eventRepository.save(event);
-
-        log.warn("Agenda unfinalized for event {} by {} - Reason: {}", eventCode, organizerUsername, reason);
-
-        return event;
-    }
+    // NOTE: finalizeAgenda() and unfinalizeAgenda() removed in V82.
+    // AGENDA_FINALIZED state was removed from the workflow. The scheduler now transitions
+    // AGENDA_PUBLISHED → EVENT_LIVE automatically on event day (daily 00:01 Bern time).
 
     /**
      * Custom exception for publishing validation errors

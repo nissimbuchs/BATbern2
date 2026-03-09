@@ -127,11 +127,17 @@ const SpeakerMagicLoginPage = React.lazy(
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
+// Story 10.12: Self-service deregistration page
+const DeregistrationPage = React.lazy(() => import('@pages/public/DeregistrationPage'));
+
 // Dev tool: local email inbox (no auth, no layout)
 const DevEmailInboxPage = React.lazy(() => import('@pages/dev/DevEmailInboxPage'));
 
 // Story 10.8a: Fullscreen moderator presentation page (no auth, no layout wrapper)
 const PresentationPage = React.lazy(() => import('@pages/PresentationPage'));
+
+// Fullscreen organizer live session control page (no layout wrapper, mobile-optimized)
+const LiveControlPage = React.lazy(() => import('@pages/LiveControlPage/LiveControlPage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -258,7 +264,7 @@ function App() {
                     />
                     {/* Story 4.2: Archive browsing routes */}
                     <Route path="/archive" element={<ArchivePage />} />
-                    {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
+                    {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme BATbern components) */}
                     <Route path="/archive/:eventCode" element={<HomePage />} />
 
                     {/* Story 6.2a: Speaker Portal - Invitation Response */}
@@ -278,6 +284,9 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Story 10.12: Self-service deregistration (token-protected, no auth required) */}
+                    <Route path="/deregister" element={<DeregistrationPage />} />
 
                     {/* Story 10.8a: Fullscreen moderator presentation page — public, no auth */}
                     <Route path="/present/:eventCode" element={<PresentationPage />} />
@@ -391,6 +400,15 @@ function App() {
                           <AuthLayout>
                             <SlotAssignmentPage />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Live session control — fullscreen, mobile-optimized, no AuthLayout */}
+                    <Route
+                      path="/organizer/events/:eventCode/live-control"
+                      element={
+                        <ProtectedRoute>
+                          <LiveControlPage />
                         </ProtectedRoute>
                       }
                     />
@@ -624,4 +642,3 @@ function App() {
 }
 
 export default App;
-

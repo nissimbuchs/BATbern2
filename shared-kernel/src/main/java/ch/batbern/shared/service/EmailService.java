@@ -63,6 +63,9 @@ public class EmailService {
     @Value("${app.email.from-name:BATbern Platform}")
     private String fromName;
 
+    @Value("${app.email.reply-to:replies@batbern.ch}")
+    private String replyToEmail;
+
     /**
      * Send a simple HTML email asynchronously.
      *
@@ -88,6 +91,7 @@ public class EmailService {
 
             SendEmailRequest request = SendEmailRequest.builder()
                     .source(String.format("%s <%s>", fromName, fromEmail))
+                    .replyToAddresses(replyToEmail)
                     .destination(Destination.builder().toAddresses(to).build())
                     .message(software.amazon.awssdk.services.ses.model.Message.builder()
                             .subject(Content.builder().data(subject).charset("UTF-8").build())
@@ -147,6 +151,7 @@ public class EmailService {
             message.setFrom(new InternetAddress(fromEmail, fromName));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
             message.setSubject(subject, "UTF-8");
+            message.setReplyTo(InternetAddress.parse(replyToEmail));
 
             // Create multipart message
             MimeMultipart multipart = new MimeMultipart("mixed");

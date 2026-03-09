@@ -279,19 +279,13 @@ export class CognitoStack extends cdk.Stack {
     // Roles are now managed exclusively in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
     // NO Cognito Groups - eliminates dual storage and sync complexity
 
-    // Create bootstrap organizer user for environment setup
-    // This user is created automatically on stack deployment
-    new BootstrapOrganizer(this, 'BootstrapOrganizer', {
-      userPool: this.userPool,
-      email: 'nissim@buchs.be',
-      password: 'TempPass123!',
-    });
-
     // Story 1.2.5: Add Cognito user sync triggers
     // These triggers sync user creation/authentication between Cognito and PostgreSQL
     // Only deploy if VPC and database are configured (not available in local development)
+    // Must be created before BootstrapOrganizer so we can pass the PostConfirmation Lambda ARN
+    let userSyncTriggers: CognitoUserSyncTriggers | undefined;
     if (props.vpc && props.lambdaTriggersSecurityGroup && props.databaseSecret && props.databaseEndpoint) {
-      new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
+      userSyncTriggers = new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
         userPool: this.userPool,
         vpc: props.vpc,
         lambdaSecurityGroup: props.lambdaTriggersSecurityGroup,
@@ -302,6 +296,17 @@ export class CognitoStack extends cdk.Stack {
       // Note: Lambda security group and database ingress rule are created in NetworkStack
       // Tables are created by CompanyManagementStack Flyway migrations at runtime
     }
+
+    // Create bootstrap organizer user for environment setup
+    // This user is created automatically on stack deployment.
+    // Pass the PostConfirmation Lambda ARN so the bootstrap user is also synced to the DB
+    // with ORGANIZER role (AdminCreateUser does not fire the PostConfirmation trigger).
+    new BootstrapOrganizer(this, 'BootstrapOrganizer', {
+      userPool: this.userPool,
+      email: 'nissim@buchs.be',
+      password: 'TempPass123!',
+      postConfirmationLambdaArn: userSyncTriggers?.postConfirmationTrigger.functionArn,
+    });
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);

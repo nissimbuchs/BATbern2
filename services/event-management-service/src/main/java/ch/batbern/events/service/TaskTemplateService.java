@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  * 3. Moderator Assignment (trigger: topic_selection, due: -14 days)
  * 4. Newsletter: Topic (trigger: topic_selection, due: immediate)
  * 5. Newsletter: Speakers (trigger: agenda_published, due: -30 days)
- * 6. Newsletter: Final (trigger: agenda_finalized, due: -14 days)
- * 7. Catering (trigger: agenda_finalized, due: -30 days)
+ * 6. Newsletter: Final (trigger: agenda_published, due: -14 days)
+ * 7. Catering (trigger: agenda_published, due: -30 days)
  */
 @Slf4j
 @Service

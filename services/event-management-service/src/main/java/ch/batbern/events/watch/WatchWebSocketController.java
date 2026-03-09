@@ -143,6 +143,7 @@ public class WatchWebSocketController {
     /**
      * Validates sessionSlug and minutes for session control actions (EXTEND_SESSION, DELAY_TO_PREVIOUS).
      * W4.3 Task 7.3: Null guard to prevent misleading exceptions for malformed STOMP frames.
+     * EXTEND_SESSION allows negative minutes (session reduction); DELAY_TO_PREVIOUS requires positive.
      */
     private boolean isValidSessionAction(WatchActionMessage action, String actionType,
             String username, String eventCode) {
@@ -151,9 +152,14 @@ public class WatchWebSocketController {
                     actionType, username, eventCode);
             return false;
         }
-        if (action.minutes() == null || action.minutes() <= 0) {
+        if (action.minutes() == null || action.minutes() == 0) {
             log.warn("{} rejected: invalid minutes ({}) from organizer {} in event {}",
                     actionType, action.minutes(), username, eventCode);
+            return false;
+        }
+        if ("DELAY_TO_PREVIOUS".equals(actionType) && action.minutes() < 0) {
+            log.warn("{} rejected: negative minutes not allowed for {} from organizer {} in event {}",
+                    actionType, actionType, username, eventCode);
             return false;
         }
         return true;

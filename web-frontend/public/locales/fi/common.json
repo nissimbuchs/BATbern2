@@ -552,7 +552,8 @@
       "activeCount": "{{count}} aktiivinen suodatin"
     },
     "detail": {
-      "backToArchive": "← Takaisin arkistoon"
+      "backToArchive": "← Takaisin arkistoon",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Tuo tiedot",
       "taskTemplates": "Tehtäväpohjat",
       "emailTemplates": "Sähköpostipohjat",
-      "presentationSettings": "Esitys"
+      "presentationSettings": "Esitys",
+      "exportImport": "Vienti / Tuonti",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Pääsy estetty",
     "organizerOnly": "Tämä sivu on vain järjestäjille.",
@@ -639,6 +642,31 @@
       "saved": "Asetukset tallennettu.",
       "saveFailed": "Tallennus epäonnistui. Yritä uudelleen."
     },
+    "exportImport": {
+      "title": "Vienti / Tuonti",
+      "exportSection": "Vienti",
+      "exportJsonButton": "Vie kaikki tiedot (JSON)",
+      "exportAssetsButton": "Hae resurssien luettelo",
+      "importSection": "Tuonti",
+      "importJsonLabel": "Valitse JSON-tiedosto",
+      "importButton": "Tuo",
+      "successAlert": "Tuonti onnistui.",
+      "resultEvents": "Tapahtumat",
+      "resultSessions": "Istunnot",
+      "resultSpeakers": "Puhujat",
+      "resultCompanies": "Yritykset",
+      "resultAttendees": "Osallistujat",
+      "resultErrors": "Virheet",
+      "errorAlert": "Tuonti epäonnistui. Katso virheet alta.",
+      "importAssetsLabel": "Tuo resurssit (ZIP)",
+      "importAssetsChooseLabel": "Valitse ZIP-tiedosto",
+      "importAssetsButton": "Tuo resurssit",
+      "confirmTitle": "Vahvista tuonti",
+      "confirmMessage": "Tämä lisää tai päivittää tietoja. Olemassa olevat tietueet päivitetään. Tätä ei voi peruuttaa automaattisesti.",
+      "confirmAssetsTitle": "Vahvista resurssien tuonti",
+      "confirmAssetsMessage": "Kaikki ZIP-tiedoston resurssit ladataan S3:een. Tätä ei voi peruuttaa automaattisesti.",
+      "confirmButton": "Jatka"
+    },
     "taskTemplates": {
       "defaultSection": "Oletuspohjat",
       "customSection": "Mukautetut pohjat",
@@ -647,6 +675,21 @@
       "noCustom": "Ei vielä mukautettuja pohjia.",
       "confirmDelete": "Poistetaanko pohja?",
       "deleteFailed": "Pohjan poistaminen epäonnistui. Yritä uudelleen."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "labels": {

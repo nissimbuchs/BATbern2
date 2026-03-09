@@ -1,0 +1,319 @@
+name: Doc Drift Resolver
+
+# Automatically fixes documentation drift flagged by the weekly auditor.
+# Triggered when a 'doc-drift' issue is labeled, or manually via workflow_dispatch.
+#
+# Flow:
+#   1. Parse the issue body → extract flagged commits + suggested docs
+#   2. Create branch docs/drift-fix-<issue-number>
+#   3. Run Claude Code session → inspect each commit, update docs
+#   4. Open a PR
+#   5. If PR touches only docs/ → auto-merge + close issue
+#      If PR touches code    → comment on issue + notify
+
+on:
+  issues:
+    types: [labeled]
+
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Doc-drift issue number to resolve'
+        required: true
+
+jobs:
+  resolve:
+    name: Resolve doc drift
+    # Only run for doc-drift label, or manual dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'doc-drift'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: pip install pyyaml --quiet
+
+      - name: Resolve issue number
+        id: issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
+          else
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+          fi
+          echo "number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+
+          # Fetch issue body
+          gh issue view "$ISSUE_NUMBER" --json body --jq '.body' > /tmp/issue-body.md
+          echo "Issue #$ISSUE_NUMBER fetched."
+
+      - name: Parse issue body
+        id: parse
+        run: |
+          chmod +x .github/scripts/doc-drift-parse-issue.py
+          python3 .github/scripts/doc-drift-parse-issue.py \
+            --file /tmp/issue-body.md > /tmp/drift-commits.json
+
+          COUNT=$(python3 -c "import json; d=json.load(open('/tmp/drift-commits.json')); print(len(d))")
+          echo "commits_count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Parsed $COUNT commits from issue."
+          cat /tmp/drift-commits.json
+
+      - name: Exit early if no commits parsed
+        if: steps.parse.outputs.commits_count == '0'
+        run: |
+          echo "No commits found in issue body — nothing to resolve."
+          exit 0
+
+      - name: Create branch
+        id: branch
+        run: |
+          BRANCH="docs/drift-fix-${{ steps.issue.outputs.number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          echo "Created branch: $BRANCH"
+
+      - name: Build Claude prompt
+        id: prompt
+        run: |
+          python3 - << 'PYEOF'
+          import json, subprocess, textwrap
+
+          commits = json.load(open('/tmp/drift-commits.json'))
+
+          lines = []
+          lines.append("You are fixing documentation drift in the BATbern repository.")
+          lines.append("")
+          lines.append("## Your task")
+          lines.append("")
+          lines.append("The following commits changed business logic but had no corresponding")
+          lines.append("documentation update. For each commit:")
+          lines.append("1. Run `git show <sha>` to inspect what changed")
+          lines.append("2. Read each suggested doc file listed for that commit")
+          lines.append("3. If the doc does NOT accurately describe what the code now does, update it")
+          lines.append("4. Only edit files under `docs/` — never touch source code")
+          lines.append("5. Keep updates concise — add or modify only what the commit changed")
+          lines.append("6. If a commit genuinely needs no doc update, skip it silently")
+          lines.append("")
+          lines.append("## Commits to review")
+          lines.append("")
+
+          for i, c in enumerate(commits, 1):
+              lines.append(f"### {i}. `{c['sha']}` — {c['message']}")
+              lines.append("")
+              lines.append("**Suggested docs to check:**")
+              for doc in c['docs']:
+                  lines.append(f"- `{doc}`")
+              lines.append("")
+
+          lines.append("## Rules")
+          lines.append("")
+          lines.append("- ONLY edit files under `docs/` — no source code changes whatsoever")
+          lines.append("- Do not rewrite entire sections — surgical additions/updates only")
+          lines.append("- Match the tone and style of the existing doc")
+          lines.append("- After all updates, create a single git commit:")
+          lines.append("  `docs(drift): update docs for issue #" + open('/tmp/issue-number.txt').read().strip() + "`")
+          lines.append("- If you make NO changes at all, output the text NOCHANGES on its own line")
+
+          with open('/tmp/drift-prompt.txt', 'w') as f:
+              f.write('\n'.join(lines))
+
+          print(f"Prompt built ({len(lines)} lines, {sum(len(l) for l in lines)} chars).")
+          PYEOF
+
+          # Write issue number for the python script above
+          echo "${{ steps.issue.outputs.number }}" > /tmp/issue-number.txt
+          # Re-run now that issue-number.txt exists
+          python3 - << 'PYEOF'
+          import json
+
+          commits = json.load(open('/tmp/drift-commits.json'))
+
+          lines = []
+          lines.append("You are fixing documentation drift in the BATbern repository.")
+          lines.append("")
+          lines.append("## Your task")
+          lines.append("")
+          lines.append("The following commits changed business logic but had no corresponding")
+          lines.append("documentation update. For each commit:")
+          lines.append("1. Run `git show <sha>` to inspect what changed")
+          lines.append("2. Read each suggested doc file listed for that commit")
+          lines.append("3. If the doc does NOT accurately describe what the code now does, update it")
+          lines.append("4. Only edit files under `docs/` — never touch source code")
+          lines.append("5. Keep updates concise — add or modify only what the commit changed")
+          lines.append("6. If a commit genuinely needs no doc update, skip it silently")
+          lines.append("")
+          lines.append("## Commits to review")
+          lines.append("")
+
+          for i, c in enumerate(commits, 1):
+              lines.append(f"### {i}. `{c['sha']}` — {c['message']}")
+              lines.append("")
+              lines.append("**Suggested docs to check:**")
+              for doc in c['docs']:
+                  lines.append(f"- `{doc}`")
+              lines.append("")
+
+          issue_number = open('/tmp/issue-number.txt').read().strip()
+          lines.append("## Rules")
+          lines.append("")
+          lines.append("- ONLY edit files under `docs/` — no source code changes whatsoever")
+          lines.append("- Do not rewrite entire sections — surgical additions/updates only")
+          lines.append("- Match the tone and style of the existing doc")
+          lines.append("- After all updates, create a single git commit:")
+          lines.append(f"  `docs(drift): update docs for issue #{issue_number}`")
+          lines.append("- If you make NO changes at all, output the text NOCHANGES on its own line")
+
+          with open('/tmp/drift-prompt.txt', 'w') as f:
+              f.write('\n'.join(lines))
+
+          print(f"Prompt built: {len(lines)} lines.")
+          PYEOF
+
+      - name: Run Claude Code — update docs
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt_file: /tmp/drift-prompt.txt
+          claude_args: >-
+            --allowed-tools
+            "Bash(git show:*),Bash(git log:*),Bash(git diff:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Read,Edit,Write"
+
+      - name: Check if Claude made any changes
+        id: changes
+        run: |
+          if git diff --quiet HEAD; then
+            echo "made_changes=false" >> $GITHUB_OUTPUT
+            echo "Claude made no doc changes — issue may be all false positives."
+          else
+            echo "made_changes=true" >> $GITHUB_OUTPUT
+            echo "Claude made changes:"
+            git diff --stat HEAD
+          fi
+
+      - name: Push branch
+        if: steps.changes.outputs.made_changes == 'true'
+        run: |
+          git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Create PR
+        if: steps.changes.outputs.made_changes == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --title "docs(drift): auto-fix documentation drift (issue #${{ steps.issue.outputs.number }})" \
+            --body "$(cat << 'EOF'
+          ## Documentation Drift Auto-Fix
+
+          Resolves #${{ steps.issue.outputs.number }}
+
+          This PR was generated automatically by the [doc-drift-resolver](../actions/workflows/doc-drift-resolver.yml).
+          Claude inspected each flagged commit and updated the relevant documentation.
+
+          **Review checklist:**
+          - [ ] Doc changes are accurate and match the code behaviour
+          - [ ] No source code was accidentally modified
+          - [ ] Tone and style match the existing docs
+
+          > If any change is incorrect, edit this PR directly before merging.
+          EOF
+          )" \
+            --base main \
+            --head "${{ steps.branch.outputs.name }}" \
+            --label "doc-drift")
+
+          echo "url=$PR_URL" >> $GITHUB_OUTPUT
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "PR created: $PR_URL"
+
+      - name: Check if PR is docs-only
+        if: steps.changes.outputs.made_changes == 'true'
+        id: safety
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Wait briefly for PR to be indexed
+          sleep 5
+
+          NON_DOC=$(gh pr view ${{ steps.pr.outputs.number }} \
+            --json files --jq '[.files[].path | select(startswith("docs/") | not)] | length')
+
+          echo "non_doc_count=$NON_DOC" >> $GITHUB_OUTPUT
+
+          if [[ "$NON_DOC" -eq 0 ]]; then
+            echo "✅ PR is docs-only — safe to auto-merge."
+          else
+            echo "⚠️  PR touches $NON_DOC non-doc file(s) — requires manual review."
+          fi
+
+      - name: Auto-merge docs-only PR
+        if: |
+          steps.changes.outputs.made_changes == 'true' &&
+          steps.safety.outputs.non_doc_count == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ steps.pr.outputs.number }} \
+            --squash \
+            --subject "docs(drift): auto-fix documentation drift (issue #${{ steps.issue.outputs.number }})" \
+            --delete-branch
+
+          gh issue close ${{ steps.issue.outputs.number }} \
+            --comment "✅ Documentation updated automatically. PR merged: ${{ steps.pr.outputs.url }}"
+
+          echo "✅ PR merged and issue closed."
+
+      - name: Notify — manual review required
+        if: |
+          steps.changes.outputs.made_changes == 'true' &&
+          steps.safety.outputs.non_doc_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ steps.issue.outputs.number }} --body "$(cat << 'EOF'
+          ## ⚠️ Manual review required
+
+          The auto-resolver created a PR but it touches files outside `docs/` — it cannot be auto-merged.
+
+          **PR:** ${{ steps.pr.outputs.url }}
+
+          Please review and merge manually.
+          EOF
+          )"
+          echo "⚠️  Notification posted to issue."
+
+      - name: Notify — no changes made
+        if: steps.changes.outputs.made_changes == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ steps.issue.outputs.number }} --body "$(cat << 'EOF'
+          ## ℹ️ No documentation changes needed
+
+          The auto-resolver reviewed all flagged commits and found no documentation updates required.
+          All commits in this issue may be false positives.
+
+          Label this issue `doc-drift-false-positive` and close it if that's the case.
+          EOF
+          )"

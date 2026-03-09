@@ -552,7 +552,8 @@
       "activeCount": "{{count}} actief filter"
     },
     "detail": {
-      "backToArchive": "← Terug naar archief"
+      "backToArchive": "← Terug naar archief",
+      "photos": "Photos"
     }
   },
   "notifications": {
@@ -626,7 +627,9 @@
       "importData": "Gegevens importeren",
       "taskTemplates": "Taaksjablonen",
       "emailTemplates": "E-mailsjablonen",
-      "presentationSettings": "Presentatie"
+      "presentationSettings": "Presentatie",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Toegang geweigerd",
     "organizerOnly": "Deze pagina is alleen voor organisatoren.",
@@ -639,6 +642,31 @@
       "saved": "Instellingen opgeslagen.",
       "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Exporteren",
+      "exportJsonButton": "Alle gegevens exporteren (JSON)",
+      "exportAssetsButton": "Activamanifest ophalen",
+      "importSection": "Importeren",
+      "importJsonLabel": "JSON-bestand kiezen",
+      "importButton": "Importeren",
+      "successAlert": "Import succesvol voltooid.",
+      "resultEvents": "Evenementen",
+      "resultSessions": "Sessies",
+      "resultSpeakers": "Sprekers",
+      "resultCompanies": "Bedrijven",
+      "resultAttendees": "Deelnemers",
+      "resultErrors": "Fouten",
+      "errorAlert": "Import mislukt. Zie fouten hieronder.",
+      "importAssetsLabel": "Activa importeren (ZIP)",
+      "importAssetsChooseLabel": "ZIP-bestand kiezen",
+      "importAssetsButton": "Activa importeren",
+      "confirmTitle": "Import bevestigen",
+      "confirmMessage": "Dit voegt gegevens in of bij. Bestaande records worden bijgewerkt. Dit kan niet automatisch ongedaan worden gemaakt.",
+      "confirmAssetsTitle": "Activa-import bevestigen",
+      "confirmAssetsMessage": "Alle activa uit het ZIP-bestand worden geüpload naar S3. Dit kan niet automatisch ongedaan worden gemaakt.",
+      "confirmButton": "Doorgaan"
+    },
     "taskTemplates": {
       "defaultSection": "Standaardsjablonen",
       "customSection": "Aangepaste sjablonen",
@@ -647,6 +675,21 @@
       "noCustom": "Nog geen aangepaste sjablonen.",
       "confirmDelete": "Sjabloon verwijderen?",
       "deleteFailed": "Verwijderen van sjabloon mislukt. Probeer het opnieuw."
+    },
+    "aiPrompts": {
+      "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
+      "variablesLabel": "Variables:",
+      "save": "Save",
+      "saved": "Prompt saved.",
+      "saveFailed": "Failed to save prompt.",
+      "resetToDefault": "Reset to default",
+      "resetDialogTitle": "Reset prompt to default?",
+      "resetDialogText": "This will overwrite your current changes with the original default text. This cannot be undone.",
+      "resetDialogCancel": "Cancel",
+      "resetDialogConfirm": "Reset",
+      "resetDone": "Prompt reset to default.",
+      "resetFailed": "Failed to reset prompt.",
+      "loadFailed": "Failed to load AI prompts."
     }
   },
   "labels": {

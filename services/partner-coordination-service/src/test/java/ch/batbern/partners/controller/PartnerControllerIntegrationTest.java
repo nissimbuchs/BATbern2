@@ -280,6 +280,28 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message").exists());
     }
 
+    @Test
+    void should_return400_when_paginationParamIsNotAnInteger() throws Exception {
+        // ZAP finding: ?page=c:/Windows/system.ini caused 500 — must return 400
+        mockMvc.perform(get("/api/v1/partners")
+                        .param("page", "not-an-integer")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("page")));
+    }
+
+    @Test
+    void should_return400_when_sizeParamIsNotAnInteger() throws Exception {
+        // ZAP finding: non-integer size param caused 500 — must return 400
+        mockMvc.perform(get("/api/v1/partners")
+                        .param("size", "c:/Windows/system.ini")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("size")));
+    }
+
     // Helper methods
     private Partner createTestPartner(String companyName, PartnershipLevel level) {
         Partner partner = new Partner();

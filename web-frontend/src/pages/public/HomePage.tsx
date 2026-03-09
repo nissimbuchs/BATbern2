@@ -13,30 +13,42 @@
  * - Hides speakers, sessions, and venue sections
  */
 
+import { useState } from 'react';
 import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
 import { EventLogistics } from '@/components/public/Event/EventLogistics';
+import { CapacityIndicator } from '@/components/public/Event/CapacityIndicator';
 import { CountdownTimer } from '@/components/public/Event/CountdownTimer';
 import { SpeakerGrid } from '@/components/public/Event/SpeakerGrid';
 import { SessionCards } from '@/components/public/Event/SessionCards';
 import { EventProgram } from '@/components/public/Event/EventProgram';
 import { VenueMap } from '@/components/public/Event/VenueMap';
 import { SocialSharing } from '@/components/public/Event/SocialSharing';
+import { EventDescriptionSection } from '@/components/public/Event/EventDescriptionSection';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
+import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { NewsletterSubscribeWidget } from '@/components/public/NewsletterSubscribeWidget';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { useEventPhotos } from '@/hooks/useEventPhotos';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
+import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
+
+const DEREGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
 const HomePage = () => {
   const { t } = useTranslation('events');
   const { t: tCommon } = useTranslation('common');
+  const { t: tReg } = useTranslation('registration');
+  const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
   const { eventCode } = useParams<{ eventCode?: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -69,6 +81,28 @@ const HomePage = () => {
 
   // Select the appropriate query result
   const { data: event, isLoading, error } = eventCode ? specificEventQuery : currentEventQuery;
+
+  // EVENT_COMPLETED within 14-day window is shown on homepage with archive-style UI.
+  // Computed early (with optional chaining) so it can gate the registration hook below.
+  const isArchivedState =
+    event?.workflowState === 'ARCHIVED' || event?.workflowState === 'EVENT_COMPLETED';
+
+  // Event-specific photos for archive/completed view (Story 10.21 — AC7)
+  // Enabled for archive pages and EVENT_COMPLETED/ARCHIVED on homepage
+  const { data: eventPhotos } = useEventPhotos(eventCode ?? '', isArchiveMode || isArchivedState);
+
+  // AC2/AC4: Registration status banner (Story 10.10)
+  // Hook returns undefined immediately for unauthenticated users — no API call made (AC8)
+  const BANNER_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
+  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
+    !isArchiveMode &&
+      !isArchivedState &&
+      event &&
+      event.workflowState &&
+      BANNER_WORKFLOW_STATES.includes(event.workflowState)
+      ? event.eventCode
+      : undefined
+  );
 
   // Loading state
   if (isLoading) {
@@ -117,14 +151,19 @@ const HomePage = () => {
   const currentPhase =
     ('currentPublishedPhase' in event
       ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
-      : null) || 'AGENDA';
+      : null) ?? null;
 
-  // Archive mode (Story 4.2): Only show timeline, hide speakers/sessions/venue
+  // Archive mode (Story 4.2 / 10.21): Show timetable + speakers; hide logistics/venue/registration
+  // EVENT_COMPLETED within 14-day window is shown on homepage with same archive-style UI,
+  // so attendees still see materials and programme without live logistics.
+  const isArchiveDisplay = isArchiveMode || isArchivedState;
+
+  // In archive mode always show speakers — event is fully published and done
   const showSpeakersAndSessions =
-    !isArchiveMode && (currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA');
-  const showTimetable = isArchiveMode || currentPhase === 'AGENDA'; // Always show in archive mode
-  const showSessionList = !isArchiveMode && currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
-  const showVenue = !isArchiveMode; // Hide venue in archive mode
+    isArchiveDisplay || currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
+  const showTimetable = isArchiveDisplay || currentPhase === 'AGENDA'; // Always show in archive mode
+  const showSessionList = !isArchiveDisplay && currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
+  const showVenue = !isArchiveDisplay; // Hide venue in archive mode
 
   // Preview Mode Banner (Story 5.7) - shown above navigation
   // Fixed positioning to stay above the fixed navigation
@@ -163,10 +202,52 @@ const HomePage = () => {
         eventCode={event.eventCode}
         themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
+        spotsRemaining={event.spotsRemaining}
       />
+
+      {/* Event Description Section (Story 10.23) — shown below hero, hidden when null/empty or no phase published */}
+      {currentPhase !== null && (
+        <div className="container mx-auto px-4">
+          <EventDescriptionSection description={event?.description} />
+        </div>
+      )}
 
       {/* Event Content */}
       <div className="container mx-auto px-4">
+        {/* Registration Status Banner (Story 10.10) — AC2, AC4
+            Shown below hero when authenticated user has a registration for the current event.
+            Only for events in AGENDA_PUBLISHED / EVENT_LIVE states. */}
+        {!isArchiveDisplay && (
+          <RegistrationStatusBanner
+            status={myRegistration?.status ?? null}
+            eventCode={event.eventCode ?? ''}
+            isLoading={isRegistrationLoading}
+            waitlistPosition={myRegistration?.waitlistPosition}
+          />
+        )}
+
+        {/* Story 10.12 (AC9): "Cancel your registration" link for anonymous and authenticated registrants.
+            Shown when event is in a state where registrations can be cancelled. */}
+        {!isArchiveDisplay &&
+          event.workflowState &&
+          DEREGISTRATION_WORKFLOW_STATES.includes(event.workflowState) && (
+            <>
+              <div className="mt-2 text-center">
+                <button
+                  onClick={() => setDeregisterModalOpen(true)}
+                  className="text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors"
+                >
+                  {tReg('deregistration.homepage.cancelLink')}
+                </button>
+              </div>
+              <DeregistrationByEmailModal
+                open={deregisterModalOpen}
+                onClose={() => setDeregisterModalOpen(false)}
+                eventCode={event.eventCode ?? ''}
+              />
+            </>
+          )}
+
         {/* Back Button - Only shown in archive mode (Story 4.2) */}
         {isArchiveMode && backToArchiveUrl && (
           <Link
@@ -177,11 +258,19 @@ const HomePage = () => {
           </Link>
         )}
 
-        {/* Event Logistics - Hidden in archive mode (Story 4.2) */}
-        {!isArchiveMode && (
+        {/* Event Logistics - Hidden in archive/completed mode (Story 4.2) */}
+        {!isArchiveDisplay && (
           <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
             <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
             <EventLogistics event={event} />
+            {/* AC7 (Story 10.11): Capacity badge — only when capacity is configured */}
+            <div className="mt-4">
+              <CapacityIndicator
+                registrationCapacity={event.registrationCapacity}
+                spotsRemaining={event.spotsRemaining}
+                waitlistCount={event.waitlistCount}
+              />
+            </div>
           </div>
         )}
 
@@ -189,7 +278,7 @@ const HomePage = () => {
         {showTimetable && event.sessions && event.sessions.length > 0 && (
           <EventProgram
             sessions={event.sessions}
-            isArchived={event.workflowState === 'ARCHIVED'}
+            isArchived={isArchivedState}
             eventCode={event.eventCode}
           />
         )}
@@ -204,7 +293,7 @@ const HomePage = () => {
           <SpeakerGrid sessions={event.sessions} />
         )}
 
-        {/* Venue Map - Hidden in archive mode (Story 4.2) */}
+        {/* Venue Map - Hidden in archive/completed mode (Story 4.2) */}
         {showVenue && event.venueName && event.venueAddress && (
           <VenueMap
             venue={{
@@ -219,13 +308,38 @@ const HomePage = () => {
         {/* Social Sharing */}
         <SocialSharing eventTitle={eventTitle} eventUrl={eventUrl} />
 
-        {/* Upcoming Events Section — hidden in archive mode */}
-        {!isArchiveMode && <UpcomingEventsSection currentEventCode={event.eventCode} />}
+        {/* Upcoming Events Section — hidden in archive/completed mode */}
+        {!isArchiveDisplay && <UpcomingEventsSection currentEventCode={event.eventCode} />}
 
-        {/* Testimonials Section */}
-        <div className="mt-16 pb-12">
-          <TestimonialSection />
-        </div>
+        {/* Event Photos Marquee — archive/completed detail only (Story 10.21 — AC7) */}
+        {isArchiveDisplay && eventPhotos && eventPhotos.length > 0 && (
+          <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6 mt-12">
+            <InfiniteMarquee direction="left" speed="slow">
+              {eventPhotos.map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.displayUrl}
+                  alt={photo.filename || 'BATbern event photo'}
+                  className="rounded-lg object-cover h-48 w-64 shrink-0"
+                />
+              ))}
+            </InfiniteMarquee>
+          </section>
+        )}
+
+        {/* Testimonials / recent photos marquee + partner marquee:
+            - Normal homepage: full section (photo row + partner row)
+            - EVENT_COMPLETED homepage: partner row always + recent-photos row as fallback
+              (skipPhotoRow when event already has its own photos shown above) */}
+        {!isArchiveDisplay ? (
+          <div className="mt-16 pb-12">
+            <TestimonialSection />
+          </div>
+        ) : isArchivedState && !isArchiveMode ? (
+          <div className="mt-8 pb-12">
+            <TestimonialSection skipPhotoRow={!!(eventPhotos && eventPhotos.length > 0)} />
+          </div>
+        ) : null}
 
         {/* Newsletter Subscribe Widget — footer */}
         <div className="border-t pt-4 pb-8">

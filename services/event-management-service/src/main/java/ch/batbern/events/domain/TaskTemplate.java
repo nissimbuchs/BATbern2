@@ -33,7 +33,7 @@ public class TaskTemplate {
 
     /**
      * Event workflow state that triggers task creation.
-     * Values: 'topic_selection', 'agenda_published', 'agenda_finalized', etc.
+     * Values: 'topic_selection', 'agenda_published', 'event_live', etc.
      */
     @Column(name = "trigger_state", nullable = false, length = 50)
     private String triggerState;

@@ -37,4 +37,21 @@ export const devEmailService = {
       throw new Error(`Failed to clear inbox: ${response.status}`);
     }
   },
+
+  /**
+   * Simulate an inbound email reply for local dev testing (Story 10.17 — AC11).
+   * Constructs a ParsedEmail from the captured email and routes it via InboundEmailRouter.
+   * Any resulting confirmation email will appear in the inbox after a refresh.
+   */
+  replyToEmail: async (id: string, replyBody: string): Promise<string> => {
+    const response = await fetch(`${EMS_BASE}/dev/emails/${id}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ replyBody }),
+    });
+    if (!response.ok) {
+      throw new Error(`Reply failed: ${response.status}`);
+    }
+    return response.text();
+  },
 };

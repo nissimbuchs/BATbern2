@@ -5,10 +5,10 @@
 **Last Updated:** 2026-01-24
 **Completed:** 2026-01-24
 
-**Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 9 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
+**Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 8 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
 
 **Key Architectural Changes:**
-- **Event Workflow:** Simplified to 9 high-level states (down from 16 linear steps)
+- **Event Workflow:** Simplified to 8 high-level states (down from 16 linear steps)
 - **Speaker Workflow:** Per-speaker state machine with parallel quality review and slot assignment
 - **Task System:** Configurable tasks (newsletters, catering, partner meetings) separate from workflow states
 - **Organizer-Driven:** Manual speaker coordination without requiring speaker self-service portal
@@ -37,7 +37,7 @@
 **Epic Goal**: Implement a complete event management workflow with parallel speaker coordination and configurable task management, enabling organizers to manage the entire event lifecycle from topic selection through event completion.
 
 **Deliverable**: Integrated workflow system with:
-- **Event Workflow**: 9-state state machine for event lifecycle management
+- **Event Workflow**: 8-state state machine for event lifecycle management
 - **Speaker Workflow**: Per-speaker state machine with parallel quality review and slot assignment
 - **Task System**: Configurable task templates for organizer coordination (newsletters, catering, partner meetings, etc.)
 
@@ -70,13 +70,13 @@
 
 ## Redesigned Workflow Architecture
 
-### Event Workflow (9 States)
+### Event Workflow (8 States)
 
 High-level event lifecycle states:
 
 ```
 CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
-AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 ```
 
 **State Transitions:**
@@ -84,9 +84,8 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 - `TOPIC_SELECTION → SPEAKER_IDENTIFICATION`: When minimum speakers added to pool (per event type)
 - `SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT`: When all slots filled (after overflow voting if needed)
 - `SLOT_ASSIGNMENT → AGENDA_PUBLISHED`: When agenda published
-- `AGENDA_PUBLISHED → AGENDA_FINALIZED`: Manual (2 weeks before event)
-- `AGENDA_FINALIZED → EVENT_LIVE`: Automatic (event day)
-- `EVENT_LIVE → EVENT_COMPLETED`: Manual (after event)
+- `AGENDA_PUBLISHED → EVENT_LIVE`: Automatic (on event day, via scheduler)
+- `EVENT_LIVE → EVENT_COMPLETED`: Automatic — triggered when all completeable sessions (keynote, presentation, workshop, panel_discussion) are ended via the Watch feature. Break, lunch, and networking sessions are excluded from this check.
 - `EVENT_COMPLETED → ARCHIVED`: Manual
 
 ### Speaker Workflow (Per Speaker - Parallel)
@@ -96,27 +95,26 @@ Each speaker progresses through their own workflow:
 ```
 identified → contacted → ready → accepted/declined
                                     ↓ (if accepted)
-                ┌───────────────────┴───────────────────┐
-                ↓                                       ↓
-        content_submitted                       slot_assigned
-                ↓                                       ↓
-        quality_reviewed                                │
-                └───────────────────┬───────────────────┘
                                     ↓
+                            content_submitted
+                                    ↓
+                            quality_reviewed
+                                    ↓ (auto-confirmed when session.startTime also set)
                                confirmed
 ```
 
 **Key States:**
-- `identified`: Added to speaker pool
+- `identified`: Added to speaker pool (initial status)
 - `contacted`: Organizer recorded outreach
 - `ready`: Speaker is ready to accept/decline
 - `accepted`/`declined`: Speaker decision
 - `content_submitted`: Presentation title/abstract submitted
 - `quality_reviewed`: Content approved by moderator
-- `slot_assigned`: Assigned to time slot
-- `confirmed`: Both quality_reviewed AND slot_assigned (order doesn't matter)
+- `confirmed`: Auto-confirmed when `QUALITY_REVIEWED` AND `session.startTime` is set (slot assigned externally — slot assignment sets `session.startTime`, not a speaker pool status)
 - `overflow`: Backup speaker (accepted but no slot available)
 - `withdrew`: Speaker drops out after accepting
+
+**DECLINED** is reachable from any non-terminal state (including `CONFIRMED`). Once `DECLINED`, no further transitions are possible.
 
 **Stored in:** `speaker_pool.status` column
 
@@ -130,8 +128,10 @@ Tasks are assignable work items with due dates, NOT workflow states:
 3. Moderator Assignment (trigger: TOPIC_SELECTION, due: 14 days before event)
 4. Newsletter: Topic (trigger: TOPIC_SELECTION, due: immediate)
 5. Newsletter: Speakers (trigger: AGENDA_PUBLISHED, due: 30 days before event)
-6. Newsletter: Final (trigger: AGENDA_FINALIZED, due: 14 days before event)
-7. Catering (trigger: AGENDA_FINALIZED, due: 30 days before event)
+6. Newsletter: Final (trigger: AGENDA_PUBLISHED, due: 14 days before event)
+7. Catering (trigger: AGENDA_PUBLISHED, due: 30 days before event)
+
+**Task Lifecycle:** Tasks are created in `pending` status at event creation. They activate to `todo` status when the event transitions to the task's configured `triggerState`. Task creation is idempotent — calling `createTasksForEvent` multiple times for the same event/template combination does not create duplicates. Task completion records `completedByUsername` (from security context), `completedDate`, and optional notes.
 
 **Organizers can:**
 - Add custom tasks when creating event
@@ -148,14 +148,14 @@ Tasks are assignable work items with due dates, NOT workflow states:
 | Story | Covers | Event States | Speaker States | Tasks |
 |-------|--------|--------------|----------------|-------|
 | **5.1** | Event Type Definition | CREATED | - | - |
-| **5.1a** | Workflow State Machine | All 9 states | All 11 states | - |
+| **5.1a** | Workflow State Machine | All 8 states | All 11 states | - |
 | **5.2** | Topic Selection & Brainstorming | TOPIC_SELECTION | identified | - |
 | **5.3** | Speaker Outreach | - | contacted | - |
 | **5.4** | Speaker Status Management | - | ready, accepted, declined | - |
 | **5.5** | Content, Quality Review & Tasks | - | content_submitted, quality_reviewed, confirmed | Task system foundation |
 | **5.6** | Overflow & Voting | - | overflow | - |
-| **5.7** | Slot Assignment & Publishing | SLOT_ASSIGNMENT, AGENDA_PUBLISHED | slot_assigned | Newsletter tasks |
-| **5.8** | Finalization & Lifecycle | AGENDA_FINALIZED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED | withdrew | Catering task |
+| **5.7** | Slot Assignment & Publishing | SLOT_ASSIGNMENT, AGENDA_PUBLISHED | - | Newsletter tasks |
+| **5.8** | Finalization & Lifecycle | EVENT_LIVE, EVENT_COMPLETED, ARCHIVED | withdrew | Catering task |
 
 **Old Mapping (16 Stories) → New Mapping (8 Stories):**
 - Stories 5.1-5.4: ✅ Already implemented (no changes)
@@ -333,7 +333,7 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 10. **Speaker Notes**: Free-text notes field for each potential speaker
 11. **Assignment Strategy**: Assign speakers to specific organizers for outreach
 12. **Contact Distribution**: Track which organizer will contact which speaker
-13. **Speaker Status**: Initial status = "OPEN" (not yet contacted)
+13. **Speaker Status**: Initial status = "IDENTIFIED" (added to pool, not yet contacted)
 
 **Workflow Engine Integration:**
 14. **Event State Transition**: When topic selected, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.TOPIC_SELECTION, organizerId)`
@@ -550,9 +550,9 @@ As an **organizer**, I want to submit speaker materials, have them quality-revie
 14. **Workflow State**: Update `speaker_pool.status` = 'quality_reviewed' when approved
 15. **Re-review**: If rejected, speaker remains in 'content_submitted' until resubmitted
 
-**D. Parallel Workflow Support (AC16-18):**
-16. **Flexible Order**: quality_reviewed and slot_assigned can happen in any order
-17. **Confirmed State**: Auto-update `speaker_pool.status` = 'confirmed' when BOTH quality_reviewed AND slot_assigned
+**D. Confirmation Logic (AC16-18):**
+16. **Slot Assignment**: Session slot assignment sets `session.startTime` (does NOT change speaker pool status)
+17. **Confirmed State**: Auto-update `speaker_pool.status` = 'confirmed' when `QUALITY_REVIEWED` AND `session.startTime` is set
 18. **Visual Indicators**: Dashboard shows which speakers have quality reviewed, slot assigned, or both
 
 **E. Task System Foundation (AC19-27):**
@@ -596,7 +596,7 @@ As an **organizer**, I want to submit speaker materials, have them quality-revie
 - [x] **Phase 4:** Quality review queue shows content_submitted speakers, approve/reject working
 - [x] **Phase 5:** Task system backend with auto-creation on workflow transitions
 - [x] **Phase 6:** Frontend components (ContentSubmissionDrawer, QualityReviewDrawer, TaskDashboard)
-- [x] Parallel workflow: confirmed state reached when both quality_reviewed AND slot_assigned
+- [x] Confirmation: confirmed state reached when quality_reviewed AND session.startTime is set (slot assigned)
 - [x] Integration tests >80% coverage (6 test files complete)
 - [x] All REST API endpoints operational
 - [x] All functionality fully tested and production-ready
@@ -742,7 +742,7 @@ As an **organizer**, I want to vote on speaker selection when we have more speak
 **Acceptance Criteria:**
 
 **Overflow Detection:**
-1. **Automatic Detection**: System detects when accepted speakers > maximum slots for event type
+1. **Automatic Detection**: System detects when accepted speakers > maximum slots for event type. The overflow check (`checkForOverflow`) counts both `ACCEPTED` and `CONFIRMED` speakers together against the event's maximum slot count.
 2. **Overflow Pool Creation**: Automatically create overflow pool with excess speakers
 3. **Overflow Dashboard**: Show all speakers requiring voting decision
 4. **Speaker Comparison View**: Side-by-side comparison of speaker abstracts, expertise, past performance
@@ -847,7 +847,7 @@ As an **organizer**, I want to assign speakers to specific time slots considerin
 ### Story 5.10: Progressive Publishing Engine (Workflow Step 11)
 
 **User Story:**
-As an **organizer**, I want to progressively publish event information (topic immediately, speakers 1 month before, final agenda 2 weeks before), so that attendees receive timely information as it becomes available.
+As an **organizer**, I want to progressively publish event information (topic immediately, speakers 30 days before, final agenda 2 weeks before), so that attendees receive timely information as it becomes available.
 
 **Architecture Integration:**
 - **Service**: Event Management Service
@@ -862,13 +862,13 @@ As an **organizer**, I want to progressively publish event information (topic im
 
 **Publishing Phases:**
 1. **Phase 1 - Topic**: Publish event topic, date, venue immediately upon creation
-2. **Phase 2 - Speakers**: Publish speaker lineup 1 month before event (auto-triggered)
+2. **Phase 2 - Speakers**: Publish speaker lineup 30 days before event (auto-triggered)
 3. **Phase 3 - Final Agenda**: Publish complete agenda with time slots 2 weeks before event
 4. **Continuous Updates**: Allow organizers to update published content anytime
 
 **Publishing Controls:**
 5. **Publish/Unpublish**: Manual publish/unpublish buttons per phase
-6. **Auto-Publish Scheduling**: Automatically publish Phase 2 at 1 month before, Phase 3 at 2 weeks before
+6. **Auto-Publish Scheduling**: Automatically publish Phase 2 at 30 days before, Phase 3 at 2 weeks before
 7. **Preview Mode**: Preview how event will appear publicly before publishing
 8. **Publishing Validation**: Validate required content before allowing publish per phase
 
@@ -880,13 +880,13 @@ As an **organizer**, I want to progressively publish event information (topic im
 
 **Workflow Engine Integration:**
 13. **Publishing States**: Call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_PUBLISHED, organizerId)` per publishing phase
-14. **Scheduled Jobs**: Cron jobs call state machine for auto-publish at 1 month and 2 weeks before event
+14. **Scheduled Jobs**: Cron jobs call state machine for auto-publish at 30 days and 2 weeks before event
 15. **Validation**: State machine validates all slots assigned and quality reviews complete before allowing AGENDA_PUBLISHED transition
 16. **Event Listener**: Listen for EventWorkflowTransitionEvent to trigger CDN cache invalidation
 
 **Technical Implementation:**
 17. **Publishing Phase Enum**: TOPIC_PUBLISHED, SPEAKERS_PUBLISHED, AGENDA_PUBLISHED (integrated with EventWorkflowState from Story 5.1a)
-18. **Scheduled Tasks**: Cron jobs to auto-publish at 1 month and 2 weeks before
+18. **Scheduled Tasks**: Cron jobs to auto-publish at 30 days and 2 weeks before
 19. **REST API**: POST /api/events/{id}/publish/{phase}, DELETE /api/events/{id}/publish/{phase}
 20. **React Components**: PublishingControls, EventPreview, PublicEventPage
 21. **CDN Integration**: CloudFront invalidation API calls
@@ -894,7 +894,7 @@ As an **organizer**, I want to progressively publish event information (topic im
 
 **Definition of Done:**
 - [ ] Topic published immediately when event created
-- [ ] Speaker lineup auto-publishes 1 month before event
+- [ ] Speaker lineup auto-publishes 30 days before event
 - [ ] Final agenda auto-publishes 2 weeks before event
 - [ ] Manual publish/unpublish controls working per phase
 - [ ] Preview mode shows public view before publishing
@@ -903,6 +903,17 @@ As an **organizer**, I want to progressively publish event information (topic im
 - [ ] Integration test verifies progressive publishing workflow
 
 **Estimated Duration:** 2 weeks
+
+---
+
+### GET /api/v1/events/current — Two-Phase Selection Algorithm
+
+The "current event" API uses a two-phase selection algorithm:
+
+- **Phase 1**: Return the nearest upcoming event where `currentPublishedPhase IS NOT NULL` and event date is today or in the future.
+- **Phase 2 fallback**: If no Phase 1 result, return the most recent `EVENT_COMPLETED` event within 14 days of today.
+- Returns 404 if the most recent `EVENT_COMPLETED` event is older than 14 days.
+- An upcoming event with `currentPublishedPhase = null` does NOT qualify for Phase 1 and must not block the Phase 2 fallback.
 
 ---
 
@@ -939,10 +950,10 @@ As an **organizer**, I want to finalize the event agenda 2 weeks before the even
 14. **Change Log**: Track all changes after finalization with timestamp and reason
 
 **Workflow Engine Integration:**
-15. **Finalization State**: When agenda finalized, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_FINALIZED, organizerId)`
-16. **Lock Validation**: State machine enforces lock after finalization - major changes require unlock workflow
+15. **Finalization Note**: `AGENDA_FINALIZED` state was removed from the implementation — the 8-state model goes directly `AGENDA_PUBLISHED → EVENT_LIVE` (auto-triggered on event day by scheduler). Finalization controls described in this story are managed within the `AGENDA_PUBLISHED` phase.
+16. **Lock Validation**: Locking logic applies after `AGENDA_PUBLISHED` — major changes require unlock workflow
 17. **Dropout Handling**: Promote overflow speaker via `OverflowManagementService.promoteFromOverflow(eventId, droppedSpeakerId, replacementSpeakerId)`
-18. **Validation**: State machine validates all slots assigned before allowing AGENDA_FINALIZED transition
+18. **Validation**: State machine validates all slots assigned before allowing `AGENDA_PUBLISHED` transition
 
 **Technical Implementation:**
 19. **Agenda Status Enum**: DRAFT, FINALIZED, LOCKED_PRINT (integrated with EventWorkflowState from Story 5.1a)
@@ -985,7 +996,7 @@ As an **organizer**, I want to send progressive newsletters to our mailing list,
    - Event topic, date, venue
    - Call for speaker suggestions
    - Save the date message
-2. **Template 2 - Speaker Lineup**: Sent 1 month before when speakers published
+2. **Template 2 - Speaker Lineup**: Sent 30 days before when speakers published
    - Speaker names, companies, titles
    - Presentation abstracts
    - Registration link

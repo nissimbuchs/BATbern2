@@ -60,4 +60,7 @@ public class PatchEventRequest {
 
     // Story 10.4: Record selection rationale from blob selector session
     private String topicSelectionNote;
+
+    // Story 10.11: nullable — when provided (non-null), sets the limit; to clear use PUT with null
+    private Integer registrationCapacity;
 }

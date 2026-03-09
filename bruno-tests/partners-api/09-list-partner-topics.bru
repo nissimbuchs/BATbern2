@@ -1,0 +1,60 @@
+meta {
+  name: List Partner Topics
+  type: http
+  seq: 9
+}
+
+docs {
+  GET /partners/topics - list all topic suggestions with vote counts.
+  Accessible by PARTNER and ORGANIZER. TopicController @ /api/v1/partners/topics
+}
+
+get {
+  url: {{baseUrl}}/partners/topics
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of topics", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("topics should have required TopicDTO fields", function() {
+    const body = res.getBody();
+    if (body && body.length > 0) {
+      const topic = body[0];
+      expect(topic.id).to.exist;
+      expect(topic.title).to.exist;
+      expect(topic.suggestedByCompany).to.exist;
+      expect(topic.voteCount).to.be.a('number');
+      expect(topic.status).to.exist;
+      expect(topic.createdAt).to.exist;
+    }
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

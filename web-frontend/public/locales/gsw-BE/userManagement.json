@@ -11,5 +11,16 @@
     "tabs": {
       "ariaLabel": "User detail tabs"
     }
+  },
+  "table": {
+    "headers": {
+      "company": "Firma",
+      "roles": "Rolle"
+    }
+  },
+  "cognito": {
+    "linked": "Cognito verchüpft",
+    "notLinked": "Kei Cognito-Konto",
+    "tooltip": "Cognito-ID: {{id}}"
   }
 }

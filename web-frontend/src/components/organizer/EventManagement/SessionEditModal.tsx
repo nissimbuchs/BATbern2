@@ -374,19 +374,19 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   };
 
   // Story 5.9: Materials tab handlers
-  const handleFileUploadSuccess = (
-    data: UploadedFile | { uploadId: string; tempFileUrl?: string }
-  ) => {
-    // Handle both UploadedFile (multiple mode) and basic data (single mode)
-    const uploadedFile: UploadedFile =
-      'fileName' in data
-        ? data
-        : {
-            uploadId: data.uploadId,
-            fileName: 'Unknown', // Fallback for single mode (shouldn't happen in materials upload)
-            fileSize: 0,
-            fileType: 'application/octet-stream',
-          };
+  const handleFileUploadSuccess = (data: {
+    uploadId: string;
+    tempFileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    fileType?: string;
+  }) => {
+    const uploadedFile: UploadedFile = {
+      uploadId: data.uploadId,
+      fileName: data.fileName ?? 'Unknown',
+      fileSize: data.fileSize ?? 0,
+      fileType: data.fileType ?? 'application/octet-stream',
+    };
     setUploadedMaterials((prev) => [...prev, uploadedFile]);
   };
 

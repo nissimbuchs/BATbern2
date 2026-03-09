@@ -304,7 +304,9 @@ Click **Confirm Topic Selection**.
 
 ![Topic Selection Confirmed](../assets/screenshots/workflow/phase-a-setup/a-19-topic-selection-confirmed.png)
 
-Event state: CREATED → **TOPIC_SELECTION**
+Event state: CREATED → **SPEAKER_IDENTIFICATION**
+
+> **Note**: Selecting a topic from CREATED state transitions the event directly to SPEAKER_IDENTIFICATION. TOPIC_SELECTION is a valid starting state for events created that way, but is not a mandatory intermediate stop when transitioning from CREATED.
 
 **Auto-created Tasks**:
 - Venue Booking (due: 90 days before event)

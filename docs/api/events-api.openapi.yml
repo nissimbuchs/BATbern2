@@ -58,6 +58,8 @@ tags:
     description: Email template management for organizers (Story 10.2)
   - name: Newsletter
     description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
+  - name: AI Assist
+    description: AI-assisted event content creation — description, theme image, abstract analysis (Story 10.16)
 
 paths:
   /events/attendance-summary:
@@ -711,7 +713,7 @@ paths:
         9. OVERFLOW_MANAGEMENT - Managing speaker overflow
         10. SLOT_ASSIGNMENT - Assigning speakers to time slots
         11. AGENDA_PUBLISHED - Publishing agenda
-        12. AGENDA_FINALIZED - Finalizing agenda
+        12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
         13. NEWSLETTER_SENT - Newsletter sent to attendees
         14. EVENT_READY - Event ready to start
         15. PARTNER_MEETING_COMPLETE - Partner meetings completed
@@ -2328,6 +2330,56 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/my-registration:
+    get:
+      tags:
+        - Registrations
+      summary: Get my registration status for an event
+      description: |
+        Returns the authenticated user's registration status for the specified event.
+        Always returns 200. Use the `registered` boolean to determine if a record exists.
+
+        **Story**: 10.10 - Registration Status Indicator for Logged-in Users (AC1)
+        **Security**: Requires Bearer JWT authentication. Returns 401 for unauthenticated requests.
+
+        **ADR-003**: Uses eventCode (meaningful ID) not UUID.
+        **ADR-004**: Response is minimal — no user profile fields (firstName, lastName, email).
+
+      operationId: getMyRegistration
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '200':
+          description: Registration status for the authenticated user (registered or not)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyRegistrationResponse'
+              examples:
+                registered:
+                  summary: User has a registration
+                  value:
+                    registered: true
+                    registrationCode: BATbern142-reg-ABC123
+                    eventCode: BATbern142
+                    status: CONFIRMED
+                    registrationDate: '2025-11-01T10:30:00Z'
+                not_registered:
+                  summary: User has no registration
+                  value:
+                    registered: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/registrations/{registrationCode}:
     get:
       tags:
@@ -2451,6 +2503,55 @@ paths:
           description: Registration deleted successfully
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/registrations/{registrationCode}/promote:
+    post:
+      tags:
+        - Registrations
+      summary: Manually promote a waitlisted registration
+      description: |
+        Organizer-only action to manually promote a waitlisted registration to registered status.
+
+        **Story**: 10.11 — Venue Capacity Enforcement & Waitlist Management (AC3, AC5)
+        **Security**: ORGANIZER role required
+
+      operationId: promoteFromWaitlist
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code of the waitlisted registration
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Registration successfully promoted from waitlist to registered
+        '404':
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Registration exists but is not on the waitlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Registration is not on the waitlist
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -2621,6 +2722,125 @@ paths:
                 code: REGISTRATION_NOT_FOUND
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  # Story 10.12: Self-service deregistration endpoints (token-protected, no JWT auth)
+  /registrations/deregister/verify:
+    get:
+      tags:
+        - Registrations
+      summary: Verify deregistration token (public)
+      description: |
+        Verifies a deregistration token and returns registration details for confirmation.
+        Returns 404 if token is unknown or registration is already cancelled.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — UUID token provides authentication
+      operationId: verifyDeregistrationToken
+      security: []
+      parameters:
+        - name: token
+          in: query
+          description: UUID deregistration token
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token valid — returns registration summary for confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeregistrationVerifyResponse'
+        '404':
+          description: Token not found or registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_token
+                message: Deregistration token not found or already used
+
+  /registrations/deregister:
+    post:
+      tags:
+        - Registrations
+      summary: Cancel registration via deregistration token (public)
+      description: |
+        Cancels a registration using the self-service deregistration token.
+        Sets registration status to "cancelled" and triggers waitlist promotion.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — UUID token provides authentication
+      operationId: deregisterByToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationRequest'
+      responses:
+        '200':
+          description: Registration cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration cancelled successfully
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Registration already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: already_cancelled
+                message: This registration has already been cancelled
+
+  /registrations/deregister/by-email:
+    post:
+      tags:
+        - Registrations
+      summary: Request deregistration link via email (public, anti-enumeration)
+      description: |
+        Sends a deregistration link to the provided email address if a matching registration is found.
+        Always returns 200 to prevent email enumeration — the caller cannot determine whether
+        a registration exists from the response.
+
+        **Story**: 10.12 — Self-Service Deregistration
+        **Security**: Public endpoint — anti-enumeration design
+      operationId: requestDeregistrationByEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeregistrationByEmailRequest'
+      responses:
+        '200':
+          description: |
+            Always 200 regardless of whether registration was found.
+            "If you are registered, you'll receive a deregistration email."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "If you are registered for this event, you'll receive a cancellation link by email."
 
   /events/batch_registrations:
     post:
@@ -3526,7 +3746,7 @@ paths:
       summary: Get active events for authenticated organizer
       description: |
         Returns active events assigned to the authenticated organizer.
-        Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+        Events within ±3 days with workflow state AGENDA_PUBLISHED or EVENT_LIVE.
 
         **Story W2.3**: Event Join & Schedule Sync
         - AC#1: Full schedule including sessions and speaker metadata
@@ -3868,6 +4088,135 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+  # ── AI Prompt Management Endpoints (Story 10.x) ──────────────────────────────
+
+  /ai-prompts:
+    get:
+      tags:
+        - AI Prompts
+      summary: List all AI prompts
+      description: |
+        Returns all three organizer-editable OpenAI prompts (event_description, theme_image, abstract_quality).
+
+        **Authorization**: ORGANIZER role required.
+      operationId: listAiPrompts
+      responses:
+        '200':
+          description: List of AI prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}:
+    get:
+      tags:
+        - AI Prompts
+      summary: Get a single AI prompt
+      description: |
+        Returns a single AI prompt by its key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: getAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AI prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - AI Prompts
+      summary: Update an AI prompt
+      description: |
+        Updates the prompt text for the given key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: updateAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiPromptRequest'
+      responses:
+        '200':
+          description: Updated prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}/reset:
+    post:
+      tags:
+        - AI Prompts
+      summary: Reset an AI prompt to its default text
+      description: |
+        Copies the original default prompt text back to prompt_text.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: resetAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Prompt after reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4280,8 +4629,1062 @@ paths:
         '404':
           description: Event not found
 
+  # ── AI Assist (Story 10.16) ──────────────────────────────────────────────────
+
+  /public/settings/features:
+    get:
+      tags: [AI Assist]
+      operationId: getFeatureFlags
+      summary: Get feature flags (public, no auth required)
+      security: []
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+
+  /events/{eventCode}/ai/description:
+    post:
+      tags: [AI Assist]
+      operationId: generateEventDescription
+      summary: Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      responses:
+        '200':
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiDescriptionResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/ai/theme-image:
+    post:
+      tags: [AI Assist]
+      operationId: generateThemeImage
+      summary: Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+        - name: seed
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional seed string for cache-busting a re-generation
+      responses:
+        '200':
+          description: Generated theme image URL and S3 key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiThemeImageResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/ai/theme-image/apply:
+    post:
+      tags: [AI Assist]
+      operationId: applyThemeImage
+      summary: Persist an AI-generated theme image URL on the event record
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyThemeImageRequest'
+      responses:
+        '200':
+          description: Image URL persisted on the event
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /speakers/{speakerId}/ai/analyze-abstract:
+    post:
+      tags: [AI Assist]
+      operationId: analyzeAbstract
+      summary: Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Abstract analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbstractAnalysisResponse'
+        '503':
+          description: AI service disabled or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ── Event Photos (Story 10.21) ──────────────────────────────────────────────
+
+  /events/recent-photos:
+    get:
+      tags: [Event Photos]
+      summary: Recent photos from last N events (homepage use)
+      operationId: getRecentEventPhotos
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: lastNEvents
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Random sample of recent photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+
+  /events/{eventCode}/photos:
+    get:
+      tags: [Event Photos]
+      summary: List photos for an event
+      operationId: listEventPhotos
+      security: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of event photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventPhotoResponse'
+
+  /events/{eventCode}/photos/upload-url:
+    post:
+      tags: [Event Photos]
+      summary: Request presigned URL for photo upload
+      operationId: requestEventPhotoUploadUrl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoUploadRequest'
+      responses:
+        '200':
+          description: Presigned URL + photoId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoUploadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/photos/confirm:
+    post:
+      tags: [Event Photos]
+      summary: Confirm photo upload and persist record
+      operationId: confirmEventPhotoUpload
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPhotoConfirmRequest'
+      responses:
+        '200':
+          description: Photo confirmed and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPhotoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/photos/{photoId}:
+    delete:
+      tags: [Event Photos]
+      summary: Delete a photo (DB record + S3 object)
+      operationId: deleteEventPhoto
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Photo deleted
+        '404':
+          description: Photo not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ── Event Teaser Images (Story 10.22) ────────────────────────────────────────
+
+  /events/{eventCode}/teaser-images/upload-url:
+    post:
+      tags: [Events]
+      operationId: generateTeaserImageUploadUrl
+      summary: Get presigned S3 PUT URL for teaser image upload (organizer-only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL + s3Key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageUploadUrlResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/teaser-images/confirm:
+    post:
+      tags: [Events]
+      operationId: confirmTeaserImageUpload
+      summary: Confirm upload and persist new teaser image
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageConfirmRequest'
+      responses:
+        '200':
+          description: Teaser image confirmed and persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '422':
+          description: Max image limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/teaser-images/{imageId}:
+    patch:
+      tags: [Events]
+      operationId: updateTeaserImage
+      summary: Update presentation position of a teaser image
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeaserImageUpdateRequest'
+      responses:
+        '200':
+          description: Teaser image updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeaserImageItem'
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Events]
+      operationId: deleteTeaserImage
+      summary: Delete a specific teaser image by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern57"
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Teaser image deleted
+        '404':
+          description: Teaser image not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ── Admin Export/Import Endpoints (Story 10.20) ─────────────────────────────
+
+  /admin/export/legacy:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export all data in legacy BAT JSON format
+      description: |
+        Exports all events, sessions, speakers, companies, and attendees in the legacy
+        BATspa JSON format for data migration or interoperability. Returns a downloadable
+        JSON file. Organizer role required.
+      operationId: exportLegacyData
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Legacy JSON file download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyExportEnvelope'
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename=batbern-export-2026-03-02.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/export/assets:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export asset presigned-URL manifest
+      description: |
+        Returns a JSON manifest with presigned S3 URLs for all binary assets
+        (speaker portraits, company logos, session materials). Each URL is valid for 1 hour.
+        Organizer role required.
+      operationId: exportAssetManifest
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Asset manifest with presigned URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetManifestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/legacy:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import data from legacy BAT JSON file
+      description: |
+        Accepts a multipart file upload of a legacy BAT JSON export. Upserts all entity
+        types (events, sessions, speakers, companies, attendees) idempotently — importing
+        the same file twice has no side effects. Returns import counts and error details.
+        Organizer role required.
+      operationId: importLegacyData
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Legacy BAT JSON export file
+      responses:
+        '200':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyImportResult'
+        '400':
+          description: Invalid JSON file or schema mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/assets:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import assets from ZIP file
+      description: |
+        Accepts a multipart ZIP file. Unpacks asset files to S3 under
+        `imports/{timestamp}/` prefix and links them to entities by filename convention.
+        Organizer role required.
+      operationId: importAssets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: ZIP archive containing asset files
+      responses:
+        '200':
+          description: Asset import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetImportResult'
+        '400':
+          description: Invalid ZIP file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/export/bundle:
+    get:
+      tags: [Admin Export/Import]
+      summary: Export full bundle (data + binary assets) as ZIP
+      description: |
+        Returns a single ZIP archive containing:
+        - `export.json` — full LegacyExportEnvelope (same as GET /admin/export/legacy)
+        - `manifest.json` — AssetManifestResponse with presigned URLs (for reference)
+        - `portraits/{speakerId}/{filename}` — speaker portrait images
+        - `logos/{logoId}/{filename}` — company/partner logos
+        - `materials/{materialId}/{filename}` — session materials
+        - `themes/{eventId}/{filename}` — event theme images
+
+        Symmetric counterpart to POST /admin/import/bundle.
+        S3 download failures are logged and skipped (partial bundle is still valid).
+        Organizer role required.
+      operationId: exportBundle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bundle ZIP file
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/import/bundle:
+    post:
+      tags: [Admin Export/Import]
+      summary: Import bundle ZIP (data + binary assets)
+      description: |
+        Accepts a ZIP produced by GET /admin/export/bundle.
+        Restores data (upsert, idempotent) AND uploads binary assets to S3,
+        re-linking them to their entity records.
+        Organizer role required.
+      operationId: importBundle
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Bundle ZIP produced by GET /admin/export/bundle
+      responses:
+        '200':
+          description: Bundle import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleImportResult'
+        '400':
+          description: Invalid or missing export.json in ZIP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   schemas:
+
+    # ── Admin Export/Import Schemas (Story 10.20) ─────────────────────────────
+
+    LegacyExportEnvelope:
+      type: object
+      description: Top-level envelope for a legacy BAT JSON export
+      required: [version, exportedAt, events, companies, speakers, attendees]
+      properties:
+        version:
+          type: string
+          example: "2.0"
+        exportedAt:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyEventDto'
+        companies:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyCompanyDto'
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacySpeakerDto'
+        attendees:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyAttendeeDto'
+
+    LegacyEventDto:
+      type: object
+      properties:
+        bat:
+          type: integer
+          description: Event number (legacy BAT number)
+        eventCode:
+          type: string
+          example: BATbern57
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacySessionDto'
+
+    LegacySessionDto:
+      type: object
+      properties:
+        sessionSlug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        sessionType:
+          type: string
+        pdf:
+          type: string
+          description: Legacy PDF filename for session materials
+        referenten:
+          type: array
+          description: Session speakers (legacy field name)
+          items:
+            $ref: '#/components/schemas/LegacySpeakerDto'
+
+    LegacySpeakerDto:
+      type: object
+      properties:
+        speakerId:
+          type: string
+          description: Speaker username
+        name:
+          type: string
+          description: Full name (firstName + lastName)
+        bio:
+          type: string
+        company:
+          type: string
+        portrait:
+          type: string
+          description: Portrait filename or URL
+        linkedInUrl:
+          type: string
+        twitterHandle:
+          type: string
+
+    LegacyCompanyDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Company name/identifier
+        displayName:
+          type: string
+        logo:
+          type: string
+          description: Logo filename or URL
+        url:
+          type: string
+          description: Company website URL
+
+    LegacyAttendeeDto:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        username:
+          type: string
+        status:
+          type: string
+        registeredAt:
+          type: string
+          format: date-time
+
+    LegacyImportResult:
+      type: object
+      required: [imported]
+      properties:
+        imported:
+          type: object
+          properties:
+            events:
+              type: integer
+            sessions:
+              type: integer
+            speakers:
+              type: integer
+            companies:
+              type: integer
+            attendees:
+              type: integer
+        skipped:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+
+    AssetManifestResponse:
+      type: object
+      required: [exportedAt, assetCount, assets]
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        assetCount:
+          type: integer
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetEntry'
+
+    AssetEntry:
+      type: object
+      required: [type, entityId, filename, presignedUrl]
+      properties:
+        type:
+          type: string
+          description: Asset type (portrait, logo, material)
+          example: portrait
+        entityId:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        presignedUrl:
+          type: string
+          format: uri
+
+    AssetImportResult:
+      type: object
+      required: [importedAt, importedCount, s3Prefix]
+      properties:
+        importedAt:
+          type: string
+          format: date-time
+        importedCount:
+          type: integer
+        s3Prefix:
+          type: string
+          description: S3 key prefix where assets were uploaded
+          example: "imports/2026-03-03T10:00:00Z/"
+        errors:
+          type: array
+          items:
+            type: string
+
+    BundleImportResult:
+      type: object
+      description: Result of a bundle ZIP import that restores both data and binary assets
+      required: [dataResult, assetsImported, assetErrors]
+      properties:
+        dataResult:
+          $ref: '#/components/schemas/LegacyImportResult'
+          description: Result of the data (JSON) import phase
+        assetsImported:
+          type: integer
+          description: Number of binary assets successfully uploaded to S3 and linked to entities
+          example: 12
+        assetErrors:
+          type: array
+          description: Per-asset error messages for assets that could not be restored
+          items:
+            type: string
+
+    # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
+
+    EventPhotoResponse:
+      type: object
+      required: [id, eventCode, displayUrl, uploadedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+        displayUrl:
+          type: string
+        filename:
+          type: string
+        uploadedBy:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+        sortOrder:
+          type: integer
+
+    EventPhotoUploadRequest:
+      type: object
+      required: [filename, contentType, fileSize]
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        fileSize:
+          type: integer
+          format: int64
+
+    EventPhotoUploadResponse:
+      type: object
+      required: [photoId, uploadUrl, s3Key, expiresIn]
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+        s3Key:
+          type: string
+        expiresIn:
+          type: integer
+
+    EventPhotoConfirmRequest:
+      type: object
+      required: [photoId, s3Key]
+      properties:
+        photoId:
+          type: string
+          format: uuid
+        s3Key:
+          type: string
+
+    # ── Event Teaser Image Schemas (Story 10.22) ──────────────────────────────
+
+    TeaserImagePresentationPosition:
+      type: string
+      description: Controls which slide the image appears after in the moderator presentation.
+      enum:
+        - AFTER_WELCOME
+        - AFTER_COMMITTEE
+        - AFTER_TOPIC_REVEAL
+        - AFTER_UPCOMING_EVENTS
+
+    TeaserImageItem:
+      type: object
+      required: [id, imageUrl, displayOrder, presentationPosition]
+      description: A single teaser image for the moderator presentation page.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the teaser image.
+        imageUrl:
+          type: string
+          format: uri
+          description: CloudFront URL for the teaser image.
+          example: "https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg"
+        displayOrder:
+          type: integer
+          description: Order in which the image is displayed (ascending).
+          example: 0
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
+
+    TeaserImageUpdateRequest:
+      type: object
+      required: [presentationPosition]
+      properties:
+        presentationPosition:
+          $ref: '#/components/schemas/TeaserImagePresentationPosition'
+
+    TeaserImageUploadUrlRequest:
+      type: object
+      required: [contentType, fileName]
+      properties:
+        contentType:
+          type: string
+          description: MIME type of the image (image/jpeg, image/png, image/webp).
+          example: "image/jpeg"
+        fileName:
+          type: string
+          description: Original filename.
+          example: "teaser.jpg"
+
+    TeaserImageUploadUrlResponse:
+      type: object
+      required: [uploadUrl, s3Key, expiresIn]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned S3 PUT URL for direct upload.
+        s3Key:
+          type: string
+          description: S3 object key to use in the confirm step.
+          example: "events/BATbern57/teaser/abc123-def456.jpg"
+        expiresIn:
+          type: integer
+          description: URL expiry in seconds.
+          example: 900
+
+    TeaserImageConfirmRequest:
+      type: object
+      required: [s3Key]
+      properties:
+        s3Key:
+          type: string
+          description: S3 object key returned by the upload-url step.
+          example: "events/BATbern57/teaser/abc123-def456.jpg"
+
+    # ── AI Assist Schemas (Story 10.16) ──────────────────────────────────────
+
+    FeatureFlagsResponse:
+      type: object
+      properties:
+        aiContentEnabled:
+          type: boolean
+
+    AiDescriptionResponse:
+      type: object
+      properties:
+        description:
+          type: string
+
+    AiThemeImageResponse:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        s3Key:
+          type: string
+
+    ApplyThemeImageRequest:
+      type: object
+      required: [imageUrl]
+      properties:
+        imageUrl:
+          type: string
+          description: "CloudFront URL of the AI-generated image to persist on the event"
+
+    AbstractAnalysisResponse:
+      type: object
+      properties:
+        noPromotionScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "1=heavy product promotion, 10=no promotion at all"
+        noPromotionFeedback:
+          type: string
+          description: "Brief German explanation of the noPromotionScore"
+        lessonsLearnedScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "1=no real-world experience mentioned, 10=clearly practical lessons learned"
+        lessonsLearnedFeedback:
+          type: string
+          description: "Brief German explanation of the lessonsLearnedScore"
+        wordCount:
+          type: integer
+          description: "Number of words in the original abstract"
+        shortenedAbstract:
+          type: string
+          nullable: true
+          description: "Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null"
 
     # ── Newsletter Schemas (Story 10.7) ───────────────────────────────────────
 
@@ -4325,6 +5728,12 @@ components:
         locale:
           type: string
           enum: [de, en]
+        templateKey:
+          type: string
+          nullable: true
+          description: >
+            Optional template key override. If omitted, uses default 'newsletter-event'.
+            Must be a NEWSLETTER category template key present in DB.
 
     NewsletterSendResponse:
       type: object
@@ -4741,6 +6150,45 @@ components:
           description: Updated layout key (null = standalone)
           maxLength: 100
 
+    # ── AI Prompt Schemas (Story 10.x) ───────────────────────────────────────
+
+    AiPromptResponse:
+      type: object
+      description: Organizer-editable OpenAI prompt configuration
+      required:
+        - promptKey
+        - displayName
+        - promptText
+        - defaultText
+        - updatedAt
+      properties:
+        promptKey:
+          type: string
+          description: Prompt identifier (event_description, theme_image, abstract_quality)
+        displayName:
+          type: string
+          description: Human-readable name shown in Admin UI
+        promptText:
+          type: string
+          description: Current prompt text (editable by organizer)
+        defaultText:
+          type: string
+          description: Original default prompt text (used to reset)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    UpdateAiPromptRequest:
+      type: object
+      description: Request to update an AI prompt's text
+      required:
+        - promptText
+      properties:
+        promptText:
+          type: string
+          description: New prompt text
+
     # ── Partner Analytics Schemas (Story 8.1) ────────────────────────────────
 
     AttendanceSummaryDTO:
@@ -5153,6 +6601,26 @@ components:
         venueCapacity:
           type: integer
           example: 500
+        registrationCapacity:
+          type: integer
+          nullable: true
+          description: |
+            Story 10.11: Organizer-configured registration limit (≤ venueCapacity). NULL = unlimited.
+            Distinct from venueCapacity (fire-code limit). Null means no cap is enforced.
+          example: 60
+        confirmedCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status registered or confirmed.
+          example: 42
+        waitlistCount:
+          type: integer
+          description: Story 10.11 — Count of registrations with status waitlist.
+          example: 3
+        spotsRemaining:
+          type: integer
+          nullable: true
+          description: Story 10.11 — registrationCapacity - confirmedCount. Null when registrationCapacity is null (unlimited).
+          example: 18
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
@@ -5199,6 +6667,15 @@ components:
             Upload ID from three-phase upload pattern (internal reference).
             Story 2.5.3a: Event Theme Image Upload
             This is returned so the frontend can track what was uploaded.
+        teaserImages:
+          type: array
+          nullable: true
+          description: |
+            Ordered list of teaser images shown as individual slides on the moderator
+            presentation page (between topic-reveal and agenda-preview).
+            Story 10.22: Event Teaser Images.
+          items:
+            $ref: '#/components/schemas/TeaserImageItem'
         topicCode:
           type: string
           nullable: true
@@ -5610,6 +7087,48 @@ components:
           nullable: true
           example: "user-interface-design-abc123"
 
+    MyRegistrationResponse:
+      type: object
+      description: |
+        Story 10.10: Minimal registration status for the authenticated user (AC1).
+        ADR-004: No user profile fields (firstName, lastName, email) — owned by User Management Service.
+        ADR-003: Uses registrationCode and eventCode as meaningful identifiers.
+
+        Always returns 200. Use `registered` to determine if a record exists.
+      required:
+        - registered
+      properties:
+        registered:
+          type: boolean
+          description: Whether the authenticated user has a registration record for this event.
+          example: true
+        registrationCode:
+          type: string
+          description: Unique registration code (public identifier). Present when registered=true.
+          example: BATbern142-reg-ABC123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to. Present when registered=true.
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+        status:
+          type: string
+          description: Registration status (uppercase). Present when registered=true.
+          enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED]
+          example: CONFIRMED
+        registrationDate:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp when registration was created. Present when registered=true.
+          example: '2025-11-01T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: |
+            Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
+            Backward-compatible addition — null for non-waitlist registrations.
+          example: 3
+
     Registration:
       type: object
       description: |
@@ -5668,7 +7187,12 @@ components:
         # Registration metadata
         status:
           type: string
-          enum: [REGISTERED, WAITLISTED, CONFIRMED, CANCELLED, ATTENDED]
+          enum: [REGISTERED, WAITLIST, CONFIRMED, CANCELLED, ATTENDED]
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+          example: 2
         registrationDate:
           type: string
           format: date-time
@@ -5730,6 +7254,11 @@ components:
         venueCapacity:
           type: integer
           minimum: 1
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited.
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
@@ -5792,6 +7321,11 @@ components:
           type: string
         venueCapacity:
           type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
@@ -5840,6 +7374,11 @@ components:
           type: string
         venueCapacity:
           type: integer
+        registrationCapacity:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
@@ -6128,6 +7667,132 @@ components:
             type: string
           example: ["Event BATbern99 not found"]
 
+    # Story 10.12: Self-service deregistration schemas
+    DeregistrationVerifyResponse:
+      type: object
+      description: |
+        Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
+        Returns registration summary so the user can confirm they want to cancel.
+      required:
+        - registrationCode
+        - eventCode
+        - eventTitle
+        - eventDate
+        - attendeeFirstName
+      properties:
+        registrationCode:
+          type: string
+          description: Public registration code
+          example: BATbern142-reg-A3X9K2
+        eventCode:
+          type: string
+          description: Event code
+          example: BATbern142
+        eventTitle:
+          type: string
+          description: Event title
+          example: BATbern — Berner Architekten Treffen #142
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date as ISO-8601
+          example: '2026-06-15T18:00:00Z'
+        attendeeFirstName:
+          type: string
+          description: Attendee first name for personalised confirmation message
+          example: Max
+
+    DeregistrationRequest:
+      type: object
+      description: "Story 10.12 (AC3): Body for POST /registrations/deregister."
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          format: uuid
+          description: Deregistration UUID token from confirmation email
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    DeregistrationByEmailRequest:
+      type: object
+      description: "Story 10.12 (AC3): Body for POST /registrations/deregister/by-email."
+      required:
+        - email
+        - eventCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the registrant
+          example: max.muster@example.com
+        eventCode:
+          type: string
+          description: Event code the user is registered for
+          example: BATbern142
+
+    RegistrationAdminResponse:
+      type: object
+      description: |
+        Story 10.12 (T1.4): Organizer-only registration view that includes sensitive fields
+        such as deregistrationToken. Schema separation is the security control — do NOT add
+        deregistrationToken to RegistrationResponse (public schema).
+        ADR-003: Uses registrationCode/eventCode as public identifiers.
+      required:
+        - registrationCode
+        - eventCode
+        - status
+        - attendeeUsername
+      properties:
+        registrationCode:
+          type: string
+          description: Unique registration code (public identifier)
+          example: BATbern142-reg-ABC123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to
+          example: BATbern142
+        status:
+          type: string
+          description: Registration status (uppercase)
+          enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED]
+          example: CONFIRMED
+        attendeeUsername:
+          type: string
+          description: Cross-service reference to user_profiles.username
+          example: max.muster
+        attendeeFirstName:
+          type: string
+          example: Max
+        attendeeLastName:
+          type: string
+          example: Muster
+        attendeeEmail:
+          type: string
+          format: email
+          example: max.muster@example.com
+        attendeeCompany:
+          type: string
+          nullable: true
+          example: Acme AG
+        registrationDate:
+          type: string
+          format: date-time
+          example: '2026-01-15T10:30:00Z'
+        waitlistPosition:
+          type: integer
+          nullable: true
+          description: Story 10.11 — Position on the waitlist (1-based). Null when not waitlisted.
+          example: 3
+        deregistrationToken:
+          type: string
+          format: uuid
+          readOnly: true
+          description: |
+            Story 10.12: UUID token used for self-service deregistration link.
+            ORGANIZER VIEW ONLY — never exposed in public RegistrationResponse.
+          example: 550e8400-e29b-41d4-a716-446655440000
+
     FailedRegistration:
       type: object
       description: Details of a failed registration within a batch
@@ -6415,16 +8080,15 @@ components:
     EventWorkflowState:
       type: string
       description: |
-        Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
+        Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed).
         Defines the current state of an event in the organizer workflow.
-        Previous 16-state workflow was consolidated to improve clarity and automation.
+        The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.
       enum:
         - CREATED
         - TOPIC_SELECTION
         - SPEAKER_IDENTIFICATION
         - SLOT_ASSIGNMENT
         - AGENDA_PUBLISHED
-        - AGENDA_FINALIZED
         - EVENT_LIVE
         - EVENT_COMPLETED
         - ARCHIVED

@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "View user {{name}}",
     "headers": {
-      "roles": "Roles"
+      "roles": "Roles",
+      "company": "Company"
     },
     "empty": "No users found"
   },
@@ -241,6 +242,11 @@
     "removeTooltip": "Remove Photo",
     "verified": "Verified",
     "memberSince": "Member since {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito linked",
+    "notLinked": "No Cognito account",
+    "tooltip": "Cognito ID: {{id}}"
   },
   "userDetail": {
     "tabs": {

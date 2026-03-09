@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Gebruiker {{name}} bekijken",
     "headers": {
-      "roles": "Rollen"
+      "roles": "Rollen",
+      "company": "Bedrijf"
     },
     "empty": "Geen gebruikers gevonden"
   },
@@ -267,5 +268,10 @@
     "removeTooltip": "Foto verwijderen",
     "verified": "Geverifieerd",
     "memberSince": "Lid sinds {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito gekoppeld",
+    "notLinked": "Geen Cognito-account",
+    "tooltip": "Cognito ID: {{id}}"
   }
 }

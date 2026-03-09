@@ -59,12 +59,13 @@ public class RegistrationEmailService {
     /**
      * Send registration confirmation email asynchronously with i18n support.
      *
-     * @param registration Registration entity
-     * @param userProfile User profile DTO
-     * @param event Event entity
+     * @param registration     Registration entity
+     * @param userProfile      User profile DTO
+     * @param event            Event entity
      * @param confirmationToken JWT token for email confirmation (Story 4.1.5c)
      * @param cancellationToken JWT token for email cancellation (Anonymous Cancellation Flow)
-     * @param locale User's preferred locale (defaults to German if null)
+     * @param deregistrationUrl Full URL to self-service deregistration page (Story 10.12)
+     * @param locale           User's preferred locale (defaults to German if null)
      */
     @Async
     public void sendRegistrationConfirmation(
@@ -73,6 +74,7 @@ public class RegistrationEmailService {
             Event event,
             String confirmationToken,
             String cancellationToken,
+            String deregistrationUrl,
             Locale locale
     ) {
         try {
@@ -86,8 +88,9 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
             // Load email template (i18n)
+            EmailTokens tokens = new EmailTokens(confirmationToken, cancellationToken, deregistrationUrl);
             EmailContent content = loadEmailTemplate(emailLocale, registration, userProfile, event,
-                eventDateTime, confirmationToken, cancellationToken);
+                eventDateTime, tokens);
 
             // Generate calendar file (.ics)
             byte[] icsFile = generateCalendarFile(event, eventDateTime);
@@ -116,12 +119,13 @@ public class RegistrationEmailService {
 
     private record EmailContent(String html, String subject) {}
 
+    private record EmailTokens(String confirmationToken, String cancellationToken, String deregistrationUrl) {}
+
     /**
      * Load and populate email template with user/event data.
      */
     private EmailContent loadEmailTemplate(Locale locale, Registration registration,
-        UserResponse userProfile, Event event, ZonedDateTime eventDateTime,
-        String confirmationToken, String cancellationToken) {
+        UserResponse userProfile, Event event, ZonedDateTime eventDateTime, EmailTokens tokens) {
         String localeStr = locale.getLanguage().equals("de") ? "de" : "en";
         String templateName = localeStr.equals("de")
                 ? "email-templates/registration-confirmation-de.html"
@@ -133,19 +137,23 @@ public class RegistrationEmailService {
         // Prepare template variables
         // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
         // Anonymous Cancellation Flow: Include cancellation link in email
+        // Story 10.12: Include self-service deregistration URL
         Map<String, String> variables = Map.ofEntries(
                 Map.entry("attendeeFirstName", userProfile.getFirstName()),
                 Map.entry("attendeeLastName", userProfile.getLastName()),
                 Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
+                Map.entry("eventCode", event.getEventCode()),
                 Map.entry("eventTitle", event.getTitle()),
                 Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
                 Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
                 Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
                 Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
                 Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
-                    + "/confirm-registration?token=" + confirmationToken),
+                    + "/confirm-registration?token=" + tokens.confirmationToken()),
                 Map.entry("cancellationUrl", baseUrl + "/events/" + event.getEventCode()
-                    + "/cancel-registration?token=" + cancellationToken),
+                    + "/cancel-registration?token=" + tokens.cancellationToken()),
+                Map.entry("deregistrationUrl",
+                    tokens.deregistrationUrl() != null ? tokens.deregistrationUrl() : ""),
                 Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                 Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                 Map.entry("supportUrl", baseUrl + "/support"),
@@ -157,8 +165,8 @@ public class RegistrationEmailService {
         String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
                 .map(s -> emailService.replaceVariables(s, variables))
                 .orElseGet(() -> localeStr.equals("de")
-                        ? "Registrierungsbestätigung - " + event.getTitle()
-                        : "Registration Confirmation - " + event.getTitle());
+                        ? "Registrierungsbestätigung - " + event.getEventCode() + " - " + event.getTitle()
+                        : "Registration Confirmation - " + event.getEventCode() + " - " + event.getTitle());
         return new EmailContent(html, subject);
     }
 

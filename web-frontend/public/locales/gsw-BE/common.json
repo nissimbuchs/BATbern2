@@ -444,7 +444,8 @@
       "activeCount": "{{count}} aktive Filter"
     },
     "detail": {
-      "backToArchive": "← Zrugg zum Archiv"
+      "backToArchive": "← Zrugg zum Archiv",
+      "photos": "Fotos"
     }
   },
   "notifications": {
@@ -517,7 +518,9 @@
       "importData": "Date importiere",
       "taskTemplates": "Ufgabevorlagen",
       "emailTemplates": "E-Mail-Vorlagen",
-      "presentationSettings": "Präsentation"
+      "presentationSettings": "Präsentation",
+      "exportImport": "Export / Import",
+      "aiPrompts": "AI Prompts"
     },
     "accessDenied": "Zuegriff verweigeret",
     "organizerOnly": "Die Syte isch nur für Organisatore.",
@@ -530,6 +533,31 @@
       "saved": "Istellige gspycheret.",
       "saveFailed": "Spychere fehlgschlage. Bitte nomol versuche."
     },
+    "exportImport": {
+      "title": "Export / Import",
+      "exportSection": "Export",
+      "exportJsonButton": "Alli Date exportiere (JSON)",
+      "exportAssetsButton": "Asset-Manifest hole",
+      "importSection": "Import",
+      "importJsonLabel": "JSON-Datei uuswähle",
+      "importButton": "Importiere",
+      "successAlert": "Import erfolgriich abgschlosse.",
+      "resultEvents": "Veraastaltige",
+      "resultSessions": "Sessione",
+      "resultSpeakers": "Referente",
+      "resultCompanies": "Firme",
+      "resultAttendees": "Teilnehmer",
+      "resultErrors": "Fehler",
+      "errorAlert": "Import fählgschlage. Lueg d'Fehler unge a.",
+      "importAssetsLabel": "Assets importiere (ZIP)",
+      "importAssetsChooseLabel": "ZIP-Datei uswähle",
+      "importAssetsButton": "Assets importiere",
+      "confirmTitle": "Import bestätige",
+      "confirmMessage": "Das füegt Date i oder aktualisiert si. Bstehendi Datensätz wärde überschribe. Das chann nit automatisch rückgängig gmacht wärde.",
+      "confirmAssetsTitle": "Asset-Import bestätige",
+      "confirmAssetsMessage": "Alli Assets us em ZIP wärde zu S3 ufeglade. Das chann nit automatisch rückgängig gmacht wärde.",
+      "confirmButton": "Wiiterfahre"
+    },
     "taskTemplates": {
       "defaultSection": "Standard-Vorlagen",
       "customSection": "Eigeni Vorlagen",
@@ -538,6 +566,21 @@
       "noCustom": "No kei eigeni Vorlagen.",
       "confirmDelete": "Vorlage lösche?",
       "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
+    },
+    "aiPrompts": {
+      "description": "Die Prompts wärde a OpenAI gschickt, wenn Veröutigsbeschriebige, Titelbilder oder Qualitätsbewertunge vo Abstracts generiert wärde. Verwänded {{VARIABLE_NAME}}-Platzhalter — d verfügbare Variablen sind under jedem Prompt ufgliistet.",
+      "variablesLabel": "Variablen:",
+      "save": "Spichere",
+      "saved": "Prompt gspicheret.",
+      "saveFailed": "Prompt hät nid chönne gspicheret wärde.",
+      "resetToDefault": "Uf Standard zrüggsetze",
+      "resetDialogTitle": "Prompt uf Standard zrüggsetze?",
+      "resetDialogText": "Das überschribt Ihri Änderige mit em Originaltext. Die Aktion chann nid rückgängig gmacht wärde.",
+      "resetDialogCancel": "Abbräche",
+      "resetDialogConfirm": "Zrüggsetze",
+      "resetDone": "Prompt uf Standard zrügggsetzt.",
+      "resetFailed": "Prompt hät nid chönne zrügggsetzt wärde.",
+      "loadFailed": "KI-Prompts chönnte nid glade wärde."
     }
   },
   "userAccount": {

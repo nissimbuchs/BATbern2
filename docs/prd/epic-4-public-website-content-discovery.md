@@ -92,6 +92,11 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 6. **Registration Confirmation**: QR code for check-in, calendar export (iCal), email confirmation
 7. **Session Details Modal**: Deep dive into individual sessions with speaker bios
 
+**Post-Event 14-Day Display Rule:**
+After an event finishes, the homepage continues to show it for **14 days** using an archive-style layout: timetable and speaker list are visible, but registration, logistics, and venue blocks are hidden. After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
+
+**Phase 1 eligibility rule**: Only events that have `currentPublishedPhase` set qualify as an upcoming event (Phase 1). Unpublished future events (e.g., state `SPEAKER_IDENTIFICATION` with no published phase) are excluded and do not block the Phase 2 (recently-completed) fallback.
+
 ---
 
 ### Wireframe References
@@ -209,6 +214,7 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 18. **Performance**: Page loads <1.5 seconds globally from CloudFront
 19. **SEO Optimization**: Proper meta tags, Open Graph, structured data (JSON-LD)
 20. **Analytics**: Google Analytics event tracking for registrations and navigation
+21. **Unconfirmed Registration Cleanup**: Unconfirmed registrations (status = `registered` / unconfirmed) are permanently deleted after 48 hours by a scheduled cleanup job.
 
 **Deliverables:**
 - [x] Public landing page live and accessible
@@ -234,52 +240,56 @@ As an **anonymous attendee**, I want to cancel my event registration without log
 Per Story 4.1.5c security requirements, registration codes were removed from API responses to prevent unauthorized access. However, the original cancellation endpoint required users to provide their registration code, creating an impossible situation for anonymous users who never received their code. This story implements a secure JWT-based cancellation flow that maintains security while enabling anonymous cancellation.
 
 **Architecture Integration:**
-- **Backend**: Event Management Service with JWT token validation
-- **Security**: Separate JWT cancellation token (48-hour validity, type: "registration-cancellation")
+- **Backend**: Event Management Service — UUID-based deregistration token validation (superseded by Story 10.12)
+- **Security**: UUID `deregistrationToken` stored on the registration record (not a JWT)
 - **Email**: Cancellation link embedded in confirmation emails
 - **Frontend**: Public cancellation page with loading/success/error states
 - **i18n**: Full German/English support for emails and UI
 
+> **Note**: The original design called for a JWT cancellation token with `type: "registration-cancellation"` and 48-hour expiry. Story 10.12 replaced this with a UUID-based `deregistrationToken` column on the registration record. The JWT mechanism described below reflects the original design; see the **UUID-Based Deregistration (Story 10.12)** section for the current implementation.
+
 **Key Functionality:**
-1. **JWT Token Generation**: Generate separate cancellation token during registration
+1. **UUID Token Generation**: Generate separate UUID `deregistrationToken` during registration (Story 10.12 implementation)
 2. **Email Integration**: Cancellation link embedded in email footer (German/English templates)
-3. **Public Cancellation Endpoint**: POST `/api/v1/registrations/cancel?token={jwt}` (no authentication required)
-4. **Token Validation**: Type-safe validation ensuring token is specifically for cancellation
-5. **Permanent Deletion**: Registration permanently deleted from database (not just status change)
+3. **Public Cancellation Endpoint**: POST `/api/v1/events/{eventCode}/registrations/cancel?token={token}` (no authentication required)
+4. **Token Validation**: UUID token looked up against `deregistrationToken` column on the registration record
+5. **Status Update**: Registration status set to `cancelled` (record is retained in the database)
 6. **Cancellation Page**: User-friendly confirmation page with i18n support
 7. **Security**: Token cleared from URL after successful cancellation
 
 **Implementation Details:**
 
-**Backend (Event Management Service):**
-- **ConfirmationTokenService.java**:
-  - `generateCancellationToken(UUID registrationId, String eventCode)` - Creates JWT with type "registration-cancellation"
-  - `validateCancellationToken(String token)` - Validates token and checks type field
-- **EventController.java**:
-  - POST `/api/v1/registrations/cancel` endpoint (public access)
-  - Validates JWT, retrieves registration, permanently deletes record
+**Backend (Event Management Service) — Story 10.12 implementation:**
+- **Registration entity**: `deregistrationToken` UUID column stored at registration time
+- **DeregistrationController.java** (Story 10.12 endpoints — see UUID-Based Deregistration section):
+  - GET `/api/v1/registrations/deregister/verify?token={uuid}` — verifies token and returns registration info
+  - POST `/api/v1/registrations/deregister` with UUID token — sets status to `cancelled`
+  - POST `/api/v1/registrations/deregister/by-email` — always returns 200 (anti-enumeration)
+- **EventController.java** (original Story 4.1.5d endpoint, superseded by Story 10.12):
+  - POST `/api/v1/events/{eventCode}/registrations/cancel?token={token}` endpoint (public access)
+  - Validates UUID token, sets registration status to `cancelled`
   - Returns `{message: "...", status: "CANCELLED"}`
 - **SecurityConfig.java**: Added `.requestMatchers("/api/v1/registrations/cancel").permitAll()`
 - **RegistrationEmailService.java**: Updated to accept `cancellationToken` parameter
-- **Email Templates**: Added cancellation link in footer (48-hour validity notice)
+- **Email Templates**: Added cancellation link in footer
 
 **Frontend (React):**
-- **eventApiClient.ts**: `cancelRegistration(token)` method with Skip-Auth header
+- **eventApiClient.ts**: `cancelRegistration(eventCode, token)` method — calls `POST /api/v1/events/{eventCode}/registrations/cancel?token={token}` with Skip-Auth header
 - **CancelRegistrationPage.tsx**: Three-state UI (loading → success/error)
 - **App.tsx**: Route `/cancel-registration` with lazy loading
 - **i18n**: Full translation support in registration namespace (de/en)
 
-**Security Model:**
-- **Token Type Validation**: Cancellation tokens explicitly marked with `type: "registration-cancellation"`
-- **48-Hour Expiry**: Tokens expire after 48 hours (same as confirmation tokens)
-- **Single-Use**: Registration deleted after successful cancellation (token becomes invalid)
+**Security Model (Story 10.12 implementation):**
+- **UUID Token Lookup**: Cancellation token is a UUID stored as `deregistrationToken` on the registration record (not a JWT; no type-field or expiry validation)
+- **Single-Use**: Registration status is set to `cancelled` after successful deregistration; repeated calls return 409 Conflict
+- **Anti-Enumeration**: `POST /api/v1/registrations/deregister/by-email` always returns HTTP 200 regardless of whether the email is registered
 - **URL Clearing**: Token removed from browser URL after processing (security best practice)
-- **No Authentication**: Public endpoint - JWT provides authorization
+- **No Authentication**: Public endpoint — UUID token provides authorization
 
 **Acceptance Criteria:**
 1. ✅ Cancellation token generated during registration alongside confirmation token
 2. ✅ Email templates include "Registrierung stornieren" / "Cancel Registration" link
-3. ✅ POST `/api/v1/registrations/cancel?token={jwt}` endpoint validates token and deletes registration
+3. ✅ POST `/api/v1/events/{eventCode}/registrations/cancel?token={token}` endpoint validates UUID token and sets registration status to `cancelled`
 4. ✅ Cancellation page shows loading spinner during API call
 5. ✅ Success state displays confirmation message with "Back to Home" button
 6. ✅ Error state shows user-friendly messages for expired/invalid/not-found tokens
@@ -287,6 +297,8 @@ Per Story 4.1.5c security requirements, registration codes were removed from API
 8. ✅ Token cleared from URL after successful cancellation
 9. ✅ Security config permits public access to cancellation endpoint
 10. ✅ All tests updated to reflect new method signature with cancellation token
+11. ✅ On successful deregistration, the first waitlisted registration (if any) is automatically promoted to confirmed status and their `waitlistPosition` cleared
+12. ✅ The by-email deregistration endpoint (`POST /api/v1/registrations/deregister/by-email`) returns HTTP 200 unconditionally to prevent user-enumeration attacks
 
 **Technical Files Modified:**
 - Backend: 6 files (ConfirmationTokenService, EventController, SecurityConfig × 2, RegistrationEmailService, email templates × 2)
@@ -303,6 +315,26 @@ Per Story 4.1.5c security requirements, registration codes were removed from API
 - ✅ TypeScript compilation successful
 - ✅ Pre-commit hooks passing (Prettier, ESLint, Checkstyle)
 - ⏳ Manual E2E testing pending
+
+---
+
+### UUID-Based Deregistration (Story 10.12)
+**Status:** ✅ **COMPLETE** — supersedes the JWT mechanism from Story 4.1.5d
+
+Story 10.12 replaced the JWT cancellation token mechanism with a UUID `deregistrationToken` stored directly on the registration record. The following endpoints are now the canonical deregistration API:
+
+**Endpoints (all public — no authentication required):**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/registrations/deregister/verify?token={uuid}` | Verify token validity and return registration info; 404 if unknown or already cancelled |
+| `POST` | `/api/v1/registrations/deregister` | Cancel registration by UUID token; sets status to `cancelled`; 409 on second call; 404 for unknown token |
+| `POST` | `/api/v1/registrations/deregister/by-email` | Initiate deregistration by email; **always returns 200** (anti-enumeration) |
+
+**Behaviour:**
+- Cancellation sets registration status to `cancelled` (record is retained in the database)
+- On successful cancellation, the first waitlisted registration (if any) is automatically promoted to `registered` status and their `waitlistPosition` is cleared
+- The by-email endpoint returns HTTP 200 unconditionally to prevent user-enumeration attacks
 
 ---
 

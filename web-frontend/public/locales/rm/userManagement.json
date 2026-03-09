@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Mussar utilisader {{name}}",
     "headers": {
-      "roles": "Rollas"
+      "roles": "Rollas",
+      "company": "Interpresa"
     },
     "empty": "Nagin utilisader chattà"
   },
@@ -267,5 +268,10 @@
     "removeTooltip": "Stizzar foto",
     "verified": "Verificà",
     "memberSince": "Commemher dapi {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito collià",
+    "notLinked": "Nagin conto Cognito",
+    "tooltip": "ID Cognito: {{id}}"
   }
 }

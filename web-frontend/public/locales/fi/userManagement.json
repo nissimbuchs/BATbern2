@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Näytä käyttäjä {{name}}",
     "headers": {
-      "roles": "Roolit"
+      "roles": "Roolit",
+      "company": "Yritys"
     },
     "empty": "Käyttäjiä ei löydy"
   },
@@ -267,5 +268,10 @@
     "removeTooltip": "Poista kuva",
     "verified": "Vahvistettu",
     "memberSince": "Jäsen {{date}} lähtien"
+  },
+  "cognito": {
+    "linked": "Cognito yhdistetty",
+    "notLinked": "Ei Cognito-tiliä",
+    "tooltip": "Cognito-tunnus: {{id}}"
   }
 }

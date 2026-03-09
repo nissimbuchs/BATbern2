@@ -180,7 +180,8 @@ public class NewsletterController {
         NewsletterPreviewResponse preview = emailService.preview(
                 event,
                 Boolean.TRUE.equals(request.getIsReminder()),
-                request.getLocale()
+                request.getLocale(),
+                request.getTemplateKey()
         );
         return ResponseEntity.ok(preview);
     }
@@ -199,7 +200,8 @@ public class NewsletterController {
                 event,
                 Boolean.TRUE.equals(request.getIsReminder()),
                 request.getLocale(),
-                sentByUsername
+                sentByUsername,
+                request.getTemplateKey()
         );
         return ResponseEntity.ok(response);
     }

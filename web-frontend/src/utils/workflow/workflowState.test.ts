@@ -22,8 +22,8 @@ import {
 
 describe('workflowState utilities', () => {
   describe('WORKFLOW_STATE_ORDER', () => {
-    it('should contain exactly 9 workflow states', () => {
-      expect(WORKFLOW_STATE_ORDER).toHaveLength(9);
+    it('should contain exactly 8 workflow states', () => {
+      expect(WORKFLOW_STATE_ORDER).toHaveLength(8);
     });
 
     it('should start with CREATED', () => {
@@ -31,7 +31,7 @@ describe('workflowState utilities', () => {
     });
 
     it('should end with ARCHIVED', () => {
-      expect(WORKFLOW_STATE_ORDER[8]).toBe('ARCHIVED');
+      expect(WORKFLOW_STATE_ORDER[7]).toBe('ARCHIVED');
     });
 
     it('should contain all expected workflow states in order', () => {
@@ -41,7 +41,6 @@ describe('workflowState utilities', () => {
         'SPEAKER_IDENTIFICATION',
         'SLOT_ASSIGNMENT',
         'AGENDA_PUBLISHED',
-        'AGENDA_FINALIZED',
         'EVENT_LIVE',
         'EVENT_COMPLETED',
         'ARCHIVED',
@@ -51,31 +50,27 @@ describe('workflowState utilities', () => {
   });
 
   describe('getWorkflowProgress', () => {
-    it('should return 11% for CREATED (step 1/9)', () => {
-      expect(getWorkflowProgress('CREATED')).toBe(11);
+    it('should return 13% for CREATED (step 1/8)', () => {
+      expect(getWorkflowProgress('CREATED')).toBe(13);
     });
 
-    it('should return 22% for TOPIC_SELECTION (step 2/9)', () => {
-      expect(getWorkflowProgress('TOPIC_SELECTION')).toBe(22);
+    it('should return 25% for TOPIC_SELECTION (step 2/8)', () => {
+      expect(getWorkflowProgress('TOPIC_SELECTION')).toBe(25);
     });
 
-    it('should return 33% for SPEAKER_IDENTIFICATION (step 3/9)', () => {
-      expect(getWorkflowProgress('SPEAKER_IDENTIFICATION')).toBe(33);
+    it('should return 38% for SPEAKER_IDENTIFICATION (step 3/8)', () => {
+      expect(getWorkflowProgress('SPEAKER_IDENTIFICATION')).toBe(38);
     });
 
-    it('should return 44% for SLOT_ASSIGNMENT (step 4/9)', () => {
-      expect(getWorkflowProgress('SLOT_ASSIGNMENT')).toBe(44);
+    it('should return 50% for SLOT_ASSIGNMENT (step 4/8)', () => {
+      expect(getWorkflowProgress('SLOT_ASSIGNMENT')).toBe(50);
     });
 
-    it('should return 67% for AGENDA_FINALIZED (step 6/9)', () => {
-      expect(getWorkflowProgress('AGENDA_FINALIZED')).toBe(67);
+    it('should return 75% for EVENT_LIVE (step 6/8)', () => {
+      expect(getWorkflowProgress('EVENT_LIVE')).toBe(75);
     });
 
-    it('should return 78% for EVENT_LIVE (step 7/9)', () => {
-      expect(getWorkflowProgress('EVENT_LIVE')).toBe(78);
-    });
-
-    it('should return 100% for ARCHIVED (step 9/9)', () => {
+    it('should return 100% for ARCHIVED (step 8/8)', () => {
       expect(getWorkflowProgress('ARCHIVED')).toBe(100);
     });
 
@@ -195,7 +190,7 @@ describe('workflowState utilities', () => {
       expect(label).toBe('CREATED');
     });
 
-    it('should handle all 9 workflow states', () => {
+    it('should handle all 8 workflow states', () => {
       const mockT = vi.fn((_key: string, fallback: string) => fallback) as unknown as TFunction;
 
       WORKFLOW_STATE_ORDER.forEach((state) => {
@@ -203,7 +198,7 @@ describe('workflowState utilities', () => {
         expect(label).toBe(state);
       });
 
-      expect(mockT).toHaveBeenCalledTimes(9);
+      expect(mockT).toHaveBeenCalledTimes(8);
     });
   });
 
@@ -220,8 +215,8 @@ describe('workflowState utilities', () => {
       expect(getWorkflowStepNumber('SLOT_ASSIGNMENT')).toBe(4);
     });
 
-    it('should return 9 for ARCHIVED', () => {
-      expect(getWorkflowStepNumber('ARCHIVED')).toBe(9);
+    it('should return 8 for ARCHIVED', () => {
+      expect(getWorkflowStepNumber('ARCHIVED')).toBe(8);
     });
 
     it('should return 0 for invalid state', () => {
@@ -298,7 +293,7 @@ describe('workflowState utilities', () => {
   });
 
   describe('isValidWorkflowState', () => {
-    it('should return true for all 9 valid workflow states', () => {
+    it('should return true for all 8 valid workflow states', () => {
       WORKFLOW_STATE_ORDER.forEach((state) => {
         expect(isValidWorkflowState(state)).toBe(true);
       });
@@ -335,7 +330,7 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(22); // Step 2/9
+      expect(progress).toBe(25); // Step 2/8
       expect(color).toBe('warning'); // < 30%
       expect(isEarlyStage(state)).toBe(true);
       expect(isLateStage(state)).toBe(false);
@@ -346,7 +341,7 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(44); // Step 4/9
+      expect(progress).toBe(50); // Step 4/8
       expect(color).toBe('primary'); // 30-70%
       expect(isEarlyStage(state)).toBe(false);
       expect(isLateStage(state)).toBe(false);
@@ -357,7 +352,7 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(78); // Step 7/9
+      expect(progress).toBe(75); // Step 6/8
       expect(color).toBe('success'); // > 70%
       expect(isEarlyStage(state)).toBe(false);
       expect(isLateStage(state)).toBe(true);
@@ -368,7 +363,7 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(100); // Step 9/9
+      expect(progress).toBe(100); // Step 8/8
       expect(color).toBe('success');
       expect(isEarlyStage(state)).toBe(false);
       expect(isLateStage(state)).toBe(true);
@@ -380,7 +375,7 @@ describe('workflowState utilities', () => {
       const stepNumber = getWorkflowStepNumber(state);
 
       expect(i18nKey).toBe('workflow.states.speaker_identification');
-      expect(stepNumber).toBe(3); // Step 3/9
+      expect(stepNumber).toBe(3); // Step 3/8
     });
   });
 });

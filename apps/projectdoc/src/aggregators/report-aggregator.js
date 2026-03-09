@@ -260,14 +260,20 @@ export class ReportAggregator {
     const summary      = ZapParser.calculateOverallSummary(reports);
     const byAlertType  = ZapParser.groupByAlertType(reports);
 
-    // Per-rule PASS/WARN/FAIL breakdown from log files
+    // Per-rule breakdown: prefer log files (PASS/WARN/FAIL); fall back to JSON alert data
     const logPattern = this.config.sources?.security?.zapLogPattern || 'security-reports/zap-logs/*.log';
     let categoryMatrix = null;
     try {
       const logScans = await ZapParser.findAndParseLogFiles(this.baseDir, logPattern);
-      categoryMatrix = ZapParser.buildCategoryMatrix(logScans);
+      if (logScans.length > 0) {
+        categoryMatrix = ZapParser.buildCategoryMatrix(logScans);
+      } else {
+        console.log('  ZAP log files not found — building category matrix from JSON alerts instead.');
+        categoryMatrix = ZapParser.buildCategoryMatrixFromJson(reports);
+      }
     } catch (err) {
-      console.warn('ZAP log parsing failed (per-rule breakdown unavailable):', err.message);
+      console.warn('ZAP per-rule breakdown failed:', err.message);
+      categoryMatrix = ZapParser.buildCategoryMatrixFromJson(reports);
     }
 
     return {

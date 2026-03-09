@@ -1,0 +1,133 @@
+# Doc Drift Mappings
+# Maps source path patterns to documentation files that should be reviewed
+# when those paths are modified in a feat: or fix: commit.
+# Used by both the weekly auditor (doc-drift-auditor.yml) and PR check (claude-code-review.yml).
+# Extend this file as new services or docs are added.
+
+mappings:
+
+  # ── Event Management Service ────────────────────────────────────────────────
+  - source_pattern: "services/event-management-service/"
+    docs:
+      - "docs/architecture/06a-workflow-state-machines.md"
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/prd/epic-5-enhanced-organizer-workflows.md"
+      - "docs/user-guide/workflow/"
+      - "docs/user-guide/entity-management/events.md"
+      - "docs/user-guide/appendix/changelog.md"
+
+  # ── Speaker Coordination Service ────────────────────────────────────────────
+  - source_pattern: "services/speaker-coordination-service/"
+    docs:
+      - "docs/architecture/06a-workflow-state-machines.md"
+      - "docs/architecture/06d-notification-system.md"
+      - "docs/prd/epic-6-speaker-portal-support.md"
+      - "docs/prd/epic-9-speaker-authentication.md"
+      - "docs/user-guide/speaker-portal/"
+      - "docs/user-guide/appendix/changelog.md"
+
+  # ── Company / User Management Service ──────────────────────────────────────
+  - source_pattern: "services/company-user-management-service/"
+    docs:
+      - "docs/architecture/06b-user-lifecycle-sync.md"
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/user-guide/entity-management/companies.md"
+      - "docs/user-guide/entity-management/users.md"
+      - "docs/user-guide/appendix/changelog.md"
+
+  # ── Partner Coordination Service ────────────────────────────────────────────
+  - source_pattern: "services/partner-coordination-service/"
+    docs:
+      - "docs/prd/epic-8-partner-coordination.md"
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/user-guide/partner-portal/"
+      - "docs/user-guide/features/analytics.md"
+      - "docs/user-guide/appendix/changelog.md"
+
+  # ── Attendee Experience Service ─────────────────────────────────────────────
+  - source_pattern: "services/attendee-experience-service/"
+    docs:
+      - "docs/prd/epic-4-public-website-content-discovery.md"
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/user-guide/appendix/changelog.md"
+
+  # ── API Gateway ─────────────────────────────────────────────────────────────
+  - source_pattern: "api-gateway/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/api/"
+
+  # ── Infrastructure (CDK) ────────────────────────────────────────────────────
+  - source_pattern: "infrastructure/"
+    docs:
+      - "docs/architecture/08-operations-security.md"
+      - "docs/architecture/06-backend-architecture.md"
+
+  # ── Shared Kernel ────────────────────────────────────────────────────────────
+  - source_pattern: "shared-kernel/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/06a-workflow-state-machines.md"
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  - source_pattern: "web-frontend/src/components/speaker"
+    docs:
+      - "docs/user-guide/speaker-portal/"
+      - "docs/prd/epic-6-speaker-portal-support.md"
+
+  - source_pattern: "web-frontend/src/components/partner"
+    docs:
+      - "docs/user-guide/partner-portal/"
+      - "docs/prd/epic-8-partner-coordination.md"
+
+  - source_pattern: "web-frontend/src/components/event"
+    docs:
+      - "docs/user-guide/workflow/"
+      - "docs/user-guide/entity-management/events.md"
+      - "docs/prd/epic-4-public-website-content-discovery.md"
+
+  - source_pattern: "web-frontend/src/components/admin"
+    docs:
+      - "docs/user-guide/administration/"
+
+  - source_pattern: "web-frontend/src/"
+    docs:
+      - "docs/user-guide/features/"
+
+  # ── OpenAPI Specs ─────────────────────────────────────────────────────────
+  # Changes to API specs are themselves doc changes — flag PRD and user-guide
+  - source_pattern: "docs/api/"
+    docs:
+      - "docs/prd-enhanced.md"
+
+# ── Commit type prefixes that are ALWAYS skipped ────────────────────────────
+skip_commit_types:
+  - "chore"
+  - "test"
+  - "docs"
+  - "style"
+  - "refactor"
+  - "build"
+  - "ci"
+
+# Only these types are audited
+audit_commit_types:
+  - "feat"
+  - "fix"
+
+# ── Commit scopes that are ALWAYS skipped ────────────────────────────────────
+# Scopes that are never business-rule changes — infra wiring, test fixes,
+# build tooling, UI polish, code-review cleanup, etc.
+skip_commit_scopes:
+  - "infra"
+  - "test"
+  - "tests"
+  - "build"
+  - "bruno"
+  - "review"
+  - "presentation"
+  - "ci"
+  - "security"   # OWASP/ZAP remediations — technical, not user-facing behaviour
+  - "auth"       # auth wiring fixes — rarely need PRD/user-guide updates
+  - "blob-selector"  # UI animation/interaction — not a business rule
+  - "watch"          # WebSocket resilience — technical fix

@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "ユーザー {{name}} を表示",
     "headers": {
-      "roles": "役割"
+      "roles": "役割",
+      "company": "会社"
     },
     "empty": "ユーザーが見つかりません"
   },
@@ -267,5 +268,10 @@
     "removeTooltip": "写真を削除",
     "verified": "認証済み",
     "memberSince": "{{date}}からのメンバー"
+  },
+  "cognito": {
+    "linked": "Cognito連携済み",
+    "notLinked": "Cognitoアカウントなし",
+    "tooltip": "Cognito ID: {{id}}"
   }
 }

@@ -118,7 +118,7 @@ After reviewing the content, approve it to confirm the speaker.
   - **Magic link** to speaker portal (30-day validity) for easy content revision
   - Direct access to revision page without re-authentication
 - Speaker content status set to REVISION_NEEDED
-- Rejection feedback displayed in speaker contact history
+- Rejection feedback displayed in speaker contact history **and** versioned on the `ContentSubmission` record (`reviewerFeedback`, `reviewedBy`, `reviewedAt` fields) — visible in the speaker portal for the speaker to reference when revising
 - Re-review after speaker submits revised content
 
 **Permanently Reject** (insufficient quality):
@@ -172,6 +172,9 @@ Once all submissions reviewed, you're ready for Phase D (Slot Assignment).
 - Quality review and slot assignment can happen in any order
 - You can assign slots in Phase D before all quality reviews complete
 - Speakers auto-confirm when BOTH quality_reviewed AND slot assigned (regardless of order)
+
+**Idempotent State Transitions**:
+- Re-submitting a speaker to their current state is a safe no-op — the system accepts it without creating duplicate history entries.
 
 ## Phase C Completion
 

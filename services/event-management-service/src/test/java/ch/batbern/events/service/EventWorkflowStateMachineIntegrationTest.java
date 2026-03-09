@@ -115,7 +115,7 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
         // Given: Event in CREATED state
         Event currentEvent = testEvent;
 
-        // Define the complete workflow sequence (16 states)
+        // Define the complete workflow sequence (8-state model)
         EventWorkflowState[] workflowSequence = {
             EventWorkflowState.CREATED,
             EventWorkflowState.TOPIC_SELECTION,
@@ -128,9 +128,8 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
             EventWorkflowState.SPEAKER_IDENTIFICATION,
             EventWorkflowState.SLOT_ASSIGNMENT,
             EventWorkflowState.AGENDA_PUBLISHED,
-            EventWorkflowState.AGENDA_FINALIZED,
-            EventWorkflowState.AGENDA_FINALIZED,
-            EventWorkflowState.AGENDA_FINALIZED,
+            EventWorkflowState.EVENT_LIVE,
+            EventWorkflowState.EVENT_COMPLETED,
             EventWorkflowState.ARCHIVED,
             EventWorkflowState.ARCHIVED
         };

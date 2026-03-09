@@ -181,6 +181,33 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
+    // Test Story 10.20: admin export/import must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_adminExportLegacyCalled")
+    void should_routeToEventService_when_adminExportLegacyCalled() {
+        // Given
+        String requestPath = "/api/v1/admin/export/legacy";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_adminImportLegacyCalled")
+    void should_routeToEventService_when_adminImportLegacyCalled() {
+        // Given
+        String requestPath = "/api/v1/admin/import/legacy";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
@@ -350,5 +377,79 @@ class DomainRouterTest {
 
         // Verify full target URL is correct
         assertThat(capturedUri.toString()).startsWith("http://localhost:8081/api/v1/events?");
+    }
+
+    // Trailing slash normalization tests (ZAP fix: prevent 500 on /api/v1/events/)
+    @Test
+    @DisplayName("should_stripTrailingSlash_when_requestUriEndsWithSlash")
+    void should_stripTrailingSlash_when_requestUriEndsWithSlash() {
+        // Given
+        String targetService = "event-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/events/");
+        request.setMethod("GET");
+
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("[]".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        // When
+        domainRouter.routeRequest(targetService, request).join();
+
+        // Then: proxied URI must NOT end with trailing slash
+        assertThat(uriCaptor.getValue().getPath()).doesNotEndWith("/");
+        assertThat(uriCaptor.getValue().getPath()).isEqualTo("/api/v1/events");
+    }
+
+    @Test
+    @DisplayName("should_notModifyPath_when_requestUriHasNoTrailingSlash")
+    void should_notModifyPath_when_requestUriHasNoTrailingSlash() {
+        // Given
+        String targetService = "event-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/events/BATbern42");
+        request.setMethod("GET");
+
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        // When
+        domainRouter.routeRequest(targetService, request).join();
+
+        // Then: path must remain unchanged
+        assertThat(uriCaptor.getValue().getPath()).isEqualTo("/api/v1/events/BATbern42");
+    }
+
+    @Test
+    @DisplayName("should_notModifyRootPath_when_requestUriIsSlashOnly")
+    void should_notModifyRootPath_when_requestUriIsSlashOnly() {
+        // Given — root "/" is the only single-char path ending with slash; it must not be stripped
+        String targetService = "event-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/");
+        request.setMethod("GET");
+
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        // When
+        domainRouter.routeRequest(targetService, request).join();
+
+        // Then: root path "/" is preserved as-is (length == 1, not stripped)
+        assertThat(uriCaptor.getValue().getPath()).isEqualTo("/");
     }
 }

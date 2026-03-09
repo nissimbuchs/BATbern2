@@ -45,18 +45,20 @@ CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
 AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 ```
 
+> **Note**: TOPIC_SELECTION is not a mandatory stop from CREATED. When a topic is confirmed from CREATED state, the event transitions directly to **SPEAKER_IDENTIFICATION**. CREATED → SPEAKER_IDENTIFICATION is also a valid direct transition (e.g., when re-creating an event with a pre-known topic).
+
 ### State Definitions
 
 | State                      | Description                             | When Reached                      | Exit Condition                       |
 | -------------------------- | --------------------------------------- | --------------------------------- | ------------------------------------ |
-| **CREATED**                | Event created, ready for setup          | Event creation form submitted     | Topic selected                       |
+| **CREATED**                | Event created, ready for setup          | Event creation form submitted     | Topic selected (→ TOPIC_SELECTION or directly to SPEAKER_IDENTIFICATION) |
 | **TOPIC_SELECTION**        | Topics selected, ready for speakers     | Minimum 1 topic selected          | Minimum speakers in pool             |
 | **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled                     |
 | **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | All confirmed speakers assigned   | Agenda published                     |
 | **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action             | Manual finalization (2 weeks before) |
 | **AGENDA_FINALIZED**       | Agenda locked for printing              | Finalize agenda action            | Event day arrives                    |
 | **EVENT_LIVE**             | Event currently happening               | Automatic when event start time passed (hourly check) | Automatic when event end time passed |
-| **EVENT_COMPLETED**        | Event finished, post-processing         | Post-event trigger                | Manual archival                      |
+| **EVENT_COMPLETED**        | Event finished, post-processing         | All completeable sessions ended via Watch mode (organizer calls endSession() for every keynote/presentation/workshop/panel) | Manual archival |
 | **ARCHIVED**               | Event archived for history              | Archival action                   | Terminal state                       |
 
 ### Workflow Phases (User Guide Organization)
@@ -180,19 +182,27 @@ Organizers can create custom tasks with:
 
 ### Task Dashboard
 
-Tasks appear in the task list with three statuses:
+Tasks appear in the task list with four statuses:
 
-- **TODO**: Not started (overdue highlighted in red)
+- **TODO**: Not started (overdue highlighted in red; tasks due within 3 calendar days are highlighted as critical)
 - **IN_PROGRESS**: Currently working on
 - **COMPLETED**: Finished with completion notes
+- **CANCELLED**: Not needed (event cancelled or task no longer relevant)
+
+> **Internal note**: Tasks also have a **PENDING** pre-activation status that is not shown on the task dashboard. See [Task Auto-Creation](#task-auto-creation) below.
 
 ### Task Auto-Creation
 
-Tasks are automatically created when the event transitions to their trigger state:
+Tasks use a **two-phase lifecycle**:
 
-- Event reaches TOPIC_SELECTION → creates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
-- Event reaches AGENDA_PUBLISHED → creates Newsletter: Speakers task
-- Event reaches AGENDA_FINALIZED → creates Newsletter: Final, Catering tasks
+1. **Pre-created as `pending`** — All default task templates are silently pre-created with `status = "pending"` when the event is first created. They do not yet appear on the task dashboard.
+2. **Activated to `todo`** — When the event transitions to a task's configured trigger state, the matching pending tasks are activated to `status = "todo"` and become visible in the task dashboard.
+
+Activation happens at:
+
+- Event reaches TOPIC_SELECTION → activates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
+- Event reaches AGENDA_PUBLISHED → activates Newsletter: Speakers task
+- Event reaches AGENDA_FINALIZED → activates Newsletter: Final, Catering tasks
 
 ---
 
@@ -202,10 +212,10 @@ The platform automates two critical parts of the event lifecycle, removing the n
 
 ### Auto-Publishing Schedule
 
-| Content | When | Required Event State |
-|---------|------|----------------------|
-| Speaker profiles | 30 days before event date | `AGENDA_PUBLISHED` or `AGENDA_FINALIZED` |
-| Full agenda | 14 days before event date | `AGENDA_FINALIZED` |
+| Content | When | Gate Condition |
+|---------|------|----------------|
+| Speaker profiles | 30 days before event date | `currentPublishedPhase` has not yet reached "speakers" (speakers not yet published), regardless of event workflow state |
+| Full agenda | 14 days before event date | `currentPublishedPhase = "speakers"` (speakers already published) **and** all sessions have timing; auto-publish transitions event to AGENDA_PUBLISHED |
 
 Both run via a daily cron job (00:00 UTC). If the event has already passed the 30-day or 14-day mark without publishing, the job publishes on the next run (catch-up behaviour).
 
@@ -218,9 +228,9 @@ Both run via a daily cron job (00:00 UTC). If the event has already passed the 3
 | Transition | Trigger | Check Frequency |
 |------------|---------|----------------|
 | `AGENDA_FINALIZED` → `EVENT_LIVE` | Event start date/time reached | Hourly |
-| `EVENT_LIVE` → `EVENT_COMPLETED` | Event end date/time passed | Hourly |
+| `EVENT_LIVE` → `EVENT_COMPLETED` | Organizer ends all completeable sessions via Watch mode | On each endSession() call |
 
-Both transitions require no organizer action. The event enters `EVENT_COMPLETED` for post-event processing, then moves to `ARCHIVED` via a manual organizer action.
+The `AGENDA_FINALIZED` → `EVENT_LIVE` transition requires no organizer action (hourly cron). The `EVENT_LIVE` → `EVENT_COMPLETED` transition is driven by the **Watch feature**: when an organizer calls `endSession()` for every completeable session (keynote, presentation, workshop, panel_discussion), the event automatically transitions to `EVENT_COMPLETED`. Break, lunch, and networking sessions are excluded from this check. The event then moves to `ARCHIVED` via a manual organizer action.
 
 See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full details including dropout handling and CDN configuration.
 
@@ -423,14 +433,16 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 1. **identified** - In speaker pool
 2. **contacted** - Outreach recorded
-3. **ready** - Ready to accept/decline
-4. **accepted** - Committed to presenting
-5. **declined** - Not available
-6. **content_submitted** - Content received
-7. **quality_reviewed** - Content approved
-8. **confirmed** - Ready for publication
-9. **overflow** - Backup speaker
-10. **withdrew** - Cancelled after accepting
+3. **invited** - Invitation email dispatched (before speaker marks ready)
+4. **ready** - Ready to accept/decline
+5. **accepted** - Committed to presenting
+6. **declined** - Not available (reachable from any active state including confirmed)
+7. **slot_assigned** - Slot automatically assigned by the system (cannot be set manually)
+8. **content_submitted** - Content received
+9. **quality_reviewed** - Content approved
+10. **confirmed** - Ready for publication
+11. **overflow** - Backup speaker
+12. **withdrew** - Cancelled after accepting
 
 ---
 

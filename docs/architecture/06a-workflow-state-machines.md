@@ -6,7 +6,7 @@ This document details the workflow state management systems for the BATbern Even
 
 The BATbern platform implements sophisticated state machines to manage event workflows. **Key architectural insight:** The original "16-step linear workflow" was a misconception. The actual implementation uses:
 
-1. **Event Workflow**: 9-state state machine for high-level event lifecycle
+1. **Event Workflow**: 8-state state machine for high-level event lifecycle
 2. **Speaker Workflow**: Per-speaker state machine with parallel progression (quality review and slot assignment can happen in any order)
 3. **Task System**: Configurable tasks (newsletters, catering, etc.) separate from workflow states
 
@@ -21,14 +21,18 @@ These state machines ensure proper transition validation, business rule enforcem
 
 This led to a complete redesign from 16 stories to 8 stories, with clearer separation of concerns.
 
-## Event Workflow State Machine (9 States)
+## Event Workflow State Machine (8 States)
 
 ### State Diagram
 
 ```
 CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
-AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 ```
+
+> **Skip transition:** `CREATED` may transition directly to `SPEAKER_IDENTIFICATION` (skipping `TOPIC_SELECTION`) if a speaker is added to the pool before a topic is formally selected. This is an explicitly allowed path in the transition validator.
+
+> **Historical note:** An `AGENDA_FINALIZED` state was removed during implementation (see inline test comment: "Direct scheduler transition (AGENDA_FINALIZED removed)"). The transition now goes directly from `AGENDA_PUBLISHED` to `EVENT_LIVE`. The 14-day-before-event guard that was attached to `AGENDA_FINALIZED` is no longer part of the workflow.
 
 ### State Definitions
 
@@ -38,11 +42,26 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 | **TOPIC_SELECTION** | Topic selected, brainstorming speakers | Topic selected | Minimum speakers in pool |
 | **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach in progress | Min speakers in pool | All slots filled (after overflow if needed) |
 | **SLOT_ASSIGNMENT** | Speakers assigned to time slots | All slots filled | Agenda published |
-| **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Manually finalized (2 weeks before) |
-| **AGENDA_FINALIZED** | Agenda locked for printing | Manually finalized | Event day |
+| **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Event day (direct scheduler transition) |
 | **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
-| **EVENT_COMPLETED** | Event finished, post-processing | After event | Manual trigger |
-| **ARCHIVED** | Event archived | Archival trigger | Terminal state |
+| **EVENT_COMPLETED** | Event finished, post-processing | After event | Auto: daily scheduler 02:00 Bern time, 14 days after event date |
+| **ARCHIVED** | Event archived | Auto-archived when event date is **more than** 14 days in the past (exclusive boundary: exactly 14 days does not qualify); or manual trigger | Terminal state |
+
+### Post-Event Window (14-Day Rule)
+
+After an event transitions to **EVENT_COMPLETED**, it enters a 14-day public-visibility window before being auto-archived:
+
+- **During the window (days 0–14 after event date):**
+  - `getCurrentEvent()` query: Phase 1 checks for upcoming/live events; Phase 2 falls back to the most recent EVENT_COMPLETED event within the 14-day window.
+  - The homepage renders the event with an **archive-style UI**: timetable and speakers visible; no registration form, no logistics/venue block.
+  - A 404 is NOT returned — the event is still surfaced to the public.
+
+- **After 14 days:**
+  - `processEventsToArchive()` runs at **02:00 Bern time** via a daily ShedLock-guarded scheduler.
+  - It transitions all qualifying EVENT_COMPLETED events to ARCHIVED.
+  - From this point, `getCurrentEvent()` returns 404 if no future event is active.
+
+**Implementation note:** The scheduler lives in `event-management-service` and is guarded by ShedLock to prevent duplicate execution across ECS tasks. The archive-style homepage UI is determined in the frontend by checking `event.workflowState === 'EVENT_COMPLETED'`.
 
 ### Implementation
 
@@ -57,9 +76,9 @@ public class EventWorkflowStateMachine {
     private final DomainEventPublisher eventPublisher;
     private final EventTaskService eventTaskService;
 
-    public Event transitionToState(String eventId, EventWorkflowState targetState, String organizerId) {
-        Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
+    public Event transitionToState(String eventCode, EventWorkflowState targetState, String organizerUsername) {
+        Event event = eventRepository.findByEventCode(eventCode)
+            .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventCode));
 
         EventWorkflowState currentState = event.getWorkflowState();
 
@@ -84,11 +103,6 @@ public class EventWorkflowStateMachine {
                 validateAllSpeakersConfirmed(event);
                 break;
 
-            case AGENDA_FINALIZED:
-                validateAgendaPublished(event);
-                validateEventDateInFuture(event, 14); // Must be at least 14 days before event
-                break;
-
             case EVENT_LIVE:
                 // Auto-triggered on event day
                 break;
@@ -104,19 +118,19 @@ public class EventWorkflowStateMachine {
 
         // Update state
         event.setWorkflowState(targetState);
-        event.setLastUpdatedBy(organizerId);
+        event.setUpdatedBy(organizerUsername);
         event.setUpdatedAt(Instant.now());
 
         Event savedEvent = eventRepository.save(event);
 
         // Publish state transition event (triggers task auto-creation)
         EventWorkflowTransitionEvent transitionEvent = new EventWorkflowTransitionEvent(
-            eventId, currentState, targetState, organizerId, Instant.now(), event
+            eventCode, currentState, targetState, organizerUsername, Instant.now(), event
         );
-        eventPublisher.publishEvent(transitionEvent);
+        eventPublisher.publish(transitionEvent);
 
         log.info("Event {} transitioned from {} to {} by organizer {}",
-                 eventId, currentState, targetState, organizerId);
+                 eventCode, currentState, targetState, organizerUsername);
 
         return savedEvent;
     }
@@ -146,7 +160,7 @@ public class EventWorkflowStateMachine {
 
         if (confirmedSpeakers < maxSlots) {
             throw new WorkflowValidationException(
-                "Not all slots have confirmed speakers",
+                "Minimum threshold not met",
                 Map.of("maxSlots", maxSlots, "confirmed", confirmedSpeakers)
             );
         }
@@ -192,6 +206,8 @@ withdrew (speaker drops out after accepting)
 
 **Note:** Slot assignment is NOT a speaker state. It's tracked by whether the session has timing assigned (`session.startTime != null`). The speaker reaches CONFIRMED when they are quality_reviewed AND their session has timing.
 
+**Note on `SLOT_ASSIGNED` enum value:** The enum value `SLOT_ASSIGNED` exists but is rejected by the workflow service — it was an early design artefact. Attempting to transition to `SLOT_ASSIGNED` throws `IllegalStateException("Invalid state transition")`.
+
 ### State Definitions
 
 | State | Description | Stored In | Notes |
@@ -203,7 +219,7 @@ withdrew (speaker drops out after accepting)
 | **declined** | Speaker declined invitation | speaker_pool.status | Speaker not available |
 | **content_submitted** | Title/abstract submitted | speaker_pool.status | Presentation details received |
 | **quality_reviewed** | Content approved by moderator | speaker_pool.status | Abstract meets quality standards |
-| **confirmed** | Quality reviewed AND session timing assigned | speaker_pool.status | Auto-confirmed when quality_reviewed AND session.startTime exists. Speaker fully confirmed, ready for publishing |
+| **confirmed** | Quality reviewed AND session timing assigned | speaker_pool.status | **Terminal state.** Auto-confirmed when quality_reviewed AND session.startTime exists. Speaker fully confirmed, ready for publishing. Any further transition throws `IllegalStateException`. |
 | **overflow** | Backup speaker (no slot available) | speaker_pool.status | Accepted but no slots left |
 | **withdrew** | Speaker dropped out after accepting | speaker_pool.status | Speaker cancelled commitment |
 
@@ -221,9 +237,10 @@ withdrew (speaker drops out after accepting)
   - Session timing assignment → checks if speaker is quality_reviewed → auto-confirms
 
 **Data Model:**
-- **speaker_pool**: Tracks workflow state (9 possible states: identified, contacted, ready, accepted, declined, content_submitted, quality_reviewed, confirmed, overflow, withdrew)
+- **speaker_pool**: Tracks workflow state (10 possible values: identified, contacted, ready, accepted, declined, content_submitted, quality_reviewed, confirmed, overflow, withdrew)
+  - **contentStatus** field tracks content review progress. Possible values: `null` (no content submitted), `"SUBMITTED"`, `"REVISION_NEEDED"` (set when content is rejected), `"APPROVED"`.
 - **sessions**: Stores presentation details AND timing (startTime, endTime, room)
-- **session_users**: Junction table linking speaker (username) to session
+- **session_users**: Junction table linking speaker (username) to session; `is_confirmed` is set to `true` on auto-confirmation
 - **speaker_pool.session_id**: FK to sessions table (links speaker to their session/slot)
 
 ### Implementation
@@ -296,7 +313,7 @@ public class SpeakerWorkflowService {
         speakerPoolRepository.save(speaker);
 
         // Publish workflow state change event
-        eventPublisher.publishEvent(new SpeakerWorkflowStateChangeEvent(
+        eventPublisher.publish(new SpeakerWorkflowStateChangeEvent(
             poolId, speaker.getEventId().toString(), previousState, newState, updatedBy
         ));
 
@@ -376,12 +393,16 @@ public class SpeakerWorkflowService {
 
 **Default Task Templates (7):**
 1. **Venue Booking**: Triggered at TOPIC_SELECTION, due 90 days before event
-2. **Partner Meeting**: Triggered at TOPIC_SELECTION, due same day as event
+2. **Partner Meeting Coordination**: Triggered at TOPIC_SELECTION, due same day as event
 3. **Moderator Assignment**: Triggered at TOPIC_SELECTION, due 14 days before event
-4. **Newsletter: Topic**: Triggered at TOPIC_SELECTION, due immediately
-5. **Newsletter: Speakers**: Triggered at AGENDA_PUBLISHED, due 30 days before event
-6. **Newsletter: Final**: Triggered at AGENDA_FINALIZED, due 14 days before event
-7. **Catering**: Triggered at AGENDA_FINALIZED, due 30 days before event
+4. **Newsletter: Topic Announcement**: Triggered at TOPIC_SELECTION, due immediately
+5. **Newsletter: Speaker Lineup**: Triggered at AGENDA_PUBLISHED, due 30 days before event
+6. **Newsletter: Final Agenda**: Triggered at AGENDA_PUBLISHED, due 14 days before event
+7. **Catering**: Triggered at AGENDA_PUBLISHED, due 30 days before event
+
+> **Note:** Template names match exactly what is seeded by the V22 Flyway migration. Default templates are immutable — update and delete operations on them throw an `IllegalStateException` (HTTP 400).
+
+> **Default template immutability:** Attempting to update or delete any default template (those seeded by migration) throws `IllegalStateException("Cannot modify/delete default template")`.
 
 **Custom Tasks:**
 Organizers can create custom tasks with:
@@ -396,7 +417,12 @@ Organizers can create custom tasks with:
 - id, name, trigger_state, due_date_type, due_date_offset_days, is_default, created_by_username
 
 **event_tasks** table:
-- id, event_id, template_id, task_name, trigger_state, due_date, assigned_organizer_username, status (todo/in_progress/completed), notes, completed_date, completed_by_username
+- id, event_id, template_id, task_name, trigger_state, due_date, assigned_organizer_username, status (`pending`/`todo`/`in_progress`/`completed`), notes, completed_date, completed_by_username
+
+**Two-phase task lifecycle:**
+- Tasks are created with `status="pending"` at event creation time (covering all future trigger states).
+- When an `EventWorkflowTransitionEvent` fires, tasks whose `trigger_state` matches the new state are activated: their status moves from `"pending"` → `"todo"`.
+- This ensures tasks are always pre-created (idempotent) and only become actionable when the event reaches the relevant state.
 
 ### Auto-Creation on Workflow Transitions
 
@@ -434,7 +460,7 @@ public class EventTaskService implements ApplicationListener<EventWorkflowTransi
             .triggerState(template.getTriggerState())
             .dueDate(dueDate)
             .assignedOrganizerUsername(template.getDefaultAssignee())
-            .status("todo")
+            .status("pending") // Tasks start as "pending"; activated to "todo" when event reaches trigger state
             .build();
 
         eventTaskRepository.save(task);
@@ -483,6 +509,12 @@ Organizers see tasks grouped by status:
 - **TODO**: Not started, sorted by due date (overdue highlighted in red)
 - **IN_PROGRESS**: Currently working on
 - **COMPLETED**: Finished tasks with completion notes
+
+**Critical tasks filter:** `getCriticalTasksForOrganizer()` returns only tasks that are overdue or due within the next 3 days. This is separate from the status-based grouping above.
+
+**Task reassignment:** `reassignTask(taskId, newOrganizerUsername)` allows changing the assigned organizer on any open task.
+
+**Task creation idempotency:** Calling `createTasksForEvent` twice for the same template/event pair does not create duplicate tasks. The creation guard prevents duplicates even if a workflow transition event is replayed.
 
 ## Slot Assignment Algorithm Service
 
@@ -583,9 +615,9 @@ public class QualityReviewService {
         // Notify moderator of pending review
         notificationService.notifyModeratorOfPendingReview(savedReview);
 
-        // Update speaker workflow state
+        // Update speaker workflow state to CONTENT_SUBMITTED (not yet reviewed)
         speakerWorkflowService.updateSpeakerWorkflowState(
-            sessionId, speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, speakerId
+            sessionId, speakerId, SpeakerWorkflowState.CONTENT_SUBMITTED, speakerId
         );
 
         return savedReview;
@@ -609,11 +641,12 @@ public class QualityReviewService {
             // Notify speaker of required changes
             notificationService.notifySpeakerOfRequiredChanges(review);
         } else if (request.getStatus() == QualityReviewStatus.APPROVED) {
-            // Move speaker to final agenda state
+            // Moderator approval transitions speaker to QUALITY_REVIEWED;
+            // auto-confirmation to CONFIRMED happens when session timing is also assigned.
             speakerWorkflowService.updateSpeakerWorkflowState(
                 review.getSessionId(),
                 review.getSpeakerId(),
-                SpeakerWorkflowState.FINAL_AGENDA,
+                SpeakerWorkflowState.QUALITY_REVIEWED,
                 moderatorId
             );
         }
@@ -622,6 +655,16 @@ public class QualityReviewService {
     }
 }
 ```
+
+### Quality Review — Constraints
+
+**Rejection requires non-empty feedback:** Calling `rejectContent(..., null, ...)` or with a blank feedback string throws `IllegalArgumentException("Feedback is required when rejecting content")` (HTTP 400).
+
+**`content_submissions` table:** Stores the review record. Key fields populated on rejection/approval:
+- `reviewer_feedback` — the moderator's written feedback
+- `reviewed_by` — moderator username
+- `reviewed_at` — review timestamp
+- `submission_version` — version counter for resubmissions
 
 ## Overflow Management & Voting System
 
@@ -734,6 +777,16 @@ public class OverflowManagementService {
     }
 }
 ```
+
+## Archival Cleanup
+
+When an event transitions to `ARCHIVED`, `EventArchivalCleanupService.cleanup(eventId, eventCode)` runs automatically. It performs three steps:
+
+1. **Open task cancellation** — all open tasks for the event are bulk-cancelled. This step is mandatory; failure aborts the cleanup.
+2. **Waitlist registration cancellation** — best-effort; failures are logged but do not propagate.
+3. **Notification dismissal** — best-effort; failures are logged but do not propagate.
+
+**Idempotency:** The cleanup is idempotent and safe to call multiple times. A second call for an already-archived event produces no side-effects and no exceptions.
 
 ## Related Documentation
 
