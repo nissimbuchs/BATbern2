@@ -129,3 +129,5 @@ skip_commit_scopes:
   - "ci"
   - "security"   # OWASP/ZAP remediations — technical, not user-facing behaviour
   - "auth"       # auth wiring fixes — rarely need PRD/user-guide updates
+  - "blob-selector"  # UI animation/interaction — not a business rule
+  - "watch"          # WebSocket resilience — technical fix
