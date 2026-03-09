@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,12 +49,54 @@ jobs:
             - Performance considerations
             - Security concerns
             - Test coverage
-            
+            - Documentation drift: if this PR modifies business logic, scheduler
+              behaviour, state machine transitions, or API contracts, check whether
+              the relevant docs in docs/architecture/, docs/prd/, or docs/api/ are
+              included in the diff. If not, note which docs likely need updating and why.
+
             Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
-          
+
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
           claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+  doc-drift-check:
+    name: Doc Drift Check
+    # Skip for dependabot and for auto-resolver branches (they're docs-only by design)
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      !startsWith(github.head_ref, 'docs/drift-fix-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: pip install pyyaml --quiet
+
+      - name: Check for doc drift
+        id: drift
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          MAPPINGS_FILE: .github/doc-drift-mappings.yml
+        run: |
+          chmod +x .github/scripts/doc-drift-pr-check.sh
+          .github/scripts/doc-drift-pr-check.sh
+
+      - name: Comment on PR
+        if: failure() && steps.drift.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file /tmp/drift-pr-comment.md
 

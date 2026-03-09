@@ -36,6 +36,7 @@ Each release includes:
 **Already Delivered (v1.2.x)**:
 - ✅ Story 9.1: JWT magic link authentication — RS256 signed, HTTP-only cookie, backward compatible with Epic 6 tokens
 - ✅ Epic 10 (partial): Admin page with Event Types, Import Data, Task Templates, and Email Templates tabs (in progress)
+- ✅ Post-event 14-day homepage window: public homepage shows the most recent event for 14 days after it ends (archive-style view — timetable and speakers visible, no registration/logistics). After 14 days a nightly scheduler auto-archives the event.
 
 **Remaining Planned Features — Epic 9**:
 - 📋 Story 9.2: Auto-create/extend Cognito accounts on invitation acceptance (SPEAKER role assignment)

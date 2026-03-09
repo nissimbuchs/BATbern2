@@ -12,8 +12,21 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardActionArea, Typography, Box, Chip, Avatar } from '@mui/material';
-import { Business as BusinessIcon, Email as EmailIcon } from '@mui/icons-material';
+import {
+  Card,
+  CardContent,
+  CardActionArea,
+  Typography,
+  Box,
+  Chip,
+  Avatar,
+  Tooltip,
+} from '@mui/material';
+import {
+  Business as BusinessIcon,
+  Email as EmailIcon,
+  Cloud as CloudIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { User, Role } from '@/types/user.types';
 import { ROLE_ICONS } from '@/types/user.types';
@@ -95,13 +108,21 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
               sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}
             >
               {/* Status Badge */}
-              <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Chip
                   label={user.active ? t('status.active') : t('status.inactive')}
                   size="small"
                   color={user.active ? 'success' : 'default'}
                   sx={{ height: 20, fontSize: '0.7rem' }}
                 />
+                {user.cognitoUserId && (
+                  <Tooltip title={t('cognito.tooltip', { id: user.cognitoUserId })}>
+                    <CloudIcon
+                      sx={{ fontSize: 14, color: 'info.main' }}
+                      aria-label={t('cognito.linked')}
+                    />
+                  </Tooltip>
+                )}
               </Box>
 
               {/* User Name */}

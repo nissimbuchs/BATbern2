@@ -56,9 +56,6 @@ const HomePage = () => {
   // Check if we're in archive mode (Story 4.2)
   const isArchiveMode = location.pathname.startsWith('/archive');
 
-  // Event-specific photos for archive detail view (Story 10.21 — AC7)
-  const { data: eventPhotos } = useEventPhotos(eventCode ?? '', isArchiveMode);
-
   // Check if we're in preview mode
   const isPreview = searchParams.get('preview') === 'true';
   const previewPhase = searchParams.get('phase') || 'speakers';
@@ -89,6 +86,10 @@ const HomePage = () => {
   // Computed early (with optional chaining) so it can gate the registration hook below.
   const isArchivedState =
     event?.workflowState === 'ARCHIVED' || event?.workflowState === 'EVENT_COMPLETED';
+
+  // Event-specific photos for archive/completed view (Story 10.21 — AC7)
+  // Enabled for archive pages and EVENT_COMPLETED/ARCHIVED on homepage
+  const { data: eventPhotos } = useEventPhotos(eventCode ?? '', isArchiveMode || isArchivedState);
 
   // AC2/AC4: Registration status banner (Story 10.10)
   // Hook returns undefined immediately for unauthenticated users — no API call made (AC8)
@@ -326,12 +327,19 @@ const HomePage = () => {
           </section>
         )}
 
-        {/* Testimonials / recent photos marquee — homepage & event pages only */}
-        {!isArchiveDisplay && (
+        {/* Testimonials / recent photos marquee + partner marquee:
+            - Normal homepage: full section (photo row + partner row)
+            - EVENT_COMPLETED homepage: partner row always + recent-photos row as fallback
+              (skipPhotoRow when event already has its own photos shown above) */}
+        {!isArchiveDisplay ? (
           <div className="mt-16 pb-12">
             <TestimonialSection />
           </div>
-        )}
+        ) : isArchivedState && !isArchiveMode ? (
+          <div className="mt-8 pb-12">
+            <TestimonialSection skipPhotoRow={!!(eventPhotos && eventPhotos.length > 0)} />
+          </div>
+        ) : null}
 
         {/* Newsletter Subscribe Widget — footer */}
         <div className="border-t pt-4 pb-8">

@@ -268,5 +268,10 @@
     "removeTooltip": "Stizzar foto",
     "verified": "Verificà",
     "memberSince": "Commemher dapi {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito collià",
+    "notLinked": "Nagin conto Cognito",
+    "tooltip": "ID Cognito: {{id}}"
   }
 }

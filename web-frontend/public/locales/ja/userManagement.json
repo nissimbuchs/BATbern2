@@ -268,5 +268,10 @@
     "removeTooltip": "写真を削除",
     "verified": "認証済み",
     "memberSince": "{{date}}からのメンバー"
+  },
+  "cognito": {
+    "linked": "Cognito連携済み",
+    "notLinked": "Cognitoアカウントなし",
+    "tooltip": "Cognito ID: {{id}}"
   }
 }

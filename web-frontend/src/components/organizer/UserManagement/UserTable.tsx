@@ -28,8 +28,13 @@ import {
   Box,
   Typography,
   TableSortLabel,
+  Tooltip,
 } from '@mui/material';
-import { MoreVert as MoreVertIcon, Person as PersonIcon } from '@mui/icons-material';
+import {
+  MoreVert as MoreVertIcon,
+  Person as PersonIcon,
+  Cloud as CloudIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { User, Role } from '@/types/user.types';
 import { ROLE_ICONS } from '@/types/user.types';
@@ -184,6 +189,14 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                   <Typography variant="body2">
                     {user.firstName} {user.lastName}
                   </Typography>
+                  {user.cognitoUserId && (
+                    <Tooltip title={t('cognito.tooltip', { id: user.cognitoUserId })}>
+                      <CloudIcon
+                        sx={{ fontSize: 16, color: 'info.main' }}
+                        aria-label={t('cognito.linked')}
+                      />
+                    </Tooltip>
+                  )}
                 </Box>
               </TableCell>
               <TableCell>

@@ -1,0 +1,64 @@
+name: Doc Drift Auditor
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # Monday 08:00 UTC
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'How far back to scan (e.g. "7 days ago", "14 days ago")'
+        required: false
+        default: '7 days ago'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for git log
+
+      - name: Install dependencies
+        run: pip install pyyaml --quiet
+
+      - name: Run audit
+        id: audit
+        env:
+          SINCE: ${{ github.event.inputs.since || '7 days ago' }}
+          MAPPINGS_FILE: .github/doc-drift-mappings.yml
+        run: |
+          chmod +x .github/scripts/doc-drift-weekly-audit.sh
+          .github/scripts/doc-drift-weekly-audit.sh
+          GAPS_COUNT=$(tail -1 /tmp/doc-drift-gaps.txt)
+          echo "gaps_count=$GAPS_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Build issue body
+        if: steps.audit.outputs.gaps_count != '0'
+        run: |
+          python3 .github/scripts/build-issue-body.py \
+            --gaps-file /tmp/doc-drift-gaps.txt \
+            --since "${{ github.event.inputs.since || '7 days ago' }}" \
+            --date "$(date +%Y-%m-%d)" \
+            > /tmp/issue-body.md
+          echo "--- Issue body preview ---"
+          cat /tmp/issue-body.md
+
+      - name: Create GitHub Issue
+        if: steps.audit.outputs.gaps_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "📋 Doc Drift Report — week of $(date +%Y-%m-%d)" \
+            --body-file /tmp/issue-body.md \
+            --label "doc-drift" \
+            --assignee "${{ github.repository_owner }}"
+
+      - name: All clear
+        if: steps.audit.outputs.gaps_count == '0'
+        run: echo "✅ No doc drift detected this week."
