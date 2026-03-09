@@ -114,3 +114,18 @@ skip_commit_types:
 audit_commit_types:
   - "feat"
   - "fix"
+
+# ── Commit scopes that are ALWAYS skipped ────────────────────────────────────
+# Scopes that are never business-rule changes — infra wiring, test fixes,
+# build tooling, UI polish, code-review cleanup, etc.
+skip_commit_scopes:
+  - "infra"
+  - "test"
+  - "tests"
+  - "build"
+  - "bruno"
+  - "review"
+  - "presentation"
+  - "ci"
+  - "security"   # OWASP/ZAP remediations — technical, not user-facing behaviour
+  - "auth"       # auth wiring fixes — rarely need PRD/user-guide updates

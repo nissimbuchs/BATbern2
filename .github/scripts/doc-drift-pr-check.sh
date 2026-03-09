@@ -16,8 +16,9 @@ if echo "$PR_TITLE" | grep -q "\[no-doc\]"; then
   exit 0
 fi
 
-# ── 2. Commit type filter ────────────────────────────────────────────────────
+# ── 2. Commit type + scope filter ───────────────────────────────────────────
 commit_type=$(echo "$PR_TITLE" | sed -E 's/^([a-z]+)[(:!].*/\1/' | grep -E '^[a-z]+$' || echo "unknown")
+commit_scope=$(echo "$PR_TITLE" | sed -E 's/^[a-z]+\(([^)]+)\).*/\1/' | grep -vE '^[a-z]+[:!]' || echo "")
 
 SKIP_TYPES=$(python3 -c "
 import yaml
@@ -25,8 +26,19 @@ data = yaml.safe_load(open('$MAPPINGS_FILE'))
 print('|'.join(data.get('skip_commit_types', [])))
 ")
 
+SKIP_SCOPES=$(python3 -c "
+import yaml
+data = yaml.safe_load(open('$MAPPINGS_FILE'))
+print('|'.join(data.get('skip_commit_scopes', [])))
+")
+
 if [[ -n "$SKIP_TYPES" ]] && echo "$commit_type" | grep -qE "^($SKIP_TYPES)$"; then
   echo "✅ Commit type '$commit_type' is in skip list — doc drift check skipped."
+  exit 0
+fi
+
+if [[ -n "$SKIP_SCOPES" && -n "$commit_scope" ]] && echo "$commit_scope" | grep -qE "^($SKIP_SCOPES)$"; then
+  echo "✅ Commit scope '$commit_scope' is in skip list — doc drift check skipped."
   exit 0
 fi
 

@@ -11,11 +11,17 @@ SINCE="${SINCE:-7 days ago}"
 
 echo "🔍 Scanning commits since: $SINCE"
 
-# Load skip types
+# Load skip types and scopes
 SKIP_TYPES=$(python3 -c "
 import yaml
 data = yaml.safe_load(open('$MAPPINGS_FILE'))
 print('|'.join(data.get('skip_commit_types', [])))
+")
+
+SKIP_SCOPES=$(python3 -c "
+import yaml
+data = yaml.safe_load(open('$MAPPINGS_FILE'))
+print('|'.join(data.get('skip_commit_scopes', [])))
 ")
 
 # Load all source patterns
@@ -41,6 +47,14 @@ while IFS= read -r sha; do
 
   # Skip non-auditable types
   if [[ -n "$SKIP_TYPES" ]] && echo "$commit_type" | grep -qE "^($SKIP_TYPES)$"; then
+    continue
+  fi
+
+  # Extract scope e.g. feat(infra): → infra
+  commit_scope=$(echo "$msg" | sed -E 's/^[a-z]+\(([^)]+)\).*/\1/' | grep -vE '^[a-z]+[:!]' || echo "")
+
+  # Skip non-auditable scopes
+  if [[ -n "$SKIP_SCOPES" && -n "$commit_scope" ]] && echo "$commit_scope" | grep -qE "^($SKIP_SCOPES)$"; then
     continue
   fi
 
