@@ -132,7 +132,11 @@ public class EmailService {
                 List<CapturedEmail.AttachmentInfo> attachmentInfos = attachments.stream()
                     .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
                     .toList();
-                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                java.util.UUID emailId = localEmailCapture.capture(
+                        to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                for (EmailAttachment attachment : attachments) {
+                    localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
+                }
             } else {
                 log.info("Would send email with {} attachment(s) to: {}, subject: {}",
                         attachments.size(), to, subject);

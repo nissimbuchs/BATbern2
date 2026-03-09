@@ -24,11 +24,17 @@ export interface CapturedEmail {
   }>;
 }
 
-async function fetchFromService(baseUrl: string): Promise<CapturedEmail[]> {
+/** Frontend-only: CapturedEmail annotated with the service base URL it came from. */
+export interface CapturedEmailWithSource extends CapturedEmail {
+  _sourceBaseUrl: string;
+}
+
+async function fetchFromService(baseUrl: string): Promise<CapturedEmailWithSource[]> {
   try {
     const response = await fetch(`${baseUrl}/dev/emails`);
     if (!response.ok) return [];
-    return response.json();
+    const emails: CapturedEmail[] = await response.json();
+    return emails.map((e) => ({ ...e, _sourceBaseUrl: baseUrl }));
   } catch {
     // Service may not be running — silently return empty
     return [];
@@ -36,7 +42,7 @@ async function fetchFromService(baseUrl: string): Promise<CapturedEmail[]> {
 }
 
 export const devEmailService = {
-  fetchAll: async (): Promise<CapturedEmail[]> => {
+  fetchAll: async (): Promise<CapturedEmailWithSource[]> => {
     const [emsEmails, pcsEmails] = await Promise.all([
       fetchFromService(EMS_BASE),
       fetchFromService(PCS_BASE),
@@ -46,6 +52,10 @@ export const devEmailService = {
       (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
     );
   },
+
+  /** Returns the direct download URL for an attachment (opens in browser / triggers save). */
+  attachmentDownloadUrl: (email: CapturedEmailWithSource, filename: string): string =>
+    `${email._sourceBaseUrl}/dev/emails/${email.id}/attachments/${filename}`,
 
   clearAll: async (): Promise<void> => {
     await Promise.all([

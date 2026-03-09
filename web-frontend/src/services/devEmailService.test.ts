@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { devEmailService } from './devEmailService';
+import { devEmailService, type CapturedEmailWithSource } from './devEmailService';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -39,7 +39,7 @@ describe('devEmailService', () => {
   beforeEach(() => vi.clearAllMocks());
 
   describe('fetchAll', () => {
-    it('merges emails from EMS and PCS, sorted newest first', async () => {
+    it('merges emails from EMS and PCS, sorted newest first, tagged with source URL', async () => {
       mockFetch
         .mockResolvedValueOnce({ ok: true, json: async () => [EMS_EMAIL] }) // EMS
         .mockResolvedValueOnce({ ok: true, json: async () => [PCS_EMAIL] }); // PCS
@@ -51,7 +51,9 @@ describe('devEmailService', () => {
       expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('8004/dev/emails'));
       // PCS email is newer → should come first
       expect(result[0].id).toBe('pcs-1');
+      expect(result[0]._sourceBaseUrl).toContain('8004');
       expect(result[1].id).toBe('ems-1');
+      expect(result[1]._sourceBaseUrl).toContain('8002');
     });
 
     it('returns only EMS emails when PCS is unavailable', async () => {
@@ -116,6 +118,19 @@ describe('devEmailService', () => {
         .mockRejectedValueOnce(new Error('Connection refused')); // PCS down
 
       await expect(devEmailService.clearAll()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('attachmentDownloadUrl', () => {
+    it('builds download URL from source base URL', () => {
+      const email: CapturedEmailWithSource = {
+        ...PCS_EMAIL,
+        _sourceBaseUrl: 'http://localhost:8004',
+      };
+
+      const url = devEmailService.attachmentDownloadUrl(email, 'partner-meeting.ics');
+
+      expect(url).toBe('http://localhost:8004/dev/emails/pcs-1/attachments/partner-meeting.ics');
     });
   });
 
