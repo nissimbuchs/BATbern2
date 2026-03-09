@@ -17,6 +17,20 @@ vi.mock('@/services/presentationService', () => ({
   getPresentationSettings: vi.fn(),
 }));
 
+vi.mock('@/contexts/useConfig', () => ({
+  useConfig: () => ({ apiBaseUrl: 'http://localhost:8000' }),
+}));
+
+vi.mock('@stomp/stompjs', () => ({
+  Client: class {
+    activate = vi.fn();
+    deactivate = vi.fn(() => Promise.resolve());
+    subscribe = vi.fn();
+  },
+}));
+
+vi.mock('sockjs-client', () => ({ default: vi.fn() }));
+
 import {
   getPresentationData,
   getPublicOrganizers,

@@ -422,11 +422,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
       {/* AI Assist Drawer (Story 10.16) */}
       <AiAssistDrawer
         eventCode={eventCode}
-        topicTitle={topic?.title ?? ''}
-        topicCategory={topic?.category ?? ''}
-        eventTitle={event.title}
-        eventDate={eventDate ?? undefined}
-        eventDescription={event.description ?? undefined}
         open={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}
         onDescriptionGenerated={() => {

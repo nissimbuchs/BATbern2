@@ -100,7 +100,7 @@ public interface EventTaskRepository extends JpaRepository<EventTask, UUID> {
      * @param eventId the event UUID
      * @return number of tasks updated
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE EventTask t SET t.status = 'cancelled', t.cancelledReason = 'Event archived', "
             + "t.cancelledAt = CURRENT_TIMESTAMP WHERE t.eventId = :eventId "
             + "AND t.status NOT IN ('completed', 'cancelled')")

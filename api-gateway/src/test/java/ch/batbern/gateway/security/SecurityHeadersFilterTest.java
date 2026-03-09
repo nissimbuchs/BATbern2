@@ -196,6 +196,16 @@ class SecurityHeadersFilterTest {
         verify(response).setHeader(eq("Permissions-Policy"), anyString());
     }
 
+    @Test
+    @DisplayName("should_setCORPHeader_when_filterExecuted")
+    void should_setCORPHeader_when_filterExecuted() throws ServletException, IOException {
+        // When: Filter is executed
+        securityHeadersFilter.doFilter(request, response, filterChain);
+
+        // Then: Cross-Origin-Resource-Policy header should be set to same-site
+        verify(response).setHeader("Cross-Origin-Resource-Policy", "same-site");
+    }
+
     // ========================================
     // Filter Chain Tests
     // ========================================

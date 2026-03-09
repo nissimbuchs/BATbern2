@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Voir l'utilisateur {{name}}",
     "headers": {
-      "roles": "Rôles"
+      "roles": "Rôles",
+      "company": "Entreprise"
     },
     "empty": "Aucun utilisateur trouvé"
   },

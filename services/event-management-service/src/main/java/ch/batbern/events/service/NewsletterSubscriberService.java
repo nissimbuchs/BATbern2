@@ -194,6 +194,21 @@ public class NewsletterSubscriberService {
         return subscriberRepository.findByUnsubscribedAtIsNull();
     }
 
+    /**
+     * Unsubscribe a subscriber by email address (Story 10.17 — inbound email).
+     * Silent no-op if email not found or already unsubscribed (anti-enumeration).
+     */
+    @Transactional
+    public void unsubscribeByEmail(String email) {
+        subscriberRepository.findByEmail(email)
+                .filter(sub -> sub.getUnsubscribedAt() == null)
+                .ifPresent(sub -> {
+                    sub.setUnsubscribedAt(Instant.now());
+                    subscriberRepository.save(sub);
+                    log.info("Unsubscribed newsletter subscriber via inbound email: {}", sub.getEmail());
+                });
+    }
+
     /** Maps a subscriber entity to its response DTO. */
     public SubscriberResponse toResponse(NewsletterSubscriber sub) {
         return SubscriberResponse.builder()

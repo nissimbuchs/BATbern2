@@ -480,4 +480,18 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    @DisplayName("GET /companies/search - should return 400 when limit param is not an integer")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldReturn400WhenLimitParamIsNotAnInteger() throws Exception {
+        // ZAP finding: ?limit=c:/Windows/system.ini caused 500 — must return 400
+        mockMvc.perform(get("/api/v1/companies/search")
+                        .param("query", "Swiss")
+                        .param("limit", "not-an-integer")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("limit")));
+    }
 }

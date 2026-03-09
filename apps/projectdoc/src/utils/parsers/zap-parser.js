@@ -448,7 +448,8 @@ export class ZapParser {
       scans: scanNames,
       categories,
       totals: { pass: totalPass, warn: totalWarn, fail: totalFail,
-                rulesPerScan: scans[0] ? Object.keys(scans[0].rules).length : 0 }
+                rulesPerScan: scans[0] ? Object.keys(scans[0].rules).length : 0 },
+      fromLogs: true   // flag so template/debug can distinguish log-based vs JSON-based matrix
     };
   }
 }

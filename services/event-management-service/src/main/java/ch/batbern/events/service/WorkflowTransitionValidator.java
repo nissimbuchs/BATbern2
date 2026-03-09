@@ -70,7 +70,8 @@ public class WorkflowTransitionValidator {
             )),
             Map.entry(EventWorkflowState.AGENDA_PUBLISHED, EnumSet.of(
                     EventWorkflowState.AGENDA_PUBLISHED,  // Idempotent
-                    EventWorkflowState.EVENT_LIVE         // Auto-transition via cron when event date reached (daily 00:01 Bern time)
+                    // Auto-transition via cron when event date reached (daily 00:01 Bern time)
+                    EventWorkflowState.EVENT_LIVE
             )),
             Map.entry(EventWorkflowState.EVENT_LIVE, EnumSet.of(
                     EventWorkflowState.EVENT_LIVE,        // Idempotent

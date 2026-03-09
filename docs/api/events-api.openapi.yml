@@ -4097,6 +4097,135 @@ paths:
       security:
         - BearerAuth: []
 
+  # ── AI Prompt Management Endpoints (Story 10.x) ──────────────────────────────
+
+  /ai-prompts:
+    get:
+      tags:
+        - AI Prompts
+      summary: List all AI prompts
+      description: |
+        Returns all three organizer-editable OpenAI prompts (event_description, theme_image, abstract_quality).
+
+        **Authorization**: ORGANIZER role required.
+      operationId: listAiPrompts
+      responses:
+        '200':
+          description: List of AI prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}:
+    get:
+      tags:
+        - AI Prompts
+      summary: Get a single AI prompt
+      description: |
+        Returns a single AI prompt by its key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: getAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AI prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - AI Prompts
+      summary: Update an AI prompt
+      description: |
+        Updates the prompt text for the given key.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: updateAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiPromptRequest'
+      responses:
+        '200':
+          description: Updated prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+  /ai-prompts/{promptKey}/reset:
+    post:
+      tags:
+        - AI Prompts
+      summary: Reset an AI prompt to its default text
+      description: |
+        Copies the original default prompt text back to prompt_text.
+
+        **Authorization**: ORGANIZER role required.
+      operationId: resetAiPrompt
+      parameters:
+        - name: promptKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Prompt after reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPromptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
   # ── Analytics Dashboard Endpoints (Story 10.5) ───────────────────────────────
 
   /analytics/overview:
@@ -4520,7 +4649,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: generateEventDescription
-      summary: Generate AI event description (GPT-4o, German, 150-200 words)
+      summary: Generate AI event description (GPT-4o, German, 150-200 words). Looks up event/topic data from eventCode.
       security:
         - BearerAuth: []
       parameters:
@@ -4530,12 +4659,6 @@ paths:
           schema:
             type: string
           example: "BATbern56"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AiDescriptionRequest'
       responses:
         '200':
           description: Generated description
@@ -4558,7 +4681,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: generateThemeImage
-      summary: Generate AI theme image (DALL-E 3), upload to S3
+      summary: Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode.
       security:
         - BearerAuth: []
       parameters:
@@ -4568,12 +4691,12 @@ paths:
           schema:
             type: string
           example: "BATbern56"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AiThemeImageRequest'
+        - name: seed
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional seed string for cache-busting a re-generation
       responses:
         '200':
           description: Generated theme image URL and S3 key
@@ -4630,7 +4753,7 @@ paths:
     post:
       tags: [AI Assist]
       operationId: analyzeAbstract
-      summary: Analyze speaker abstract quality (GPT-4o)
+      summary: Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract.
       security:
         - BearerAuth: []
       parameters:
@@ -4639,12 +4762,7 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnalyzeAbstractRequest'
+            format: uuid
       responses:
         '200':
           description: Abstract analysis result
@@ -5519,39 +5637,11 @@ components:
         aiContentEnabled:
           type: boolean
 
-    AiDescriptionRequest:
-      type: object
-      required: [topicTitle, topicCategory]
-      properties:
-        topicTitle:
-          type: string
-        topicCategory:
-          type: string
-        eventTitle:
-          type: string
-          description: The specific session/event title (e.g. "Importance of DevOps in vibe coding")
-        eventDate:
-          type: string
-          format: date
-          description: The event date (ISO 8601, e.g. 2026-04-04)
-
     AiDescriptionResponse:
       type: object
       properties:
         description:
           type: string
-
-    AiThemeImageRequest:
-      type: object
-      required: [topicTitle, topicCategory]
-      properties:
-        topicTitle:
-          type: string
-        topicCategory:
-          type: string
-        eventTitle:
-          type: string
-          description: The specific session/event title for a more accurate image
 
     AiThemeImageResponse:
       type: object
@@ -5568,15 +5658,6 @@ components:
         imageUrl:
           type: string
           description: "CloudFront URL of the AI-generated image to persist on the event"
-
-    AnalyzeAbstractRequest:
-      type: object
-      required: [abstract]
-      properties:
-        abstract:
-          type: string
-        speakerName:
-          type: string
 
     AbstractAnalysisResponse:
       type: object
@@ -6068,6 +6149,45 @@ components:
           nullable: true
           description: Updated layout key (null = standalone)
           maxLength: 100
+
+    # ── AI Prompt Schemas (Story 10.x) ───────────────────────────────────────
+
+    AiPromptResponse:
+      type: object
+      description: Organizer-editable OpenAI prompt configuration
+      required:
+        - promptKey
+        - displayName
+        - promptText
+        - defaultText
+        - updatedAt
+      properties:
+        promptKey:
+          type: string
+          description: Prompt identifier (event_description, theme_image, abstract_quality)
+        displayName:
+          type: string
+          description: Human-readable name shown in Admin UI
+        promptText:
+          type: string
+          description: Current prompt text (editable by organizer)
+        defaultText:
+          type: string
+          description: Original default prompt text (used to reset)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    UpdateAiPromptRequest:
+      type: object
+      description: Request to update an AI prompt's text
+      required:
+        - promptText
+      properties:
+        promptText:
+          type: string
+          description: New prompt text
 
     # ── Partner Analytics Schemas (Story 8.1) ────────────────────────────────
 

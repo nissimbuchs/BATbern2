@@ -27,6 +27,12 @@ export interface EventManagementStackProps extends cdk.StackProps {
   alarmTopic?: sns.ITopic;
   /** When true, injects AI_ENABLED=true and the OpenAI key into the container (Story 10.16). */
   aiEnabled?: boolean;
+  /** Story 10.17: SQS queue URL for inbound email processing. */
+  inboundEmailQueueUrl?: string;
+  /** Story 10.17: S3 bucket name for raw inbound emails. */
+  inboundEmailBucketName?: string;
+  /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
+  watchJwtSecret?: secretsmanager.ISecret;
 }
 
 /**
@@ -86,13 +92,19 @@ export class EventManagementStack extends cdk.Stack {
           }),
           // Story 10.16: AI content generation feature flag
           ...(props.aiEnabled && { AI_ENABLED: 'true' }),
+          // Story 10.17: Inbound email processing via SQS
+          ...(props.inboundEmailQueueUrl && {
+            AWS_INBOUND_EMAIL_QUEUE_URL: props.inboundEmailQueueUrl,
+            AWS_INBOUND_EMAIL_ENABLED: 'true',
+          }),
+          ...(props.inboundEmailBucketName && {
+            AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
+          }),
         },
-        // Story 10.16: Inject OpenAI API key from Secrets Manager
-        ...(openAiSecret && {
-          additionalSecrets: {
-            OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret),
-          },
-        }),
+        additionalSecrets: {
+          ...(openAiSecret && { OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret) }),
+          ...(props.watchJwtSecret && { WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
+        },
       },
       cluster: props.cluster,
       vpc: props.vpc,
@@ -108,6 +120,9 @@ export class EventManagementStack extends cdk.Stack {
     // Grant Secrets Manager read access for OpenAI key to the ECS execution role (Story 10.16)
     if (openAiSecret) {
       openAiSecret.grantRead(this.service.taskDefinition.executionRole!);
+    }
+    if (props.watchJwtSecret) {
+      props.watchJwtSecret.grantRead(this.service.taskDefinition.executionRole!);
     }
 
     // Override desiredCount for Event Management specifically (3 tasks for HA + load capacity)

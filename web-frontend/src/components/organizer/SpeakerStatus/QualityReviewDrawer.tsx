@@ -144,14 +144,11 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
   const handleAnalyze = () => {
     setAiErrorMessage(null);
-    analysisMutation.mutate(
-      { abstract: abstract, speakerName: speaker?.speakerName },
-      {
-        onError: (err) => {
-          setAiErrorMessage(err.message);
-        },
-      }
-    );
+    analysisMutation.mutate(undefined, {
+      onError: (err) => {
+        setAiErrorMessage(err.message);
+      },
+    });
   };
 
   const handleCopyShortened = () => {

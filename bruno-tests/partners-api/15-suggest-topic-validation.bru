@@ -1,0 +1,55 @@
+meta {
+  name: Suggest Topic - Title Too Long (400)
+  type: http
+  seq: 15
+}
+
+docs {
+  POST /partners/topics - validation: title exceeds max length.
+  TopicController @ /api/v1/partners/topics
+}
+
+post {
+  url: {{baseUrl}}/partners/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. This title is way too long.",
+    "description": "Test description"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 when title is too long", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error details", function() {
+    const body = res.getBody();
+    expect(body).to.exist;
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

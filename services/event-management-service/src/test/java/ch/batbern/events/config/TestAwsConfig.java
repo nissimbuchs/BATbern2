@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -130,5 +131,17 @@ public class TestAwsConfig {
         EmailService mockEmailService = Mockito.mock(EmailService.class);
         // sendEmail is void, no need to configure
         return mockEmailService;
+    }
+
+    /**
+     * Mock SqsAsyncClient for testing (Story 10.17).
+     * spring-cloud-aws-starter-sqs auto-configures SqsAsyncClient which requires
+     * real AWS credentials. This mock prevents integration test startup failures
+     * when no AWS SQS is configured in the test environment.
+     */
+    @Bean
+    @Primary
+    public SqsAsyncClient sqsAsyncClient() {
+        return Mockito.mock(SqsAsyncClient.class);
     }
 }

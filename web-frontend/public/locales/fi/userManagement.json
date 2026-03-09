@@ -19,7 +19,8 @@
   "table": {
     "viewUser": "Näytä käyttäjä {{name}}",
     "headers": {
-      "roles": "Roolit"
+      "roles": "Roolit",
+      "company": "Yritys"
     },
     "empty": "Käyttäjiä ei löydy"
   },

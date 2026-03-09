@@ -91,7 +91,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/partners").permitAll()
                 // Story 8.2: Partner Topic Suggestions & Voting (AC6 — role-based access)
                 .requestMatchers(HttpMethod.GET, "/api/v1/partners/topics").hasAnyRole("PARTNER", "ORGANIZER")
-                .requestMatchers(HttpMethod.POST, "/api/v1/partners/topics").hasRole("PARTNER")
+                .requestMatchers(HttpMethod.POST, "/api/v1/partners/topics").hasAnyRole("PARTNER", "ORGANIZER")
                 .requestMatchers(HttpMethod.POST, "/api/v1/partners/topics/*/vote").hasRole("PARTNER")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/partners/topics/*/vote").hasRole("PARTNER")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/topics/*").hasAnyRole("PARTNER", "ORGANIZER")
