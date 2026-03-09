@@ -124,6 +124,7 @@ As a **speaker**, I want to click a magic link that logs me in automatically wit
 - Backend verifies JWT signature, expiration, and SPEAKER role claim
 
 **Testing:**
+- Integration tests location: `services/event-management-service/src/test/java` (Story 9.1 is implemented in `event-management-service`, not `speaker-coordination-service`)
 - Integration tests: JWT generation, validation, expiration handling
 - E2E tests: Magic link click-through flow, token refresh
 - Security tests: Invalid signature, expired token, tampered claims
@@ -375,6 +376,12 @@ Access Granted (authenticated, user account, role-based)
 ## Testing Strategy
 
 ### Integration Tests
+
+**Test location by story:**
+- Story 9.1 (JWT magic link): `services/event-management-service/src/test/java` — `MagicLinkService`, `SpeakerMagicLoginController` live in `event-management-service`
+- Stories 9.2–9.5 (account creation, dual auth, migration, navigation): location TBD per story implementation
+
+**Scenarios:**
 - JWT generation and validation
 - Cognito user creation/update
 - Role management (add/remove roles)
@@ -398,6 +405,15 @@ Access Granted (authenticated, user account, role-based)
 - Role claim tampering prevention
 - Cookie security attributes (HTTP-only, Secure, SameSite)
 - Password complexity enforcement
+
+### Operational Readiness
+
+The `speaker-coordination-service` exposes standard Spring Boot Actuator endpoints verified by existing integration tests (`HealthControllerIntegrationTest`):
+
+- `GET /actuator/health` → HTTP 200, `$.status == "UP"`
+- `GET /actuator/info` → HTTP 200
+
+These are not Epic 9 business-rule tests; they confirm basic service liveness and are inherited from the service foundation (Story 5.4).
 
 ---
 
