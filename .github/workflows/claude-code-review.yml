@@ -64,7 +64,10 @@ jobs:
 
   doc-drift-check:
     name: Doc Drift Check
-    if: github.actor != 'dependabot[bot]'
+    # Skip for dependabot and for auto-resolver branches (they're docs-only by design)
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      !startsWith(github.head_ref, 'docs/drift-fix-')
     runs-on: ubuntu-latest
     permissions:
       contents: read
