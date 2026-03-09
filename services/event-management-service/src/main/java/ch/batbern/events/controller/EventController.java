@@ -768,7 +768,11 @@ public class EventController {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
         // Two-phase lookup for the public homepage current event:
-        // Phase 1: Prefer the next upcoming event (date >= today) in any active state.
+        // Phase 1: Prefer the next upcoming event that has been explicitly published
+        //          (currentPublishedPhase IS NOT NULL). Events in early internal states
+        //          (SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT) without a published phase must NOT
+        //          block the Phase 2 fallback — only events the organiser has actively published
+        //          (topics / speakers / agenda) are eligible for public display.
         // Phase 2: Fallback — show the most recently completed event within the 14-day
         //          post-event window, so the homepage is not blank right after an event.
         // After 14 days the scheduler auto-archives the event and the page returns 404.
@@ -777,15 +781,15 @@ public class EventController {
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
                 EventWorkflowState.SLOT_ASSIGNMENT,
                 EventWorkflowState.AGENDA_PUBLISHED,
-                EventWorkflowState.EVENT_LIVE,
-                EventWorkflowState.EVENT_COMPLETED
+                EventWorkflowState.EVENT_LIVE
         );
         ZoneId bernZone = ZoneId.of("Europe/Zurich");
         Instant startOfToday = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant();
 
-        // Phase 1: upcoming event (today or future)
+        // Phase 1: upcoming published event (today or future, currentPublishedPhase set)
         Event currentEvent = eventRepository
-                .findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(activeWorkflowStates, startOfToday)
+                .findFirstByWorkflowStateInAndDateGreaterThanEqualAndCurrentPublishedPhaseIsNotNullOrderByDateAsc(
+                        activeWorkflowStates, startOfToday)
                 .orElse(null);
 
         // Phase 2: fallback — recently completed event within 14-day post-event window

@@ -77,6 +77,20 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
             List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
 
     /**
+     * Find the next upcoming published event (date >= fromDate, currentPublishedPhase not null).
+     * Used by getCurrentEvent Phase 1: only events that have been explicitly published at some
+     * level (topics / speakers / agenda) are shown on the public homepage — unpublished events
+     * in early organizer states (SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT) must not block the
+     * Phase 2 fallback that shows a recently completed event.
+     *
+     * @param workflowStates List of workflow states to match
+     * @param fromDate Only include events whose date is >= this instant (start of today)
+     * @return Optional containing the next qualifying published event if found
+     */
+    Optional<Event> findFirstByWorkflowStateInAndDateGreaterThanEqualAndCurrentPublishedPhaseIsNotNullOrderByDateAsc(
+            List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
+
+    /**
      * Find an event by its event number
      *
      * @param eventNumber The event number to search for
