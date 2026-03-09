@@ -50,6 +50,8 @@ The main view is a table sorted by event date (most recent first):
 | **Last 5 Years** (default) | Current year minus 5 | ~15 events |
 | **Full History** | Up to 20 years back | ~60 events |
 
+The toggle maps to a `fromYear` query parameter on `GET /api/v1/partners/{companyName}/analytics/dashboard`. The **Last 5 Years** option sends `fromYear = currentYear - 5`; **Full History** omits the parameter entirely.
+
 ### Cost-Per-Attendee Metric
 
 ```

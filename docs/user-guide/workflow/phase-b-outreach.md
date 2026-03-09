@@ -142,7 +142,7 @@ If speaker declines, the system displays the decline notification with date, rea
 
 Once minimum speakers show interest, click **Complete Outreach**.
 
-Event state advances to: **OUTREACH_INITIATED**
+Event state remains: **SPEAKER_IDENTIFICATION** (no state advance at this step; the event stays in SPEAKER_IDENTIFICATION throughout Phases B and C).
 </div>
 
 ### Outreach Metrics
@@ -171,8 +171,10 @@ Track speaker progression from interest through content submission, ensuring tim
 ```mermaid
 graph LR
     A[identified] --> B[contacted]
-    B --> C[ready]
+    B --> BI[invited]
+    BI --> C[ready]
     C --> D[accepted]
+    D --> SA[slot_assigned\nsystem-set]
     D --> E[content_submitted]
     E --> F[quality_reviewed]
     F --> G[confirmed]
@@ -180,7 +182,12 @@ graph LR
     C -.->|Declined| H[declined]
     D -.->|Withdrew| I[withdrew]
     F -.->|No slots| J[overflow]
+    G -.->|Withdrew| H
 ```
+
+> **INVITED state**: After an invitation email is dispatched, the speaker transitions from **contacted** to **invited**. The speaker then moves to **ready** once they acknowledge the invitation. The sequence is: `contacted → invited → ready`.
+>
+> **SLOT_ASSIGNED state**: Set automatically by the system when a slot is assigned to a speaker. Manual transitions to SLOT_ASSIGNED are rejected.
 
 ### Status Definitions
 
@@ -188,9 +195,11 @@ graph LR
 |--------|---------|------------------|----------------|
 | **identified** | Potential candidate | Send invitation | - |
 | **contacted** | Invitation sent | Await response | Respond to invitation |
+| **invited** | Invitation email dispatched; awaiting speaker acknowledgement | Await response | Acknowledge invitation |
 | **ready** | Ready to accept/decline | Get acceptance | Decide to accept or decline |
 | **accepted** | Committed to presenting | Send content guidelines | Submit content |
-| **declined** | Not available | Contact backup candidate | - |
+| **declined** | Not available (reachable from any active state, including confirmed) | Contact backup candidate | - |
+| **slot_assigned** | Slot automatically assigned by system (cannot be set manually) | — (system-managed) | - |
 | **content_submitted** | Content received | Review content (Phase C) | - |
 | **quality_reviewed** | Content approved | Assign time slot (Phase D) | - |
 | **confirmed** | Quality reviewed AND slot assigned | Ready for publication | - |
@@ -356,6 +365,9 @@ Once minimum speakers at **content_submitted** state, you're ready for Phase C (
 </div>
 
 ### Status Management Tips
+
+**Idempotent State Transitions**:
+- Re-submitting a speaker to their current state is a safe no-op — the system accepts it without creating duplicate history entries. This is useful when integrating external tools or replaying events.
 
 **Set Clear Deadlines**:
 - Give speakers 2-3 weeks for content submission

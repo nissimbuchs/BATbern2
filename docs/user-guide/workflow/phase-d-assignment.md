@@ -125,6 +125,8 @@ Event state: SPEAKER_IDENTIFICATION → **SLOT_ASSIGNMENT**
 
 **Auto-confirmation**: All quality_reviewed speakers with assigned slots (session.startTime exists) automatically transition to **confirmed** state.
 
+**SLOT_ASSIGNED state**: When a slot is assigned to a speaker, the system automatically sets the speaker to `slot_assigned` state as an intermediate step. This transition is system-managed and cannot be triggered manually. A speaker in `slot_assigned` state can still transition to `declined` if they withdraw after assignment.
+
 </div>
 
 ## Step 10: Publish the Agenda
@@ -190,6 +192,10 @@ Phase D complete! ✅
 - ✅ Schedule conflicts resolved
 - ✅ Agenda published successfully
 - ✅ Event state = **AGENDA_PUBLISHED**
+
+### Late Withdrawals by Confirmed Speakers
+
+A speaker who has already reached **confirmed** state can still transition to **declined** if they withdraw after confirmation. Mark them as **declined** to free the slot and activate a backup or overflow speaker if needed.
 
 ### What Happens Next
 

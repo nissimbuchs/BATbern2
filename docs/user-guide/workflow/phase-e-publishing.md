@@ -108,7 +108,7 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 
 **Speaker Profiles** (30 days before event):
 - Cron job runs daily at 00:00 UTC
-- Checks all events in AGENDA_PUBLISHED or AGENDA_FINALIZED states
+- Checks all events where `currentPublishedPhase` has not yet reached "speakers" (i.e. speakers not yet published), regardless of event workflow state
 - For events exactly 30 days away (or past this date if not yet published):
   - Publishes all confirmed speaker profiles to public website
   - Sets speaker.publishedAt timestamp
@@ -116,10 +116,11 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 
 **Full Agenda** (14 days before event):
 - Cron job runs daily at 00:00 UTC
-- Checks all events in AGENDA_FINALIZED state
+- Checks all events where `currentPublishedPhase = "speakers"` (speakers already published) **and** all sessions have timing configured
 - For events exactly 14 days away (or past this date if not yet published):
   - Publishes complete session schedule with time slots
   - Sets event.agendaPublishedAt timestamp
+  - Transitions event to **AGENDA_PUBLISHED** state
   - Auto-creates "Newsletter: Final" task (if not exists)
 
 **Manual Override**:
@@ -139,18 +140,46 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
   - Sends real-time notification to organizers
   - Triggers day-of-event systems (check-in, live updates)
 
-**EVENT_COMPLETED Transition** (after event ends):
-- Cron job runs hourly
-- Checks all events in EVENT_LIVE state
-- For events where current date/time >= event end time:
-  - Automatically transitions event to EVENT_COMPLETED state
-  - Sends post-event notification to organizers
-  - Triggers post-event workflows (feedback collection, archival preparation)
+**EVENT_COMPLETED Transition** (after all sessions end via Watch mode):
+- Primary mechanism: organizer uses the live **Watch feature** to call `endSession()` for each completeable session
+- When the last completeable session is ended, the system automatically transitions the event to EVENT_COMPLETED state
+- Only session types that count toward completion: **keynote**, **presentation**, **workshop**, **panel_discussion**
+- Excluded from completion check: **break**, **lunch**, **networking** — these do not need to be ended by the organizer
+- Sends post-event notification to organizers
+- Triggers post-event workflows (feedback collection, archival preparation)
+
+See [Live Event Management (Watch Mode)](#live-event-management-watch-mode) below for full details.
 
 **Configuration**:
-- Auto-transitions enabled by default (can be disabled in event settings)
-- Uses event.eventDate and event.eventTime for transition triggers
+- Uses event.eventDate and event.eventTime for EVENT_LIVE transition trigger
 - Handles timezone correctly (all times stored as UTC)
+
+### Live Event Management (Watch Mode)
+
+<span class="feature-status implemented">Implemented</span>
+
+The **Watch** feature lets organizers manage the event in real time on the event day. It is the primary mechanism that drives the `EVENT_LIVE → EVENT_COMPLETED` transition.
+
+**How it works:**
+
+1. While the event is in `EVENT_LIVE` state, open the Watch view from the event dashboard.
+2. As each session concludes, click **End Session** for that session in the Watch view.
+3. When the last *completeable* session has been ended, the system automatically transitions the event to `EVENT_COMPLETED`.
+
+**Completeable session types** (must be ended to trigger completion):
+- keynote
+- presentation
+- workshop
+- panel_discussion
+
+**Non-completeable session types** (never required to be ended):
+- break
+- lunch
+- networking
+
+If organizers do not use Watch mode, the event remains in `EVENT_LIVE` indefinitely — there is no automatic time-based fallback that transitions to `EVENT_COMPLETED`.
+
+---
 
 ### CDN Delivery (CloudFront)
 

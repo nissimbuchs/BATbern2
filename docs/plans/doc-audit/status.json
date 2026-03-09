@@ -2,61 +2,97 @@
   "state-machines": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-state-machines.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-state-machines.md",
+    "fixed_at": "2026-03-09T14:25:03.489507"
   },
   "backend-architecture": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-backend-architecture.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-backend-architecture.md",
+    "fixed_at": "2026-03-09T14:29:02.102218"
   },
   "epic-4-public-website": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-epic-4-public-website.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-4-public-website.md",
+    "fixed_at": "2026-03-09T14:31:40.881563"
   },
   "epic-5-organizer-workflows": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-epic-5-organizer-workflows.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-5-organizer-workflows.md",
+    "fixed_at": "2026-03-09T14:38:28.981116"
   },
   "epic-6-speaker-portal": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-epic-6-speaker-portal.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-6-speaker-portal.md",
+    "fixed_at": "2026-03-09T14:39:58.762737"
   },
   "epic-8-partner": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-epic-8-partner.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-8-partner.md",
+    "fixed_at": "2026-03-09T14:41:29.673505"
   },
   "epic-9-speaker-auth": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-epic-9-speaker-auth.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-9-speaker-auth.md",
+    "fixed_at": "2026-03-09T14:43:01.217311"
   },
   "user-lifecycle-sync": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-user-lifecycle-sync.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-lifecycle-sync.md",
+    "fixed_at": "2026-03-09T14:46:46.353732"
   },
   "notification-system": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-notification-system.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-notification-system.md",
+    "fixed_at": "2026-03-09T14:50:17.178936"
   },
   "user-guide-workflow": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-user-guide-workflow.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-guide-workflow.md",
+    "fixed_at": "2026-03-09T14:56:42.488366"
   },
   "user-guide-speaker-portal": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-user-guide-speaker-portal.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-guide-speaker-portal.md",
+    "fixed_at": "2026-03-09T14:57:38.966079"
   },
   "user-guide-partner-portal": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-user-guide-partner-portal.md",
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-guide-partner-portal.md",
+    "fixed_at": "2026-03-09T15:00:59.496595"
   }
 }

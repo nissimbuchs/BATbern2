@@ -81,7 +81,7 @@ The meeting creation form opens.
 | **Meeting Type** | Yes | Spring or Autumn |
 | **Start Time** | Yes | Time of partner lunch (e.g., 12:00) |
 | **End Time** | Yes | End of lunch before the main event (e.g., 14:00) |
-| **Location** | Yes | Venue name and/or address |
+| **Location** | No | Venue name and/or address (shown in .ics invite if provided) |
 | **Agenda** | No | Free text — included in the calendar invite description |
 
 The meeting date is automatically set to the linked BATbern event date.
@@ -167,6 +167,10 @@ Notes are saved and visible to all organisers. They are **not visible to partner
 
 <div class="alert info">
 ℹ️ <strong>Note:</strong> Post-meeting notes are organiser-internal only. Partners cannot see meeting notes — they only receive the initial calendar invite.
+</div>
+
+<div class="alert warning">
+⚠️ <strong>Note ownership:</strong> Notes are scoped to their partner company. Attempting to update or delete a note via another partner company's URL returns <code>404 Not Found</code>.
 </div>
 
 ## Meeting List View

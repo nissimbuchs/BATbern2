@@ -31,7 +31,7 @@ After login, partners are routed to their company dashboard showing all three po
 |------|-------------|---------------|
 | Attendance analytics | Own company only | Any company |
 | Topics & votes | All topics (global) | All topics + voting data |
-| Meetings | All upcoming meetings | All meetings + management tools |
+| Meetings | Receive .ics calendar invite via email only | All meetings + management tools |
 | Partner notes | **Hidden entirely** | All notes for all partners |
 | Other partners' data | Not visible | All partners |
 
@@ -42,6 +42,10 @@ After login, partners are routed to their company dashboard showing all three po
 | [Attendance Analytics](analytics.md) | View attendance table, export to XLSX, see cost-per-attendee |
 | [Topic Voting](topic-voting.md) | Suggest topics, vote on proposals, view status of selected topics |
 | [Meeting Coordination](meetings.md) | Receive .ics calendar invites for partner meetings |
+
+## Constraints
+
+- **Partner company names** are limited to **12 characters** (meaningful short identifiers per ADR-003). Names exceeding 12 characters are rejected with an `IllegalArgumentException`.
 
 ## For Organisers
 
