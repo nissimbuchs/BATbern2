@@ -305,6 +305,139 @@ def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
     return True
 
 
+# ── Fix prompt builder ───────────────────────────────────────────────────────
+
+def build_fix_prompt(target: dict, findings_text: str) -> str:
+    doc_path = target["doc"]
+    fix_summary_file = f"docs/plans/doc-audit/fix-summary-{target['id']}.md"
+
+    return textwrap.dedent(f"""
+    You are applying documentation fixes for BATbern based on a completed audit.
+
+    ## Findings to action
+
+    The audit identified gaps between the documentation and the actual code/tests.
+    Your job is to fix the docs — not the tests, not the code.
+
+    ```
+    {findings_text}
+    ```
+
+    ## What to fix
+
+    **MISMATCH items** — the test represents ground truth. Update the doc to match
+    what the test actually asserts. Be surgical: change only the incorrect sentence
+    or paragraph, not the whole section.
+
+    **UNDOCUMENTED items** — behaviour exists in tests but is missing from the doc.
+    Add a concise description in the most appropriate section of the doc. Match the
+    existing tone and style.
+
+    **UNTESTED items** — do NOT auto-fix these. The doc claim may be valid but
+    just lacks a test, or it may be stale. Instead, add a note in the fix summary
+    flagging them for manual review.
+
+    ## Rules
+
+    - Only edit files under `docs/` — never touch source code or test files
+    - Surgical edits only — don't rewrite sections, just fix the specific gap
+    - After all edits, write a fix summary to `{fix_summary_file}`:
+
+    ```markdown
+    # Fix Summary — {target['label']}
+    **Fixed:** {datetime.date.today().isoformat()}
+
+    ## Changes made
+    ### <doc file>
+    - M1: <what was changed and why>
+    - N1: <what was added and where>
+
+    ## Skipped (UNTESTED — needs manual review)
+    - U1: "<claim>" — flagged for test coverage decision
+    ```
+
+    - If there is nothing to fix (all items are UNTESTED or already correct),
+      write the fix summary with "No doc changes needed" and make no file edits.
+    """).strip()
+
+
+def run_fix(target: dict, status: dict, dry_run: bool = False) -> bool:
+    tid = target["id"]
+    label = target["label"]
+    findings_file = FINDINGS_DIR / f"findings-{tid}.md"
+    fix_summary_file = FINDINGS_DIR / f"fix-summary-{tid}.md"
+
+    s = status.get(tid, {})
+
+    if s.get("status") not in ("done", "error"):
+        print(f"   ⏭  {label} — no findings yet (status: {s.get('status', 'pending')}). Run audit first.")
+        return True
+
+    if not findings_file.exists():
+        print(f"   ⚠️  {label} — findings file missing. Re-run audit for this target.")
+        return True
+
+    if s.get("fix_status") == "done":
+        print(f"   ✅ {label} — already fixed. Use --reset-fix to redo.")
+        return True
+
+    print(f"\n{'='*60}")
+    print(f"🔧 Fixing: {label}")
+    print(f"   Findings: {findings_file.relative_to(REPO_ROOT)}")
+    print(f"{'='*60}")
+
+    findings_text = findings_file.read_text()
+
+    # Check if there's anything actionable
+    if "MISMATCH" not in findings_text and "UNDOCUMENTED" not in findings_text:
+        print(f"   ℹ️  No MISMATCH or UNDOCUMENTED items — nothing to fix.")
+        status[tid]["fix_status"] = "done"
+        status[tid]["fix_summary_file"] = None
+        status[tid]["fixed_at"] = datetime.datetime.now().isoformat()
+        save_status(status)
+        return True
+
+    if dry_run:
+        print("   [dry-run] Skipping claude invocation.")
+        return True
+
+    prompt = build_fix_prompt(target, findings_text)
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+
+    print(f"   Launching claude fix session…")
+
+    result = subprocess.run(
+        [
+            "claude",
+            "--print",
+            "--allowedTools", "Read,Edit,Write,Glob,Grep",
+            "--model", "claude-sonnet-4-6",
+            prompt,
+        ],
+        cwd=str(REPO_ROOT),
+        capture_output=False,
+        text=True,
+        env=env,
+    )
+
+    if result.returncode != 0:
+        print(f"   ❌ claude exited with code {result.returncode}")
+        status[tid]["fix_status"] = "error"
+        save_status(status)
+        return False
+
+    status[tid]["fix_status"] = "done"
+    status[tid]["fix_summary_file"] = str(fix_summary_file.relative_to(REPO_ROOT)) if fix_summary_file.exists() else None
+    status[tid]["fixed_at"] = datetime.datetime.now().isoformat()
+    save_status(status)
+
+    if fix_summary_file.exists():
+        print(f"   ✅ Fix summary: {fix_summary_file.relative_to(REPO_ROOT)}")
+    print(f"   Review changes with: git diff docs/")
+
+    return True
+
+
 # ── Aggregate report ──────────────────────────────────────────────────────────
 
 def build_report(status: dict):
@@ -344,11 +477,13 @@ def build_report(status: dict):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--list",   action="store_true", help="Show current status and exit")
-    parser.add_argument("--reset",  action="store_true", help="Reset all targets to pending")
-    parser.add_argument("--target", metavar="ID",        help="Run a single target by ID")
-    parser.add_argument("--dry-run",action="store_true", help="Show what would run, skip claude")
-    parser.add_argument("--report", action="store_true", help="Regenerate aggregate report and exit")
+    parser.add_argument("--list",      action="store_true", help="Show current status and exit")
+    parser.add_argument("--reset",     action="store_true", help="Reset all targets to pending")
+    parser.add_argument("--target",    metavar="ID",        help="Run a single target by ID")
+    parser.add_argument("--dry-run",   action="store_true", help="Show what would run, skip claude")
+    parser.add_argument("--report",    action="store_true", help="Regenerate aggregate report and exit")
+    parser.add_argument("--fix",       action="store_true", help="Apply doc fixes based on completed findings")
+    parser.add_argument("--reset-fix", action="store_true", help="Reset fix status so --fix re-runs")
     args = parser.parse_args()
 
     status = load_status()
@@ -361,14 +496,17 @@ def main():
 
     if args.list:
         print(f"\nDoc Audit Status  ({STATUS_FILE.relative_to(REPO_ROOT)})\n")
+        print(f"  {'ID':<30} {'AUDIT':<10} {'FIX':<10}  Label")
+        print(f"  {'-'*29} {'-'*9} {'-'*9}  {'-'*30}")
         for t in TARGETS:
             s = status[t["id"]]
-            icon = {"done": "✅", "pending": "⏳", "error": "❌"}.get(s["status"], "?")
-            done_at = s.get("completed_at", "")[:10] if s.get("completed_at") else ""
-            print(f"  {icon} [{s['status']:<8}] {t['id']:<30} {t['label']}  {done_at}")
+            audit_icon = {"done": "✅ done", "pending": "⏳ pending", "error": "❌ error"}.get(s["status"], "?")
+            fix_icon   = {"done": "✅ done", "error": "❌ error"}.get(s.get("fix_status", ""), "—")
+            print(f"  {t['id']:<30} {audit_icon:<10} {fix_icon:<10}  {t['label']}")
         pending = sum(1 for t in TARGETS if status[t["id"]]["status"] == "pending")
         done    = sum(1 for t in TARGETS if status[t["id"]]["status"] == "done")
-        print(f"\n  {done}/{len(TARGETS)} complete, {pending} pending\n")
+        fixed   = sum(1 for t in TARGETS if status[t["id"]].get("fix_status") == "done")
+        print(f"\n  Audit: {done}/{len(TARGETS)} done, {pending} pending  |  Fix: {fixed}/{done} done\n")
         return
 
     if args.reset:
@@ -378,11 +516,58 @@ def main():
         print("✅ All targets reset to pending.")
         return
 
+    if args.reset_fix:
+        for t in TARGETS:
+            status[t["id"]].pop("fix_status", None)
+            status[t["id"]].pop("fix_summary_file", None)
+            status[t["id"]].pop("fixed_at", None)
+        save_status(status)
+        print("✅ Fix status reset. Re-run with --fix to redo.")
+        return
+
     if args.report:
         build_report(status)
         return
 
-    # Determine targets to run
+    # ── FIX mode ──────────────────────────────────────────────────────────────
+    if args.fix:
+        if args.target:
+            ids = [t["id"] for t in TARGETS]
+            if args.target not in ids:
+                print(f"❌ Unknown target '{args.target}'. Known: {', '.join(ids)}")
+                sys.exit(1)
+            targets_to_fix = [t for t in TARGETS if t["id"] == args.target]
+        else:
+            targets_to_fix = [
+                t for t in TARGETS
+                if status[t["id"]]["status"] == "done"
+                and status[t["id"]].get("fix_status") != "done"
+            ]
+
+        if not targets_to_fix:
+            print("✅ Nothing to fix — either no audit results yet, or all already fixed.")
+            print("   Run audit first, then --fix. Use --reset-fix to redo fixes.")
+            return
+
+        print(f"\n🔧 Doc Audit Fix Mode")
+        print(f"   Targets to fix: {len(targets_to_fix)}")
+        print(f"   Interrupt at any time — completed fixes are saved.\n")
+
+        errors = 0
+        for target in targets_to_fix:
+            ok = run_fix(target, status, dry_run=args.dry_run)
+            if not ok:
+                errors += 1
+
+        fixed = sum(1 for t in TARGETS if status[t["id"]].get("fix_status") == "done")
+        print(f"\n{'='*60}")
+        print(f"✅ {fixed} target(s) fixed. {errors} error(s).")
+        print(f"   Review all doc changes: git diff docs/")
+        print(f"   Then commit:            git add docs/ && git commit -m 'docs(audit): retrospective doc fixes'")
+        print(f"{'='*60}\n")
+        return
+
+    # ── AUDIT mode (default) ──────────────────────────────────────────────────
     if args.target:
         ids = [t["id"] for t in TARGETS]
         if args.target not in ids:
@@ -394,6 +579,7 @@ def main():
 
     if not targets_to_run:
         print("✅ All targets already complete. Use --reset to re-run, or --list to view status.")
+        print("   Ready to fix? Run: python3 scripts/dev/doc-audit-retrospective.py --fix")
         return
 
     print(f"\n🔍 Doc Audit Retrospective")
@@ -409,14 +595,15 @@ def main():
             errors += 1
             print(f"   ⚠️  Continuing to next target despite error…")
 
-    # Build aggregate report after all targets
     build_report(status)
 
-    print(f"\n{'='*60}")
     done = sum(1 for t in TARGETS if status[t["id"]]["status"] == "done")
+    print(f"\n{'='*60}")
     print(f"✅ {done}/{len(TARGETS)} targets complete. {errors} error(s).")
     if errors:
         print(f"   Re-run to retry errored targets (they remain 'pending').")
+    if done > 0:
+        print(f"   Apply fixes: python3 scripts/dev/doc-audit-retrospective.py --fix")
     print(f"{'='*60}\n")
 
 
