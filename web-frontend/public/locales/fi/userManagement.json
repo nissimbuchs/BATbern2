@@ -268,5 +268,10 @@
     "removeTooltip": "Poista kuva",
     "verified": "Vahvistettu",
     "memberSince": "Jäsen {{date}} lähtien"
+  },
+  "cognito": {
+    "linked": "Cognito yhdistetty",
+    "notLinked": "Ei Cognito-tiliä",
+    "tooltip": "Cognito-tunnus: {{id}}"
   }
 }

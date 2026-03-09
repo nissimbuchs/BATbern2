@@ -243,6 +243,11 @@
     "verified": "Verified",
     "memberSince": "Member since {{date}}"
   },
+  "cognito": {
+    "linked": "Cognito linked",
+    "notLinked": "No Cognito account",
+    "tooltip": "Cognito ID: {{id}}"
+  },
   "userDetail": {
     "tabs": {
       "overview": "Overview",

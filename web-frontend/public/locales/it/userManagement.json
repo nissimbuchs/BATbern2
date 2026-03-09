@@ -268,5 +268,10 @@
     "removeTooltip": "Rimuovi foto",
     "verified": "Verificato",
     "memberSince": "Membro dal {{date}}"
+  },
+  "cognito": {
+    "linked": "Cognito collegato",
+    "notLinked": "Nessun account Cognito",
+    "tooltip": "ID Cognito: {{id}}"
   }
 }

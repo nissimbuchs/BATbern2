@@ -28,6 +28,8 @@ import {
   Delete as DeleteIcon,
   Person as OverviewIcon,
   Event as EventIcon,
+  Cloud as CloudIcon,
+  CloudOff as CloudOffIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -144,13 +146,24 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     {user.email}
                   </Typography>
-                  <Box mt={1}>
+                  <Box mt={1} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
                       label={
                         user.active ? t('filters.status.active') : t('filters.status.inactive')
                       }
                       color={user.active ? 'success' : 'default'}
                       size="small"
+                    />
+                    <Chip
+                      icon={user.cognitoUserId ? <CloudIcon /> : <CloudOffIcon />}
+                      label={user.cognitoUserId ? t('cognito.linked') : t('cognito.notLinked')}
+                      color={user.cognitoUserId ? 'info' : 'default'}
+                      size="small"
+                      title={
+                        user.cognitoUserId
+                          ? t('cognito.tooltip', { id: user.cognitoUserId })
+                          : undefined
+                      }
                     />
                   </Box>
                 </Box>
