@@ -58,7 +58,10 @@
   "user-lifecycle-sync": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-user-lifecycle-sync.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-lifecycle-sync.md",
+    "fixed_at": "2026-03-09T14:46:46.353732"
   },
   "notification-system": {
     "status": "done",
