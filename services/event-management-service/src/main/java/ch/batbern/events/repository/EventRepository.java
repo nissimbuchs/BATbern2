@@ -115,6 +115,22 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     );
 
     /**
+     * Find the most recent event in the given state within a date window [fromDate, toDate).
+     * Used as fallback in getCurrentEvent: shows EVENT_COMPLETED events for up to 14 days
+     * after the event date when no upcoming event exists.
+     *
+     * @param workflowState The workflow state to match (EVENT_COMPLETED)
+     * @param fromDate Inclusive lower bound (today - 14 days)
+     * @param toDate Exclusive upper bound (start of today)
+     * @return The most recent qualifying event, if any
+     */
+    Optional<Event> findFirstByWorkflowStateAndDateGreaterThanEqualAndDateBeforeOrderByDateDesc(
+            ch.batbern.shared.types.EventWorkflowState workflowState,
+            Instant fromDate,
+            Instant toDate
+    );
+
+    /**
      * Find events with a date after the given timestamp.
      * Used for deadline reminder processing (Story 6.5) - finds active/future events.
      *

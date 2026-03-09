@@ -38,6 +38,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -766,9 +767,11 @@ public class EventController {
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
-        // Find the next event with active workflow states (V17: changed from status to workflowState)
-        // Returns the event nearest to current date, but only if it occurs today or in the future.
-        // Events whose date was yesterday or earlier are no longer shown on the homepage.
+        // Two-phase lookup for the public homepage current event:
+        // Phase 1: Prefer the next upcoming event (date >= today) in any active state.
+        // Phase 2: Fallback — show the most recently completed event within the 14-day
+        //          post-event window, so the homepage is not blank right after an event.
+        // After 14 days the scheduler auto-archives the event and the page returns 404.
         // 8-State Model (V82): AGENDA_FINALIZED removed, scheduler transitions AGENDA_PUBLISHED → EVENT_LIVE
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
@@ -779,9 +782,27 @@ public class EventController {
         );
         ZoneId bernZone = ZoneId.of("Europe/Zurich");
         Instant startOfToday = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant();
+
+        // Phase 1: upcoming event (today or future)
         Event currentEvent = eventRepository
                 .findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(activeWorkflowStates, startOfToday)
                 .orElse(null);
+
+        // Phase 2: fallback — recently completed event within 14-day post-event window
+        if (currentEvent == null) {
+            Instant twoWeeksAgo = startOfToday.minus(14, ChronoUnit.DAYS);
+            currentEvent = eventRepository
+                    .findFirstByWorkflowStateAndDateGreaterThanEqualAndDateBeforeOrderByDateDesc(
+                            EventWorkflowState.EVENT_COMPLETED,
+                            twoWeeksAgo,
+                            startOfToday
+                    )
+                    .orElse(null);
+            if (currentEvent != null) {
+                log.debug("Fallback: showing recently completed event {} within 14-day window",
+                        currentEvent.getEventCode());
+            }
+        }
 
         if (currentEvent == null) {
             log.debug("No current event found with workflow states: {}", activeWorkflowStates);
