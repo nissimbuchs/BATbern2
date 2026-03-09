@@ -1,8 +1,8 @@
 {
   "state-machines": {
-    "status": "pending",
-    "findings_file": null,
-    "completed_at": null
+    "status": "done",
+    "findings_file": "docs/plans/doc-audit/findings-state-machines.md",
+    "completed_at": "2026-03-09"
   },
   "backend-architecture": {
     "status": "pending",

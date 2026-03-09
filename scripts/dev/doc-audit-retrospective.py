@@ -5,44 +5,47 @@ doc-audit-retrospective.py
 One-shot retrospective audit: compares documentation claims against the
 current integration test suite to find stale or undocumented behaviour.
 
-Each doc target is audited in an isolated `claude` subagent session to
-stay within context limits. State is saved to docs/plans/doc-audit/status.json
-after each target, so you can interrupt and resume freely.
+Uses the Anthropic Python SDK directly — no CLI subprocess required.
+Each target runs as an isolated API session with file-system tools
+(Read, Grep, Glob, Write). State is saved after each target so you can
+interrupt and resume freely.
 
 Usage:
   python3 scripts/dev/doc-audit-retrospective.py           # run all pending
   python3 scripts/dev/doc-audit-retrospective.py --list    # show status
   python3 scripts/dev/doc-audit-retrospective.py --reset   # reset all to pending
-  python3 scripts/dev/doc-audit-retrospective.py --target state-machines  # one target only
+  python3 scripts/dev/doc-audit-retrospective.py --target state-machines
+  python3 scripts/dev/doc-audit-retrospective.py --fix     # apply fixes from findings
+  python3 scripts/dev/doc-audit-retrospective.py --fix --target state-machines
 """
 
 import argparse
 import datetime
+import glob as glob_module
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import textwrap
 
+import anthropic
+
 # ── Paths ────────────────────────────────────────────────────────────────────
-REPO_ROOT   = pathlib.Path(__file__).parent.parent.parent.resolve()
-STATUS_FILE = REPO_ROOT / "docs/plans/doc-audit/status.json"
+REPO_ROOT    = pathlib.Path(__file__).parent.parent.parent.resolve()
+STATUS_FILE  = REPO_ROOT / "docs/plans/doc-audit/status.json"
 FINDINGS_DIR = REPO_ROOT / "docs/plans/doc-audit"
+MODEL        = "claude-sonnet-4-6"
+MAX_TOKENS   = 8192
 
-# ── Audit targets ────────────────────────────────────────────────────────────
-# Each target = one isolated claude subagent session.
-# (doc, tests[]) pairs chosen by risk: architecture docs first, then PRDs,
-# then user-guide sections. Add more targets here as needed.
-
+# ── Audit targets ─────────────────────────────────────────────────────────────
 TARGETS = [
     {
         "id": "state-machines",
         "label": "Event state machine & lifecycle",
         "doc":   "docs/architecture/06a-workflow-state-machines.md",
-        "tests": [
-            "services/event-management-service/src/test/java",
-        ],
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "backend-architecture",
@@ -58,50 +61,37 @@ TARGETS = [
         "id": "epic-4-public-website",
         "label": "Public website & registration (Epic 4)",
         "doc":   "docs/prd/epic-4-public-website-content-discovery.md",
-        "tests": [
-            "services/event-management-service/src/test/java",
-            "web-frontend/src",
-        ],
+        "tests": ["services/event-management-service/src/test/java", "web-frontend/src"],
     },
     {
         "id": "epic-5-organizer-workflows",
         "label": "Organizer workflows & lifecycle automation (Epic 5)",
         "doc":   "docs/prd/epic-5-enhanced-organizer-workflows.md",
-        "tests": [
-            "services/event-management-service/src/test/java",
-        ],
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "epic-6-speaker-portal",
         "label": "Speaker self-service portal (Epic 6)",
         "doc":   "docs/prd/epic-6-speaker-portal-support.md",
-        "tests": [
-            "services/speaker-coordination-service/src/test/java",
-        ],
+        "tests": ["services/speaker-coordination-service/src/test/java"],
     },
     {
         "id": "epic-8-partner",
         "label": "Partner coordination (Epic 8)",
         "doc":   "docs/prd/epic-8-partner-coordination.md",
-        "tests": [
-            "services/partner-coordination-service/src/test/java",
-        ],
+        "tests": ["services/partner-coordination-service/src/test/java"],
     },
     {
         "id": "epic-9-speaker-auth",
         "label": "Speaker authentication (Epic 9)",
         "doc":   "docs/prd/epic-9-speaker-authentication.md",
-        "tests": [
-            "services/speaker-coordination-service/src/test/java",
-        ],
+        "tests": ["services/speaker-coordination-service/src/test/java"],
     },
     {
         "id": "user-lifecycle-sync",
         "label": "User lifecycle sync",
         "doc":   "docs/architecture/06b-user-lifecycle-sync.md",
-        "tests": [
-            "services/company-user-management-service/src/test/java",
-        ],
+        "tests": ["services/company-user-management-service/src/test/java"],
     },
     {
         "id": "notification-system",
@@ -115,35 +105,209 @@ TARGETS = [
     {
         "id": "user-guide-workflow",
         "label": "User guide — organiser workflow phases",
-        "doc":   "docs/user-guide/workflow",   # directory — all .md files inside
-        "tests": [
-            "services/event-management-service/src/test/java",
-        ],
+        "doc":   "docs/user-guide/workflow",
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "user-guide-speaker-portal",
         "label": "User guide — speaker portal",
         "doc":   "docs/user-guide/speaker-portal",
-        "tests": [
-            "services/speaker-coordination-service/src/test/java",
-        ],
+        "tests": ["services/speaker-coordination-service/src/test/java"],
     },
     {
         "id": "user-guide-partner-portal",
         "label": "User guide — partner portal",
         "doc":   "docs/user-guide/partner-portal",
-        "tests": [
-            "services/partner-coordination-service/src/test/java",
-        ],
+        "tests": ["services/partner-coordination-service/src/test/java"],
     },
 ]
 
-# ── Status helpers ────────────────────────────────────────────────────────────
+# ── Tool definitions (passed to Claude API) ───────────────────────────────────
+TOOLS = [
+    {
+        "name": "read_file",
+        "description": "Read the full contents of a file in the repository.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Path relative to repo root"}
+            },
+            "required": ["path"],
+        },
+    },
+    {
+        "name": "glob_files",
+        "description": "Find files matching a glob pattern.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {"type": "string", "description": "Glob pattern relative to repo root (e.g. 'services/event-management-service/src/test/**/*.java')"},
+                "max_results": {"type": "integer", "description": "Max files to return (default 50)"},
+            },
+            "required": ["pattern"],
+        },
+    },
+    {
+        "name": "grep_files",
+        "description": "Search for a regex pattern in files under a directory.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern":   {"type": "string", "description": "Regex pattern to search for"},
+                "directory": {"type": "string", "description": "Directory to search in (relative to repo root)"},
+                "glob":      {"type": "string", "description": "File glob filter (e.g. '*.java', '*.ts')"},
+                "context_lines": {"type": "integer", "description": "Lines of context around each match (default 2)"},
+            },
+            "required": ["pattern", "directory"],
+        },
+    },
+    {
+        "name": "write_file",
+        "description": "Write content to a file (creates or overwrites).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path":    {"type": "string", "description": "Path relative to repo root"},
+                "content": {"type": "string", "description": "File content to write"},
+            },
+            "required": ["path", "content"],
+        },
+    },
+    {
+        "name": "edit_file",
+        "description": "Replace an exact string in a file.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path":       {"type": "string", "description": "Path relative to repo root"},
+                "old_string": {"type": "string", "description": "Exact text to find and replace"},
+                "new_string": {"type": "string", "description": "Text to replace it with"},
+            },
+            "required": ["path", "old_string", "new_string"],
+        },
+    },
+]
 
+
+# ── Tool executor ─────────────────────────────────────────────────────────────
+def execute_tool(name: str, inputs: dict) -> str:
+    try:
+        if name == "read_file":
+            p = REPO_ROOT / inputs["path"]
+            if not p.exists():
+                return f"ERROR: File not found: {inputs['path']}"
+            content = p.read_text(errors="replace")
+            if len(content) > 40000:
+                content = content[:40000] + f"\n... [truncated at 40000 chars]"
+            return content
+
+        elif name == "glob_files":
+            pattern = str(REPO_ROOT / inputs["pattern"])
+            max_r = inputs.get("max_results", 50)
+            matches = glob_module.glob(pattern, recursive=True)[:max_r]
+            rel = [str(pathlib.Path(m).relative_to(REPO_ROOT)) for m in sorted(matches)]
+            return "\n".join(rel) if rel else "No files matched."
+
+        elif name == "grep_files":
+            directory = REPO_ROOT / inputs["directory"]
+            if not directory.exists():
+                return f"ERROR: Directory not found: {inputs['directory']}"
+            ctx = inputs.get("context_lines", 2)
+            file_glob = inputs.get("glob", "*")
+            cmd = ["grep", "-r", "-n", f"-C{ctx}", "--include", file_glob,
+                   inputs["pattern"], str(directory)]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            out = result.stdout
+            if not out:
+                return "No matches found."
+            # Trim to 20000 chars
+            if len(out) > 20000:
+                out = out[:20000] + "\n... [truncated]"
+            return out
+
+        elif name == "write_file":
+            p = REPO_ROOT / inputs["path"]
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(inputs["content"])
+            return f"Written: {inputs['path']} ({len(inputs['content'])} chars)"
+
+        elif name == "edit_file":
+            p = REPO_ROOT / inputs["path"]
+            if not p.exists():
+                return f"ERROR: File not found: {inputs['path']}"
+            content = p.read_text()
+            if inputs["old_string"] not in content:
+                return f"ERROR: old_string not found in {inputs['path']}"
+            new_content = content.replace(inputs["old_string"], inputs["new_string"], 1)
+            p.write_text(new_content)
+            return f"Edited: {inputs['path']}"
+
+        else:
+            return f"ERROR: Unknown tool: {name}"
+
+    except Exception as e:
+        return f"ERROR: {e}"
+
+
+# ── Claude session runner ─────────────────────────────────────────────────────
+def run_claude_session(prompt: str, label: str) -> str:
+    """Run a full Claude tool-use loop. Returns final text response."""
+    client = anthropic.Anthropic()
+    messages = [{"role": "user", "content": prompt}]
+    turn = 0
+
+    while True:
+        turn += 1
+        print(f"   [turn {turn}] Calling Claude API…", flush=True)
+
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            tools=TOOLS,
+            messages=messages,
+        )
+
+        # Collect any text output from this turn
+        text_parts = [b.text for b in response.content if hasattr(b, "text") and b.text]
+        tool_uses  = [b for b in response.content if b.type == "tool_use"]
+
+        if text_parts:
+            print(f"   [turn {turn}] Claude: {text_parts[0][:120]}…" if len(text_parts[0]) > 120 else f"   [turn {turn}] Claude: {text_parts[0]}", flush=True)
+
+        if tool_uses:
+            print(f"   [turn {turn}] Tools: {', '.join(f'{t.name}({list(t.input.values())[0]!r:.50})' for t in tool_uses)}", flush=True)
+
+        # Append assistant message
+        messages.append({"role": "assistant", "content": response.content})
+
+        if response.stop_reason == "end_turn":
+            return "\n".join(text_parts)
+
+        if response.stop_reason == "tool_use":
+            # Execute all tools and collect results
+            tool_results = []
+            for tool_use in tool_uses:
+                print(f"   [tool] {tool_use.name}: {json.dumps(tool_use.input)[:100]}", flush=True)
+                result = execute_tool(tool_use.name, tool_use.input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use.id,
+                    "content": result,
+                })
+            messages.append({"role": "user", "content": tool_results})
+            continue
+
+        # Unexpected stop reason
+        print(f"   ⚠️  Unexpected stop_reason: {response.stop_reason}")
+        break
+
+    return ""
+
+
+# ── Status helpers ─────────────────────────────────────────────────────────────
 def load_status() -> dict:
     if STATUS_FILE.exists():
         return json.loads(STATUS_FILE.read_text())
-    # Initialise from TARGETS
     return {t["id"]: {"status": "pending", "findings_file": None, "completed_at": None}
             for t in TARGETS}
 
@@ -153,13 +317,11 @@ def save_status(status: dict):
     STATUS_FILE.write_text(json.dumps(status, indent=2) + "\n")
 
 
-# ── Prompt builder ────────────────────────────────────────────────────────────
-
-def build_prompt(target: dict) -> str:
-    doc_path  = target["doc"]
+# ── Prompt builders ────────────────────────────────────────────────────────────
+def build_audit_prompt(target: dict) -> str:
+    doc_path   = target["doc"]
     test_paths = target["tests"]
     findings_file = f"docs/plans/doc-audit/findings-{target['id']}.md"
-
     test_paths_str = "\n".join(f"  - {p}" for p in test_paths)
 
     return textwrap.dedent(f"""
@@ -172,150 +334,58 @@ def build_prompt(target: dict) -> str:
 
     1. **MISMATCH** — doc states X, but a test asserts Y (doc is wrong or stale)
     2. **UNTESTED** — doc makes a claim but no test validates it (claim may be stale)
-    3. **UNDOCUMENTED** — a test asserts a business rule that is NOT mentioned in the doc
+    3. **UNDOCUMENTED** — a test asserts a business rule NOT mentioned in the doc
 
     ## Doc to audit
     `{doc_path}`
-    (If this is a directory, read all .md files inside it)
+    (If this is a directory, use glob_files to find all .md files inside it and read each)
 
     ## Test directories to search
     {test_paths_str}
 
-    ## Instructions
+    ## Steps
 
-    Step 1 — Read the doc(s) completely. Extract every:
-      - State machine transition or business rule
-      - User-facing behaviour or API contract
-      - Timing rule, threshold, or constraint (e.g. "14 days", "30 days", "02:00")
-      - Named workflow step or process
-
-    Step 2 — For each claim, search the test directories:
-      - Use Grep to find relevant test methods by keyword
-      - Read matching test files to understand what they actually assert
-      - Classify: VALIDATED / MISMATCH / UNTESTED
-
-    Step 3 — Scan test files for business-rule assertions NOT covered by the doc:
-      - Look for test method names that describe behaviour (`should_`, `when_`, `given_`)
-      - If the tested behaviour is not mentioned in the doc → UNDOCUMENTED
-
-    Step 4 — Write your findings to `{findings_file}` using this format:
+    1. Read the doc file(s) completely using read_file
+    2. Extract every business rule, state transition, API behaviour, timing constraint
+    3. For each claim, use grep_files to find relevant test methods, then read_file to inspect them
+    4. Classify each claim: VALIDATED / MISMATCH / UNTESTED
+    5. Use glob_files + grep_files to find test methods not covered by the doc (UNDOCUMENTED)
+    6. Write your findings using write_file to `{findings_file}` in this format:
 
     ```markdown
     # Doc Audit Findings — {target['label']}
     **Audited:** {datetime.date.today().isoformat()}
     **Doc:** `{doc_path}`
-    **Tests searched:** {', '.join(f'`{p}`' for p in test_paths)}
 
     ## Summary
-    - VALIDATED: n
-    - MISMATCH: n
-    - UNTESTED: n
-    - UNDOCUMENTED: n
+    - VALIDATED: n  |  MISMATCH: n  |  UNTESTED: n  |  UNDOCUMENTED: n
 
     ## MISMATCH
-    ### M1 — <short title>
-    **Doc claims:** "exact quote from doc"
-    **Test asserts:** `TestClass#methodName` — description of what test actually checks
-    **Action:** Update doc to say: "suggested correction"
+    ### M1 — <title>
+    **Doc claims:** "quote"
+    **Test asserts:** `TestClass#method` — what it actually checks
+    **Action:** Update doc to say: "correction"
 
     ## UNTESTED
-    ### U1 — <short title>
-    **Doc claims:** "exact quote"
-    **Test found:** none
+    ### U1 — <title>
+    **Doc claims:** "quote"
     **Risk:** high / medium / low
-    **Action:** Write a test, or remove/update the claim if it's stale
 
     ## UNDOCUMENTED
-    ### N1 — <short title>
-    **Test:** `TestClass#methodName` — what it asserts
-    **Missing from doc:** which doc section should mention this
-    **Action:** Add a sentence to doc section X
+    ### N1 — <title>
+    **Test:** `TestClass#method` — what it asserts
+    **Action:** Add to doc section: X
 
-    ## VALIDATED (list only — no detail needed)
-    - "claim text" → `TestClass#methodName`
+    ## VALIDATED
+    - "claim" → `TestClass#method`
     ```
 
-    ## Rules
-    - Be surgical — only flag real discrepancies, not stylistic differences
-    - Quote the doc and the test precisely
-    - If a test exists but only partially validates a claim, mark as UNTESTED with a note
-    - Do not modify any source files or doc files — output findings only
-    - If everything checks out and there are no findings, write a findings file that says so
+    Rules: surgical findings only — quote doc and test precisely.
+    If no gaps found, write a findings file that says so.
     """).strip()
 
 
-# ── Runner ────────────────────────────────────────────────────────────────────
-
-def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
-    tid = target["id"]
-    label = target["label"]
-    findings_file = FINDINGS_DIR / f"findings-{tid}.md"
-
-    print(f"\n{'='*60}")
-    print(f"▶  Auditing: {label}")
-    print(f"   Doc:   {target['doc']}")
-    print(f"   Tests: {', '.join(target['tests'])}")
-    print(f"{'='*60}")
-
-    if dry_run:
-        print("   [dry-run] Skipping claude invocation.")
-        return True
-
-    prompt = build_prompt(target)
-    prompt_file = FINDINGS_DIR / f"prompt-{tid}.txt"
-    FINDINGS_DIR.mkdir(parents=True, exist_ok=True)
-    prompt_file.write_text(prompt)
-
-    print(f"   Launching claude subagent session…")
-
-    # Unset CLAUDECODE so the subprocess is not treated as a nested session
-    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
-
-    try:
-        result = subprocess.run(
-            [
-                "claude",
-                "--print",
-                "--dangerously-skip-permissions",
-                "--model", "claude-sonnet-4-6",
-                prompt,
-            ],
-            cwd=str(REPO_ROOT),
-            capture_output=False,   # stream output so user can watch progress
-            text=True,
-            env=env,
-            timeout=600,            # 10 min max per target — prevents infinite hang
-        )
-    except subprocess.TimeoutExpired:
-        print(f"   ❌ claude timed out after 10 minutes.")
-        status[tid]["status"] = "error"
-        save_status(status)
-        return False
-
-    if result.returncode != 0:
-        print(f"   ❌ claude exited with code {result.returncode}")
-        status[tid]["status"] = "error"
-        save_status(status)
-        return False
-
-    # Mark complete
-    status[tid]["status"] = "done"
-    status[tid]["findings_file"] = str(findings_file.relative_to(REPO_ROOT))
-    status[tid]["completed_at"] = datetime.datetime.now().isoformat()
-    save_status(status)
-
-    if findings_file.exists():
-        print(f"   ✅ Findings written to {findings_file.relative_to(REPO_ROOT)}")
-    else:
-        print(f"   ⚠️  No findings file written — check claude output above.")
-
-    return True
-
-
-# ── Fix prompt builder ───────────────────────────────────────────────────────
-
 def build_fix_prompt(target: dict, findings_text: str) -> str:
-    doc_path = target["doc"]
     fix_summary_file = f"docs/plans/doc-audit/fix-summary-{target['id']}.md"
 
     return textwrap.dedent(f"""
@@ -323,31 +393,19 @@ def build_fix_prompt(target: dict, findings_text: str) -> str:
 
     ## Findings to action
 
-    The audit identified gaps between the documentation and the actual code/tests.
-    Your job is to fix the docs — not the tests, not the code.
-
     ```
     {findings_text}
     ```
 
     ## What to fix
 
-    **MISMATCH items** — the test represents ground truth. Update the doc to match
-    what the test actually asserts. Be surgical: change only the incorrect sentence
-    or paragraph, not the whole section.
-
-    **UNDOCUMENTED items** — behaviour exists in tests but is missing from the doc.
-    Add a concise description in the most appropriate section of the doc. Match the
-    existing tone and style.
-
-    **UNTESTED items** — do NOT auto-fix these. The doc claim may be valid but
-    just lacks a test, or it may be stale. Instead, add a note in the fix summary
-    flagging them for manual review.
+    **MISMATCH** — use edit_file to correct the doc to match what the test asserts.
+    **UNDOCUMENTED** — use edit_file or read_file + write_file to add the missing behaviour.
+    **UNTESTED** — do NOT auto-fix. Note them in the fix summary only.
 
     ## Rules
-
-    - Only edit files under `docs/` — never touch source code or test files
-    - Surgical edits only — don't rewrite sections, just fix the specific gap
+    - Only edit files under `docs/` — never touch source or test files
+    - Surgical edits only — fix the specific gap, don't rewrite sections
     - After all edits, write a fix summary to `{fix_summary_file}`:
 
     ```markdown
@@ -355,270 +413,187 @@ def build_fix_prompt(target: dict, findings_text: str) -> str:
     **Fixed:** {datetime.date.today().isoformat()}
 
     ## Changes made
-    ### <doc file>
-    - M1: <what was changed and why>
+    - M1: <what changed and why>
     - N1: <what was added and where>
 
-    ## Skipped (UNTESTED — needs manual review)
-    - U1: "<claim>" — flagged for test coverage decision
+    ## Skipped — needs manual decision
+    - U1: "<claim>" — no test exists, may need test or doc removal
     ```
-
-    - If there is nothing to fix (all items are UNTESTED or already correct),
-      write the fix summary with "No doc changes needed" and make no file edits.
     """).strip()
 
 
-def run_fix(target: dict, status: dict, dry_run: bool = False) -> bool:
+# ── Target runners ─────────────────────────────────────────────────────────────
+def run_audit_target(target: dict, status: dict) -> bool:
     tid = target["id"]
-    label = target["label"]
     findings_file = FINDINGS_DIR / f"findings-{tid}.md"
-    fix_summary_file = FINDINGS_DIR / f"fix-summary-{tid}.md"
+
+    print(f"\n{'='*60}")
+    print(f"▶  Auditing: {target['label']}")
+    print(f"   Doc:   {target['doc']}")
+    print(f"   Tests: {', '.join(target['tests'])}")
+    print(f"{'='*60}")
+
+    prompt = build_audit_prompt(target)
+    run_claude_session(prompt, target["label"])
+
+    status[tid]["status"] = "done" if findings_file.exists() else "error"
+    status[tid]["findings_file"] = str(findings_file.relative_to(REPO_ROOT)) if findings_file.exists() else None
+    status[tid]["completed_at"] = datetime.datetime.now().isoformat()
+    save_status(status)
+
+    if findings_file.exists():
+        print(f"   ✅ Findings: {findings_file.relative_to(REPO_ROOT)}")
+        return True
+    else:
+        print(f"   ⚠️  No findings file written — check output above")
+        status[tid]["status"] = "error"
+        save_status(status)
+        return False
+
+
+def run_fix_target(target: dict, status: dict) -> bool:
+    tid = target["id"]
+    findings_file = FINDINGS_DIR / f"findings-{tid}.md"
+    fix_summary   = FINDINGS_DIR / f"fix-summary-{tid}.md"
 
     s = status.get(tid, {})
-
-    if s.get("status") not in ("done", "error"):
-        print(f"   ⏭  {label} — no findings yet (status: {s.get('status', 'pending')}). Run audit first.")
+    if s.get("status") != "done" or not findings_file.exists():
+        print(f"   ⏭  {target['label']} — no findings yet. Run audit first.")
         return True
-
-    if not findings_file.exists():
-        print(f"   ⚠️  {label} — findings file missing. Re-run audit for this target.")
-        return True
-
     if s.get("fix_status") == "done":
-        print(f"   ✅ {label} — already fixed. Use --reset-fix to redo.")
+        print(f"   ✅ {target['label']} — already fixed.")
         return True
 
     print(f"\n{'='*60}")
-    print(f"🔧 Fixing: {label}")
-    print(f"   Findings: {findings_file.relative_to(REPO_ROOT)}")
+    print(f"🔧 Fixing: {target['label']}")
     print(f"{'='*60}")
 
     findings_text = findings_file.read_text()
-
-    # Check if there's anything actionable
     if "MISMATCH" not in findings_text and "UNDOCUMENTED" not in findings_text:
-        print(f"   ℹ️  No MISMATCH or UNDOCUMENTED items — nothing to fix.")
+        print(f"   ℹ️  No actionable findings — nothing to fix.")
         status[tid]["fix_status"] = "done"
-        status[tid]["fix_summary_file"] = None
-        status[tid]["fixed_at"] = datetime.datetime.now().isoformat()
         save_status(status)
-        return True
-
-    if dry_run:
-        print("   [dry-run] Skipping claude invocation.")
         return True
 
     prompt = build_fix_prompt(target, findings_text)
-    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
-
-    print(f"   Launching claude fix session…")
-
-    try:
-        result = subprocess.run(
-            [
-                "claude",
-                "--print",
-                "--dangerously-skip-permissions",
-                "--model", "claude-sonnet-4-6",
-                prompt,
-            ],
-            cwd=str(REPO_ROOT),
-            capture_output=False,
-            text=True,
-            env=env,
-            timeout=600,            # 10 min max per target
-        )
-    except subprocess.TimeoutExpired:
-        print(f"   ❌ claude timed out after 10 minutes.")
-        status[tid]["fix_status"] = "error"
-        save_status(status)
-        return False
-
-    if result.returncode != 0:
-        print(f"   ❌ claude exited with code {result.returncode}")
-        status[tid]["fix_status"] = "error"
-        save_status(status)
-        return False
+    run_claude_session(prompt, target["label"])
 
     status[tid]["fix_status"] = "done"
-    status[tid]["fix_summary_file"] = str(fix_summary_file.relative_to(REPO_ROOT)) if fix_summary_file.exists() else None
+    status[tid]["fix_summary_file"] = str(fix_summary.relative_to(REPO_ROOT)) if fix_summary.exists() else None
     status[tid]["fixed_at"] = datetime.datetime.now().isoformat()
     save_status(status)
 
-    if fix_summary_file.exists():
-        print(f"   ✅ Fix summary: {fix_summary_file.relative_to(REPO_ROOT)}")
-    print(f"   Review changes with: git diff docs/")
-
+    print(f"   ✅ Done. Review with: git diff docs/")
     return True
 
 
-# ── Aggregate report ──────────────────────────────────────────────────────────
-
+# ── Aggregate report ───────────────────────────────────────────────────────────
 def build_report(status: dict):
     report_file = FINDINGS_DIR / "report.md"
     lines = [
         "# Doc Audit Retrospective Report",
         f"**Generated:** {datetime.date.today().isoformat()}",
-        "",
-        "## Status",
-        "",
-        "| Target | Label | Status | Findings |",
-        "|--------|-------|--------|----------|",
+        "", "## Status", "",
+        "| Target | Label | Audit | Fix | Findings |",
+        "|--------|-------|-------|-----|----------|",
     ]
-
     for t in TARGETS:
-        s = status.get(t["id"], {})
-        st = s.get("status", "pending")
+        s  = status.get(t["id"], {})
+        ai = {"done": "✅", "pending": "⏳", "error": "❌"}.get(s.get("status", "pending"), "?")
+        fi = {"done": "✅", "error": "❌"}.get(s.get("fix_status", ""), "—")
         ff = s.get("findings_file", "")
         link = f"[view]({pathlib.Path(ff).name})" if ff else "—"
-        icon = {"done": "✅", "pending": "⏳", "error": "❌", "skipped": "⏭"}.get(st, "?")
-        lines.append(f"| `{t['id']}` | {t['label']} | {icon} {st} | {link} |")
+        lines.append(f"| `{t['id']}` | {t['label']} | {ai} | {fi} | {link} |")
 
     lines += ["", "## Findings", ""]
-
     for t in TARGETS:
-        s = status.get(t["id"], {})
-        ff = s.get("findings_file")
+        ff = status.get(t["id"], {}).get("findings_file")
         if ff and (REPO_ROOT / ff).exists():
-            lines.append(f"---")
-            lines.append((REPO_ROOT / ff).read_text())
+            lines += ["---", (REPO_ROOT / ff).read_text()]
 
     report_file.write_text("\n".join(lines) + "\n")
-    print(f"\n📄 Report written to {report_file.relative_to(REPO_ROOT)}")
+    print(f"\n📄 Report: {report_file.relative_to(REPO_ROOT)}")
 
 
-# ── CLI ───────────────────────────────────────────────────────────────────────
-
+# ── CLI ────────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--list",      action="store_true", help="Show current status and exit")
-    parser.add_argument("--reset",     action="store_true", help="Reset all targets to pending")
-    parser.add_argument("--target",    metavar="ID",        help="Run a single target by ID")
-    parser.add_argument("--dry-run",   action="store_true", help="Show what would run, skip claude")
-    parser.add_argument("--report",    action="store_true", help="Regenerate aggregate report and exit")
-    parser.add_argument("--fix",       action="store_true", help="Apply doc fixes based on completed findings")
-    parser.add_argument("--reset-fix", action="store_true", help="Reset fix status so --fix re-runs")
+    parser.add_argument("--list",      action="store_true")
+    parser.add_argument("--reset",     action="store_true")
+    parser.add_argument("--reset-fix", action="store_true")
+    parser.add_argument("--target",    metavar="ID")
+    parser.add_argument("--report",    action="store_true")
+    parser.add_argument("--fix",       action="store_true")
     args = parser.parse_args()
 
     status = load_status()
-
-    # Ensure all targets exist in status (for newly added targets)
     for t in TARGETS:
         if t["id"] not in status:
             status[t["id"]] = {"status": "pending", "findings_file": None, "completed_at": None}
     save_status(status)
 
     if args.list:
-        print(f"\nDoc Audit Status  ({STATUS_FILE.relative_to(REPO_ROOT)})\n")
-        print(f"  {'ID':<30} {'AUDIT':<10} {'FIX':<10}  Label")
-        print(f"  {'-'*29} {'-'*9} {'-'*9}  {'-'*30}")
+        print(f"\nDoc Audit Status\n")
+        print(f"  {'ID':<32} {'AUDIT':<10} {'FIX':<8}  Label")
+        print(f"  {'-'*31} {'-'*9} {'-'*7}  {'-'*35}")
         for t in TARGETS:
-            s = status[t["id"]]
-            audit_icon = {"done": "✅ done", "pending": "⏳ pending", "error": "❌ error"}.get(s["status"], "?")
-            fix_icon   = {"done": "✅ done", "error": "❌ error"}.get(s.get("fix_status", ""), "—")
-            print(f"  {t['id']:<30} {audit_icon:<10} {fix_icon:<10}  {t['label']}")
-        pending = sum(1 for t in TARGETS if status[t["id"]]["status"] == "pending")
-        done    = sum(1 for t in TARGETS if status[t["id"]]["status"] == "done")
-        fixed   = sum(1 for t in TARGETS if status[t["id"]].get("fix_status") == "done")
-        print(f"\n  Audit: {done}/{len(TARGETS)} done, {pending} pending  |  Fix: {fixed}/{done} done\n")
+            s  = status[t["id"]]
+            ai = {"done": "✅ done", "pending": "⏳ pend", "error": "❌ err"}.get(s["status"], "?")
+            fi = {"done": "✅ done", "error": "❌ err"}.get(s.get("fix_status", ""), "—")
+            print(f"  {t['id']:<32} {ai:<10} {fi:<8}  {t['label']}")
+        done  = sum(1 for t in TARGETS if status[t["id"]]["status"] == "done")
+        fixed = sum(1 for t in TARGETS if status[t["id"]].get("fix_status") == "done")
+        print(f"\n  Audit: {done}/{len(TARGETS)} done  |  Fix: {fixed}/{done} done\n")
         return
 
     if args.reset:
         for t in TARGETS:
             status[t["id"]] = {"status": "pending", "findings_file": None, "completed_at": None}
-        save_status(status)
-        print("✅ All targets reset to pending.")
-        return
+        save_status(status); print("✅ Reset."); return
 
     if args.reset_fix:
         for t in TARGETS:
-            status[t["id"]].pop("fix_status", None)
-            status[t["id"]].pop("fix_summary_file", None)
-            status[t["id"]].pop("fixed_at", None)
-        save_status(status)
-        print("✅ Fix status reset. Re-run with --fix to redo.")
-        return
+            for k in ("fix_status", "fix_summary_file", "fixed_at"):
+                status[t["id"]].pop(k, None)
+        save_status(status); print("✅ Fix status reset."); return
 
     if args.report:
-        build_report(status)
-        return
+        build_report(status); return
 
-    # ── FIX mode ──────────────────────────────────────────────────────────────
-    if args.fix:
+    # Resolve single target if given
+    def get_targets(pool):
         if args.target:
             ids = [t["id"] for t in TARGETS]
             if args.target not in ids:
                 print(f"❌ Unknown target '{args.target}'. Known: {', '.join(ids)}")
                 sys.exit(1)
-            targets_to_fix = [t for t in TARGETS if t["id"] == args.target]
-        else:
-            targets_to_fix = [
-                t for t in TARGETS
-                if status[t["id"]]["status"] == "done"
-                and status[t["id"]].get("fix_status") != "done"
-            ]
+            return [t for t in TARGETS if t["id"] == args.target]
+        return pool
 
-        if not targets_to_fix:
-            print("✅ Nothing to fix — either no audit results yet, or all already fixed.")
-            print("   Run audit first, then --fix. Use --reset-fix to redo fixes.")
-            return
-
-        print(f"\n🔧 Doc Audit Fix Mode")
-        print(f"   Targets to fix: {len(targets_to_fix)}")
-        print(f"   Interrupt at any time — completed fixes are saved.\n")
-
-        errors = 0
-        for target in targets_to_fix:
-            ok = run_fix(target, status, dry_run=args.dry_run)
-            if not ok:
-                errors += 1
-
-        fixed = sum(1 for t in TARGETS if status[t["id"]].get("fix_status") == "done")
-        print(f"\n{'='*60}")
-        print(f"✅ {fixed} target(s) fixed. {errors} error(s).")
-        print(f"   Review all doc changes: git diff docs/")
-        print(f"   Then commit:            git add docs/ && git commit -m 'docs(audit): retrospective doc fixes'")
-        print(f"{'='*60}\n")
+    if args.fix:
+        targets = get_targets([t for t in TARGETS
+                               if status[t["id"]]["status"] == "done"
+                               and status[t["id"]].get("fix_status") != "done"])
+        if not targets:
+            print("✅ Nothing to fix — run audit first, or use --reset-fix to redo."); return
+        print(f"\n🔧 Fix mode — {len(targets)} target(s)\n")
+        for t in targets:
+            run_fix_target(t, status)
+        print(f"\n   git diff docs/   ← review changes")
+        print(f"   git add docs/ && git commit -m 'docs(audit): retrospective fixes'")
         return
 
-    # ── AUDIT mode (default) ──────────────────────────────────────────────────
-    if args.target:
-        ids = [t["id"] for t in TARGETS]
-        if args.target not in ids:
-            print(f"❌ Unknown target '{args.target}'. Known: {', '.join(ids)}")
-            sys.exit(1)
-        targets_to_run = [t for t in TARGETS if t["id"] == args.target]
-    else:
-        targets_to_run = [t for t in TARGETS if status[t["id"]]["status"] == "pending"]
+    # Default: audit
+    targets = get_targets([t for t in TARGETS if status[t["id"]]["status"] == "pending"])
+    if not targets:
+        print("✅ All done. Run --fix to apply fixes, or --reset to re-audit."); return
 
-    if not targets_to_run:
-        print("✅ All targets already complete. Use --reset to re-run, or --list to view status.")
-        print("   Ready to fix? Run: python3 scripts/dev/doc-audit-retrospective.py --fix")
-        return
-
-    print(f"\n🔍 Doc Audit Retrospective")
-    print(f"   Targets to run: {len(targets_to_run)}")
-    print(f"   State file:     {STATUS_FILE.relative_to(REPO_ROOT)}")
-    print(f"   Findings dir:   {FINDINGS_DIR.relative_to(REPO_ROOT)}/")
-    print(f"\n   Interrupt at any time — completed targets are saved and will be skipped on resume.\n")
-
-    errors = 0
-    for target in targets_to_run:
-        ok = run_target(target, status, dry_run=args.dry_run)
-        if not ok:
-            errors += 1
-            print(f"   ⚠️  Continuing to next target despite error…")
-
+    print(f"\n🔍 Doc Audit — {len(targets)} target(s)  (interrupt anytime, state is saved)\n")
+    for t in targets:
+        run_audit_target(t, status)
     build_report(status)
-
     done = sum(1 for t in TARGETS if status[t["id"]]["status"] == "done")
-    print(f"\n{'='*60}")
-    print(f"✅ {done}/{len(TARGETS)} targets complete. {errors} error(s).")
-    if errors:
-        print(f"   Re-run to retry errored targets (they remain 'pending').")
-    if done > 0:
-        print(f"   Apply fixes: python3 scripts/dev/doc-audit-retrospective.py --fix")
-    print(f"{'='*60}\n")
+    print(f"\n✅ {done}/{len(TARGETS)} done. Run --fix to apply corrections.\n")
 
 
 if __name__ == "__main__":
