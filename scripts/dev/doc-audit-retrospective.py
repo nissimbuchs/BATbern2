@@ -268,6 +268,9 @@ def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
 
     print(f"   Launching claude subagent session…")
 
+    # Unset CLAUDECODE so the subprocess is not treated as a nested session
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+
     result = subprocess.run(
         [
             "claude",
@@ -279,6 +282,7 @@ def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
         cwd=str(REPO_ROOT),
         capture_output=False,   # stream output so user can watch progress
         text=True,
+        env=env,
     )
 
     if result.returncode != 0:
