@@ -2,7 +2,10 @@
   "state-machines": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-state-machines.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-state-machines.md",
+    "fixed_at": "2026-03-09T14:25:03.489507"
   },
   "backend-architecture": {
     "status": "pending",
