@@ -26,7 +26,10 @@
   "epic-5-organizer-workflows": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-epic-5-organizer-workflows.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-5-organizer-workflows.md",
+    "fixed_at": "2026-03-09T14:38:28.981116"
   },
   "epic-6-speaker-portal": {
     "status": "done",
