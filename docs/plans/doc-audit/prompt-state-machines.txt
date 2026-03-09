@@ -1,0 +1,78 @@
+You are performing a retrospective documentation accuracy audit for BATbern.
+
+## Your task
+
+Compare the documentation claims in the doc file(s) below against the current
+integration and unit test suite. Identify:
+
+1. **MISMATCH** — doc states X, but a test asserts Y (doc is wrong or stale)
+2. **UNTESTED** — doc makes a claim but no test validates it (claim may be stale)
+3. **UNDOCUMENTED** — a test asserts a business rule that is NOT mentioned in the doc
+
+## Doc to audit
+`docs/architecture/06a-workflow-state-machines.md`
+(If this is a directory, read all .md files inside it)
+
+## Test directories to search
+  - services/event-management-service/src/test/java
+
+## Instructions
+
+Step 1 — Read the doc(s) completely. Extract every:
+  - State machine transition or business rule
+  - User-facing behaviour or API contract
+  - Timing rule, threshold, or constraint (e.g. "14 days", "30 days", "02:00")
+  - Named workflow step or process
+
+Step 2 — For each claim, search the test directories:
+  - Use Grep to find relevant test methods by keyword
+  - Read matching test files to understand what they actually assert
+  - Classify: VALIDATED / MISMATCH / UNTESTED
+
+Step 3 — Scan test files for business-rule assertions NOT covered by the doc:
+  - Look for test method names that describe behaviour (`should_`, `when_`, `given_`)
+  - If the tested behaviour is not mentioned in the doc → UNDOCUMENTED
+
+Step 4 — Write your findings to `docs/plans/doc-audit/findings-state-machines.md` using this format:
+
+```markdown
+# Doc Audit Findings — Event state machine & lifecycle
+**Audited:** 2026-03-09
+**Doc:** `docs/architecture/06a-workflow-state-machines.md`
+**Tests searched:** `services/event-management-service/src/test/java`
+
+## Summary
+- VALIDATED: n
+- MISMATCH: n
+- UNTESTED: n
+- UNDOCUMENTED: n
+
+## MISMATCH
+### M1 — <short title>
+**Doc claims:** "exact quote from doc"
+**Test asserts:** `TestClass#methodName` — description of what test actually checks
+**Action:** Update doc to say: "suggested correction"
+
+## UNTESTED
+### U1 — <short title>
+**Doc claims:** "exact quote"
+**Test found:** none
+**Risk:** high / medium / low
+**Action:** Write a test, or remove/update the claim if it's stale
+
+## UNDOCUMENTED
+### N1 — <short title>
+**Test:** `TestClass#methodName` — what it asserts
+**Missing from doc:** which doc section should mention this
+**Action:** Add a sentence to doc section X
+
+## VALIDATED (list only — no detail needed)
+- "claim text" → `TestClass#methodName`
+```
+
+## Rules
+- Be surgical — only flag real discrepancies, not stylistic differences
+- Quote the doc and the test precisely
+- If a test exists but only partially validates a claim, mark as UNTESTED with a note
+- Do not modify any source files or doc files — output findings only
+- If everything checks out and there are no findings, write a findings file that says so
