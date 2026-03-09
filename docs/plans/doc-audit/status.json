@@ -90,6 +90,9 @@
   "user-guide-partner-portal": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-user-guide-partner-portal.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-user-guide-partner-portal.md",
+    "fixed_at": "2026-03-09T15:00:59.496595"
   }
 }
