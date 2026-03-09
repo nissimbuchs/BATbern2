@@ -271,19 +271,26 @@ def run_target(target: dict, status: dict, dry_run: bool = False) -> bool:
     # Unset CLAUDECODE so the subprocess is not treated as a nested session
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
 
-    result = subprocess.run(
-        [
-            "claude",
-            "--print",
-            "--allowedTools", "Read,Edit,Write,Glob,Grep",
-            "--model", "claude-sonnet-4-6",
-            prompt,
-        ],
-        cwd=str(REPO_ROOT),
-        capture_output=False,   # stream output so user can watch progress
-        text=True,
-        env=env,
-    )
+    try:
+        result = subprocess.run(
+            [
+                "claude",
+                "--print",
+                "--allowedTools", "Read,Edit,Write,Glob,Grep",
+                "--model", "claude-sonnet-4-6",
+                prompt,
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=False,   # stream output so user can watch progress
+            text=True,
+            env=env,
+            timeout=600,            # 10 min max per target — prevents infinite hang
+        )
+    except subprocess.TimeoutExpired:
+        print(f"   ❌ claude timed out after 10 minutes.")
+        status[tid]["status"] = "error"
+        save_status(status)
+        return False
 
     if result.returncode != 0:
         print(f"   ❌ claude exited with code {result.returncode}")
@@ -406,19 +413,26 @@ def run_fix(target: dict, status: dict, dry_run: bool = False) -> bool:
 
     print(f"   Launching claude fix session…")
 
-    result = subprocess.run(
-        [
-            "claude",
-            "--print",
-            "--allowedTools", "Read,Edit,Write,Glob,Grep",
-            "--model", "claude-sonnet-4-6",
-            prompt,
-        ],
-        cwd=str(REPO_ROOT),
-        capture_output=False,
-        text=True,
-        env=env,
-    )
+    try:
+        result = subprocess.run(
+            [
+                "claude",
+                "--print",
+                "--allowedTools", "Read,Edit,Write,Glob,Grep",
+                "--model", "claude-sonnet-4-6",
+                prompt,
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=False,
+            text=True,
+            env=env,
+            timeout=600,            # 10 min max per target
+        )
+    except subprocess.TimeoutExpired:
+        print(f"   ❌ claude timed out after 10 minutes.")
+        status[tid]["fix_status"] = "error"
+        save_status(status)
+        return False
 
     if result.returncode != 0:
         print(f"   ❌ claude exited with code {result.returncode}")
