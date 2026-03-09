@@ -18,7 +18,10 @@
   "epic-4-public-website": {
     "status": "done",
     "findings_file": "docs/plans/doc-audit/findings-epic-4-public-website.md",
-    "completed_at": "2026-03-09"
+    "completed_at": "2026-03-09",
+    "fix_status": "done",
+    "fix_summary_file": "docs/plans/doc-audit/fix-summary-epic-4-public-website.md",
+    "fixed_at": "2026-03-09T14:31:40.881563"
   },
   "epic-5-organizer-workflows": {
     "status": "done",
