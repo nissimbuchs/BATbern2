@@ -22,7 +22,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.Nullable;
@@ -128,6 +130,39 @@ public class NewsletterEmailService {
     @Autowired
     public void setSelf(@Lazy NewsletterEmailService self) {
         this.self = self;
+    }
+
+    // ── Startup recovery ──────────────────────────────────────────────────────
+
+    /**
+     * On startup, marks any orphaned IN_PROGRESS or PENDING sends as PARTIAL/FAILED.
+     *
+     * <p>If the service is killed mid-send (e.g. Fargate Spot interruption), the
+     * {@code newsletter_sends} row is left in {@code IN_PROGRESS}. Without recovery the
+     * row would stay that way forever and the Retry button would never appear.
+     *
+     * <p>After this runs, orphaned sends show up with status PARTIAL (if some emails were
+     * already sent) or FAILED (if none were sent), and the organizer can click Retry.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void recoverOrphanedSends() {
+        List<NewsletterSend> orphans = sendRepository.findByStatusIn(
+                List.of(STATUS_IN_PROGRESS, STATUS_PENDING));
+        if (orphans.isEmpty()) {
+            return;
+        }
+        log.warn("Recovering {} orphaned newsletter send(s) left in IN_PROGRESS/PENDING "
+                + "by a previous service instance", orphans.size());
+        Instant now = Instant.now();
+        for (NewsletterSend send : orphans) {
+            String recoveredStatus = send.getSentCount() > 0 ? STATUS_PARTIAL : STATUS_FAILED;
+            send.setStatus(recoveredStatus);
+            send.setCompletedAt(now);
+            sendRepository.save(send);
+            log.warn("Orphaned send {} → {} (sentCount={}, failedCount={})",
+                    send.getId(), recoveredStatus, send.getSentCount(), send.getFailedCount());
+        }
     }
 
     // ── Preview (no send) ─────────────────────────────────────────────────────

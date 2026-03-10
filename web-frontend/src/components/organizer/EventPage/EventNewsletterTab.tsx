@@ -80,6 +80,18 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
     sendStatusQuery.data?.status === 'PENDING' || sendStatusQuery.data?.status === 'IN_PROGRESS';
   const newsletterTemplatesQuery = useEmailTemplates({ category: 'NEWSLETTER' });
 
+  // On mount (or when history loads), resume polling if there's an active send in the history.
+  // This handles navigating away and back while a send is in progress.
+  useEffect(() => {
+    if (activeSendId) return; // already tracking one
+    const activeRow = historyQuery.data?.find(
+      (s) => s.status === 'PENDING' || s.status === 'IN_PROGRESS'
+    );
+    if (activeRow) {
+      setActiveSendId(activeRow.id);
+    }
+  }, [historyQuery.data, activeSendId]);
+
   // Refetch history when the active send job reaches a terminal state.
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {

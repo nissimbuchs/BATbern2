@@ -20,4 +20,7 @@ public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, 
 
     /** Validates that a send record belongs to a specific event (security guard). */
     java.util.Optional<NewsletterSend> findByIdAndEventId(UUID id, UUID eventId);
+
+    /** All sends currently in one of the given statuses — used for startup orphan recovery. */
+    java.util.List<NewsletterSend> findByStatusIn(java.util.Collection<String> statuses);
 }
