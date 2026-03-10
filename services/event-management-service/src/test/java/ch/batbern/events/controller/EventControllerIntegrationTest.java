@@ -101,6 +101,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private org.springframework.cache.CacheManager cacheManager;
+
     // Counter for generating unique event numbers in tests
     private int eventNumberCounter = 1000;
 
@@ -108,6 +111,14 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         // Reset mocks to prevent test pollution
         reset(userApiClient, logoRepository);
+
+        // Clear all Spring caches to prevent stale cache entries across @Transactional test rollbacks
+        cacheManager.getCacheNames().forEach(name -> {
+            org.springframework.cache.Cache cache = cacheManager.getCache(name);
+            if (cache != null) {
+                cache.clear();
+            }
+        });
 
         // Clean database before each test
         eventRepository.deleteAll();
