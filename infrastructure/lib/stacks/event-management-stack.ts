@@ -86,7 +86,9 @@ export class EventManagementStack extends cdk.Stack {
             AWS_S3_BUCKET_NAME: props.contentBucket.bucketName,
           }),
           ...(props.cloudFrontDistribution && {
-            CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
+            CLOUDFRONT_DOMAIN: props.config.domain?.cdnDomain
+              ? `https://${props.config.domain.cdnDomain}`
+              : `https://${props.cloudFrontDistribution.distributionDomainName}`,
             CLOUDFRONT_DISTRIBUTION_ID: props.cloudFrontDistribution.distributionId,
           }),
           // Service Connect URL for company-user-management service (ADR-004)
