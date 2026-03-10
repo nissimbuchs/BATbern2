@@ -87,7 +87,7 @@ const HomePage = () => {
   const isCompletedOrArchived =
     event?.workflowState === 'ARCHIVED' || event?.workflowState === 'EVENT_COMPLETED';
   const { data: eventPhotos } = useEventPhotos(
-    eventCode ?? '',
+    eventCode ?? event?.eventCode ?? '',
     isArchiveMode || isCompletedOrArchived
   );
 

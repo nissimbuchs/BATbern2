@@ -7114,7 +7114,7 @@ components:
         status:
           type: string
           description: Registration status (uppercase). Present when registered=true.
-          enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED]
+          enum: [REGISTERED, CONFIRMED, WAITLIST, CANCELLED, ATTENDED]
           example: CONFIRMED
         registrationDate:
           type: string

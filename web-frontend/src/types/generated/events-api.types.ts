@@ -3685,7 +3685,7 @@ export interface components {
        * @example CONFIRMED
        * @enum {string}
        */
-      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
       /**
        * Format: date-time
        * @description ISO-8601 timestamp when registration was created. Present when registered=true.
