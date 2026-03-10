@@ -81,6 +81,8 @@ class NewsletterEmailServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(newsletterEmailService, "baseUrl", "https://batbern.ch");
+        // Wire self-reference so @Async proxy calls work (avoids NPE on this.self in tests).
+        newsletterEmailService.setSelf(newsletterEmailService);
 
         testEvent = new Event();
         testEvent.setEventCode("BATbern58");

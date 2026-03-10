@@ -7,7 +7,7 @@
  * 3. Compose & send section (template select, language, preview iframe, send/reminder buttons + confirm dialog)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -79,6 +79,19 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   const isJobActive =
     sendStatusQuery.data?.status === 'PENDING' || sendStatusQuery.data?.status === 'IN_PROGRESS';
   const newsletterTemplatesQuery = useEmailTemplates({ category: 'NEWSLETTER' });
+
+  // Refetch history when the active send job reaches a terminal state.
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const status = sendStatusQuery.data?.status;
+    const wasActive =
+      prevStatusRef.current === 'PENDING' || prevStatusRef.current === 'IN_PROGRESS';
+    const isTerminal = status === 'COMPLETED' || status === 'PARTIAL' || status === 'FAILED';
+    if (wasActive && isTerminal) {
+      historyQuery.refetch();
+    }
+    prevStatusRef.current = status;
+  }, [sendStatusQuery.data?.status, historyQuery]);
 
   const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
     () => (newsletterTemplatesQuery.data ?? []).filter((tpl) => tpl.locale === locale),
@@ -382,13 +395,6 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             </Button>
           </Stack>
 
-          {sendMutation.isSuccess && (
-            <Alert severity="success">
-              {t('eventPage.newsletter.sendSuccess', {
-                count: sendMutation.data?.recipientCount ?? 0,
-              })}
-            </Alert>
-          )}
           {sendMutation.isError && (
             <Alert severity="error">
               {t('eventPage.newsletter.sendError', 'Failed to send. Please try again.')}

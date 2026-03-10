@@ -20,7 +20,9 @@ import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.Nullable;
@@ -117,6 +119,17 @@ public class NewsletterEmailService {
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
+    /**
+     * Self-reference via {@code @Lazy} so that calls to {@code @Async} methods go through
+     * the Spring proxy (direct {@code this.xxx()} calls bypass the proxy and run synchronously).
+     */
+    private NewsletterEmailService self;
+
+    @Autowired
+    public void setSelf(@Lazy NewsletterEmailService self) {
+        this.self = self;
+    }
+
     // ── Preview (no send) ─────────────────────────────────────────────────────
 
     /**
@@ -171,7 +184,8 @@ public class NewsletterEmailService {
                 (int) totalCount, effectiveKey);
 
         // Launch background send job — returns immediately.
-        executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey);
+        // Must call via `self` proxy so @Async is honoured (direct this.xxx() bypasses the proxy).
+        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey);
 
         log.info("Newsletter send job queued: sendId={}, event={}, recipients={}",
                 saved.getId(), event.getEventCode(), totalCount);
@@ -268,7 +282,7 @@ public class NewsletterEmailService {
         }
 
         String effectiveKey = resolveTemplateKey(send.getTemplateKey());
-        executeRetryAsync(send.getId(), event, send.isReminder(), send.getLocale(), effectiveKey);
+        self.executeRetryAsync(send.getId(), event, send.isReminder(), send.getLocale(), effectiveKey);
 
         log.info("Newsletter retry job queued: sendId={}, event={}",
                 send.getId(), event.getEventCode());
