@@ -44,12 +44,18 @@ interface UserTableProps {
   users: User[];
   onRowClick: (user: User) => void;
   onAction: (action: string, user: User) => void;
+  showAdminActions?: boolean;
 }
 
 type SortField = 'name' | 'email' | 'company';
 type SortDirection = 'asc' | 'desc';
 
-const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) => {
+const UserTable: React.FC<UserTableProps> = ({
+  users,
+  onRowClick,
+  onAction,
+  showAdminActions = true,
+}) => {
   const { t } = useTranslation('userManagement');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -164,7 +170,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
             </TableCell>
             <TableCell>{t('table.headers.roles')}</TableCell>
             <TableCell>{t('common:labels.status')}</TableCell>
-            <TableCell align="right">{t('common:labels.actions')}</TableCell>
+            {showAdminActions && <TableCell align="right">{t('common:labels.actions')}</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -227,15 +233,17 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                   color={user.active ? 'success' : 'default'}
                 />
               </TableCell>
-              <TableCell align="right">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleMenuOpen(e, user)}
-                  aria-label={t('actions.openMenu')}
-                >
-                  <MoreVertIcon />
-                </IconButton>
-              </TableCell>
+              {showAdminActions && (
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, user)}
+                    aria-label={t('actions.openMenu')}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
