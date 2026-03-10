@@ -116,6 +116,7 @@ describe('getSectionVisibility — COMING_SOON', () => {
   const phase: HomePagePhase = { kind: 'COMING_SOON' };
   const vis = getSectionVisibility(phase);
 
+  it('disables registration', () => expect(vis.registrationEnabled).toBe(false));
   it('hides event description', () => expect(vis.eventDescription).toBe(false));
   it('shows event logistics', () => expect(vis.eventLogistics).toBe(true));
   it('shows venue map', () => expect(vis.venueMap).toBe(true));
@@ -139,6 +140,7 @@ describe('getSectionVisibility — PRE_EVENT TOPIC', () => {
   const phase: HomePagePhase = { kind: 'PRE_EVENT', sub: 'TOPIC' };
   const vis = getSectionVisibility(phase);
 
+  it('enables registration', () => expect(vis.registrationEnabled).toBe(true));
   it('shows event description', () => expect(vis.eventDescription).toBe(true));
   it('shows event logistics', () => expect(vis.eventLogistics).toBe(true));
   it('shows venue map', () => expect(vis.venueMap).toBe(true));
@@ -186,6 +188,7 @@ describe('getSectionVisibility — POST_EVENT hasEventPhotos=true', () => {
   const phase: HomePagePhase = { kind: 'POST_EVENT', hasEventPhotos: true };
   const vis = getSectionVisibility(phase);
 
+  it('disables registration', () => expect(vis.registrationEnabled).toBe(false));
   it('shows event description', () => expect(vis.eventDescription).toBe(true));
   it('shows event logistics', () => expect(vis.eventLogistics).toBe(true));
   it('hides venue map', () => expect(vis.venueMap).toBe(false));
@@ -209,6 +212,7 @@ describe('getSectionVisibility — POST_EVENT hasEventPhotos=false', () => {
   const phase: HomePagePhase = { kind: 'POST_EVENT', hasEventPhotos: false };
   const vis = getSectionVisibility(phase);
 
+  it('disables registration', () => expect(vis.registrationEnabled).toBe(false));
   it('hides event photos marquee', () => expect(vis.eventPhotosMarquee).toBe(false));
   it('does not skip testimonials photo row', () =>
     expect(vis.testimonialsSkipPhotoRow).toBe(false));
@@ -223,6 +227,7 @@ describe('getSectionVisibility — ARCHIVE hasEventPhotos=true', () => {
   const phase: HomePagePhase = { kind: 'ARCHIVE', hasEventPhotos: true };
   const vis = getSectionVisibility(phase);
 
+  it('disables registration', () => expect(vis.registrationEnabled).toBe(false));
   it('shows event description', () => expect(vis.eventDescription).toBe(true));
   it('shows event logistics', () => expect(vis.eventLogistics).toBe(true));
   it('hides venue map', () => expect(vis.venueMap).toBe(false));
@@ -245,6 +250,7 @@ describe('getSectionVisibility — ARCHIVE hasEventPhotos=false', () => {
   const phase: HomePagePhase = { kind: 'ARCHIVE', hasEventPhotos: false };
   const vis = getSectionVisibility(phase);
 
+  it('disables registration', () => expect(vis.registrationEnabled).toBe(false));
   it('hides event photos marquee', () => expect(vis.eventPhotosMarquee).toBe(false));
   it('does not skip testimonials photo row', () =>
     expect(vis.testimonialsSkipPhotoRow).toBe(false));

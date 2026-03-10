@@ -197,6 +197,7 @@ const HomePage = () => {
         location={eventLocation}
         ctaLink={registerLink}
         eventCode={event.eventCode}
+        hideRegisterCta={!vis.registrationEnabled}
         themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}

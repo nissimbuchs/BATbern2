@@ -107,6 +107,7 @@ The homepage has three display phases plus an archive mode. All section visibili
 
 | Section | COMING_SOON | PRE_EVENT TOPIC | PRE_EVENT SPEAKERS | PRE_EVENT AGENDA | POST_EVENT | ARCHIVE |
 |---------|:-----------:|:---------------:|:------------------:|:----------------:|:----------:|:-------:|
+| **Register CTA (HeroSection)** | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | EventDescription | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | EventLogistics | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | VenueMap | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -118,7 +119,7 @@ The homepage has three display phases plus an archive mode. All section visibili
 | testimonialsSkipPhotoRow | ❌ | ❌ | ❌ | ❌ | if photos | if photos |
 | UpcomingEvents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-Registration banner and deregistration link are additionally gated by `workflowState ∈ {AGENDA_PUBLISHED, EVENT_LIVE}`.
+**Register CTA** is controlled by `vis.registrationEnabled` in `homePagePhase.ts` — hidden for COMING_SOON, POST_EVENT, and ARCHIVE. Registration banner and deregistration link are additionally gated by `workflowState ∈ {AGENDA_PUBLISHED, EVENT_LIVE}`.
 
 After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
 

@@ -27,6 +27,8 @@ interface HeroSectionProps {
   countdownTimer?: ReactNode;
   /** AC8 (Story 10.11): Remaining spots — passed through to RegistrationWizard */
   spotsRemaining?: number | null;
+  /** Hide the register CTA entirely (POST_EVENT, ARCHIVE, COMING_SOON) */
+  hideRegisterCta?: boolean;
 }
 
 export const HeroSection = ({
@@ -40,6 +42,7 @@ export const HeroSection = ({
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
   spotsRemaining,
+  hideRegisterCta = false,
 }: HeroSectionProps) => {
   const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
@@ -229,69 +232,70 @@ export const HeroSection = ({
               )}
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {pendingRegistration ? (
-                  // Show "already registered" message (sessionStorage — just registered this session)
-                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-green-400 font-medium mb-1">
-                          {t('registration.alreadyRegistered.title')}
-                        </p>
-                        <p className="text-sm text-zinc-300 mb-2">
-                          {t('registration.alreadyRegistered.pending')}{' '}
-                          <span className="font-mono text-green-400">
-                            {pendingRegistration.email}
-                          </span>
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-zinc-400">
-                          <Mail className="h-3 w-3" />
-                          <span>{t('registration.alreadyRegistered.checkEmail')}</span>
+                {!hideRegisterCta &&
+                  (pendingRegistration ? (
+                    // Show "already registered" message (sessionStorage — just registered this session)
+                    <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-green-400 font-medium mb-1">
+                            {t('registration.alreadyRegistered.title')}
+                          </p>
+                          <p className="text-sm text-zinc-300 mb-2">
+                            {t('registration.alreadyRegistered.pending')}{' '}
+                            <span className="font-mono text-green-400">
+                              {pendingRegistration.email}
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-zinc-400">
+                            <Mail className="h-3 w-3" />
+                            <span>{t('registration.alreadyRegistered.checkEmail')}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : isAlreadyRegistered ? (
-                  // Show "already registered" for authenticated users with an active registration
-                  <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-green-400 font-medium mb-1">
-                          {t('registration.alreadyRegistered.title')}
-                        </p>
-                        <p className="text-sm text-zinc-300 mb-2">
-                          {t(
-                            `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
+                  ) : isAlreadyRegistered ? (
+                    // Show "already registered" for authenticated users with an active registration
+                    <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-green-400 font-medium mb-1">
+                            {t('registration.alreadyRegistered.title')}
+                          </p>
+                          <p className="text-sm text-zinc-300 mb-2">
+                            {t(
+                              `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
+                            )}
+                          </p>
+                          {eventCode && (
+                            <Link
+                              to={`/register/${eventCode}`}
+                              className="text-xs text-green-400 underline"
+                            >
+                              {t('registration:registrationStatusBanner.manageLink')}
+                            </Link>
                           )}
-                        </p>
-                        {eventCode && (
-                          <Link
-                            to={`/register/${eventCode}`}
-                            className="text-xs text-green-400 underline"
-                          >
-                            {t('registration:registrationStatusBanner.manageLink')}
-                          </Link>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : eventCode ? (
-                  // Inline registration mode: expand wizard below
-                  <Button
-                    size="lg"
-                    className="text-base md:text-lg"
-                    onClick={() => setIsRegistrationExpanded(true)}
-                    disabled={isRegistrationExpanded}
-                  >
-                    {ctaText || t('public.register')}
-                  </Button>
-                ) : (
-                  // Fallback to link mode (when eventCode not provided)
-                  <Button size="lg" className="text-base md:text-lg" asChild>
-                    <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
-                  </Button>
-                )}
+                  ) : eventCode ? (
+                    // Inline registration mode: expand wizard below
+                    <Button
+                      size="lg"
+                      className="text-base md:text-lg"
+                      onClick={() => setIsRegistrationExpanded(true)}
+                      disabled={isRegistrationExpanded}
+                    >
+                      {ctaText || t('public.register')}
+                    </Button>
+                  ) : (
+                    // Fallback to link mode (when eventCode not provided)
+                    <Button size="lg" className="text-base md:text-lg" asChild>
+                      <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
+                    </Button>
+                  ))}
                 {countdownTimer && <div className="ml-0 sm:ml-4">{countdownTimer}</div>}
               </div>
             </div>

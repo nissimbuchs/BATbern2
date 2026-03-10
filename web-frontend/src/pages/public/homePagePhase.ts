@@ -68,6 +68,8 @@ export function getHomepagePhase(
 // ---------------------------------------------------------------------------
 
 export interface SectionVisibility {
+  /** True when registration CTA is shown (PRE_EVENT only); false for COMING_SOON, POST_EVENT, and ARCHIVE */
+  registrationEnabled: boolean;
   /** Shown when publication phase is set (all phases except COMING_SOON) */
   eventDescription: boolean;
   /** Always shown */
@@ -98,6 +100,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
   switch (phase.kind) {
     case 'COMING_SOON':
       return {
+        registrationEnabled: false,
         eventDescription: false,
         eventLogistics: true,
         venueMap: true,
@@ -115,6 +118,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
     case 'PRE_EVENT': {
       const showSpeakers = phase.sub === 'SPEAKERS' || phase.sub === 'AGENDA';
       return {
+        registrationEnabled: true,
         eventDescription: true,
         eventLogistics: true,
         venueMap: true,
@@ -132,6 +136,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
 
     case 'POST_EVENT':
       return {
+        registrationEnabled: false,
         eventDescription: true,
         eventLogistics: true,
         venueMap: false,
@@ -148,6 +153,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
 
     case 'ARCHIVE':
       return {
+        registrationEnabled: false,
         eventDescription: true,
         eventLogistics: true,
         venueMap: false,
