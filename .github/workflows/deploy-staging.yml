@@ -552,7 +552,7 @@ jobs:
         working-directory: ./infrastructure
         run: |
           echo "🔗  Pre-deploy EventManagement to clear any removed cross-stack refs before Storage update"
-          npm run deploy:staging:layer4-event-management --context version=${{ github.sha }} || true
+          npx cdk deploy BATbern-staging-EventManagement --exclusively --context environment=staging --context version=${{ github.sha }} --require-approval never || true
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 

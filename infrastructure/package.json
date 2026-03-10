@@ -31,7 +31,7 @@
     "deploy:staging:layer2-bastion": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Bastion --context environment=staging --require-approval never",
     "deploy:staging:layer3-application": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Cognito BATbern-staging-Cluster --context environment=staging --require-approval never --concurrency=2",
     "deploy:staging:layer4-services": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-EventManagement BATbern-staging-SpeakerCoordination BATbern-staging-PartnerCoordination BATbern-staging-AttendeeExperience BATbern-staging-CompanyManagement BATbern-staging-ApiGatewayService --context environment=staging --require-approval never --concurrency=6",
-    "deploy:staging:layer4-event-management": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-EventManagement --context environment=staging --require-approval never",
+    "deploy:staging:layer4-event-management": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-EventManagement --exclusively --context environment=staging --require-approval never",
     "deploy:staging:layer4-speaker-coordination": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-SpeakerCoordination --context environment=staging --require-approval never",
     "deploy:staging:layer4-partner-coordination": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-PartnerCoordination --context environment=staging --require-approval never",
     "deploy:staging:layer4-attendee-experience": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-AttendeeExperience --context environment=staging --require-approval never",
