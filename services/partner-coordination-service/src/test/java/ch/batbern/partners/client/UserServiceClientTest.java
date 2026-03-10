@@ -72,6 +72,10 @@ class UserServiceClientTest {
         // Clear cache before each test
         if (cacheManager != null) {
             Objects.requireNonNull(cacheManager.getCache("userApiCache")).clear();
+            var byCompanyCache = cacheManager.getCache("usersByCompanyRoleCache");
+            if (byCompanyCache != null) byCompanyCache.clear();
+            var byRoleCache = cacheManager.getCache("usersByRoleCache");
+            if (byRoleCache != null) byRoleCache.clear();
         }
     }
 
@@ -213,6 +217,74 @@ class UserServiceClientTest {
                 .as("Should successfully call API with JWT token")
                 .isNotNull();
 
+        mockServer.verify();
+    }
+
+    @Test
+    void should_callByCompanyEndpoint_withoutAuthHeader_when_getUsersByCompanyAndRole() {
+        // Given
+        String expectedUrl = "http://company-user-management:8080/api/v1/users/by-company?company=sbb&role=PARTNER&limit=100";
+
+        mockServer.expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.GET))
+                // No JWT header expected — this is a VPC-internal service-to-service call
+                .andExpect(request -> assertThat(request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION))
+                        .as("getUsersByCompanyAndRole must NOT forward a JWT")
+                        .isFalse())
+                .andRespond(withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                            {
+                                "data": [
+                                    {
+                                        "id": "partner.user",
+                                        "email": "partner@sbb.ch",
+                                        "firstName": "Partner",
+                                        "lastName": "User"
+                                    }
+                                ],
+                                "pagination": {
+                                    "page": 1, "limit": 100,
+                                    "totalItems": 1, "totalPages": 1,
+                                    "hasNext": false, "hasPrev": false
+                                }
+                            }
+                            """));
+
+        // When
+        var users = userServiceClient.getUsersByCompanyAndRole("sbb", "PARTNER");
+
+        // Then
+        assertThat(users).hasSize(1);
+        assertThat(users.get(0).getEmail()).isEqualTo("partner@sbb.ch");
+        mockServer.verify();
+    }
+
+    @Test
+    void should_returnEmptyList_when_byCompanyEndpointReturnsEmptyData() {
+        // Given
+        String expectedUrl = "http://company-user-management:8080/api/v1/users/by-company?company=empty-co&role=PARTNER&limit=100";
+
+        mockServer.expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                            {
+                                "data": [],
+                                "pagination": {
+                                    "page": 1, "limit": 100,
+                                    "totalItems": 0, "totalPages": 0,
+                                    "hasNext": false, "hasPrev": false
+                                }
+                            }
+                            """));
+
+        // When
+        var users = userServiceClient.getUsersByCompanyAndRole("empty-co", "PARTNER");
+
+        // Then
+        assertThat(users).isEmpty();
         mockServer.verify();
     }
 }

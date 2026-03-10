@@ -4,6 +4,7 @@ import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.dto.generated.PartnerContactResponse;
 import ch.batbern.partners.exception.PartnerNotFoundException;
+import ch.batbern.partners.exception.UserServiceException;
 import ch.batbern.partners.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,7 @@ public class PartnerContactService {
      * @return list of partner users enriched with User Service data
      * @throws PartnerNotFoundException if no partner record exists for companyName
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, noRollbackFor = UserServiceException.class)
     public List<PartnerContactResponse> getPartnerContacts(String companyName) {
         log.debug("Getting contacts for partner: {}", companyName);
 

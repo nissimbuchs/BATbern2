@@ -1069,4 +1069,52 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
     }
+
+    // ---- /api/v1/users/by-company (service-to-service endpoint) ----
+
+    @Test
+    @WithMockUser(username = "service", roles = {"PARTNER"})
+    @DisplayName("should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint")
+    void should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint() throws Exception {
+        // Given - partner user in SBB
+        User partnerUser = User.builder()
+                .username("partner.sbb")
+                .email("partner@sbb.ch")
+                .firstName("Partner")
+                .lastName("Sbb")
+                .cognitoUserId("partner-sbb-cognito")
+                .companyId("sbb")
+                .roles(new HashSet<>(Set.of(Role.PARTNER)))
+                .build();
+        userRepository.save(partnerUser);
+
+        // When / Then - any authenticated call succeeds (VPC-internal in production, mock user in tests)
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "sbb")
+                        .param("role", "PARTNER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].email", is("partner@sbb.ch")));
+    }
+
+    @Test
+    @WithMockUser(username = "service", roles = {"PARTNER"})
+    @DisplayName("should_returnEmptyList_when_noUsersMatchCompanyAndRole")
+    void should_returnEmptyList_when_noUsersMatchCompanyAndRole() throws Exception {
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "nonexistent-company")
+                        .param("role", "PARTNER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
+    @DisplayName("should_return401_when_byCompanyCalledWithoutAuth")
+    void should_return401_when_byCompanyCalledWithoutAuth() throws Exception {
+        // In production this path is protected by VpcInternalAuthorizationManager;
+        // in the test profile it falls back to .anyRequest().authenticated()
+        mockMvc.perform(get("/api/v1/users/by-company")
+                        .param("company", "sbb"))
+                .andExpect(status().isUnauthorized());
+    }
 }

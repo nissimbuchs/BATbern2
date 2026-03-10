@@ -180,6 +180,41 @@ public class UserController {
     }
 
     /**
+     * Service-to-service endpoint: list users by company and role.
+     * VPC-internal only — protected by VpcInternalAuthorizationManager via /api/v1/users/* filter chain rule.
+     * Called by partner-coordination (and other services) without forwarding the user JWT.
+     * No @PreAuthorize — authorization is enforced at the filter chain level.
+     *
+     * GET /api/v1/users/by-company?company={companyName}&role={role}
+     */
+    @GetMapping("/by-company")
+    @Timed(value = "users.listUsersByCompany", description = "Time to list users by company (service-to-service)")
+    public ResponseEntity<PaginatedUserResponse> listUsersByCompany(
+            @RequestParam String company,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "100") int limit) {
+        log.debug("Service-to-service: listing users by company={}, role={}", company, role);
+
+        int pageIndex = Math.max(0, page - 1);
+        Page<UserResponse> usersPage = userService.listUsersPaginated(role, company, null, null, pageIndex, limit);
+
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata = new ch.batbern.shared.api.PaginationMetadata();
+        paginationMetadata.setPage(page);
+        paginationMetadata.setLimit(limit);
+        paginationMetadata.setTotalItems(usersPage.getTotalElements());
+        paginationMetadata.setTotalPages(usersPage.getTotalPages());
+        paginationMetadata.setHasNext(usersPage.hasNext());
+        paginationMetadata.setHasPrev(usersPage.hasPrevious());
+
+        PaginatedUserResponse response = new PaginatedUserResponse();
+        response.setData(usersPage.getContent());
+        response.setPagination(paginationMetadata);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * AC5: Get user by username
      * GET /api/v1/users/{username}?include=company,roles,preferences
      *
