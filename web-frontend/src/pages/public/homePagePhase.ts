@@ -90,6 +90,8 @@ export interface SectionVisibility {
   upcomingEvents: boolean;
   /** Back-to-archive link — only in ARCHIVE mode */
   backLink: boolean;
+  /** Show session materials download links — true in POST_EVENT and ARCHIVE */
+  showSessionMaterials: boolean;
 }
 
 export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
@@ -107,6 +109,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         testimonialsSkipPhotoRow: false,
         upcomingEvents: true,
         backLink: false,
+        showSessionMaterials: false,
       };
 
     case 'PRE_EVENT': {
@@ -123,6 +126,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         testimonialsSkipPhotoRow: false,
         upcomingEvents: true,
         backLink: false,
+        showSessionMaterials: false,
       };
     }
 
@@ -139,6 +143,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         testimonialsSkipPhotoRow: phase.hasEventPhotos,
         upcomingEvents: true,
         backLink: false,
+        showSessionMaterials: true,
       };
 
     case 'ARCHIVE':
@@ -154,6 +159,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         testimonialsSkipPhotoRow: phase.hasEventPhotos,
         upcomingEvents: true,
         backLink: true,
+        showSessionMaterials: true,
       };
   }
 }

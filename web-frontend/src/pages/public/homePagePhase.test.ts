@@ -128,6 +128,7 @@ describe('getSectionVisibility — COMING_SOON', () => {
     expect(vis.testimonialsSkipPhotoRow).toBe(false));
   it('shows upcoming events', () => expect(vis.upcomingEvents).toBe(true));
   it('hides back link', () => expect(vis.backLink).toBe(false));
+  it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
 
 // ---------------------------------------------------------------------------
@@ -146,6 +147,7 @@ describe('getSectionVisibility — PRE_EVENT TOPIC', () => {
   it('hides event program', () => expect(vis.eventProgram).toBe(false));
   it('shows testimonials', () => expect(vis.testimonials).toBe(true));
   it('shows upcoming events', () => expect(vis.upcomingEvents).toBe(true));
+  it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
 
 // ---------------------------------------------------------------------------
@@ -159,6 +161,7 @@ describe('getSectionVisibility — PRE_EVENT SPEAKERS', () => {
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
   it('shows session cards', () => expect(vis.sessionCards).toBe(true));
   it('hides event program', () => expect(vis.eventProgram).toBe(false));
+  it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
 
 // ---------------------------------------------------------------------------
@@ -172,6 +175,7 @@ describe('getSectionVisibility — PRE_EVENT AGENDA', () => {
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
   it('hides session cards (replaced by timetable)', () => expect(vis.sessionCards).toBe(false));
   it('shows event program', () => expect(vis.eventProgram).toBe(true));
+  it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
 
 // ---------------------------------------------------------------------------
@@ -194,6 +198,7 @@ describe('getSectionVisibility — POST_EVENT hasEventPhotos=true', () => {
     expect(vis.testimonialsSkipPhotoRow).toBe(true));
   it('shows upcoming events', () => expect(vis.upcomingEvents).toBe(true));
   it('hides back link', () => expect(vis.backLink).toBe(false));
+  it('shows session materials', () => expect(vis.showSessionMaterials).toBe(true));
 });
 
 // ---------------------------------------------------------------------------
@@ -207,6 +212,7 @@ describe('getSectionVisibility — POST_EVENT hasEventPhotos=false', () => {
   it('hides event photos marquee', () => expect(vis.eventPhotosMarquee).toBe(false));
   it('does not skip testimonials photo row', () =>
     expect(vis.testimonialsSkipPhotoRow).toBe(false));
+  it('shows session materials', () => expect(vis.showSessionMaterials).toBe(true));
 });
 
 // ---------------------------------------------------------------------------
@@ -228,6 +234,7 @@ describe('getSectionVisibility — ARCHIVE hasEventPhotos=true', () => {
   it('skips testimonials photo row', () => expect(vis.testimonialsSkipPhotoRow).toBe(true));
   it('shows upcoming events', () => expect(vis.upcomingEvents).toBe(true));
   it('shows back link', () => expect(vis.backLink).toBe(true));
+  it('shows session materials', () => expect(vis.showSessionMaterials).toBe(true));
 });
 
 // ---------------------------------------------------------------------------
@@ -242,4 +249,5 @@ describe('getSectionVisibility — ARCHIVE hasEventPhotos=false', () => {
   it('does not skip testimonials photo row', () =>
     expect(vis.testimonialsSkipPhotoRow).toBe(false));
   it('shows back link', () => expect(vis.backLink).toBe(true));
+  it('shows session materials', () => expect(vis.showSessionMaterials).toBe(true));
 });

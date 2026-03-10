@@ -2,6 +2,9 @@
  * SessionCards Component (Story 4.1.4)
  * Displays sessions in grid/list view with filtering capabilities
  * Hover to expand session description
+ *
+ * Structural sessions (moderation, break, lunch) are excluded from this view.
+ * Materials are shown when showMaterials=true (EVENT_COMPLETED / ARCHIVE phases).
  */
 
 import { useState, useMemo } from 'react';
@@ -14,29 +17,20 @@ import {
   Clock,
   MapPin,
   Users,
-  Coffee,
-  UtensilsCrossed,
-  Mic2,
+  FileText,
+  Video,
+  Presentation,
+  Download,
 } from 'lucide-react';
-import type { Session } from '@/types/event.types';
+import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
+import { eventApiClient } from '@/services/eventApiClient';
 
 const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
-const isStructuralSession = (session: Session) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
-
-const StructuralSessionIcon = ({ sessionType }: { sessionType: string | null | undefined }) => {
-  switch (sessionType) {
-    case 'break':
-      return <Coffee className="h-5 w-5 text-zinc-400" />;
-    case 'lunch':
-      return <UtensilsCrossed className="h-5 w-5 text-zinc-400" />;
-    default:
-      return <Mic2 className="h-5 w-5 text-zinc-400" />;
-  }
-};
+const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
 
 interface Topic {
   id: string;
@@ -45,25 +39,38 @@ interface Topic {
 }
 
 interface SessionCardsProps {
-  sessions: Session[];
+  sessions: SessionUI[];
   topics?: Topic[];
+  /** Show session materials download links (true in POST_EVENT / ARCHIVE phases) */
+  showMaterials?: boolean;
+  /** Required when showMaterials=true — used for the download presigned URL API */
+  eventCode?: string;
 }
 
-export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
+export const SessionCards = ({
+  sessions,
+  topics = [],
+  showMaterials = false,
+  eventCode,
+}: SessionCardsProps) => {
   const { t } = useTranslation('events');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [downloadingMaterials, setDownloadingMaterials] = useState<Set<string>>(new Set());
 
-  // Filter sessions by selected topics
+  // Exclude structural sessions (moderation, break, lunch)
+  const contentSessions = useMemo(
+    () => sessions.filter((s) => !isStructuralSession(s)),
+    [sessions]
+  );
+
+  // Filter by selected topics
   const filteredSessions = useMemo(() => {
-    if (selectedTopics.length === 0) {
-      return sessions;
-    }
-
+    if (selectedTopics.length === 0) return contentSessions;
     // Note: Session type doesn't have topicIds in current schema,
     // so filtering is disabled until topics are fully integrated
-    return sessions;
-  }, [sessions, selectedTopics]);
+    return contentSessions;
+  }, [contentSessions, selectedTopics]);
 
   const toggleTopic = (topicId: string) => {
     setSelectedTopics((prev) =>
@@ -75,20 +82,76 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
     startTime: string | null | undefined,
     endTime: string | null | undefined
   ) => {
-    if (!startTime || !endTime) {
-      return ''; // Session not yet assigned to time slot
-    }
-
+    if (!startTime || !endTime) return '';
     try {
-      const start = new Date(startTime);
-      const end = new Date(endTime);
-      return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
+      return `${format(new Date(startTime), 'HH:mm')} - ${format(new Date(endTime), 'HH:mm')}`;
     } catch {
       return '';
     }
   };
 
-  if (sessions.length === 0) {
+  // Materials helpers (mirrors EventProgram)
+  const getMaterialTypeIcon = (type: string) => {
+    switch (type) {
+      case 'PRESENTATION':
+        return <Presentation className="h-4 w-4" />;
+      case 'VIDEO':
+        return <Video className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const getMaterialTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'PRESENTATION':
+        return t('public.program.materialTypes.presentation', 'Presentation');
+      case 'DOCUMENT':
+        return t('public.program.materialTypes.document', 'Document');
+      case 'VIDEO':
+        return t('public.program.materialTypes.video', 'Video');
+      default:
+        return t('public.program.materialTypes.other', 'Other');
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+  const groupMaterialsByType = (materials: SessionMaterial[] | undefined) => {
+    if (!materials || materials.length === 0) return {} as Record<string, SessionMaterial[]>;
+    return materials.reduce(
+      (acc, m) => {
+        const type = m.materialType || 'OTHER';
+        acc[type] = acc[type] ? [...acc[type], m] : [m];
+        return acc;
+      },
+      {} as Record<string, SessionMaterial[]>
+    );
+  };
+
+  const handleMaterialDownload = async (sessionSlug: string, materialId: string) => {
+    if (!eventCode) return;
+    try {
+      setDownloadingMaterials((prev) => new Set(prev).add(materialId));
+      const downloadUrl = await eventApiClient.getMaterialDownloadUrl(
+        eventCode,
+        sessionSlug,
+        materialId
+      );
+      window.open(downloadUrl, '_blank');
+    } catch (error) {
+      console.error('Failed to download material:', error);
+      alert(t('errors.materialDownloadFailed', 'Failed to download material. Please try again.'));
+    } finally {
+      setDownloadingMaterials((prev) => {
+        const next = new Set(prev);
+        next.delete(materialId);
+        return next;
+      });
+    }
+  };
+
+  if (contentSessions.length === 0) {
     return null;
   }
 
@@ -139,90 +202,119 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
 
       {/* Sessions grid/list */}
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
-        {filteredSessions.map((session) =>
-          isStructuralSession(session) ? (
-            /* Structural session — compact icon row, no speaker */
-            <div
-              key={session.sessionSlug}
-              className="flex items-center gap-4 px-5 py-3 rounded-lg bg-zinc-800/40 border border-zinc-700/50 text-zinc-400"
-            >
-              <StructuralSessionIcon sessionType={session.sessionType} />
-              <span className="font-medium text-zinc-300 flex-1">{session.title}</span>
-              {session.startTime && session.endTime && (
-                <span className="flex items-center gap-1.5 text-sm shrink-0">
-                  <Clock className="h-4 w-4" />
-                  {formatSessionTime(session.startTime, session.endTime)}
-                </span>
+        {filteredSessions.map((session) => (
+          <Card
+            key={session.sessionSlug}
+            className="group bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
+          >
+            <CardHeader>
+              <div className="flex items-start justify-between gap-4">
+                <CardTitle className="font-light text-xl text-zinc-100">{session.title}</CardTitle>
+                <Badge
+                  variant="outline"
+                  className="bg-blue-400/10 text-blue-400 border-blue-400/20"
+                >
+                  {session.sessionType}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {session.description && (
+                <p className="text-sm text-zinc-400">{session.description}</p>
               )}
-            </div>
-          ) : (
-            /* Regular session card */
-            <Card
-              key={session.sessionSlug}
-              className="group bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="font-light text-xl text-zinc-100">
-                    {session.title}
-                  </CardTitle>
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-400/10 text-blue-400 border-blue-400/20"
-                  >
-                    {session.sessionType}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {session.description && (
-                  <p className="text-sm text-zinc-400">{session.description}</p>
+
+              <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
+                {session.startTime && session.endTime && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    {formatSessionTime(session.startTime, session.endTime)}
+                  </span>
                 )}
+                {session.room && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4" />
+                    {session.room}
+                  </span>
+                )}
+                {session.capacity && (
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4" />
+                    {t('public.sessions.seats', { count: session.capacity })}
+                  </span>
+                )}
+              </div>
 
-                <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
-                  {session.startTime && session.endTime && (
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="h-4 w-4" />
-                      {formatSessionTime(session.startTime, session.endTime)}
-                    </span>
-                  )}
-                  {session.room && (
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4" />
-                      {session.room}
-                    </span>
-                  )}
-                  {session.capacity && (
-                    <span className="flex items-center gap-1.5">
-                      <Users className="h-4 w-4" />
-                      {t('public.sessions.seats', { count: session.capacity })}
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-zinc-800">
-                  {session.speakers && session.speakers.length > 0 ? (
-                    <div>
-                      <p className="text-xs text-zinc-500 mb-2">{t('common:role.speaker')}:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {session.speakers.map((speaker) => (
-                          <SpeakerDisplay
-                            key={speaker.username}
-                            speaker={speaker}
-                            size="small"
-                            showProfilePicture={true}
-                          />
-                        ))}
-                      </div>
+              <div className="pt-2 border-t border-zinc-800">
+                {session.speakers && session.speakers.length > 0 ? (
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-2">{t('common:role.speaker')}:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {session.speakers.map((speaker) => (
+                        <SpeakerDisplay
+                          key={speaker.username}
+                          speaker={speaker}
+                          size="small"
+                          showProfilePicture={true}
+                        />
+                      ))}
                     </div>
-                  ) : (
-                    <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
-                  )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
+                )}
+              </div>
+
+              {/* Materials — shown in POST_EVENT / ARCHIVE phases */}
+              {showMaterials && session.materials && session.materials.length > 0 && (
+                <div className="pt-2 border-t border-zinc-800">
+                  <p className="text-xs text-zinc-500 mb-3">
+                    {t('public.program.materials', 'Materials')}:
+                  </p>
+                  <div className="space-y-4">
+                    {Object.entries(groupMaterialsByType(session.materials)).map(
+                      ([type, materials]) => (
+                        <div key={type}>
+                          <p className="text-xs font-medium text-zinc-400 mb-2 capitalize">
+                            {getMaterialTypeLabel(type)}
+                          </p>
+                          <div className="space-y-2">
+                            {materials.map((material) => {
+                              const isDownloading = downloadingMaterials.has(material.id);
+                              return (
+                                <button
+                                  key={material.id}
+                                  onClick={() =>
+                                    handleMaterialDownload(session.sessionSlug, material.id)
+                                  }
+                                  disabled={isDownloading}
+                                  aria-label={t('materials.downloadAriaLabel', {
+                                    fileName: material.fileName,
+                                  })}
+                                  className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {getMaterialTypeIcon(material.materialType)}
+                                  <span className="flex-1">{material.fileName}</span>
+                                  <span className="text-xs text-zinc-500">
+                                    {formatFileSize(material.fileSize)}
+                                  </span>
+                                  {isDownloading ? (
+                                    <span className="h-4 w-4 animate-spin">⏳</span>
+                                  ) : (
+                                    <Download className="h-4 w-4" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )
-        )}
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {filteredSessions.length === 0 && selectedTopics.length > 0 && (

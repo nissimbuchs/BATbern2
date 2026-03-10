@@ -277,7 +277,13 @@ const HomePage = () => {
         )}
 
         {/* Session Cards (list) — SPEAKERS phase, POST_EVENT, ARCHIVE */}
-        {vis.sessionCards && hasSessions && <SessionCards sessions={event.sessions!} />}
+        {vis.sessionCards && hasSessions && (
+          <SessionCards
+            sessions={event.sessions!}
+            showMaterials={vis.showSessionMaterials}
+            eventCode={event.eventCode}
+          />
+        )}
 
         {/* Speaker Grid — SPEAKERS phase onward, POST_EVENT, ARCHIVE */}
         {vis.speakerGrid && hasSessions && <SpeakerGrid sessions={event.sessions!} />}
