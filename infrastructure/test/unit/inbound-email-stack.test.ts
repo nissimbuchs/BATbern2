@@ -31,7 +31,7 @@ describe('InboundEmailStack', () => {
     template.resourceCountIs('AWS::SES::ReceiptRule', 1);
     template.hasResourceProperties('AWS::SES::ReceiptRule', {
       Rule: Match.objectLike({
-        Recipients: ['replies@batbern.ch'],
+        Recipients: ['replies@staging.batbern.ch'],
         Actions: Match.arrayWith([
           Match.objectLike({
             S3Action: Match.objectLike({

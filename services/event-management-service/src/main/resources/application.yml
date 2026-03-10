@@ -83,6 +83,7 @@ app:
     from-name: ${EMAIL_FROM_NAME:BATbern Platform}
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
+    reply-to: ${EMAIL_REPLY_TO:replies@batbern.ch}
 
 # OpenAI Configuration (Story 10.4: Topic Similarity + Trending Topics)
 openai:

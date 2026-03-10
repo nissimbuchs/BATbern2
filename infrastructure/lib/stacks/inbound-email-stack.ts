@@ -5,12 +5,15 @@ import * as ses from 'aws-cdk-lib/aws-ses';
 import * as sesActions from 'aws-cdk-lib/aws-ses-actions';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
 export interface InboundEmailStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   emsTaskRole?: iam.IRole;
+  /** Route53 hosted zone for the inbound domain (used for SES identity DNS verification). */
+  hostedZone?: route53.IHostedZone;
 }
 
 /**
@@ -132,6 +135,15 @@ export class InboundEmailStack extends cdk.Stack {
       ],
       enabled: true,
     });
+
+    // SES domain identity for the inbound domain — required for SES to accept inbound mail.
+    // Without a verified identity for replyDomain, SES rejects with 550 5.1.1 mailbox unavailable.
+    // If a hosted zone is provided, CDK auto-adds the DKIM CNAME and TXT verification records.
+    if (props.hostedZone) {
+      new ses.EmailIdentity(this, 'InboundDomainIdentity', {
+        identity: ses.Identity.publicHostedZone(props.hostedZone),
+      });
+    }
 
     // Grant EMS task role permissions to consume messages and read email objects
     if (props.emsTaskRole) {

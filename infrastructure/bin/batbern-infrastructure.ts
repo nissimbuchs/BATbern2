@@ -242,8 +242,12 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     env,
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
+    hostedZone: dnsStack?.hostedZone,
   });
   inboundEmailStack.addDependency(sesStack);
+  if (dnsStack) {
+    inboundEmailStack.addDependency(dnsStack);
+  }
 
   // 10a. Event Management Service
   eventManagementStack = new EventManagementStack(app, `${stackPrefix}-EventManagement`, {
