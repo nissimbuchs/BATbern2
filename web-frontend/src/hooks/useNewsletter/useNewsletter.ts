@@ -161,8 +161,13 @@ export function useRetryFailedRecipients(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sendId) => newsletterService.retryFailedRecipients(eventCode, sendId),
-    onSuccess: () => {
+    onSuccess: (_data, sendId) => {
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
+      // Reset the cached send-status so the terminal PARTIAL/FAILED state is cleared
+      // and polling resumes (refetchInterval sees undefined status → returns 3000ms).
+      queryClient.resetQueries({
+        queryKey: ['newsletter', 'send-status', eventCode, sendId],
+      });
     },
   });
 }
