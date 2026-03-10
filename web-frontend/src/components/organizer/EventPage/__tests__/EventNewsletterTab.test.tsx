@@ -463,6 +463,9 @@ describe('EventNewsletterTab', () => {
 
     renderTab();
 
+    // History is in a collapsed Accordion — expand it first.
+    fireEvent.click(screen.getByText(/send history/i));
+
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 
