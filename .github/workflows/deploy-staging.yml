@@ -540,6 +540,22 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      # Pre-deploy application stacks that consume Storage exports before updating Storage.
+      # When a cross-stack CDK reference is removed (e.g. EventManagement stops importing
+      # distributionDomainName), CloudFormation refuses to delete the export from Storage while
+      # the old EventManagement template still imports it. Deploying EventManagement first
+      # removes the import, then Storage can clean up the auto-generated export.
+      # This step is a no-op when nothing changed in EventManagement or the cross-stack refs.
+      - name: Pre-deploy EventManagement (remove stale cross-stack imports before Storage update)
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
+        working-directory: ./infrastructure
+        run: |
+          echo "🔗  Pre-deploy EventManagement to clear any removed cross-stack refs before Storage update"
+          npm run deploy:staging:layer4-event-management --context version=${{ github.sha }} || true
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
       - name: Deploy Layer 2 - Data
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
         timeout-minutes: 25
