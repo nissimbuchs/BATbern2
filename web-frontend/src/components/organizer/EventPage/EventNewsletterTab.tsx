@@ -396,7 +396,11 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                           ? t('eventPage.newsletter.typeReminder', 'Reminder')
                           : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
                       </TableCell>
-                      <TableCell align="right">{send.recipientCount}</TableCell>
+                      <TableCell align="right">
+                        {send.status === 'IN_PROGRESS' || send.status === 'PENDING'
+                          ? `${send.sentCount ?? 0} / ${send.recipientCount}`
+                          : send.recipientCount}
+                      </TableCell>
                       <TableCell align="center">
                         <Typography
                           variant="caption"
