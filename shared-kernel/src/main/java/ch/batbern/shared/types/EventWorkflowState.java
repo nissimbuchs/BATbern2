@@ -128,5 +128,5 @@ public enum EventWorkflowState {
      *
      * Next States: None (terminal state)
      */
-    ARCHIVED
+    ARCHIVED;
 }
