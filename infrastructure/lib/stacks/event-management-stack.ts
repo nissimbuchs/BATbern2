@@ -31,6 +31,8 @@ export interface EventManagementStackProps extends cdk.StackProps {
   inboundEmailQueueUrl?: string;
   /** Story 10.17: S3 bucket name for raw inbound emails. */
   inboundEmailBucketName?: string;
+  /** Story 10.17: Environment-specific reply address (e.g. replies@staging.batbern.ch). */
+  inboundEmailReplyAddress?: string;
   /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
 }
@@ -95,8 +97,11 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.config.domain && {
             APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
           }),
-          // Email from-address — use verified SES domain for this environment
+          // Email from-address and reply-to — use environment-specific addresses
           EMAIL_FROM: `noreply@${sesFromDomain}`,
+          ...(props.inboundEmailReplyAddress && {
+            EMAIL_REPLY_TO: props.inboundEmailReplyAddress,
+          }),
           // Story 10.16: AI content generation feature flag
           ...(props.aiEnabled && { AI_ENABLED: 'true' }),
           // Story 10.17: Inbound email processing via SQS

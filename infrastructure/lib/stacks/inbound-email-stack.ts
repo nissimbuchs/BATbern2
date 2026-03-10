@@ -17,20 +17,38 @@ export interface InboundEmailStackProps extends cdk.StackProps {
  * InboundEmailStack — SES inbound email pipeline (Story 10.17)
  *
  * Data flow:
- *   replies@batbern.ch → SES receipt rule → S3 bucket → S3 event notification
+ *   replies@{inboundDomain} → SES receipt rule → S3 bucket → S3 event notification
  *   → SQS queue → @SqsListener in EMS → MIME parse → route (unsubscribe/cancel)
  *
  * Deployed to eu-central-1 (same region as all other stacks). SES inbound email receiving
  * expanded to eu-central-1 in September 2023 — no cross-region deployment required.
+ *
+ * Environment isolation: each environment uses a distinct reply address so replies
+ * are routed to the correct SES account:
+ *   production  → replies@batbern.ch         (batbern.ch MX → prod account SES)
+ *   staging     → replies@staging.batbern.ch  (staging.batbern.ch MX → staging account SES)
  */
 export class InboundEmailStack extends cdk.Stack {
   public readonly inboundQueue: sqs.IQueue;
   public readonly inboundBucket: s3.IBucket;
+  public readonly replyAddress: string;
 
   constructor(scope: Construct, id: string, props: InboundEmailStackProps) {
     super(scope, id, props);
 
     const envName = props.config.envName;
+
+    // Environment-specific reply-to address for environment isolation.
+    // Each environment's SES account only receives replies addressed to its own subdomain,
+    // preventing staging replies from landing in the production service or vice versa.
+    const replyDomain =
+      envName === 'production'
+        ? 'batbern.ch'
+        : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
+    const replyAddress = `replies@${replyDomain}`;
+
+    // Expose for use in bin file (EMAIL_REPLY_TO env var on EMS)
+    this.replyAddress = replyAddress;
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
@@ -105,7 +123,7 @@ export class InboundEmailStack extends cdk.Stack {
     });
 
     ruleSet.addRule('RouteReplies', {
-      recipients: ['replies@batbern.ch'],
+      recipients: [replyAddress],
       actions: [
         new sesActions.S3({
           bucket: inboundBucket,

@@ -260,9 +260,10 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     alarmTopic: monitoringStack.alarmTopic,
     // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
-    // Story 10.17: Inbound email SQS queue URL and S3 bucket name
+    // Story 10.17: Inbound email SQS queue URL, S3 bucket name, and env-specific reply address
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
+    inboundEmailReplyAddress: inboundEmailStack.replyAddress,
     watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
