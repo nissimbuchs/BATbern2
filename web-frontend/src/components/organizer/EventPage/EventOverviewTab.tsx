@@ -88,11 +88,15 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   // Use typicalStartTime from event type (not event.date hour)
   const formattedTime = event.typicalStartTime || '-';
 
+  // Use registrationCapacity (organizer-set limit) when available; fall back to venueCapacity.
+  // registrationCapacity is populated when include=registrations is requested (Story 10.11).
+  const registrationCapacity = (event as { registrationCapacity?: number | null })
+    .registrationCapacity;
+  const displayCapacity = registrationCapacity ?? event.venueCapacity ?? 0;
+
   // Calculate capacity percentage
   const capacityPercent =
-    event.venueCapacity && event.venueCapacity > 0
-      ? Math.round((event.currentAttendeeCount / event.venueCapacity) * 100)
-      : 0;
+    displayCapacity > 0 ? Math.round((event.currentAttendeeCount / displayCapacity) * 100) : 0;
 
   // Calculate speaker progress
   const confirmedSpeakers = eventUI.confirmedSpeakersCount || 0;
@@ -328,7 +332,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   <Typography variant="subtitle2">{t('form.capacity', 'Capacity')}</Typography>
                 </Stack>
                 <Typography variant="body1" gutterBottom>
-                  {event.currentAttendeeCount || 0} / {event.venueCapacity || 0}{' '}
+                  {event.currentAttendeeCount || 0} / {displayCapacity || 0}{' '}
                   {t('eventPage.overview.registered', 'registered')}
                 </Typography>
                 <LinearProgress

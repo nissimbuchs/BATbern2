@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -69,6 +70,28 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Registration {
+
+    /**
+     * Statuses that count toward currentAttendeeCount (display purposes).
+     * Includes 'attended' which is the historical import status for past events.
+     * Excludes 'cancelled' to avoid inflating counts.
+     */
+    public static final List<String> ACTIVE_STATUSES =
+            List.of("registered", "confirmed", "waitlist", "attended");
+
+    /**
+     * Statuses that count as confirmed/attending (for confirmedCount and spotsRemaining).
+     * Excludes 'waitlist' (not yet confirmed) and 'cancelled'.
+     */
+    public static final List<String> CONFIRMED_STATUSES =
+            List.of("registered", "confirmed", "attended");
+
+    /**
+     * Statuses that occupy a capacity slot for new registration enforcement.
+     * Excludes 'waitlist' (pending), 'attended' (historical only), and 'cancelled'.
+     */
+    public static final List<String> CAPACITY_STATUSES =
+            List.of("registered", "confirmed");
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

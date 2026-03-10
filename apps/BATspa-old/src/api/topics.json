@@ -568,5 +568,15 @@
     "eventType": "Abend-BAT",
     "moderator": "Baltisar Oswald",
     "category": "Security"
+  },
+  {
+    "bat": 58,
+    "topic": "AI in der Software Entwicklung",
+    "datum": "6. März 2026, 16:00h - 19:00h",
+    "parsedDate": "2026-03-06T16:00:00+01:00",
+    "description": "Am 6. März 2026 findet das BATbern#58, das Berner Architekten Treffen, statt, das sich ganz dem Thema 'AI in der Software Entwicklung' widmet. In der heutigen Softwarebranche spielt Künstliche Intelligenz eine zentrale Rolle und verändert die Art und Weise, wie Software entworfen und entwickelt wird. Trends wie maschinelles Lernen und automatisierte Code-Generierung stellen sowohl Chancen als auch Herausforderungen dar. Unternehmen stehen vor der Aufgabe, diese Technologien effektiv zu integrieren, um wettbewerbsfähig zu bleiben. Bei diesem BATbern-Event präsentieren lokale IT-Experten und Unternehmen aus Bern ihre praxisnahen Ansätze und Erfahrungen. Im Mittelpunkt stehen reale Anwendungsbeispiele und die Herausforderungen, denen sie bei der Implementierung von KI in der Softwareentwicklung begegnet sind. Statt akademischer Vorträge erwartet die Teilnehmenden wertvolle Einblicke von Praktikern, die ihre Strategien und Erfolge im Umgang mit den neuesten KI-Trends teilen. An diesem BAT stellen unsere Referenten ihre Ansätze und Lessons Learned vor.",
+    "eventType": "Abend-BAT",
+    "moderator": "Andreas Grütter",
+    "category": "Agentic AI"
   }
 ]

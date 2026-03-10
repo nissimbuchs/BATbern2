@@ -147,7 +147,7 @@ public class RegistrationService {
         Integer waitlistPosition = null;
         if (capacity != null) {
             long activeCount = registrationRepository.countByEventIdAndStatusIn(
-                    event.getId(), List.of("registered", "confirmed"));
+                    event.getId(), Registration.CAPACITY_STATUSES);
             if (activeCount >= capacity) {
                 registrationStatus = "waitlist";
                 waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());

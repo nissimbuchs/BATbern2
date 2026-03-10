@@ -329,7 +329,8 @@ public class EventController {
             // Existing registrationRepository doesn't have a batch count; fall back to per-event
             // (registrations are rarely requested on archive list, so this is acceptable)
             for (int i = 0; i < events.size(); i++) {
-                long regCount = registrationRepository.countByEventId(events.get(i).getId());
+                long regCount = registrationRepository.countByEventIdAndStatusIn(
+                        events.get(i).getId(), Registration.ACTIVE_STATUSES);
                 responses.get(i).setCurrentAttendeeCount((int) regCount);
             }
         }
@@ -517,9 +518,8 @@ public class EventController {
                     expandMetricsToDTO(event, response);
                     break;
                 case "registrations":
-                    // Active (non-cancelled) registrations only — cancelled ones must not inflate counts
                     long registrationCount = registrationRepository.countByEventIdAndStatusIn(
-                            event.getId(), java.util.List.of("registered", "confirmed", "waitlist"));
+                            event.getId(), Registration.ACTIVE_STATUSES);
                     response.setCurrentAttendeeCount((int) registrationCount);
                     break;
                 default:
@@ -1385,7 +1385,7 @@ public class EventController {
      */
     private void enrichWithRegistrationCounts(EventResponse response, java.util.UUID eventId) {
         long confirmed = registrationRepository.countByEventIdAndStatusIn(
-                eventId, java.util.List.of("registered", "confirmed"));
+                eventId, Registration.CONFIRMED_STATUSES);
         long waitlisted = registrationRepository.countByEventIdAndStatus(eventId, "waitlist");
         response.setConfirmedCount((int) confirmed);
         response.setWaitlistCount((int) waitlisted);

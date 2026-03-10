@@ -11,7 +11,9 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.RegistrationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -74,6 +76,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private RegistrationRepository registrationRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -2338,5 +2343,121 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // When / Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isNotFound());
+    }
+
+    // ============================================================================
+    // Registration Count Bug Fix: 'attended' status must be included in counts
+    // Bug: detail endpoint excluded 'attended' registrations from currentAttendeeCount
+    // and confirmedCount, causing mismatch with list endpoint (which used countByEventId).
+    // ============================================================================
+
+    private Registration createRegistration(java.util.UUID eventId, String status) {
+        Registration reg = Registration.builder()
+                .registrationCode("REG-" + java.util.UUID.randomUUID().toString().substring(0, 8))
+                .eventId(eventId)
+                .attendeeUsername("test.user." + java.util.UUID.randomUUID().toString().substring(0, 4))
+                .status(status)
+                .attendeeFirstName("Test")
+                .attendeeLastName("User")
+                .attendeeEmail("test@example.com")
+                .registrationDate(Instant.now())
+                .build();
+        return registrationRepository.save(reg);
+    }
+
+    @Test
+    @DisplayName("should_include_attended_in_confirmedCount_when_enrichingEventResponse")
+    void should_include_attended_in_confirmedCount_when_enrichingEventResponse() throws Exception {
+        // Given: event with attended, confirmed, and waitlist registrations (no include param)
+        eventRepository.deleteAll();
+        Event event = createTestEvent("Legacy Event", "2023-05-15T09:00:00Z", "EVENT_COMPLETED");
+        createRegistration(event.getId(), "attended");  // 3 historical attendees
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "confirmed"); // 1 new confirmed
+        createRegistration(event.getId(), "waitlist");  // 1 waitlist
+        entityManager.flush();
+
+        // When: GET detail without include
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                // Then: confirmedCount includes 'attended' (3) + 'confirmed' (1) = 4
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.confirmedCount").value(4))
+                .andExpect(jsonPath("$.waitlistCount").value(1));
+    }
+
+    @Test
+    @DisplayName("should_include_attended_in_currentAttendeeCount_when_registrations_included_in_detail")
+    void should_include_attended_in_currentAttendeeCount_when_registrations_included_in_detail() throws Exception {
+        // Given: event with attended + confirmed + waitlist registrations
+        eventRepository.deleteAll();
+        Event event = createTestEvent("Historical Event", "2023-05-15T09:00:00Z", "EVENT_COMPLETED");
+        createRegistration(event.getId(), "attended");  // 224 in production; 3 here
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "confirmed"); // 1 confirmed
+        createRegistration(event.getId(), "waitlist");  // 1 waitlist
+        entityManager.flush();
+
+        // When: GET detail with include=registrations
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode() + "?include=registrations"))
+                // Then: currentAttendeeCount = 3 attended + 1 confirmed + 1 waitlist = 5
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentAttendeeCount").value(5));
+    }
+
+    @Test
+    @DisplayName("should_use_registrationCapacity_in_spotsRemaining_when_confirmedCountIncludesAttended")
+    void should_use_registrationCapacity_in_spotsRemaining_when_confirmedCountIncludesAttended() throws Exception {
+        // Given: event with registrationCapacity=5, 3 attended + 1 confirmed = 4 confirmed total
+        eventRepository.deleteAll();
+        Event event = Event.builder()
+                .eventCode("BATbernCapTest")
+                .title("Capacity Test")
+                .eventNumber(9999)
+                .date(Instant.parse("2023-05-15T09:00:00Z"))
+                .registrationDeadline(Instant.parse("2023-05-08T00:00:00Z"))
+                .venueName("Test Venue")
+                .venueAddress("Test Address")
+                .venueCapacity(200)
+                .registrationCapacity(5)
+                .organizerUsername("test.organizer")
+                .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
+                .workflowState(EventWorkflowState.EVENT_COMPLETED)
+                .build();
+        event = eventRepository.save(event);
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "confirmed");
+        entityManager.flush();
+
+        // When: GET detail
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                // Then: confirmedCount=4 (3 attended + 1 confirmed), spotsRemaining=5-4=1
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.confirmedCount").value(4))
+                .andExpect(jsonPath("$.spotsRemaining").value(1));
+    }
+
+    @Test
+    @DisplayName("should_exclude_cancelled_from_currentAttendeeCount_on_list_endpoint")
+    void should_exclude_cancelled_from_currentAttendeeCount_on_list_endpoint() throws Exception {
+        // Given: event with 3 active + 2 cancelled registrations
+        eventRepository.deleteAll();
+        Event event = createTestEvent("Active Count Event", "2024-06-15T09:00:00Z", "CREATED");
+        createRegistration(event.getId(), "registered");
+        createRegistration(event.getId(), "confirmed");
+        createRegistration(event.getId(), "attended");
+        createRegistration(event.getId(), "cancelled");
+        createRegistration(event.getId(), "cancelled");
+        entityManager.flush();
+
+        // When: GET list with include=registrations
+        mockMvc.perform(get("/api/v1/events?include=registrations"))
+                // Then: currentAttendeeCount = 3 (cancelled excluded via ACTIVE_STATUSES)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].currentAttendeeCount").value(3));
     }
 }
