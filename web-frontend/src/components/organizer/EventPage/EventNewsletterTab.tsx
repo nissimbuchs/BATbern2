@@ -95,6 +95,15 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
     }
   }, [historyQuery.data, activeSendId]);
 
+  // Keep history table in sync while a send is active (same 3s cadence as progress bar).
+  useEffect(() => {
+    if (!isJobActive) return;
+    const interval = setInterval(() => {
+      historyQuery.refetch();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isJobActive, historyQuery]);
+
   // Refetch history when the active send job reaches a terminal state.
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
