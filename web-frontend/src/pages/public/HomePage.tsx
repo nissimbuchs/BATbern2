@@ -10,7 +10,10 @@
  *
  * Story 4.2 (BAT-109): Supports archive mode
  * - Route "/archive/:eventCode" shows archived event with timeline only
- * - Hides speakers, sessions, and venue sections
+ *
+ * ## Display Phase Logic
+ * All section visibility is driven by a single HomePagePhase discriminated union.
+ * See homePagePhase.ts for the authoritative section visibility matrix.
  */
 
 import { useState } from 'react';
@@ -41,8 +44,9 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTranslation } from 'react-i18next';
+import { getHomepagePhase, getSectionVisibility } from './homePagePhase';
 
-const DEREGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
+const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
 const HomePage = () => {
   const { t } = useTranslation('events');
@@ -53,10 +57,10 @@ const HomePage = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
-  // Check if we're in archive mode (Story 4.2)
+  // Archive mode (Story 4.2)
   const isArchiveMode = location.pathname.startsWith('/archive');
 
-  // Check if we're in preview mode
+  // Preview mode (Story 5.7)
   const isPreview = searchParams.get('preview') === 'true';
   const previewPhase = searchParams.get('phase') || 'speakers';
   const previewMode = searchParams.get('mode') || 'progressive';
@@ -72,36 +76,30 @@ const HomePage = () => {
       });
     },
     enabled: !!eventCode,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 2,
   });
 
-  // Use current event query if no eventCode specified
   const currentEventQuery = useCurrentEvent();
-
-  // Select the appropriate query result
   const { data: event, isLoading, error } = eventCode ? specificEventQuery : currentEventQuery;
 
-  // EVENT_COMPLETED within 14-day window is shown on homepage with archive-style UI.
-  // Computed early (with optional chaining) so it can gate the registration hook below.
-  const isArchivedState =
+  // Event-specific photos — enabled for archive pages and EVENT_COMPLETED/ARCHIVED on homepage
+  const isCompletedOrArchived =
     event?.workflowState === 'ARCHIVED' || event?.workflowState === 'EVENT_COMPLETED';
+  const { data: eventPhotos } = useEventPhotos(
+    eventCode ?? '',
+    isArchiveMode || isCompletedOrArchived
+  );
 
-  // Event-specific photos for archive/completed view (Story 10.21 — AC7)
-  // Enabled for archive pages and EVENT_COMPLETED/ARCHIVED on homepage
-  const { data: eventPhotos } = useEventPhotos(eventCode ?? '', isArchiveMode || isArchivedState);
-
-  // AC2/AC4: Registration status banner (Story 10.10)
-  // Hook returns undefined immediately for unauthenticated users — no API call made (AC8)
-  const BANNER_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
-  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
+  // Registration status (Story 10.10) — only fetch when registration is actionable
+  const registrationActive =
     !isArchiveMode &&
-      !isArchivedState &&
-      event &&
-      event.workflowState &&
-      BANNER_WORKFLOW_STATES.includes(event.workflowState)
-      ? event.eventCode
-      : undefined
+    !isCompletedOrArchived &&
+    !!event?.workflowState &&
+    REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
+
+  const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
+    registrationActive ? (event?.eventCode ?? undefined) : undefined
   );
 
   // Loading state
@@ -129,7 +127,10 @@ const HomePage = () => {
     );
   }
 
-  // Fallback values
+  // ---------------------------------------------------------------------------
+  // Derived display values
+  // ---------------------------------------------------------------------------
+
   const eventTitle = event.title || t('public.comingSoon');
   const registerLink = event.eventCode ? `/register/${event.eventCode}` : '/register';
   const eventDate = event.date;
@@ -137,36 +138,28 @@ const HomePage = () => {
   const eventDateObj = eventDate ? new Date(eventDate) : null;
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
+  const hasSessions = !!(event.sessions && event.sessions.length > 0);
 
-  // Archive mode: construct back URL preserving query parameters (filters, sort)
   const backToArchiveUrl = isArchiveMode
     ? location.search
       ? `/archive${location.search}`
       : '/archive'
     : null;
 
-  // Progressive publishing phase-based display (Story 5.7)
-  // API returns uppercase: 'TOPIC', 'SPEAKERS', 'AGENDA'
-  // Default to 'AGENDA' (show all) if not set (backward compatibility)
-  const currentPhase =
-    ('currentPublishedPhase' in event
-      ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
-      : null) ?? null;
+  // ---------------------------------------------------------------------------
+  // Phase + visibility — single source of truth
+  // ---------------------------------------------------------------------------
 
-  // Archive mode (Story 4.2 / 10.21): Show timetable + speakers; hide logistics/venue/registration
-  // EVENT_COMPLETED within 14-day window is shown on homepage with same archive-style UI,
-  // so attendees still see materials and programme without live logistics.
-  const isArchiveDisplay = isArchiveMode || isArchivedState;
+  const phase = getHomepagePhase(event, isArchiveMode, eventPhotos);
+  const vis = getSectionVisibility(phase);
 
-  // In archive mode always show speakers — event is fully published and done
-  const showSpeakersAndSessions =
-    isArchiveDisplay || currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
-  const showTimetable = isArchiveDisplay || currentPhase === 'AGENDA'; // Always show in archive mode
-  const showSessionList = !isArchiveDisplay && currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
-  const showVenue = !isArchiveDisplay; // Hide venue in archive mode
+  const canDeregister =
+    !!event.workflowState && REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
 
-  // Preview Mode Banner (Story 5.7) - shown above navigation
-  // Fixed positioning to stay above the fixed navigation
+  // ---------------------------------------------------------------------------
+  // Preview mode banner (Story 5.7)
+  // ---------------------------------------------------------------------------
+
   const previewBanner = isPreview ? (
     <div className="fixed top-0 left-0 right-0 z-[60] bg-blue-500 text-white py-3 px-4 text-center">
       <div className="container mx-auto flex items-center justify-center gap-4 flex-wrap">
@@ -182,6 +175,10 @@ const HomePage = () => {
     </div>
   ) : undefined;
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
     <PublicLayout topBanner={previewBanner}>
       {/* SEO Meta Tags */}
@@ -193,7 +190,7 @@ const HomePage = () => {
         type="event"
       />
 
-      {/* Hero Section */}
+      {/* Hero — always shown */}
       <HeroSection
         title={eventTitle}
         date={eventDate}
@@ -205,19 +202,16 @@ const HomePage = () => {
         spotsRemaining={event.spotsRemaining}
       />
 
-      {/* Event Description Section (Story 10.23) — shown below hero, hidden when null/empty or no phase published */}
-      {currentPhase !== null && (
+      {/* Event Description — hidden in COMING_SOON */}
+      {vis.eventDescription && (
         <div className="container mx-auto px-4">
           <EventDescriptionSection description={event?.description} />
         </div>
       )}
 
-      {/* Event Content */}
       <div className="container mx-auto px-4">
-        {/* Registration Status Banner (Story 10.10) — AC2, AC4
-            Shown below hero when authenticated user has a registration for the current event.
-            Only for events in AGENDA_PUBLISHED / EVENT_LIVE states. */}
-        {!isArchiveDisplay && (
+        {/* Registration Status Banner (Story 10.10) */}
+        {registrationActive && (
           <RegistrationStatusBanner
             status={myRegistration?.status ?? null}
             eventCode={event.eventCode ?? ''}
@@ -226,30 +220,27 @@ const HomePage = () => {
           />
         )}
 
-        {/* Story 10.12 (AC9): "Cancel your registration" link for anonymous and authenticated registrants.
-            Shown when event is in a state where registrations can be cancelled. */}
-        {!isArchiveDisplay &&
-          event.workflowState &&
-          DEREGISTRATION_WORKFLOW_STATES.includes(event.workflowState) && (
-            <>
-              <div className="mt-2 text-center">
-                <button
-                  onClick={() => setDeregisterModalOpen(true)}
-                  className="text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors"
-                >
-                  {tReg('deregistration.homepage.cancelLink')}
-                </button>
-              </div>
-              <DeregistrationByEmailModal
-                open={deregisterModalOpen}
-                onClose={() => setDeregisterModalOpen(false)}
-                eventCode={event.eventCode ?? ''}
-              />
-            </>
-          )}
+        {/* Deregistration link (Story 10.12) */}
+        {registrationActive && canDeregister && (
+          <>
+            <div className="mt-2 text-center">
+              <button
+                onClick={() => setDeregisterModalOpen(true)}
+                className="text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors"
+              >
+                {tReg('deregistration.homepage.cancelLink')}
+              </button>
+            </div>
+            <DeregistrationByEmailModal
+              open={deregisterModalOpen}
+              onClose={() => setDeregisterModalOpen(false)}
+              eventCode={event.eventCode ?? ''}
+            />
+          </>
+        )}
 
-        {/* Back Button - Only shown in archive mode (Story 4.2) */}
-        {isArchiveMode && backToArchiveUrl && (
+        {/* Back to archive link — only in ARCHIVE mode (Story 4.2) */}
+        {vis.backLink && backToArchiveUrl && (
           <Link
             to={backToArchiveUrl}
             className="inline-block mt-8 mb-4 text-blue-400 hover:text-blue-300 transition-colors"
@@ -258,43 +249,41 @@ const HomePage = () => {
           </Link>
         )}
 
-        {/* Event Logistics - Hidden in archive/completed mode (Story 4.2) */}
-        {!isArchiveDisplay && (
+        {/* Event Logistics — always shown */}
+        {vis.eventLogistics && (
           <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
             <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
             <EventLogistics event={event} />
-            {/* AC7 (Story 10.11): Capacity badge — only when capacity is configured */}
-            <div className="mt-4">
-              <CapacityIndicator
-                registrationCapacity={event.registrationCapacity}
-                spotsRemaining={event.spotsRemaining}
-                waitlistCount={event.waitlistCount}
-              />
-            </div>
+            {/* Capacity badge — only when registration is active (Story 10.11) */}
+            {registrationActive && (
+              <div className="mt-4">
+                <CapacityIndicator
+                  registrationCapacity={event.registrationCapacity}
+                  spotsRemaining={event.spotsRemaining}
+                  waitlistCount={event.waitlistCount}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Event Program Timeline (Timetable) - Only show when agenda is published */}
-        {showTimetable && event.sessions && event.sessions.length > 0 && (
+        {/* Event Program (timetable) — AGENDA phase only */}
+        {vis.eventProgram && hasSessions && (
           <EventProgram
-            sessions={event.sessions}
-            isArchived={isArchivedState}
+            sessions={event.sessions!}
+            isArchived={isCompletedOrArchived}
             eventCode={event.eventCode}
           />
         )}
 
-        {/* Session Cards (List View) - Only show when speakers published, NOT when agenda published */}
-        {showSessionList && event.sessions && event.sessions.length > 0 && (
-          <SessionCards sessions={event.sessions} />
-        )}
+        {/* Session Cards (list) — SPEAKERS phase, POST_EVENT, ARCHIVE */}
+        {vis.sessionCards && hasSessions && <SessionCards sessions={event.sessions!} />}
 
-        {/* Speaker Grid - Show when speakers or agenda is published */}
-        {showSpeakersAndSessions && event.sessions && event.sessions.length > 0 && (
-          <SpeakerGrid sessions={event.sessions} />
-        )}
+        {/* Speaker Grid — SPEAKERS phase onward, POST_EVENT, ARCHIVE */}
+        {vis.speakerGrid && hasSessions && <SpeakerGrid sessions={event.sessions!} />}
 
-        {/* Venue Map - Hidden in archive/completed mode (Story 4.2) */}
-        {showVenue && event.venueName && event.venueAddress && (
+        {/* Venue Map — hidden in POST_EVENT and ARCHIVE */}
+        {vis.venueMap && event.venueName && event.venueAddress && (
           <VenueMap
             venue={{
               id: event.eventCode,
@@ -305,14 +294,14 @@ const HomePage = () => {
           />
         )}
 
-        {/* Social Sharing */}
+        {/* Social Sharing — always shown */}
         <SocialSharing eventTitle={eventTitle} eventUrl={eventUrl} />
 
-        {/* Upcoming Events Section — hidden in archive/completed mode */}
-        {!isArchiveDisplay && <UpcomingEventsSection currentEventCode={event.eventCode} />}
+        {/* Upcoming Events — always shown */}
+        <UpcomingEventsSection currentEventCode={event.eventCode} />
 
-        {/* Event Photos Marquee — archive/completed detail only (Story 10.21 — AC7) */}
-        {isArchiveDisplay && eventPhotos && eventPhotos.length > 0 && (
+        {/* Event-specific photos marquee — POST_EVENT and ARCHIVE when photos exist */}
+        {vis.eventPhotosMarquee && eventPhotos && eventPhotos.length > 0 && (
           <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6 mt-12">
             <InfiniteMarquee direction="left" speed="slow">
               {eventPhotos.map((photo) => (
@@ -327,21 +316,12 @@ const HomePage = () => {
           </section>
         )}
 
-        {/* Testimonials / recent photos marquee + partner marquee:
-            - Normal homepage: full section (photo row + partner row)
-            - EVENT_COMPLETED homepage: partner row always + recent-photos row as fallback
-              (skipPhotoRow when event already has its own photos shown above) */}
-        {!isArchiveDisplay ? (
-          <div className="mt-16 pb-12">
-            <TestimonialSection />
-          </div>
-        ) : isArchivedState && !isArchiveMode ? (
-          <div className="mt-8 pb-12">
-            <TestimonialSection skipPhotoRow={!!(eventPhotos && eventPhotos.length > 0)} />
-          </div>
-        ) : null}
+        {/* Testimonials + Partners — always shown */}
+        <div className="mt-16 pb-12">
+          <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
+        </div>
 
-        {/* Newsletter Subscribe Widget — footer */}
+        {/* Newsletter Subscribe Widget — always shown */}
         <div className="border-t pt-4 pb-8">
           <NewsletterSubscribeWidget />
         </div>

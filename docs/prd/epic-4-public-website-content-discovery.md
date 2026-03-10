@@ -92,10 +92,35 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 6. **Registration Confirmation**: QR code for check-in, calendar export (iCal), email confirmation
 7. **Session Details Modal**: Deep dive into individual sessions with speaker bios
 
-**Post-Event 14-Day Display Rule:**
-After an event finishes, the homepage continues to show it for **14 days** using an archive-style layout: timetable and speaker list are visible, but registration, logistics, and venue blocks are hidden. After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
+**Homepage Display Phases:**
 
-**Phase 1 eligibility rule**: Only events that have `currentPublishedPhase` set qualify as an upcoming event (Phase 1). Unpublished future events (e.g., state `SPEAKER_IDENTIFICATION` with no published phase) are excluded and do not block the Phase 2 (recently-completed) fallback.
+The homepage has three display phases plus an archive mode. All section visibility is derived from a single phase computation (see `web-frontend/src/pages/public/homePagePhase.ts`).
+
+| Phase | Trigger |
+|-------|---------|
+| **COMING_SOON** | `currentPublishedPhase` is null (event not yet published) |
+| **PRE_EVENT** (TOPIC / SPEAKERS / AGENDA) | `currentPublishedPhase` is set and `workflowState ≠ EVENT_COMPLETED` |
+| **POST_EVENT** | `workflowState === EVENT_COMPLETED` (≤14 days; backend auto-archives after) |
+| **ARCHIVE** | URL path starts with `/archive` |
+
+**Section Visibility Matrix:**
+
+| Section | COMING_SOON | PRE_EVENT TOPIC | PRE_EVENT SPEAKERS | PRE_EVENT AGENDA | POST_EVENT | ARCHIVE |
+|---------|:-----------:|:---------------:|:------------------:|:----------------:|:----------:|:-------:|
+| EventDescription | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| EventLogistics | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| VenueMap | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| SpeakerGrid | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| SessionCards | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| EventProgram (timetable) | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| EventPhotosMarquee | ❌ | ❌ | ❌ | ❌ | if photos | if photos |
+| TestimonialSection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| testimonialsSkipPhotoRow | ❌ | ❌ | ❌ | ❌ | if photos | if photos |
+| UpcomingEvents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+Registration banner and deregistration link are additionally gated by `workflowState ∈ {AGENDA_PUBLISHED, EVENT_LIVE}`.
+
+After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
 
 ---
 
