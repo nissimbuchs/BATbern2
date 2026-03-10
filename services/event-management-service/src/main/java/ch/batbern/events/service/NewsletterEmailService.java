@@ -348,6 +348,8 @@ public class NewsletterEmailService {
 
         int newlySent = 0;
         int newlyFailed = 0;
+        int processedSinceLastFlush = 0;
+        int lastFlushedSent = 0;
         try {
             // ── 1. Re-send to previously-failed recipients ─────────────────────
             for (NewsletterRecipient failed : failedRecipients) {
@@ -373,6 +375,11 @@ public class NewsletterEmailService {
                 }
                 updateRecipientStatus(sendId, email, deliveryStatus);
                 sleepQuietly(sendRateDelayMs);
+                if (++processedSinceLastFlush >= SEND_PAGE_SIZE) {
+                    updateRetrySentCount(sendId, newlySent - lastFlushedSent);
+                    lastFlushedSent = newlySent;
+                    processedSinceLastFlush = 0;
+                }
             }
 
             // ── 2. Send to subscribers that were never contacted (orphan resume) ─
@@ -397,10 +404,15 @@ public class NewsletterEmailService {
                 }
                 recordRecipient(sendId, email, deliveryStatus);
                 sleepQuietly(sendRateDelayMs);
+                if (++processedSinceLastFlush >= SEND_PAGE_SIZE) {
+                    updateRetrySentCount(sendId, newlySent - lastFlushedSent);
+                    lastFlushedSent = newlySent;
+                    processedSinceLastFlush = 0;
+                }
             }
 
-            // Increment sentCount by how many we newly delivered.
-            updateRetrySentCount(sendId, newlySent);
+            // Final flush of any remaining progress since last batch.
+            updateRetrySentCount(sendId, newlySent - lastFlushedSent);
 
             // Determine final status based on remaining failures.
             long remainingFailed =
