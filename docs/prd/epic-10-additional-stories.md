@@ -408,7 +408,7 @@ public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
 ### Story 10.7: Newsletter Subscription & Sending
 
 **Story file**: `_bmad-output/implementation-artifacts/10-7-newsletter-subscription-and-sending.md`
-**Status**: ready-for-dev
+**Status**: done
 **Prerequisites**: Story 10.2 (Email Template Management — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category, `batbern-default` layout)
 
 **User Story:**
@@ -489,18 +489,24 @@ docs/api/events.openapi.yml                                          ← newslet
 ```
 
 **Definition of Done (Story 10.7):**
-- [ ] V67 migration runs cleanly; subscribe/unsubscribe endpoints work without auth
-- [ ] Registration with newsletter checkbox auto-subscribes (silent, no UI change)
-- [ ] Homepage footer widget subscribes anonymous users; duplicate → 409 shown inline
-- [ ] `/unsubscribe?token=valid` confirms and unsubscribes; invalid token → error state
-- [ ] `/account` Settings → Notifications shows newsletter toggle for authenticated users
-- [ ] EventPage → Newsletter tab: subscriber count, send history, preview, send/reminder buttons with confirmation
-- [ ] Every sent email contains `{{unsubscribeLink}}` footer link (GDPR)
-- [ ] Newsletter templates visible/editable in admin Email Templates tab (NEWSLETTER category)
-- [ ] OpenAPI spec committed before any backend implementation (ADR-006)
-- [ ] All tests pass: `NewsletterSubscriberServiceTest`, `NewsletterControllerIntegrationTest`, `NewsletterEmailServiceTest` + 3 frontend tests
-- [ ] Type-check passes, no TypeScript errors; Checkstyle passes
-- [ ] i18n: `newsletter.*` keys in both `en.json` and `de.json`
+- [x] V67 migration runs cleanly; subscribe/unsubscribe endpoints work without auth
+- [x] Registration with newsletter checkbox auto-subscribes (silent, no UI change)
+- [x] Homepage footer widget subscribes anonymous users; duplicate → 409 shown inline
+- [x] `/unsubscribe?token=valid` confirms and unsubscribes; invalid token → error state
+- [x] `/account` Settings → Notifications shows newsletter toggle for authenticated users
+- [x] EventPage → Newsletter tab: subscriber count, send history, preview, send/reminder buttons with confirmation
+- [x] Every sent email contains `{{unsubscribeLink}}` footer link (GDPR)
+- [x] Newsletter templates visible/editable in admin Email Templates tab (NEWSLETTER category)
+- [x] OpenAPI spec committed before any backend implementation (ADR-006)
+- [x] All tests pass: `NewsletterSubscriberServiceTest`, `NewsletterControllerIntegrationTest`, `NewsletterEmailServiceTest` + 3 frontend tests
+- [x] Type-check passes, no TypeScript errors; Checkstyle passes
+- [x] i18n: `newsletter.*` keys in both `en.json` and `de.json`
+
+**Robustness Addendum (2026-03-10):** Fixed P0 thread-pool overflow bug (only ~110/3000 emails actually sent).
+Redesigned `sendNewsletter()` as fire-and-forget with single `@Async` background job + paginated processing (50/page).
+Added: V87 migration (status tracking), duplicate-send prevention (409), SES rate limiting (70ms/email),
+retry for PARTIAL/FAILED sends, progress polling endpoint, frontend LinearProgress UI.
+See `docs/plans/newsletter-robustness-v87-plan.md` for full details.
 
 ---
 

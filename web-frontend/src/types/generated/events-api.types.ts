@@ -2041,6 +2041,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/newsletter/sends/{sendId}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Poll send-job progress for a newsletter send (ORGANIZER) */
+    get: operations['getNewsletterSendStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/newsletter/sends/{sendId}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER) */
+    post: operations['retryNewsletterSend'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/public/settings/features': {
     parameters: {
       query?: never;
@@ -2681,6 +2715,31 @@ export interface components {
       locale: string;
       recipientCount: number;
       sentByUsername?: string;
+      /**
+       * @description Send-job status
+       * @enum {string}
+       */
+      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
+      sentCount?: number;
+      failedCount?: number;
+      /** Format: date-time */
+      startedAt?: string;
+      /** Format: date-time */
+      completedAt?: string;
+    };
+    NewsletterSendStatusResponse: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
+      sentCount: number;
+      failedCount: number;
+      totalCount: number;
+      percentComplete: number;
+      /** Format: date-time */
+      startedAt?: string;
+      /** Format: date-time */
+      completedAt?: string;
     };
     NewsletterPreviewResponse: {
       subject: string;
@@ -8424,6 +8483,77 @@ export interface operations {
       403: components['responses']['Forbidden'];
       /** @description Event not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getNewsletterSendStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sendId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current send-job status and progress counts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSendStatusResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event or send record not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  retryNewsletterSend: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sendId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Retry job accepted; returns updated send response with PENDING status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSendResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event or send record not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Send is already COMPLETED or IN_PROGRESS — retry not allowed */
+      409: {
         headers: {
           [name: string]: unknown;
         };

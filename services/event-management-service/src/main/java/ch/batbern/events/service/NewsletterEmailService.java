@@ -8,17 +8,23 @@ import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.NewsletterPreviewResponse;
 import ch.batbern.events.dto.NewsletterSendResponse;
+import ch.batbern.events.dto.NewsletterSendStatusResponse;
 import ch.batbern.events.dto.SessionSpeakerResponse;
+import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
+import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.Nullable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,27 +38,57 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Service for building and sending newsletter emails (Story 10.7 — AC8, AC10).
  *
- * <p>Assembles all template variables from event data, builds the per-recipient
- * email with a unique unsubscribeLink, and sends via {@link EmailService}.
- * Audit records are written to newsletter_sends + newsletter_recipients.
+ * <h2>Send Architecture (robustness for 3000+ subscribers)</h2>
+ * <ol>
+ *   <li>{@link #sendNewsletter} creates a {@code newsletter_sends} row (status=PENDING),
+ *       launches {@link #executeNewsletterSendAsync} in a background thread,
+ *       and returns immediately with the send ID and PENDING status.</li>
+ *   <li>{@link #executeNewsletterSendAsync} runs in a single {@code @Async} thread,
+ *       processes subscribers in pages of 50, calls
+ *       {@link EmailService#sendHtmlEmailSync} (no inner thread-pool dispatch),
+ *       and respects the SES default rate limit (~14/s) via a 70 ms sleep between emails.</li>
+ *   <li>Progress is written to {@code newsletter_sends} after each page so the organizer
+ *       can poll {@code GET /sends/{sendId}/status} and see a live progress bar.</li>
+ *   <li>Terminal status: COMPLETED (no failures) | PARTIAL (some failed) | FAILED (all failed).</li>
+ * </ol>
+ *
+ * <h2>Duplicate-send prevention</h2>
+ * {@link #sendNewsletter} throws {@link DuplicateNewsletterSendException} (409) when a
+ * send is already IN_PROGRESS for the same event.
+ *
+ * <h2>Retry</h2>
+ * {@link #retryFailedRecipients} re-sends only to subscribers with
+ * {@code delivery_status='failed'} in {@code newsletter_recipients}, updating the
+ * existing send row in place.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class NewsletterEmailService {
 
-    private static final String TEMPLATE_KEY = "newsletter-event";
+    // ── Constants ─────────────────────────────────────────────────────────────
+
+    private static final String DEFAULT_TEMPLATE_KEY = "newsletter-event";
     private static final String LAYOUT_KEY = "batbern-default";
+    private static final int SEND_PAGE_SIZE = 50;
+    /**
+     * Delay between individual email sends, in milliseconds.
+     * <p>
+     * Production default: 70 ms (~14 emails/s — respects AWS SES default sending rate).<br>
+     * Local dev override: 50 ms (set via {@code newsletter.send.rate-delay-ms} in the
+     * {@code local} profile) — intentionally slow enough to make the progress bar
+     * visible and to allow service-kill/resume tests without hitting a real SES rate limit.
+     */
+    @Value("${newsletter.send.rate-delay-ms:70}")
+    private long sendRateDelayMs;
 
-    /** Session types that are structural (moderation, breaks, lunch) — excluded from newsletter. */
     private static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of("moderation", "break", "lunch");
-
-    /** Workflow states where speaker section is considered published. */
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
             EventWorkflowState.EVENT_LIVE,
@@ -60,9 +96,18 @@ public class NewsletterEmailService {
             EventWorkflowState.ARCHIVED
     );
 
+    static final String STATUS_PENDING = "PENDING";
+    static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    static final String STATUS_COMPLETED = "COMPLETED";
+    static final String STATUS_PARTIAL = "PARTIAL";
+    static final String STATUS_FAILED = "FAILED";
+
+    // ── Dependencies ──────────────────────────────────────────────────────────
+
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
     private final NewsletterSubscriberService subscriberService;
+    private final NewsletterSubscriberRepository subscriberRepository;
     private final NewsletterSendRepository sendRepository;
     private final NewsletterRecipientRepository recipientRepository;
     private final SessionRepository sessionRepository;
@@ -76,18 +121,13 @@ public class NewsletterEmailService {
 
     /**
      * Builds a preview of the newsletter email without sending.
-     *
-     * @param event       the event to preview for
-     * @param isReminder  whether to render as a reminder (adds "Erinnerung: " prefix)
-     * @param locale      "de" or "en"
-     * @param templateKey optional template key override; null → uses default 'newsletter-event'
-     * @return preview with rendered subject and HTML
      */
     @Transactional(readOnly = true)
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
                                               @Nullable String templateKey) {
         String effectiveKey = resolveTemplateKey(templateKey);
-        Map<String, String> vars = buildVariables(event, locale, isReminder, baseUrl + "/unsubscribe?token=PREVIEW");
+        Map<String, String> vars = buildVariables(event, locale, isReminder,
+                baseUrl + "/unsubscribe?token=PREVIEW");
         String contentHtml = renderContent(locale, vars, effectiveKey);
         String mergedHtml = emailService.replaceVariables(
                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
@@ -100,59 +140,263 @@ public class NewsletterEmailService {
                 .build();
     }
 
-    // ── Send ──────────────────────────────────────────────────────────────────
+    // ── Send (fire-and-forget) ────────────────────────────────────────────────
 
     /**
-     * Sends the newsletter to all active subscribers and records the send.
+     * Initiates a newsletter send for all active subscribers.
      *
-     * <p>Note: email sending is intentionally performed outside of a DB transaction
-     * to avoid holding a connection open during potentially long SMTP operations.
-     * The audit record is committed first via {@link #createSendAuditRecord}.
+     * <p>Creates an audit record with {@code status=PENDING}, launches an {@code @Async}
+     * background job, and returns immediately. The organizer can poll the status endpoint
+     * to track progress.
      *
-     * @param event           the event
-     * @param isReminder      whether to use "Reminder: " prefix
-     * @param locale          "de" or "en"
-     * @param sentByUsername  organizer's username for audit log
-     * @param templateKey     optional template key override; null → uses default 'newsletter-event'
-     * @return summary of the send operation
+     * @throws DuplicateNewsletterSendException (HTTP 409) if a send is already IN_PROGRESS
      */
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername,
                                                   @Nullable String templateKey) {
         String effectiveKey = resolveTemplateKey(templateKey);
-        List<NewsletterSubscriber> subscribers = subscriberService.findActiveSubscribers();
-        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
 
-        // Persist send audit record first (committed immediately — own transaction)
+        // Duplicate-send prevention: reject if a send is already in progress for this event.
+        sendRepository.findFirstByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS)
+                .ifPresent(active -> {
+                    throw new DuplicateNewsletterSendException(
+                            "A newsletter send is already in progress for event "
+                            + event.getEventCode() + " (sendId=" + active.getId() + ")");
+                });
+
+        long totalCount = subscriberService.getActiveCount();
+
+        // Persist PENDING audit record first (committed immediately in own transaction).
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
-                subscribers.size(), effectiveKey);
+                (int) totalCount, effectiveKey);
 
-        // Per-recipient send + recipient audit row (outside main transaction)
-        for (NewsletterSubscriber subscriber : subscribers) {
-            String deliveryStatus = "sent";
-            try {
-                String unsubscribeLink = baseUrl + "/unsubscribe?token=" + subscriber.getUnsubscribeToken();
-                Map<String, String> recipientVars = new HashMap<>(baseVars);
-                recipientVars.put("unsubscribeLink", unsubscribeLink);
-                String contentHtml = renderContent(locale, recipientVars, effectiveKey);
-                String mergedHtml = emailService.replaceVariables(
-                        emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), recipientVars);
-                emailService.sendHtmlEmail(subscriber.getEmail(), subject, mergedHtml);
-            } catch (Exception e) {
-                log.error("Failed to send newsletter to {}: {}", subscriber.getEmail(), e.getMessage());
-                deliveryStatus = "failed";
-            }
-            // AC10: log each recipient in newsletter_recipients
-            recordRecipient(saved.getId(), subscriber.getEmail(), deliveryStatus);
-        }
+        // Launch background send job — returns immediately.
+        executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey);
 
-        log.info("Newsletter sent for event {} by {}: {} recipients",
-                event.getEventCode(), sentByUsername, subscribers.size());
+        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}",
+                saved.getId(), event.getEventCode(), totalCount);
+
         return toResponse(saved);
     }
 
-    /** Saves the newsletter_sends audit row in its own transaction. */
+    /**
+     * Background send job — runs in a single {@code @Async} thread.
+     *
+     * <p>Processes subscribers in pages of {@value #SEND_PAGE_SIZE}, sends each email
+     * synchronously (no inner thread-pool dispatch), and updates progress counters in DB
+     * after each page. Sleeps {@code sendRateDelayMs} ms between emails to respect
+     * the SES default sending rate.
+     */
+    @Async
+    public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
+                                            String locale, String effectiveKey) {
+        markInProgress(sendId);
+
+        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
+        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+
+        int sentCount = 0;
+        int failedCount = 0;
+
+        try {
+            int pageNumber = 0;
+            Page<NewsletterSubscriber> page;
+
+            do {
+                page = subscriberRepository.findByUnsubscribedAtIsNull(
+                        PageRequest.of(pageNumber, SEND_PAGE_SIZE));
+
+                for (NewsletterSubscriber subscriber : page.getContent()) {
+                    String deliveryStatus = "sent";
+                    try {
+                        String unsubLink = baseUrl + "/unsubscribe?token="
+                                + subscriber.getUnsubscribeToken();
+                        Map<String, String> recipientVars = new HashMap<>(baseVars);
+                        recipientVars.put("unsubscribeLink", unsubLink);
+                        String contentHtml = renderContent(locale, recipientVars, effectiveKey);
+                        String mergedHtml = emailService.replaceVariables(
+                                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
+                                recipientVars);
+                        emailService.sendHtmlEmailSync(subscriber.getEmail(), subject, mergedHtml);
+                        sentCount++;
+                    } catch (Exception e) {
+                        log.error("Newsletter send failed for {}: {}", subscriber.getEmail(), e.getMessage());
+                        deliveryStatus = "failed";
+                        failedCount++;
+                    }
+                    recordRecipient(sendId, subscriber.getEmail(), deliveryStatus);
+                    sleepQuietly(sendRateDelayMs);
+                }
+
+                // Persist mid-send progress so the status endpoint reflects live counts.
+                updateSendProgress(sendId, sentCount, failedCount);
+                pageNumber++;
+
+            } while (page.hasNext());
+
+            String finalStatus = computeFinalStatus(sentCount, failedCount);
+            markCompleted(sendId, sentCount, failedCount, finalStatus);
+
+            log.info("Newsletter send completed: sendId={}, sent={}, failed={}, status={}",
+                    sendId, sentCount, failedCount, finalStatus);
+
+        } catch (Exception e) {
+            log.error("Newsletter send job aborted unexpectedly: sendId={}", sendId, e);
+            markCompleted(sendId, sentCount, failedCount, STATUS_FAILED);
+        }
+    }
+
+    // ── Retry failed recipients ───────────────────────────────────────────────
+
+    /**
+     * Re-sends only to recipients that previously failed for the given send.
+     *
+     * <p>Updates the existing {@code newsletter_sends} row in place so that the send
+     * history table shows one clean final row rather than a confusing duplicate.
+     *
+     * @throws IllegalStateException if the send is COMPLETED or already IN_PROGRESS/PENDING
+     */
+    public NewsletterSendResponse retryFailedRecipients(NewsletterSend send, Event event,
+                                                         String sentByUsername) {
+        if (STATUS_COMPLETED.equals(send.getStatus())) {
+            throw new IllegalStateException(
+                    "Send " + send.getId() + " is already COMPLETED — nothing to retry");
+        }
+        if (STATUS_IN_PROGRESS.equals(send.getStatus()) || STATUS_PENDING.equals(send.getStatus())) {
+            throw new IllegalStateException(
+                    "Send " + send.getId() + " is already " + send.getStatus());
+        }
+
+        String effectiveKey = resolveTemplateKey(send.getTemplateKey());
+        executeRetryAsync(send.getId(), event, send.isReminder(), send.getLocale(), effectiveKey);
+
+        log.info("Newsletter retry job queued: sendId={}, event={}",
+                send.getId(), event.getEventCode());
+
+        NewsletterSend reloaded = sendRepository.findById(send.getId()).orElse(send);
+        return toResponse(reloaded);
+    }
+
+    @Async
+    public void executeRetryAsync(UUID sendId, Event event, boolean isReminder,
+                                   String locale, String effectiveKey) {
+        markInProgress(sendId);
+
+        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
+        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+
+        List<NewsletterRecipient> failedRecipients =
+                recipientRepository.findByIdSendIdAndDeliveryStatus(sendId, "failed");
+
+        int newlySent = 0;
+        try {
+            for (NewsletterRecipient failed : failedRecipients) {
+                String email = failed.getId().getEmail();
+                String deliveryStatus = "sent";
+                try {
+                    String unsubToken = subscriberRepository.findByEmail(email)
+                            .map(NewsletterSubscriber::getUnsubscribeToken)
+                            .orElse("");
+                    String unsubLink = baseUrl + "/unsubscribe?token=" + unsubToken;
+                    Map<String, String> recipientVars = new HashMap<>(baseVars);
+                    recipientVars.put("unsubscribeLink", unsubLink);
+                    String contentHtml = renderContent(locale, recipientVars, effectiveKey);
+                    String mergedHtml = emailService.replaceVariables(
+                            emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
+                            recipientVars);
+                    emailService.sendHtmlEmailSync(email, subject, mergedHtml);
+                    newlySent++;
+                } catch (Exception e) {
+                    log.error("Newsletter retry failed for {}: {}", email, e.getMessage());
+                    deliveryStatus = "failed";
+                }
+                updateRecipientStatus(sendId, email, deliveryStatus);
+                sleepQuietly(sendRateDelayMs);
+            }
+
+            // Increment sentCount by how many we newly delivered.
+            updateRetrySentCount(sendId, newlySent);
+
+            // Determine final status based on remaining failures.
+            long remainingFailed =
+                    recipientRepository.findByIdSendIdAndDeliveryStatus(sendId, "failed").size();
+            String finalStatus = remainingFailed == 0 ? STATUS_COMPLETED : STATUS_PARTIAL;
+            markCompleted(sendId, -1, (int) remainingFailed, finalStatus);
+
+            log.info("Newsletter retry completed: sendId={}, newlySent={}, remainingFailed={}, status={}",
+                    sendId, newlySent, remainingFailed, finalStatus);
+
+        } catch (Exception e) {
+            log.error("Newsletter retry aborted: sendId={}", sendId, e);
+            markCompleted(sendId, -1, -1, STATUS_PARTIAL);
+        }
+    }
+
+    // ── Status mapping ────────────────────────────────────────────────────────
+
+    /** Maps a send entity to the polling status DTO. */
+    public NewsletterSendStatusResponse toStatusResponse(NewsletterSend send) {
+        int total = send.getRecipientCount() != null ? send.getRecipientCount() : 0;
+        int done = send.getSentCount() + send.getFailedCount();
+        int pct = total > 0 ? Math.min(100, done * 100 / total) : 0;
+        return NewsletterSendStatusResponse.builder()
+                .id(send.getId())
+                .status(send.getStatus())
+                .sentCount(send.getSentCount())
+                .failedCount(send.getFailedCount())
+                .totalCount(total)
+                .percentComplete(pct)
+                .startedAt(send.getStartedAt())
+                .completedAt(send.getCompletedAt())
+                .build();
+    }
+
+    /** Maps a NewsletterSend entity to its response DTO. */
+    public NewsletterSendResponse toResponse(NewsletterSend send) {
+        return NewsletterSendResponse.builder()
+                .id(send.getId())
+                .sentAt(send.getSentAt())
+                .reminder(send.isReminder())
+                .locale(send.getLocale())
+                .recipientCount(send.getRecipientCount() != null ? send.getRecipientCount() : 0)
+                .sentByUsername(send.getSentByUsername())
+                .status(send.getStatus())
+                .sentCount(send.getSentCount())
+                .failedCount(send.getFailedCount())
+                .startedAt(send.getStartedAt())
+                .completedAt(send.getCompletedAt())
+                .build();
+    }
+
+    // ── Variable building ─────────────────────────────────────────────────────
+
+    Map<String, String> buildVariables(Event event, String locale, boolean isReminder,
+                                        String unsubscribeLink) {
+        boolean isDe = "de".equals(locale);
+        Locale javaLocale = isDe ? Locale.GERMAN : Locale.ENGLISH;
+
+        Map<String, String> vars = new HashMap<>();
+        vars.put("reminderPrefix", buildReminderPrefix(isReminder, isDe));
+        vars.put("eventNumber", String.valueOf(event.getEventNumber()));
+        vars.put("eventType", localizeEventType(event.getEventType(), isDe));
+        vars.put("eventTitle", event.getTitle());
+        vars.put("eventDate", formatEventDate(event, javaLocale));
+        vars.put("eventTime", formatEventTime(event, isDe));
+        vars.put("venue", event.getVenueName());
+        vars.put("venueDirectionsUrl", "");
+        vars.put("conferenceLanguage", isDe ? "Deutsch / Englisch" : "German / English");
+        vars.put("speakersSection", buildSpeakersSection(event, isDe));
+        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
+        vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
+        vars.put("registrationLink", baseUrl + "/register/" + event.getEventCode());
+        vars.put("upcomingEventsSection", buildUpcomingEventsSection(event.getId(), isDe));
+        vars.put("unsubscribeLink", unsubscribeLink);
+        vars.put("preferencesLink", baseUrl + "/account");
+        return vars;
+    }
+
+    // ── @Transactional helpers (each in its own short transaction) ────────────
+
     @Transactional
     protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
                                                    String sentByUsername, int recipientCount,
@@ -165,13 +409,54 @@ public class NewsletterEmailService {
                 .sentAt(Instant.now())
                 .sentByUsername(sentByUsername)
                 .recipientCount(recipientCount)
+                .status(STATUS_PENDING)
                 .build();
         return sendRepository.save(send);
     }
 
-    /** Saves a single newsletter_recipients row in its own transaction. */
     @Transactional
-    protected void recordRecipient(java.util.UUID sendId, String email, String deliveryStatus) {
+    protected void markInProgress(UUID sendId) {
+        sendRepository.findById(sendId).ifPresent(send -> {
+            send.setStatus(STATUS_IN_PROGRESS);
+            send.setStartedAt(Instant.now());
+            sendRepository.save(send);
+        });
+    }
+
+    @Transactional
+    protected void updateSendProgress(UUID sendId, int sentCount, int failedCount) {
+        sendRepository.findById(sendId).ifPresent(send -> {
+            send.setSentCount(sentCount);
+            send.setFailedCount(failedCount);
+            sendRepository.save(send);
+        });
+    }
+
+    @Transactional
+    protected void updateRetrySentCount(UUID sendId, int addedSentCount) {
+        sendRepository.findById(sendId).ifPresent(send -> {
+            send.setSentCount(send.getSentCount() + addedSentCount);
+            sendRepository.save(send);
+        });
+    }
+
+    @Transactional
+    protected void markCompleted(UUID sendId, int sentCount, int failedCount, String finalStatus) {
+        sendRepository.findById(sendId).ifPresent(send -> {
+            if (sentCount >= 0) {
+                send.setSentCount(sentCount);
+            }
+            if (failedCount >= 0) {
+                send.setFailedCount(failedCount);
+            }
+            send.setStatus(finalStatus);
+            send.setCompletedAt(Instant.now());
+            sendRepository.save(send);
+        });
+    }
+
+    @Transactional
+    protected void recordRecipient(UUID sendId, String email, String deliveryStatus) {
         NewsletterRecipient recipient = NewsletterRecipient.builder()
                 .id(new NewsletterRecipientId(sendId, email))
                 .deliveryStatus(deliveryStatus)
@@ -179,83 +464,16 @@ public class NewsletterEmailService {
         recipientRepository.save(recipient);
     }
 
-    // ── Variable building ─────────────────────────────────────────────────────
-
-    /**
-     * Builds all template variable substitutions for a newsletter email.
-     *
-     * @param event           event data
-     * @param locale          "de" or "en"
-     * @param isReminder      whether to add the reminder prefix
-     * @param unsubscribeLink per-recipient unsubscribe URL (placeholder for preview)
-     */
-    Map<String, String> buildVariables(Event event, String locale, boolean isReminder, String unsubscribeLink) {
-        boolean isDe = "de".equals(locale);
-        Locale javaLocale = isDe ? Locale.GERMAN : Locale.ENGLISH;
-
-        Map<String, String> vars = new HashMap<>();
-        vars.put("reminderPrefix", buildReminderPrefix(isReminder, isDe));
-        vars.put("eventNumber", String.valueOf(event.getEventNumber()));
-        vars.put("eventType", localizeEventType(event.getEventType(), isDe));
-        vars.put("eventTitle", event.getTitle());
-        vars.put("eventDate", formatEventDate(event, javaLocale));
-        vars.put("eventTime", formatEventTime(event, isDe));
-        vars.put("venue", event.getVenueName());
-        vars.put("venueDirectionsUrl", ""); // No directions URL in current Event model — Mustache block suppressed
-        vars.put("conferenceLanguage", isDe ? "Deutsch / Englisch" : "German / English");
-        vars.put("speakersSection", buildSpeakersSection(event, isDe));
-        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
-        vars.put("registrationLink", baseUrl + "/register/" + event.getEventCode());
-        vars.put("upcomingEventsSection", buildUpcomingEventsSection(event.getId(), isDe));
-        vars.put("unsubscribeLink", unsubscribeLink);
-        vars.put("preferencesLink", baseUrl + "/account");
-        return vars;
+    @Transactional
+    protected void updateRecipientStatus(UUID sendId, String email, String deliveryStatus) {
+        recipientRepository.findById(new NewsletterRecipientId(sendId, email)).ifPresent(r -> {
+            r.setDeliveryStatus(deliveryStatus);
+            recipientRepository.save(r);
+        });
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Speaker / upcoming events section builders ────────────────────────────
 
-    private String buildReminderPrefix(boolean isReminder, boolean isDe) {
-        if (!isReminder) {
-            return "";
-        }
-        return isDe ? "Erinnerung: " : "Reminder: ";
-    }
-
-    private String localizeEventType(ch.batbern.events.dto.generated.EventType eventType, boolean isDe) {
-        if (eventType == null) {
-            return isDe ? "Abend-BAT" : "Evening BAT";
-        }
-        return switch (eventType) {
-            case EVENING -> isDe ? "Abend-BAT" : "Evening BAT";
-            case FULL_DAY -> isDe ? "Ganztages-BAT" : "Full-Day BAT";
-            case AFTERNOON -> isDe ? "Nachmittags-BAT" : "Afternoon BAT";
-            default -> eventType.name().replace("_", " ");
-        };
-    }
-
-    private String formatEventDate(Event event, Locale locale) {
-        if (event.getDate() == null) {
-            return "";
-        }
-        DateTimeFormatter formatter = DateTimeFormatter
-                .ofPattern("EEEE, d. MMMM yyyy", locale)
-                .withZone(ZoneId.of("Europe/Zurich"));
-        return formatter.format(event.getDate());
-    }
-
-    private String formatEventTime(Event event, boolean isDe) {
-        // Event entity doesn't have a separate start/end time field.
-        // Default to standard BATbern evening time.
-        return isDe ? "ab 16:00 Uhr" : "from 4:00 PM";
-    }
-
-    /**
-     * Builds the speakers section as an HTML table when event workflow state allows it.
-     * One row per session; multiple speakers joined by "; ". Structural sessions filtered out.
-     * Speaker names and company come from SessionUserService (enriched via user-management-service).
-     * Returns empty string when agenda is not yet published.
-     */
     String buildSpeakersSection(Event event, boolean isDe) {
         if (event.getWorkflowState() == null
                 || !SPEAKERS_VISIBLE_STATES.contains(event.getWorkflowState())) {
@@ -280,7 +498,7 @@ public class NewsletterEmailService {
                 .append("<th style=\"").append(thStyle).append("\">")
                 .append(isDe ? "Vortrag" : "Talk").append("</th>")
                 .append("<th style=\"").append(thStyle).append("\">")
-                .append(isDe ? "Sprecher\u00b7in" : "Speaker").append("</th>")
+                .append(isDe ? "Sprecher·in" : "Speaker").append("</th>")
                 .append("</tr></thead><tbody>");
 
         boolean hasRows = false;
@@ -289,22 +507,18 @@ public class NewsletterEmailService {
                 continue;
             }
 
-            // Use SessionUserService to get enriched speaker data (firstName/lastName/company
-            // fetched from company-user-management-service — same path as the event detail API).
             List<SessionSpeakerResponse> speakers =
                     sessionUserService.getSessionSpeakers(session.getId());
             if (speakers.isEmpty()) {
                 continue;
             }
 
-            // Collect title from first speaker's presentationTitle, fall back to session title
             String title = speakers.stream()
                     .map(SessionSpeakerResponse::getPresentationTitle)
                     .filter(t -> t != null && !t.isBlank())
                     .findFirst()
                     .orElse(session.getTitle());
 
-            // Build "First Last, Company; First Last2, Company2" — one entry per speaker
             String speakerNames = speakers.stream()
                     .map(sp -> {
                         String fn = sp.getFirstName() != null ? sp.getFirstName() : "";
@@ -334,11 +548,7 @@ public class NewsletterEmailService {
         return sb.toString();
     }
 
-    /**
-     * Builds the upcoming events section HTML with future confirmed events.
-     * Returns empty string if no future events exist.
-     */
-    String buildUpcomingEventsSection(java.util.UUID excludeEventId, boolean isDe) {
+    String buildUpcomingEventsSection(UUID excludeEventId, boolean isDe) {
         Instant now = Instant.now();
         List<Event> future = eventRepository.findByDateAfter(now).stream()
                 .filter(e -> !e.getId().equals(excludeEventId))
@@ -376,8 +586,10 @@ public class NewsletterEmailService {
         return sb.toString();
     }
 
+    // ── Private helpers ───────────────────────────────────────────────────────
+
     private String resolveTemplateKey(@Nullable String templateKey) {
-        return (templateKey != null && !templateKey.isBlank()) ? templateKey : TEMPLATE_KEY;
+        return (templateKey != null && !templateKey.isBlank()) ? templateKey : DEFAULT_TEMPLATE_KEY;
     }
 
     private String renderContent(String locale, Map<String, String> vars, String templateKey) {
@@ -398,6 +610,49 @@ public class NewsletterEmailService {
         return emailService.replaceVariables(subject, vars);
     }
 
+    private String buildReminderPrefix(boolean isReminder, boolean isDe) {
+        if (!isReminder) {
+            return "";
+        }
+        return isDe ? "Erinnerung: " : "Reminder: ";
+    }
+
+    private String localizeEventType(ch.batbern.events.dto.generated.EventType eventType, boolean isDe) {
+        if (eventType == null) {
+            return isDe ? "Abend-BAT" : "Evening BAT";
+        }
+        return switch (eventType) {
+            case EVENING -> isDe ? "Abend-BAT" : "Evening BAT";
+            case FULL_DAY -> isDe ? "Ganztages-BAT" : "Full-Day BAT";
+            case AFTERNOON -> isDe ? "Nachmittags-BAT" : "Afternoon BAT";
+            default -> eventType.name().replace("_", " ");
+        };
+    }
+
+    private String formatEventDate(Event event, Locale locale) {
+        if (event.getDate() == null) {
+            return "";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern("EEEE, d. MMMM yyyy", locale)
+                .withZone(ZoneId.of("Europe/Zurich"));
+        return formatter.format(event.getDate());
+    }
+
+    private String formatEventTime(Event event, boolean isDe) {
+        return isDe ? "ab 16:00 Uhr" : "from 4:00 PM";
+    }
+
+    private String computeFinalStatus(int sentCount, int failedCount) {
+        if (failedCount == 0) {
+            return STATUS_COMPLETED;
+        }
+        if (sentCount == 0) {
+            return STATUS_FAILED;
+        }
+        return STATUS_PARTIAL;
+    }
+
     private static String escapeHtml(String text) {
         if (text == null) {
             return "";
@@ -408,15 +663,12 @@ public class NewsletterEmailService {
                    .replace("\"", "&quot;");
     }
 
-    /** Maps a NewsletterSend entity to its response DTO. */
-    public NewsletterSendResponse toResponse(NewsletterSend send) {
-        return NewsletterSendResponse.builder()
-                .id(send.getId())
-                .sentAt(send.getSentAt())
-                .reminder(send.isReminder())
-                .locale(send.getLocale())
-                .recipientCount(send.getRecipientCount() != null ? send.getRecipientCount() : 0)
-                .sentByUsername(send.getSentByUsername())
-                .build();
+    @SuppressWarnings("java:S2142") // intentional sleep for rate limiting
+    private static void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

@@ -4629,6 +4629,70 @@ paths:
         '404':
           description: Event not found
 
+  /events/{eventCode}/newsletter/sends/{sendId}/status:
+    get:
+      tags: [Newsletter]
+      summary: Poll send-job progress for a newsletter send (ORGANIZER)
+      operationId: getNewsletterSendStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sendId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current send-job status and progress counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or send record not found
+
+  /events/{eventCode}/newsletter/sends/{sendId}/retry:
+    post:
+      tags: [Newsletter]
+      summary: Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER)
+      operationId: retryNewsletterSend
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sendId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Retry job accepted; returns updated send response with PENDING status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or send record not found
+        '409':
+          description: Send is already COMPLETED or IN_PROGRESS — retry not allowed
+
   # ── AI Assist (Story 10.16) ──────────────────────────────────────────────────
 
   /public/settings/features:
@@ -5737,7 +5801,7 @@ components:
 
     NewsletterSendResponse:
       type: object
-      required: [id, sentAt, isReminder, locale, recipientCount]
+      required: [id, sentAt, isReminder, locale, recipientCount, status]
       properties:
         id:
           type: string
@@ -5753,6 +5817,47 @@ components:
           type: integer
         sentByUsername:
           type: string
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED]
+          description: Send-job status
+        sentCount:
+          type: integer
+        failedCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    NewsletterSendStatusResponse:
+      type: object
+      required: [id, status, sentCount, failedCount, totalCount, percentComplete]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED]
+        sentCount:
+          type: integer
+        failedCount:
+          type: integer
+        totalCount:
+          type: integer
+        percentComplete:
+          type: integer
+          minimum: 0
+          maximum: 100
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
 
     NewsletterPreviewResponse:
       type: object

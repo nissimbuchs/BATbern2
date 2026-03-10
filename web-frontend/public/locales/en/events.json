@@ -161,9 +161,16 @@
       "historyDate": "Date",
       "historyType": "Type",
       "historyRecipients": "Recipients",
+      "historyStatus": "Status",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Reminder",
-      "previewTitle": "Email Preview"
+      "previewTitle": "Email Preview",
+      "sendInProgress": "Sending newsletter...",
+      "sendCompleted": "Newsletter sent to {{count}} recipients.",
+      "sendPartial": "Sent to {{sent}} recipients. {{failed}} failed — use Retry to resend.",
+      "sendFailed": "Send failed. Use Retry on the send history row.",
+      "retryButton": "Retry",
+      "retryTooltip": "Retry failed recipients"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",

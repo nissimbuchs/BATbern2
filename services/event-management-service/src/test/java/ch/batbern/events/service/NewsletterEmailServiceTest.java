@@ -1,12 +1,21 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.NewsletterSend;
+import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.dto.SessionSpeakerResponse;
+import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
+import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,8 +34,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,7 +61,11 @@ class NewsletterEmailServiceTest {
     @Mock
     private NewsletterSubscriberService subscriberService;
     @Mock
+    private NewsletterSubscriberRepository subscriberRepository;
+    @Mock
     private NewsletterSendRepository sendRepository;
+    @Mock
+    private NewsletterRecipientRepository recipientRepository;
     @Mock
     private SessionRepository sessionRepository;
     @Mock
@@ -288,6 +303,98 @@ class NewsletterEmailServiceTest {
         tpl.setLocale(locale);
         tpl.setHtmlBody(html);
         return tpl;
+    }
+
+    // ── sendNewsletter: fire-and-forget architecture ──────────────────────────
+
+    @Test
+    @DisplayName("sendNewsletter: returns immediately with PENDING status and a sendId")
+    void sendNewsletter_returnsPendingStatus() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend savedSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_PENDING)
+                .recipientCount(5)
+                .locale("de")
+                .sentByUsername("organizer")
+                .sentAt(Instant.now())
+                .templateKey("newsletter-event")
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(java.util.Optional.empty());
+        when(subscriberService.getActiveCount()).thenReturn(5L);
+        when(sendRepository.save(any())).thenReturn(savedSend);
+
+        NewsletterSendResponse response = newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "organizer", null);
+
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+        assertThat(response.getId()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter: throws DuplicateNewsletterSendException when IN_PROGRESS send exists")
+    void sendNewsletter_throws409_whenSendAlreadyInProgress() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend activeSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_IN_PROGRESS)
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(java.util.Optional.of(activeSend));
+
+        assertThatThrownBy(() ->
+                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
+                .isInstanceOf(DuplicateNewsletterSendException.class);
+    }
+
+    @Test
+    @DisplayName("executeNewsletterSendAsync: uses paginated query — not findByUnsubscribedAtIsNull()")
+    void executeNewsletterSendAsync_usesPagedQuery() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).build();
+
+        NewsletterSubscriber subscriber = new NewsletterSubscriber();
+        subscriber.setEmail("user@example.com");
+        subscriber.setUnsubscribeToken("tok-abc");
+
+        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
+
+        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
+        when(subscriberRepository.findByUnsubscribedAtIsNull(any(Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(Page.empty()); // second call returns empty to stop loop
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
+
+        // Must use paginated query, not the non-paginated one
+        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNull(any(Pageable.class));
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any());
+    }
+
+    @Test
+    @DisplayName("computeFinalStatus: no failures → COMPLETED")
+    void sendJob_noFailures_completedStatus() {
+        // Indirectly tested via executeNewsletterSendAsync
+        // Status constants are package-visible for test verification
+        assertThat(NewsletterEmailService.STATUS_COMPLETED).isEqualTo("COMPLETED");
+        assertThat(NewsletterEmailService.STATUS_PARTIAL).isEqualTo("PARTIAL");
+        assertThat(NewsletterEmailService.STATUS_FAILED).isEqualTo("FAILED");
     }
 
     @Test

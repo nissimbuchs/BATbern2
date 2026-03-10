@@ -319,4 +319,40 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         mockMvc.perform(get("/api/v1/events/NONEXISTENT-EVENT/newsletter/history"))
                 .andExpect(status().isNotFound());
     }
+
+    // ── GET /events/{code}/newsletter/sends/{sendId}/status ──────────────────
+
+    @Test
+    @DisplayName("GET /events/{code}/newsletter/sends/{sendId}/status — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void getSendStatus_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern-test/newsletter/sends/00000000-0000-0000-0000-000000000001/status"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /events/{code}/newsletter/sends/{sendId}/status — organizer, unknown event → 404")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void getSendStatus_unknownEvent_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/events/NONEXISTENT-EVENT/newsletter/sends/00000000-0000-0000-0000-000000000001/status"))
+                .andExpect(status().isNotFound());
+    }
+
+    // ── POST /events/{code}/newsletter/sends/{sendId}/retry ──────────────────
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/sends/{sendId}/retry — non-organizer → 403")
+    @WithMockUser(username = "user", roles = "USER")
+    void retryFailedRecipients_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/sends/00000000-0000-0000-0000-000000000001/retry"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /events/{code}/newsletter/sends/{sendId}/retry — organizer, unknown event → 404")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void retryFailedRecipients_unknownEvent_returns404() throws Exception {
+        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/sends/00000000-0000-0000-0000-000000000001/retry"))
+                .andExpect(status().isNotFound());
+    }
 }

@@ -23,4 +23,11 @@ public class NewsletterSendResponse {
     private String locale;
     private int recipientCount;
     private String sentByUsername;
+
+    /** Send-job lifecycle status: PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED. */
+    private String status;
+    private int sentCount;
+    private int failedCount;
+    private Instant startedAt;
+    private Instant completedAt;
 }

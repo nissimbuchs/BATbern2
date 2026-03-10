@@ -161,9 +161,16 @@
       "historyDate": "Datum",
       "historyType": "Typ",
       "historyRecipients": "Empfänger",
+      "historyStatus": "Status",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Erinnerung",
-      "previewTitle": "E-Mail-Vorschau"
+      "previewTitle": "E-Mail-Vorschau",
+      "sendInProgress": "Newsletter wird versendet...",
+      "sendCompleted": "Newsletter an {{count}} Empfänger versendet.",
+      "sendPartial": "An {{sent}} Empfänger versendet. {{failed}} fehlgeschlagen — Wiederholung nutzen.",
+      "sendFailed": "Versand fehlgeschlagen. Bitte «Wiederholen» in der Versandhistorie nutzen.",
+      "retryButton": "Wiederholen",
+      "retryTooltip": "Fehlgeschlagene Empfänger erneut senden"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",

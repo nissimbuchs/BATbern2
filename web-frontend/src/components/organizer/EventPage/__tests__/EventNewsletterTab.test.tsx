@@ -12,6 +12,8 @@ vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
   useNewsletterHistory: vi.fn(),
   useNewsletterPreview: vi.fn(),
   useSendNewsletter: vi.fn(),
+  useSendStatus: vi.fn(),
+  useRetryFailedRecipients: vi.fn(),
 }));
 
 vi.mock('@/hooks/useEmailTemplates', () => ({
@@ -53,6 +55,8 @@ import {
   useNewsletterHistory,
   useNewsletterPreview,
   useSendNewsletter,
+  useSendStatus,
+  useRetryFailedRecipients,
 } from '@/hooks/useNewsletter/useNewsletter';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 
@@ -109,6 +113,16 @@ describe('EventNewsletterTab', () => {
       isLoading: false,
       data: [deTemplate, enTemplate],
     } as ReturnType<typeof useEmailTemplates>);
+
+    vi.mocked(useSendStatus).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as ReturnType<typeof useSendStatus>);
+
+    vi.mocked(useRetryFailedRecipients).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as ReturnType<typeof useRetryFailedRecipients>);
   });
 
   it('shows subscriber count when loaded', () => {
@@ -295,5 +309,206 @@ describe('EventNewsletterTab', () => {
     const link = screen.getByRole('link', { name: /create new template/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/organizer/admin?tab=email-templates');
+  });
+
+  // ── Progress tracking (Story 10.7 robustness) ────────────────────────────
+
+  it('shows progress bar after send is triggered and status is IN_PROGRESS', async () => {
+    // Simulate a successful send that returns a sendId, which triggers polling
+    const mockMutate = vi.fn().mockImplementation((_req, { onSuccess }) => {
+      onSuccess({ id: 'send-42', status: 'PENDING', recipientCount: 3000 });
+    });
+    vi.mocked(useSendNewsletter).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    } as ReturnType<typeof useSendNewsletter>);
+
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 3000 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    // First render: no status yet (so button is enabled). After confirm, activeSendId is set
+    // and subsequent renders return IN_PROGRESS status.
+    vi.mocked(useSendStatus)
+      .mockReturnValueOnce({ data: undefined, isLoading: false } as ReturnType<
+        typeof useSendStatus
+      >)
+      .mockReturnValue({
+        data: {
+          id: 'send-42',
+          status: 'IN_PROGRESS',
+          sentCount: 1500,
+          failedCount: 0,
+          totalCount: 3000,
+          percentComplete: 50,
+        },
+        isLoading: false,
+      } as ReturnType<typeof useSendStatus>);
+
+    renderTab();
+
+    // Open confirm dialog and confirm
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
+    await waitFor(() => screen.getByText('Confirm Send'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('newsletter-send-progress')).toBeInTheDocument();
+    });
+  });
+
+  it('shows success alert after send is triggered and status is COMPLETED', async () => {
+    const mockMutate = vi.fn().mockImplementation((_req, { onSuccess }) => {
+      onSuccess({ id: 'send-42', status: 'PENDING', recipientCount: 3000 });
+    });
+    vi.mocked(useSendNewsletter).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    } as ReturnType<typeof useSendNewsletter>);
+
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 3000 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    vi.mocked(useSendStatus).mockReturnValue({
+      data: {
+        id: 'send-42',
+        status: 'COMPLETED',
+        sentCount: 3000,
+        failedCount: 0,
+        totalCount: 3000,
+        percentComplete: 100,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useSendStatus>);
+
+    renderTab();
+
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
+    await waitFor(() => screen.getByText('Confirm Send'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('newsletter-send-completed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows warning alert after send is triggered and status is PARTIAL', async () => {
+    const mockMutate = vi.fn().mockImplementation((_req, { onSuccess }) => {
+      onSuccess({ id: 'send-42', status: 'PENDING', recipientCount: 3000 });
+    });
+    vi.mocked(useSendNewsletter).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    } as ReturnType<typeof useSendNewsletter>);
+
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 3000 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    vi.mocked(useSendStatus).mockReturnValue({
+      data: {
+        id: 'send-42',
+        status: 'PARTIAL',
+        sentCount: 2998,
+        failedCount: 2,
+        totalCount: 3000,
+        percentComplete: 100,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useSendStatus>);
+
+    renderTab();
+
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
+    await waitFor(() => screen.getByText('Confirm Send'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('newsletter-send-partial')).toBeInTheDocument();
+    });
+  });
+
+  it('shows retry button for PARTIAL history rows', () => {
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 10 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    vi.mocked(useNewsletterHistory).mockReturnValue({
+      isLoading: false,
+      data: [
+        {
+          id: 'send-partial-1',
+          isReminder: false,
+          sentAt: '2026-02-25T10:00:00Z',
+          sentByUsername: 'organizer',
+          recipientCount: 100,
+          templateKey: 'newsletter-event',
+          status: 'PARTIAL',
+          sentCount: 98,
+          failedCount: 2,
+        },
+      ],
+    } as ReturnType<typeof useNewsletterHistory>);
+
+    renderTab();
+
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it('send buttons are disabled when a polled send-job is IN_PROGRESS', async () => {
+    // Simulate successful send triggering activeSendId
+    const mockMutate = vi.fn().mockImplementation((_req, { onSuccess }) => {
+      onSuccess({ id: 'send-42', status: 'PENDING', recipientCount: 100 });
+    });
+    vi.mocked(useSendNewsletter).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    } as ReturnType<typeof useSendNewsletter>);
+
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 100 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    // First render: no status (button enabled). After confirm, returns IN_PROGRESS.
+    vi.mocked(useSendStatus)
+      .mockReturnValueOnce({ data: undefined, isLoading: false } as ReturnType<
+        typeof useSendStatus
+      >)
+      .mockReturnValue({
+        data: {
+          id: 'send-42',
+          status: 'IN_PROGRESS',
+          sentCount: 50,
+          failedCount: 0,
+          totalCount: 100,
+          percentComplete: 50,
+        },
+        isLoading: false,
+      } as ReturnType<typeof useSendStatus>);
+
+    renderTab();
+
+    fireEvent.click(screen.getByRole('button', { name: /Send Newsletter/i }));
+    await waitFor(() => screen.getByText('Confirm Send'));
+    fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Send Newsletter/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Send Reminder/i })).toBeDisabled();
+    });
   });
 });

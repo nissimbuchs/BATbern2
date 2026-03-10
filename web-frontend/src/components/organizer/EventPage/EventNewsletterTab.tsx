@@ -20,6 +20,7 @@ import {
   DialogTitle,
   FormControl,
   InputLabel,
+  LinearProgress,
   Link,
   MenuItem,
   Paper,
@@ -31,6 +32,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { Email as EmailIcon } from '@mui/icons-material';
@@ -40,6 +42,8 @@ import {
   useNewsletterHistory,
   useNewsletterPreview,
   useSendNewsletter,
+  useSendStatus,
+  useRetryFailedRecipients,
 } from '@/hooks/useNewsletter/useNewsletter';
 import type { NewsletterSendRequest } from '@/services/newsletterService';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
@@ -62,11 +66,18 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   const [pendingSendType, setPendingSendType] = useState<SendType | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('newsletter-event');
+  /** sendId of the most recently triggered send — used to poll status. */
+  const [activeSendId, setActiveSendId] = useState<string | null>(null);
 
   const subscriberCountQuery = useSubscriberCount();
   const historyQuery = useNewsletterHistory(eventCode);
   const previewMutation = useNewsletterPreview();
   const sendMutation = useSendNewsletter(eventCode);
+  const sendStatusQuery = useSendStatus(eventCode, activeSendId);
+  const retryMutation = useRetryFailedRecipients(eventCode);
+
+  const isJobActive =
+    sendStatusQuery.data?.status === 'PENDING' || sendStatusQuery.data?.status === 'IN_PROGRESS';
   const newsletterTemplatesQuery = useEmailTemplates({ category: 'NEWSLETTER' });
 
   const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
@@ -97,9 +108,13 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
       templateKey: selectedTemplateKey,
     };
     sendMutation.mutate(request, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         setConfirmOpen(false);
         setPendingSendType(null);
+        // Start polling the send-job status.
+        if (data.id) {
+          setActiveSendId(data.id);
+        }
       },
       onError: () => {
         setConfirmOpen(false);
@@ -160,6 +175,10 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                   <TableCell align="right">
                     {t('eventPage.newsletter.historyRecipients', 'Recipients')}
                   </TableCell>
+                  <TableCell align="center">
+                    {t('eventPage.newsletter.historyStatus', 'Status')}
+                  </TableCell>
+                  <TableCell />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -172,6 +191,47 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                         : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
                     </TableCell>
                     <TableCell align="right">{send.recipientCount}</TableCell>
+                    <TableCell align="center">
+                      <Typography
+                        variant="caption"
+                        color={
+                          send.status === 'COMPLETED'
+                            ? 'success.main'
+                            : send.status === 'PARTIAL'
+                              ? 'warning.main'
+                              : send.status === 'FAILED'
+                                ? 'error.main'
+                                : 'text.secondary'
+                        }
+                      >
+                        {send.status ?? 'COMPLETED'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
+                        <Tooltip
+                          title={t('eventPage.newsletter.retryTooltip', 'Retry failed recipients')}
+                        >
+                          <span>
+                            <Button
+                              size="small"
+                              variant="text"
+                              color="warning"
+                              onClick={() => {
+                                retryMutation.mutate(send.id, {
+                                  onSuccess: (data) => {
+                                    if (data.id) setActiveSendId(data.id);
+                                  },
+                                });
+                              }}
+                              disabled={retryMutation.isPending || isJobActive}
+                            >
+                              {t('eventPage.newsletter.retryButton', 'Retry')}
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -183,6 +243,62 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
           </Typography>
         )}
       </Box>
+
+      {/* Send progress indicator — visible while PENDING or IN_PROGRESS */}
+      {activeSendId && sendStatusQuery.data && (
+        <Box>
+          {isJobActive ? (
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                {t('eventPage.newsletter.sendInProgress', 'Sending newsletter...')}{' '}
+                <strong>
+                  {sendStatusQuery.data.sentCount} / {sendStatusQuery.data.totalCount}
+                </strong>{' '}
+                ({sendStatusQuery.data.percentComplete}%)
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={sendStatusQuery.data.percentComplete}
+                data-testid="newsletter-send-progress"
+              />
+            </Stack>
+          ) : sendStatusQuery.data.status === 'COMPLETED' ? (
+            <Alert
+              severity="success"
+              onClose={() => setActiveSendId(null)}
+              data-testid="newsletter-send-completed"
+            >
+              {t('eventPage.newsletter.sendCompleted', {
+                count: sendStatusQuery.data.sentCount,
+                defaultValue: `Newsletter sent to ${sendStatusQuery.data.sentCount} recipients.`,
+              })}
+            </Alert>
+          ) : sendStatusQuery.data.status === 'PARTIAL' ? (
+            <Alert
+              severity="warning"
+              onClose={() => setActiveSendId(null)}
+              data-testid="newsletter-send-partial"
+            >
+              {t('eventPage.newsletter.sendPartial', {
+                sent: sendStatusQuery.data.sentCount,
+                failed: sendStatusQuery.data.failedCount,
+                defaultValue: `Sent to ${sendStatusQuery.data.sentCount} recipients. ${sendStatusQuery.data.failedCount} failed — use Retry to resend.`,
+              })}
+            </Alert>
+          ) : sendStatusQuery.data.status === 'FAILED' ? (
+            <Alert
+              severity="error"
+              onClose={() => setActiveSendId(null)}
+              data-testid="newsletter-send-failed"
+            >
+              {t(
+                'eventPage.newsletter.sendFailed',
+                'Send failed. Please use Retry on the send history row.'
+              )}
+            </Alert>
+          ) : null}
+        </Box>
+      )}
 
       {/* Section 3 — Compose & send */}
       <Box>
@@ -252,7 +368,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             <Button
               variant="contained"
               onClick={() => openConfirm('newsletter')}
-              disabled={sendMutation.isPending}
+              disabled={sendMutation.isPending || isJobActive}
             >
               {t('eventPage.newsletter.sendNewsletter')}
             </Button>
@@ -260,7 +376,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
               variant="outlined"
               color="secondary"
               onClick={() => openConfirm('reminder')}
-              disabled={sendMutation.isPending}
+              disabled={sendMutation.isPending || isJobActive}
             >
               {t('eventPage.newsletter.sendReminder')}
             </Button>

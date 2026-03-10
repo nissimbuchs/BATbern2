@@ -810,6 +810,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    /**
+     * Handle DuplicateNewsletterSendException (send already in progress for the same event).
+     * Returns HTTP 409 Conflict.
+     */
+    @ExceptionHandler(DuplicateNewsletterSendException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateNewsletterSendException(
+            DuplicateNewsletterSendException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate newsletter send attempt: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

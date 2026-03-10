@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 /**
  * Repository for newsletter subscribers (Story 10.7).
  */
@@ -22,6 +25,9 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
 
     /** All active subscribers (not unsubscribed). */
     List<NewsletterSubscriber> findByUnsubscribedAtIsNull();
+
+    /** Active subscribers paginated — use for bulk-send jobs to avoid loading 3000+ rows at once. */
+    Page<NewsletterSubscriber> findByUnsubscribedAtIsNull(Pageable pageable);
 
     long countByUnsubscribedAtIsNull();
 }

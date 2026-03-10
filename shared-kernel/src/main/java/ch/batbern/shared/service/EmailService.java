@@ -111,6 +111,52 @@ public class EmailService {
     }
 
     /**
+     * Send a simple HTML email synchronously (blocking).
+     *
+     * <p>Use this variant when the caller is already running in a background thread
+     * (e.g., a newsletter bulk-send job) and must not dispatch further async tasks
+     * to avoid thread-pool overflow with large recipient lists.
+     *
+     * @param to       Recipient email address
+     * @param subject  Email subject
+     * @param htmlBody HTML content
+     */
+    public void sendHtmlEmailSync(String to, String subject, String htmlBody) {
+        if (sesClient == null) {
+            log.warn("SES client not configured - skipping email send (local/test mode)");
+            if (localEmailCapture != null) {
+                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
+            } else {
+                log.info("Would send email to: {}, subject: {}", to, subject);
+            }
+            return;
+        }
+
+        try {
+            log.debug("Sending HTML email (sync) to: {}, subject: {}", to, subject);
+
+            SendEmailRequest request = SendEmailRequest.builder()
+                    .source(String.format("%s <%s>", fromName, fromEmail))
+                    .replyToAddresses(replyToEmail)
+                    .destination(Destination.builder().toAddresses(to).build())
+                    .message(software.amazon.awssdk.services.ses.model.Message.builder()
+                            .subject(Content.builder().data(subject).charset("UTF-8").build())
+                            .body(Body.builder()
+                                    .html(Content.builder().data(htmlBody).charset("UTF-8").build())
+                                    .build())
+                            .build())
+                    .build();
+
+            SendEmailResponse response = sesClient.sendEmail(request);
+            log.info("Email sent (sync) to: {}, MessageId: {}", to, response.messageId());
+
+        } catch (SesException e) {
+            log.error("Failed to send email (sync) to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            throw new EmailSendException("Failed to send email to: " + to, e);
+        }
+    }
+
+    /**
      * Send an HTML email with attachments asynchronously (e.g., .ics calendar file).
      *
      * @param to Recipient email address

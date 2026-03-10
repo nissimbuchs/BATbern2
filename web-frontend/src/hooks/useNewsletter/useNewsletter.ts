@@ -17,6 +17,7 @@ import type {
   NewsletterSubscriptionStatusResponse,
   NewsletterSendRequest,
   NewsletterSendResponse,
+  NewsletterSendStatusResponse,
   NewsletterPreviewResponse,
   NewsletterSendHistoryItem,
   SubscriberCountResponse,
@@ -114,7 +115,7 @@ export function useNewsletterPreview(): UseMutationResult<
   });
 }
 
-/** Send newsletter for an event. */
+/** Send newsletter for an event. Returns immediately with PENDING status and a sendId. */
 export function useSendNewsletter(
   eventCode: string
 ): UseMutationResult<NewsletterSendResponse, Error, NewsletterSendRequest> {
@@ -124,6 +125,44 @@ export function useSendNewsletter(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.subscriberCount });
+    },
+  });
+}
+
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'PARTIAL', 'FAILED']);
+
+/**
+ * Poll send-job status every 3 seconds while status is PENDING or IN_PROGRESS.
+ * Stops polling automatically when a terminal status is reached.
+ */
+export function useSendStatus(
+  eventCode: string,
+  sendId: string | null
+): UseQueryResult<NewsletterSendStatusResponse, Error> {
+  return useQuery({
+    queryKey: ['newsletter', 'send-status', eventCode, sendId],
+    queryFn: () => newsletterService.getSendStatus(eventCode, sendId!),
+    enabled: !!sendId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (!status || TERMINAL_STATUSES.has(status)) {
+        return false;
+      }
+      return 3000;
+    },
+    staleTime: 0,
+  });
+}
+
+/** Retry failed recipients for a PARTIAL or FAILED send. */
+export function useRetryFailedRecipients(
+  eventCode: string
+): UseMutationResult<NewsletterSendResponse, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sendId) => newsletterService.retryFailedRecipients(eventCode, sendId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
     },
   });
 }

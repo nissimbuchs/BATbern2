@@ -5,6 +5,7 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.dto.NewsletterPreviewResponse;
 import ch.batbern.events.dto.NewsletterSendRequest;
 import ch.batbern.events.dto.NewsletterSendResponse;
+import ch.batbern.events.dto.NewsletterSendStatusResponse;
 import ch.batbern.events.dto.NewsletterSubscribeRequest;
 import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.dto.NewsletterUnsubscribeRequest;
@@ -28,6 +29,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Map;
@@ -218,6 +221,43 @@ public class NewsletterController {
                 .map(emailService::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Poll send-job progress (ORGANIZER only).
+     * Frontend calls this every 3 seconds while status is PENDING or IN_PROGRESS.
+     */
+    @GetMapping("/events/{eventCode}/newsletter/sends/{sendId}/status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<NewsletterSendStatusResponse> getSendStatus(
+            @PathVariable String eventCode,
+            @PathVariable UUID sendId) {
+        Event event = findEventOrThrow(eventCode);
+        NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Send not found: " + sendId + " for event " + eventCode));
+        return ResponseEntity.ok(emailService.toStatusResponse(send));
+    }
+
+    /**
+     * Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER only).
+     */
+    @PostMapping("/events/{eventCode}/newsletter/sends/{sendId}/retry")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<NewsletterSendResponse> retryFailedRecipients(
+            @PathVariable String eventCode,
+            @PathVariable UUID sendId) {
+        Event event = findEventOrThrow(eventCode);
+        NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Send not found: " + sendId + " for event " + eventCode));
+        try {
+            String sentByUsername = securityContextHelper.getCurrentUsername();
+            NewsletterSendResponse response = emailService.retryFailedRecipients(send, event, sentByUsername);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).build();
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

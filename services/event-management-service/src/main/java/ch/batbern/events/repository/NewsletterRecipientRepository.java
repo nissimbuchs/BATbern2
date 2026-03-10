@@ -10,4 +10,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface NewsletterRecipientRepository extends JpaRepository<NewsletterRecipient, NewsletterRecipientId> {
+
+    /** All recipients of a send that failed delivery — used by the retry logic. */
+    java.util.List<NewsletterRecipient> findByIdSendIdAndDeliveryStatus(java.util.UUID sendId, String deliveryStatus);
 }
