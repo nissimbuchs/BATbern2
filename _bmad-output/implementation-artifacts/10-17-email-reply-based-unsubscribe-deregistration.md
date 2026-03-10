@@ -12,7 +12,7 @@ so that I can manage my preferences without clicking any links — especially us
 
 ## Acceptance Criteria
 
-1. **AC1 — AWS InboundEmailStack deploys cleanly**: CDK `InboundEmailStack` creates: (a) SES receiving rule set for `replies@batbern.ch`, (b) S3 bucket `batbern-inbound-emails-{env}`, (c) standard SQS queue `batbern-inbound-email-{env}` (standard queue — not FIFO; idempotent handlers make FIFO unnecessary). **Stack is deployed to `eu-west-1`** (AWS SES inbound email receiving is only supported in `us-east-1`, `us-west-2`, and `eu-west-1`; BATbern's primary region `eu-central-1` is not supported for inbound). Stack instantiation in `batbern-infrastructure.ts` includes `env: { region: 'eu-west-1' }` and `crossRegionReferences: true`. `cdk synth` passes.
+1. **AC1 — AWS InboundEmailStack deploys cleanly**: CDK `InboundEmailStack` creates: (a) SES receiving rule set for `replies@batbern.ch`, (b) S3 bucket `batbern-inbound-emails-{env}`, (c) standard SQS queue `batbern-inbound-email-{env}` (standard queue — not FIFO; idempotent handlers make FIFO unnecessary). **Stack is deployed to `eu-central-1`** (BATbern's primary region — AWS expanded SES inbound email receiving to `eu-central-1` in Sept 2023; no cross-region deployment or `crossRegionReferences` needed). `cdk synth` passes.
 
 2. **AC2 — Reply-To header on all outbound emails**: `EmailService.java` in `shared-kernel` adds `Reply-To: replies@batbern.ch` to ALL outbound emails (both `sendHtmlEmail()` and `sendHtmlEmailWithAttachments()`). Existing emails are unaffected in functionality; only the header is added.
 
@@ -73,7 +73,7 @@ so that I can manage my preferences without clicking any links — especially us
 
 - [x] **T3 — Wire InboundEmailStack into `bin/batbern-infrastructure.ts`** (AC: #1)
   - [x] T3.1 — Import `InboundEmailStack` in the bin file
-  - [x] T3.2 — Create stack BEFORE EMS (to pass queue URL to EMS), `eu-west-1` + `crossRegionReferences: true`
+  - [x] T3.2 — Create stack BEFORE EMS (to pass queue URL to EMS), same `eu-central-1` region as all other stacks — no `crossRegionReferences` needed
   - [x] T3.3 — `inboundEmailStack.addDependency(sesStack)`
   - [x] T3.4 — `eventManagementStack.addDependency(inboundEmailStack)`
   - [x] T3.5 — Pass `inboundEmailQueueUrl` to EMS via `additionalEnvironment`
@@ -364,7 +364,7 @@ User replies to email
 
 9. **Integration test startup fix (CRITICAL)**: Adding `spring-cloud-aws-starter-sqs` triggers `SqsAsyncClient` auto-configuration. Without a mock, ALL integration tests in EMS will fail to start. Add `@MockitoBean SqsAsyncClient sqsAsyncClient;` to `AbstractIntegrationTest.java` as part of T5.5.
 
-10. **Cross-region deployment (CRITICAL)**: `InboundEmailStack` **must** be deployed with `env: { region: 'eu-west-1' }` and `crossRegionReferences: true` in `batbern-infrastructure.ts`. AWS SES inbound receiving is not available in `eu-central-1` (BATbern's primary region).
+10. **Same-region deployment**: `InboundEmailStack` deploys to `eu-central-1` alongside all other stacks — no special `env` override or `crossRegionReferences` needed. AWS expanded SES inbound email receiving to `eu-central-1` in Sept 2023.
 
 ### Project Structure Notes — New Files
 
@@ -419,13 +419,11 @@ infrastructure/lib/stacks/event-management-stack.ts ← MODIFIED: new env vars +
 
 ### CDK SES Receiving Region Note
 
-**IMPORTANT**: AWS SES email receiving is only supported in `us-east-1`, `us-west-2`, and `eu-west-1`. BATbern's primary region is `eu-central-1` which does NOT support inbound receiving.
+AWS expanded SES inbound email receiving to `eu-central-1` in September 2023. `InboundEmailStack` deploys to `eu-central-1` alongside all other BATbern stacks — no cross-region complexity needed.
 
-**Decision**: Deploy `InboundEmailStack` to `eu-west-1` with `crossRegionReferences: true`. The SQS queue lives in `eu-west-1`; EMS (in `eu-central-1`) polls it cross-region. CDK handles the cross-region SSM parameter exports automatically when `crossRegionReferences: true`.
-
-- Outbound SES remains in `eu-central-1` (unchanged — no impact on existing email sending)
-- Inbound SES receipt rule in `eu-west-1` — `replies@batbern.ch` receiving
-- SES domain `batbern.ch` must be verified in `eu-west-1` as well (verify via SES console or CDK `ses.EmailIdentity` in `eu-west-1` if not already done)
+- Outbound SES: `eu-central-1` (unchanged)
+- Inbound SES receipt rule: `eu-central-1` — `replies@batbern.ch` receiving
+- No `crossRegionReferences: true` required; no separate bootstrap in `eu-west-1`
 
 This is already reflected in T3.2 above.
 
@@ -496,7 +494,7 @@ claude-sonnet-4-6
 - `web-frontend/src/pages/dev/DevEmailInboxPage.test.tsx`
 
 **Modified files:**
-- `infrastructure/bin/batbern-infrastructure.ts` — added InboundEmailStack wiring (eu-west-1, crossRegionReferences)
+- `infrastructure/bin/batbern-infrastructure.ts` — added InboundEmailStack wiring (eu-central-1, same region as all stacks)
 - `infrastructure/lib/stacks/event-management-stack.ts` — added `inboundEmailQueueUrl` + `inboundEmailBucketName` optional props + env vars
 - `services/event-management-service/build.gradle` — added spring-cloud-aws-starter-sqs 3.3.0, jakarta.mail-api, angus-mail
 - `services/event-management-service/src/main/resources/application.yml` — added `aws.inbound-email.queue-url` + `aws.inbound-email.enabled`
