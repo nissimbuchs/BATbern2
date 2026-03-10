@@ -3,12 +3,15 @@
  *
  * Newsletter management tab for organizers:
  * 1. Subscriber summary
- * 2. Send history table
- * 3. Compose & send section (template select, language, preview iframe, send/reminder buttons + confirm dialog)
+ * 2. Compose & send section (template select, language, preview iframe, send/reminder buttons + confirm dialog)
+ * 3. Send history table (collapsible, at the bottom)
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -35,7 +38,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Email as EmailIcon } from '@mui/icons-material';
+import { Email as EmailIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import {
   useSubscriberCount,
@@ -183,92 +186,6 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         )}
       </Box>
 
-      {/* Section 2 — Send history */}
-      <Box>
-        <Typography variant="subtitle1" gutterBottom fontWeight="medium">
-          {t('eventPage.newsletter.sendHistory')}
-        </Typography>
-        {historyQuery.isLoading ? (
-          <Skeleton variant="rectangular" height={100} />
-        ) : historyQuery.data && historyQuery.data.length > 0 ? (
-          <Paper variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('common:labels.date')}</TableCell>
-                  <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
-                  <TableCell align="right">
-                    {t('eventPage.newsletter.historyRecipients', 'Recipients')}
-                  </TableCell>
-                  <TableCell align="center">
-                    {t('eventPage.newsletter.historyStatus', 'Status')}
-                  </TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {historyQuery.data.map((send) => (
-                  <TableRow key={send.id}>
-                    <TableCell>{new Date(send.sentAt).toLocaleString()}</TableCell>
-                    <TableCell>
-                      {send.isReminder
-                        ? t('eventPage.newsletter.typeReminder', 'Reminder')
-                        : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
-                    </TableCell>
-                    <TableCell align="right">{send.recipientCount}</TableCell>
-                    <TableCell align="center">
-                      <Typography
-                        variant="caption"
-                        color={
-                          send.status === 'COMPLETED'
-                            ? 'success.main'
-                            : send.status === 'PARTIAL'
-                              ? 'warning.main'
-                              : send.status === 'FAILED'
-                                ? 'error.main'
-                                : 'text.secondary'
-                        }
-                      >
-                        {send.status ?? 'COMPLETED'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
-                        <Tooltip
-                          title={t('eventPage.newsletter.retryTooltip', 'Retry failed recipients')}
-                        >
-                          <span>
-                            <Button
-                              size="small"
-                              variant="text"
-                              color="warning"
-                              onClick={() => {
-                                retryMutation.mutate(send.id, {
-                                  onSuccess: (data) => {
-                                    if (data.id) setActiveSendId(data.id);
-                                  },
-                                });
-                              }}
-                              disabled={retryMutation.isPending || isJobActive}
-                            >
-                              {t('eventPage.newsletter.retryButton', 'Retry')}
-                            </Button>
-                          </span>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            {t('eventPage.newsletter.noHistory')}
-          </Typography>
-        )}
-      </Box>
-
       {/* Send progress indicator — visible while PENDING or IN_PROGRESS */}
       {activeSendId && sendStatusQuery.data && (
         <Box>
@@ -325,7 +242,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         </Box>
       )}
 
-      {/* Section 3 — Compose & send */}
+      {/* Section 2 — Compose & send */}
       <Box>
         <Typography variant="subtitle1" gutterBottom fontWeight="medium">
           {t('eventPage.newsletter.composeTitle')}
@@ -436,6 +353,108 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
           </Box>
         )}
       </Box>
+
+      {/* Section 3 — Send history (collapsible) */}
+      <Accordion variant="outlined" disableGutters>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle1" fontWeight="medium">
+            {t('eventPage.newsletter.sendHistory')}
+            {historyQuery.data && historyQuery.data.length > 0 && (
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                ({historyQuery.data.length})
+              </Typography>
+            )}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 0 }}>
+          {historyQuery.isLoading ? (
+            <Box p={2}>
+              <Skeleton variant="rectangular" height={100} />
+            </Box>
+          ) : historyQuery.data && historyQuery.data.length > 0 ? (
+            <Paper variant="outlined" sx={{ border: 0 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('common:labels.date')}</TableCell>
+                    <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
+                    <TableCell align="right">
+                      {t('eventPage.newsletter.historyRecipients', 'Recipients')}
+                    </TableCell>
+                    <TableCell align="center">
+                      {t('eventPage.newsletter.historyStatus', 'Status')}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {historyQuery.data.map((send) => (
+                    <TableRow key={send.id}>
+                      <TableCell>{new Date(send.sentAt).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {send.isReminder
+                          ? t('eventPage.newsletter.typeReminder', 'Reminder')
+                          : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
+                      </TableCell>
+                      <TableCell align="right">{send.recipientCount}</TableCell>
+                      <TableCell align="center">
+                        <Typography
+                          variant="caption"
+                          color={
+                            send.status === 'COMPLETED'
+                              ? 'success.main'
+                              : send.status === 'PARTIAL'
+                                ? 'warning.main'
+                                : send.status === 'FAILED'
+                                  ? 'error.main'
+                                  : 'text.secondary'
+                          }
+                        >
+                          {send.status ?? 'COMPLETED'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
+                          <Tooltip
+                            title={t(
+                              'eventPage.newsletter.retryTooltip',
+                              'Retry failed recipients'
+                            )}
+                          >
+                            <span>
+                              <Button
+                                size="small"
+                                variant="text"
+                                color="warning"
+                                onClick={() => {
+                                  retryMutation.mutate(send.id, {
+                                    onSuccess: (data) => {
+                                      if (data.id) setActiveSendId(data.id);
+                                    },
+                                  });
+                                }}
+                                disabled={retryMutation.isPending || isJobActive}
+                              >
+                                {t('eventPage.newsletter.retryButton', 'Retry')}
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          ) : (
+            <Box p={2}>
+              <Typography variant="body2" color="text.secondary">
+                {t('eventPage.newsletter.noHistory')}
+              </Typography>
+            </Box>
+          )}
+        </AccordionDetails>
+      </Accordion>
 
       {/* Confirmation dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
