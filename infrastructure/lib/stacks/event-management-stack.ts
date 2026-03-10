@@ -51,6 +51,11 @@ export class EventManagementStack extends cdk.Stack {
     const envName = props.config.envName;
     const serviceName = 'event-management';
 
+    // Use berner-architekten-treffen.ch on staging (batbern.ch SES verification failed there).
+    // Production owns the verified batbern.ch domain.
+    const sesFromDomain =
+      envName === 'production' ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+
     // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
     let openAiSecret: secretsmanager.ISecret | undefined;
     if (props.aiEnabled) {
@@ -90,6 +95,8 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.config.domain && {
             APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
           }),
+          // Email from-address — use verified SES domain for this environment
+          EMAIL_FROM: `noreply@${sesFromDomain}`,
           // Story 10.16: AI content generation feature flag
           ...(props.aiEnabled && { AI_ENABLED: 'true' }),
           // Story 10.17: Inbound email processing via SQS
@@ -162,9 +169,9 @@ export class EventManagementStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ['ses:SendEmail', 'ses:SendRawEmail'],
         resources: [
-          // FROM identity - batbern.ch domain (verified domain)
-          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/batbern.ch`,
-          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@batbern.ch`,
+          // FROM identity - environment-specific verified SES domain
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
           // TO identities - all verified emails (required for sandbox mode)
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
