@@ -334,11 +334,22 @@ public class NewsletterEmailService {
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
 
+        // Recipients that previously failed (explicit delivery failure).
         List<NewsletterRecipient> failedRecipients =
                 recipientRepository.findByIdSendIdAndDeliveryStatus(sendId, "failed");
 
+        // Subscribers with no recipient record at all — the service was killed before
+        // it reached them. After orphan recovery these are the majority of "unsent" recipients.
+        List<NewsletterSubscriber> uncontactedSubscribers =
+                subscriberRepository.findActiveSubscribersNotInSend(sendId);
+
+        log.info("Newsletter retry: sendId={}, failed={}, uncontacted={}",
+                sendId, failedRecipients.size(), uncontactedSubscribers.size());
+
         int newlySent = 0;
+        int newlyFailed = 0;
         try {
+            // ── 1. Re-send to previously-failed recipients ─────────────────────
             for (NewsletterRecipient failed : failedRecipients) {
                 String email = failed.getId().getEmail();
                 String deliveryStatus = "sent";
@@ -356,10 +367,35 @@ public class NewsletterEmailService {
                     emailService.sendHtmlEmailSync(email, subject, mergedHtml);
                     newlySent++;
                 } catch (Exception e) {
-                    log.error("Newsletter retry failed for {}: {}", email, e.getMessage());
+                    log.error("Newsletter retry (failed) failed for {}: {}", email, e.getMessage());
                     deliveryStatus = "failed";
+                    newlyFailed++;
                 }
                 updateRecipientStatus(sendId, email, deliveryStatus);
+                sleepQuietly(sendRateDelayMs);
+            }
+
+            // ── 2. Send to subscribers that were never contacted (orphan resume) ─
+            for (NewsletterSubscriber subscriber : uncontactedSubscribers) {
+                String email = subscriber.getEmail();
+                String deliveryStatus = "sent";
+                try {
+                    String unsubLink = baseUrl + "/unsubscribe?token="
+                            + subscriber.getUnsubscribeToken();
+                    Map<String, String> recipientVars = new HashMap<>(baseVars);
+                    recipientVars.put("unsubscribeLink", unsubLink);
+                    String contentHtml = renderContent(locale, recipientVars, effectiveKey);
+                    String mergedHtml = emailService.replaceVariables(
+                            emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
+                            recipientVars);
+                    emailService.sendHtmlEmailSync(email, subject, mergedHtml);
+                    newlySent++;
+                } catch (Exception e) {
+                    log.error("Newsletter retry (uncontacted) failed for {}: {}", email, e.getMessage());
+                    deliveryStatus = "failed";
+                    newlyFailed++;
+                }
+                recordRecipient(sendId, email, deliveryStatus);
                 sleepQuietly(sendRateDelayMs);
             }
 

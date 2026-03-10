@@ -2,6 +2,8 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.NewsletterSubscriber;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,4 +32,15 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
     Page<NewsletterSubscriber> findByUnsubscribedAtIsNull(Pageable pageable);
 
     long countByUnsubscribedAtIsNull();
+
+    /**
+     * Active subscribers who have NO recipient record for the given send.
+     * Used by retry-after-orphan-recovery to find subscribers that were never contacted
+     * because the service was killed mid-send.
+     */
+    @Query("SELECT s FROM NewsletterSubscriber s WHERE s.unsubscribedAt IS NULL "
+            + "AND s.email NOT IN ("
+            + "  SELECT r.id.email FROM NewsletterRecipient r WHERE r.id.sendId = :sendId"
+            + ")")
+    List<NewsletterSubscriber> findActiveSubscribersNotInSend(@Param("sendId") UUID sendId);
 }
