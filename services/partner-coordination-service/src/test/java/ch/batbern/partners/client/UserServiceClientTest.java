@@ -73,9 +73,13 @@ class UserServiceClientTest {
         if (cacheManager != null) {
             Objects.requireNonNull(cacheManager.getCache("userApiCache")).clear();
             var byCompanyCache = cacheManager.getCache("usersByCompanyRoleCache");
-            if (byCompanyCache != null) { byCompanyCache.clear(); }
+            if (byCompanyCache != null) {
+                byCompanyCache.clear();
+            }
             var byRoleCache = cacheManager.getCache("usersByRoleCache");
-            if (byRoleCache != null) { byRoleCache.clear(); }
+            if (byRoleCache != null) {
+                byRoleCache.clear();
+            }
         }
     }
 
