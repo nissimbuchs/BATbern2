@@ -90,7 +90,7 @@ describe('RegistrationWizard Component', () => {
     );
 
     await waitFor(() => {
-      // MUI Stepper should be present - check for translated step labels
+      // MUI Stepper should be present - both step labels visible at all times
       expect(screen.getAllByText(/step 1 of 2/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
@@ -120,7 +120,7 @@ describe('RegistrationWizard Component', () => {
     await user.click(continueButton);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
   });
 
@@ -149,7 +149,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
   });
 
@@ -182,7 +182,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
 
     // Now on Step 2, click Back
@@ -225,7 +225,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
 
     // On Step 2, accept terms and submit
@@ -278,7 +278,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
     });
 
     // On Step 2, accept terms and submit
