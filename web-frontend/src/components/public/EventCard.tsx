@@ -13,7 +13,7 @@ import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
-type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
 
 interface EventCardProps {
   event: EventDetailUI;
@@ -28,6 +28,7 @@ const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
   REGISTERED: 'bg-amber-400/20 text-amber-400 border-amber-400/30',
   WAITLIST: 'bg-blue-400/20 text-blue-400 border-blue-400/30',
   CANCELLED: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
+  ATTENDED: 'bg-purple-400/20 text-purple-400 border-purple-400/30',
 };
 
 export function EventCard({

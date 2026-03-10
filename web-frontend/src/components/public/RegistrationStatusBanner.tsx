@@ -15,7 +15,7 @@ import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import QueueIcon from '@mui/icons-material/Queue';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-export type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED';
+export type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
 
 interface RegistrationStatusBannerProps {
   /** Registration status. null = not registered (render nothing). undefined = loading/no data. */
@@ -120,6 +120,12 @@ export function RegistrationStatusBanner({
         waitlistPosition != null
           ? 'registrationStatusBanner.waitlistWithPosition'
           : 'registrationStatusBanner.waitlist',
+      linkKey: 'registrationStatusBanner.manageLink',
+    },
+    ATTENDED: {
+      severity: 'success',
+      icon: <CheckCircleIcon fontSize="small" />,
+      textKey: 'registrationStatusBanner.attended',
       linkKey: 'registrationStatusBanner.manageLink',
     },
   };
