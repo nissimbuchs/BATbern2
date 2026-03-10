@@ -444,7 +444,7 @@
   "newsletter": {
     "templateSelect": {
       "label": "[MISSING] Vorlage",
-      "createNew": "[MISSING] Neue Vorlage erstellen"
+      "createNew": "新しいテンプレートを作成"
     }
   },
   "aiAssist": {

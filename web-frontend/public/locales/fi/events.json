@@ -12,7 +12,7 @@
       "publishing": "Julkaisu",
       "newsletter": "Uutiskirje",
       "settings": "Asetukset",
-      "photos": "Photos"
+      "photos": "Valokuvat"
     },
     "tabsAriaLabel": "Tapahtumassivun navigointi",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "Valittu aihe",
       "quickActions": "Pikavalikko",
       "selectTopic": "Valitse aihe",
-      "previewPublic": "Esikatsele julkista sivua"
+      "previewPublic": "Esikatsele julkista sivua",
+      "startPresentation": "Aloita esitys",
+      "liveControl": "Live-ohjaus"
     },
     "participantsTab": {
       "title": "Tapahtuman osallistujat",
@@ -97,8 +99,37 @@
       "moderatorLabel": "Moderaattori",
       "moderatorUpdated": "Moderaattori päivitetty onnistuneesti",
       "moderatorUpdateError": "Moderaattorin päivittäminen epäonnistui.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Rekisteröintien enimmäismäärä",
+      "capacityHelperText": "Jätä tyhjäksi rajattomille rekisteröinneille. Ei voi ylittää paikan kapasiteettia.",
+      "capacityUpdated": "Kapasiteetti päivitetty onnistuneesti",
+      "capacityUpdateError": "Kapasiteetin päivitys epäonnistui.",
+      "notifications": "Ilmoitukset",
+      "activeAutomations": "aktiivista automaatiota",
+      "manageAll": "Hallinnoi kaikkia ilmoituksia",
+      "dangerZone": "Vaaravyöhyke",
+      "dangerWarning": "Nämä toiminnot ovat peruuttamattomia. Ole varovainen.",
+      "cancelEvent": "Peruuta tapahtuma",
+      "cancelEventDesc": "Peruuttaa tapahtuman ja ilmoittaa kaikille ilmoittautuneille",
+      "deleteEvent": "Poista tapahtuma",
+      "deleteEventDesc": "Poistaa tapahtuman pysyvästi (vain ilman rekisteröintejä)",
+      "cannotDelete": "Tapahtumaa, jolla on rekisteröintejä, ei voi poistaa. Peruuta tapahtuma sen sijaan.",
+      "confirmCancel": "Peruutetaanko tapahtuma?",
+      "cancelConfirmText": "Tapahtuma peruutetaan ja kaikille {{count}} rekisteröityneelle osallistujalle ilmoitetaan. Tätä toimintoa ei voi kumota.",
+      "confirmCancelBtn": "Kyllä, peruuta",
+      "confirmDelete": "Poistetaanko tapahtuma?",
+      "deleteConfirmText": "Tapahtuma \"{{title}}\" poistetaan pysyvästi. Tätä toimintoa ei voi kumota.",
+      "confirmDeleteBtn": "Kyllä, poista",
+      "deleteError": "Tapahtuman poistaminen epäonnistui. Yritä uudelleen.",
+      "speakerReminders": "Puhujien deadlinemuistutukset",
+      "speakerRemindersDesc": "3 päivää ennen deadlinea",
+      "registrationEmails": "Rekisteröintivahvistussähköpostit",
+      "registrationEmailsDesc": "Välittömästi rekisteröinnissä",
+      "agendaDistribution": "Lopullisen ohjelman jakaminen",
+      "agendaDistributionDesc": "Ajastettu tapahtumapäivälle -14",
+      "checkInReminders": "Sisäänkirjautumismuistutukset tapahtumapäivänä",
+      "checkInRemindersDesc": "Tapahtumapäivän aamuna",
+      "startPresentation": "Aloita esitys",
+      "liveControl": "Live-ohjaus"
     },
     "speakers": {
       "progress": "Edistyminen",
@@ -485,10 +516,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "Aihe",
+      "speakers": "Puhujat",
+      "agenda": "Ohjelma",
+      "updates": "Päivitykset"
     }
   },
   "notifications": {
@@ -776,14 +807,32 @@
     "heading": "Tietoja tapahtumasta"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Tapahtuman kuvat",
+    "uploadButton": "Lataa kuva",
+    "deleteConfirmTitle": "Poista kuva",
+    "deleteConfirmMessage": "Haluatko varmasti poistaa tämän kuvan? Tätä toimintoa ei voi kumota.",
+    "deleteConfirm": "Poista",
+    "deleteCancel": "Peruuta",
+    "emptyState": "Ei kuvia vielä. Lataa ensimmäinen!",
+    "uploading": "Ladataan...",
+    "uploadError": "Lataus epäonnistui. Yritä uudelleen.",
+    "uploadErrorPartial": "{{failed}}/{{total}} latauksesta epäonnistui. Yritä uudelleen."
+  },
+  "teaserImage": {
+    "title": "Teaserikuvat",
+    "description": "Kuvat näytetään koko näytön dioinä esityssivulla.",
+    "uploadButton": "Lisää teaserikuva",
+    "uploading": "Ladataan...",
+    "uploadError": "Lataus epäonnistui. Yritä uudelleen.",
+    "removeError": "Poisto epäonnistui. Yritä uudelleen.",
+    "positionError": "Sijainnin päivitys epäonnistui. Yritä uudelleen.",
+    "limitReached": "Enimmäismäärä {{max}} teaserikuvaa saavutettu.",
+    "position": {
+      "label": "Näytä jälkeen",
+      "afterWelcome": "Tervetuliaisdia",
+      "afterCommittee": "Komiteadia",
+      "afterTopicReveal": "Aiheen paljastusdia",
+      "afterUpcomingEvents": "Tulevat tapahtumat -dia"
+    }
   }
 }

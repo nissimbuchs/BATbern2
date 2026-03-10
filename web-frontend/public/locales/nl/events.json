@@ -12,7 +12,7 @@
       "publishing": "Publicatie",
       "newsletter": "Nieuwsbrief",
       "settings": "Instellingen",
-      "photos": "Photos"
+      "photos": "Foto's"
     },
     "tabsAriaLabel": "Navigatie evenementenpagina",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "Geselecteerd onderwerp",
       "quickActions": "Snelle acties",
       "selectTopic": "Onderwerp selecteren",
-      "previewPublic": "Openbare pagina bekijken"
+      "previewPublic": "Openbare pagina bekijken",
+      "startPresentation": "Presentatie starten",
+      "liveControl": "Live besturing"
     },
     "participantsTab": {
       "title": "Evenementdeelnemers",
@@ -97,8 +99,37 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator succesvol bijgewerkt",
       "moderatorUpdateError": "Bijwerken van moderator mislukt.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Registratiecapaciteit",
+      "capacityHelperText": "Leeg laten voor onbeperkte registraties. Mag de locatiecapaciteit niet overschrijden.",
+      "capacityUpdated": "Capaciteit succesvol bijgewerkt",
+      "capacityUpdateError": "Bijwerken van capaciteit mislukt.",
+      "notifications": "Meldingen",
+      "activeAutomations": "actieve automatiseringen",
+      "manageAll": "Alle meldingen beheren",
+      "dangerZone": "Gevarenzone",
+      "dangerWarning": "Deze acties zijn onomkeerbaar. Ga voorzichtig te werk.",
+      "cancelEvent": "Evenement annuleren",
+      "cancelEventDesc": "Annuleert het evenement en informeert alle registranten",
+      "deleteEvent": "Evenement verwijderen",
+      "deleteEventDesc": "Verwijdert het evenement permanent (alleen zonder registraties)",
+      "cannotDelete": "Evenement met registraties kan niet worden verwijderd. Annuleer het evenement in plaats daarvan.",
+      "confirmCancel": "Evenement annuleren?",
+      "cancelConfirmText": "Het evenement wordt geannuleerd en alle {{count}} geregistreerde deelnemers worden geïnformeerd. Deze actie kan niet ongedaan worden gemaakt.",
+      "confirmCancelBtn": "Ja, annuleren",
+      "confirmDelete": "Evenement verwijderen?",
+      "deleteConfirmText": "Het evenement \"{{title}}\" wordt permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt.",
+      "confirmDeleteBtn": "Ja, verwijderen",
+      "deleteError": "Verwijderen van evenement mislukt. Probeer opnieuw.",
+      "speakerReminders": "Deadlineherinneringen voor sprekers",
+      "speakerRemindersDesc": "3 dagen voor deadline",
+      "registrationEmails": "Registratiebevestigings-e-mails",
+      "registrationEmailsDesc": "Direct bij registratie",
+      "agendaDistribution": "Definitieve programmadistributie",
+      "agendaDistributionDesc": "Gepland voor evenementdag -14",
+      "checkInReminders": "Incheckherinneringen op de dag van het evenement",
+      "checkInRemindersDesc": "Ochtend van het evenement",
+      "startPresentation": "Presentatie starten",
+      "liveControl": "Live besturing"
     },
     "speakers": {
       "progress": "Voortgang",
@@ -485,8 +516,8 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Onderwerp",
+      "speakers": "Sprekers",
       "agenda": "Agenda",
       "updates": "Updates"
     }
@@ -776,14 +807,32 @@
     "heading": "Over dit evenement"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Evenementfoto's",
+    "uploadButton": "Foto uploaden",
+    "deleteConfirmTitle": "Foto verwijderen",
+    "deleteConfirmMessage": "Weet je zeker dat je deze foto wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "deleteConfirm": "Verwijderen",
+    "deleteCancel": "Annuleren",
+    "emptyState": "Nog geen foto's. Upload de eerste!",
+    "uploading": "Uploaden...",
+    "uploadError": "Upload mislukt. Probeer opnieuw.",
+    "uploadErrorPartial": "{{failed}} van {{total}} uploads mislukt. Probeer opnieuw."
+  },
+  "teaserImage": {
+    "title": "Teaserafbeeldingen",
+    "description": "Afbeeldingen weergegeven als schermvullende dia's op de presentatiepagina.",
+    "uploadButton": "Teaserafbeelding toevoegen",
+    "uploading": "Uploaden...",
+    "uploadError": "Upload mislukt. Probeer opnieuw.",
+    "removeError": "Verwijderen mislukt. Probeer opnieuw.",
+    "positionError": "Positie bijwerken mislukt. Probeer opnieuw.",
+    "limitReached": "Maximum van {{max}} teaserafbeeldingen bereikt.",
+    "position": {
+      "label": "Weergeven na",
+      "afterWelcome": "Welkomstdia",
+      "afterCommittee": "Commissiedia",
+      "afterTopicReveal": "Onthullingsdia onderwerp",
+      "afterUpcomingEvents": "Komende evenementen-dia"
+    }
   }
 }

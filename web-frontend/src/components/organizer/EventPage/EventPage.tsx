@@ -227,7 +227,7 @@ export const EventPage: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Präsentation starten
+              {t('eventPage.overview.startPresentation', 'Start Presentation')}
             </Button>
             <Button
               variant="outlined"
@@ -235,7 +235,7 @@ export const EventPage: React.FC = () => {
               startIcon={<LiveTvIcon />}
               onClick={() => navigate(`/organizer/events/${eventCode}/live-control`)}
             >
-              Live Steuerung
+              {t('eventPage.overview.liveControl', 'Live Control')}
             </Button>
           </Stack>
         </Stack>

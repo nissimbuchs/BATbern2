@@ -30,7 +30,9 @@
       "selectedTopic": "Sujet sélectionné",
       "quickActions": "Actions rapides",
       "selectTopic": "Sélectionner un sujet",
-      "previewPublic": "Aperçu de la page publique"
+      "previewPublic": "Aperçu de la page publique",
+      "startPresentation": "Démarrer la présentation",
+      "liveControl": "Contrôle en direct"
     },
     "participantsTab": {
       "title": "Participants à l'événement",
@@ -97,8 +99,37 @@
       "moderatorLabel": "Modérateur",
       "moderatorUpdated": "Modérateur mis à jour avec succès",
       "moderatorUpdateError": "Échec de la mise à jour du modérateur.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Capacité d'inscription",
+      "capacityHelperText": "Laisser vide pour des inscriptions illimitées. Ne peut pas dépasser la capacité du lieu.",
+      "capacityUpdated": "Capacité mise à jour avec succès",
+      "capacityUpdateError": "Échec de la mise à jour de la capacité.",
+      "notifications": "Notifications",
+      "activeAutomations": "automatisations actives",
+      "manageAll": "Gérer toutes les notifications",
+      "dangerZone": "Zone de danger",
+      "dangerWarning": "Ces actions sont irréversibles. Veuillez procéder avec prudence.",
+      "cancelEvent": "Annuler l'événement",
+      "cancelEventDesc": "Annule l'événement et notifie tous les inscrits",
+      "deleteEvent": "Supprimer l'événement",
+      "deleteEventDesc": "Supprime définitivement l'événement (uniquement sans inscriptions)",
+      "cannotDelete": "Impossible de supprimer un événement avec des inscriptions. Annulez l'événement à la place.",
+      "confirmCancel": "Annuler l'événement ?",
+      "cancelConfirmText": "L'événement sera annulé et les {{count}} participants inscrits seront notifiés. Cette action est irréversible.",
+      "confirmCancelBtn": "Oui, annuler",
+      "confirmDelete": "Supprimer l'événement ?",
+      "deleteConfirmText": "L'événement «{{title}}» sera définitivement supprimé. Cette action est irréversible.",
+      "confirmDeleteBtn": "Oui, supprimer",
+      "deleteError": "Échec de la suppression. Veuillez réessayer.",
+      "speakerReminders": "Rappels de délai pour les conférenciers",
+      "speakerRemindersDesc": "3 jours avant la date limite",
+      "registrationEmails": "E-mails de confirmation d'inscription",
+      "registrationEmailsDesc": "Immédiatement lors de l'inscription",
+      "agendaDistribution": "Distribution du programme final",
+      "agendaDistributionDesc": "Prévu pour le jour J-14",
+      "checkInReminders": "Rappels d'enregistrement le jour de l'événement",
+      "checkInRemindersDesc": "Le matin de l'événement",
+      "startPresentation": "Démarrer la présentation",
+      "liveControl": "Contrôle en direct"
     },
     "speakers": {
       "progress": "Progression",
@@ -485,10 +516,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "Sujet",
+      "speakers": "Conférenciers",
+      "agenda": "Programme",
+      "updates": "Mises à jour"
     }
   },
   "notifications": {
@@ -776,14 +807,32 @@
     "heading": "À propos de cet événement"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Photos de l'événement",
+    "uploadButton": "Télécharger une photo",
+    "deleteConfirmTitle": "Supprimer la photo",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer cette photo ? Cette action est irréversible.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler",
+    "emptyState": "Aucune photo pour l'instant. Téléchargez la première !",
+    "uploading": "Téléchargement...",
+    "uploadError": "Échec du téléchargement. Veuillez réessayer.",
+    "uploadErrorPartial": "{{failed}} sur {{total}} téléchargements ont échoué. Veuillez réessayer."
+  },
+  "teaserImage": {
+    "title": "Images teaser",
+    "description": "Images affichées en plein écran sur la page de présentation.",
+    "uploadButton": "Ajouter une image teaser",
+    "uploading": "Téléchargement...",
+    "uploadError": "Échec du téléchargement. Veuillez réessayer.",
+    "removeError": "Échec de la suppression. Veuillez réessayer.",
+    "positionError": "Échec de la mise à jour de la position. Veuillez réessayer.",
+    "limitReached": "Maximum de {{max}} images teaser atteint.",
+    "position": {
+      "label": "Afficher après",
+      "afterWelcome": "Diapositive d'accueil",
+      "afterCommittee": "Diapositive du comité",
+      "afterTopicReveal": "Diapositive de révélation du sujet",
+      "afterUpcomingEvents": "Diapositive des prochains événements"
+    }
   }
 }

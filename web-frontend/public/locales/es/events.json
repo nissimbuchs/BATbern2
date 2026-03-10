@@ -12,7 +12,7 @@
       "publishing": "Publicación",
       "newsletter": "Newsletter",
       "settings": "Configuración",
-      "photos": "Photos"
+      "photos": "Fotos"
     },
     "tabsAriaLabel": "Navegación de la página de evento",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "Tema seleccionado",
       "quickActions": "Acciones rápidas",
       "selectTopic": "Seleccionar tema",
-      "previewPublic": "Vista previa de página pública"
+      "previewPublic": "Vista previa de página pública",
+      "startPresentation": "Iniciar presentación",
+      "liveControl": "Control en vivo"
     },
     "participantsTab": {
       "title": "Participantes del evento",
@@ -97,8 +99,37 @@
       "moderatorLabel": "Moderador",
       "moderatorUpdated": "Moderador actualizado correctamente",
       "moderatorUpdateError": "Error al actualizar el moderador.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Capacidad de registro",
+      "capacityHelperText": "Dejar en blanco para registros ilimitados. No puede superar la capacidad del lugar.",
+      "capacityUpdated": "Capacidad actualizada con éxito",
+      "capacityUpdateError": "Error al actualizar la capacidad.",
+      "notifications": "Notificaciones",
+      "activeAutomations": "automatizaciones activas",
+      "manageAll": "Gestionar todas las notificaciones",
+      "dangerZone": "Zona de peligro",
+      "dangerWarning": "Estas acciones son irreversibles. Proceder con precaución.",
+      "cancelEvent": "Cancelar evento",
+      "cancelEventDesc": "Cancela el evento y notifica a todos los inscritos",
+      "deleteEvent": "Eliminar evento",
+      "deleteEventDesc": "Elimina permanentemente el evento (solo sin registros)",
+      "cannotDelete": "No se puede eliminar un evento con registros. Cancela el evento en su lugar.",
+      "confirmCancel": "¿Cancelar el evento?",
+      "cancelConfirmText": "El evento será cancelado y los {{count}} participantes inscritos serán notificados. Esta acción no se puede deshacer.",
+      "confirmCancelBtn": "Sí, cancelar",
+      "confirmDelete": "¿Eliminar el evento?",
+      "deleteConfirmText": "El evento \"{{title}}\" será eliminado permanentemente. Esta acción no se puede deshacer.",
+      "confirmDeleteBtn": "Sí, eliminar",
+      "deleteError": "Error al eliminar el evento. Por favor, inténtelo de nuevo.",
+      "speakerReminders": "Recordatorios de fecha límite para ponentes",
+      "speakerRemindersDesc": "3 días antes del plazo",
+      "registrationEmails": "Correos de confirmación de registro",
+      "registrationEmailsDesc": "Inmediatamente al registrarse",
+      "agendaDistribution": "Distribución del programa final",
+      "agendaDistributionDesc": "Programado para el día del evento -14",
+      "checkInReminders": "Recordatorios de check-in el día del evento",
+      "checkInRemindersDesc": "La mañana del evento",
+      "startPresentation": "Iniciar presentación",
+      "liveControl": "Control en vivo"
     },
     "speakers": {
       "progress": "Progreso",
@@ -485,10 +516,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "Tema",
+      "speakers": "Ponentes",
+      "agenda": "Programa",
+      "updates": "Actualizaciones"
     }
   },
   "notifications": {
@@ -776,14 +807,32 @@
     "heading": "Acerca de este evento"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "Fotos del evento",
+    "uploadButton": "Subir foto",
+    "deleteConfirmTitle": "Eliminar foto",
+    "deleteConfirmMessage": "¿Estás seguro de que quieres eliminar esta foto? Esta acción no se puede deshacer.",
+    "deleteConfirm": "Eliminar",
+    "deleteCancel": "Cancelar",
+    "emptyState": "No hay fotos todavía. ¡Sube la primera!",
+    "uploading": "Subiendo...",
+    "uploadError": "Error al subir. Por favor, inténtelo de nuevo.",
+    "uploadErrorPartial": "{{failed}} de {{total}} cargas fallaron. Por favor, inténtelo de nuevo."
+  },
+  "teaserImage": {
+    "title": "Imágenes teaser",
+    "description": "Imágenes mostradas como diapositivas a pantalla completa en la página de presentación.",
+    "uploadButton": "Agregar imagen teaser",
+    "uploading": "Subiendo...",
+    "uploadError": "Error al subir. Por favor, inténtelo de nuevo.",
+    "removeError": "Error al eliminar. Por favor, inténtelo de nuevo.",
+    "positionError": "Error al actualizar la posición. Por favor, inténtelo de nuevo.",
+    "limitReached": "Se alcanzó el máximo de {{max}} imágenes teaser.",
+    "position": {
+      "label": "Mostrar después de",
+      "afterWelcome": "Diapositiva de bienvenida",
+      "afterCommittee": "Diapositiva del comité",
+      "afterTopicReveal": "Diapositiva de revelación del tema",
+      "afterUpcomingEvents": "Diapositiva de próximos eventos"
+    }
   }
 }

@@ -30,7 +30,9 @@
       "selectedTopic": "Selected Topic",
       "quickActions": "Quick Actions",
       "selectTopic": "Select Topic",
-      "previewPublic": "Preview Public Page"
+      "previewPublic": "Preview Public Page",
+      "startPresentation": "Start Presentation",
+      "liveControl": "Live Control"
     },
     "participantsTab": {
       "title": "Event Participants",
@@ -55,7 +57,38 @@
       "moderatorDesc": "The organizer responsible for moderating this event.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator updated successfully",
-      "moderatorUpdateError": "Failed to update moderator."
+      "moderatorUpdateError": "Failed to update moderator.",
+      "capacityLabel": "Registration Capacity",
+      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity.",
+      "capacityUpdated": "Capacity updated successfully",
+      "capacityUpdateError": "Failed to update capacity.",
+      "notifications": "Notifications",
+      "activeAutomations": "active automations",
+      "manageAll": "Manage All Notifications",
+      "dangerZone": "Danger Zone",
+      "dangerWarning": "These actions are irreversible. Please proceed with caution.",
+      "cancelEvent": "Cancel Event",
+      "cancelEventDesc": "Cancels the event and notifies all registrants",
+      "deleteEvent": "Delete Event",
+      "deleteEventDesc": "Permanently removes event (only if no registrations)",
+      "cannotDelete": "Cannot delete event with registrations. Cancel the event instead.",
+      "confirmCancel": "Cancel Event?",
+      "cancelConfirmText": "This will cancel the event and notify all {{count}} registered attendees. This action cannot be undone.",
+      "confirmCancelBtn": "Yes, Cancel Event",
+      "confirmDelete": "Delete Event?",
+      "deleteConfirmText": "This will permanently delete the event \"{{title}}\". This action cannot be undone.",
+      "confirmDeleteBtn": "Yes, Delete Event",
+      "deleteError": "Failed to delete event. Please try again.",
+      "speakerReminders": "Speaker deadline reminders",
+      "speakerRemindersDesc": "3 days before deadline",
+      "registrationEmails": "Registration confirmation emails",
+      "registrationEmailsDesc": "Immediate on registration",
+      "agendaDistribution": "Final agenda distribution",
+      "agendaDistributionDesc": "Scheduled for event day -14",
+      "checkInReminders": "Event day check-in reminders",
+      "checkInRemindersDesc": "Morning of event",
+      "startPresentation": "Start Presentation",
+      "liveControl": "Live Control"
     },
     "participantTable": {
       "headers": {
@@ -782,7 +815,8 @@
     "deleteCancel": "Cancel",
     "emptyState": "No photos yet. Upload the first one!",
     "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "uploadError": "Upload failed. Please try again.",
+    "uploadErrorPartial": "{{failed}} of {{total}} uploads failed. Please retry."
   },
   "teaserImage": {
     "title": "Teaser Images",

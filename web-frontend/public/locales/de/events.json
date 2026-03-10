@@ -30,7 +30,9 @@
       "selectedTopic": "Ausgewähltes Thema",
       "quickActions": "Schnellzugriff",
       "selectTopic": "Thema auswählen",
-      "previewPublic": "Öffentliche Seite vorschauen"
+      "previewPublic": "Öffentliche Seite vorschauen",
+      "startPresentation": "Präsentation starten",
+      "liveControl": "Live Steuerung"
     },
     "participantsTab": {
       "title": "Veranstaltungsteilnehmer",
@@ -55,7 +57,38 @@
       "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgreich aktualisiert",
-      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
+      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden.",
+      "capacityLabel": "Anmeldekapazität",
+      "capacityHelperText": "Leer lassen für unbegrenzte Anmeldungen. Darf die Veranstaltungskapazität nicht überschreiten.",
+      "capacityUpdated": "Kapazität erfolgreich aktualisiert",
+      "capacityUpdateError": "Kapazität konnte nicht aktualisiert werden.",
+      "notifications": "Benachrichtigungen",
+      "activeAutomations": "aktive Automatisierungen",
+      "manageAll": "Alle Benachrichtigungen verwalten",
+      "dangerZone": "Gefahrenbereich",
+      "dangerWarning": "Diese Aktionen sind nicht rückgängig zu machen. Bitte mit Vorsicht vorgehen.",
+      "cancelEvent": "Veranstaltung absagen",
+      "cancelEventDesc": "Sagt die Veranstaltung ab und benachrichtigt alle Angemeldeten",
+      "deleteEvent": "Veranstaltung löschen",
+      "deleteEventDesc": "Löscht die Veranstaltung dauerhaft (nur ohne Anmeldungen)",
+      "cannotDelete": "Veranstaltung mit Anmeldungen kann nicht gelöscht werden. Stattdessen absagen.",
+      "confirmCancel": "Veranstaltung absagen?",
+      "cancelConfirmText": "Die Veranstaltung wird abgesagt und alle {{count}} angemeldeten Teilnehmer werden benachrichtigt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmCancelBtn": "Ja, absagen",
+      "confirmDelete": "Veranstaltung löschen?",
+      "deleteConfirmText": "Die Veranstaltung \"{{title}}\" wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmDeleteBtn": "Ja, löschen",
+      "deleteError": "Veranstaltung konnte nicht gelöscht werden. Bitte erneut versuchen.",
+      "speakerReminders": "Referenten-Erinnerungen",
+      "speakerRemindersDesc": "3 Tage vor Deadline",
+      "registrationEmails": "Anmeldebestätigungs-E-Mails",
+      "registrationEmailsDesc": "Sofort bei Anmeldung",
+      "agendaDistribution": "Finale Programmverteilung",
+      "agendaDistributionDesc": "Geplant für Veranstaltungstag -14",
+      "checkInReminders": "Check-in-Erinnerungen am Veranstaltungstag",
+      "checkInRemindersDesc": "Am Morgen des Veranstaltungstags",
+      "startPresentation": "Präsentation starten",
+      "liveControl": "Live Steuerung"
     },
     "participantTable": {
       "headers": {
@@ -483,10 +516,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Thema",
+      "speakers": "Referenten",
       "agenda": "Agenda",
-      "updates": "Updates"
+      "updates": "Aktualisierungen"
     }
   },
   "notifications": {
@@ -782,7 +815,8 @@
     "deleteCancel": "Abbrechen",
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
-    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "uploadErrorPartial": "{{failed}} von {{total}} Uploads fehlgeschlagen. Bitte erneut versuchen."
   },
   "teaserImage": {
     "title": "Teaser-Bilder",

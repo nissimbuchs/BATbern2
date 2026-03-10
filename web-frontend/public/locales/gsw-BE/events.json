@@ -30,7 +30,9 @@
       "selectedTopic": "Gwäuts Thema",
       "quickActions": "Schnällaktione",
       "selectTopic": "Thema uswähle",
-      "previewPublic": "Öffentligi Syte vorschau"
+      "previewPublic": "Öffentligi Syte vorschau",
+      "startPresentation": "Präsentation starte",
+      "liveControl": "Live Stüürig"
     },
     "participantsTab": {
       "title": "Veranstautigsteilnähmer",
@@ -102,8 +104,37 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgriich aktualisiert",
       "moderatorUpdateError": "Moderator chöne nid aktualisiert werde.",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "Aameldekapazität",
+      "capacityHelperText": "Leer löh für unbbegrenzte Aameldige. Darf d Veranstatigkapazität nid überschrite.",
+      "capacityUpdated": "Kapazität erfolgrich aktualisiert",
+      "capacityUpdateError": "Kapazität chönd nid aktualisiert wärde.",
+      "notifications": "Benachrichtigige",
+      "activeAutomations": "aktivi Automatisieriige",
+      "manageAll": "Alli Benachrichtigige verwalte",
+      "dangerZone": "Gefahrebereich",
+      "dangerWarning": "Die Aktione sind nid umkehrbar. Bitte mit Vorsicht vorgoh.",
+      "cancelEvent": "Veranstatig absäge",
+      "cancelEventDesc": "Sait d Veranstatig ab und benachrichtiget alli Aagemeldete",
+      "deleteEvent": "Veranstatig lösche",
+      "deleteEventDesc": "Löscht d Veranstatig duurhaft (nu ohni Aameldige)",
+      "cannotDelete": "Veranstatig mit Aameldige cha nid glöscht wärde. Stattdesse absäge.",
+      "confirmCancel": "Veranstatig absäge?",
+      "cancelConfirmText": "D Veranstatig wird abgsait und alli {{count}} aagemeldete Teilnähmer wärde benachrichtiget. Die Aktion cha nid umgkeert wärde.",
+      "confirmCancelBtn": "Jo, absäge",
+      "confirmDelete": "Veranstatig lösche?",
+      "deleteConfirmText": "D Veranstatig \"{{title}}\" wird duurhaft glöscht. Die Aktion cha nid umgkeert wärde.",
+      "confirmDeleteBtn": "Jo, lösche",
+      "deleteError": "Veranstatig chönd nid glöscht wärde. Bitte nomol versuche.",
+      "speakerReminders": "Referenten-Erinnirige",
+      "speakerRemindersDesc": "3 Tag vor Deadline",
+      "registrationEmails": "Aameldebstätigigs-E-Mails",
+      "registrationEmailsDesc": "Sofort bi dr Aamäldig",
+      "agendaDistribution": "Finali Programmverteilig",
+      "agendaDistributionDesc": "Gplant für Veranstatigstag -14",
+      "checkInReminders": "Check-in-Erinnirige am Veranstatigstag",
+      "checkInRemindersDesc": "Am Morge vom Veranstatigstag",
+      "startPresentation": "Präsentation starte",
+      "liveControl": "Live Stüürig"
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -490,10 +521,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
+      "topic": "Thema",
+      "speakers": "Referente",
       "agenda": "Agenda",
-      "updates": "Updates"
+      "updates": "Aktualisieriige"
     }
   },
   "notifications": {
@@ -786,6 +817,24 @@
     "deleteCancel": "Abbrechen",
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
-    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "uploadErrorPartial": "{{failed}} vo {{total}} Uploads fehlgschlage. Bitte nomol versuche."
+  },
+  "teaserImage": {
+    "title": "Teaser-Bilder",
+    "description": "Bilder, wo uf dr Präsentationssite als Vollbild-Folie azeigt werde.",
+    "uploadButton": "Teaser-Bild hinzuefüege",
+    "uploading": "Wird hochglade...",
+    "uploadError": "Upload fehlgschlage. Bitte nomol versuche.",
+    "removeError": "Entferne fehlgschlage. Bitte nomol versuche.",
+    "positionError": "Folieposition chönd nid aktualisiert wärde. Bitte nomol versuche.",
+    "limitReached": "Maximum vo {{max}} Teaser-Bilder erreicht.",
+    "position": {
+      "label": "Azeige nach",
+      "afterWelcome": "Willkommens-Folie",
+      "afterCommittee": "Komitee-Folie",
+      "afterTopicReveal": "Themenbekanntgab-Folie",
+      "afterUpcomingEvents": "Chömmendi Events-Folie"
+    }
   }
 }

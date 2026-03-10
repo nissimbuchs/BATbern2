@@ -77,7 +77,10 @@
     "retry": "Nomol versuche",
     "back": "Zrugg",
     "confirm": "Bestätige",
-    "clearFilters": "Filter lösche"
+    "clearFilters": "Filter lösche",
+    "previous": "Vorigi",
+    "next": "Wyter",
+    "deleting": "Wird glöscht..."
   },
   "labels": {
     "status": "Status",
@@ -89,7 +92,18 @@
     "company": "Firma",
     "email": "E-Mail",
     "dueDate": "Fälligkeitsdatum",
-    "emailAddress": "E-Mail-Adress"
+    "emailAddress": "E-Mail-Adress",
+    "name": "Name",
+    "description": "Beschriibig",
+    "notes": "Bemerkige",
+    "event": "Veranstatig",
+    "viewMode": "Azeigemodis",
+    "gridView": "Rasteraziig",
+    "listView": "Listenaziig",
+    "sessions": "Sessions",
+    "topics": "Theme",
+    "firstName": "Vorname",
+    "lastName": "Nachname"
   },
   "filters": {
     "status": {

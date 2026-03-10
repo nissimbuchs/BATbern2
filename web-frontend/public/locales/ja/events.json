@@ -12,7 +12,7 @@
       "publishing": "公開",
       "newsletter": "ニュースレター",
       "settings": "設定",
-      "photos": "Photos"
+      "photos": "写真"
     },
     "tabsAriaLabel": "イベントページのナビゲーション",
     "overview": {
@@ -30,7 +30,9 @@
       "selectedTopic": "選択中のトピック",
       "quickActions": "クイックアクション",
       "selectTopic": "トピックを選択",
-      "previewPublic": "公開ページをプレビュー"
+      "previewPublic": "公開ページをプレビュー",
+      "startPresentation": "プレゼンテーションを開始",
+      "liveControl": "ライブコントロール"
     },
     "participantsTab": {
       "title": "イベント参加者",
@@ -97,8 +99,37 @@
       "moderatorLabel": "モデレーター",
       "moderatorUpdated": "モデレーターが正常に更新されました",
       "moderatorUpdateError": "モデレーターの更新に失敗しました。",
-      "capacityLabel": "[MISSING] Registration Capacity",
-      "capacityHelperText": "[MISSING] Leave blank for unlimited registrations"
+      "capacityLabel": "登録定員",
+      "capacityHelperText": "無制限の登録の場合は空白のままにしてください。会場の定員を超えることはできません。",
+      "capacityUpdated": "定員を正常に更新しました",
+      "capacityUpdateError": "定員の更新に失敗しました。",
+      "notifications": "通知",
+      "activeAutomations": "アクティブな自動化",
+      "manageAll": "すべての通知を管理",
+      "dangerZone": "危険ゾーン",
+      "dangerWarning": "これらの操作は元に戻せません。注意して進めてください。",
+      "cancelEvent": "イベントをキャンセル",
+      "cancelEventDesc": "イベントをキャンセルし、全登録者に通知します",
+      "deleteEvent": "イベントを削除",
+      "deleteEventDesc": "イベントを完全に削除します（登録がない場合のみ）",
+      "cannotDelete": "登録があるイベントは削除できません。代わりにイベントをキャンセルしてください。",
+      "confirmCancel": "イベントをキャンセルしますか？",
+      "cancelConfirmText": "イベントがキャンセルされ、{{count}}人の登録済み参加者に通知されます。この操作は元に戻せません。",
+      "confirmCancelBtn": "はい、キャンセルします",
+      "confirmDelete": "イベントを削除しますか？",
+      "deleteConfirmText": "イベント「{{title}}」が完全に削除されます。この操作は元に戻せません。",
+      "confirmDeleteBtn": "はい、削除します",
+      "deleteError": "イベントの削除に失敗しました。再試行してください。",
+      "speakerReminders": "登壇者締め切りリマインダー",
+      "speakerRemindersDesc": "締め切り3日前",
+      "registrationEmails": "登録確認メール",
+      "registrationEmailsDesc": "登録時に即座に送信",
+      "agendaDistribution": "最終プログラムの配布",
+      "agendaDistributionDesc": "イベント当日-14日に予定",
+      "checkInReminders": "イベント当日のチェックインリマインダー",
+      "checkInRemindersDesc": "イベント当日の朝",
+      "startPresentation": "プレゼンテーションを開始",
+      "liveControl": "ライブコントロール"
     },
     "speakers": {
       "progress": "進捗",
@@ -485,10 +516,10 @@
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",
     "phases": {
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates"
+      "topic": "トピック",
+      "speakers": "登壇者",
+      "agenda": "プログラム",
+      "updates": "更新情報"
     }
   },
   "notifications": {
@@ -776,14 +807,32 @@
     "heading": "このイベントについて"
   },
   "photos": {
-    "title": "Event Photos",
-    "uploadButton": "Upload Photo",
-    "deleteConfirmTitle": "Delete Photo",
-    "deleteConfirmMessage": "Are you sure you want to delete this photo? This cannot be undone.",
-    "deleteConfirm": "Delete",
-    "deleteCancel": "Cancel",
-    "emptyState": "No photos yet. Upload the first one!",
-    "uploading": "Uploading...",
-    "uploadError": "Upload failed. Please try again."
+    "title": "イベント写真",
+    "uploadButton": "写真をアップロード",
+    "deleteConfirmTitle": "写真を削除",
+    "deleteConfirmMessage": "この写真を削除してもよいですか？この操作は元に戻せません。",
+    "deleteConfirm": "削除",
+    "deleteCancel": "キャンセル",
+    "emptyState": "まだ写真がありません。最初の1枚をアップロードしましょう！",
+    "uploading": "アップロード中...",
+    "uploadError": "アップロードに失敗しました。再試行してください。",
+    "uploadErrorPartial": "{{total}}件中{{failed}}件のアップロードが失敗しました。再試行してください。"
+  },
+  "teaserImage": {
+    "title": "ティーザー画像",
+    "description": "プレゼンテーションページでフルスクリーンスライドとして表示される画像。",
+    "uploadButton": "ティーザー画像を追加",
+    "uploading": "アップロード中...",
+    "uploadError": "アップロードに失敗しました。再試行してください。",
+    "removeError": "削除に失敗しました。再試行してください。",
+    "positionError": "位置の更新に失敗しました。再試行してください。",
+    "limitReached": "ティーザー画像の最大数 {{max}} に達しました。",
+    "position": {
+      "label": "表示する位置",
+      "afterWelcome": "ウェルカムスライドの後",
+      "afterCommittee": "委員会スライドの後",
+      "afterTopicReveal": "トピック公開スライドの後",
+      "afterUpcomingEvents": "今後のイベントスライドの後"
+    }
   }
 }

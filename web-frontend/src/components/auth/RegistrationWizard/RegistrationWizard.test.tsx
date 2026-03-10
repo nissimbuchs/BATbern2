@@ -76,7 +76,7 @@ describe('RegistrationWizard Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 1 of 2/i)[0]).toBeInTheDocument();
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     });
   });
@@ -90,9 +90,9 @@ describe('RegistrationWizard Component', () => {
     );
 
     await waitFor(() => {
-      // MUI Stepper should be present - check for step labels
-      expect(screen.getByText('Step 1')).toBeInTheDocument();
-      expect(screen.getByText('Step 2')).toBeInTheDocument();
+      // MUI Stepper should be present - check for translated step labels
+      expect(screen.getAllByText(/step 1 of 2/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
   });
 
@@ -120,7 +120,7 @@ describe('RegistrationWizard Component', () => {
     await user.click(continueButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
   });
 
@@ -149,7 +149,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
   });
 
@@ -182,7 +182,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
 
     // Now on Step 2, click Back
@@ -225,7 +225,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
 
     // On Step 2, accept terms and submit
@@ -278,7 +278,7 @@ describe('RegistrationWizard Component', () => {
 
     // Wait for Step 2 to render
     await waitFor(() => {
-      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/step 2 of 2/i)[0]).toBeInTheDocument();
     });
 
     // On Step 2, accept terms and submit
