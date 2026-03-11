@@ -1,6 +1,6 @@
 # Epic 10: Additional Stories
 
-**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02).
+**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02). Story 10.26 added (2026-03-11).
 
 **Epic Goal**: Consolidate scattered admin configuration and tooling into coherent, discoverable interfaces. These are standalone improvements that don't belong to any prior epic's domain.
 
@@ -1936,6 +1936,62 @@ services/partner-coordination-service/.../repository/PartnerMeetingRepository.ja
 - [ ] TDD: `PartnerMeetingAutoCreateListenerTest` (mocked client, idempotency, failure isolation); `YearEndReminderSchedulerTest` (task creation, dedup); `PartnerInviteEmailServiceTest` (template load, fallback)
 - [ ] No OpenAPI changes needed (no new public endpoints)
 - [ ] Checkstyle passes; Type-check passes
+
+---
+
+### Story 10.26: SES Email Forwarding & Role-Based Distribution Lists
+
+**Story file**: `_bmad-output/implementation-artifacts/10-26-ses-email-forwarding-distribution-lists.md`
+**Status**: draft
+**Prerequisites**: Story 10.17 (InboundEmailStack, SES receipt rules)
+
+**User Story:**
+As an **organizer**, I want `ok@batbern.ch`, `info@batbern.ch`, `events@batbern.ch`, `partner@batbern.ch`, `support@batbern.ch`, and `batbern{N}@batbern.ch` to automatically forward emails to the right recipients based on user roles and event registrations, so that we have zero-cost distribution lists without needing any mailbox provider.
+
+**Scope:**
+- Extend existing `InboundEmailStack` with SES receipt rules for forwarding addresses
+- New Lambda forwarder (Node.js 20.x) triggered by S3 events under `forwarding/` prefix
+- **Address resolution** via existing APIs (no new service endpoints):
+  - `ok@batbern.ch` → all ORGANIZER users (organizers only can send)
+  - `info@batbern.ch` / `events@batbern.ch` → all ORGANIZER users (anyone can send)
+  - `partner@batbern.ch` → all PARTNER users (organizers only can send)
+  - `support@batbern.ch` → configurable contacts from Admin Settings (anyone can send)
+  - `batbern{N}@batbern.ch` → confirmed registrants of event N (organizers only can send)
+- **Sender authorization**: organizer-only for restricted addresses; 5-min TTL cache
+- **Admin Settings tab** on `/admin` page for configuring `support@` forwarding recipients
+- New `app_settings` table (key-value) in Event Management Service
+- Rate-limited sending (70ms delay, matching newsletter pattern) — 300 recipients ≈ 21s, fits 60s Lambda timeout
+- Route 53 MX record for `batbern.ch` → SES inbound SMTP
+- CloudWatch metrics (`EmailsForwarded`, `EmailsRejected`, `EmailsUnresolved`) + alarm
+
+**Key files (estimated):**
+```
+infrastructure/lib/stacks/inbound-email-stack.ts            — extended with forwarding receipt rules + Lambda
+infrastructure/lambda/email-forwarder/index.ts              — new Lambda forwarder
+infrastructure/lambda/email-forwarder/package.json          — new
+infrastructure/test/unit/inbound-email-stack.test.ts        — extended
+services/event-management-service/.../domain/AppSetting.java                    — new entity
+services/event-management-service/.../repository/AppSettingRepository.java      — new repository
+services/event-management-service/.../service/AdminSettingsService.java         — new service
+services/event-management-service/.../controller/AdminSettingsController.java   — new controller
+services/event-management-service/.../resources/db/migration/V*.sql             — new migration
+web-frontend/src/components/organizer/admin/AdminSettingsTab.tsx                — new component
+web-frontend/src/services/adminSettingsService.ts                               — new service
+```
+
+**Definition of Done (Story 10.26):**
+- [ ] Sending email to `ok@batbern.ch` from organizer → delivered to all organizers
+- [ ] Sending email to `info@batbern.ch` or `events@batbern.ch` from anyone → delivered to all organizers
+- [ ] Sending email to `partner@batbern.ch` from organizer → delivered to all partners
+- [ ] Sending email to `support@batbern.ch` from anyone → delivered to configured support contacts
+- [ ] Sending email to `batbern58@batbern.ch` from organizer → delivered to all confirmed registrants of event 58
+- [ ] Non-organizer sending to `ok@` / `partner@` / `batbern{N}@` → silently rejected
+- [ ] Admin Settings tab visible on `/admin` page; support contacts configurable and persisted
+- [ ] From rewritten to `{name} via BATbern <noreply@batbern.ch>`; Reply-To = original sender
+- [ ] CloudWatch metrics published; alarm fires on >20 rejections/hour
+- [ ] MX record for `batbern.ch` resolves to SES inbound SMTP
+- [ ] CDK unit tests + Lambda Jest tests + Admin Settings integration tests all pass
+- [ ] Cost: ~$0.20/month (SES free tier + Lambda free tier)
 
 ---
 
