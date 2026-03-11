@@ -33,7 +33,7 @@ export class FrontendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FrontendStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
 
     // S3 bucket for frontend static files

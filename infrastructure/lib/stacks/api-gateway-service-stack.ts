@@ -48,12 +48,12 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
-    const isProd = envName === 'production';
+    const isProd = props.config.isProduction ?? (envName === 'production');
 
     // Common environment variables (non-sensitive)
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
-      APP_ENVIRONMENT: envName,
+      APP_ENVIRONMENT: isProd ? 'production' : envName,
       AWS_REGION: props.config.region,
       LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && {

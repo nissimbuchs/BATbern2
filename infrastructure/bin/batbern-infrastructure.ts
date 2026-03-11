@@ -81,7 +81,7 @@ const stackPrefix = `BATbern-${config.envName}`;
 // - API certificates in eu-central-1 (for API Gateway)
 let dnsStack: DnsStack | undefined;
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
-  const domainName = config.envName === 'production' ? 'batbern.ch' : `${config.envName}.batbern.ch`;
+  const domainName = config.domain?.zoneName ?? `${config.envName}.batbern.ch`;
   dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
     config,
     domainName,
@@ -421,7 +421,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     domainName: config.domain?.apiDomain,
     hostedZoneId: config.domain?.hostedZoneId,
-    certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
+    // Prefer pre-created cert ARN from config (avoids CloudFormation cross-stack export
+    // conflicts when domain changes). Falls back to Network stack cert for fresh deploys.
+    certificateArn: config.domain?.apiCertificateArn || networkStack.apiCertificate?.certificateArn,
     apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
     env,
     description: `BATbern API Gateway - ${config.envName}`,

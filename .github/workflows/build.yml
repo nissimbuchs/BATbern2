@@ -325,28 +325,32 @@ jobs:
             docker push ${ECR_REPO}:latest-production
           fi
 
-      - name: Configure AWS credentials (Production)
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR (Production)
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Push to production ECR
-        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          VERSION="${GITHUB_SHA:0:7}"
-          STAGING_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
-          PROD_REGISTRY="422940799530.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
-          PROD_REPO="${PROD_REGISTRY}/batbern/production/${{ matrix.service }}"
-
-          echo "Promoting ${STAGING_REPO}:${VERSION} → ${PROD_REPO}:${VERSION}"
-          docker tag ${STAGING_REPO}:${VERSION} ${PROD_REPO}:${VERSION}
-          docker push ${PROD_REPO}:${VERSION}
+      # DEPRECATED: Production account (422940799530) is decommissioned.
+      # Production traffic is served by the staging account (188701360969).
+      # Images pushed to staging ECR are used directly for production deployments.
+      # The steps below are kept commented out for reference.
+      #
+      # - name: Configure AWS credentials (Production)
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
+      #     aws-region: ${{ env.AWS_REGION }}
+      #
+      # - name: Login to Amazon ECR (Production)
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #
+      # - name: Push to production ECR
+      #   if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   run: |
+      #     VERSION="${GITHUB_SHA:0:7}"
+      #     STAGING_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+      #     PROD_REGISTRY="422940799530.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+      #     PROD_REPO="${PROD_REGISTRY}/batbern/production/${{ matrix.service }}"
+      #     echo "Promoting ${STAGING_REPO}:${VERSION} → ${PROD_REPO}:${VERSION}"
+      #     docker tag ${STAGING_REPO}:${VERSION} ${PROD_REPO}:${VERSION}
+      #     docker push ${PROD_REPO}:${VERSION}
 
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Frontend Application

@@ -65,7 +65,7 @@ export class CICDStack extends cdk.Stack {
             rulePriority: 2,
           },
         ],
-        removalPolicy: config.envName === 'production'
+        removalPolicy: (config.isProduction ?? (config.envName === 'production'))
           ? cdk.RemovalPolicy.RETAIN
           : cdk.RemovalPolicy.DESTROY,
       });

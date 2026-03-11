@@ -3,7 +3,9 @@ import * as cdk from 'aws-cdk-lib';
 import { EnvironmentConfig } from './environment-config';
 
 /**
- * Production environment configuration
+ * @deprecated Production account (422940799530) is decommissioned as of March 2026.
+ * Production traffic is now served by the staging account (188701360969) via staging-config.ts
+ * with `isProduction: true`. This file is kept for reference only and is not used in deployments.
  */
 export const prodConfig: EnvironmentConfig = {
   envName: 'production',

@@ -32,7 +32,7 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
 
     // Create SNS topic for alarm notifications (production and staging)
     if (isProd || props.config.envName === 'staging') {

@@ -35,8 +35,8 @@ on:
     - cron: '0 3 * * 1'
 
 env:
-  API_BASE_URL: https://api.staging.batbern.ch
-  FRONTEND_URL: https://staging.batbern.ch
+  API_BASE_URL: https://api.batbern.ch
+  FRONTEND_URL: https://www.batbern.ch
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
@@ -73,7 +73,7 @@ jobs:
           # Pass the OpenAPI spec as a file path inside the Docker workspace mount.
           # The action mounts GITHUB_WORKSPACE at /zap/wrk/, so the spec is accessible
           # at /zap/wrk/<spec-path>. ZAP reads the spec, then actively scans the server
-          # URL declared inside the spec (https://api.staging.batbern.ch).
+          # URL declared inside the spec (https://api.batbern.ch).
           target: /zap/wrk/${{ matrix.spec }}
           format: openapi
           rules_file_name: '.zap/rules.tsv'

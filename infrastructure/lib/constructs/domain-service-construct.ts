@@ -61,7 +61,7 @@ export function createDomainService(
 ): { service: ecs.FargateService } {
 
     const envName = props.config.envName;
-    const isProd = envName === 'production';
+    const isProd = props.config.isProduction ?? (envName === 'production');
     const { serviceName, componentTag, additionalEnvironment } = props.serviceConfig;
 
     // Common environment variables (non-sensitive)

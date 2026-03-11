@@ -16,6 +16,7 @@ export interface CognitoUserSyncTriggersProps {
   databaseSecret: secretsmanager.ISecret;
   databaseEndpoint: string;
   envName: string;
+  isProduction?: boolean;
 }
 
 /**
@@ -40,7 +41,7 @@ export class CognitoUserSyncTriggers extends Construct {
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
 
-    const isProd = props.envName === 'production';
+    const isProd = props.isProduction ?? (props.envName === 'production');
 
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time

@@ -1,4 +1,7 @@
-name: Deploy to Production
+# DEPRECATED: Production account (422940799530) is decommissioned as of March 2026.
+# Production traffic is now served by the staging account (188701360969) via deploy-staging.yml.
+# This workflow is kept for reference. Use deploy-staging.yml for all production deployments.
+name: Deploy to Production (DEPRECATED)
 
 on:
   workflow_dispatch:

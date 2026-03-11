@@ -6,7 +6,7 @@ This document consolidates security implementation, performance standards, acces
 
 ### Frontend Security
 - **CSP Headers**: Strict content security policy with CloudFront CDN support
-  - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domains (`cdn.batbern.ch`, `cdn.staging.batbern.ch`)
+  - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domain (`cdn.batbern.ch`)
   - Configured in `SecurityHeadersFilter.java` for API Gateway
 - **XSS Prevention**: Input sanitization and output encoding
 - **Secure Storage**: Encrypted localStorage for sensitive data
@@ -30,8 +30,7 @@ This document consolidates security implementation, performance standards, acces
 | Service Tier | Availability Target | Monthly Downtime | Response Time (P95) | Error Rate |
 |--------------|--------------------|--------------------|-------------------|------------|
 | **Production** | 99.9% | < 43 minutes | < 200ms | < 0.1% |
-| **Staging** | 99.0% | < 7.2 hours | < 500ms | < 1.0% |
-| **Development** | 95.0% | < 36 hours | < 1000ms | < 5.0% |
+| **Development (local)** | N/A | N/A | N/A | N/A |
 
 **Business SLA Commitments:**
 - **Event Registration**: 99.5% availability during registration periods

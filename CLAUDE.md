@@ -455,16 +455,17 @@ git commit -m "test(integration): add company API contract tests"
 
 ## Deployment
 
+> **Consolidated Environment:** BATbern uses a single AWS account (188701360969, profile `batbern-staging`) for production.
+> CloudFormation stacks retain `BATbern-staging-*` names; the `isProduction: true` flag in CDK config controls production behavior.
+> Production URLs: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
+
 ```bash
-# Development (auto-deploy on push to develop)
+# Production deploy (auto-deploy on push to develop)
 git push origin develop
 
-# Staging (manual via GitHub Actions)
-# Actions → Deploy to Staging → Run workflow
-
-# Production (manual — 3 steps)
+# Tagged releases (manual — 3 steps)
 # 1. Merge develop → main via a PR on GitHub
-#    This builds images and pushes them to production ECR with the merge commit SHA as the tag.
+#    This builds images and pushes them to ECR with the merge commit SHA as the tag.
 # 2. Note the 7-char SHA of the merge commit (visible in the commit list or build run)
 # 3. Actions → Deploy to Production → Run workflow → version: <sha7>
 #    e.g. version: a3f7c91
@@ -473,21 +474,22 @@ git push origin develop
 
 # CDK deployment (infrastructure changes only)
 cd infrastructure
-npm run deploy:staging
-npm run deploy:prod
+npm run deploy:staging   # Deploys to production (staging account serves production traffic)
 ```
 
 ## AWS Monitoring & Logs
 
 ### AWS Profiles
 
-The project uses multiple AWS accounts:
-- `batbern-dev` - Development environment (Account: 954163570305)
-- `batbern-staging` - Staging environment (Account: 188701360969)
-- `batbern-prod` - Production environment (Account: 422940799530)
+The project uses a consolidated single-account setup:
+- `batbern-staging` - Production environment (Account: 188701360969) — serves www.batbern.ch
+- `batbern-mgmt` - Management account (Account: 510187933511) — domain registration only
+
+> **Note:** The staging account serves production traffic. CloudFormation stacks retain `BATbern-staging-*` names.
+> The former production account (422940799530) is decommissioned.
 
 ```bash
-# Switch AWS profile for staging
+# Switch AWS profile for production
 export AWS_PROFILE=batbern-staging
 
 # Or prefix commands
@@ -498,7 +500,7 @@ AWS_PROFILE=batbern-staging aws <command>
 
 All services log to CloudWatch with the naming pattern: `/aws/ecs/BATbern-{env}/{service-name}`
 
-**Staging Environment Log Groups:**
+**Production Log Groups** (CloudWatch paths retain `staging` prefix):
 ```bash
 /aws/ecs/BATbern-staging/api-gateway
 /aws/ecs/BATbern-staging/event-management

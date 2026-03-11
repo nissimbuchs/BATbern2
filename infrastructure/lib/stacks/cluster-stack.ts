@@ -28,7 +28,7 @@ export class ClusterStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
-    const isProd = envName === 'production';
+    const isProd = props.config.isProduction ?? (envName === 'production');
 
     // Create ECS cluster with Service Connect enabled
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {

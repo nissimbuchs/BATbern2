@@ -40,7 +40,7 @@ This guide covers the comprehensive end-to-end testing framework for the BATbern
 
 ## Multi-Role Authentication Setup
 
-Starting with Epic 8, tests run as three distinct roles against a shared staging Cognito pool. Each role has its own stored token.
+Starting with Epic 8, tests run as three distinct roles against the production Cognito pool. Each role has its own stored token.
 
 ### Token Storage
 
@@ -107,7 +107,7 @@ The pipeline exports `AUTH_TOKEN`, `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`,
 **Usage**:
 ```bash
 # Test staging
-./scripts/ci/cors-validation-tests.sh https://api.staging.batbern.ch https://staging.batbern.ch
+./scripts/ci/cors-validation-tests.sh https://api.batbern.ch https://www.batbern.ch
 
 # Test production
 ./scripts/ci/cors-validation-tests.sh https://api.batbern.ch https://www.batbern.ch
@@ -141,10 +141,10 @@ The pipeline exports `AUTH_TOKEN`, `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`,
 **Usage**:
 ```bash
 # Without auth token (limited tests)
-./scripts/ci/header-propagation-tests.sh https://api.staging.batbern.ch
+./scripts/ci/header-propagation-tests.sh https://api.batbern.ch
 
 # With auth token (full tests)
-./scripts/ci/header-propagation-tests.sh https://api.staging.batbern.ch eyJhbGc...
+./scripts/ci/header-propagation-tests.sh https://api.batbern.ch eyJhbGc...
 ```
 
 **What it tests**:
@@ -164,7 +164,7 @@ The pipeline exports `AUTH_TOKEN`, `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`,
 
 **Usage**:
 ```bash
-./scripts/ci/smoke-tests.sh https://staging.batbern.ch https://api.staging.batbern.ch
+./scripts/ci/smoke-tests.sh https://www.batbern.ch https://api.batbern.ch
 ```
 
 **What it tests**:
@@ -396,7 +396,7 @@ npm test -- test/e2e/api-gateway-cors-validation.test.ts
 
 ### Deployment Workflow
 
-Both `deploy-staging.yml` and `deploy-production.yml` execute tests in this order:
+The `deploy-staging.yml` workflow (which deploys to production) executes tests in this order:
 
 ```yaml
 1. Deploy infrastructure
@@ -509,14 +509,14 @@ DEBUG=pw:api npx playwright test
 
 ```bash
 # Test CORS locally
-./scripts/ci/cors-validation-tests.sh https://api.staging.batbern.ch https://staging.batbern.ch
+./scripts/ci/cors-validation-tests.sh https://api.batbern.ch https://www.batbern.ch
 
 # Test with Bruno
 ./scripts/ci/run-bruno-tests.sh staging
 
 # Test with Playwright
 cd web-frontend
-E2E_BASE_URL=https://staging.batbern.ch npx playwright test
+E2E_BASE_URL=https://www.batbern.ch npx playwright test
 ```
 
 ### 2. Keep Auth Tokens Fresh

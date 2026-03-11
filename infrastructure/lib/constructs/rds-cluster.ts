@@ -13,6 +13,7 @@ export interface RdsClusterProps {
   allocatedStorage: number;
   deletionProtection: boolean;
   envName: string;
+  isProduction?: boolean;
   instanceIdentifier?: string;
 }
 
@@ -33,7 +34,7 @@ export class RdsCluster extends Construct {
   constructor(scope: Construct, id: string, props: RdsClusterProps) {
     super(scope, id);
 
-    const isProd = props.envName === 'production';
+    const isProd = props.isProduction ?? (props.envName === 'production');
 
     // Create DB Subnet Group in isolated subnets
     this.subnetGroup = new rds.SubnetGroup(this, 'SubnetGroup', {

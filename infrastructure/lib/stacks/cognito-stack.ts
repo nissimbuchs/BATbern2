@@ -36,7 +36,7 @@ export class CognitoStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
 
     // Create stable log group for Pre-Signup Lambda Trigger
@@ -106,18 +106,17 @@ export class CognitoStack extends cdk.Stack {
     });
 
     // Determine frontend domain based on environment
-    const frontendDomain =
-      envName === 'production'
-        ? 'https://www.batbern.ch'
-        : envName === 'staging'
-        ? 'https://staging.batbern.ch'
-        : 'http://localhost:3000';
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const frontendDomain = isProdTraffic
+      ? `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`
+      : envName === 'staging'
+      ? 'https://staging.batbern.ch'
+      : 'http://localhost:3000';
 
     // FROM address must use a domain verified in SES for the environment
-    const fromEmail =
-      envName === 'production'
-        ? 'BATbern <noreply@batbern.ch>'
-        : 'BATbern <noreply@berner-architekten-treffen.ch>';
+    const fromEmail = isProdTraffic
+      ? 'BATbern <noreply@batbern.ch>'
+      : 'BATbern <noreply@berner-architekten-treffen.ch>';
 
     const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
       functionName: `batbern-${envName}-custom-email-sender-trigger`,
@@ -219,14 +218,14 @@ export class CognitoStack extends cdk.Stack {
     });
 
     // Determine callback URLs based on environment
-    const callbackUrls = envName === 'production'
-      ? ['https://www.batbern.ch/auth/callback']
+    const callbackUrls = isProdTraffic
+      ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/auth/callback`]
       : envName === 'staging'
       ? ['https://staging.batbern.ch/auth/callback']
       : ['http://localhost:3000/auth/callback'];
 
-    const logoutUrls = envName === 'production'
-      ? ['https://www.batbern.ch/logout']
+    const logoutUrls = isProdTraffic
+      ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/logout`]
       : envName === 'staging'
       ? ['https://staging.batbern.ch/logout']
       : ['http://localhost:3000/logout'];
@@ -292,6 +291,7 @@ export class CognitoStack extends cdk.Stack {
         databaseSecret: props.databaseSecret,
         databaseEndpoint: props.databaseEndpoint,
         envName: props.config.envName,
+        isProduction: props.config.isProduction,
       });
       // Note: Lambda security group and database ingress rule are created in NetworkStack
       // Tables are created by CompanyManagementStack Flyway migrations at runtime

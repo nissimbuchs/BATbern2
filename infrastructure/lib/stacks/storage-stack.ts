@@ -31,7 +31,7 @@ export class StorageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
 
     // Logs bucket for CloudFront and application logs
     this.logsBucket = new s3.Bucket(this, 'LogsBucket', {

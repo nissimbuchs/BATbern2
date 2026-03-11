@@ -9,19 +9,22 @@ BATbern uses a **local-first development model** optimized for cost and develope
 | Environment | Infrastructure | Services & Frontend | Rationale |
 |-------------|---------------|---------------------|-----------|
 | **Development** | Local PostgreSQL (Docker) | Native execution (Java + Vite) | Zero AWS costs + 60-70% less resources |
-| **Staging** | AWS (Full stack) | AWS ECS Fargate | Production-like testing |
 | **Production** | AWS (Full stack) | AWS ECS Fargate | Swiss hosting, GDPR compliance |
 
 **Development Environment Details:**
-- Uses staging Cognito for authentication (shared with AWS)
-- Uses staging S3 for file storage (shared with AWS)
+- Uses production Cognito for authentication (shared with AWS)
+- Uses production S3 for file storage (shared with AWS)
 - **Saves $600-720/year** by eliminating dedicated development AWS environment
 
-### AWS Account Architecture
+### AWS Account Architecture (Consolidated)
 
-- **Development**: No dedicated AWS account (uses local PostgreSQL + staging Cognito/S3)
-- **Staging**: 188701360969 (Full stack, delegated subdomain `staging.batbern.ch`)
-- **Production**: 422940799530 (Full stack, root domain `batbern.ch`)
+> **Environment Consolidation (March 2026):** Staging account promoted to serve production traffic.
+> CloudFormation stacks retain `BATbern-staging-*` names. The `isProduction: true` flag in CDK config controls production behavior.
+
+- **Development**: No AWS account (local PostgreSQL + production Cognito/S3)
+- **Production**: 188701360969 (Full stack, root domain `batbern.ch`, CDK `envName: 'staging'`)
+- **Management**: 510187933511 (Domain registration only, profile `batbern-mgmt`)
+- **Former Production**: 422940799530 (Decommissioned)
 
 ### CDK Stack Deployment Order
 
@@ -52,7 +55,7 @@ The infrastructure is deployed as **14+ interconnected CDK stacks** with explici
 
 **Key Insights:**
 - Stacks have explicit dependencies (e.g., Database depends on Network + Secrets)
-- Staging/Production deploy all stacks; Development skips stacks 11-14
+- Production deploys all stacks; Development skips stacks 11-14
 - CI/CD supports **selective deployment** (only changed service stacks)
 - Average full deployment: ~15 minutes; selective deployment: ~5 minutes
 
@@ -66,7 +69,7 @@ graph TB
         DEV1 -.->|Connects to| DEV2
     end
 
-    subgraph "Staging/Production Environment"
+    subgraph "Production Environment (Account: 188701360969)"
         DNS[DNS Stack<br/>Route53 + Certificates<br/>us-east-1]
         NET[Network Stack<br/>VPC + Security Groups<br/>eu-central-1]
         DB[Database Stack<br/>RDS PostgreSQL]
@@ -116,37 +119,26 @@ graph TB
 
 The BATbern platform infrastructure has been optimized for cost-efficiency while maintaining reliability for our use case of 1000 monthly active users with 3 peak event periods per year.
 
-**Total Cost Reduction: 83%**
-- Production: $675/month → $110/month (-84%)
-- Staging: $381/month → $70/month (-82%)
-- Development: $72/month → $55/month (-24%)
-- **Annual Savings: $10,716/year**
+**Total Cost Reduction: 83% (from original design)**
+- Production (single account): ~$150/month
+- Development: $0/month (fully local)
+- **Additional savings from environment consolidation:** ~$1,800/year (eliminated separate production account)
 
 ### Infrastructure Configuration by Environment
 
-#### Production Environment
+#### Production Environment (Account: 188701360969, CDK envName: `staging`)
 
 | Component | Configuration | Cost Optimization |
 |-----------|--------------|-------------------|
 | **VPC** | 2 AZ (eu-central-1a) | Reduced from 3 AZs |
 | **NAT Gateway** | 1 NAT Gateway | Reduced from 3 |
 | **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.medium Multi-AZ |
-| **Storage** | 50GB gp3 | Reduced from 100GB |
+| **Storage** | 20GB gp3 | Cost-optimized |
 | **ElastiCache Redis** | Removed | Now using in-memory caching (Caffeine) |
 | **Log Retention** | 30 days | Reduced from 180 days |
-| **Backup Retention** | 30 days | Optimized for compliance |
-
-#### Staging Environment
-
-| Component | Configuration | Cost Optimization |
-|-----------|--------------|-------------------|
-| **VPC** | 2 AZ (eu-central-1a) | Reduced from 2 AZs |
-| **NAT Gateway** | 1 NAT Gateway | Reduced from 2 |
-| **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.small Multi-AZ |
-| **Storage** | 20GB gp3 | Reduced from 50GB |
-| **ElastiCache Redis** | Removed | In-memory caching |
-| **Log Retention** | 30 days | Reduced from 90 days |
-| **Backup Retention** | 7 days | Testing-appropriate |
+| **Backup Retention** | 14 days | GDPR compliance |
+| **Deletion Protection** | Enabled | Production safety |
+| **Domains** | www.batbern.ch, api.batbern.ch, cdn.batbern.ch | Production traffic |
 
 #### Development Environment (Local PostgreSQL)
 
@@ -168,9 +160,9 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 - **All Microservices** - Native Java processes (ports 8080-8085)
 - **Frontend** - Vite dev server (port 3000)
 
-**What Uses AWS (Staging Environment):**
-- **AWS Cognito (Staging)** - Authentication (shared with staging)
-- **S3 Buckets (Staging)** - File storage (shared with staging)
+**What Uses AWS (Production Account):**
+- **AWS Cognito** - Authentication (shared with production)
+- **S3 Buckets** - File storage (shared with production)
 
 **Local Development Commands:**
 ```bash
@@ -180,7 +172,7 @@ docker compose -f docker-compose-dev.yml up -d
 # 2. Start all services natively (recommended)
 make dev-native-up
 
-# 3. First time only: Sync users from staging Cognito
+# 3. First time only: Sync users from production Cognito
 ./scripts/auth/get-token.sh staging your-email@example.com your-password
 ./scripts/dev/sync-users-from-cognito.sh
 
@@ -201,7 +193,7 @@ make dev-native-up
 - ✅ 60-70% less resource usage than Docker Compose
 - ✅ Full debugging capabilities (breakpoints, profiling)
 - ✅ Local database with production-parity (PostgreSQL 15)
-- ✅ Uses staging Cognito for realistic authentication testing
+- ✅ Uses production Cognito for realistic authentication testing
 - ✅ Completely isolated developer environments
 
 **Developer Workflow:**
@@ -220,7 +212,7 @@ make dev-native-up                              # All services
 make dev-native-down
 ```
 
-#### Staging/Production Architecture
+#### Production Architecture
 
 **Full AWS Deployment using ECS Fargate:**
 
@@ -296,11 +288,7 @@ graph TB
 | Company Management | 256 | 512 MB | 2 | 8 | ~$12 |
 | **Total ECS Costs** | | | | | **~$111/month** |
 
-**Staging Service Sizing (Cost-Optimized):**
-
-| Service | CPU | Memory | Desired Count | Max Count | Monthly Cost |
-|---------|-----|--------|---------------|-----------|--------------|
-| All Services | 256-512 | 512-1024 MB | 1 each | 2-4 each | ~$65/month |
+> **Note:** Production uses the same sizing as the table above. There is no separate staging environment.
 
 ### Architecture Decisions & Trade-offs
 
@@ -415,7 +403,7 @@ aws rds modify-db-instance \
 
 4. **Cost Monitoring**
    - AWS Cost Explorer daily checks
-   - Budget alerts at $150/month (production)
+   - Budget alerts at $200/month (production)
    - Unexpected cost spike detection
 
 **CloudWatch Alarms:**
@@ -448,7 +436,7 @@ Alarms:
 **Recovery Point Objective (RPO):** 1 hour (automated backups every hour)
 
 **Backup Strategy:**
-- **RDS Automated Backups:** Daily, 30-day retention (production), 7-day (staging)
+- **RDS Automated Backups:** Daily, 14-day retention (production)
 - **Database Snapshots:** Weekly manual snapshots, 90-day retention
 - **S3 Content:** Versioning enabled, lifecycle policies to Glacier after 2 years
 - **Infrastructure as Code:** All infrastructure defined in CDK (infrastructure/)
@@ -462,8 +450,7 @@ Alarms:
 
 For detailed deployment instructions, rollback procedures, and performance considerations, refer to:
 - `infrastructure/COST_OPTIMIZATION.md` - Complete deployment guide
-- `infrastructure/lib/config/prod-config.ts` - Production infrastructure configuration
-- `infrastructure/lib/config/staging-config.ts` - Staging infrastructure configuration
+- `infrastructure/lib/config/staging-config.ts` - Production infrastructure configuration (`isProduction: true`)
 - `infrastructure/lib/config/dev-config.ts` - Development infrastructure configuration
 
 ## API Gateway Architecture Pattern
@@ -493,7 +480,7 @@ graph LR
     style D5 fill:#527FFF,stroke:#0066CC,color:#fff
 ```
 
-**Tier 1: AWS HTTP API Gateway (`api.batbern.ch` / `api.staging.batbern.ch`)**
+**Tier 1: AWS HTTP API Gateway (`api.batbern.ch`)**
 
 **Responsibilities:**
 - ✅ TLS termination with AWS Certificate Manager
@@ -522,7 +509,7 @@ const httpApi = new HttpApi(this, 'BATbernHttpApi', {
     certificate: apiCertificate,
   },
   corsPreflight: {
-    allowOrigins: ['https://www.batbern.ch', 'https://staging.batbern.ch'],
+    allowOrigins: ['https://www.batbern.ch'],
     allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST,
                    CorsHttpMethod.PUT, CorsHttpMethod.DELETE],
     allowHeaders: ['Authorization', 'Content-Type', 'X-Correlation-ID'],
@@ -895,8 +882,8 @@ jobs:
 
 **Environment Variables:**
 ```bash
-# Staging Frontend Build
-VITE_API_URL=https://api.staging.batbern.ch
+# Production Frontend Build (deployed via staging workflow)
+VITE_API_URL=https://api.batbern.ch
 VITE_AWS_REGION=eu-central-1
 VITE_COGNITO_USER_POOL_ID=${STAGING_COGNITO_USER_POOL_ID}
 VITE_COGNITO_CLIENT_ID=${STAGING_COGNITO_CLIENT_ID}
@@ -1012,18 +999,11 @@ graph TB
         BUILD_DOCKER[Docker Build<br/>ARM64 Images]
     end
 
-    subgraph "AWS - Staging (188701360969)"
-        ECR_STG[Amazon ECR<br/>Container Registry]
-        CDK_STG[CDK Deploy<br/>Staging Stacks]
-        ECS_STG[ECS Fargate<br/>Staging Cluster]
-        TEST_STG[Automated Tests<br/>Smoke + E2E]
-    end
-
-    subgraph "AWS - Production (422940799530)"
-        ECR_PROD[Amazon ECR<br/>Container Registry]
-        CDK_PROD[CDK Deploy<br/>Production Stacks]
-        ECS_PROD[ECS Fargate<br/>Production Cluster]
-        TEST_PROD[Automated Tests<br/>Full Suite]
+    subgraph "AWS - Production (188701360969)"
+        ECR[Amazon ECR<br/>Container Registry]
+        CDK[CDK Deploy<br/>Production Stacks]
+        ECS[ECS Fargate<br/>Production Cluster]
+        TESTS[Automated Tests<br/>Smoke + E2E + Bruno]
     end
 
     GH_CODE -->|Push to develop| GH_ACTIONS
@@ -1031,16 +1011,11 @@ graph TB
     BUILD_SK --> BUILD_SVC
     BUILD_SK --> BUILD_FE
     BUILD_SVC --> BUILD_DOCKER
-    BUILD_DOCKER --> ECR_STG
+    BUILD_DOCKER --> ECR
 
-    ECR_STG --> CDK_STG
-    CDK_STG --> ECS_STG
-    ECS_STG --> TEST_STG
-
-    TEST_STG -->|Manual Approval| CDK_PROD
-    ECR_STG -.Copy Images.-> ECR_PROD
-    CDK_PROD --> ECS_PROD
-    ECS_PROD --> TEST_PROD
+    ECR --> CDK
+    CDK --> ECS
+    ECS --> TESTS
 
     style GH_CODE fill:#24292E,stroke:#fff,color:#fff
     style GH_ACTIONS fill:#2088FF,stroke:#0969DA,color:#fff
@@ -1048,14 +1023,10 @@ graph TB
     style BUILD_SVC fill:#4CAF50,stroke:#2E7D32,color:#fff
     style BUILD_FE fill:#00BCD4,stroke:#006064,color:#fff
     style BUILD_DOCKER fill:#2196F3,stroke:#1565C0,color:#fff
-    style ECR_STG fill:#FF9900,stroke:#FF6600,color:#000
-    style CDK_STG fill:#527FFF,stroke:#0066CC,color:#fff
-    style ECS_STG fill:#FF9900,stroke:#FF6600,color:#000
-    style TEST_STG fill:#9C27B0,stroke:#6A1B9A,color:#fff
-    style ECR_PROD fill:#FF9900,stroke:#FF6600,color:#000
-    style CDK_PROD fill:#527FFF,stroke:#0066CC,color:#fff
-    style ECS_PROD fill:#FF9900,stroke:#FF6600,color:#000
-    style TEST_PROD fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style ECR fill:#FF9900,stroke:#FF6600,color:#000
+    style CDK fill:#527FFF,stroke:#0066CC,color:#fff
+    style ECS fill:#FF9900,stroke:#FF6600,color:#000
+    style TESTS fill:#9C27B0,stroke:#6A1B9A,color:#fff
 ```
 
 **OIDC Authentication (No Long-Lived Credentials):**
@@ -1082,7 +1053,7 @@ graph TB
         IGW[Internet Gateway]
     end
 
-    subgraph "AWS VPC - 10.2.0.0/16 (Production) / 10.1.0.0/16 (Staging)"
+    subgraph "AWS VPC - 10.1.0.0/16 (Production)"
         subgraph "Public Subnet - eu-central-1a"
             NAT1[NAT Gateway<br/>Elastic IP]
             ALB_PUB[Public ALB<br/>API Gateway Service<br/>Security Group: ALB-Public]
@@ -1203,65 +1174,52 @@ Outbound:
 
 ```mermaid
 graph TB
-    subgraph "Production AWS Account (422940799530)"
-        PROD_ZONE[Route53 Hosted Zone<br/>batbern.ch<br/>Z003987919RPX23XXEU48]
-        PROD_CERT_US[ACM Certificate us-east-1<br/>*.batbern.ch<br/>CloudFront]
-        PROD_CERT_EU[ACM Certificate eu-central-1<br/>api.batbern.ch<br/>API Gateway]
+    subgraph "Production AWS Account (188701360969)"
+        ZONE[Route53 Hosted Zone<br/>batbern.ch<br/>Z08825557YYLWVHISLPY]
+        CERT_US[ACM Certificate us-east-1<br/>*.batbern.ch<br/>CloudFront]
+        CERT_EU[ACM Certificate eu-central-1<br/>api.batbern.ch<br/>API Gateway]
 
-        PROD_ZONE -.Owns.-> PROD_CERT_US
-        PROD_ZONE -.Owns.-> PROD_CERT_EU
+        ZONE -.Owns.-> CERT_US
+        ZONE -.Owns.-> CERT_EU
 
-        PROD_DNS_WWW[A Record: www.batbern.ch<br/>→ CloudFront]
-        PROD_DNS_API[A Record: api.batbern.ch<br/>→ HTTP API Gateway]
-        PROD_DNS_CDN[A Record: cdn.batbern.ch<br/>→ CloudFront CDN]
+        DNS_WWW[A Record: www.batbern.ch<br/>→ CloudFront]
+        DNS_API[A Record: api.batbern.ch<br/>→ HTTP API Gateway]
+        DNS_CDN[A Record: cdn.batbern.ch<br/>→ CloudFront CDN]
     end
 
-    subgraph "Staging AWS Account (188701360969)"
-        STG_ZONE[Route53 Hosted Zone<br/>staging.batbern.ch<br/>Z00395322M4O1QCL0M7UA<br/>Delegated Subdomain]
-        STG_CERT_US[ACM Certificate us-east-1<br/>*.staging.batbern.ch<br/>CloudFront]
-        STG_CERT_EU[ACM Certificate eu-central-1<br/>api.staging.batbern.ch<br/>API Gateway]
-
-        STG_ZONE -.Owns.-> STG_CERT_US
-        STG_ZONE -.Owns.-> STG_CERT_EU
-
-        STG_DNS_WWW[A Record: staging.batbern.ch<br/>→ CloudFront]
-        STG_DNS_API[A Record: api.staging.batbern.ch<br/>→ HTTP API Gateway]
-        STG_DNS_CDN[A Record: cdn.staging.batbern.ch<br/>→ CloudFront CDN]
+    subgraph "Management Account (510187933511)"
+        REG[Domain Registration<br/>batbern.ch<br/>NS → Production Zone]
     end
 
-    PROD_ZONE -->|NS Records| STG_ZONE
+    REG -->|NS Delegation| ZONE
 
-    style PROD_ZONE fill:#FF9900,stroke:#FF6600,color:#000
-    style PROD_CERT_US fill:#8C4FFF,stroke:#6B3ACC,color:#fff
-    style PROD_CERT_EU fill:#8C4FFF,stroke:#6B3ACC,color:#fff
-    style PROD_DNS_WWW fill:#00BCD4,stroke:#006064,color:#fff
-    style PROD_DNS_API fill:#FF4F8B,stroke:#C7365F,color:#fff
-    style PROD_DNS_CDN fill:#FF9900,stroke:#FF6600,color:#000
-    style STG_ZONE fill:#FF9900,stroke:#FF6600,color:#000
-    style STG_CERT_US fill:#8C4FFF,stroke:#6B3ACC,color:#fff
-    style STG_CERT_EU fill:#8C4FFF,stroke:#6B3ACC,color:#fff
-    style STG_DNS_WWW fill:#00BCD4,stroke:#006064,color:#fff
-    style STG_DNS_API fill:#FF4F8B,stroke:#C7365F,color:#fff
-    style STG_DNS_CDN fill:#FF9900,stroke:#FF6600,color:#000
+    style ZONE fill:#FF9900,stroke:#FF6600,color:#000
+    style CERT_US fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style CERT_EU fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style DNS_WWW fill:#00BCD4,stroke:#006064,color:#fff
+    style DNS_API fill:#FF4F8B,stroke:#C7365F,color:#fff
+    style DNS_CDN fill:#FF9900,stroke:#FF6600,color:#000
+    style REG fill:#E8F5E9,stroke:#4CAF50,color:#000
 ```
 
 **Key DNS Features:**
 - **Automatic DNS Validation**: ACM certificates validated via Route53 CNAME records
 - **Health Checks**: Route53 monitors ALB health and fails over if needed
 - **TTL Strategy**: 60 seconds for API/frontend, 300 seconds for CDN
-- **Subdomain Delegation**: Staging account fully manages staging.batbern.ch subdomain
-- **Certificate Management**: Separate certificates per account, auto-renewal via ACM
+- **Consolidated Architecture**: Single account owns the `batbern.ch` hosted zone (migrated March 2026)
+- **Certificate Management**: Certificates auto-renewed via ACM
+- **Domain Registration**: Managed in AWS Organizations management account (510187933511)
 
 ### Cost Optimization: Network Architecture
 
 **Single NAT Gateway Strategy:**
 
-| Component | Production | Staging | Development |
-|-----------|-----------|---------|-------------|
-| **NAT Gateways** | 1 | 1 | 1 |
-| **Monthly Cost** | $32 | $32 | $32 |
-| **Data Transfer** | ~$15/month | ~$5/month | ~$2/month |
-| **Total Network Cost** | $47/month | $37/month | $34/month |
+| Component | Production | Development |
+|-----------|-----------|-------------|
+| **NAT Gateways** | 1 | N/A (local) |
+| **Monthly Cost** | $32 | $0 |
+| **Data Transfer** | ~$15/month | $0 |
+| **Total Network Cost** | $47/month | $0 |
 
 **Trade-offs:**
 - ✅ 66% cost reduction (vs 3 NAT Gateways in 3 AZs)
@@ -1280,31 +1238,27 @@ graph TB
 
 | Environment | AWS Account | Frontend URL | Backend URL | Purpose |
 |-------------|-------------|--------------|-------------|---------|
-| Development | 954163570305 | http://localhost:3000 | http://localhost:8080 | Local development |
-| Staging | 188701360969 | https://staging.batbern.ch | https://api.staging.batbern.ch | Pre-production testing |
-| Production | 422940799530 | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
+| Development | N/A (local) | http://localhost:3000 | http://localhost:8080 | Local development |
+| Production | 188701360969 | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
 
 ## Infrastructure as Code with DNS and Certificate Management
 
 ### DNS Strategy with AWS Route53
 
-**DNS Architecture with Subdomain Delegation:**
+**DNS Architecture (Consolidated Single-Account):**
 
-The BATbern platform uses subdomain delegation for environment isolation:
+The BATbern platform uses a single AWS account for production infrastructure:
 
-- **Production (422940799530):** Owns `batbern.ch` hosted zone
+- **Production (188701360969):** Owns `batbern.ch` hosted zone
   - Frontend: `www.batbern.ch`
   - API: `api.batbern.ch`
+  - CDN: `cdn.batbern.ch`
 
-- **Staging (188701360969):** Owns `staging.batbern.ch` delegated subdomain zone
-  - Frontend: `staging.batbern.ch`
-  - API: `api.staging.batbern.ch` (subdomain within delegated zone)
-
-- **Development (954163570305):** Local Docker services (no custom domains)
+- **Development:** Local services (no custom domains)
   - Frontend: `http://localhost:3000`
   - API: `http://localhost:8080`
 
-Each environment creates its own certificates with automatic DNS validation in Route53.
+Certificates are auto-validated via Route53 DNS records in the production account.
 
 // Route53 Hosted Zone for batbern.ch
 const hostedZone = new HostedZone(this, 'BATbernHostedZone', {
@@ -1319,34 +1273,16 @@ new ARecord(this, 'ProductionARecord', {
   target: RecordTarget.fromAlias(new CloudFrontTarget(productionCloudFront))
 });
 
-new ARecord(this, 'StagingARecord', {
-  zone: hostedZone,
-  recordName: 'staging',
-  target: RecordTarget.fromAlias(new CloudFrontTarget(stagingCloudFront))
-});
-
-new ARecord(this, 'DevARecord', {
-  zone: hostedZone,
-  recordName: 'dev',
-  target: RecordTarget.fromAlias(new CloudFrontTarget(devCloudFront))
-});
-
 new ARecord(this, 'ProductionApiARecord', {
   zone: hostedZone,
   recordName: 'api',
-  target: RecordTarget.fromAlias(new ApiGatewayDomain(productionApiGateway))
+  target: RecordTarget.fromAlias(new ApiGatewayDomain(apiGateway))
 });
 
-new ARecord(this, 'StagingApiARecord', {
+new ARecord(this, 'CdnARecord', {
   zone: hostedZone,
-  recordName: 'api.staging',
-  target: RecordTarget.fromAlias(new ApiGatewayDomain(stagingApiGateway))
-});
-
-new ARecord(this, 'DevApiARecord', {
-  zone: hostedZone,
-  recordName: 'api-dev',
-  target: RecordTarget.fromAlias(new ApiGatewayDomain(devApiGateway))
+  recordName: 'cdn',
+  target: RecordTarget.fromAlias(new CloudFrontTarget(cdnDistribution))
 });
 ```
 
@@ -2010,10 +1946,9 @@ export class ContentStorageStack extends cdk.Stack {
 
   private getCorsOrigins(environment: string): string[] {
     switch (environment) {
+      case 'staging': // Staging account serves production traffic
       case 'production':
         return ['https://www.batbern.ch', 'https://api.batbern.ch'];
-      case 'staging':
-        return ['https://staging.batbern.ch', 'https://api.staging.batbern.ch'];
       case 'development':
         return ['https://dev.batbern.ch', 'https://api-dev.batbern.ch', 'http://localhost:3000'];
       default:
@@ -2033,10 +1968,9 @@ export class ContentStorageStack extends cdk.Stack {
 
   private getDomainNames(environment: string): string[] {
     switch (environment) {
+      case 'staging': // Staging account serves production traffic
       case 'production':
         return ['cdn.batbern.ch'];
-      case 'staging':
-        return ['cdn.staging.batbern.ch'];
       case 'development':
         // Development uses CloudFront auto-generated domain (no custom domain)
         return [];
@@ -2576,7 +2510,7 @@ The CloudFront distribution provides global content delivery with edge caching a
 - **Lambda@Edge**: Image optimization and resizing at edge locations
 - **HTTPS Only**: Automatic HTTP to HTTPS redirection
 - **Compression**: Automatic gzip/brotli compression
-- **Custom Domain**: `cdn.batbern.ch` (production), `cdn.staging.batbern.ch` (staging) with SSL certificates
+- **Custom Domain**: `cdn.batbern.ch` with SSL certificate
 - **Logging**: Comprehensive access logs for analytics
 
 **Performance Optimizations:**

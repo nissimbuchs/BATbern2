@@ -39,19 +39,31 @@ export class DnsStack extends cdk.Stack {
       zoneName: props.domainName,
     });
 
-    // Create ACM certificate for frontend (CloudFront)
-    // Automatic DNS validation works because hosted zone is in same account!
-    this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
-      domainName: props.config.domain!.frontendDomain,
-      validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
-    }) as certificatemanager.ICertificate;
+    // ACM certificates for CloudFront (must be in us-east-1)
+    // When pre-created cert ARNs are provided in config, use them to avoid
+    // CDK cross-region export writer conflicts during domain changes.
+    // Otherwise, create new certificates with automatic DNS validation.
+    if (props.config.domain!.frontendCertificateArn) {
+      this.certificate = certificatemanager.Certificate.fromCertificateArn(
+        this, 'Certificate', props.config.domain!.frontendCertificateArn,
+      );
+    } else {
+      this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
+        domainName: props.config.domain!.frontendDomain,
+        validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
+      });
+    }
 
-    // Create ACM certificate for CDN domain (CloudFront for static assets)
-    // Must be in us-east-1 for CloudFront
-    this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
-      domainName: props.config.domain!.cdnDomain,
-      validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
-    }) as certificatemanager.ICertificate;
+    if (props.config.domain!.cdnCertificateArn) {
+      this.cdnCertificate = certificatemanager.Certificate.fromCertificateArn(
+        this, 'CdnCertificate', props.config.domain!.cdnCertificateArn,
+      );
+    } else {
+      this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
+        domainName: props.config.domain!.cdnDomain,
+        validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
+      });
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'HostedZoneId', {

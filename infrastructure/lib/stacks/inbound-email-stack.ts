@@ -44,10 +44,10 @@ export class InboundEmailStack extends cdk.Stack {
     // Environment-specific reply-to address for environment isolation.
     // Each environment's SES account only receives replies addressed to its own subdomain,
     // preventing staging replies from landing in the production service or vice versa.
-    const replyDomain =
-      envName === 'production'
-        ? 'batbern.ch'
-        : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const replyDomain = isProdTraffic
+      ? 'batbern.ch'
+      : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
     const replyAddress = `replies@${replyDomain}`;
 
     // Expose for use in bin file (EMAIL_REPLY_TO env var on EMS)

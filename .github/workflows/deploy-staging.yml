@@ -863,8 +863,8 @@ jobs:
             chmod +x scripts/ci/smoke-tests.sh
             echo "Running smoke tests against deployed staging environment..."
             ./scripts/ci/smoke-tests.sh \
-              https://staging.batbern.ch \
-              https://api.staging.batbern.ch
+              https://www.batbern.ch \
+              https://api.batbern.ch
             echo "✅ Smoke tests passed"
           else
             echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"
@@ -876,8 +876,8 @@ jobs:
             chmod +x scripts/ci/cors-validation-tests.sh
             echo "Running CORS validation tests..."
             ./scripts/ci/cors-validation-tests.sh \
-              https://api.staging.batbern.ch \
-              https://staging.batbern.ch
+              https://api.batbern.ch \
+              https://www.batbern.ch
             echo "✅ CORS validation tests passed"
           else
             echo "::error::CORS validation tests script not found"
@@ -889,7 +889,7 @@ jobs:
           if [ -f "scripts/ci/header-propagation-tests.sh" ]; then
             chmod +x scripts/ci/header-propagation-tests.sh
             echo "Running header propagation tests..."
-            if ./scripts/ci/header-propagation-tests.sh https://api.staging.batbern.ch; then
+            if ./scripts/ci/header-propagation-tests.sh https://api.batbern.ch; then
               echo "✅ Header propagation tests passed"
             else
               echo "::warning::Header propagation tests failed - see details above"
@@ -1037,8 +1037,8 @@ jobs:
         working-directory: ./web-frontend
         env:
           TEST_ENV: staging
-          E2E_BASE_URL: https://staging.batbern.ch
-          E2E_API_URL: https://api.staging.batbern.ch
+          E2E_BASE_URL: https://www.batbern.ch
+          E2E_API_URL: https://api.batbern.ch
           E2E_AWS_REGION: ${{ env.AWS_REGION }}
           AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
           ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}

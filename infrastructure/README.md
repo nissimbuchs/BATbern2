@@ -14,13 +14,16 @@ This infrastructure implements a complete AWS-based multi-tier architecture with
 
 ## Environments
 
-Three environments are supported with different configurations and dedicated AWS accounts:
+BATbern uses a **consolidated single-account** setup for production, with local-first development:
 
 | Environment | AWS Account ID | Purpose |
 |-------------|---------------|---------|
-| **Development** | 954163570305 | Cost-optimized for development and testing |
-| **Staging** | 188701360969 | Production-like for integration testing |
-| **Production** | 422940799530 | High-availability with Multi-AZ deployments |
+| **Development** | N/A (local) | Local PostgreSQL + native services; uses production Cognito/S3 |
+| **Production** | 188701360969 | Single account serving www.batbern.ch (CDK `envName: 'staging'`, `isProduction: true`) |
+
+> **Note:** CloudFormation stacks retain `BATbern-staging-*` names to preserve existing infrastructure.
+> The `isProduction` flag in `staging-config.ts` controls production behavior (domains, email, scaling, RDS hardening).
+> The former production account (422940799530) is decommissioned.
 
 ## Prerequisites
 
@@ -227,28 +230,20 @@ Observability and alerting:
 
 ## Environment Configurations
 
-### Development
-- **VPC CIDR**: 10.0.0.0/16
-- **RDS**: t3.micro, Single-AZ
-- **NAT Gateways**: 1 (cost optimization)
-- **Backup Retention**: 7 days
-- **Log Retention**: 30 days
+### Development (Local)
+- **PostgreSQL**: Docker container (localhost:5432)
+- **Cognito/S3**: Shared with production (AWS)
+- **Services**: Native Java processes + Vite dev server
 
-### Staging
+### Production (Account: 188701360969, CDK envName: `staging`)
 - **VPC CIDR**: 10.1.0.0/16
-- **RDS**: t3.small, Multi-AZ
-- **NAT Gateways**: 2 (high availability)
+- **RDS**: db.t4g.micro (ARM), Single-AZ
+- **NAT Gateways**: 1 (cost optimization)
 - **Backup Retention**: 14 days
-- **Log Retention**: 90 days
-
-### Production
-- **VPC CIDR**: 10.2.0.0/16
-- **RDS**: t3.medium, Multi-AZ
-- **NAT Gateways**: 3 (across 3 AZs)
-- **Backup Retention**: 30 days
-- **Log Retention**: 180 days
+- **Log Retention**: 30 days
 - **Deletion Protection**: Enabled
-- **Secret Rotation**: Enabled (30 days)
+- **Domains**: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
+- **Config flag**: `isProduction: true` in `staging-config.ts`
 
 ## Testing
 
