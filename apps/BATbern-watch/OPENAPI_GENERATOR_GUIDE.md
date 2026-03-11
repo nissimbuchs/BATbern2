@@ -81,7 +81,7 @@ class PublicEventService {
 
     init() {
         self.client = Client(
-            serverURL: URL(string: "https://api.staging.batbern.ch")!,
+            serverURL: URL(string: "https://api.batbern.ch")!,
             transport: URLSessionTransport()
         )
     }
