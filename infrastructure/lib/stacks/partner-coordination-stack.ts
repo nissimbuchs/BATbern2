@@ -88,6 +88,22 @@ export class PartnerCoordinationStack extends cdk.Stack {
       });
     }
 
+    // Grant SES permissions for sending emails (partner meeting invites with iCal attachments)
+    // Uses SendRawEmail via shared-kernel EmailService.sendHtmlEmailWithAttachments()
+    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'berner-architekten-treffen.ch';
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: [
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@${sesFromDomain}`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+        ],
+      }),
+    );
+
     // Grant EventBridge permissions for domain events
     // Service publishes: PartnerCreatedEvent, PartnerUpdatedEvent, TopicVoteSubmittedEvent, TopicSuggestionSubmittedEvent
     if (props.eventBus) {
