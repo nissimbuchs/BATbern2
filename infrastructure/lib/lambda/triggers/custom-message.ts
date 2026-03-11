@@ -261,7 +261,7 @@ export const handler: CustomMessageTriggerHandler = async (event) => {
     // Send email directly via SES
     const sesClient = new SESClient({ region: process.env.AWS_REGION || 'eu-central-1' });
     const sendEmailCommand = new SendEmailCommand({
-      Source: 'BATbern <noreply@berner-architekten-treffen.ch>',
+      Source: process.env.FROM_EMAIL || 'BATbern <noreply@batbern.ch>',
       Destination: {
         ToAddresses: [email],
       },
