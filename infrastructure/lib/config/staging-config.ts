@@ -51,7 +51,7 @@ export const stagingConfig: EnvironmentConfig = {
     cdnDomain: 'cdn.batbern.ch',
     zoneName: 'batbern.ch',
     hostedZoneId: 'Z08825557YYLWVHISLPY', // New batbern.ch zone in staging account
-    frontendCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/ef93631c-8241-4a2c-b84b-74615d5394cd', // Pre-created for www.batbern.ch
+    frontendCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/434c81ef-77f3-4e2f-9b76-915ed1123ba8', // Pre-created for www.batbern.ch + batbern.ch
     cdnCertificateArn: 'arn:aws:acm:us-east-1:188701360969:certificate/4aece095-d46f-4266-ac3a-c25736d59c08', // Pre-created for cdn.batbern.ch
     apiCertificateArn: 'arn:aws:acm:eu-central-1:188701360969:certificate/d0f9a634-86a9-4bf4-b8b8-d2e9503e3cec', // Pre-created for api.batbern.ch
   },

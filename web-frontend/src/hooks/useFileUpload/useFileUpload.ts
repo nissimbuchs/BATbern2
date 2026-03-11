@@ -58,11 +58,7 @@ function getCloudFrontUrl(): string {
     return 'http://localhost:8450/batbern-development-company-logos';
   }
 
-  if (hostname === 'staging.batbern.ch' || hostname.includes('staging')) {
-    return 'https://cdn.staging.batbern.ch';
-  }
-
-  // Production
+  // Production (batbern.ch or www.batbern.ch)
   return 'https://cdn.batbern.ch';
 }
 

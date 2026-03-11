@@ -92,8 +92,7 @@ export async function loadRuntimeConfig(): Promise<AppConfig> {
  *
  * This enables the same build to work in different environments:
  * - localhost → local API Gateway (supports custom ports via VITE_API_PORT)
- * - staging.batbern.ch → staging API Gateway
- * - batbern.ch → production API Gateway
+ * - batbern.ch / www.batbern.ch → production API Gateway
  */
 function getApiUrl(): string {
   const hostname = window.location.hostname;
@@ -103,10 +102,6 @@ function getApiUrl(): string {
     // Set via VITE_API_PORT when starting frontend (e.g., VITE_API_PORT=8500 npm run dev)
     const apiPort = import.meta.env.VITE_API_PORT || '8080';
     return `http://localhost:${apiPort}`;
-  }
-
-  if (hostname === 'staging.batbern.ch') {
-    return 'https://api.staging.batbern.ch';
   }
 
   // Production (batbern.ch or www.batbern.ch)

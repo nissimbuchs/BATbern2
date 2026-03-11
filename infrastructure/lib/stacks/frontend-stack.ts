@@ -13,6 +13,7 @@ export interface FrontendStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   logsBucket: s3.IBucket;
   domainName?: string;
+  apexDomainName?: string;
   hostedZoneId?: string;
   certificateArn?: string;
 }
@@ -313,7 +314,9 @@ function handler(event) {
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       comment: `BATbern Frontend Distribution - ${envName}`,
       certificate,
-      domainNames: props.domainName ? [props.domainName] : undefined,
+      domainNames: props.domainName
+        ? [props.domainName, ...(props.apexDomainName ? [props.apexDomainName] : [])]
+        : undefined,
     });
 
     // Create Route 53 record if hosted zone provided
@@ -337,6 +340,17 @@ function handler(event) {
           new route53targets.CloudFrontTarget(this.distribution)
         ),
       });
+
+      // Create A record for apex domain (e.g., batbern.ch → same CloudFront distribution)
+      if (props.apexDomainName) {
+        new route53.ARecord(this, 'ApexAliasRecord', {
+          zone: hostedZone,
+          recordName: props.apexDomainName,
+          target: route53.RecordTarget.fromAlias(
+            new route53targets.CloudFrontTarget(this.distribution)
+          ),
+        });
+      }
     }
 
     // Deploy frontend files to S3

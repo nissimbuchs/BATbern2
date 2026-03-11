@@ -40,8 +40,9 @@ const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
       redirectSignOut = 'https://www.batbern.ch/';
       break;
     case 'staging':
-      redirectSignIn = 'https://staging.batbern.ch/auth/callback';
-      redirectSignOut = 'https://staging.batbern.ch/';
+      // Staging account now serves production traffic
+      redirectSignIn = 'https://www.batbern.ch/auth/callback';
+      redirectSignOut = 'https://www.batbern.ch/';
       break;
   }
 

@@ -138,7 +138,7 @@ Two URL patterns replaced:
 
 Verified: brute-force scan of ALL text/varchar columns in ALL tables confirmed zero remaining old URLs.
 
-### Phase 9: CDK Deploy & Verification — IN PROGRESS 🚧 (2026-03-11)
+### Phase 9: CDK Deploy & Verification — COMPLETE ✅ (2026-03-11)
 
 #### Certificate Workaround (Cross-Region Export Writer)
 
@@ -158,75 +158,125 @@ CDK's `CrossRegionExportWriter` blocked updating ACM certificate exports because
 | Layer | Stack | Status | Notes |
 |-------|-------|--------|-------|
 | **L0** | CICD | ✅ deployed | |
-| **L0** | DNS | ✅ deployed | Old staging.batbern.ch certs remain (in use by CloudFront) — cleaned up after L2/L5 |
+| **L0** | DNS | ✅ deployed | Pre-created cert ARNs, no CrossRegionExportWriter |
 | **L0** | Monitoring | ✅ deployed | |
 | **L0** | SES | ✅ deployed | |
-| **L1** | Network | 🔄 blocked | API cert export consumed by ApiGateway — needs ApiGateway deployed first (see below) |
+| **L1** | Network | ✅ deployed | New API cert for `api.batbern.ch` (config ARN preferred) |
 | **L1** | Secrets | ✅ deployed | |
 | **L1** | EventBus | ✅ deployed | |
-| **L2** | Database | ⏳ pending | RDS deletion protection, 14-day backup (no blockers) |
-| **L2** | Storage | 🔄 blocked | `cdn.batbern.ch` CNAME on old prod CloudFront — destroying old prod account |
-| **L2** | Bastion | ⏳ pending | |
-| **L3** | Cognito | ⏳ pending | Email from `noreply@batbern.ch`, callback URLs |
-| **L3** | Cluster | ⏳ pending | |
-| **L4** | EventManagement | ⏳ pending | |
-| **L4** | SpeakerCoordination | ⏳ pending | |
-| **L4** | PartnerCoordination | ⏳ pending | |
-| **L4** | AttendeeExperience | ⏳ pending | |
-| **L4** | CompanyManagement | ⏳ pending | |
-| **L4** | ApiGatewayService | ⏳ pending | `APP_ENVIRONMENT=production` |
-| **L5** | ApiGateway | 🔄 blocked | `api.batbern.ch` domain zombie in APIGW — destroying old prod account should clear |
-| **L5** | Frontend | 🔄 blocked | `www.batbern.ch` CNAME on old prod CloudFront — destroying old prod account |
+| **L2** | Database | ✅ deployed | RDS deletion protection on, 14-day backup retention |
+| **L2** | Storage | ✅ deployed | `cdn.batbern.ch` CNAME active on CloudFront |
+| **L2** | Bastion | ⏳ pending | Not included in deploy (optional) |
+| **L3** | Cognito | ✅ deployed | `noreply@batbern.ch`, `www.batbern.ch` callbacks |
+| **L3** | Cluster | ✅ deployed | |
+| **L4** | InboundEmail | ✅ deployed | `replies@batbern.ch`, SES identity created |
+| **L4** | EventManagement | ✅ deployed | Recreated fresh (Cloud Map conflict resolved) |
+| **L4** | SpeakerCoordination | ✅ deployed | Recreated fresh |
+| **L4** | PartnerCoordination | ✅ deployed | Recreated fresh |
+| **L4** | AttendeeExperience | ✅ deployed | Recreated fresh |
+| **L4** | CompanyManagement | ✅ deployed | Recreated fresh |
+| **L4** | ApiGatewayService | ✅ deployed | `APP_ENVIRONMENT=production` |
+| **L5** | ApiGateway | ✅ deployed | `api.batbern.ch` custom domain active |
+| **L5** | Frontend | ✅ deployed | `www.batbern.ch` CNAME active |
 
-#### Blockers & Fixes
+#### Blockers & Fixes (All Resolved)
 
-**1. CloudFront CNAME conflicts (Storage, Frontend)**
-The old production account (422940799530) has CloudFront distributions with `cdn.batbern.ch`, `www.batbern.ch`, and `batbern.ch` as alternate domain names. CloudFront CNAMEs are globally unique — can't add them to the staging account distributions until removed from prod.
-**Fix**: Destroying all stacks in old production account (`cdk destroy --all --context environment=production`).
+**1. CloudFront CNAME conflicts (Storage, Frontend)** ✅
+The old production account (422940799530) had CloudFront distributions with `cdn.batbern.ch`, `www.batbern.ch`, and `batbern.ch` as alternate domain names. CloudFront CNAMEs are globally unique.
+**Fix**: Destroyed all stacks in old production account. CNAMEs released.
 
-**2. API Gateway domain zombie (ApiGateway)**
-The `api.batbern.ch` custom domain got stuck in a phantom state in API Gateway after rapid create/delete cycles during failed deploys. The API returns NotFoundException on get/delete but BadRequestException("already exists") on create.
-**Fix**: Destroying old prod account should release the domain. If not, wait ~40 min for eventual consistency or contact AWS support.
+**2. API Gateway domain zombie (ApiGateway)** ✅
+The `api.batbern.ch` custom domain was stuck in a phantom state after rapid create/delete cycles.
+**Fix**: Destroying old prod account released the domain. Staging ApiGateway deployed successfully with `api.batbern.ch`.
 
-**3. Network → ApiGateway cross-stack export (Network)**
-The Network stack exports the API certificate ARN to the ApiGateway stack. Changing the cert (new domain) changes the export value, which CloudFormation blocks while ApiGateway still imports it.
-**Fix applied**: Changed `batbern-infrastructure.ts` to prefer `config.domain.apiCertificateArn` over `networkStack.apiCertificate.certificateArn`. Pre-created API cert ARN added to config. Deploy order: ApiGateway first (--exclusively), then Network.
+**3. Network → ApiGateway cross-stack export (Network)** ✅
+The Network stack exports the API certificate ARN to the ApiGateway stack. Changing the cert changes the export value, which CloudFormation blocks.
+**Fix applied**: Changed `batbern-infrastructure.ts` to prefer `config.domain.apiCertificateArn` over `networkStack.apiCertificate.certificateArn`. This is now the permanent design — static cert ARNs eliminate cross-stack export issues.
 
-**4. CDK global CLI version mismatch**
-Global `cdk` was v2.1030.0, library needs ≥2.1107.0. Can't sudo to update global install.
+**4. CDK global CLI version mismatch** ✅
+Global `cdk` was v2.1030.0, library needs ≥2.1107.0.
 **Fix**: Using `npx cdk` for all deploys (uses local v2.1109.0).
 
-**5. Missing VPC log group (Network)**
+**5. Missing VPC log group (Network)** ✅
 Log group `/aws/lambda/BATbern-staging/vpc-restrict-default-sg` was externally deleted.
 **Fix**: Manually recreated via `aws logs create-log-group`.
 
+**6. Cloud Map service discovery conflict (EventManagement)** ✅
+ECS service replacement failed because the existing Cloud Map registration blocked the new service from registering with the same namespace.
+**Fix**: Destroyed all L4 service stacks and recreated them from scratch. These stacks are stateless (ECS services, task defs, ALBs) — no data loss.
+
+**7. CDK Bootstrap version too old** ✅
+InboundEmail deploy required bootstrap toolkit v30+; installed was v29.
+**Fix**: Ran `cdk bootstrap` to update CDKToolkit stack.
+
+**8. Orphaned SES email identity (InboundEmail)** ✅
+`batbern.ch` SES domain identity existed outside CloudFormation, blocking InboundEmail stack from creating it.
+**Fix**: Deleted orphaned identity via `aws sesv2 delete-email-identity`. CDK will recreate it as a managed resource.
+
 #### Verification Checklist
 
-- [ ] `https://www.batbern.ch` loads frontend
-- [ ] `https://api.batbern.ch/api/v1/health` returns OK
-- [ ] `https://cdn.batbern.ch` serves assets
-- [ ] Password reset email comes from `noreply@batbern.ch`
-- [ ] Inbound email to `replies@batbern.ch` arrives in SQS
+- [x] `https://www.batbern.ch` loads frontend — "BATbern Platform" ✅
+- [x] `https://batbern.ch` loads frontend — apex domain serves same CloudFront ✅
+- [x] `https://api.batbern.ch/api/v1/config` returns `environment: "production"` ✅
+- [x] `https://cdn.batbern.ch` serves assets (CloudFront active) ✅
+- [x] All 6 ECS services running (desired == running) ✅
+- [ ] Password reset email comes from `noreply@batbern.ch` — manual test pending
+- [ ] Inbound email to `replies@batbern.ch` arrives in SQS — manual test pending
+
+**Apex domain migration:** Old coming-soon CloudFront distribution (E2UQ8ZRVTQ4RLV) in prod account disabled and CNAME removed. New ACM cert (`434c81ef-...`) covers both `www.batbern.ch` and `batbern.ch`. Frontend CloudFront distribution now serves both domains.
+
+**Note:** Frontend stack has a benign `DELETE_FAILED` on `WebsiteBucketAutoDeleteObjectsCustomResource` — old Lambda lacks `s3:GetBucketTagging` permission. Does not affect functionality; will self-resolve on next deploy.
+
+#### Post-Deploy Fixes (2026-03-11)
+
+**9a. Service Connect inter-service communication failure** ✅
+All 6 ECS services were created simultaneously. Envoy sidecar proxies cached DNS failure state because upstream services weren't registered when the proxy started.
+**Fix**: `force-new-deployment` on all 6 ECS services. Fresh Envoy proxies resolved Service Connect DNS correctly.
+
+**9b. Frontend staging URL references** ✅
+Service workers cached old `api.staging.batbern.ch` URLs from the previous frontend bundle.
+**Fix**: Removed all `staging.batbern.ch` references from 3 frontend source files:
+- `web-frontend/src/config/runtime-config.ts` — removed staging hostname check from `getApiUrl()`
+- `web-frontend/src/config/amplify.ts` — changed staging Cognito redirects to `www.batbern.ch`
+- `web-frontend/src/hooks/useFileUpload/useFileUpload.ts` — removed staging CDN URL, always returns `cdn.batbern.ch`
+
+**9c. CORS for apex domain (`https://batbern.ch`)** ✅
+Requests from `https://batbern.ch` were blocked — only `https://www.batbern.ch` was in CORS allowed origins.
+**Fix**: Added `https://batbern.ch` to both layers:
+- `infrastructure/lib/stacks/api-gateway-stack.ts` — AWS HTTP API Gateway CORS config
+- `api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java` — Spring Boot CORS config
+Deployed via `cdk deploy BATbern-staging-ApiGateway BATbern-staging-ApiGatewayService`.
+
+**9d. Staging subdomain HTTPS redirect** ✅
+S3 redirect buckets only serve HTTP. Users visiting `https://staging.batbern.ch` got a TLS error.
+**Fix**: Created CloudFront distribution (`EKKYTX97ETYNC`, `d37mzqchrwvyov.cloudfront.net`) in front of the S3 redirect bucket, using existing ACM cert `ff0df8d1-...` (staging.batbern.ch). Updated DNS CNAME from S3 website endpoint to CloudFront. Both `http://` and `https://staging.batbern.ch` now 301 redirect to `https://www.batbern.ch`.
+
+**Note:** `api.staging.batbern.ch` and `www.staging.batbern.ch` still use direct S3 redirect (HTTP only). No ACM certs exist for these subdomains. Low priority — unlikely to receive user traffic.
 
 ### Phase 10: Certificate & Resource Cleanup — PENDING ⏳
 
 After all stacks deployed and CloudFront distributions updated:
 
 1. **Delete old ACM certificates** (no longer referenced by CloudFront):
-   - `arn:aws:acm:us-east-1:188701360969:certificate/ff0df8d1-94c4-4cef-bbda-39af8c816dba` (staging.batbern.ch)
+   - ~~`arn:aws:acm:us-east-1:188701360969:certificate/ff0df8d1-94c4-4cef-bbda-39af8c816dba` (staging.batbern.ch)~~ — **now in use** by staging redirect CloudFront (EKKYTX97ETYNC)
    - `arn:aws:acm:us-east-1:188701360969:certificate/79870b01-d094-4d38-81f0-aceed0d3b041` (cdn.staging.batbern.ch)
 2. **Delete orphaned SSM parameters** in eu-central-1 (if still present):
    - `/cdk/exports/BATbern-staging-Storage/BATbernstagingDNSuseast1RefCdnCertificateE363B99BAEC53CEB`
    - `/cdk/exports/BATbern-staging-Frontend/BATbernstagingDNSuseast1RefCertificate4E7ABB08423E170F`
 3. **Delete DNS validation CNAME records** for old staging.batbern.ch certs (if any remain)
+4. **Delete old SES identities**: `staging.batbern.ch` (no longer needed)
 
-### Phase 11: Decommission Old Production Account — IN PROGRESS 🚧 (2026-03-11)
+### Phase 11: Decommission Old Production Account — COMPLETE ✅ (2026-03-11)
 
-Moved up from "after 30 days" because old prod CloudFront CNAMEs block staging deploys.
+Moved up from "after 30 days" because old prod CloudFront CNAMEs blocked staging deploys.
 
-1. 🚧 Destroying all 20 stacks in production account (422940799530) via `cdk destroy --all`
+1. ✅ Destroyed all 21 stacks in production account (422940799530) via `cdk destroy --all`
+   - 19 stacks destroyed cleanly on first pass
+   - Database stack required disabling RDS deletion protection, then destroyed on retry
+   - Remaining stacks (Network, Secrets) destroyed after Database unblocked
+   - **Skipped resources** (retained by CDK policy): S3 buckets (4), ECR repos (7), Cognito UserPool, KMS key
 2. ⏳ Optionally close production AWS account
-3. ⏳ Delete old hosted zone from production account (if not destroyed by CDK)
+3. ⏳ Delete retained S3 buckets and ECR repos manually (if closing account)
 
 ---
 
@@ -245,8 +295,11 @@ Moved up from "after 30 days" because old prod CloudFront CNAMEs block staging d
 
 ## Total Files Modified
 
-**Infrastructure code:** 22 files
+**Infrastructure code:** 23 files (+ api-gateway-stack.ts CORS update)
+**Application code:** 3 files (frontend staging URL cleanup + SecurityConfig.java CORS)
 **CI/CD workflows:** 5 files
 **Documentation:** 11 files
+**watchOS app:** 3 files (API URLs updated to batbern.ch)
 **Database:** 8 tables (1,030 rows migrated)
-**Total:** 38 files + database migration
+**AWS manual resources:** 1 CloudFront distribution (staging redirect EKKYTX97ETYNC)
+**Total:** 45 files + database migration + manual CloudFront

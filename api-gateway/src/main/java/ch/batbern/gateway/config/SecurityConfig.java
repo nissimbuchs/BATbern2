@@ -103,7 +103,8 @@ public class SecurityConfig {
             "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
             "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
             "https://staging.batbern.ch",
-            "https://www.batbern.ch"
+            "https://www.batbern.ch",
+            "https://batbern.ch"
         ));
 
         configuration.setAllowedMethods(java.util.Arrays.asList(

@@ -65,7 +65,10 @@ export class ApiGatewayStack extends cdk.Stack {
     // Determine allowed origins based on environment
     const isProdTraffic = props.config.isProduction ?? (envName === 'production');
     const allowOrigins = isProdTraffic
-      ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`]
+      ? [
+          `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`,
+          `https://${props.config.domain?.zoneName ?? 'batbern.ch'}`,
+        ]
       : envName === 'staging'
       ? ['https://staging.batbern.ch']
       : ['http://localhost:3000'];

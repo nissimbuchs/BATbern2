@@ -444,8 +444,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     config,
     logsBucket: storageStack.logsBucket,
     domainName: config.domain?.frontendDomain,
+    apexDomainName: config.domain?.zoneName, // batbern.ch → same CloudFront as www.batbern.ch
     hostedZoneId: config.domain?.hostedZoneId,
-    certificateArn: dnsStack?.certificate.certificateArn,
+    certificateArn: config.domain?.frontendCertificateArn ?? dnsStack?.certificate.certificateArn,
     env,
     description: `BATbern Frontend Application - ${config.envName}`,
     tags: config.tags,
