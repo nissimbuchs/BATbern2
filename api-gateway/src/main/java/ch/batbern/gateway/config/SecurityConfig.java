@@ -274,6 +274,13 @@ public class SecurityConfig {
                         // W2.2: Watch JWT auth — unauthenticated (exchanges pairing token for JWT; must be permit-all)
                         .requestMatchers(HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
 
+                        // Story 10.26: Internal Lambda forwarder endpoints (VPC-only, no JWT needed)
+                        // Safe: Spring Boot API Gateway is only reachable within VPC (Service Connect);
+                        // external traffic is authenticated by AWS API Gateway's Cognito authorizer.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
+
                         // All other requests require authentication (including Watch organizer endpoints,
                         // which are validated by the composite JwtDecoder below)
                         .anyRequest().authenticated()

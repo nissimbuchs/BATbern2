@@ -1,1 +1,16 @@
-{}
+{
+  "settings": {
+    "emailForwarding": {
+      "title": "E-Mail-Weiterleitung",
+      "subtitle": "E-Mail-Weiterleitungsempfänger für batbern.ch-Adressen konfigurieren.",
+      "supportContacts": "support@batbern.ch Empfänger",
+      "supportContactsHelp": "Kommagetrennte E-Mail-Adressen. Wenn leer, werden E-Mails an support@batbern.ch an alle Organisatoren weitergeleitet."
+    },
+    "save": "Speichern",
+    "saved": "Einstellungen gespeichert.",
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "tabs": {
+    "settings": "Einstellungen"
+  }
+}

@@ -1,1 +1,16 @@
-{}
+{
+  "settings": {
+    "emailForwarding": {
+      "title": "Email Forwarding",
+      "subtitle": "Configure email forwarding recipients for batbern.ch addresses.",
+      "supportContacts": "support@batbern.ch recipients",
+      "supportContactsHelp": "Comma-separated email addresses. If empty, emails to support@batbern.ch are forwarded to all organizers."
+    },
+    "save": "Save",
+    "saved": "Settings saved.",
+    "saveFailed": "Save failed. Please try again."
+  },
+  "tabs": {
+    "settings": "Settings"
+  }
+}

@@ -5,7 +5,13 @@ import * as ses from 'aws-cdk-lib/aws-ses';
 import * as sesActions from 'aws-cdk-lib/aws-ses-actions';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
@@ -14,14 +20,23 @@ export interface InboundEmailStackProps extends cdk.StackProps {
   emsTaskRole?: iam.IRole;
   /** Route53 hosted zone for the inbound domain (used for SES identity DNS verification). */
   hostedZone?: route53.IHostedZone;
+  /** VPC for Lambda to access services via Service Connect DNS (Story 10.26). */
+  vpc?: ec2.IVpc;
+  /** Security group allowing Lambda to communicate with ECS services (Story 10.26). */
+  lambdaSecurityGroup?: ec2.ISecurityGroup;
 }
 
 /**
- * InboundEmailStack — SES inbound email pipeline (Story 10.17)
+ * InboundEmailStack — SES inbound email pipeline (Story 10.17 + 10.26)
  *
- * Data flow:
- *   replies@{inboundDomain} → SES receipt rule → S3 bucket → S3 event notification
+ * Data flow (Story 10.17 — reply routing):
+ *   replies@{inboundDomain} → SES receipt rule → S3 bucket (emails/) → S3 event notification
  *   → SQS queue → @SqsListener in EMS → MIME parse → route (unsubscribe/cancel)
+ *
+ * Data flow (Story 10.26 — email forwarding):
+ *   ok@/info@/events@/partner@/support@/batbern{N}@batbern.ch → SES receipt rule
+ *   → S3 bucket (forwarding/) → S3 event notification → Forwarder Lambda
+ *   → resolve recipients via API → re-send via SES SendRawEmail
  *
  * Deployed to eu-central-1 (same region as all other stacks). SES inbound email receiving
  * expanded to eu-central-1 in September 2023 — no cross-region deployment required.
@@ -48,6 +63,7 @@ export class InboundEmailStack extends cdk.Stack {
     const replyDomain = isProdTraffic
       ? 'batbern.ch'
       : `${envName}.batbern.ch`; // e.g. staging.batbern.ch
+    const forwardingDomain = isProdTraffic ? 'batbern.ch' : `${envName}.batbern.ch`;
     const replyAddress = `replies@${replyDomain}`;
 
     // Expose for use in bin file (EMAIL_REPLY_TO env var on EMS)
@@ -114,10 +130,11 @@ export class InboundEmailStack extends cdk.Stack {
       }),
     );
 
-    // S3 event notification → SQS (no SNS intermediary needed)
+    // S3 event notification → SQS for reply emails (emails/ prefix)
     inboundBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3n.SqsDestination(inboundQueue),
+      { prefix: 'emails/' },
     );
 
     // SES receipt rule set for inbound email
@@ -125,6 +142,7 @@ export class InboundEmailStack extends cdk.Stack {
       receiptRuleSetName: `batbern-inbound-${envName}`,
     });
 
+    // Rule 1 (highest priority): Route replies to S3 emails/ prefix → SQS (Story 10.17)
     ruleSet.addRule('RouteReplies', {
       recipients: [replyAddress],
       actions: [
@@ -136,12 +154,142 @@ export class InboundEmailStack extends cdk.Stack {
       enabled: true,
     });
 
+    // Rule 2: Route named forwarding addresses to S3 forwarding/ prefix (Story 10.26)
+    const forwardingRule = ruleSet.addRule('RouteForwardingNamed', {
+      recipients: [
+        `ok@${forwardingDomain}`,
+        `info@${forwardingDomain}`,
+        `events@${forwardingDomain}`,
+        `partner@${forwardingDomain}`,
+        `support@${forwardingDomain}`,
+      ],
+      actions: [
+        new sesActions.S3({
+          bucket: inboundBucket,
+          objectKeyPrefix: 'forwarding/',
+        }),
+      ],
+      enabled: true,
+    });
+
+    // Rule 3 (lowest priority): Catch-all domain rule for batbern{N}@ addresses (Story 10.26)
+    const catchAllRule = ruleSet.addRule('RouteForwardingCatchAll', {
+      recipients: [forwardingDomain],
+      actions: [
+        new sesActions.S3({
+          bucket: inboundBucket,
+          objectKeyPrefix: 'forwarding/',
+        }),
+      ],
+      enabled: true,
+    });
+
+    // Ensure ordering: replies first, named forwarding second, catch-all third
+    forwardingRule.node.addDependency(ruleSet.node.findChild('RouteReplies'));
+    catchAllRule.node.addDependency(forwardingRule);
+
+    // ========================
+    // Email Forwarder Lambda (Story 10.26)
+    // ========================
+
+    const forwarderLogGroup = new logs.LogGroup(this, 'ForwarderLogGroup', {
+      logGroupName: `/aws/lambda/batbern-email-forwarder-${envName}`,
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // API Gateway internal URL for the forwarder to call existing APIs.
+    // In ECS Service Connect, services are accessible via {service-name}.batbern-{env}
+    const apiGatewayUrl = `http://api-gateway.batbern-${envName}:8080`;
+
+    const forwarderLambda = new NodejsFunction(this, 'EmailForwarder', {
+      functionName: `batbern-email-forwarder-${envName}`,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: path.join(__dirname, '../../lambda/email-forwarder/index.ts'),
+      handler: 'handler',
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(60),
+      logGroup: forwarderLogGroup,
+      // VPC access: Lambda needs to call services via Service Connect DNS
+      ...(props.vpc && props.lambdaSecurityGroup ? {
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+      } : {}),
+      environment: {
+        API_GATEWAY_URL: apiGatewayUrl,
+        SES_SENDER_ADDRESS: `noreply@${forwardingDomain}`,
+        FORWARDING_DOMAIN: forwardingDomain,
+      },
+      bundling: {
+        externalModules: ['@aws-sdk/*'],
+        minify: true,
+        sourceMap: false,
+        forceDockerBundling: false,
+      },
+    });
+
+    // Grant Lambda S3 read access for fetching raw emails
+    inboundBucket.grantRead(forwarderLambda);
+
+    // Grant Lambda SES send permissions
+    forwarderLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+      }),
+    );
+
+    // Grant Lambda CloudWatch PutMetricData permission
+    forwarderLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cloudwatch:PutMetricData'],
+        resources: ['*'],
+        conditions: {
+          StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' },
+        },
+      }),
+    );
+
+    // S3 event notification → Lambda for forwarding emails (forwarding/ prefix)
+    inboundBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(forwarderLambda),
+      { prefix: 'forwarding/' },
+    );
+
+    // CloudWatch alarm for abuse detection (AC10)
+    new cloudwatch.Alarm(this, 'EmailsRejectedAlarm', {
+      alarmName: `batbern-${envName}-emails-rejected`,
+      alarmDescription: 'Email forwarding: high rejection rate may indicate abuse',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/EmailForwarder',
+        metricName: 'EmailsRejected',
+        statistic: 'Sum',
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 20,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
     // SES domain identity for the inbound domain — required for SES to accept inbound mail.
     // Without a verified identity for replyDomain, SES rejects with 550 5.1.1 mailbox unavailable.
     // If a hosted zone is provided, CDK auto-adds the DKIM CNAME and TXT verification records.
     if (props.hostedZone) {
       new ses.EmailIdentity(this, 'InboundDomainIdentity', {
         identity: ses.Identity.publicHostedZone(props.hostedZone),
+      });
+
+      // Story 10.26: MX record pointing batbern.ch to SES inbound SMTP endpoint.
+      // Required for the world's mail servers to deliver email to @batbern.ch → SES.
+      new route53.MxRecord(this, 'InboundMxRecord', {
+        zone: props.hostedZone,
+        values: [{ priority: 10, hostName: `inbound-smtp.${props.config.region}.amazonaws.com` }],
+        ttl: cdk.Duration.hours(1),
+        comment: 'SES inbound email for forwarding distribution lists (Story 10.26)',
       });
     }
 
