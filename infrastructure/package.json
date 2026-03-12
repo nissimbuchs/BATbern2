@@ -26,7 +26,7 @@
     "deploy:staging:selective": "AWS_PROFILE=batbern-staging cdk deploy --context environment=staging --require-approval never",
     "deploy:staging:hotswap": "AWS_PROFILE=batbern-staging cdk deploy --hotswap --context environment=staging --require-approval never",
     "deploy:staging:layer0-foundation": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-CICD BATbern-staging-DNS BATbern-staging-Monitoring BATbern-staging-SES --context environment=staging --require-approval never --concurrency=4",
-    "deploy:staging:layer1-infrastructure": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Network BATbern-staging-Secrets BATbern-staging-EventBus --context environment=staging --require-approval never --concurrency=3",
+    "deploy:staging:layer1-infrastructure": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Network BATbern-staging-Secrets BATbern-staging-EventBus BATbern-staging-InboundEmail --context environment=staging --require-approval never --concurrency=4",
     "deploy:staging:layer2-data": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Database BATbern-staging-Storage --context environment=staging --require-approval never --concurrency=2",
     "deploy:staging:layer2-bastion": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Bastion --context environment=staging --require-approval never",
     "deploy:staging:layer3-application": "AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Cognito BATbern-staging-Cluster --context environment=staging --require-approval never --concurrency=2",
