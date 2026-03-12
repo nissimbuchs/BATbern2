@@ -363,11 +363,13 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
-    @DisplayName("should_return403_when_nonAdminRequestsUserList")
-    void should_return403_when_nonAdminRequestsUserList() throws Exception {
+    @DisplayName("should_return200_when_nonAdminRequestsUserList")
+    void should_return200_when_nonAdminRequestsUserList() throws Exception {
+        // Story 10.26: GET /api/v1/users is permitAll so Lambda email forwarder can call it
+        // without a JWT (routes via NAT GW). Any authenticated or unauthenticated request succeeds.
         mockMvc.perform(get("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     // AC5: GET /api/v1/users/{username} returns user by username

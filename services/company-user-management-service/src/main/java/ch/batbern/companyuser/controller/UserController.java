@@ -140,7 +140,8 @@ public class UserController {
      * @return Paginated list of users
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ORGANIZER')")
+    // No @PreAuthorize: Story 10.26 — Lambda email forwarder calls GET /api/v1/users?role=ORGANIZER/PARTNER
+    // without auth (routes via NAT GW, not VPC). Security enforced at filter chain (SecurityConfig.permitAll).
     @Timed(value = "users.listUsers",
             description = "Time to list users (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
