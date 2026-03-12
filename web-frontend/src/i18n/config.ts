@@ -101,6 +101,18 @@ import registrationFi from '../../public/locales/fi/registration.json';
 import registrationNl from '../../public/locales/nl/registration.json';
 import registrationJa from '../../public/locales/ja/registration.json';
 
+// Story 10.26: Admin namespace for admin page settings
+import adminGswBe from '../../public/locales/gsw-BE/admin.json';
+import adminDe from '../../public/locales/de/admin.json';
+import adminEn from '../../public/locales/en/admin.json';
+import adminFr from '../../public/locales/fr/admin.json';
+import adminIt from '../../public/locales/it/admin.json';
+import adminRm from '../../public/locales/rm/admin.json';
+import adminEs from '../../public/locales/es/admin.json';
+import adminFi from '../../public/locales/fi/admin.json';
+import adminNl from '../../public/locales/nl/admin.json';
+import adminJa from '../../public/locales/ja/admin.json';
+
 const resources = {
   'gsw-BE': {
     common: commonGswBe,
@@ -112,6 +124,7 @@ const resources = {
     organizer: organizerGswBe,
     about: aboutGswBe,
     registration: registrationGswBe,
+    admin: adminGswBe,
   },
   de: {
     common: commonDe,
@@ -123,6 +136,7 @@ const resources = {
     organizer: organizerDe,
     about: aboutDe,
     registration: registrationDe,
+    admin: adminDe,
   },
   en: {
     common: commonEn,
@@ -134,6 +148,7 @@ const resources = {
     organizer: organizerEn,
     about: aboutEn,
     registration: registrationEn,
+    admin: adminEn,
   },
   fr: {
     common: commonFr,
@@ -145,6 +160,7 @@ const resources = {
     organizer: organizerFr,
     about: aboutFr,
     registration: registrationFr,
+    admin: adminFr,
   },
   it: {
     common: commonIt,
@@ -156,6 +172,7 @@ const resources = {
     organizer: organizerIt,
     about: aboutIt,
     registration: registrationIt,
+    admin: adminIt,
   },
   rm: {
     common: commonRm,
@@ -167,6 +184,7 @@ const resources = {
     organizer: organizerRm,
     about: aboutRm,
     registration: registrationRm,
+    admin: adminRm,
   },
   es: {
     common: commonEs,
@@ -178,6 +196,7 @@ const resources = {
     organizer: organizerEs,
     about: aboutEs,
     registration: registrationEs,
+    admin: adminEs,
   },
   fi: {
     common: commonFi,
@@ -189,6 +208,7 @@ const resources = {
     organizer: organizerFi,
     about: aboutFi,
     registration: registrationFi,
+    admin: adminFi,
   },
   nl: {
     common: commonNl,
@@ -200,6 +220,7 @@ const resources = {
     organizer: organizerNl,
     about: aboutNl,
     registration: registrationNl,
+    admin: adminNl,
   },
   ja: {
     common: commonJa,
@@ -211,6 +232,7 @@ const resources = {
     organizer: organizerJa,
     about: aboutJa,
     registration: registrationJa,
+    admin: adminJa,
   },
 } as const;
 
@@ -231,6 +253,7 @@ i18n
       'organizer',
       'about',
       'registration',
+      'admin',
     ],
     detection: {
       order: ['localStorage', 'htmlTag'],

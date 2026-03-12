@@ -1,13 +1,15 @@
 /**
  * EventManagementAdminPage (Story 10.1 - Task 1)
  *
- * Tabbed administration page at /organizer/admin with 6 tabs:
+ * Tabbed administration page at /organizer/admin with 8 tabs:
  *   0 - Event Types
  *   1 - Import Data
  *   2 - Task Templates
  *   3 - Email Templates
  *   4 - Presentation Settings
  *   5 - Export / Import (Story 10.20)
+ *   6 - AI Prompts
+ *   7 - Settings (Story 10.26)
  *
  * Tab index is persisted in URL as ?tab=N.
  * ORGANIZER role guard enforced.
@@ -27,13 +29,14 @@ import { EmailTemplatesTab } from '@/components/organizer/Admin/EmailTemplatesTa
 import { PresentationSettingsTab } from '@/components/organizer/Admin/PresentationSettingsTab';
 import { ExportImportTab } from '@/components/organizer/Admin/ExportImportTab';
 import { AiPromptsTab } from '@/components/organizer/Admin/AiPromptsTab';
+import { AdminSettingsTab } from '@/components/organizer/Admin/AdminSettingsTab';
 
 const EventManagementAdminPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabIndex = Math.max(0, Math.min(6, Number(searchParams.get('tab') ?? 0)));
+  const tabIndex = Math.max(0, Math.min(7, Number(searchParams.get('tab') ?? 0)));
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [{ label: t('menu.administration', 'Administration') }],
@@ -66,6 +69,7 @@ const EventManagementAdminPage: React.FC = () => {
     },
     { label: t('admin.tabs.exportImport', 'Export / Import'), component: <ExportImportTab /> },
     { label: t('admin.tabs.aiPrompts', 'AI Prompts'), component: <AiPromptsTab /> },
+    { label: t('admin.tabs.settings', 'Settings'), component: <AdminSettingsTab /> },
   ];
 
   return (

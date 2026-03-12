@@ -243,6 +243,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
     hostedZone: dnsStack?.hostedZone,
+    // Story 10.26: VPC access for forwarder Lambda to call services via Service Connect DNS
+    vpc: networkStack.vpc,
+    lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
   });
   inboundEmailStack.addDependency(sesStack);
   if (dnsStack) {

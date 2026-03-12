@@ -157,6 +157,12 @@ public class SecurityConfig {
                 // Story 10.16: AI feature flag endpoint (public — no auth required)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
+                // Story 10.26: Internal Lambda forwarder endpoints (VPC-only access)
+                // Registrations list for batbern{N}@ event distribution lists
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
+                // Admin settings read for support@ contact resolution
+                .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
+
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 

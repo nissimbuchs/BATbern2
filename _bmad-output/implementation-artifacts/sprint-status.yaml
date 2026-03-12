@@ -167,7 +167,7 @@ development_status:
   10-23-event-description-section-on-public-homepage: done             # EventDescriptionSection.tsx; HomePage after HeroSection; ArchiveEventDetailPage before sessions; description.heading in 10 locales; no backend changes
   10-24-aws-cognito-user-provisioning-from-user-management: deferred   # CognitoAdminService; POST /users/{username}/provision-cognito; hasCognitoAccount in UserResponse; LinkCognitoDialog; create modal toggle; CDK IAM; welcome email templates; prereq: Story 9.1 patterns
   10-25-partner-meeting-ical-auto-creation-year-end-reminders: ready-for-dev  # EventCreatedApplicationEvent in EMS → PartnerCoordinationClient auto-create; PCS email_templates V8 + EmailTemplateSeedService; YearEndReminderScheduler (ShedLock, cron 31-Dec); prereq: Story 8.3, 10.2
-  10-26-ses-email-forwarding-distribution-lists: draft                        # SES+Lambda forwarding for ok@/info@/events@/partner@/support@/batbern{N}@batbern.ch; Admin Settings tab; sender auth; prereq: 10.17
+  10-26-ses-email-forwarding-distribution-lists: done                          # SES+Lambda forwarding for ok@/info@/events@/partner@/support@/batbern{N}@batbern.ch; Admin Settings tab; sender auth; prereq: 10.17
   epic-10-retrospective: optional
 
   # ============================================================
