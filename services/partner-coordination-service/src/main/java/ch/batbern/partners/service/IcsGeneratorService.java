@@ -3,14 +3,17 @@ package ch.batbern.partners.service;
 import ch.batbern.partners.client.dto.EventSummaryDTO;
 import ch.batbern.partners.domain.PartnerMeeting;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Service for generating RFC 5545 iCalendar (.ics) files for partner meetings.
@@ -18,8 +21,12 @@ import java.time.format.DateTimeFormatter;
  * Story 8.3: Partner Meeting Coordination (AC3)
  *
  * Produces a VCALENDAR with two VEVENTs:
- *   1. The partner lunch/meeting itself
+ *   1. The partner lunch/meeting itself (with SEQUENCE, DTSTAMP, ORGANIZER)
  *   2. The main BATbern event (as reminder context)
+ *
+ * SEQUENCE is taken from PartnerMeeting.inviteSequence and must be incremented
+ * before calling generate() so that email clients (Outlook, Gmail, macOS Mail)
+ * recognise repeated sends as updates of the same calendar entry, not new events.
  *
  * No external library required — RFC 5545 is plain CRLF-delimited text.
  */
@@ -31,35 +38,50 @@ public class IcsGeneratorService {
     private static final DateTimeFormatter UTC_FMT =
             DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
 
+    @Value("${app.email.from:noreply@batbern.ch}")
+    private String organizerEmail;
+
     /**
      * Generate an ICS calendar file with two VEVENTs.
      *
-     * @param meeting      the partner meeting record
+     * @param meeting      the partner meeting record (inviteSequence must already be incremented)
      * @param batbernEvent summary of the linked BATbern event
      * @return ICS content as UTF-8 byte array
      */
     public byte[] generate(PartnerMeeting meeting, EventSummaryDTO batbernEvent) {
-        log.debug("Generating ICS for meeting={}, event={}", meeting.getId(), meeting.getEventCode());
+        log.debug("Generating ICS for meeting={}, event={}, sequence={}",
+                meeting.getId(), meeting.getEventCode(), meeting.getInviteSequence());
+
+        // Single DTSTAMP shared across both VEVENTs (moment of generation)
+        String dtstamp = UTC_FMT.format(Instant.now().atZone(ZoneId.of("UTC")));
 
         String ics = "BEGIN:VCALENDAR\r\n"
                 + "VERSION:2.0\r\n"
                 + "PRODID:-//BATbern//Partner Meeting//EN\r\n"
                 + "CALSCALE:GREGORIAN\r\n"
                 + "METHOD:REQUEST\r\n"
+                // VEVENT 1: the partner meeting — includes SEQUENCE + ORGANIZER for update tracking
                 + buildVEvent(
                         meeting.getId() + "@batbern.ch",
                         toUtc(meeting.getMeetingDate(), meeting.getStartTime()),
                         toUtc(meeting.getMeetingDate(), meeting.getEndTime()),
                         "BATbern Partner Meeting (" + meeting.getMeetingType() + ")",
                         meeting.getAgenda() != null ? meeting.getAgenda() : "",
-                        meeting.getLocation() != null ? meeting.getLocation() : "")
+                        meeting.getLocation() != null ? meeting.getLocation() : "",
+                        List.of(
+                                "DTSTAMP:" + dtstamp,
+                                "SEQUENCE:" + meeting.getInviteSequence(),
+                                "ORGANIZER:mailto:" + organizerEmail
+                        ))
+                // VEVENT 2: the main BATbern event as context (no SEQUENCE/ORGANIZER — not our event)
                 + buildVEvent(
                         batbernEvent.eventCode() + "-main@batbern.ch",
                         toUtc(batbernEvent.eventDate(), batbernEvent.startTime()),
                         toUtc(batbernEvent.eventDate(), batbernEvent.endTime()),
                         batbernEvent.title(),
                         "BATbern Event — you are registered as a partner",
-                        batbernEvent.venue() != null ? batbernEvent.venue() : "")
+                        batbernEvent.venue() != null ? batbernEvent.venue() : "",
+                        List.of("DTSTAMP:" + dtstamp))
                 + "END:VCALENDAR\r\n";
 
         return ics.getBytes(StandardCharsets.UTF_8);
@@ -71,16 +93,22 @@ public class IcsGeneratorService {
             String dtEnd,
             String summary,
             String description,
-            String location
+            String location,
+            List<String> extraLines
     ) {
-        return "BEGIN:VEVENT\r\n"
-                + "UID:" + uid + "\r\n"
-                + "DTSTART:" + dtStart + "\r\n"
-                + "DTEND:" + dtEnd + "\r\n"
-                + "SUMMARY:" + foldLine(escapeText(summary)) + "\r\n"
-                + "DESCRIPTION:" + foldLine(escapeText(description)) + "\r\n"
-                + "LOCATION:" + foldLine(escapeText(location)) + "\r\n"
-                + "END:VEVENT\r\n";
+        StringBuilder sb = new StringBuilder()
+                .append("BEGIN:VEVENT\r\n")
+                .append("UID:").append(uid).append("\r\n")
+                .append("DTSTART:").append(dtStart).append("\r\n")
+                .append("DTEND:").append(dtEnd).append("\r\n")
+                .append("SUMMARY:").append(foldLine(escapeText(summary))).append("\r\n")
+                .append("DESCRIPTION:").append(foldLine(escapeText(description))).append("\r\n")
+                .append("LOCATION:").append(foldLine(escapeText(location))).append("\r\n");
+        for (String line : extraLines) {
+            sb.append(line).append("\r\n");
+        }
+        sb.append("END:VEVENT\r\n");
+        return sb.toString();
     }
 
     /**

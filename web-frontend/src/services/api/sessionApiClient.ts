@@ -137,6 +137,35 @@ class SessionApiClient {
   }
 
   /**
+   * Delete a material from a session
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param materialId - Material UUID
+   */
+  async deleteMaterial(
+    eventCode: string,
+    sessionSlug: string,
+    materialId: string
+  ): Promise<void> {
+    try {
+      await apiClient.delete(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials/${materialId}`
+      );
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Delete a session
    *
    * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}

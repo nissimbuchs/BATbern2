@@ -7,6 +7,7 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
+import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -90,9 +92,12 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                 ));
 
         // Stub getUsersByRole so sendInvite can collect partner emails
-        UserResponse mockUser = new UserResponse();
-        mockUser.setEmail("contact@partner.com");
-        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(mockUser));
+        UserResponse mockPartner = new UserResponse();
+        mockPartner.setEmail("contact@partner.com");
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(mockPartner));
+
+        // Stub organizer role — empty by default; individual tests override when needed
+        when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of());
     }
 
     // ─── AC1: Create meeting record ───────────────────────────────────────────
@@ -276,6 +281,66 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
                         .with(user("alice").roles("PARTNER")))
                 .andExpect(status().isForbidden());
+    }
+
+    // ─── SEQUENCE increment (RFC 5545 calendar update recognition) ───────────
+
+    @Test
+    void should_incrementInviteSequence_on_each_sendInvite() throws Exception {
+        String meetingId = createMeeting("BATbern57");
+
+        // First send → sequence becomes 1
+        mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted());
+
+        // Second send → sequence becomes 2
+        mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted());
+
+        PartnerMeeting meeting = meetingRepository.findById(UUID.fromString(meetingId)).orElseThrow();
+        assertThat(meeting.getInviteSequence()).isEqualTo(2);
+    }
+
+    // ─── Organizer recipients ─────────────────────────────────────────────────
+
+    @Test
+    void should_includeOrganizers_in_recipientCount() throws Exception {
+        UserResponse organizerUser = new UserResponse();
+        organizerUser.setEmail("organizer@batbern.ch");
+        when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of(organizerUser));
+
+        String meetingId = createMeeting("BATbern57");
+
+        MvcResult result = mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        // 1 partner (setUp mock) + 1 organizer = 2
+        assertThat(json.get("recipientCount").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void should_deduplicateRecipients_when_userHasBothRoles() throws Exception {
+        // Same email in both PARTNER and ORGANIZER roles
+        String sharedEmail = "both@batbern.ch";
+        UserResponse sharedUser = new UserResponse();
+        sharedUser.setEmail(sharedEmail);
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(sharedUser));
+        when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of(sharedUser));
+
+        String meetingId = createMeeting("BATbern57");
+
+        MvcResult result = mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(json.get("recipientCount").asInt()).isEqualTo(1);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

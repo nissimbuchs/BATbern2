@@ -642,7 +642,9 @@
       "uploadTitle": "Upload Session Materials",
       "uploadDescription": "Upload presentations, documents, or videos (max 100MB per file, up to 10 files)",
       "existingTitle": "Existing Materials",
-      "downloadError": "Failed to download material"
+      "downloadError": "Failed to download material",
+      "delete": "Delete material",
+      "deleteError": "Failed to delete material"
     },
     "errors": {
       "titleRequired": "Title is required",

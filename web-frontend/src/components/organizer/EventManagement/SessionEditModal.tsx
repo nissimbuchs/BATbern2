@@ -29,9 +29,12 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  ListItemSecondaryAction,
+  IconButton,
   Link,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Description as DescriptionIcon,
   PictureAsPdf as PdfIcon,
@@ -180,6 +183,8 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const [activeTab, setActiveTab] = useState<number>(initialTab); // 0 = Details, 1 = Materials
   const [uploadedMaterials, setUploadedMaterials] = useState<UploadedFile[]>([]);
   const [existingMaterials, setExistingMaterials] = useState<SessionMaterial[]>([]);
+  const [deletingMaterialId, setDeletingMaterialId] = useState<string | null>(null);
+  const [deleteMaterialError, setDeleteMaterialError] = useState<string | null>(null);
 
   // Initialize form when session changes
   useEffect(() => {
@@ -392,6 +397,25 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (!session) return;
+    setDeletingMaterialId(materialId);
+    setDeleteMaterialError(null);
+    try {
+      await sessionApiClient.deleteMaterial(session.eventCode, session.sessionSlug, materialId);
+      setExistingMaterials((prev) => prev.filter((m) => m.id !== materialId));
+      queryClient.invalidateQueries({ queryKey: ['event', session.eventCode] });
+    } catch (error) {
+      setDeleteMaterialError(
+        error instanceof Error
+          ? error.message
+          : t('sessionEdit.materials.deleteError', 'Failed to delete material')
+      );
+    } finally {
+      setDeletingMaterialId(null);
+    }
   };
 
   // Auto-calculation handlers per AC2
@@ -620,6 +644,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                 <Typography variant="subtitle2" gutterBottom>
                   {t('sessionEdit.materials.existingTitle', 'Existing Materials')}
                 </Typography>
+                {deleteMaterialError && (
+                  <Alert severity="error" onClose={() => setDeleteMaterialError(null)} sx={{ mb: 1 }}>
+                    {deleteMaterialError}
+                  </Alert>
+                )}
                 <List dense>
                   {existingMaterials.map((material) => (
                     <ListItem key={material.id}>
@@ -663,6 +692,22 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                         }
                         secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
                       />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          aria-label={t('sessionEdit.materials.delete', 'Delete material')}
+                          onClick={() => handleDeleteMaterial(material.id)}
+                          disabled={deletingMaterialId === material.id}
+                          size="small"
+                          color="error"
+                        >
+                          {deletingMaterialId === material.id ? (
+                            <CircularProgress size={18} />
+                          ) : (
+                            <DeleteIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </ListItemSecondaryAction>
                     </ListItem>
                   ))}
                 </List>

@@ -36,10 +36,11 @@ public class PartnerInviteEmailService {
     /**
      * Send the partner meeting calendar invite asynchronously.
      *
-     * Sends one email per recipient. The ICS attachment contains two VEVENTs:
-     * the partner meeting and the main BATbern event.
+     * Sends a single email addressed to all recipients (partners + organizers) so that
+     * every invitee can see who else received the invitation. The ICS attachment contains
+     * two VEVENTs: the partner meeting and the main BATbern event.
      *
-     * @param recipientEmails list of partner contact email addresses
+     * @param recipientEmails list of all recipient email addresses (partners + organizers)
      * @param eventTitle      title of the linked BATbern event
      * @param meetingDate     date of the partner meeting
      * @param meetingStartTime start time
@@ -71,21 +72,22 @@ public class PartnerInviteEmailService {
                 "text/calendar; charset=utf-8; method=REQUEST"
         );
 
+        // Send one email with all recipients in To: so everyone sees who was invited.
+        // InternetAddress.parse() (used by EmailService) accepts comma-separated addresses.
+        String toField = String.join(",", recipientEmails);
+
         log.info("Sending partner meeting invite to {} recipients for event={}", recipientEmails.size(), eventTitle);
 
-        for (String email : recipientEmails) {
-            try {
-                emailService.sendHtmlEmailWithAttachments(
-                        email,
-                        subject,
-                        htmlBody,
-                        List.of(icsAttachment)
-                );
-                log.debug("Partner meeting invite queued for: {}", email);
-            } catch (Exception e) {
-                log.error("Failed to send partner meeting invite to {}: {}", email, e.getMessage(), e);
-                // Continue sending to remaining recipients
-            }
+        try {
+            emailService.sendHtmlEmailWithAttachments(
+                    toField,
+                    subject,
+                    htmlBody,
+                    List.of(icsAttachment)
+            );
+            log.debug("Partner meeting invite sent to: {}", toField);
+        } catch (Exception e) {
+            log.error("Failed to send partner meeting invite: {}", e.getMessage(), e);
         }
     }
 

@@ -137,11 +137,14 @@ public class PartnerMeetingService {
         // Fetch linked event details for ICS
         EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
 
-        // Generate ICS content
+        // Increment SEQUENCE before ICS generation (RFC 5545: higher SEQUENCE = update)
+        meeting.setInviteSequence(meeting.getInviteSequence() + 1);
+
+        // Generate ICS content (uses the incremented sequence)
         byte[] icsContent = icsGeneratorService.generate(meeting, event);
 
-        // Collect all partner contact emails
-        List<String> emails = collectPartnerContactEmails();
+        // Collect all invite recipients: partner contacts + organizers
+        List<String> emails = collectInviteRecipientEmails();
 
         // Dispatch emails asynchronously (AC8 — returns 202 immediately)
         inviteEmailService.sendCalendarInvites(
@@ -154,7 +157,7 @@ public class PartnerMeetingService {
                 icsContent
         );
 
-        // Mark invite_sent_at
+        // Persist updated sequence and invite_sent_at together
         meeting.setInviteSentAt(Instant.now());
         meetingRepository.save(meeting);
 
@@ -168,27 +171,35 @@ public class PartnerMeetingService {
     }
 
     /**
-     * Collect all unique partner contact emails.
+     * Collect all unique invite recipient emails: partners + organizers.
      *
-     * Fetches all users with the PARTNER role from the User Service.
-     * Any PARTNER-role user is automatically a partner contact of their company.
+     * Partners receive the invite as the primary audience.
+     * Organizers are included so they have the calendar entry for coordination.
+     * Duplicates (e.g. a user with both roles) are removed.
      *
-     * Silently returns empty list if User Service is unavailable (logs warning).
+     * Silently tolerates User Service unavailability per role (logs warning).
      */
-    private List<String> collectPartnerContactEmails() {
-        try {
-            List<UserResponse> partnerUsers = userServiceClient.getUsersByRole("PARTNER");
+    private List<String> collectInviteRecipientEmails() {
+        List<String> emails = new ArrayList<>();
+        emails.addAll(fetchEmailsByRole("PARTNER"));
+        emails.addAll(fetchEmailsByRole("ORGANIZER"));
 
-            List<String> emails = partnerUsers.stream()
+        List<String> deduplicated = emails.stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        log.debug("Collected {} invite recipient emails (partners + organizers)", deduplicated.size());
+        return deduplicated;
+    }
+
+    private List<String> fetchEmailsByRole(String role) {
+        try {
+            return userServiceClient.getUsersByRole(role).stream()
                     .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
                     .map(UserResponse::getEmail)
-                    .distinct()
                     .collect(Collectors.toList());
-
-            log.debug("Collected {} partner contact emails", emails.size());
-            return emails;
         } catch (Exception e) {
-            log.warn("Could not fetch partner contact emails from User Service: {}", e.getMessage());
+            log.warn("Could not fetch {} emails from User Service: {}", role, e.getMessage());
             return new ArrayList<>();
         }
     }

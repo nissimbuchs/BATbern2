@@ -642,7 +642,9 @@
       "uploadTitle": "Session-Materialien hochladen",
       "uploadDescription": "Laden Sie Präsentationen, Dokumente oder Videos hoch (max. 100MB pro Datei, bis zu 10 Dateien)",
       "existingTitle": "Vorhandene Materialien",
-      "downloadError": "Material konnte nicht heruntergeladen werden"
+      "downloadError": "Material konnte nicht heruntergeladen werden",
+      "delete": "Material löschen",
+      "deleteError": "Material konnte nicht gelöscht werden"
     },
     "errors": {
       "titleRequired": "Titel ist erforderlich",

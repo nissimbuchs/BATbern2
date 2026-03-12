@@ -9,8 +9,9 @@
  * - Form validation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockInstance } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
@@ -20,6 +21,15 @@ import { AxiosError } from 'axios';
 // Mock SessionSpeakersTab to isolate SessionEditModal tests
 vi.mock('../SessionSpeakersTab', () => ({
   SessionSpeakersTab: () => <div data-testid="session-speakers-tab">No speakers assigned yet</div>,
+}));
+
+// Mock sessionApiClient
+vi.mock('@/services/api/sessionApiClient', () => ({
+  sessionApiClient: {
+    getMaterialDownloadUrl: vi.fn(),
+    deleteMaterial: vi.fn(),
+    associateMaterials: vi.fn(),
+  },
 }));
 
 // Mock i18n
@@ -758,6 +768,116 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     // Should display uploaded materials
     expect(screen.getByText('presentation.pptx')).toBeInTheDocument();
     expect(screen.getByText('document.pdf')).toBeInTheDocument();
+  });
+});
+
+describe('SessionEditModal - Delete Material', () => {
+  const mockSessionWithMaterials: SessionUI = {
+    sessionSlug: 'test-session',
+    eventCode: 'BATbern99',
+    title: 'Test Session',
+    description: '',
+    startTime: null,
+    endTime: null,
+    durationMinutes: 60,
+    slotNumber: 1,
+    materialsStatus: 'uploaded',
+    materials: [
+      {
+        id: 'mat-1',
+        uploadId: 'upload-1',
+        fileName: 'slides.pptx',
+        fileSize: 2048000,
+        materialType: 'PRESENTATION',
+        cloudFrontUrl: 'https://cdn.batbern.ch/materials/slides.pptx',
+        uploadedBy: 'john.doe',
+        createdAt: '2024-01-15T10:00:00Z',
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.mocked(sessionApiClient.deleteMaterial).mockResolvedValue(undefined);
+  });
+
+  it('should_renderDeleteButton_when_existingMaterialsDisplayed', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSessionWithMaterials}
+        eventDate="2024-12-15"
+        onSave={vi.fn()}
+      />
+    );
+
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    expect(screen.getByLabelText(/delete material/i)).toBeInTheDocument();
+  });
+
+  it('should_removeMaterial_when_deleteButtonClicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSessionWithMaterials}
+        eventDate="2024-12-15"
+        onSave={vi.fn()}
+      />
+    );
+
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    expect(screen.getByText('slides.pptx')).toBeInTheDocument();
+
+    const deleteButton = screen.getByLabelText(/delete material/i);
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(sessionApiClient.deleteMaterial).toHaveBeenCalledWith(
+        'BATbern99',
+        'test-session',
+        'mat-1'
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('slides.pptx')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_showError_when_deleteFails', async () => {
+    vi.mocked(sessionApiClient.deleteMaterial).mockRejectedValue(
+      new Error('Network error')
+    );
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSessionWithMaterials}
+        eventDate="2024-12-15"
+        onSave={vi.fn()}
+      />
+    );
+
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    const deleteButton = screen.getByLabelText(/delete material/i);
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+
+    // Material should still be in list
+    expect(screen.getByText('slides.pptx')).toBeInTheDocument();
   });
 });
 
