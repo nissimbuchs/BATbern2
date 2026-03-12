@@ -165,7 +165,19 @@
       "actions": "Acties"
     },
     "error": "Vergaderingen konden niet worden geladen",
-    "inviteSuccess": "Kalenderuitnodiging wordt verstuurd"
+    "inviteSuccess": "Kalenderuitnodiging wordt verstuurd",
+    "rsvp": {
+      "title": "Reacties van deelnemers",
+      "loading": "Reacties laden...",
+      "error": "RSVP-reacties konden niet worden geladen",
+      "noResponses": "Nog geen reacties",
+      "summary": "{{accepted}} Geaccepteerd · {{declined}} Afgewezen · {{tentative}} Voorlopig",
+      "status": {
+        "accepted": "Geaccepteerd",
+        "declined": "Afgewezen",
+        "tentative": "Voorlopig"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Uw account is niet gekoppeld aan een bedrijf",

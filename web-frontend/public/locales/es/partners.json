@@ -165,7 +165,19 @@
       "actions": "Acciones"
     },
     "error": "No se pudieron cargar las reuniones",
-    "inviteSuccess": "La invitación de calendario está siendo enviada"
+    "inviteSuccess": "La invitación de calendario está siendo enviada",
+    "rsvp": {
+      "title": "Respuestas de asistentes",
+      "loading": "Cargando respuestas...",
+      "error": "Error al cargar las respuestas RSVP",
+      "noResponses": "Aún no hay respuestas",
+      "summary": "{{accepted}} Aceptado · {{declined}} Rechazado · {{tentative}} Provisional",
+      "status": {
+        "accepted": "Aceptado",
+        "declined": "Rechazado",
+        "tentative": "Provisional"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Su cuenta no está vinculada a una empresa",

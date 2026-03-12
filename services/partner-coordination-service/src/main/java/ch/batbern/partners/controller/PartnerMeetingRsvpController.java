@@ -1,14 +1,10 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnerMeetingRsvp;
 import ch.batbern.partners.domain.RsvpStatus;
 import ch.batbern.partners.dto.MeetingRsvpListResponse;
 import ch.batbern.partners.dto.RecordRsvpRequest;
 import ch.batbern.partners.dto.RsvpDTO;
-import ch.batbern.partners.dto.RsvpSummary;
-import ch.batbern.partners.exception.PartnerNotFoundException;
-import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.service.PartnerMeetingRsvpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Controller for iCal RSVP tracking — Story 10.27 (AC6, AC7).
@@ -37,7 +31,6 @@ import java.util.stream.Collectors;
 public class PartnerMeetingRsvpController {
 
     private final PartnerMeetingRsvpService rsvpService;
-    private final PartnerMeetingRepository meetingRepository;
 
     /**
      * Internal endpoint: record or update an RSVP from an inbound iCal REPLY email (AC6).
@@ -57,7 +50,11 @@ public class PartnerMeetingRsvpController {
         PartnerMeetingRsvp rsvp = rsvpService.upsertRsvp(
                 request.getMeetingId(), request.getAttendeeEmail(), status);
 
-        return ResponseEntity.ok(toDTO(rsvp));
+        return ResponseEntity.ok(RsvpDTO.builder()
+                .attendeeEmail(rsvp.getAttendeeEmail())
+                .status(rsvp.getStatus().name())
+                .respondedAt(rsvp.getRespondedAt())
+                .build());
     }
 
     /**
@@ -66,41 +63,6 @@ public class PartnerMeetingRsvpController {
     @GetMapping("/api/v1/partner-meetings/{id}/rsvps")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MeetingRsvpListResponse> getRsvps(@PathVariable UUID id) {
-        PartnerMeeting meeting = meetingRepository.findById(id)
-                .orElseThrow(() -> new PartnerNotFoundException("Partner meeting not found: " + id));
-
-        List<PartnerMeetingRsvp> rsvps = rsvpService.getRsvps(id);
-
-        List<RsvpDTO> rsvpDTOs = rsvps.stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-
-        RsvpSummary summary = buildSummary(rsvps);
-
-        return ResponseEntity.ok(MeetingRsvpListResponse.builder()
-                .meetingId(id)
-                .inviteSentAt(meeting.getInviteSentAt())
-                .rsvps(rsvpDTOs)
-                .summary(summary)
-                .build());
-    }
-
-    private RsvpDTO toDTO(PartnerMeetingRsvp rsvp) {
-        return RsvpDTO.builder()
-                .attendeeEmail(rsvp.getAttendeeEmail())
-                .status(rsvp.getStatus().name())
-                .respondedAt(rsvp.getRespondedAt())
-                .build();
-    }
-
-    private RsvpSummary buildSummary(List<PartnerMeetingRsvp> rsvps) {
-        int accepted = (int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.ACCEPTED).count();
-        int declined = (int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.DECLINED).count();
-        int tentative = (int) rsvps.stream().filter(r -> r.getStatus() == RsvpStatus.TENTATIVE).count();
-        return RsvpSummary.builder()
-                .accepted(accepted)
-                .declined(declined)
-                .tentative(tentative)
-                .build();
+        return ResponseEntity.ok(rsvpService.getMeetingRsvpResponse(id));
     }
 }

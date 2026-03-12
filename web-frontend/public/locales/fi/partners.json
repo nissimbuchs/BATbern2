@@ -165,7 +165,19 @@
       "actions": "Toiminnot"
     },
     "error": "Kokouksia ei voitu ladata",
-    "inviteSuccess": "Kalenterikutsua lähetetään"
+    "inviteSuccess": "Kalenterikutsua lähetetään",
+    "rsvp": {
+      "title": "Osallistujien vastaukset",
+      "loading": "Ladataan vastauksia...",
+      "error": "RSVP-vastausten lataaminen epäonnistui",
+      "noResponses": "Ei vielä vastauksia",
+      "summary": "{{accepted}} Hyväksytty · {{declined}} Hylätty · {{tentative}} Alustava",
+      "status": {
+        "accepted": "Hyväksytty",
+        "declined": "Hylätty",
+        "tentative": "Alustava"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Tiliäsi ei ole yhdistetty yritykseen",

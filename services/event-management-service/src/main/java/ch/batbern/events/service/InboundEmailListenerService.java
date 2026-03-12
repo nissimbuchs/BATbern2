@@ -147,7 +147,8 @@ public class InboundEmailListenerService {
                 }
                 // Unfold RFC 5545 line continuations before checking METHOD
                 String unfolded = icsText.replaceAll("\r\n[ \t]", "").replaceAll("\n[ \t]", "");
-                if (unfolded.contains("METHOD:REPLY")) {
+                // RFC 5545 §3.2: property names and values are case-insensitive
+                if (unfolded.toUpperCase().contains("METHOD:REPLY")) {
                     return unfolded;
                 }
                 return null;

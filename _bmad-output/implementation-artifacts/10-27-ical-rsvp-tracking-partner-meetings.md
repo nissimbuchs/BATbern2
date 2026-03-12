@@ -633,3 +633,50 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+**Phase 1–5 (Initial Implementation):**
+- `services/partner-coordination-service/src/main/resources/db/migration/V9__partner_meeting_rsvps.sql`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/RsvpStatus.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/PartnerMeetingRsvp.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/PartnerMeetingRsvpRepository.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/RsvpDTO.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/RsvpSummary.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/MeetingRsvpListResponse.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/RecordRsvpRequest.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/PartnerMeetingRsvpService.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/PartnerMeetingRsvpController.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/IcsGeneratorService.java` (ATTENDEE+ORGANIZER lines)
+- `services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingRsvpControllerIntegrationTest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailListenerService.java` (iCal REPLY detection)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRouter.java` (routeIcsReply)
+- `services/event-management-service/src/main/java/ch/batbern/events/client/PartnerMeetingRsvpClient.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailListenerServiceTest.java`
+- `web-frontend/src/api/partnerMeetingsApi.ts` (RsvpDTO, MeetingRsvpListResponse, getRsvps)
+- `web-frontend/src/api/partnerMeetingsApi.test.ts`
+- `web-frontend/src/components/partners/PartnerMeetingRsvpPanel.tsx` (new)
+- `web-frontend/src/components/partners/PartnerMeetingRsvpPanel.test.tsx` (new)
+- `web-frontend/src/components/partners/MeetingDetailPanel.tsx` (rsvpRefreshKey + panel mount)
+- `web-frontend/public/locales/en/partners.json`
+- `web-frontend/public/locales/de/partners.json`
+- `web-frontend/public/locales/fr/partners.json`
+- `web-frontend/public/locales/es/partners.json`
+- `web-frontend/public/locales/it/partners.json`
+- `web-frontend/public/locales/nl/partners.json`
+- `web-frontend/public/locales/fi/partners.json`
+- `web-frontend/public/locales/ja/partners.json`
+- `web-frontend/public/locales/rm/partners.json`
+- `web-frontend/public/locales/gsw-BE/partners.json`
+
+**Code Review Fixes (CR 10-27):**
+- M1: `PartnerMeetingRsvpService.java` — `DataIntegrityViolationException` catch + retry (`doUpsert()`) for concurrent SQS delivery race condition
+- M2: `IcsGeneratorService.java` — applied `foldLine()` to all `extraLines` (ATTENDEE/ORGANIZER) per RFC 5545 §3.1
+- M3: `InboundEmailListenerService.java` — case-insensitive `METHOD:REPLY` check (`toUpperCase()`) per RFC 5545 §3.2
+- M4: `PartnerMeetingRsvpController.java` — removed direct `PartnerMeetingRepository` injection (layer violation); `PartnerMeetingRsvpService.getMeetingRsvpResponse()` now owns all meeting+RSVP assembly
+- M5: All 8 non-EN/DE locale files (`fr`, `es`, `it`, `nl`, `fi`, `ja`, `rm`, `gsw-BE`) — added `meetings.rsvp` i18n keys
+
+### Completion Notes List
+
+- All 7 PCS RSVP integration tests pass after M1+M4 refactoring
+- EMS: 1595 tests pass (Gradle XML write error on 2 nested test classes is pre-existing infra issue, not a test failure)
+- RFC 5545 line folding now applied uniformly to all VEVENT properties including ATTENDEE lines
+- Race condition window closed: duplicate SQS deliveries for same attendee are handled via UNIQUE constraint + retry

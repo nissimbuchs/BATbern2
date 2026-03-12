@@ -112,7 +112,8 @@ public class IcsGeneratorService {
                 .append("DESCRIPTION:").append(foldLine(escapeText(description))).append("\r\n")
                 .append("LOCATION:").append(foldLine(escapeText(location))).append("\r\n");
         for (String line : extraLines) {
-            sb.append(line).append("\r\n");
+            // RFC 5545 §3.1: fold at 75 octets — applies to all lines including ATTENDEE/ORGANIZER
+            sb.append(foldLine(line)).append("\r\n");
         }
         sb.append("END:VEVENT\r\n");
         return sb.toString();

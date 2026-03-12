@@ -165,7 +165,19 @@
       "actions": "Azioni"
     },
     "error": "Impossibile caricare le riunioni",
-    "inviteSuccess": "L'invito del calendario è in fase di invio"
+    "inviteSuccess": "L'invito del calendario è in fase di invio",
+    "rsvp": {
+      "title": "Risposte dei partecipanti",
+      "loading": "Caricamento risposte...",
+      "error": "Impossibile caricare le risposte RSVP",
+      "noResponses": "Nessuna risposta ancora",
+      "summary": "{{accepted}} Accettato · {{declined}} Rifiutato · {{tentative}} Provvisorio",
+      "status": {
+        "accepted": "Accettato",
+        "declined": "Rifiutato",
+        "tentative": "Provvisorio"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Il tuo account non è collegato a un'azienda",

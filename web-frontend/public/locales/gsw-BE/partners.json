@@ -23,6 +23,18 @@
   "meetings": {
     "fields": {
       "eventCodePlaceholder": "BATbern57"
+    },
+    "rsvp": {
+      "title": "Teilnehmer-Rückmäldig",
+      "loading": "Rückmäldig wird glade...",
+      "error": "RSVP-Rückmäldig kenne nit glade wärde",
+      "noResponses": "No kei Rückmäldig",
+      "summary": "{{accepted}} Zuegseit · {{declined}} Abgseit · {{tentative}} Vorläufig",
+      "status": {
+        "accepted": "Zuegseit",
+        "declined": "Abgseit",
+        "tentative": "Vorläufig"
+      }
     }
   },
   "topicStatus": {

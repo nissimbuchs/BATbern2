@@ -165,7 +165,19 @@
       "actions": "Acziuns"
     },
     "error": "Impussibel da chargiare inscunters",
-    "inviteSuccess": "L'invitaziun dal chalender vegn tramessa"
+    "inviteSuccess": "L'invitaziun dal chalender vegn tramessa",
+    "rsvp": {
+      "title": "Respostas dals participants",
+      "loading": "Chargiar respostas...",
+      "error": "Impussibel da chargiar las respostas RSVP",
+      "noResponses": "Anc naginas respostas",
+      "summary": "{{accepted}} Acceptà · {{declined}} Refusà · {{tentative}} Provisoric",
+      "status": {
+        "accepted": "Acceptà",
+        "declined": "Refusà",
+        "tentative": "Provisoric"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Tes conto n'è betg collià cun ina interpresa",
