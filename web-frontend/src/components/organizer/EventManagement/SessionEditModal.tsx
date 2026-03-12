@@ -645,7 +645,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                   {t('sessionEdit.materials.existingTitle', 'Existing Materials')}
                 </Typography>
                 {deleteMaterialError && (
-                  <Alert severity="error" onClose={() => setDeleteMaterialError(null)} sx={{ mb: 1 }}>
+                  <Alert
+                    severity="error"
+                    onClose={() => setDeleteMaterialError(null)}
+                    sx={{ mb: 1 }}
+                  >
                     {deleteMaterialError}
                   </Alert>
                 )}

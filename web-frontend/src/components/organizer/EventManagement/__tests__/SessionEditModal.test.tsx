@@ -852,9 +852,7 @@ describe('SessionEditModal - Delete Material', () => {
   });
 
   it('should_showError_when_deleteFails', async () => {
-    vi.mocked(sessionApiClient.deleteMaterial).mockRejectedValue(
-      new Error('Network error')
-    );
+    vi.mocked(sessionApiClient.deleteMaterial).mockRejectedValue(new Error('Network error'));
     const user = userEvent.setup();
     render(
       <SessionEditModal

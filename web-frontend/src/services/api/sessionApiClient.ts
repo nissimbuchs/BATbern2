@@ -145,11 +145,7 @@ class SessionApiClient {
    * @param sessionSlug - Session slug identifier
    * @param materialId - Material UUID
    */
-  async deleteMaterial(
-    eventCode: string,
-    sessionSlug: string,
-    materialId: string
-  ): Promise<void> {
+  async deleteMaterial(eventCode: string, sessionSlug: string, materialId: string): Promise<void> {
     try {
       await apiClient.delete(
         `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials/${materialId}`
