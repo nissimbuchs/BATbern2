@@ -24,6 +24,12 @@ export interface InboundEmailStackProps extends cdk.StackProps {
   vpc?: ec2.IVpc;
   /** Security group allowing Lambda to communicate with ECS services (Story 10.26). */
   lambdaSecurityGroup?: ec2.ISecurityGroup;
+  /**
+   * Public API Gateway base URL (e.g. https://api.batbern.ch).
+   * When provided, the forwarder Lambda uses this instead of the ECS Service Connect DNS,
+   * which is not resolvable from VPC-native Lambda functions.
+   */
+  apiGatewayPublicUrl?: string;
 }
 
 /**
@@ -198,9 +204,13 @@ export class InboundEmailStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // API Gateway internal URL for the forwarder to call existing APIs.
-    // In ECS Service Connect, services are accessible via {service-name}.batbern-{env}
-    const apiGatewayUrl = `http://api-gateway.batbern-${envName}:8080`;
+    // API Gateway URL for the forwarder to call existing APIs.
+    // ECS Service Connect DNS (api-gateway.batbern-{env}) is only resolvable from within ECS
+    // tasks — VPC-native Lambda functions use the standard VPC DNS which cannot resolve it.
+    // Use the public API domain when available; fall back to Service Connect for local/dev.
+    const apiGatewayUrl = props.apiGatewayPublicUrl
+      ? props.apiGatewayPublicUrl
+      : `http://api-gateway.batbern-${envName}:8080`;
 
     const forwarderLambda = new NodejsFunction(this, 'EmailForwarder', {
       functionName: `batbern-email-forwarder-${envName}`,

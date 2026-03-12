@@ -243,9 +243,10 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
     hostedZone: dnsStack?.hostedZone,
-    // Story 10.26: VPC access for forwarder Lambda to call services via Service Connect DNS
     vpc: networkStack.vpc,
     lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
+    // ECS Service Connect DNS is not resolvable from Lambda; use the public API domain instead.
+    apiGatewayPublicUrl: config.domain?.apiDomain ? `https://${config.domain.apiDomain}` : undefined,
   });
   inboundEmailStack.addDependency(sesStack);
   if (dnsStack) {
