@@ -27,7 +27,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
-import { ReleaseNotesInfoBox } from '@components/auth/ReleaseNotesInfoBox';
 
 type LoginFormData = {
   email: string;
@@ -144,161 +143,152 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
   const displayError = error ? t(getErrorTranslationKey(error.code)) : submitError;
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="sm">
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
         <LanguageSwitcher />
       </Box>
       <Box
         sx={{
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: 3,
+          flexDirection: 'column',
+          alignItems: 'center',
           mt: 2,
-          alignItems: 'flex-start',
         }}
       >
-        {/* Release Notes - Left Side */}
-        <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 40%' } }}>
-          <ReleaseNotesInfoBox />
-        </Box>
+        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography component="h1" variant="h4" gutterBottom>
+              {t('auth:login.title')}
+            </Typography>
 
-        {/* Login Form - Right Side */}
-        <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(60% - 24px)' } }}>
-          <Paper elevation={3} sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Typography component="h1" variant="h4" gutterBottom>
-                {t('auth:login.title')}
-              </Typography>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              {t('auth:login.subtitle')}
+            </Typography>
 
-              <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                {t('auth:login.subtitle')}
-              </Typography>
+            {displayError && (
+              <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+                {displayError}
+              </Alert>
+            )}
 
-              {displayError && (
-                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-                  {displayError}
-                </Alert>
-              )}
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label={t('auth:login.emailLabel')}
+                    placeholder={t('auth:login.emailPlaceholder')}
+                    type="email"
+                    autoComplete="email username"
+                    autoFocus
+                    margin="normal"
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
+                    disabled={isLoading}
+                  />
+                )}
+              />
 
-              <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
-                <Controller
-                  name="email"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={t('auth:login.emailLabel')}
-                      placeholder={t('auth:login.emailPlaceholder')}
-                      type="email"
-                      autoComplete="email username"
-                      autoFocus
-                      margin="normal"
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
-                      disabled={isLoading}
-                    />
-                  )}
-                />
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label={t('auth:login.passwordLabel')}
+                    placeholder={t('auth:login.passwordPlaceholder')}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    margin="normal"
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={
+                              showPassword
+                                ? t('auth:login.hidePassword')
+                                : t('auth:login.showPassword')
+                            }
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+              />
 
-                <Controller
-                  name="password"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label={t('auth:login.passwordLabel')}
-                      placeholder={t('auth:login.passwordPlaceholder')}
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      margin="normal"
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      disabled={isLoading}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label={
-                                showPassword
-                                  ? t('auth:login.hidePassword')
-                                  : t('auth:login.showPassword')
-                              }
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  )}
-                />
+              <Controller
+                name="rememberMe"
+                control={control}
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...field}
+                        checked={value}
+                        onChange={(e) => onChange(e.target.checked)}
+                        disabled={isLoading}
+                      />
+                    }
+                    label={t('auth:login.rememberMe')}
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              />
 
-                <Controller
-                  name="rememberMe"
-                  control={control}
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          {...field}
-                          checked={value}
-                          onChange={(e) => onChange(e.target.checked)}
-                          disabled={isLoading}
-                        />
-                      }
-                      label={t('auth:login.rememberMe')}
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={isLoading || !isValid}
+                startIcon={isLoading ? <CircularProgress size={20} /> : null}
+              >
+                {t('auth:login.signInButton')}
+              </Button>
 
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
-                  disabled={isLoading || !isValid}
-                  startIcon={isLoading ? <CircularProgress size={20} /> : null}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                <Link
+                  component="button"
+                  variant="body2"
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={isLoading}
+                  sx={{ textDecoration: 'none' }}
                 >
-                  {t('auth:login.signInButton')}
-                </Button>
+                  {t('auth:login.forgotPassword')}
+                </Link>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="body2" component="span" color="text.secondary">
+                    {t('auth:login.noAccount')}{' '}
+                  </Typography>
                   <Link
                     component="button"
                     variant="body2"
                     type="button"
-                    onClick={handleForgotPassword}
+                    onClick={handleSignUp}
                     disabled={isLoading}
                     sx={{ textDecoration: 'none' }}
                   >
-                    {t('auth:login.forgotPassword')}
+                    {t('auth:login.createAccount')}
                   </Link>
-
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" component="span" color="text.secondary">
-                      {t('auth:login.noAccount')}{' '}
-                    </Typography>
-                    <Link
-                      component="button"
-                      variant="body2"
-                      type="button"
-                      onClick={handleSignUp}
-                      disabled={isLoading}
-                      sx={{ textDecoration: 'none' }}
-                    >
-                      {t('auth:login.createAccount')}
-                    </Link>
-                  </Box>
                 </Box>
               </Box>
             </Box>
-          </Paper>
-        </Box>
+          </Box>
+        </Paper>
       </Box>
     </Container>
   );
