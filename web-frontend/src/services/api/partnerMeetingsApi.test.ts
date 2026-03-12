@@ -18,6 +18,8 @@ import {
   getMeeting,
   updateMeeting,
   sendInvite,
+  getRsvps,
+  type MeetingRsvpListResponse,
 } from './partnerMeetingsApi';
 
 // Mock meeting data that matches the PartnerMeetingDTO shape
@@ -144,6 +146,53 @@ describe('Partner Meetings API Client - Story 8.3', () => {
       vi.mocked(apiClient.post).mockRejectedValue(new Error('Service Unavailable'));
 
       await expect(sendInvite('meeting-1')).rejects.toThrow('Service Unavailable');
+    });
+  });
+
+  // ─── Story 10.27: getRsvps ───────────────────────────────────────────────────
+
+  describe('getRsvps', () => {
+    const mockRsvpResponse: MeetingRsvpListResponse = {
+      meetingId: 'meeting-1',
+      inviteSentAt: '2026-03-01T10:00:00Z',
+      rsvps: [
+        {
+          attendeeEmail: 'alice@partner.com',
+          status: 'ACCEPTED',
+          respondedAt: '2026-03-02T09:00:00Z',
+        },
+        {
+          attendeeEmail: 'bob@partner.com',
+          status: 'DECLINED',
+          respondedAt: '2026-03-02T10:00:00Z',
+        },
+      ],
+      summary: { accepted: 1, declined: 1, tentative: 0 },
+    };
+
+    it('should_callGetEndpoint_when_getRsvpsInvoked', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: mockRsvpResponse });
+
+      const result = await getRsvps('meeting-1');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/partner-meetings/meeting-1/rsvps');
+      expect(result).toEqual(mockRsvpResponse);
+    });
+
+    it('should_returnRsvpList_with_summary', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: mockRsvpResponse });
+
+      const result = await getRsvps('meeting-1');
+
+      expect(result.rsvps).toHaveLength(2);
+      expect(result.summary.accepted).toBe(1);
+      expect(result.summary.declined).toBe(1);
+    });
+
+    it('should_propagateError_when_getRsvpsFails', async () => {
+      vi.mocked(apiClient.get).mockRejectedValue(new Error('Not Found'));
+
+      await expect(getRsvps('nonexistent')).rejects.toThrow('Not Found');
     });
   });
 });

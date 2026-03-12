@@ -87,6 +87,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Story 10.27: VPC-internal RSVP endpoint (no JWT — SQS async context)
+                .requestMatchers("/internal/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/partners/me").hasRole("PARTNER")
                 .requestMatchers(HttpMethod.GET, "/api/v1/partners").permitAll()
                 // Story 8.2: Partner Topic Suggestions & Voting (AC6 — role-based access)

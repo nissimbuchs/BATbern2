@@ -10,6 +10,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,7 @@ class IcsGeneratorServiceTest {
 
     private static final UUID MEETING_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final String ORGANIZER_EMAIL = "noreply@batbern.ch";
+    private static final String REPLIES_EMAIL = "replies@batbern.ch";
 
     @BeforeEach
     void setUp() {
@@ -81,6 +83,33 @@ class IcsGeneratorServiceTest {
         assertThat(count).isEqualTo(2);
     }
 
+    // ─── T1.1 — ATTENDEE fields present for each recipient ────────────────────
+
+    @Test
+    void should_containAttendeeLines_for_eachRecipient() {
+        ReflectionTestUtils.setField(service, "organizerEmail", REPLIES_EMAIL);
+        String ics = generateWith(buildMeeting(0), List.of("alice@partner.com", "bob@partner.com"));
+        assertThat(ics).contains("ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:alice@partner.com");
+        assertThat(ics).contains("ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:bob@partner.com");
+    }
+
+    // ─── T1.2 — ORGANIZER uses replies@batbern.ch ──────────────────────────
+
+    @Test
+    void should_containOrganizer_withRepliesAddress() {
+        ReflectionTestUtils.setField(service, "organizerEmail", REPLIES_EMAIL);
+        String ics = generateWith(buildMeeting(0), List.of());
+        assertThat(ics).contains("ORGANIZER:mailto:replies@batbern.ch");
+    }
+
+    // ─── T1.3 — no recipients → no ATTENDEE lines ─────────────────────────
+
+    @Test
+    void should_notContainAttendeeLines_when_recipientsEmpty() {
+        String ics = generateWith(buildMeeting(0), List.of());
+        assertThat(ics).doesNotContain("ATTENDEE;");
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private String generate(PartnerMeeting meeting) {
@@ -90,7 +119,17 @@ class IcsGeneratorServiceTest {
                 LocalTime.of(18, 0), LocalTime.of(22, 0),
                 "Bern Congress Centre"
         );
-        return new String(service.generate(meeting, event), StandardCharsets.UTF_8);
+        return new String(service.generate(meeting, event, List.of()), StandardCharsets.UTF_8);
+    }
+
+    private String generateWith(PartnerMeeting meeting, List<String> recipients) {
+        EventSummaryDTO event = new EventSummaryDTO(
+                "BATbern57", "BATbern Spring 2026",
+                LocalDate.of(2026, 5, 14),
+                LocalTime.of(18, 0), LocalTime.of(22, 0),
+                "Bern Congress Centre"
+        );
+        return new String(service.generate(meeting, event, recipients), StandardCharsets.UTF_8);
     }
 
     private PartnerMeeting buildMeeting(int sequence) {

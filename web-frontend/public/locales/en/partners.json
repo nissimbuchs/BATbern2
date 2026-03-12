@@ -165,7 +165,19 @@
       "actions": "Actions"
     },
     "error": "Could not load meetings",
-    "inviteSuccess": "Calendar invite is being sent"
+    "inviteSuccess": "Calendar invite is being sent",
+    "rsvp": {
+      "title": "Attendee Responses",
+      "loading": "Loading responses...",
+      "error": "Failed to load RSVP responses",
+      "noResponses": "No responses yet",
+      "summary": "{{accepted}} Accepted · {{declined}} Declined · {{tentative}} Tentative",
+      "status": {
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "tentative": "Tentative"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Your account is not linked to a company",

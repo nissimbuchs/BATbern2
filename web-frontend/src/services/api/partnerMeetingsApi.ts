@@ -1,6 +1,7 @@
 /**
  * Partner Meetings API Client
  * Story 8.3: Partner Meeting Coordination — AC1–6, 8
+ * Story 10.27: iCal RSVP Tracking — AC7, AC8
  *
  * All endpoints served by partner-coordination-service via API Gateway.
  * Path is relative to baseURL (which already includes /api/v1).
@@ -15,6 +16,27 @@ export type PartnerMeetingDTO = components['schemas']['PartnerMeetingDTO'];
 export type CreateMeetingRequest = components['schemas']['CreateMeetingRequest'];
 export type UpdateMeetingRequest = components['schemas']['UpdateMeetingRequest'];
 export type SendInviteResponse = components['schemas']['SendInviteResponse'];
+
+// ─── Story 10.27: RSVP types ─────────────────────────────────────────────────
+
+export interface RsvpDTO {
+  attendeeEmail: string;
+  status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+  respondedAt: string;
+}
+
+export interface RsvpSummary {
+  accepted: number;
+  declined: number;
+  tentative: number;
+}
+
+export interface MeetingRsvpListResponse {
+  meetingId: string;
+  inviteSentAt: string | null;
+  rsvps: RsvpDTO[];
+  summary: RsvpSummary;
+}
 
 // ─── API functions ────────────────────────────────────────────────────────────
 
@@ -60,6 +82,17 @@ export const updateMeeting = async (
 export const sendInvite = async (meetingId: string): Promise<SendInviteResponse> => {
   const response = await apiClient.post<SendInviteResponse>(
     `/partner-meetings/${meetingId}/send-invite`
+  );
+  return response.data;
+};
+
+/**
+ * Get RSVP responses for a partner meeting (ORGANIZER only).
+ * Story 10.27 (AC7).
+ */
+export const getRsvps = async (meetingId: string): Promise<MeetingRsvpListResponse> => {
+  const response = await apiClient.get<MeetingRsvpListResponse>(
+    `/partner-meetings/${meetingId}/rsvps`
   );
   return response.data;
 };

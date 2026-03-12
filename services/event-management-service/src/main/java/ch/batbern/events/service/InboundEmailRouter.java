@@ -1,10 +1,12 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.PartnerMeetingRsvpClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +32,7 @@ public class InboundEmailRouter {
     private final RegistrationService registrationService;
     private final InboundEmailConfirmationEmailService confirmationEmailService;
     private final InboundEmailRateLimiter rateLimiter;
+    private final PartnerMeetingRsvpClient partnerMeetingRsvpClient;
 
     /**
      * Immutable DTO representing a parsed inbound email.
@@ -39,6 +42,15 @@ public class InboundEmailRouter {
      * @param bodyFirstLine  first non-quoted plain-text line from the body
      */
     public record ParsedEmail(String senderEmail, String subject, String bodyFirstLine) {}
+
+    /**
+     * Immutable DTO representing a parsed iCal REPLY — Story 10.27 (AC3, AC4).
+     *
+     * @param meetingUid     raw UID value (e.g. {@code 11111111-...@batbern.ch})
+     * @param attendeeEmail  email extracted from ATTENDEE mailto: value
+     * @param partStat       PARTSTAT value: ACCEPTED, DECLINED, or TENTATIVE
+     */
+    public record IcsReply(String meetingUid, String attendeeEmail, String partStat) {}
 
     /**
      * Route the parsed email to the appropriate action.
@@ -101,6 +113,48 @@ public class InboundEmailRouter {
 
         // 6. Unrecognized — silent discard
         log.warn("Unrecognized inbound email body from: {}*** — discarding", senderPrefix);
+    }
+
+    /**
+     * Route an iCal REPLY to the partner meeting RSVP service — Story 10.27 (AC4).
+     *
+     * <ol>
+     *   <li>Rate limit check on attendee email</li>
+     *   <li>Validate UID ends with {@code @batbern.ch}</li>
+     *   <li>Parse UUID from UID prefix</li>
+     *   <li>Call {@link PartnerMeetingRsvpClient#recordRsvp}</li>
+     * </ol>
+     *
+     * @param reply parsed iCal REPLY data
+     */
+    public void routeIcsReply(IcsReply reply) {
+        // 1. Rate limit check
+        if (!rateLimiter.isAllowed(reply.attendeeEmail())) {
+            return;
+        }
+
+        // 2. Validate UID domain
+        String uid = reply.meetingUid();
+        if (uid == null || !uid.endsWith("@batbern.ch")) {
+            log.warn("ICS REPLY UID does not match @batbern.ch pattern: {} — discarding", uid);
+            return;
+        }
+
+        // 3. Parse UUID from UID prefix (before "@batbern.ch")
+        String uuidPart = uid.substring(0, uid.length() - "@batbern.ch".length());
+        UUID meetingId;
+        try {
+            meetingId = UUID.fromString(uuidPart);
+        } catch (IllegalArgumentException e) {
+            log.warn("ICS REPLY UID prefix is not a valid UUID: {} — discarding", uuidPart);
+            return;
+        }
+
+        // 4. Record RSVP
+        partnerMeetingRsvpClient.recordRsvp(meetingId, reply.attendeeEmail(), reply.partStat());
+        log.info("Recorded iCal RSVP: meetingId={}, emailPrefix={}, status={}",
+                meetingId, reply.attendeeEmail().substring(0, Math.min(5, reply.attendeeEmail().length())),
+                reply.partStat());
     }
 
     /**

@@ -165,7 +165,19 @@
       "actions": "Aktionen"
     },
     "error": "Meetings konnten nicht geladen werden",
-    "inviteSuccess": "Kalendereinladung wird versendet"
+    "inviteSuccess": "Kalendereinladung wird versendet",
+    "rsvp": {
+      "title": "Teilnehmer-Rückmeldungen",
+      "loading": "Rückmeldungen werden geladen...",
+      "error": "RSVP-Rückmeldungen konnten nicht geladen werden",
+      "noResponses": "Noch keine Rückmeldungen",
+      "summary": "{{accepted}} Zugesagt · {{declined}} Abgesagt · {{tentative}} Vorläufig",
+      "status": {
+        "accepted": "Zugesagt",
+        "declined": "Abgesagt",
+        "tentative": "Vorläufig"
+      }
+    }
   },
   "portal": {
     "noCompanyLinked": "Ihr Konto ist keinem Unternehmen zugeordnet",

@@ -1,11 +1,14 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.PartnerMeetingRsvpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -29,6 +32,9 @@ class InboundEmailRouterTest {
 
     @Mock
     private InboundEmailRateLimiter rateLimiter;
+
+    @Mock
+    private PartnerMeetingRsvpClient partnerMeetingRsvpClient;
 
     @InjectMocks
     private InboundEmailRouter router;
@@ -210,5 +216,58 @@ class InboundEmailRouterTest {
 
         verifyNoInteractions(newsletterSubscriberService,
                 registrationService, confirmationEmailService);
+    }
+
+    // ─── T13.1: routeIcsReply with valid UID → client called ─────────────────
+
+    @Test
+    void routeIcsReply_withValidUid_callsRecordRsvp() {
+        UUID meetingId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        String uid = meetingId + "@batbern.ch";
+        InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
+                uid, "alice@partner.com", "ACCEPTED");
+
+        router.routeIcsReply(reply);
+
+        verify(partnerMeetingRsvpClient).recordRsvp(meetingId, "alice@partner.com", "ACCEPTED");
+    }
+
+    // ─── T13.2: UID does not end with @batbern.ch → WARN, client NOT called ──
+
+    @Test
+    void routeIcsReply_withWrongUidDomain_discardsGracefully() {
+        InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
+                "11111111-1111-1111-1111-111111111111@other-domain.com",
+                "alice@partner.com", "ACCEPTED");
+
+        router.routeIcsReply(reply);
+
+        verifyNoInteractions(partnerMeetingRsvpClient);
+    }
+
+    // ─── T13.3: UID prefix is not a valid UUID → WARN, client NOT called ──────
+
+    @Test
+    void routeIcsReply_withMalformedUuidInUid_discardsGracefully() {
+        InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
+                "not-a-uuid@batbern.ch", "alice@partner.com", "ACCEPTED");
+
+        router.routeIcsReply(reply);
+
+        verifyNoInteractions(partnerMeetingRsvpClient);
+    }
+
+    // ─── T13.4: rate limiter blocks → client NOT called ──────────────────────
+
+    @Test
+    void routeIcsReply_whenRateLimitExceeded_discardsGracefully() {
+        when(rateLimiter.isAllowed("spammer@partner.com")).thenReturn(false);
+        InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
+                "11111111-1111-1111-1111-111111111111@batbern.ch",
+                "spammer@partner.com", "ACCEPTED");
+
+        router.routeIcsReply(reply);
+
+        verifyNoInteractions(partnerMeetingRsvpClient);
     }
 }

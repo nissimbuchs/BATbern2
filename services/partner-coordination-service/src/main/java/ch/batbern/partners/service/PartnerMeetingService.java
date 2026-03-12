@@ -137,14 +137,14 @@ public class PartnerMeetingService {
         // Fetch linked event details for ICS
         EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
 
+        // Collect all invite recipients BEFORE ICS generation so ATTENDEE lines are included (AC1)
+        List<String> emails = collectInviteRecipientEmails();
+
         // Increment SEQUENCE before ICS generation (RFC 5545: higher SEQUENCE = update)
         meeting.setInviteSequence(meeting.getInviteSequence() + 1);
 
-        // Generate ICS content (uses the incremented sequence)
-        byte[] icsContent = icsGeneratorService.generate(meeting, event);
-
-        // Collect all invite recipients: partner contacts + organizers
-        List<String> emails = collectInviteRecipientEmails();
+        // Generate ICS content with recipient emails for ATTENDEE fields (Story 10.27 AC1)
+        byte[] icsContent = icsGeneratorService.generate(meeting, event, emails);
 
         // Dispatch emails asynchronously (AC8 — returns 202 immediately)
         inviteEmailService.sendCalendarInvites(
