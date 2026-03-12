@@ -149,6 +149,7 @@ export class InboundEmailStack extends cdk.Stack {
     });
 
     // Rule 1 (highest priority): Route replies to S3 emails/ prefix → SQS (Story 10.17)
+    // StopAction prevents fall-through to the catch-all domain rule (Rule 3).
     ruleSet.addRule('RouteReplies', {
       recipients: [replyAddress],
       actions: [
@@ -156,11 +157,14 @@ export class InboundEmailStack extends cdk.Stack {
           bucket: inboundBucket,
           objectKeyPrefix: 'emails/',
         }),
+        new sesActions.Stop(),
       ],
       enabled: true,
     });
 
     // Rule 2: Route named forwarding addresses to S3 forwarding/ prefix (Story 10.26)
+    // StopAction prevents fall-through to the catch-all domain rule (Rule 3), which would
+    // otherwise also match these addresses and trigger the Lambda a second time.
     const forwardingRule = ruleSet.addRule('RouteForwardingNamed', {
       recipients: [
         `ok@${forwardingDomain}`,
@@ -174,6 +178,7 @@ export class InboundEmailStack extends cdk.Stack {
           bucket: inboundBucket,
           objectKeyPrefix: 'forwarding/',
         }),
+        new sesActions.Stop(),
       ],
       enabled: true,
     });
