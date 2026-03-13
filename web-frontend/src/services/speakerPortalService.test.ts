@@ -478,4 +478,283 @@ describe('speakerPortalService', () => {
       expect(result.cloudFrontUrl).toBe('https://cdn.example.com/slides.pdf');
     });
   });
+
+  // ── uploadProfilePhoto (3-phase flow) ───────────────────────────────────────
+
+  describe('uploadProfilePhoto', () => {
+    const mockFile = new File(['photo-data'], 'avatar.jpg', { type: 'image/jpeg' });
+    const mockPresigned: PresignedPhotoUploadResponse = {
+      uploadUrl: 'https://s3.example.com/photo-upload',
+      uploadId: 'photo-up-1',
+      s3Key: 'photos/avatar.jpg',
+      expiresIn: 3600,
+      maxSizeBytes: 5_000_000,
+    };
+    const mockConfirm: PhotoConfirmResponse = {
+      profilePictureUrl: 'https://cdn.example.com/avatar.jpg',
+    };
+
+    let mockXHR: {
+      open: ReturnType<typeof vi.fn>;
+      send: ReturnType<typeof vi.fn>;
+      setRequestHeader: ReturnType<typeof vi.fn>;
+      upload: { addEventListener: ReturnType<typeof vi.fn> };
+      addEventListener: ReturnType<typeof vi.fn>;
+      status: number;
+    };
+
+    beforeEach(() => {
+      mockXHR = {
+        open: vi.fn(),
+        send: vi.fn(),
+        setRequestHeader: vi.fn(),
+        upload: { addEventListener: vi.fn() },
+        addEventListener: vi.fn(),
+        status: 200,
+      };
+      vi.stubGlobal('XMLHttpRequest', function (this: any) {
+        Object.assign(this, mockXHR);
+        this.upload = { addEventListener: mockXHR.upload.addEventListener };
+      } as any);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should complete 3-phase upload and return photo URL', async () => {
+      // Phase 1: presigned URL
+      mockApiClient.post
+        .mockResolvedValueOnce({ data: mockPresigned })
+        // Phase 3: confirm
+        .mockResolvedValueOnce({ data: mockConfirm });
+
+      // Trigger XHR load on send
+      mockXHR.send.mockImplementation(() => {
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      const result = await speakerPortalService.uploadProfilePhoto('tok', mockFile);
+
+      expect(result).toBe('https://cdn.example.com/avatar.jpg');
+      expect(mockXHR.open).toHaveBeenCalledWith('PUT', 'https://s3.example.com/photo-upload');
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+    });
+
+    it('should report upload progress', async () => {
+      mockApiClient.post
+        .mockResolvedValueOnce({ data: mockPresigned })
+        .mockResolvedValueOnce({ data: mockConfirm });
+
+      const onProgress = vi.fn();
+
+      mockXHR.send.mockImplementation(() => {
+        // Trigger progress
+        const progressHandler = mockXHR.upload.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'progress'
+        )?.[1];
+        progressHandler?.({ lengthComputable: true, loaded: 50, total: 100 });
+        // Trigger load
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      await speakerPortalService.uploadProfilePhoto('tok', mockFile, onProgress);
+      expect(onProgress).toHaveBeenCalledWith(50);
+    });
+
+    it('should reject when S3 upload returns non-200', async () => {
+      mockApiClient.post.mockResolvedValueOnce({ data: mockPresigned });
+      mockXHR.status = 403;
+
+      mockXHR.send.mockImplementation(() => {
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      await expect(speakerPortalService.uploadProfilePhoto('tok', mockFile)).rejects.toThrow(
+        'S3 upload failed with status 403'
+      );
+    });
+
+    it('should reject on S3 network error', async () => {
+      mockApiClient.post.mockResolvedValueOnce({ data: mockPresigned });
+
+      mockXHR.send.mockImplementation(() => {
+        const errorHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'error'
+        )?.[1];
+        errorHandler?.();
+      });
+
+      await expect(speakerPortalService.uploadProfilePhoto('tok', mockFile)).rejects.toThrow(
+        'S3 upload failed'
+      );
+    });
+  });
+
+  // ── uploadMaterial (3-phase flow) ───────────────────────────────────────────
+
+  describe('uploadMaterial', () => {
+    const mockFile = new File(['pdf-data'], 'slides.pdf', { type: 'application/pdf' });
+    const mockPresigned: MaterialUploadResponse = {
+      uploadUrl: 'https://s3.example.com/material-upload',
+      uploadId: 'mat-up-1',
+      s3Key: 'materials/slides.pdf',
+      fileExtension: 'pdf',
+      expiresInMinutes: 60,
+      requiredHeaders: { 'Content-Type': 'application/pdf', 'x-amz-meta-tag': 'slides' },
+    };
+    const mockConfirm: MaterialConfirmResponse = {
+      materialId: 'mat-abc',
+      uploadId: 'mat-up-1',
+      fileName: 'slides.pdf',
+      cloudFrontUrl: 'https://cdn.example.com/slides.pdf',
+      materialType: 'PRESENTATION',
+      uploadedAt: '2026-03-01T10:00:00Z',
+    };
+
+    let mockXHR: {
+      open: ReturnType<typeof vi.fn>;
+      send: ReturnType<typeof vi.fn>;
+      setRequestHeader: ReturnType<typeof vi.fn>;
+      upload: { addEventListener: ReturnType<typeof vi.fn> };
+      addEventListener: ReturnType<typeof vi.fn>;
+      status: number;
+    };
+
+    beforeEach(() => {
+      mockXHR = {
+        open: vi.fn(),
+        send: vi.fn(),
+        setRequestHeader: vi.fn(),
+        upload: { addEventListener: vi.fn() },
+        addEventListener: vi.fn(),
+        status: 200,
+      };
+      vi.stubGlobal('XMLHttpRequest', function (this: any) {
+        Object.assign(this, mockXHR);
+        this.upload = { addEventListener: mockXHR.upload.addEventListener };
+      } as any);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should complete 3-phase upload and return confirm response', async () => {
+      mockApiClient.post
+        .mockResolvedValueOnce({ data: mockPresigned })
+        .mockResolvedValueOnce({ data: mockConfirm });
+
+      mockXHR.send.mockImplementation(() => {
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      const result = await speakerPortalService.uploadMaterial('tok', mockFile);
+
+      expect(result.cloudFrontUrl).toBe('https://cdn.example.com/slides.pdf');
+      expect(mockXHR.open).toHaveBeenCalledWith('PUT', 'https://s3.example.com/material-upload');
+      // Should set required headers from presigned response
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('x-amz-meta-tag', 'slides');
+      // Confirm should include file metadata
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        '/speaker-portal/materials/confirm',
+        expect.objectContaining({
+          token: 'tok',
+          uploadId: 'mat-up-1',
+          fileName: 'slides.pdf',
+          fileExtension: 'pdf',
+          materialType: 'PRESENTATION',
+        }),
+        { headers: { 'Skip-Auth': 'true' } }
+      );
+    });
+
+    it('should report upload progress', async () => {
+      mockApiClient.post
+        .mockResolvedValueOnce({ data: mockPresigned })
+        .mockResolvedValueOnce({ data: mockConfirm });
+
+      const onProgress = vi.fn();
+
+      mockXHR.send.mockImplementation(() => {
+        const progressHandler = mockXHR.upload.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'progress'
+        )?.[1];
+        progressHandler?.({ lengthComputable: true, loaded: 75, total: 100 });
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      await speakerPortalService.uploadMaterial('tok', mockFile, onProgress);
+      expect(onProgress).toHaveBeenCalledWith(75);
+    });
+
+    it('should not call onProgress when event is not lengthComputable', async () => {
+      mockApiClient.post
+        .mockResolvedValueOnce({ data: mockPresigned })
+        .mockResolvedValueOnce({ data: mockConfirm });
+
+      const onProgress = vi.fn();
+
+      mockXHR.send.mockImplementation(() => {
+        const progressHandler = mockXHR.upload.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'progress'
+        )?.[1];
+        progressHandler?.({ lengthComputable: false, loaded: 50, total: 0 });
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      await speakerPortalService.uploadMaterial('tok', mockFile, onProgress);
+      expect(onProgress).not.toHaveBeenCalled();
+    });
+
+    it('should reject when S3 returns non-200', async () => {
+      mockApiClient.post.mockResolvedValueOnce({ data: mockPresigned });
+      mockXHR.status = 500;
+
+      mockXHR.send.mockImplementation(() => {
+        const loadHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'load'
+        )?.[1];
+        loadHandler?.();
+      });
+
+      await expect(speakerPortalService.uploadMaterial('tok', mockFile)).rejects.toThrow(
+        'S3 upload failed with status 500'
+      );
+    });
+
+    it('should reject on S3 network error', async () => {
+      mockApiClient.post.mockResolvedValueOnce({ data: mockPresigned });
+
+      mockXHR.send.mockImplementation(() => {
+        const errorHandler = mockXHR.addEventListener.mock.calls.find(
+          (c: unknown[]) => c[0] === 'error'
+        )?.[1];
+        errorHandler?.();
+      });
+
+      await expect(speakerPortalService.uploadMaterial('tok', mockFile)).rejects.toThrow(
+        'S3 upload failed'
+      );
+    });
+  });
 });
