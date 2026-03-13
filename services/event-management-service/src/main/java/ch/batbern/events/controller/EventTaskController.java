@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -336,6 +337,14 @@ public class EventTaskController {
         EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
 
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/api/v1/tasks/{taskId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> deleteTask(@PathVariable UUID taskId) {
+        log.info("DELETE /api/v1/tasks/{}", taskId);
+        eventTaskService.deleteTask(taskId);
+        return ResponseEntity.noContent().build();
     }
 
     // === Helper Methods ===
