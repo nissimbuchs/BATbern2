@@ -160,9 +160,17 @@
     "columns": {
       "type": "Type",
       "date": "Date",
+      "time": "Time",
       "location": "Location",
       "inviteStatus": "Invite",
       "actions": "Actions"
+    },
+    "edit": "Edit Meeting",
+    "delete": "Delete Meeting",
+    "deleteConfirm": {
+      "title": "Delete Meeting",
+      "message": "Are you sure you want to delete the meeting for {{eventCode}}?",
+      "messageWithInvite": "Are you sure you want to delete the meeting for {{eventCode}}? A cancellation notice will be sent to all partners and organizers."
     },
     "error": "Could not load meetings",
     "inviteSuccess": "Calendar invite is being sent",

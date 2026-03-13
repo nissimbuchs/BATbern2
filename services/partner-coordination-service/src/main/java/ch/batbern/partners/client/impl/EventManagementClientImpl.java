@@ -164,7 +164,9 @@ public class EventManagementClientImpl implements EventManagementClient {
                 if (startObj != null) {
                     try {
                         LocalTime st = Instant.parse(startObj.toString()).atZone(ZURICH).toLocalTime();
-                        if (minStart == null || st.isBefore(minStart)) minStart = st;
+                        if (minStart == null || st.isBefore(minStart)) {
+                            minStart = st;
+                        }
                     } catch (Exception e) {
                         log.debug("Could not parse session startTime: {}", startObj);
                     }
@@ -172,7 +174,9 @@ public class EventManagementClientImpl implements EventManagementClient {
                 if (endObj != null) {
                     try {
                         LocalTime et = Instant.parse(endObj.toString()).atZone(ZURICH).toLocalTime();
-                        if (maxEnd == null || et.isAfter(maxEnd)) maxEnd = et;
+                        if (maxEnd == null || et.isAfter(maxEnd)) {
+                            maxEnd = et;
+                        }
                     } catch (Exception e) {
                         log.debug("Could not parse session endTime: {}", endObj);
                     }
@@ -247,25 +251,60 @@ public class EventManagementClientImpl implements EventManagementClient {
         private String eventType;
         private List<Map<String, Object>> sessions;
 
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
+        public String getTitle() {
+            return title;
+        }
 
-        public String getEventCode() { return eventCode; }
-        public void setEventCode(String eventCode) { this.eventCode = eventCode; }
+        public void setTitle(String title) {
+            this.title = title;
+        }
 
-        public Instant getDate() { return date; }
-        public void setDate(Instant date) { this.date = date; }
+        public String getEventCode() {
+            return eventCode;
+        }
 
-        public String getVenueName() { return venueName; }
-        public void setVenueName(String venueName) { this.venueName = venueName; }
+        public void setEventCode(String eventCode) {
+            this.eventCode = eventCode;
+        }
 
-        public String getVenueAddress() { return venueAddress; }
-        public void setVenueAddress(String venueAddress) { this.venueAddress = venueAddress; }
+        public Instant getDate() {
+            return date;
+        }
 
-        public String getEventType() { return eventType; }
-        public void setEventType(String eventType) { this.eventType = eventType; }
+        public void setDate(Instant date) {
+            this.date = date;
+        }
 
-        public List<Map<String, Object>> getSessions() { return sessions; }
-        public void setSessions(List<Map<String, Object>> sessions) { this.sessions = sessions; }
+        public String getVenueName() {
+            return venueName;
+        }
+
+        public void setVenueName(String venueName) {
+            this.venueName = venueName;
+        }
+
+        public String getVenueAddress() {
+            return venueAddress;
+        }
+
+        public void setVenueAddress(String venueAddress) {
+            this.venueAddress = venueAddress;
+        }
+
+        public String getEventType() {
+            return eventType;
+        }
+
+        public void setEventType(String eventType) {
+            this.eventType = eventType;
+        }
+
+        public List<Map<String, Object>> getSessions() {
+            return sessions;
+        }
+
+        public void setSessions(List<Map<String, Object>> sessions) {
+            this.sessions = sessions;
+        }
     }
 }

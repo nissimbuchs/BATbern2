@@ -94,6 +94,47 @@ public class IcsGeneratorService {
         return ics.getBytes(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Generate a METHOD:CANCEL ICS to remove the partner meeting from attendees' calendars.
+     *
+     * Uses the same UID as the original REQUEST and SEQUENCE = inviteSequence + 1 so that
+     * calendar clients (Outlook, Gmail, macOS Mail) recognise this as a cancellation of the
+     * previously sent invite.
+     *
+     * Only the partner meeting VEVENT is cancelled — the BATbern main event is not affected.
+     *
+     * @param meeting the meeting being deleted (inviteSequence must reflect the last sent REQUEST)
+     * @return ICS content as UTF-8 byte array
+     */
+    public byte[] generateCancelIcs(PartnerMeeting meeting) {
+        int cancelSequence = meeting.getInviteSequence() + 1;
+        String dtstamp = UTC_FMT.format(Instant.now().atZone(ZoneId.of("UTC")));
+
+        List<String> extraLines = List.of(
+                "DTSTAMP:" + dtstamp,
+                "SEQUENCE:" + cancelSequence,
+                "STATUS:CANCELLED",
+                "ORGANIZER:mailto:" + organizerEmail
+        );
+
+        String ics = "BEGIN:VCALENDAR\r\n"
+                + "VERSION:2.0\r\n"
+                + "PRODID:-//BATbern//Partner Meeting//EN\r\n"
+                + "CALSCALE:GREGORIAN\r\n"
+                + "METHOD:CANCEL\r\n"
+                + buildVEvent(
+                        meeting.getId() + "@batbern.ch",
+                        toUtc(meeting.getMeetingDate(), meeting.getStartTime()),
+                        toUtc(meeting.getMeetingDate(), meeting.getEndTime()),
+                        "BATbern Partner Meeting (" + meeting.getMeetingType() + ")",
+                        "",
+                        meeting.getLocation() != null ? meeting.getLocation() : "",
+                        extraLines)
+                + "END:VCALENDAR\r\n";
+
+        return ics.getBytes(StandardCharsets.UTF_8);
+    }
+
     private String buildVEvent(
             String uid,
             String dtStart,

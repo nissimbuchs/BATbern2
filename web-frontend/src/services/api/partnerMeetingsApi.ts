@@ -87,6 +87,14 @@ export const sendInvite = async (meetingId: string): Promise<SendInviteResponse>
 };
 
 /**
+ * Delete a partner meeting (ORGANIZER only).
+ * If an invite was already sent, a METHOD:CANCEL ICS is dispatched to all partners/organizers.
+ */
+export const deleteMeeting = async (meetingId: string): Promise<void> => {
+  await apiClient.delete(`/partner-meetings/${meetingId}`);
+};
+
+/**
  * Get RSVP responses for a partner meeting (ORGANIZER only).
  * Story 10.27 (AC7).
  */

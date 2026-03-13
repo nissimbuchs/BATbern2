@@ -5,6 +5,7 @@
  * Organizer-only page for managing partner meetings.
  * Lists all meetings with event, type, date, location, invite status.
  * Clicking a row expands MeetingDetailPanel (agenda + notes + send invite).
+ * Each row has Edit and Delete action buttons.
  */
 
 import React, { useState } from 'react';
@@ -15,6 +16,11 @@ import {
   Chip,
   Collapse,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Skeleton,
   Table,
@@ -27,12 +33,17 @@ import {
 import {
   Add as AddIcon,
   CalendarMonth as CalendarMonthIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
   KeyboardArrowDown as ArrowDownIcon,
   KeyboardArrowUp as ArrowUpIcon,
 } from '@mui/icons-material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
+import { deleteMeeting } from '@/services/api/partnerMeetingsApi';
 import CreateMeetingDialog from './CreateMeetingDialog';
+import EditMeetingDialog from './EditMeetingDialog';
 import MeetingDetailPanel from './MeetingDetailPanel';
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
@@ -46,9 +57,36 @@ const PartnerMeetingsPage: React.FC = () => {
   const { data: meetings, isLoading, isError } = usePartnerMeetings();
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editMeeting, setEditMeeting] = useState<PartnerMeetingDTO | null>(null);
+  const [deletingMeeting, setDeletingMeeting] = useState<PartnerMeetingDTO | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteMeeting(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerMeetings'] });
+      setDeletingMeeting(null);
+      if (expandedId === deletingMeeting?.id) setExpandedId(null);
+    },
+  });
 
   const toggleRow = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  const handleEditClick = (e: React.MouseEvent, meeting: PartnerMeetingDTO) => {
+    e.stopPropagation();
+    setEditMeeting(meeting);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, meeting: PartnerMeetingDTO) => {
+    e.stopPropagation();
+    setDeletingMeeting(meeting);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingMeeting) deleteMutation.mutate(deletingMeeting.id);
   };
 
   if (isLoading) {
@@ -101,6 +139,7 @@ const PartnerMeetingsPage: React.FC = () => {
               <TableCell>{t('common:labels.event')}</TableCell>
               <TableCell>{t('meetings.columns.type')}</TableCell>
               <TableCell>{t('common:labels.date')}</TableCell>
+              <TableCell>{t('meetings.columns.time')}</TableCell>
               <TableCell>{t('meetings.columns.location')}</TableCell>
               <TableCell>{t('meetings.columns.inviteStatus')}</TableCell>
               <TableCell>{t('common:labels.actions')}</TableCell>
@@ -113,6 +152,8 @@ const PartnerMeetingsPage: React.FC = () => {
                 meeting={meeting}
                 expanded={expandedId === meeting.id}
                 onToggle={() => toggleRow(meeting.id)}
+                onEdit={(e) => handleEditClick(e, meeting)}
+                onDelete={(e) => handleDeleteClick(e, meeting)}
                 t={t}
               />
             ))}
@@ -121,6 +162,46 @@ const PartnerMeetingsPage: React.FC = () => {
       )}
 
       <CreateMeetingDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      <EditMeetingDialog
+        open={editMeeting !== null}
+        meeting={editMeeting}
+        onClose={() => setEditMeeting(null)}
+      />
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={deletingMeeting !== null}
+        onClose={() => setDeletingMeeting(null)}
+        data-testid="delete-meeting-dialog"
+      >
+        <DialogTitle>{t('meetings.deleteConfirm.title')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {deletingMeeting?.inviteSentAt
+              ? t('meetings.deleteConfirm.messageWithInvite', {
+                  eventCode: deletingMeeting.eventCode,
+                })
+              : t('meetings.deleteConfirm.message', {
+                  eventCode: deletingMeeting?.eventCode,
+                })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingMeeting(null)} data-testid="delete-meeting-cancel">
+            {t('common:actions.cancel')}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleDeleteConfirm}
+            disabled={deleteMutation.isPending}
+            data-testid="delete-meeting-confirm"
+          >
+            {t('meetings.delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
@@ -131,13 +212,29 @@ interface MeetingRowProps {
   meeting: PartnerMeetingDTO;
   expanded: boolean;
   onToggle: () => void;
+  onEdit: (e: React.MouseEvent) => void;
+  onDelete: (e: React.MouseEvent) => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
-const MeetingRow: React.FC<MeetingRowProps> = ({ meeting, expanded, onToggle, t }) => {
+const MeetingRow: React.FC<MeetingRowProps> = ({
+  meeting,
+  expanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  t,
+}) => {
   const meetingDate = meeting.meetingDate
     ? new Date(meeting.meetingDate).toLocaleDateString()
     : '—';
+
+  const meetingTime =
+    meeting.startTime && meeting.endTime
+      ? `${meeting.startTime.slice(0, 5)} – ${meeting.endTime.slice(0, 5)}`
+      : meeting.startTime
+        ? meeting.startTime.slice(0, 5)
+        : '—';
 
   const inviteSentDate = meeting.inviteSentAt
     ? new Date(meeting.inviteSentAt).toLocaleDateString()
@@ -168,6 +265,7 @@ const MeetingRow: React.FC<MeetingRowProps> = ({ meeting, expanded, onToggle, t 
           />
         </TableCell>
         <TableCell>{meetingDate}</TableCell>
+        <TableCell>{meetingTime}</TableCell>
         <TableCell>{meeting.location ?? '—'}</TableCell>
         <TableCell>
           {inviteSentDate ? (
@@ -186,12 +284,30 @@ const MeetingRow: React.FC<MeetingRowProps> = ({ meeting, expanded, onToggle, t 
             />
           )}
         </TableCell>
-        <TableCell />
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <IconButton
+            size="small"
+            onClick={onEdit}
+            aria-label={t('meetings.edit')}
+            data-testid={`edit-meeting-${meeting.id}`}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={onDelete}
+            aria-label={t('meetings.delete')}
+            data-testid={`delete-meeting-${meeting.id}`}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </TableCell>
       </TableRow>
 
       {/* Expanded detail panel */}
       <TableRow>
-        <TableCell colSpan={7} sx={{ py: 0 }}>
+        <TableCell colSpan={8} sx={{ py: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <MeetingDetailPanel meeting={meeting} />
           </Collapse>

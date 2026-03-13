@@ -99,7 +99,8 @@ public class RegistrationEmailService {
             EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
                     "event.ics",
                     icsFile,
-                    "text/calendar; charset=utf-8; method=REQUEST"
+                    "text/calendar; charset=utf-8; method=REQUEST",
+                    true  // inline → accept/decline in Apple Mail, Outlook, Gmail
             );
 
             emailService.sendHtmlEmailWithAttachments(

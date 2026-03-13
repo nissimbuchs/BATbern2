@@ -215,7 +215,14 @@ public class EmailService {
             for (EmailAttachment attachment : attachments) {
                 MimeBodyPart attachmentPart = new MimeBodyPart();
                 attachmentPart.setContent(attachment.content(), attachment.mimeType());
+                // setFileName adds name= to Content-Type (helps clients identify the file)
                 attachmentPart.setFileName(attachment.filename());
+                if (attachment.inline()) {
+                    // Override Content-Disposition to inline so calendar clients
+                    // (Apple Mail, Outlook, Gmail) show accept/decline buttons
+                    // rather than treating the part as a downloadable attachment.
+                    attachmentPart.setDisposition(MimeBodyPart.INLINE);
+                }
                 multipart.addBodyPart(attachmentPart);
             }
 
@@ -302,10 +309,19 @@ public class EmailService {
      * Email attachment record.
      *
      * @param filename Attachment filename (e.g., "event.ics", "ticket.pdf")
-     * @param content Attachment content as byte array
+     * @param content  Attachment content as byte array
      * @param mimeType MIME type (e.g., "text/calendar", "application/pdf")
+     * @param inline   When true the part is sent with Content-Disposition: inline so that
+     *                 calendar clients (Apple Mail, Outlook, Gmail) render accept/decline
+     *                 buttons instead of treating the file as a plain attachment.
+     *                 Use true for text/calendar parts, false (default) for everything else.
      */
-    public record EmailAttachment(String filename, byte[] content, String mimeType) {}
+    public record EmailAttachment(String filename, byte[] content, String mimeType, boolean inline) {
+        /** Backward-compatible constructor — inline defaults to false. */
+        public EmailAttachment(String filename, byte[] content, String mimeType) {
+            this(filename, content, mimeType, false);
+        }
+    }
 
     /**
      * Exception thrown when email sending fails.

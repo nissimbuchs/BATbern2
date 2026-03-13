@@ -147,15 +147,15 @@ public class PartnerMeetingService {
         byte[] icsContent = icsGeneratorService.generate(meeting, event, emails);
 
         // Dispatch emails asynchronously (AC8 — returns 202 immediately)
-        inviteEmailService.sendCalendarInvites(
-                emails,
+        var inviteDetails = new PartnerInviteEmailService.MeetingInviteDetails(
                 event.title(),
+                meeting.getEventCode(),
                 meeting.getMeetingDate(),
                 meeting.getStartTime(),
                 meeting.getEndTime(),
-                meeting.getLocation(),
-                icsContent
+                meeting.getLocation()
         );
+        inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
 
         // Persist updated sequence and invite_sent_at together
         meeting.setInviteSentAt(Instant.now());
@@ -168,6 +168,41 @@ public class PartnerMeetingService {
                 .meetingId(meetingId)
                 .recipientCount(emails.size())
                 .build();
+    }
+
+    /**
+     * Delete a partner meeting.
+     *
+     * If a calendar invite has already been sent (inviteSentAt != null), a METHOD:CANCEL ICS
+     * is generated and sent to all partners and organizers so their calendar clients remove
+     * the entry automatically. The email is dispatched asynchronously.
+     *
+     * RSVPs are removed automatically via ON DELETE CASCADE (V9 migration).
+     *
+     * @param meetingId the meeting to delete
+     */
+    @Transactional
+    public void deleteMeeting(UUID meetingId) {
+        PartnerMeeting meeting = findMeetingById(meetingId);
+        log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
+                meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
+
+        if (meeting.getInviteSentAt() != null) {
+            // Fetch event title for the cancellation email body
+            EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
+            List<String> emails = collectInviteRecipientEmails();
+            byte[] cancelIcs = icsGeneratorService.generateCancelIcs(meeting);
+            inviteEmailService.sendCancellationNotice(
+                    emails,
+                    event.title(),
+                    meeting.getEventCode(),
+                    meeting.getMeetingDate(),
+                    cancelIcs
+            );
+            log.info("Cancellation notice queued for {} recipients, meetingId={}", emails.size(), meetingId);
+        }
+
+        meetingRepository.delete(meeting);
     }
 
     /**

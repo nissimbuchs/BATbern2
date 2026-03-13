@@ -160,9 +160,17 @@
     "columns": {
       "type": "Typ",
       "date": "Datum",
+      "time": "Zeit",
       "location": "Ort",
       "inviteStatus": "Einladung",
       "actions": "Aktionen"
+    },
+    "edit": "Meeting bearbeiten",
+    "delete": "Meeting löschen",
+    "deleteConfirm": {
+      "title": "Meeting löschen",
+      "message": "Soll das Meeting für {{eventCode}} wirklich gelöscht werden?",
+      "messageWithInvite": "Soll das Meeting für {{eventCode}} wirklich gelöscht werden? Alle Partner und Organisatoren erhalten eine Absage-Benachrichtigung."
     },
     "error": "Meetings konnten nicht geladen werden",
     "inviteSuccess": "Kalendereinladung wird versendet",
