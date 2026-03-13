@@ -1412,6 +1412,10 @@ export interface operations {
         role?: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
         /** @description Filter by company name (deprecated, use filter parameter) */
         company?: string;
+        /** @description Field to sort by (whitelisted server-side) */
+        sortBy?: 'name' | 'email' | 'company';
+        /** @description Sort direction */
+        sortDir?: 'asc' | 'desc';
       };
       header?: never;
       path?: never;

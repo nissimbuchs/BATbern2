@@ -3022,7 +3022,7 @@ export interface components {
     };
     /** @description Request to create a custom email template */
     CreateEmailTemplateRequest: {
-      /** @description Unique template key */
+      /** @description Unique template key (kebab-case, no spaces) */
       templateKey: string;
       /** @description Locale code (de or en) */
       locale: string;

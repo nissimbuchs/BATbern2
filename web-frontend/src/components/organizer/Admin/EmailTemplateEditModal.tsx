@@ -270,7 +270,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
                Risk accepted (code review 2026-02-28). */}
             <TinyMCEEditor
               apiKey="vfen2deuuzo9vxkqtwegdhngiujb74mu2pb3l5fg9o31ekvf"
-              value={htmlBody}
+              initialValue={htmlBody}
               onEditorChange={(val: string) => setHtmlBody(val)}
               init={{
                 height: 400,

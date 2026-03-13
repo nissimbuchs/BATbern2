@@ -6348,8 +6348,9 @@ components:
       properties:
         templateKey:
           type: string
-          description: Unique template key
+          description: Unique template key (kebab-case, no spaces)
           maxLength: 100
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
         locale:
           type: string
           description: Locale code (de or en)
