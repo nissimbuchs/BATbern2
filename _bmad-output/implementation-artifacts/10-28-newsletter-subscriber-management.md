@@ -1,6 +1,6 @@
 # Story 10.28: Newsletter Subscriber Management Page
 
-Status: review
+Status: done
 
 ## Story
 
@@ -523,13 +523,16 @@ claude-opus-4-6
 
 - Phase 1: OpenAPI spec updated with paginated GET, 3 action endpoints, `unsubscribedAt` on SubscriberResponse. Types generated.
 - Phase 2: Backend TDD complete — 55 tests all GREEN. Unit tests (16 new) + integration tests (10 new). Service, controller, repository all implemented.
-- Phase 3: Frontend complete — 49 tests all GREEN. Store (14), components (35). All 8 components, nav config, route, i18n (en+de+8 locales).
+- Phase 3: Frontend complete — 49 tests all GREEN. Store (25), components (35). All 8 components, nav config, route, i18n (en+de+8 locales).
+- Bonus: Cloud badge icon on subscribers with a registered user account (`username` field). Not in AC — added for organizer visibility. i18n key: `table.registeredUser`.
 - Phase 4: UserTable backend sort migration complete — store (`sortBy`/`sortDir` + `setSort`), API service, useUserList hook, backend controller+service with whitelist, UserTable refactored to remove in-memory sort. All existing tests pass (no regressions).
+- Code Review (Amelia): Fixed 5 issues — H1: UserPagination now accepts `namespace` prop (decoupled from userManagement i18n), H2: dialog mutation error state reset on reopen via `mutation.reset()`, M1: removed 2 duplicate integration tests, M2: documented Cloud badge scope, M3: added missing `user-api.types.ts` to File List. L1: removed unnecessary defaultValue fallback. All 131 frontend tests pass.
 
 ### File List
 
 - `docs/api/events-api.openapi.yml` — paginated subscriber list + 3 action endpoints + unsubscribedAt field
 - `web-frontend/src/types/generated/events-api.types.ts` — regenerated from OpenAPI
+- `web-frontend/src/types/generated/user-api.types.ts` — regenerated from OpenAPI (Phase 4 sort migration)
 - `services/event-management-service/src/main/java/ch/batbern/events/dto/SubscriberResponse.java` — added unsubscribedAt
 - `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterSubscriberService.java` — findSubscribers, countSubscribers, unsubscribeById, resubscribeById, deleteById, updated toResponse
 - `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterSubscriberRepository.java` — findFiltered, countFiltered JPQL

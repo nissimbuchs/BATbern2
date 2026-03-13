@@ -41,6 +41,10 @@ const UnsubscribeDialog: React.FC<UnsubscribeDialogProps> = ({
   const { t: tCommon } = useTranslation('common');
   const mutation = useUnsubscribeSubscriber();
 
+  React.useEffect(() => {
+    if (open) mutation.reset();
+  }, [open]);
+
   const handleConfirm = () => {
     if (!subscriber?.id) return;
     mutation.mutate(subscriber.id, {

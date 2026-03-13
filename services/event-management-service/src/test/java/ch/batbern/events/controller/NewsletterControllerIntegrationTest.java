@@ -201,24 +201,9 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     // ── AC10: GET /newsletter/subscribers (ORGANIZER only) ───────────────────
-
-    @Test
-    @DisplayName("GET /newsletter/subscribers — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void listSubscribers_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(get("/api/v1/newsletter/subscribers"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("GET /newsletter/subscribers — organizer → 200 with paginated response")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void listSubscribers_organizer_returns200() throws Exception {
-        mockMvc.perform(get("/api/v1/newsletter/subscribers"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination").exists());
-    }
+    // Duplicate basic tests removed by code review — covered by Story 10.28 tests below:
+    // - listSubscribers_nonOrganizer → should_return403_when_nonOrganizerAccesses
+    // - listSubscribers_organizer → should_returnPaginatedResponse_when_organizerListsSubscribers
 
     // ── AC10: Event-scoped endpoints — auth checks ─────────────────────────
 

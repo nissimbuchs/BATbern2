@@ -41,6 +41,10 @@ const ResubscribeDialog: React.FC<ResubscribeDialogProps> = ({
   const { t: tCommon } = useTranslation('common');
   const mutation = useResubscribeSubscriber();
 
+  React.useEffect(() => {
+    if (open) mutation.reset();
+  }, [open]);
+
   const handleConfirm = () => {
     if (!subscriber?.id) return;
     mutation.mutate(subscriber.id, {

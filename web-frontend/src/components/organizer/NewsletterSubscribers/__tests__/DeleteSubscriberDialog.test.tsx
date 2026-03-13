@@ -18,6 +18,7 @@ vi.mock('@/hooks/useNewsletterSubscribers', () => ({
     mutate: mockMutate,
     isPending: false,
     isError: false,
+    reset: vi.fn(),
   }),
 }));
 

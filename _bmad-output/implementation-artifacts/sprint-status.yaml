@@ -169,7 +169,7 @@ development_status:
   10-25-partner-meeting-ical-auto-creation-year-end-reminders: ready-for-dev  # EventCreatedApplicationEvent in EMS → PartnerCoordinationClient auto-create; PCS email_templates V8 + EmailTemplateSeedService; YearEndReminderScheduler (ShedLock, cron 31-Dec); prereq: Story 8.3, 10.2
   10-26-ses-email-forwarding-distribution-lists: done                          # SES+Lambda forwarding for ok@/info@/events@/partner@/support@/batbern{N}@batbern.ch; Admin Settings tab; sender auth; prereq: 10.17
   10-27-ical-rsvp-tracking-partner-meetings: done                              # iCal REPLY ingestion; partner_meeting_rsvps table (V9); POST /internal/partner-meetings/rsvps; GET /api/v1/partner-meetings/{id}/rsvps; PartnerMeetingRsvpPanel; prereq: 8.3, 10.17
-  10-28-newsletter-subscriber-management: review                               # organizer nav item; paginated/searchable/sortable subscriber list; unsubscribe/resubscribe/delete actions; backend sort; tech debt: UserTable backend sort; prereq: 10.7
+  10-28-newsletter-subscriber-management: done                                 # organizer nav item; paginated/searchable/sortable subscriber list; unsubscribe/resubscribe/delete actions; backend sort; tech debt: UserTable backend sort; prereq: 10.7
   epic-10-retrospective: optional
 
   # ============================================================

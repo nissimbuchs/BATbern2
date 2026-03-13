@@ -43,6 +43,10 @@ const DeleteSubscriberDialog: React.FC<DeleteSubscriberDialogProps> = ({
   const { t: tCommon } = useTranslation('common');
   const mutation = useDeleteSubscriber();
 
+  React.useEffect(() => {
+    if (open) mutation.reset();
+  }, [open]);
+
   const handleConfirm = () => {
     if (!subscriber?.id) return;
     mutation.mutate(subscriber.id, {

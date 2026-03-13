@@ -81,7 +81,7 @@ const NewsletterSubscriberList: React.FC = () => {
         severity="error"
         action={
           <Button color="inherit" size="small" onClick={() => refetch()}>
-            {t('error.retry', { defaultValue: 'Retry' })}
+            {t('error.retry')}
           </Button>
         }
       >
@@ -112,6 +112,7 @@ const NewsletterSubscriberList: React.FC = () => {
           limit={pagination.limit}
           onPageChange={setPage}
           onLimitChange={setLimit}
+          namespace="newsletterSubscribers"
         />
       )}
 
