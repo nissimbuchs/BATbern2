@@ -40,27 +40,34 @@ import type { User, Role } from '@/types/user.types';
 import { ROLE_ICONS } from '@/types/user.types';
 import CompanyCell from './CompanyCell';
 
+type SortField = 'name' | 'email' | 'company';
+type SortDirection = 'asc' | 'desc';
+
 interface UserTableProps {
   users: User[];
   onRowClick: (user: User) => void;
   onAction: (action: string, user: User) => void;
   showAdminActions?: boolean;
+  sortBy?: SortField;
+  sortDir?: SortDirection;
+  onSortChange?: (field: SortField, dir: SortDirection) => void;
 }
-
-type SortField = 'name' | 'email' | 'company';
-type SortDirection = 'asc' | 'desc';
 
 const UserTable: React.FC<UserTableProps> = ({
   users,
   onRowClick,
   onAction,
   showAdminActions = true,
+  sortBy: externalSortBy,
+  sortDir: externalSortDir,
+  onSortChange,
 }) => {
   const { t } = useTranslation('userManagement');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const sortField = externalSortBy ?? 'name';
+  const sortDirection = externalSortDir ?? 'asc';
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: User) => {
     event.stopPropagation();
@@ -81,36 +88,14 @@ const UserTable: React.FC<UserTableProps> = ({
   };
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
+    if (onSortChange) {
+      if (field === sortField) {
+        onSortChange(field, sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        onSortChange(field, 'asc');
+      }
     }
   };
-
-  const sortedUsers = [...users].sort((a, b) => {
-    let aValue = '';
-    let bValue = '';
-
-    switch (sortField) {
-      case 'name':
-        aValue = `${a.firstName} ${a.lastName}`;
-        bValue = `${b.firstName} ${b.lastName}`;
-        break;
-      case 'email':
-        aValue = a.email;
-        bValue = b.email;
-        break;
-      case 'company':
-        aValue = a.companyId || '';
-        bValue = b.companyId || '';
-        break;
-    }
-
-    const comparison = aValue.localeCompare(bValue);
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
 
   const getRoleBadgeColor = (role: Role): 'primary' | 'secondary' | 'success' | 'default' => {
     switch (role) {
@@ -174,7 +159,7 @@ const UserTable: React.FC<UserTableProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {sortedUsers.map((user) => (
+          {users.map((user) => (
             <TableRow
               key={user.id}
               hover

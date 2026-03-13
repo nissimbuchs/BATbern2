@@ -49,7 +49,8 @@ const UserList: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { filters, pagination, setPage, setLimit } = useUserManagementStore();
+  const { filters, pagination, sortBy, sortDir, setPage, setLimit, setSort } =
+    useUserManagementStore();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -59,6 +60,8 @@ const UserList: React.FC = () => {
   const { data, isLoading, isError, refetch } = useUserList({
     filters,
     pagination,
+    sortBy,
+    sortDir,
   });
 
   const handleRowClick = (user: User) => {
@@ -178,6 +181,9 @@ const UserList: React.FC = () => {
           <UserTable
             users={users}
             onRowClick={handleRowClick}
+            sortBy={sortBy as 'name' | 'email' | 'company'}
+            sortDir={sortDir}
+            onSortChange={(field, dir) => setSort(field, dir)}
             onAction={(action, user) => {
               if (action === 'view') {
                 handleRowClick(user);

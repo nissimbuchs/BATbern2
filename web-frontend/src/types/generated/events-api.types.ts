@@ -1980,11 +1980,62 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List all subscribers (ORGANIZER) */
+    /** List subscribers with pagination, search, and sort (ORGANIZER) */
     get: operations['listNewsletterSubscribers'];
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/subscribers/{id}/unsubscribe': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unsubscribe a subscriber by ID (ORGANIZER) */
+    post: operations['unsubscribeSubscriberById'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/subscribers/{id}/resubscribe': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Re-subscribe a subscriber by ID (ORGANIZER) */
+    post: operations['resubscribeSubscriberById'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/subscribers/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a subscriber by ID (ORGANIZER) */
+    delete: operations['deleteSubscriberById'];
     options?: never;
     head?: never;
     patch?: never;
@@ -2756,6 +2807,8 @@ export interface components {
       username?: string;
       /** Format: date-time */
       subscribedAt: string;
+      /** Format: date-time */
+      unsubscribedAt?: string | null;
     };
     /** @description All-time KPI totals and full event timeline (not filtered by time range) */
     AnalyticsOverviewResponse: {
@@ -8366,27 +8419,155 @@ export interface operations {
   };
   listNewsletterSubscribers: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Items per page (max 100) */
+        limit?: number;
+        /** @description Case-insensitive partial match against email or first name */
+        search?: string;
+        /** @description Filter by subscription status */
+        status?: 'all' | 'active' | 'unsubscribed';
+        /** @description Sort field (whitelisted server-side) */
+        sortBy?: 'email' | 'firstName' | 'subscribedAt' | 'unsubscribedAt' | 'source' | 'language';
+        /** @description Sort direction */
+        sortDir?: 'asc' | 'desc';
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Subscriber list */
+      /** @description Paginated subscriber list */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           'application/json': {
-            totalCount?: number;
-            subscribers?: components['schemas']['SubscriberResponse'][];
+            data?: components['schemas']['SubscriberResponse'][];
+            pagination?: components['schemas']['PaginationMetadata'];
           };
         };
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+    };
+  };
+  unsubscribeSubscriberById: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscriber unsubscribed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubscriberResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Subscriber not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Subscriber already unsubscribed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  resubscribeSubscriberById: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscriber re-subscribed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubscriberResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Subscriber not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Subscriber already active */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  deleteSubscriberById: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscriber deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Subscriber not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   sendEventNewsletter: {

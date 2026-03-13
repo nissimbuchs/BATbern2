@@ -419,6 +419,22 @@ paths:
           schema:
             type: string
             example: Swiss IT Solutions AG
+        - name: sortBy
+          in: query
+          description: Field to sort by (whitelisted server-side)
+          required: false
+          schema:
+            type: string
+            enum: [name, email, company]
+            default: name
+        - name: sortDir
+          in: query
+          description: Sort direction
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
       responses:
         '200':
           description: Successful response with paginated users

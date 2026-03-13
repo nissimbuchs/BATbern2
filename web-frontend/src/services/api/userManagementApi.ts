@@ -36,12 +36,17 @@ const USER_API_PATH = '/users';
 export const listUsers = async (
   filters: UserFilters,
   pagination: UserPagination,
-  includes?: string[]
+  includes?: string[],
+  sortBy?: string,
+  sortDir?: 'asc' | 'desc'
 ): Promise<PaginatedUserResponse> => {
   const params: Record<string, string | number | boolean> = {
     page: pagination.page,
     limit: pagination.limit,
   };
+
+  if (sortBy) params.sortBy = sortBy;
+  if (sortDir) params.sortDir = sortDir;
 
   // Add includes parameter
   if (includes && includes.length > 0) {

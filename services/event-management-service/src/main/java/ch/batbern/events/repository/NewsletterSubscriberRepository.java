@@ -43,4 +43,40 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
             + "  SELECT r.id.email FROM NewsletterRecipient r WHERE r.id.sendId = :sendId"
             + ")")
     List<NewsletterSubscriber> findActiveSubscribersNotInSend(@Param("sendId") UUID sendId);
+
+    /**
+     * Find subscribers with search, status filter, and pagination (Story 10.28).
+     * Dynamic ORDER BY comes from Spring Data Sort on the Pageable parameter.
+     */
+    @Query("""
+            SELECT s FROM NewsletterSubscriber s
+            WHERE (:search IS NULL
+                   OR LOWER(s.email) LIKE :searchLike
+                   OR LOWER(s.firstName) LIKE :searchLike)
+              AND (:status = 'all'
+                   OR (:status = 'active'       AND s.unsubscribedAt IS NULL)
+                   OR (:status = 'unsubscribed' AND s.unsubscribedAt IS NOT NULL))
+            """)
+    List<NewsletterSubscriber> findFiltered(
+            @Param("search") String search,
+            @Param("searchLike") String searchLike,
+            @Param("status") String status,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Count subscribers matching search + status filter (Story 10.28).
+     */
+    @Query("""
+            SELECT COUNT(s) FROM NewsletterSubscriber s
+            WHERE (:search IS NULL
+                   OR LOWER(s.email) LIKE :searchLike
+                   OR LOWER(s.firstName) LIKE :searchLike)
+              AND (:status = 'all'
+                   OR (:status = 'active'       AND s.unsubscribedAt IS NULL)
+                   OR (:status = 'unsubscribed' AND s.unsubscribedAt IS NOT NULL))
+            """)
+    long countFiltered(
+            @Param("search") String search,
+            @Param("searchLike") String searchLike,
+            @Param("status") String status);
 }

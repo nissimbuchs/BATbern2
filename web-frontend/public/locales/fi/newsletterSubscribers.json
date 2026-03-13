@@ -1,0 +1,66 @@
+{
+  "title": "Newsletter Subscribers",
+  "loading": {
+    "subscribers": "Loading subscribers\u2026"
+  },
+  "error": {
+    "loadFailed": "Failed to load subscribers.",
+    "retry": "Retry"
+  },
+  "search": {
+    "placeholder": "Search by email or name\u2026"
+  },
+  "filters": {
+    "status": {
+      "label": "Status",
+      "all": "All",
+      "active": "Active",
+      "unsubscribed": "Unsubscribed"
+    },
+    "clearAll": "Clear Filters"
+  },
+  "table": {
+    "empty": "No subscribers found.",
+    "headers": {
+      "email": "Email",
+      "firstName": "First Name",
+      "language": "Language",
+      "source": "Source",
+      "subscribedAt": "Subscribed",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "status": {
+    "active": "Active",
+    "unsubscribed": "Unsubscribed"
+  },
+  "actions": {
+    "openMenu": "Open actions",
+    "unsubscribe": "Unsubscribe",
+    "resubscribe": "Re-subscribe",
+    "delete": "Delete"
+  },
+  "pagination": {
+    "itemsPerPage": "Items per page"
+  },
+  "dialogs": {
+    "unsubscribe": {
+      "title": "Unsubscribe subscriber",
+      "message": "Unsubscribe {{email}}? They will stop receiving newsletters but their record will be kept."
+    },
+    "resubscribe": {
+      "title": "Re-subscribe subscriber",
+      "message": "Re-subscribe {{email}}? They will receive future newsletters again."
+    },
+    "delete": {
+      "title": "Delete subscriber",
+      "message": "Permanently delete {{email}}? This cannot be undone."
+    }
+  },
+  "toast": {
+    "unsubscribeSuccess": "{{email}} has been unsubscribed.",
+    "resubscribeSuccess": "{{email}} has been re-subscribed.",
+    "deleteSuccess": "{{email}} has been deleted."
+  }
+}

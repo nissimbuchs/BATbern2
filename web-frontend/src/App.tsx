@@ -61,6 +61,9 @@ const CompanyManagement = React.lazy(
 const UserManagement = React.lazy(
   () => import('@components/organizer/UserManagement/UserManagement')
 );
+const NewsletterSubscribers = React.lazy(
+  () => import('@components/organizer/NewsletterSubscribers/NewsletterSubscribers')
+);
 const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAccountPage'));
 
 // Event Management Pages - Story 2.5.3, Task 4
@@ -611,6 +614,18 @@ function App() {
                         <ProtectedRoute>
                           <AuthLayout>
                             <UserManagement />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Newsletter Subscriber Management - Story 10.28 */}
+                    <Route
+                      path="/organizer/newsletter-subscribers"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <NewsletterSubscribers />
                           </AuthLayout>
                         </ProtectedRoute>
                       }

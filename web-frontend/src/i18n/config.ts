@@ -113,6 +113,18 @@ import adminFi from '../../public/locales/fi/admin.json';
 import adminNl from '../../public/locales/nl/admin.json';
 import adminJa from '../../public/locales/ja/admin.json';
 
+// Story 10.28: Newsletter Subscribers namespace
+import newsletterSubscribersGswBe from '../../public/locales/gsw-BE/newsletterSubscribers.json';
+import newsletterSubscribersDe from '../../public/locales/de/newsletterSubscribers.json';
+import newsletterSubscribersEn from '../../public/locales/en/newsletterSubscribers.json';
+import newsletterSubscribersFr from '../../public/locales/fr/newsletterSubscribers.json';
+import newsletterSubscribersIt from '../../public/locales/it/newsletterSubscribers.json';
+import newsletterSubscribersRm from '../../public/locales/rm/newsletterSubscribers.json';
+import newsletterSubscribersEs from '../../public/locales/es/newsletterSubscribers.json';
+import newsletterSubscribersFi from '../../public/locales/fi/newsletterSubscribers.json';
+import newsletterSubscribersNl from '../../public/locales/nl/newsletterSubscribers.json';
+import newsletterSubscribersJa from '../../public/locales/ja/newsletterSubscribers.json';
+
 const resources = {
   'gsw-BE': {
     common: commonGswBe,
@@ -125,6 +137,7 @@ const resources = {
     about: aboutGswBe,
     registration: registrationGswBe,
     admin: adminGswBe,
+    newsletterSubscribers: newsletterSubscribersGswBe,
   },
   de: {
     common: commonDe,
@@ -137,6 +150,7 @@ const resources = {
     about: aboutDe,
     registration: registrationDe,
     admin: adminDe,
+    newsletterSubscribers: newsletterSubscribersDe,
   },
   en: {
     common: commonEn,
@@ -149,6 +163,7 @@ const resources = {
     about: aboutEn,
     registration: registrationEn,
     admin: adminEn,
+    newsletterSubscribers: newsletterSubscribersEn,
   },
   fr: {
     common: commonFr,
@@ -161,6 +176,7 @@ const resources = {
     about: aboutFr,
     registration: registrationFr,
     admin: adminFr,
+    newsletterSubscribers: newsletterSubscribersFr,
   },
   it: {
     common: commonIt,
@@ -173,6 +189,7 @@ const resources = {
     about: aboutIt,
     registration: registrationIt,
     admin: adminIt,
+    newsletterSubscribers: newsletterSubscribersIt,
   },
   rm: {
     common: commonRm,
@@ -185,6 +202,7 @@ const resources = {
     about: aboutRm,
     registration: registrationRm,
     admin: adminRm,
+    newsletterSubscribers: newsletterSubscribersRm,
   },
   es: {
     common: commonEs,
@@ -197,6 +215,7 @@ const resources = {
     about: aboutEs,
     registration: registrationEs,
     admin: adminEs,
+    newsletterSubscribers: newsletterSubscribersEs,
   },
   fi: {
     common: commonFi,
@@ -209,6 +228,7 @@ const resources = {
     about: aboutFi,
     registration: registrationFi,
     admin: adminFi,
+    newsletterSubscribers: newsletterSubscribersFi,
   },
   nl: {
     common: commonNl,
@@ -221,6 +241,7 @@ const resources = {
     about: aboutNl,
     registration: registrationNl,
     admin: adminNl,
+    newsletterSubscribers: newsletterSubscribersNl,
   },
   ja: {
     common: commonJa,
@@ -233,6 +254,7 @@ const resources = {
     about: aboutJa,
     registration: registrationJa,
     admin: adminJa,
+    newsletterSubscribers: newsletterSubscribersJa,
   },
 } as const;
 
@@ -254,6 +276,7 @@ i18n
       'about',
       'registration',
       'admin',
+      'newsletterSubscribers',
     ],
     detection: {
       order: ['localStorage', 'htmlTag'],

@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -299,14 +300,46 @@ public class UserService {
      * @param limit Page size
      * @return Page of user responses with pagination metadata
      */
-    @Transactional(readOnly = true)
-    public Page<UserResponse> listUsersPaginated(String roleFilter, String companyFilter,
-                                                   String search, String jsonFilter,
-                                                   int page, int limit) {
-        log.debug("UserService: Paginated listing - role={}, company={}, search={}, filter={}, page={}, limit={}",
-                roleFilter, companyFilter, search, jsonFilter, page, limit);
+    private static final Set<String> ALLOWED_USER_SORT_FIELDS = Set.of("name", "email", "company");
 
-        Pageable pageable = PageRequest.of(page, limit);
+    @Transactional(readOnly = true)
+    public Page<UserResponse> listUsersPaginated(String roleFilter,
+            String companyFilter, String search, String jsonFilter,
+            int page, int limit) {
+        return listUsersPaginated(roleFilter, companyFilter,
+                search, jsonFilter, page, limit, "name", "asc");
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("ParameterNumber")
+    public Page<UserResponse> listUsersPaginated(String roleFilter,
+            String companyFilter, String search, String jsonFilter,
+            int page, int limit, String sortBy, String sortDir) {
+        log.debug("UserService: Paginated listing - role={}, company={},"
+                + " search={}, filter={}, page={}, limit={}, sort={}/{}",
+                roleFilter, companyFilter, search, jsonFilter,
+                page, limit, sortBy, sortDir);
+
+        String safeSortBy = ALLOWED_USER_SORT_FIELDS.contains(sortBy)
+                ? sortBy : "name";
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir)
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        // Map frontend sort field names to entity property names
+        String entitySortField = switch (safeSortBy) {
+            case "name" -> "lastName";
+            case "email" -> "email";
+            case "company" -> "companyId";
+            default -> "lastName";
+        };
+
+        Sort sort = Sort.by(direction, entitySortField);
+        // Add secondary sort by firstName for name sort
+        if ("name".equals(safeSortBy)) {
+            sort = sort.and(Sort.by(direction, "firstName"));
+        }
+
+        Pageable pageable = PageRequest.of(page, limit, sort);
         Page<User> usersPage;
 
         // Use optimized repository methods with JOIN FETCH

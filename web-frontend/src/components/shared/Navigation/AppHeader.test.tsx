@@ -57,6 +57,13 @@ vi.mock('react-i18next', () => ({
         'navigation.profile': 'Profile',
         'navigation.myCompany': 'My Company',
         'navigation.topics': 'Topics',
+        'navigation.companies': 'Companies',
+        'navigation.users': 'Users',
+        'navigation.newsletterSubscribers': 'Newsletter Subscribers',
+        'navigation.publicSite': 'Public Site',
+        'navigation.partnerTopics': 'Partner Topics',
+        'navigation.partnerMeetings': 'Partner Meetings',
+        'events:navigation.dashboard': 'Events',
         'menu.profile': 'Profile',
         'menu.settings': 'Settings',
         'menu.help': 'Help',
@@ -181,10 +188,10 @@ describe('AppHeader Component', () => {
     test('should_renderOrganizerNavigation_when_userRoleIsOrganizer', () => {
       renderWithProviders(<AppHeader />);
 
-      // Organizer should see Events, Speakers, Partners menu items
+      // Organizer should see Events, Partners, Companies, Users menu items
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/companies/i)).toBeInTheDocument();
     });
 
     test('should_renderSpeakerNavigation_when_userRoleIsSpeaker', async () => {

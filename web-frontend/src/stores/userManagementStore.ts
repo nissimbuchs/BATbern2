@@ -17,6 +17,8 @@ interface UserManagementState {
   pagination: UserPagination;
   selectedUser: User | null;
   searchQuery: string;
+  sortBy: string;
+  sortDir: 'asc' | 'desc';
 
   // Actions
   setFilters: (filters: UserFilters) => void;
@@ -25,6 +27,7 @@ interface UserManagementState {
   setLimit: (limit: number) => void;
   setSelectedUser: (user: User | null) => void;
   setSearchQuery: (query: string) => void;
+  setSort: (field: string, dir: 'asc' | 'desc') => void;
   resetFilters: () => void;
   resetPagination: () => void;
   reset: () => void;
@@ -40,6 +43,8 @@ const initialState = {
   pagination: DEFAULT_PAGINATION_CONST,
   selectedUser: null,
   searchQuery: '',
+  sortBy: 'name' as string,
+  sortDir: 'asc' as 'asc' | 'desc',
 };
 
 export const useUserManagementStore = create<UserManagementState>()(
@@ -87,6 +92,17 @@ export const useUserManagementStore = create<UserManagementState>()(
 
       setSelectedUser: (user: User | null) => set({ selectedUser: user }, false, 'setSelectedUser'),
 
+      setSort: (field: string, dir: 'asc' | 'desc') =>
+        set(
+          (state) => ({
+            sortBy: field,
+            sortDir: dir,
+            pagination: { ...state.pagination, page: 1 },
+          }),
+          false,
+          'setSort'
+        ),
+
       setSearchQuery: (query: string) =>
         set(
           (state) => ({
@@ -105,6 +121,8 @@ export const useUserManagementStore = create<UserManagementState>()(
           (state) => ({
             filters: {},
             searchQuery: '',
+            sortBy: 'name',
+            sortDir: 'asc' as const,
             pagination: { ...state.pagination, page: 1 },
           }),
           false,

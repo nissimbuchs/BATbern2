@@ -219,6 +219,103 @@ public class NewsletterSubscriberService {
                 .source(sub.getSource())
                 .username(sub.getUsername())
                 .subscribedAt(sub.getSubscribedAt())
+                .unsubscribedAt(sub.getUnsubscribedAt())
                 .build();
+    }
+
+    // ── Story 10.28: Organizer subscriber management ────────────────────────
+
+    private static final java.util.Set<String> ALLOWED_SORT_FIELDS =
+            java.util.Set.of("email", "firstName", "subscribedAt", "unsubscribedAt", "source", "language");
+
+    /**
+     * Find subscribers with filtering, search, sorting, and pagination.
+     *
+     * @param search   case-insensitive partial match against email or firstName
+     * @param status   "active", "unsubscribed", or "all"
+     * @param sortBy   field name (whitelisted)
+     * @param sortDir  "asc" or "desc"
+     * @param params   pagination params (1-based page + limit)
+     */
+    @Transactional(readOnly = true)
+    public List<NewsletterSubscriber> findSubscribers(String search, String status,
+                                                       String sortBy, String sortDir,
+                                                       ch.batbern.shared.api.PaginationParams params) {
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "subscribedAt";
+        org.springframework.data.domain.Sort.Direction direction =
+                "asc".equalsIgnoreCase(sortDir) ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+
+        int springPage = params.getOffset() / params.getLimit();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                springPage, params.getLimit(),
+                org.springframework.data.domain.Sort.by(direction, safeSortBy));
+
+        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
+        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
+
+        return subscriberRepository.findFiltered(searchParam, searchLikeParam,
+                status != null ? status : "all", pageable);
+    }
+
+    /**
+     * Count subscribers matching search + status filter.
+     */
+    @Transactional(readOnly = true)
+    public long countSubscribers(String search, String status) {
+        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
+        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
+        return subscriberRepository.countFiltered(searchParam, searchLikeParam,
+                status != null ? status : "all");
+    }
+
+    /**
+     * Unsubscribe a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if already unsubscribed (409)
+     */
+    @Transactional
+    public NewsletterSubscriber unsubscribeById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getUnsubscribedAt() != null) {
+            throw new IllegalStateException("Subscriber is already unsubscribed: " + sub.getEmail());
+        }
+        sub.setUnsubscribedAt(Instant.now());
+        log.info("Organizer unsubscribed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Re-subscribe a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if already active (409)
+     */
+    @Transactional
+    public NewsletterSubscriber resubscribeById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getUnsubscribedAt() == null) {
+            throw new IllegalStateException("Subscriber is already active: " + sub.getEmail());
+        }
+        sub.setUnsubscribedAt(null);
+        sub.setSubscribedAt(Instant.now());
+        log.info("Organizer re-subscribed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Hard delete a subscriber by ID (organizer action).
+     *
+     * @throws NoSuchElementException if not found
+     */
+    @Transactional
+    public void deleteById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        subscriberRepository.delete(sub);
+        log.info("Organizer deleted subscriber: {}", sub.getEmail());
     }
 }

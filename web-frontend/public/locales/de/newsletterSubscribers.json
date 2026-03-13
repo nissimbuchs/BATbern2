@@ -1,0 +1,67 @@
+{
+  "title": "Newsletter-Abonnenten",
+  "loading": {
+    "subscribers": "Abonnenten werden geladen\u2026"
+  },
+  "error": {
+    "loadFailed": "Abonnenten konnten nicht geladen werden.",
+    "retry": "Erneut versuchen"
+  },
+  "search": {
+    "placeholder": "Nach E-Mail oder Name suchen\u2026"
+  },
+  "filters": {
+    "status": {
+      "label": "Status",
+      "all": "Alle",
+      "active": "Aktiv",
+      "unsubscribed": "Abgemeldet"
+    },
+    "clearAll": "Filter zurücksetzen"
+  },
+  "table": {
+    "empty": "Keine Abonnenten gefunden.",
+    "headers": {
+      "email": "E-Mail",
+      "firstName": "Name",
+      "language": "Sprache",
+      "source": "Quelle",
+      "subscribedAt": "Angemeldet",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "registeredUser": "Registrierter Benutzer"
+  },
+  "status": {
+    "active": "Aktiv",
+    "unsubscribed": "Abgemeldet"
+  },
+  "actions": {
+    "openMenu": "Aktionen öffnen",
+    "unsubscribe": "Abmelden",
+    "resubscribe": "Erneut anmelden",
+    "delete": "Löschen"
+  },
+  "pagination": {
+    "itemsPerPage": "Einträge pro Seite"
+  },
+  "dialogs": {
+    "unsubscribe": {
+      "title": "Abonnent abmelden",
+      "message": "{{email}} abmelden? Die Person erhält keine Newsletter mehr, aber der Eintrag bleibt erhalten."
+    },
+    "resubscribe": {
+      "title": "Abonnent erneut anmelden",
+      "message": "{{email}} erneut anmelden? Die Person erhält zukünftige Newsletter wieder."
+    },
+    "delete": {
+      "title": "Abonnent löschen",
+      "message": "{{email}} endgültig löschen? Dies kann nicht rückgängig gemacht werden."
+    }
+  },
+  "toast": {
+    "unsubscribeSuccess": "{{email}} wurde abgemeldet.",
+    "resubscribeSuccess": "{{email}} wurde erneut angemeldet.",
+    "deleteSuccess": "{{email}} wurde gelöscht."
+  }
+}

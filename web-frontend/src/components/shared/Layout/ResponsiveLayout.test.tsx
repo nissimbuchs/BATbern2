@@ -82,6 +82,13 @@ vi.mock('react-i18next', () => ({
         'navigation.speakers': 'Speakers',
         'navigation.partners': 'Partners',
         'navigation.analytics': 'Analytics',
+        'navigation.companies': 'Companies',
+        'navigation.users': 'Users',
+        'navigation.newsletterSubscribers': 'Newsletter Subscribers',
+        'navigation.publicSite': 'Public Site',
+        'navigation.partnerTopics': 'Partner Topics',
+        'navigation.partnerMeetings': 'Partner Meetings',
+        'events:navigation.dashboard': 'Events',
         'menu.profile': 'Profile',
         'menu.settings': 'Settings',
         'menu.help': 'Help',
@@ -292,8 +299,8 @@ describe('Responsive Layout', () => {
       );
 
       // Navigation items should have both icons and text labels
-      expect(screen.getByText(/events/i)).toBeInTheDocument();
-      expect(screen.getByText(/speakers/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/companies/i)).toBeInTheDocument();
     });
 
     // Test removed: should_showFullLogoWithText_when_desktopBreakpoint

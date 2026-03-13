@@ -24,4 +24,5 @@ public class SubscriberResponse {
     private String source;
     private String username;
     private Instant subscribedAt;
+    private Instant unsubscribedAt;
 }

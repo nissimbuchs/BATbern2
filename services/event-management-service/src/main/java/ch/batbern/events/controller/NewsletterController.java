@@ -16,11 +16,16 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.NewsletterEmailService;
 import ch.batbern.events.service.NewsletterSubscriberService;
+import ch.batbern.shared.api.PaginationMetadata;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
+import ch.batbern.shared.dto.PaginatedResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -153,22 +158,53 @@ public class NewsletterController {
     }
 
     /**
-     * AC10: List all subscribers (ORGANIZER only).
-     * Returns the full subscriber list — kept for future admin subscriber-management UI.
-     * Do NOT call this from the newsletter tab; use /subscribers/count instead.
+     * Story 10.28: Paginated, searchable, sortable subscriber list (ORGANIZER only).
      */
     @GetMapping("/newsletter/subscribers")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Map<String, Object>> listSubscribers() {
-        long count = subscriberService.getActiveCount();
-        List<SubscriberResponse> subscribers = subscriberService.findActiveSubscribers()
-                .stream()
-                .map(subscriberService::toResponse)
-                .toList();
-        return ResponseEntity.ok(Map.of(
-                "totalActive", count,
-                "subscribers", subscribers
-        ));
+    public ResponseEntity<PaginatedResponse<SubscriberResponse>> listSubscribers(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "all") String status,
+            @RequestParam(required = false, defaultValue = "subscribedAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
+
+        PaginationParams params = PaginationUtils.parseParams(page, limit);
+        List<SubscriberResponse> data = subscriberService
+                .findSubscribers(search, status, sortBy, sortDir, params)
+                .stream().map(subscriberService::toResponse).toList();
+        long total = subscriberService.countSubscribers(search, status);
+        PaginationMetadata meta = PaginationUtils.generateMetadata(params, total);
+        return ResponseEntity.ok(new PaginatedResponse<>(data, meta));
+    }
+
+    /**
+     * Story 10.28: Unsubscribe a subscriber by ID (ORGANIZER only).
+     */
+    @PostMapping("/newsletter/subscribers/{id}/unsubscribe")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<SubscriberResponse> unsubscribeSubscriber(@PathVariable UUID id) {
+        return ResponseEntity.ok(subscriberService.toResponse(subscriberService.unsubscribeById(id)));
+    }
+
+    /**
+     * Story 10.28: Re-subscribe a subscriber by ID (ORGANIZER only).
+     */
+    @PostMapping("/newsletter/subscribers/{id}/resubscribe")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<SubscriberResponse> resubscribeSubscriber(@PathVariable UUID id) {
+        return ResponseEntity.ok(subscriberService.toResponse(subscriberService.resubscribeById(id)));
+    }
+
+    /**
+     * Story 10.28: Delete a subscriber by ID (ORGANIZER only).
+     */
+    @DeleteMapping("/newsletter/subscribers/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> deleteSubscriber(@PathVariable UUID id) {
+        subscriberService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

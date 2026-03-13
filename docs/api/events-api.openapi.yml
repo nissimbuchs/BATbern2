@@ -4519,22 +4519,162 @@ paths:
   /newsletter/subscribers:
     get:
       tags: [Newsletter]
-      summary: List all subscribers (ORGANIZER)
+      summary: List subscribers with pagination, search, and sort (ORGANIZER)
       operationId: listNewsletterSubscribers
+      parameters:
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: search
+          in: query
+          description: Case-insensitive partial match against email or first name
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by subscription status
+          schema:
+            type: string
+            enum: [all, active, unsubscribed]
+            default: all
+        - name: sortBy
+          in: query
+          description: Sort field (whitelisted server-side)
+          schema:
+            type: string
+            enum: [email, firstName, subscribedAt, unsubscribedAt, source, language]
+            default: subscribedAt
+        - name: sortDir
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
-          description: Subscriber list
+          description: Paginated subscriber list
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  totalCount:
-                    type: integer
-                  subscribers:
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/SubscriberResponse'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /newsletter/subscribers/{id}/unsubscribe:
+    post:
+      tags: [Newsletter]
+      summary: Unsubscribe a subscriber by ID (ORGANIZER)
+      operationId: unsubscribeSubscriberById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscriber unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Subscriber already unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /newsletter/subscribers/{id}/resubscribe:
+    post:
+      tags: [Newsletter]
+      summary: Re-subscribe a subscriber by ID (ORGANIZER)
+      operationId: resubscribeSubscriberById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscriber re-subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Subscriber already active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /newsletter/subscribers/{id}:
+    delete:
+      tags: [Newsletter]
+      summary: Delete a subscriber by ID (ORGANIZER)
+      operationId: deleteSubscriberById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Subscriber deleted
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5890,6 +6030,10 @@ components:
         subscribedAt:
           type: string
           format: date-time
+        unsubscribedAt:
+          type: string
+          format: date-time
+          nullable: true
 
     # ── Analytics Dashboard Schemas (Story 10.5) ─────────────────────────────
 

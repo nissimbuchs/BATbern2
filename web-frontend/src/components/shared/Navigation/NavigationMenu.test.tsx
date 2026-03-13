@@ -28,6 +28,11 @@ vi.mock('react-i18next', () => ({
         'navigation.myCompany': 'My Company',
         'navigation.topics': 'Topics',
         'navigation.mainNav': 'main navigation',
+        'navigation.companies': 'Companies',
+        'navigation.users': 'Users',
+        'navigation.newsletterSubscribers': 'Newsletter Subscribers',
+        'navigation.publicSite': 'Public Site',
+        'events:navigation.dashboard': 'Events',
       };
       return translations[key] || key;
     },
@@ -50,11 +55,12 @@ describe('NavigationMenu Component', () => {
     test('should_renderOrganizerMenuItems_when_roleIsOrganizer', () => {
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      // Organizer should see full menu: Events, Speakers, Partners, Analytics
+      // Organizer should see: Events, Partners, Companies, Users, Newsletter Subscribers, Analytics
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/analytics/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/companies/i)).toBeInTheDocument();
+      expect(screen.getByText(/users/i)).toBeInTheDocument();
     });
 
     test('should_linkToEventsManagement_when_eventsClicked', () => {
@@ -64,11 +70,11 @@ describe('NavigationMenu Component', () => {
       expect(eventsLink).toHaveAttribute('href', '/organizer/events');
     });
 
-    test('should_linkToSpeakersManagement_when_speakersClicked', () => {
+    test('should_linkToUsersManagement_when_usersClicked', () => {
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
-      expect(speakersLink).toHaveAttribute('href', '/organizer/speakers');
+      const usersLink = screen.getByText(/users/i).closest('a');
+      expect(usersLink).toHaveAttribute('href', '/organizer/users');
     });
 
     test('should_showPartnersDropdown_when_partnersClicked', () => {
@@ -178,8 +184,8 @@ describe('NavigationMenu Component', () => {
 
       renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
-      const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
-      expect(speakersLink).not.toHaveClass(/active|selected/i);
+      const usersLink = screen.getByText(/users/i).closest('a');
+      expect(usersLink).not.toHaveClass(/active|selected/i);
     });
   });
 
@@ -205,7 +211,7 @@ describe('NavigationMenu Component', () => {
 
       // Organizer items present
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
       // Partner items also present
       expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();

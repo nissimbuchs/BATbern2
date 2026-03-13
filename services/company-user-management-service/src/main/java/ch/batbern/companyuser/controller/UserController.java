@@ -151,16 +151,19 @@ public class UserController {
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int limit) {
-        log.debug("UserController Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
-                role, company, search, page, limit);
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @RequestParam(required = false, defaultValue = "name") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDir) {
+        log.debug("UserController Listing users: role={}, company={}, search={},"
+                + " page={}, limit={}, sortBy={}, sortDir={}",
+                role, company, search, page, limit, sortBy, sortDir);
 
         // Convert 1-based page to 0-based for service layer
         int pageIndex = Math.max(0, page - 1);
 
         // Use optimized paginated service method
         Page<UserResponse> usersPage = userService.listUsersPaginated(
-                role, company, search, filter, pageIndex, limit);
+                role, company, search, filter, pageIndex, limit, sortBy, sortDir);
 
         // Build pagination metadata (using 1-based page numbers)
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =

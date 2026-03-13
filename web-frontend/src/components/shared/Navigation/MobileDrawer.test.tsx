@@ -59,7 +59,7 @@ describe('MobileDrawer Component', () => {
 
       // Should render navigation menu based on role
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
     });
 
     test('should_closeDrawer_when_menuItemClicked', () => {

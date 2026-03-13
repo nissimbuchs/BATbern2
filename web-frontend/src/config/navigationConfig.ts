@@ -15,6 +15,7 @@ import {
   EventAvailable,
   Business,
   ManageAccounts,
+  PeopleAltOutlined,
   Public,
   Lightbulb,
   CalendarMonth,
@@ -41,13 +42,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: Event,
     roles: ['organizer'],
     description: 'Manage all events',
-  },
-  {
-    labelKey: 'navigation.speakers',
-    path: '/organizer/speakers',
-    icon: People,
-    roles: ['organizer'],
-    description: 'Manage speakers',
   },
   {
     labelKey: 'navigation.partners',
@@ -92,6 +86,13 @@ export const navigationConfig: NavigationItem[] = [
     icon: ManageAccounts,
     roles: ['organizer'],
     description: 'Manage platform users',
+  },
+  {
+    labelKey: 'navigation.newsletterSubscribers',
+    path: '/organizer/newsletter-subscribers',
+    icon: PeopleAltOutlined,
+    roles: ['organizer'],
+    description: 'Manage newsletter subscribers',
   },
   {
     labelKey: 'navigation.analytics',
