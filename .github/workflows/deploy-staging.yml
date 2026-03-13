@@ -704,7 +704,7 @@ jobs:
 
       # Selective deployment - deploy each service individually with re-auth
       - name: Selective Deploy - Company Management
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'company-management') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Company Management Service"
@@ -713,14 +713,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Company Management (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'company-management') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Event Management
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'event-management') || steps.changes.outputs.changed_services == 'all-services')
         timeout-minutes: 60
         working-directory: ./infrastructure
         run: |
@@ -730,14 +730,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Event Management (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'event-management') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Speaker Coordination
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Speaker Coordination Service"
@@ -746,14 +746,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Speaker Coordination (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Partner Coordination
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Partner Coordination Service"
@@ -762,14 +762,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Partner Coordination (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - Attendee Experience
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Attendee Experience Service"
@@ -778,14 +778,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after Attendee Experience (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - API Gateway Service
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway Service"
@@ -794,14 +794,14 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after API Gateway Service (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Selective Deploy - API Gateway (if changed)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway"
@@ -810,7 +810,7 @@ jobs:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Re-authenticate after API Gateway (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
