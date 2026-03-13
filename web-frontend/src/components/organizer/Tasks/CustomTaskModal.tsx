@@ -109,6 +109,14 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       setNotes(existingTask.notes ?? '');
       setSaveAsTemplate(false);
       setErrors({});
+      // Pre-populate due date from existing task
+      if (existingTask.dueDate) {
+        setAbsoluteDueDate(existingTask.dueDate.slice(0, 10));
+        setDueDateType('absolute');
+      } else {
+        setAbsoluteDueDate('');
+        setDueDateType('relative_to_event');
+      }
     } else if (open && !isEditMode) {
       // Reset to defaults for create mode
       setTaskName('');
@@ -191,10 +199,8 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       const request: UpdateEventTaskRequest = {
         notes: notes || null,
         assignedOrganizerUsername: assignedOrganizer || null,
+        dueDate: absoluteDueDate ? new Date(absoluteDueDate).toISOString() : null,
       };
-      if (dueDateType === 'absolute' && absoluteDueDate) {
-        request.dueDate = new Date(absoluteDueDate).toISOString();
-      }
       updateTaskMutation.mutate({ taskId: existingTask.id, request });
       return;
     }
@@ -361,8 +367,8 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
             />
           )}
 
-          {/* Absolute Date picker (absolute due date type) */}
-          {dueDateType === 'absolute' && (
+          {/* Absolute Date picker — always shown in edit mode, or when type is absolute in create mode */}
+          {(isEditMode || dueDateType === 'absolute') && (
             <TextField
               label={t('tasks.absoluteDueDate')}
               type="date"
