@@ -85,7 +85,7 @@ public class IcsGeneratorService {
                         batbernEvent.eventCode() + "-main@batbern.ch",
                         toUtc(batbernEvent.eventDate(), batbernEvent.startTime()),
                         toUtc(batbernEvent.eventDate(), batbernEvent.endTime()),
-                        batbernEvent.title(),
+                        batbernEvent.eventCode() + " - " + batbernEvent.title(),
                         "BATbern Event — you are registered as a partner",
                         batbernEvent.venue() != null ? batbernEvent.venue() : "",
                         List.of("DTSTAMP:" + dtstamp))

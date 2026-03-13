@@ -83,6 +83,13 @@ class IcsGeneratorServiceTest {
         assertThat(count).isEqualTo(2);
     }
 
+    @Test
+    void should_prefixBatbernEventSummary_withEventCode() {
+        String ics = generate(buildMeeting(0));
+        // VEVENT 2 summary must be "BATbern57 - <title>"
+        assertThat(ics).contains("SUMMARY:BATbern57 - BATbern Spring 2026");
+    }
+
     // ─── T1.1 — ATTENDEE fields present for each recipient ────────────────────
 
     @Test

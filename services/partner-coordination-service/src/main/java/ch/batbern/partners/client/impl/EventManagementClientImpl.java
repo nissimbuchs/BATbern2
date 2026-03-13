@@ -26,6 +26,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of EventManagementClient using Spring RestTemplate.
@@ -98,7 +99,7 @@ public class EventManagementClientImpl implements EventManagementClient {
     public EventSummaryDTO getEventSummary(String eventCode) {
         log.debug("Fetching event summary from event-management-service: eventCode={}", eventCode);
 
-        String url = eventManagementBaseUrl + "/api/v1/events/" + eventCode;
+        String url = eventManagementBaseUrl + "/api/v1/events/" + eventCode + "?include=sessions";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
@@ -116,15 +117,17 @@ public class EventManagementClientImpl implements EventManagementClient {
                 throw new RuntimeException("Empty response from event-management-service for eventCode: " + eventCode);
             }
 
-            // Derive LocalDate + LocalTime from the event's Instant date in Europe/Zurich zone
+            // Derive LocalDate from the event's date Instant in Europe/Zurich zone
             ZonedDateTime zurichDt = body.getDate() != null
                     ? body.getDate().atZone(ZURICH)
                     : ZonedDateTime.now(ZURICH);
 
             LocalDate eventDate = zurichDt.toLocalDate();
-            LocalTime startTime = zurichDt.toLocalTime();
-            // EMS doesn't have an explicit endTime; default conference duration is ~4 hours
-            LocalTime endTime = startTime.plusHours(4);
+
+            // Derive start/end: earliest/latest session times, falling back to event-type defaults
+            LocalTime[] times = deriveEventTimes(body);
+            LocalTime startTime = times[0];
+            LocalTime endTime = times[1];
 
             // Combine venue name + address for ICS location
             String venue = buildVenueString(body.getVenueName(), body.getVenueAddress());
@@ -141,6 +144,61 @@ public class EventManagementClientImpl implements EventManagementClient {
             throw new RuntimeException(
                     "Failed to fetch event summary from event-management-service for: " + eventCode, e);
         }
+    }
+
+    /**
+     * Derive start/end times for the BATbern event VEVENT:
+     * 1. Use min(session.startTime) / max(session.endTime) if sessions have times.
+     * 2. Fall back to the event type's typical start/end times.
+     *
+     * Times are returned as Zurich local time for use by IcsGeneratorService.toUtc().
+     */
+    private LocalTime[] deriveEventTimes(EventResponse body) {
+        List<Map<String, Object>> sessions = body.getSessions();
+        if (sessions != null && !sessions.isEmpty()) {
+            LocalTime minStart = null;
+            LocalTime maxEnd = null;
+            for (Map<String, Object> session : sessions) {
+                Object startObj = session.get("startTime");
+                Object endObj = session.get("endTime");
+                if (startObj != null) {
+                    try {
+                        LocalTime st = Instant.parse(startObj.toString()).atZone(ZURICH).toLocalTime();
+                        if (minStart == null || st.isBefore(minStart)) minStart = st;
+                    } catch (Exception e) {
+                        log.debug("Could not parse session startTime: {}", startObj);
+                    }
+                }
+                if (endObj != null) {
+                    try {
+                        LocalTime et = Instant.parse(endObj.toString()).atZone(ZURICH).toLocalTime();
+                        if (maxEnd == null || et.isAfter(maxEnd)) maxEnd = et;
+                    } catch (Exception e) {
+                        log.debug("Could not parse session endTime: {}", endObj);
+                    }
+                }
+            }
+            if (minStart != null && maxEnd != null) {
+                log.debug("Derived event times from {} sessions: {}–{}", sessions.size(), minStart, maxEnd);
+                return new LocalTime[]{minStart, maxEnd};
+            }
+        }
+        return typicalTimesForType(body.getEventType());
+    }
+
+    /**
+     * Typical start/end times by event type — mirrors the values in V10__Create_event_types_table.sql.
+     * Used when no sessions with times are available yet.
+     */
+    private LocalTime[] typicalTimesForType(String eventType) {
+        if (eventType == null) {
+            return new LocalTime[]{LocalTime.of(18, 0), LocalTime.of(22, 0)};
+        }
+        return switch (eventType.toLowerCase()) {
+            case "full_day"  -> new LocalTime[]{LocalTime.of(9, 0),  LocalTime.of(16, 0)};
+            case "afternoon" -> new LocalTime[]{LocalTime.of(13, 0), LocalTime.of(19, 0)};
+            default          -> new LocalTime[]{LocalTime.of(18, 0), LocalTime.of(22, 0)};
+        };
     }
 
     private String buildVenueString(String venueName, String venueAddress) {
@@ -186,45 +244,28 @@ public class EventManagementClientImpl implements EventManagementClient {
         private Instant date;
         private String venueName;
         private String venueAddress;
+        private String eventType;
+        private List<Map<String, Object>> sessions;
 
-        public String getTitle() {
-            return title;
-        }
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
 
-        public void setTitle(String title) {
-            this.title = title;
-        }
+        public String getEventCode() { return eventCode; }
+        public void setEventCode(String eventCode) { this.eventCode = eventCode; }
 
-        public String getEventCode() {
-            return eventCode;
-        }
+        public Instant getDate() { return date; }
+        public void setDate(Instant date) { this.date = date; }
 
-        public void setEventCode(String eventCode) {
-            this.eventCode = eventCode;
-        }
+        public String getVenueName() { return venueName; }
+        public void setVenueName(String venueName) { this.venueName = venueName; }
 
-        public Instant getDate() {
-            return date;
-        }
+        public String getVenueAddress() { return venueAddress; }
+        public void setVenueAddress(String venueAddress) { this.venueAddress = venueAddress; }
 
-        public void setDate(Instant date) {
-            this.date = date;
-        }
+        public String getEventType() { return eventType; }
+        public void setEventType(String eventType) { this.eventType = eventType; }
 
-        public String getVenueName() {
-            return venueName;
-        }
-
-        public void setVenueName(String venueName) {
-            this.venueName = venueName;
-        }
-
-        public String getVenueAddress() {
-            return venueAddress;
-        }
-
-        public void setVenueAddress(String venueAddress) {
-            this.venueAddress = venueAddress;
-        }
+        public List<Map<String, Object>> getSessions() { return sessions; }
+        public void setSessions(List<Map<String, Object>> sessions) { this.sessions = sessions; }
     }
 }
