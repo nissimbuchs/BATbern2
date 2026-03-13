@@ -104,6 +104,15 @@ public interface UserApiClient {
     List<String> getOrganizerUsernames();
 
     /**
+     * Get all partner usernames.
+     * Used for auto-enrolling all PARTNER-role users when a new event is created.
+     *
+     * @return List of partner usernames
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    List<String> getPartnerUsernames();
+
+    /**
      * Get all speaker usernames.
      * Used for legacy export — speaker metadata enrichment.
      *

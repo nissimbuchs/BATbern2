@@ -31,6 +31,10 @@
       "quickActions": "Schnellzugriff",
       "selectTopic": "Thema auswählen",
       "previewPublic": "Öffentliche Seite vorschauen",
+      "enrollStakeholders": "Organisatoren & Partner einschreiben",
+      "enrollStakeholdersLoading": "Einschreiben…",
+      "enrollStakeholdersSuccess": "{{enrolled}} Organisatoren/Partner eingeschrieben ({{skipped}} bereits registriert)",
+      "enrollStakeholdersError": "Einschreiben fehlgeschlagen",
       "startPresentation": "Präsentation starten",
       "liveControl": "Live Steuerung"
     },

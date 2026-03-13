@@ -172,3 +172,20 @@ export const promoteFromWaitlist = async (
 ): Promise<void> => {
   await apiClient.post(`/events/${eventCode}/registrations/${registrationCode}/promote`);
 };
+
+/**
+ * Enroll all organizers and partners as confirmed participants for an existing event.
+ *
+ * ORGANIZER only. Idempotent — already-registered users are counted as skipped.
+ *
+ * @param eventCode - Event code
+ * @returns Summary of enrolled and skipped counts
+ */
+export const enrollStakeholders = async (
+  eventCode: string
+): Promise<{ enrolled: number; skipped: number }> => {
+  const response = await apiClient.post<{ enrolled: number; skipped: number }>(
+    `/events/${eventCode}/enroll-stakeholders`
+  );
+  return response.data;
+};

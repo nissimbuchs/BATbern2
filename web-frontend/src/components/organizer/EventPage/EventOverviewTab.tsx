@@ -16,6 +16,8 @@ import {
   Chip,
   Divider,
   LinearProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -25,7 +27,9 @@ import {
   Visibility as PreviewIcon,
   Topic as TopicIcon,
   AutoAwesome,
+  GroupAdd as GroupAddIcon,
 } from '@mui/icons-material';
+import { enrollStakeholders } from '@/services/api/eventRegistrationService';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -61,6 +65,38 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   // State for topic details
   const [topic, setTopic] = useState<Topic | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
+  // State for enroll-stakeholders action
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollSnackbar, setEnrollSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
+
+  const handleEnrollStakeholders = async () => {
+    setEnrolling(true);
+    try {
+      const result = await enrollStakeholders(eventCode);
+      setEnrollSnackbar({
+        open: true,
+        message: t(
+          'eventPage.overview.enrollStakeholdersSuccess',
+          'Enrolled {{enrolled}} organizers/partners ({{skipped}} already registered)',
+          { enrolled: result.enrolled, skipped: result.skipped }
+        ),
+        severity: 'success',
+      });
+    } catch {
+      setEnrollSnackbar({
+        open: true,
+        message: t('eventPage.overview.enrollStakeholdersError', 'Failed to enroll stakeholders'),
+        severity: 'error',
+      });
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   // Fetch topic details if topicCode is available
   useEffect(() => {
@@ -420,6 +456,17 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           >
             {t('eventPage.overview.previewPublic', 'Preview Public Page')}
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<GroupAddIcon />}
+            onClick={handleEnrollStakeholders}
+            disabled={enrolling}
+            data-testid="enroll-stakeholders-button"
+          >
+            {enrolling
+              ? t('eventPage.overview.enrollStakeholdersLoading', 'Enrolling…')
+              : t('eventPage.overview.enrollStakeholders', 'Enroll Organizers & Partners')}
+          </Button>
         </Stack>
       </Paper>
 
@@ -435,6 +482,20 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           setAiDrawerOpen(false);
         }}
       />
+
+      <Snackbar
+        open={enrollSnackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setEnrollSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={enrollSnackbar.severity}
+          onClose={() => setEnrollSnackbar((s) => ({ ...s, open: false }))}
+        >
+          {enrollSnackbar.message}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 };

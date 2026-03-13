@@ -1518,6 +1518,31 @@ public class EventController {
     }
 
     /**
+     * Enroll all organizers and partners as confirmed participants for an existing event.
+     *
+     * POST /api/v1/events/{eventCode}/enroll-stakeholders
+     *
+     * Organizer-only action intended for events that predate the auto-enrollment feature.
+     * Idempotent: already-registered users are counted as skipped, not re-enrolled.
+     * Returns counts of enrolled and skipped users.
+     */
+    @PostMapping("/{eventCode}/enroll-stakeholders")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Enroll Stakeholders",
+            description = "Bulk-enroll all organizers and partners as confirmed participants. "
+                    + "Idempotent — already-registered users are skipped. Requires ORGANIZER role."
+    )
+    public ResponseEntity<Map<String, Integer>> enrollStakeholders(@PathVariable String eventCode) {
+        log.info("POST /api/v1/events/{}/enroll-stakeholders", eventCode);
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        ch.batbern.events.service.RegistrationService.EnrollmentSummary result =
+                registrationService.enrollStakeholders(event);
+        return ResponseEntity.ok(Map.of("enrolled", result.enrolled(), "skipped", result.skipped()));
+    }
+
+    /**
      * Get Event Analytics (AC13)
      *
      * GET /api/v1/events/{id}/analytics?metrics=attendance,registrations,engagement&timeframe=start,end

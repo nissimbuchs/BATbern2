@@ -31,6 +31,10 @@
       "quickActions": "Quick Actions",
       "selectTopic": "Select Topic",
       "previewPublic": "Preview Public Page",
+      "enrollStakeholders": "Enroll Organizers & Partners",
+      "enrollStakeholdersLoading": "Enrolling…",
+      "enrollStakeholdersSuccess": "Enrolled {{enrolled}} organizers/partners ({{skipped}} already registered)",
+      "enrollStakeholdersError": "Failed to enroll stakeholders",
       "startPresentation": "Start Presentation",
       "liveControl": "Live Control"
     },

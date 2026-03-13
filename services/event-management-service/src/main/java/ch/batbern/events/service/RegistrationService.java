@@ -510,6 +510,98 @@ public class RegistrationService {
     }
 
     /**
+     * Create a system-managed confirmed registration for a known user (organizer or partner).
+     * <p>
+     * Skips email confirmation, capacity checks, and waitlist logic — these users always
+     * receive a confirmed spot.
+     *
+     * @param event the event entity
+     * @param user  the UserResponse for the user to auto-enroll
+     * @return true if a new registration was created, false if the user was already registered
+     */
+    @Transactional
+    public boolean createInternalRegistration(Event event, ch.batbern.events.dto.generated.users.UserResponse user) {
+        String username = user.getId();
+
+        if (registrationRepository.existsByEventIdAndAttendeeUsername(event.getId(), username)) {
+            log.debug("Auto-enrollment skipped: {} already registered for event {}", username, event.getEventCode());
+            return false;
+        }
+
+        String registrationCode = generateUniqueRegistrationCode(event.getEventCode());
+
+        Registration registration = Registration.builder()
+                .registrationCode(registrationCode)
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(user.getFirstName())
+                .attendeeLastName(user.getLastName())
+                .attendeeEmail(user.getEmail())
+                .attendeeCompanyId(user.getCompanyId())
+                .status("confirmed")
+                .registrationDate(Instant.now())
+                .build();
+
+        registrationRepository.save(registration);
+        log.info("Auto-enrolled {} as confirmed participant for event {}", username, event.getEventCode());
+        return true;
+    }
+
+    /**
+     * Enroll all organizers and partners as confirmed participants for the given event.
+     * <p>
+     * Fetches all users with ORGANIZER and PARTNER roles, then calls
+     * {@link #createInternalRegistration} for each. Already-registered users are skipped
+     * (idempotent). Per-user failures are logged but do not abort the batch.
+     *
+     * @param event the event to enroll stakeholders for
+     * @return summary of how many users were enrolled vs skipped
+     */
+    @Transactional
+    public EnrollmentSummary enrollStakeholders(Event event) {
+        List<String> usernames = new ArrayList<>();
+        try {
+            usernames.addAll(userApiClient.getOrganizerUsernames());
+        } catch (Exception e) {
+            log.warn("Could not fetch organizer list for event {}: {}", event.getEventCode(), e.getMessage());
+        }
+        try {
+            usernames.addAll(userApiClient.getPartnerUsernames());
+        } catch (Exception e) {
+            log.warn("Could not fetch partner list for event {}: {}", event.getEventCode(), e.getMessage());
+        }
+
+        int enrolled = 0;
+        int skipped = 0;
+        for (String username : usernames) {
+            try {
+                ch.batbern.events.dto.generated.users.UserResponse user = userApiClient.getUserByUsername(username);
+                if (createInternalRegistration(event, user)) {
+                    enrolled++;
+                } else {
+                    skipped++;
+                }
+            } catch (Exception e) {
+                log.warn("Stakeholder enrollment failed for user {} on event {}: {}",
+                        username, event.getEventCode(), e.getMessage());
+                skipped++;
+            }
+        }
+
+        log.info("Stakeholder enrollment for event {}: enrolled={}, skipped={}",
+                event.getEventCode(), enrolled, skipped);
+        return new EnrollmentSummary(enrolled, skipped);
+    }
+
+    /**
+     * Summary returned by {@link #enrollStakeholders}.
+     *
+     * @param enrolled number of users newly registered
+     * @param skipped  number of users already registered or that failed
+     */
+    public record EnrollmentSummary(int enrolled, int skipped) {}
+
+    /**
      * Generate a unique registration code with format: {eventCode}-reg-{random}
      * Example: BATbern142-reg-A3X9K2
      * <p>

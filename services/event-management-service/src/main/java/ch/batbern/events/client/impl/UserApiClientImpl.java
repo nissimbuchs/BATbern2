@@ -599,6 +599,74 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
+     * Get all partner usernames.
+     * Used for auto-enrolling all PARTNER-role users when a new event is created.
+     */
+    @Override
+    public java.util.List<String> getPartnerUsernames() {
+        log.debug("Fetching partner usernames");
+
+        String url = userServiceBaseUrl + "/api/v1/users?role=PARTNER&limit=1000";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    PaginatedUserResponse.class
+            );
+
+            PaginatedUserResponse body = response.getBody();
+            if (body == null || body.getData() == null) {
+                log.debug("No partners found");
+                return java.util.List.of();
+            }
+
+            java.util.List<String> usernames = body.getData().stream()
+                    .map(UserResponse::getId)
+                    .collect(java.util.stream.Collectors.toList());
+
+            log.debug("Successfully fetched {} partner usernames", usernames.size());
+            return usernames;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching partner list: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching partner list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for partner list: {} - {}",
+                    e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error fetching partner list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for partner list: {}",
+                    e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for partner list",
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching partner list: {}", e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching partner list",
+                    e
+            );
+        }
+    }
+
+    /**
      * Get all speaker usernames.
      * Story 10.20: AC1 — used for legacy export speaker metadata enrichment.
      */
