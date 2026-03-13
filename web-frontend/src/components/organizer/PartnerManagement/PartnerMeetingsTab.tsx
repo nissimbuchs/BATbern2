@@ -69,7 +69,15 @@ const MeetingCard: React.FC<MeetingCardProps> = ({ meeting, isOrganizer, t }) =>
                 {meeting.agenda ?? `${meeting.meetingType} Meeting`}
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center">
-                <Chip label={meeting.meetingType} size="small" variant="outlined" />
+                <Chip
+                  label={t(
+                    meeting.meetingType === 'SPRING'
+                      ? 'meetings.fields.type.spring'
+                      : 'meetings.fields.type.autumn'
+                  )}
+                  size="small"
+                  variant="outlined"
+                />
                 {meeting.inviteSentAt && (
                   <Chip label={t('meetings.inviteSent')} size="small" color="success" />
                 )}
