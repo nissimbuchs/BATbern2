@@ -124,7 +124,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
     <FormControl size={size} disabled={disabled || isLoading} {...restFormControlProps}>
       <InputLabel>{labelText}</InputLabel>
       <Select
-        value={value || ''}
+        value={isLoading ? '' : value || ''}
         onChange={(e) => onChange(e.target.value)}
         label={labelText}
         data-testid={testId}
