@@ -145,6 +145,7 @@ public class UserController {
     @Timed(value = "users.listUsers",
             description = "Time to list users (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
+    // CHECKSTYLE.OFF: ParameterNumber - search endpoint with sort/filter/pagination params
     public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String role,
@@ -154,6 +155,7 @@ public class UserController {
             @RequestParam(required = false, defaultValue = "20") int limit,
             @RequestParam(required = false, defaultValue = "name") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDir) {
+    // CHECKSTYLE.ON: ParameterNumber
         log.debug("UserController Listing users: role={}, company={}, search={},"
                 + " page={}, limit={}, sortBy={}, sortDir={}",
                 role, company, search, page, limit, sortBy, sortDir);

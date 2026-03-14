@@ -311,10 +311,11 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    @SuppressWarnings("ParameterNumber")
+    // CHECKSTYLE.OFF: ParameterNumber - search with sort/filter/pagination params
     public Page<UserResponse> listUsersPaginated(String roleFilter,
             String companyFilter, String search, String jsonFilter,
             int page, int limit, String sortBy, String sortDir) {
+    // CHECKSTYLE.ON: ParameterNumber
         log.debug("UserService: Paginated listing - role={}, company={},"
                 + " search={}, filter={}, page={}, limit={}, sort={}/{}",
                 roleFilter, companyFilter, search, jsonFilter,
