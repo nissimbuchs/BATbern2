@@ -99,6 +99,7 @@
     "sockjs-client": "^1.6.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
+    "tinymce": "^8.3.2",
     "tone": "^15.1.22",
     "web-vitals": "^5.1.0",
     "workbox-window": "^7.3.0",
@@ -149,6 +150,7 @@
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^1.0.3",
     "vite-plugin-sitemap": "^0.8.2",
+    "vite-plugin-static-copy": "^3.3.0",
     "vitest": "^4.0.18",
     "vitest-axe": "^0.1.0"
   },

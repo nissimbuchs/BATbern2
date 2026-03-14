@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
 import sitemap from 'vite-plugin-sitemap';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 /**
  * Vite Configuration - Environment-Agnostic Build
@@ -136,6 +137,32 @@ export default defineConfig({
         enabled: false, // Disable PWA in development for faster builds
       },
     }),
+    // Self-hosted TinyMCE assets (skins, icons, models, plugins)
+    // Required because TinyMCE Cloud restricts the 'code' plugin to paid tiers.
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'node_modules/tinymce/skins',
+          dest: 'tinymce',
+        },
+        {
+          src: 'node_modules/tinymce/icons',
+          dest: 'tinymce',
+        },
+        {
+          src: 'node_modules/tinymce/models',
+          dest: 'tinymce',
+        },
+        {
+          src: 'node_modules/tinymce/plugins',
+          dest: 'tinymce',
+        },
+        {
+          src: 'node_modules/tinymce/themes',
+          dest: 'tinymce',
+        },
+      ],
+    }),
     // Sitemap generation for SEO (Story 4.1.8)
     sitemap({
       hostname: 'https://batbern.ch',
@@ -213,6 +240,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
+          if (id.includes('tinymce')) return 'vendor-tinymce';
           return 'vendor';
         },
         // Asset file naming for better caching

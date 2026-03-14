@@ -203,6 +203,17 @@ jobs:
             echo "::warning::Frontend package.json not found, skipping build"
           fi
 
+      - name: Ensure frontend dist exists for CDK synthesis
+        if: steps.changes.outputs.frontend != 'true' && steps.changes.outputs.deploy_all != 'true'
+        run: |
+          # CDK synthesizes ALL stacks (including Frontend) even for selective deploys.
+          # When frontend wasn't built, create a placeholder so CDK synthesis doesn't fail.
+          if [ ! -d "web-frontend/dist" ]; then
+            echo "Creating placeholder web-frontend/dist/ for CDK synthesis"
+            mkdir -p web-frontend/dist
+            echo "<!-- placeholder for CDK synthesis -->" > web-frontend/dist/index.html
+          fi
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:

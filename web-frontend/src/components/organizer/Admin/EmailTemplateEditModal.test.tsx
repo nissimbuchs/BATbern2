@@ -34,7 +34,17 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }));
 
-// TinyMCE — replace with a simple textarea for tests
+// TinyMCE — mock self-hosted imports (no DOM in jsdom)
+vi.mock('tinymce/tinymce', () => ({}));
+vi.mock('tinymce/models/dom/model', () => ({}));
+vi.mock('tinymce/themes/silver/theme', () => ({}));
+vi.mock('tinymce/icons/default/icons', () => ({}));
+vi.mock('tinymce/plugins/code', () => ({}));
+vi.mock('tinymce/plugins/table', () => ({}));
+vi.mock('tinymce/plugins/lists', () => ({}));
+vi.mock('tinymce/plugins/link', () => ({}));
+
+// TinyMCE React wrapper — replace with a simple textarea for tests
 vi.mock('@tinymce/tinymce-react', () => ({
   Editor: ({ value, onEditorChange }: { value?: string; onEditorChange?: (v: string) => void }) => (
     <textarea
