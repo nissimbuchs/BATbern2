@@ -15,8 +15,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { publishingService } from '@/services/publishingService/publishingService';
 import type {
   PublishingPhase,
-  PublishingMode,
-  PublishRequest,
   PublishPreviewResponse,
   PublishingStatusResponse,
   ChangeLogResponse,
@@ -30,7 +28,7 @@ export interface UsePublishingReturn {
   isLoadingStatus: boolean;
 
   // Publish/unpublish mutations
-  publishPhase: (phase: PublishingPhase, options?: PublishRequest) => void;
+  publishPhase: (phase: PublishingPhase) => void;
   unpublishPhase: (phase: PublishingPhase) => void;
   isPublishing: boolean;
   isUnpublishing: boolean;
@@ -39,7 +37,7 @@ export interface UsePublishingReturn {
 
   // Preview
   preview: PublishPreviewResponse | null;
-  fetchPreview: (phase: PublishingPhase, mode: PublishingMode) => void;
+  fetchPreview: (phase: PublishingPhase) => void;
   isLoadingPreview: boolean;
   previewError: Error | null;
 
@@ -91,8 +89,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Publish phase mutation
   const publishPhaseMutation = useMutation({
-    mutationFn: ({ phase, options }: { phase: PublishingPhase; options?: PublishRequest }) =>
-      publishingService.publishPhase(eventCode, phase, options),
+    mutationFn: (phase: PublishingPhase) => publishingService.publishPhase(eventCode, phase),
     onSuccess: () => {
       // Invalidate status, version history and change log to refetch
       queryClient.invalidateQueries({ queryKey: statusKey });
@@ -111,8 +108,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Fetch preview mutation (manual trigger)
   const fetchPreviewMutation = useMutation({
-    mutationFn: ({ phase, mode }: { phase: PublishingPhase; mode: PublishingMode }) =>
-      publishingService.getPublishPreview(eventCode, phase, mode),
+    mutationFn: (phase: PublishingPhase) => publishingService.getPublishPreview(eventCode, phase),
     onSuccess: (data) => {
       // Update preview query data manually
       queryClient.setQueryData(previewKey, data);
@@ -154,7 +150,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     isLoadingStatus,
 
     // Publish/unpublish
-    publishPhase: (phase, options) => publishPhaseMutation.mutate({ phase, options }),
+    publishPhase: (phase) => publishPhaseMutation.mutate(phase),
     unpublishPhase: (phase) => unpublishPhaseMutation.mutate(phase),
     isPublishing: publishPhaseMutation.isPending,
     isUnpublishing: unpublishPhaseMutation.isPending,
@@ -163,7 +159,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
     // Preview
     preview: preview || null,
-    fetchPreview: (phase, mode) => fetchPreviewMutation.mutate({ phase, mode }),
+    fetchPreview: (phase) => fetchPreviewMutation.mutate(phase),
     isLoadingPreview: fetchPreviewMutation.isPending,
     previewError: fetchPreviewMutation.error,
 

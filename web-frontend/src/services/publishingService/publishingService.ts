@@ -13,8 +13,6 @@
 import apiClient from '@/services/api/apiClient';
 import type {
   PublishingPhase,
-  PublishingMode,
-  PublishRequest,
   PublishPhaseResponse,
   UnpublishPhaseResponse,
   PublishPreviewResponse,
@@ -30,7 +28,6 @@ import type {
  *
  * @param eventCode - Event code (e.g., "BATbern142")
  * @param phase - Publishing phase ('topic' | 'speakers' | 'agenda')
- * @param options - Publishing options (mode, notifySubscribers, approvalOverride)
  * @returns Publishing version with CDN invalidation status
  * @throws 422 if content validation fails
  * @throws 401 if not authenticated
@@ -38,10 +35,9 @@ import type {
  */
 async function publishPhase(
   eventCode: string,
-  phase: PublishingPhase,
-  options?: PublishRequest
+  phase: PublishingPhase
 ): Promise<PublishPhaseResponse> {
-  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`, options || {});
+  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`);
   return response.data;
 }
 
@@ -77,17 +73,13 @@ async function getPublishingStatus(eventCode: string): Promise<PublishingStatusR
  *
  * @param eventCode - Event code
  * @param phase - Phase to preview
- * @param mode - Publishing mode
  * @returns Preview with content and validation status
  */
 async function getPublishPreview(
   eventCode: string,
-  phase: PublishingPhase,
-  mode: PublishingMode
+  phase: PublishingPhase
 ): Promise<PublishPreviewResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`, {
-    params: { mode },
-  });
+  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`);
   return response.data;
 }
 

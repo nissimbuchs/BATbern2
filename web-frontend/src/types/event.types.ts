@@ -505,23 +505,9 @@ export interface ConflictAnalysisResponse {
 export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
 
 /**
- * Publishing mode
- */
-export type PublishingMode = 'draft' | 'progressive' | 'complete';
-
-/**
  * CDN invalidation status
  */
 export type CDNInvalidationStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
-
-/**
- * Request options for publishing a phase
- */
-export interface PublishRequest {
-  mode?: PublishingMode;
-  approvalOverride?: boolean;
-  notifySubscribers?: boolean;
-}
 
 /**
  * Response from publishing a phase
@@ -637,7 +623,6 @@ export interface ChangeLogResponse {
  */
 export interface AutoPublishScheduleRequest {
   scheduledDate: string; // ISO 8601 date-time
-  notifySubscribers?: boolean;
 }
 
 /**

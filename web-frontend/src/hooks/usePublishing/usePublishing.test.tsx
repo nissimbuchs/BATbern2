@@ -47,17 +47,14 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.publishPhase('topic', { mode: 'progressive', notifySubscribers: true });
+        result.current.publishPhase('topic');
       });
 
       await waitFor(() => {
         expect(result.current.isPublishing).toBe(false);
       });
 
-      expect(publishingService.publishPhase).toHaveBeenCalledWith('BATbern142', 'topic', {
-        mode: 'progressive',
-        notifySubscribers: true,
-      });
+      expect(publishingService.publishPhase).toHaveBeenCalledWith('BATbern142', 'topic');
     });
 
     it('should handle validation error when content not ready', async () => {
@@ -85,7 +82,7 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.publishPhase('agenda', { mode: 'progressive' });
+        result.current.publishPhase('agenda');
       });
 
       await waitFor(() => {
@@ -147,18 +144,14 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.fetchPreview('speakers', 'progressive');
+        result.current.fetchPreview('speakers');
       });
 
       await waitFor(() => {
         expect(result.current.preview).toEqual(mockPreview);
       });
 
-      expect(publishingService.getPublishPreview).toHaveBeenCalledWith(
-        'BATbern142',
-        'speakers',
-        'progressive'
-      );
+      expect(publishingService.getPublishPreview).toHaveBeenCalledWith('BATbern142', 'speakers');
     });
   });
 
@@ -210,7 +203,6 @@ describe('usePublishing', () => {
       await waitFor(() => {
         result.current.scheduleAutoPublish('speakers', {
           scheduledDate: '2025-04-15T08:00:00Z',
-          notifySubscribers: true,
         });
       });
 
@@ -220,7 +212,6 @@ describe('usePublishing', () => {
 
       expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers', {
         scheduledDate: '2025-04-15T08:00:00Z',
-        notifySubscribers: true,
       });
     });
 
@@ -270,7 +261,7 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.publishPhase('topic', { mode: 'progressive' });
+        result.current.publishPhase('topic');
       });
 
       await waitFor(() => {

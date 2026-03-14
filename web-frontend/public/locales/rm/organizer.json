@@ -435,7 +435,7 @@
     "failedToLoad": "Il cargament da l'avisament ha fallì. Pruvai anc ina giada.",
     "iframeTitle": "Avisament da l'eveniment",
     "iframeAriaLabel": "Avisament dal cuntegn da l'eveniment",
-    "previewModeCaption": "Modus d'avisament: {{mode}} | Fasa: {{phase}}",
+    "previewPhaseCaption": "Fasa: {{phase}}",
     "deviceCaption": "Apparat: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

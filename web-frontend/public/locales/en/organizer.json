@@ -442,7 +442,7 @@
     "failedToLoad": "Failed to load preview. Please try again.",
     "iframeTitle": "Event preview",
     "iframeAriaLabel": "Event content preview",
-    "previewModeCaption": "Preview Mode: {{mode}} | Phase: {{phase}}",
+    "previewPhaseCaption": "Phase: {{phase}}",
     "deviceCaption": "Device: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

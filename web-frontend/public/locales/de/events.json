@@ -473,11 +473,6 @@
       "alreadyPublished": "Bereits veröffentlicht",
       "publishTopicFirst": "Bitte veröffentlichen Sie zuerst das Thema",
       "publishSpeakersFirst": "Bitte veröffentlichen Sie zuerst die Referenten",
-      "mode": "Modus",
-      "modeDraft": "Entwurf",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Vollständig",
-      "notifySubscribers": "Abonnenten benachrichtigen",
       "validationErrors": "Validierungsfehler:",
       "phase": {
         "topic": "Thema",
@@ -485,8 +480,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Veröffentliche {{phase}}",
-        "notifySubscribers": "Abonnenten bei Veröffentlichung benachrichtigen"
+        "publishingPhase": "Veröffentliche {{phase}}"
       }
     },
     "validation": {
@@ -524,8 +518,16 @@
       "cdnUnknown": "Unbekannt",
       "noVersions": "Kein Versionsverlauf verfügbar"
     },
-    "autoPublishInDays": "Auto-publish in {{days}} days",
-    "autoPublishScheduled": "Auto-publish scheduled",
+    "timeline": {
+      "progress": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "now": "Jetzt",
+      "inDays_one": "{{count}} Tag",
+      "inDays_other": "{{count}} Tage",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}"
+    },
+    "autoPublishInDays": "Automatische Veröffentlichung in {{days}} Tagen",
+    "autoPublishScheduled": "Automatische Veröffentlichung geplant",
     "phases": {
       "topic": "Thema",
       "speakers": "Referenten",

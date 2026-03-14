@@ -435,7 +435,7 @@
     "failedToLoad": "Échec du chargement de l'aperçu. Veuillez réessayer.",
     "iframeTitle": "Aperçu de l'événement",
     "iframeAriaLabel": "Aperçu du contenu de l'événement",
-    "previewModeCaption": "Mode aperçu : {{mode}} | Phase : {{phase}}",
+    "previewPhaseCaption": "Phase : {{phase}}",
     "deviceCaption": "Appareil : {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

@@ -462,11 +462,6 @@
       "alreadyPublished": "Al gepubliceerd",
       "publishTopicFirst": "Publiceer eerst het onderwerp",
       "publishSpeakersFirst": "Publiceer eerst de sprekers",
-      "mode": "Modus",
-      "modeDraft": "Concept",
-      "modeProgressive": "Progressief",
-      "modeComplete": "Voltooid",
-      "notifySubscribers": "Abonnees informeren",
       "validationErrors": "Validatiefouten:",
       "phase": {
         "topic": "Onderwerp",
@@ -474,8 +469,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "{{phase}} publiceren",
-        "notifySubscribers": "Abonnees informeren bij publicatie"
+        "publishingPhase": "{{phase}} publiceren"
       }
     },
     "validation": {

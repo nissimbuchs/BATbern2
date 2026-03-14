@@ -465,11 +465,6 @@
       "alreadyPublished": "Scho veröffentlicht",
       "publishTopicFirst": "Bitte zerscht s'Thema veröffentliche",
       "publishSpeakersFirst": "Bitte zerscht d'Redneri veröffentliche",
-      "mode": "Modus",
-      "modeDraft": "Entwurf",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Vollständig",
-      "notifySubscribers": "Abonnente benarichtige",
       "validationErrors": "Validierigsfähler:",
       "phase": {
         "topic": "Thema",
@@ -477,8 +472,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "{{phase}} veröffentliche",
-        "notifySubscribers": "Abonnente bim Veröffentliche benarichtige"
+        "publishingPhase": "{{phase}} veröffentliche"
       }
     },
     "validation": {

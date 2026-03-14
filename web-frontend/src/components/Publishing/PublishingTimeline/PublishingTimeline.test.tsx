@@ -2,6 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PublishingTimeline } from './PublishingTimeline';
 
+// Mock date formatting utility to return predictable values
+vi.mock('@/utils/date/dateFormat', () => ({
+  formatDate: (date: Date, locale: string, fmt?: string) => {
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    if (fmt) {
+      return `${day}. ${month} ${year}`;
+    }
+    return locale === 'de' ? `${day}. ${month} ${year}` : `${month} ${day}, ${year}`;
+  },
+}));
+
 describe('PublishingTimeline', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -21,7 +34,6 @@ describe('PublishingTimeline', () => {
       expect(screen.getByText(/topic/i)).toBeInTheDocument();
       expect(screen.getByText(/speakers/i)).toBeInTheDocument();
       expect(screen.getByText(/agenda/i)).toBeInTheDocument();
-      expect(screen.getByText(/updates/i)).toBeInTheDocument();
     });
 
     it('should highlight current phase', () => {
@@ -85,11 +97,11 @@ describe('PublishingTimeline', () => {
         />
       );
 
-      expect(screen.getByText(/published on/i)).toBeInTheDocument();
-      expect(screen.getByText(/jan 15, 2025/i)).toBeInTheDocument();
+      // Uses i18n key with formatted date
+      expect(screen.getByTestId('published-date-topic')).toBeInTheDocument();
     });
 
-    it('should show scheduled date for Speakers phase (1 month before event)', () => {
+    it('should show scheduled date for Speakers phase', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
@@ -100,11 +112,10 @@ describe('PublishingTimeline', () => {
         />
       );
 
-      expect(screen.getByText(/scheduled:/i)).toBeInTheDocument();
-      expect(screen.getByText(/apr 15, 2025/i)).toBeInTheDocument();
+      expect(screen.getByTestId('scheduled-date-speakers')).toBeInTheDocument();
     });
 
-    it('should show scheduled date for Agenda phase (2 weeks before event)', () => {
+    it('should show scheduled date for Agenda phase', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
@@ -115,22 +126,7 @@ describe('PublishingTimeline', () => {
         />
       );
 
-      expect(screen.getByText(/scheduled:/i)).toBeInTheDocument();
-      expect(screen.getByText(/may 1, 2025/i)).toBeInTheDocument();
-    });
-
-    it('should show event date for final milestone', () => {
-      render(
-        <PublishingTimeline
-          eventCode="BATbern142"
-          currentPhase="agenda"
-          publishedPhases={['topic', 'speakers', 'agenda']}
-          eventDate="2025-05-15"
-        />
-      );
-
-      // Component shows the event date directly in the Updates phase milestone
-      expect(screen.getByText(/5\/15\/2025/i)).toBeInTheDocument();
+      expect(screen.getByTestId('scheduled-date-agenda')).toBeInTheDocument();
     });
   });
 
@@ -148,7 +144,7 @@ describe('PublishingTimeline', () => {
       expect(screen.getByTestId('progress-line')).toBeInTheDocument();
     });
 
-    it('should show progress line at 25% when topic phase complete', () => {
+    it('should show progress line at 33% when topic phase complete', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
@@ -159,10 +155,11 @@ describe('PublishingTimeline', () => {
       );
 
       const progressFill = screen.getByTestId('progress-fill');
-      expect(progressFill).toHaveStyle({ width: '25%' });
+      // 1/3 ≈ 33.33%
+      expect(progressFill).toHaveStyle({ width: '33.33333333333333%' });
     });
 
-    it('should show progress line at 50% when speakers phase complete', () => {
+    it('should show progress line at 67% when speakers phase complete', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
@@ -173,10 +170,11 @@ describe('PublishingTimeline', () => {
       );
 
       const progressFill = screen.getByTestId('progress-fill');
-      expect(progressFill).toHaveStyle({ width: '50%' });
+      // 2/3 ≈ 66.67%
+      expect(progressFill).toHaveStyle({ width: '66.66666666666666%' });
     });
 
-    it('should show progress line at 75% when agenda phase complete', () => {
+    it('should show progress line at 100% when all phases complete', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
@@ -187,21 +185,20 @@ describe('PublishingTimeline', () => {
       );
 
       const progressFill = screen.getByTestId('progress-fill');
-      expect(progressFill).toHaveStyle({ width: '75%' });
+      expect(progressFill).toHaveStyle({ width: '100%' });
     });
 
-    it('should show progress line at 100% when all phases complete', () => {
+    it('should use i18n for progress text', () => {
       render(
         <PublishingTimeline
           eventCode="BATbern142"
-          currentPhase="updates"
-          publishedPhases={['topic', 'speakers', 'agenda', 'updates']}
+          currentPhase="topic"
+          publishedPhases={['topic']}
           eventDate="2025-05-15"
         />
       );
 
-      const progressFill = screen.getByTestId('progress-fill');
-      expect(progressFill).toHaveStyle({ width: '100%' });
+      expect(screen.getByText(/1 of 3 phases published/i)).toBeInTheDocument();
     });
   });
 

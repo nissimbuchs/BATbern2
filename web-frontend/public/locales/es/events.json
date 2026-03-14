@@ -462,11 +462,6 @@
       "alreadyPublished": "Ya publicado",
       "publishTopicFirst": "Publique el tema primero",
       "publishSpeakersFirst": "Publique los ponentes primero",
-      "mode": "Modo",
-      "modeDraft": "Borrador",
-      "modeProgressive": "Progresivo",
-      "modeComplete": "Completo",
-      "notifySubscribers": "Notificar suscriptores",
       "validationErrors": "Errores de validación:",
       "phase": {
         "topic": "Tema",
@@ -474,8 +469,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publicando {{phase}}",
-        "notifySubscribers": "Notificar suscriptores al publicar"
+        "publishingPhase": "Publicando {{phase}}"
       }
     },
     "validation": {

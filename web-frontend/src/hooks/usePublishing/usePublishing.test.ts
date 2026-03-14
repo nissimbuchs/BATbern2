@@ -99,7 +99,7 @@ describe('usePublishing', () => {
     });
 
     await waitFor(() => expect(mockPublishPhase).toHaveBeenCalled());
-    expect(mockPublishPhase).toHaveBeenCalledWith('BAT142', 'topic', undefined);
+    expect(mockPublishPhase).toHaveBeenCalledWith('BAT142', 'topic');
   });
 
   it('should call unpublishPhase when unpublishPhase is called', async () => {
@@ -126,11 +126,11 @@ describe('usePublishing', () => {
     await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
 
     act(() => {
-      result.current.fetchPreview('topic' as never, 'FULL' as never);
+      result.current.fetchPreview('topic' as never);
     });
 
     await waitFor(() => expect(mockGetPublishPreview).toHaveBeenCalled());
-    expect(mockGetPublishPreview).toHaveBeenCalledWith('BAT142', 'topic', 'FULL');
+    expect(mockGetPublishPreview).toHaveBeenCalledWith('BAT142', 'topic');
   });
 
   it('should call scheduleAutoPublish', async () => {

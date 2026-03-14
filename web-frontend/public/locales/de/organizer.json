@@ -442,7 +442,7 @@
     "failedToLoad": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
     "iframeTitle": "Veranstaltungsvorschau",
     "iframeAriaLabel": "Inhalt der Veranstaltungsvorschau",
-    "previewModeCaption": "Vorschaumodus: {{mode}} | Phase: {{phase}}",
+    "previewPhaseCaption": "Phase: {{phase}}",
     "deviceCaption": "Gerät: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

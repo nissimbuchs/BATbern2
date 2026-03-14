@@ -435,7 +435,7 @@
     "failedToLoad": "プレビューの読み込みに失敗しました。もう一度お試しください。",
     "iframeTitle": "イベントプレビュー",
     "iframeAriaLabel": "イベントコンテンツプレビュー",
-    "previewModeCaption": "プレビューモード：{{mode}} | フェーズ：{{phase}}",
+    "previewPhaseCaption": "フェーズ：{{phase}}",
     "deviceCaption": "デバイス：{{device}}（{{width}} x {{height}}）"
   },
   "acceptTopic": {

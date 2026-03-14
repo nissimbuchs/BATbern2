@@ -33,15 +33,9 @@ describe('publishingService', () => {
 
       const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: mockData });
 
-      const result = await publishingService.publishPhase('BATbern142', 'topic', {
-        mode: 'progressive',
-        notifySubscribers: true,
-      });
+      const result = await publishingService.publishPhase('BATbern142', 'topic');
 
-      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/topic', {
-        mode: 'progressive',
-        notifySubscribers: true,
-      });
+      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/topic');
       expect(result).toEqual(mockData);
     });
 
@@ -66,9 +60,9 @@ describe('publishingService', () => {
 
       vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
 
-      await expect(
-        publishingService.publishPhase('BATbern142', 'agenda', { mode: 'progressive' })
-      ).rejects.toEqual(mockError);
+      await expect(publishingService.publishPhase('BATbern142', 'agenda')).rejects.toEqual(
+        mockError
+      );
     });
 
     it('should preserve 401 authentication error', async () => {
@@ -81,9 +75,9 @@ describe('publishingService', () => {
 
       vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
 
-      await expect(
-        publishingService.publishPhase('BATbern142', 'topic', { mode: 'progressive' })
-      ).rejects.toEqual(mockError);
+      await expect(publishingService.publishPhase('BATbern142', 'topic')).rejects.toEqual(
+        mockError
+      );
     });
 
     it('should preserve 403 forbidden error', async () => {
@@ -96,9 +90,9 @@ describe('publishingService', () => {
 
       vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
 
-      await expect(
-        publishingService.publishPhase('BATbern142', 'topic', { mode: 'progressive' })
-      ).rejects.toEqual(mockError);
+      await expect(publishingService.publishPhase('BATbern142', 'topic')).rejects.toEqual(
+        mockError
+      );
     });
   });
 
@@ -140,15 +134,9 @@ describe('publishingService', () => {
 
       const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
 
-      const result = await publishingService.getPublishPreview(
-        'BATbern142',
-        'speakers',
-        'progressive'
-      );
+      const result = await publishingService.getPublishPreview('BATbern142', 'speakers');
 
-      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/speakers/preview', {
-        params: { mode: 'progressive' },
-      });
+      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/speakers/preview');
       expect(result).toEqual(mockData);
     });
   });
@@ -199,12 +187,10 @@ describe('publishingService', () => {
 
       const result = await publishingService.scheduleAutoPublish('BATbern142', 'speakers', {
         scheduledDate: '2025-04-15T08:00:00Z',
-        notifySubscribers: true,
       });
 
       expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule', {
         scheduledDate: '2025-04-15T08:00:00Z',
-        notifySubscribers: true,
       });
       expect(result).toEqual(mockData);
     });

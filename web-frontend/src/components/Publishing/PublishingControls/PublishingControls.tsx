@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Checkbox,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
-  Alert,
-  Typography,
-  CircularProgress,
-  Stack,
-  Tooltip,
-} from '@mui/material';
+import { Box, Button, Alert, Typography, CircularProgress, Stack, Tooltip } from '@mui/material';
 import {
   Error as ErrorIcon,
   CheckCircle as CheckIcon,
@@ -23,7 +9,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-import { PublishingPhase, PublishingMode } from '@/types/event.types';
+import { PublishingPhase } from '@/types/event.types';
 
 export interface PublishingControlsProps {
   eventCode: string;
@@ -38,8 +24,6 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   const { t } = useTranslation('events');
   const { publishPhase, isPublishing, publishingStatus } = usePublishing(eventCode);
 
-  const [publishingMode, setPublishingMode] = useState<PublishingMode>('progressive');
-  const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [isAnnouncingPublish, setIsAnnouncingPublish] = useState(false);
   const [publishingPhase, setPublishingPhase] = useState<PublishingPhase | null>(null);
 
@@ -54,6 +38,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   };
 
   // Check if a phase can be published (validation passes and prerequisites met)
+  // Always uses progressive ordering: topic → speakers → agenda
   const canPublishPhase = (phase: PublishingPhase): boolean => {
     if (!publishingStatus) return false;
 
@@ -61,17 +46,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
       case 'topic':
         return publishingStatus.topic?.isValid === true;
       case 'speakers':
-        // Speakers requires topic to be published first (progressive mode)
-        return (
-          publishingStatus.speakers?.isValid === true &&
-          (isPhasePublished('topic') || publishingMode !== 'progressive')
-        );
+        return publishingStatus.speakers?.isValid === true && isPhasePublished('topic');
       case 'agenda':
-        // Agenda requires speakers to be published first (progressive mode)
-        return (
-          publishingStatus.sessions?.isValid === true &&
-          (isPhasePublished('speakers') || publishingMode !== 'progressive')
-        );
+        return publishingStatus.sessions?.isValid === true && isPhasePublished('speakers');
       default:
         return false;
     }
@@ -88,7 +65,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
         }
         break;
       case 'speakers':
-        if (!isPhasePublished('topic') && publishingMode === 'progressive') {
+        if (!isPhasePublished('topic')) {
           return t('publishing.controls.publishTopicFirst');
         }
         if (!publishingStatus.speakers?.isValid) {
@@ -98,7 +75,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
         }
         break;
       case 'agenda':
-        if (!isPhasePublished('speakers') && publishingMode === 'progressive') {
+        if (!isPhasePublished('speakers')) {
           return t('publishing.controls.publishSpeakersFirst');
         }
         if (!publishingStatus.sessions?.isValid) {
@@ -116,10 +93,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   const handlePublish = async (phase: PublishingPhase) => {
     setIsAnnouncingPublish(true);
     setPublishingPhase(phase);
-    await publishPhase(phase, {
-      mode: publishingMode,
-      notifySubscribers,
-    });
+    await publishPhase(phase);
     // Reset announcement after a brief delay
     setTimeout(() => {
       setIsAnnouncingPublish(false);
@@ -168,50 +142,6 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           ))}
         </Alert>
       )}
-
-      {/* Mode Selection */}
-      <FormControl component="fieldset" sx={{ mb: 3 }}>
-        <FormLabel component="legend" id="publishing-mode-label">
-          {t('publishing.controls.mode')}
-        </FormLabel>
-        <RadioGroup
-          aria-labelledby="publishing-mode-label"
-          value={publishingMode}
-          onChange={(e) => setPublishingMode(e.target.value as PublishingMode)}
-          row
-        >
-          <FormControlLabel
-            value="draft"
-            control={<Radio />}
-            label={t('publishing.controls.modeDraft')}
-          />
-          <FormControlLabel
-            value="progressive"
-            control={<Radio />}
-            label={t('publishing.controls.modeProgressive')}
-          />
-          <FormControlLabel
-            value="complete"
-            control={<Radio />}
-            label={t('publishing.controls.modeComplete')}
-          />
-        </RadioGroup>
-      </FormControl>
-
-      {/* Newsletter Notification Toggle */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={notifySubscribers}
-            onChange={(e) => setNotifySubscribers(e.target.checked)}
-            inputProps={{
-              'aria-label': t('publishing.controls.accessibility.notifySubscribers'),
-            }}
-          />
-        }
-        label={t('publishing.controls.notifySubscribers')}
-        sx={{ mb: 2, display: 'block' }}
-      />
 
       {/* Phase Publishing Buttons */}
       <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>

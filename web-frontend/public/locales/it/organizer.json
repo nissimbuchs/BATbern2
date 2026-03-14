@@ -435,7 +435,7 @@
     "failedToLoad": "Caricamento anteprima fallito. Riprova.",
     "iframeTitle": "Anteprima evento",
     "iframeAriaLabel": "Anteprima contenuto evento",
-    "previewModeCaption": "Modalità anteprima: {{mode}} | Fase: {{phase}}",
+    "previewPhaseCaption": "Fase: {{phase}}",
     "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

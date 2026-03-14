@@ -435,7 +435,7 @@
     "failedToLoad": "Voorbeeld laden mislukt. Probeer opnieuw.",
     "iframeTitle": "Evenementvoorbeeld",
     "iframeAriaLabel": "Voorvertoning evenementinhoud",
-    "previewModeCaption": "Voorbeeldmodus: {{mode}} | Fase: {{phase}}",
+    "previewPhaseCaption": "Fase: {{phase}}",
     "deviceCaption": "Apparaat: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

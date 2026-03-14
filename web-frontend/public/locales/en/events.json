@@ -473,11 +473,6 @@
       "alreadyPublished": "Already published",
       "publishTopicFirst": "Please publish the topic first",
       "publishSpeakersFirst": "Please publish the speakers first",
-      "mode": "Mode",
-      "modeDraft": "Draft",
-      "modeProgressive": "Progressive",
-      "modeComplete": "Complete",
-      "notifySubscribers": "Notify subscribers",
       "validationErrors": "Validation Errors:",
       "phase": {
         "topic": "Topic",
@@ -485,8 +480,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publishing {{phase}}",
-        "notifySubscribers": "Notify subscribers when publishing"
+        "publishingPhase": "Publishing {{phase}}"
       }
     },
     "validation": {
@@ -523,6 +517,14 @@
       "cdnFailed": "CDN Failed",
       "cdnUnknown": "Unknown",
       "noVersions": "No version history available"
+    },
+    "timeline": {
+      "progress": "{{completed}} of {{total}} phases published ({{percent}}%)",
+      "now": "Now",
+      "inDays_one": "{{count}} day",
+      "inDays_other": "{{count}} days",
+      "publishedOn": "Published on {{date}}",
+      "scheduled": "Scheduled: {{date}}"
     },
     "autoPublishInDays": "Auto-publish in {{days}} days",
     "autoPublishScheduled": "Auto-publish scheduled",

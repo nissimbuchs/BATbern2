@@ -435,7 +435,7 @@
     "failedToLoad": "Esikatselun lataaminen epäonnistui. Yritä uudelleen.",
     "iframeTitle": "Tapahtuman esikatselu",
     "iframeAriaLabel": "Tapahtuman sisällön esikatselu",
-    "previewModeCaption": "Esikatselutila: {{mode}} | Vaihe: {{phase}}",
+    "previewPhaseCaption": "Vaihe: {{phase}}",
     "deviceCaption": "Laite: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

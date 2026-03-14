@@ -435,7 +435,7 @@
     "failedToLoad": "Error al cargar la vista previa. Inténtalo de nuevo.",
     "iframeTitle": "Vista previa del evento",
     "iframeAriaLabel": "Vista previa del contenido del evento",
-    "previewModeCaption": "Modo vista previa: {{mode}} | Fase: {{phase}}",
+    "previewPhaseCaption": "Fase: {{phase}}",
     "deviceCaption": "Dispositivo: {{device}} ({{width}} x {{height}})"
   },
   "acceptTopic": {

@@ -462,11 +462,6 @@
       "alreadyPublished": "Jo julkaistu",
       "publishTopicFirst": "Julkaise aihe ensin",
       "publishSpeakersFirst": "Julkaise puhujat ensin",
-      "mode": "Tila",
-      "modeDraft": "Luonnos",
-      "modeProgressive": "Progressiivinen",
-      "modeComplete": "Valmis",
-      "notifySubscribers": "Ilmoita tilaajille",
       "validationErrors": "Vahvistusvirheet:",
       "phase": {
         "topic": "Aihe",
@@ -474,8 +469,7 @@
         "agenda": "Ohjelma"
       },
       "accessibility": {
-        "publishingPhase": "Julkaistaan {{phase}}",
-        "notifySubscribers": "Ilmoita tilaajille julkaisun yhteydessä"
+        "publishingPhase": "Julkaistaan {{phase}}"
       }
     },
     "validation": {

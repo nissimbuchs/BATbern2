@@ -24,8 +24,6 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
   const { unassignedSessions } = useSlotAssignment(eventCode);
 
-  const publishingMode = 'progressive' as const;
-
   // Loading state
   if (isLoadingStatus) {
     return (
@@ -115,7 +113,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
       {/* Live Preview - Preview published content */}
       <Box data-testid="live-preview-container">
-        <LivePreview eventCode={eventCode} phase={currentPhase} mode={publishingMode} />
+        <LivePreview eventCode={eventCode} phase={currentPhase} />
       </Box>
     </Stack>
   );

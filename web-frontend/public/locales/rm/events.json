@@ -462,11 +462,6 @@
       "alreadyPublished": "Gia publicà",
       "publishTopicFirst": "Publitgescha il tema emprima",
       "publishSpeakersFirst": "Publitgescha ils referents emprima",
-      "mode": "Modus",
-      "modeDraft": "Bozza",
-      "modeProgressive": "Progressiv",
-      "modeComplete": "Cumplet",
-      "notifySubscribers": "Notifitgar abonents",
       "validationErrors": "Sbagls da validaziun:",
       "phase": {
         "topic": "Tema",
@@ -474,8 +469,7 @@
         "agenda": "Agenda"
       },
       "accessibility": {
-        "publishingPhase": "Publicar {{phase}}",
-        "notifySubscribers": "Notifitgar abonents a la publicaziun"
+        "publishingPhase": "Publicar {{phase}}"
       }
     },
     "validation": {

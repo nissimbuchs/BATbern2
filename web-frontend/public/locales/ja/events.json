@@ -462,11 +462,6 @@
       "alreadyPublished": "既に公開済み",
       "publishTopicFirst": "最初にトピックを公開してください",
       "publishSpeakersFirst": "最初にスピーカーを公開してください",
-      "mode": "モード",
-      "modeDraft": "下書き",
-      "modeProgressive": "プログレッシブ",
-      "modeComplete": "完全",
-      "notifySubscribers": "購読者に通知",
       "validationErrors": "検証エラー：",
       "phase": {
         "topic": "トピック",
@@ -474,8 +469,7 @@
         "agenda": "アジェンダ"
       },
       "accessibility": {
-        "publishingPhase": "{{phase}}を公開中",
-        "notifySubscribers": "公開時に購読者に通知"
+        "publishingPhase": "{{phase}}を公開中"
       }
     },
     "validation": {
