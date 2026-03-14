@@ -4,7 +4,6 @@
  * Coverage for:
  * - Initial state (isLoadingStatus, publishingStatus)
  * - publishPhase / unpublishPhase mutations trigger the publishing service
- * - rollbackVersion mutation
  * - fetchPreview mutation
  * - scheduleAutoPublish / cancelAutoPublish mutations
  * - validationErrors extraction from 422 error
@@ -18,11 +17,9 @@ import React from 'react';
 vi.mock('@/services/publishingService/publishingService', () => ({
   publishingService: {
     getPublishingStatus: vi.fn(),
-    getVersionHistory: vi.fn(),
     getChangeLog: vi.fn(),
     publishPhase: vi.fn(),
     unpublishPhase: vi.fn(),
-    rollbackVersion: vi.fn(),
     getPublishPreview: vi.fn(),
     scheduleAutoPublish: vi.fn(),
     cancelAutoPublish: vi.fn(),
@@ -33,11 +30,9 @@ import { publishingService } from '@/services/publishingService/publishingServic
 import { usePublishing } from './usePublishing';
 
 const mockGetStatus = vi.mocked(publishingService.getPublishingStatus);
-const mockGetVersionHistory = vi.mocked(publishingService.getVersionHistory);
 const mockGetChangeLog = vi.mocked(publishingService.getChangeLog);
 const mockPublishPhase = vi.mocked(publishingService.publishPhase);
 const mockUnpublishPhase = vi.mocked(publishingService.unpublishPhase);
-const mockRollbackVersion = vi.mocked(publishingService.rollbackVersion);
 const mockGetPublishPreview = vi.mocked(publishingService.getPublishPreview);
 const mockScheduleAutoPublish = vi.mocked(publishingService.scheduleAutoPublish);
 const mockCancelAutoPublish = vi.mocked(publishingService.cancelAutoPublish);
@@ -53,7 +48,6 @@ const wrapper =
     React.createElement(QueryClientProvider, { client: qc }, children);
 
 const MOCK_STATUS = { topic: 'PUBLISHED', speakers: 'DRAFT', agenda: 'DRAFT' };
-const MOCK_HISTORY = { versions: [{ number: 1, publishedAt: '2025-01-01', phase: 'topic' }] };
 const MOCK_CHANGELOG = { entries: [{ changedAt: '2025-01-01', field: 'title' }] };
 
 describe('usePublishing', () => {
@@ -63,18 +57,16 @@ describe('usePublishing', () => {
     qc = createQC();
     vi.clearAllMocks();
     mockGetStatus.mockResolvedValue(MOCK_STATUS as never);
-    mockGetVersionHistory.mockResolvedValue(MOCK_HISTORY as never);
     mockGetChangeLog.mockResolvedValue(MOCK_CHANGELOG as never);
   });
 
-  it('should fetch publishing status, version history, and change log on mount', async () => {
+  it('should fetch publishing status and change log on mount', async () => {
     const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
 
     expect(mockGetStatus).toHaveBeenCalledWith('BAT142');
     expect(result.current.publishingStatus).toEqual(MOCK_STATUS);
-    expect(result.current.versionHistory).toEqual(MOCK_HISTORY);
     expect(result.current.changeLog).toEqual(MOCK_CHANGELOG);
   });
 
@@ -123,21 +115,6 @@ describe('usePublishing', () => {
 
     await waitFor(() => expect(mockUnpublishPhase).toHaveBeenCalled());
     expect(mockUnpublishPhase).toHaveBeenCalledWith('BAT142', 'speakers');
-  });
-
-  it('should call rollbackVersion', async () => {
-    mockRollbackVersion.mockResolvedValue({} as never);
-
-    const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
-
-    act(() => {
-      result.current.rollbackVersion(1, { reason: 'error' } as never);
-    });
-
-    await waitFor(() => expect(mockRollbackVersion).toHaveBeenCalled());
-    expect(mockRollbackVersion).toHaveBeenCalledWith('BAT142', 1, { reason: 'error' });
   });
 
   it('should call fetchPreview mutation', async () => {
@@ -195,7 +172,6 @@ describe('usePublishing', () => {
 
     expect(result.current.isPublishing).toBe(false);
     expect(result.current.isUnpublishing).toBe(false);
-    expect(result.current.isRollingBack).toBe(false);
     expect(result.current.isScheduling).toBe(false);
     expect(result.current.isCancelling).toBe(false);
   });

@@ -19,8 +19,6 @@ import type {
   PublishRequest,
   PublishPreviewResponse,
   PublishingStatusResponse,
-  VersionHistoryResponse,
-  RollbackRequest,
   ChangeLogResponse,
   AutoPublishScheduleRequest,
   PublishValidationError,
@@ -38,12 +36,6 @@ export interface UsePublishingReturn {
   isUnpublishing: boolean;
   publishError: Error | null;
   validationErrors: Array<{ field: string; message: string; requirement: string }>;
-
-  // Version control
-  versionHistory: VersionHistoryResponse | undefined;
-  isLoadingVersions: boolean;
-  rollbackVersion: (versionNumber: number, options: RollbackRequest) => void;
-  isRollingBack: boolean;
 
   // Preview
   preview: PublishPreviewResponse | null;
@@ -73,7 +65,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Query keys
   const statusKey = ['publishing', 'status', eventCode];
-  const versionHistoryKey = ['publishing', 'versions', eventCode];
   const changeLogKey = ['publishing', 'changeLog', eventCode];
   const previewKey = ['publishing', 'preview', eventCode];
 
@@ -82,13 +73,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     queryKey: statusKey,
     queryFn: () => publishingService.getPublishingStatus(eventCode),
     staleTime: 10000, // 10 seconds - validation can change frequently
-  });
-
-  // Version history query (auto-fetched)
-  const { data: versionHistory, isLoading: isLoadingVersions } = useQuery({
-    queryKey: versionHistoryKey,
-    queryFn: () => publishingService.getVersionHistory(eventCode),
-    staleTime: 30000, // 30 seconds
   });
 
   // Change log query (auto-fetched)
@@ -112,7 +96,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     onSuccess: () => {
       // Invalidate status, version history and change log to refetch
       queryClient.invalidateQueries({ queryKey: statusKey });
-      queryClient.invalidateQueries({ queryKey: versionHistoryKey });
       queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
   });
@@ -122,19 +105,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     mutationFn: (phase: PublishingPhase) => publishingService.unpublishPhase(eventCode, phase),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: statusKey });
-      queryClient.invalidateQueries({ queryKey: versionHistoryKey });
-      queryClient.invalidateQueries({ queryKey: changeLogKey });
-    },
-  });
-
-  // Rollback version mutation
-  const rollbackVersionMutation = useMutation({
-    mutationFn: ({ versionNumber, options }: { versionNumber: number; options: RollbackRequest }) =>
-      publishingService.rollbackVersion(eventCode, versionNumber, options),
-    onSuccess: () => {
-      // Rollback changes the published phase, so invalidate status too
-      queryClient.invalidateQueries({ queryKey: statusKey });
-      queryClient.invalidateQueries({ queryKey: versionHistoryKey });
       queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
   });
@@ -190,13 +160,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     isUnpublishing: unpublishPhaseMutation.isPending,
     publishError: publishPhaseMutation.error,
     validationErrors,
-
-    // Version control
-    versionHistory,
-    isLoadingVersions,
-    rollbackVersion: (versionNumber, options) =>
-      rollbackVersionMutation.mutate({ versionNumber, options }),
-    isRollingBack: rollbackVersionMutation.isPending,
 
     // Preview
     preview: preview || null,

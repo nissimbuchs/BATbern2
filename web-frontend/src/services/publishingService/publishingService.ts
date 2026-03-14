@@ -19,9 +19,6 @@ import type {
   UnpublishPhaseResponse,
   PublishPreviewResponse,
   PublishingStatusResponse,
-  VersionHistoryResponse,
-  RollbackRequest,
-  RollbackResponse,
   ChangeLogResponse,
   AutoPublishScheduleRequest,
   AutoPublishScheduleResponse,
@@ -95,38 +92,6 @@ async function getPublishPreview(
 }
 
 /**
- * Get version history for an event
- *
- * @param eventCode - Event code
- * @returns Array of publishing versions (newest first)
- */
-async function getVersionHistory(eventCode: string): Promise<VersionHistoryResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/versions`);
-  return response.data;
-}
-
-/**
- * Rollback to a previous publishing version
- *
- * @param eventCode - Event code
- * @param versionNumber - Version number to rollback to
- * @param options - Rollback options (reason required)
- * @returns New version created by rollback
- * @throws 404 if version not found
- */
-async function rollbackVersion(
-  eventCode: string,
-  versionNumber: number,
-  options: RollbackRequest
-): Promise<RollbackResponse> {
-  const response = await apiClient.post(
-    `/events/${eventCode}/publish/rollback/${versionNumber}`,
-    options
-  );
-  return response.data;
-}
-
-/**
  * Get change log for published content
  *
  * @param eventCode - Event code
@@ -180,8 +145,6 @@ export const publishingService = {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getVersionHistory,
-  rollbackVersion,
   getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,
@@ -193,8 +156,6 @@ export {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getVersionHistory,
-  rollbackVersion,
   getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,

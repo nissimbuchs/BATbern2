@@ -524,9 +524,9 @@ export interface PublishRequest {
 }
 
 /**
- * Publishing version entity (for rollback capability)
+ * Response from publishing a phase
  */
-export interface PublishingVersion {
+export interface PublishPhaseResponse {
   id: string;
   eventCode: string;
   versionNumber: number;
@@ -535,16 +535,7 @@ export interface PublishingVersion {
   publishedBy: string;
   cdnInvalidationId?: string;
   cdnInvalidationStatus?: string; // UPPERCASE in API
-  contentSnapshot: Record<string, unknown>;
-  isCurrent: boolean;
-  rolledBackAt?: string | null;
-  rolledBackBy?: string | null;
 }
-
-/**
- * Response from publishing a phase
- */
-export type PublishPhaseResponse = PublishingVersion;
 
 /**
  * Response from unpublishing a phase
@@ -594,11 +585,6 @@ export interface PublishPreviewResponse {
 }
 
 /**
- * Version history response (array of versions)
- */
-export type VersionHistoryResponse = PublishingVersion[];
-
-/**
  * Validation status for a publishing phase
  */
 export interface ValidationStatus {
@@ -626,18 +612,6 @@ export interface PublishingStatusResponse {
   speakers: ValidationStatus;
   sessions: SessionValidationStatus;
 }
-
-/**
- * Rollback request
- */
-export interface RollbackRequest {
-  reason: string; // 10-500 chars required
-}
-
-/**
- * Response from rolling back to previous version
- */
-export type RollbackResponse = PublishingVersion;
 
 /**
  * Change log entry

@@ -123,89 +123,6 @@ describe('usePublishing', () => {
     });
   });
 
-  describe('version history', () => {
-    it('should fetch version history', async () => {
-      const mockVersions = [
-        {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          eventCode: 'BATbern142',
-          versionNumber: 2,
-          publishedPhase: 'SPEAKERS',
-          publishedAt: '2025-01-15T12:00:00Z',
-          publishedBy: 'john.doe',
-          isCurrent: true,
-        },
-        {
-          id: '123e4567-e89b-12d3-a456-426614174001',
-          eventCode: 'BATbern142',
-          versionNumber: 1,
-          publishedPhase: 'TOPIC',
-          publishedAt: '2025-01-15T10:00:00Z',
-          publishedBy: 'john.doe',
-          isCurrent: false,
-        },
-      ];
-
-      vi.mocked(publishingService.getVersionHistory).mockResolvedValue(mockVersions);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.versionHistory).toEqual(mockVersions);
-      });
-
-      expect(publishingService.getVersionHistory).toHaveBeenCalledWith('BATbern142');
-    });
-
-    it('should handle loading state for version history', async () => {
-      vi.mocked(publishingService.getVersionHistory).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoadingVersions).toBe(true);
-    });
-  });
-
-  describe('rollbackVersion', () => {
-    it('should rollback to previous version successfully', async () => {
-      const mockRollbackResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174002',
-        eventCode: 'BATbern142',
-        versionNumber: 3,
-        publishedPhase: 'TOPIC',
-        publishedAt: '2025-01-15T13:00:00Z',
-        publishedBy: 'john.doe',
-        isCurrent: true,
-        rolledBackAt: '2025-01-15T13:00:00Z',
-        rolledBackBy: 'john.doe',
-      };
-
-      vi.mocked(publishingService.rollbackVersion).mockResolvedValue(mockRollbackResponse);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.rollbackVersion(1, { reason: 'Incorrect information' });
-      });
-
-      await waitFor(() => {
-        expect(result.current.isRollingBack).toBe(false);
-      });
-
-      expect(publishingService.rollbackVersion).toHaveBeenCalledWith('BATbern142', 1, {
-        reason: 'Incorrect information',
-      });
-    });
-  });
-
   describe('preview', () => {
     it('should fetch publish preview', async () => {
       const mockPreview = {
@@ -344,14 +261,9 @@ describe('usePublishing', () => {
         publishedBy: 'john.doe',
         cdnInvalidationId: 'INV123',
         cdnInvalidationStatus: 'PENDING',
-        contentSnapshot: {},
-        isCurrent: true,
       };
 
-      const mockVersions = [mockPublishResponse];
-
       vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);
-      vi.mocked(publishingService.getVersionHistory).mockResolvedValue(mockVersions);
 
       const { result } = renderHook(() => usePublishing('BATbern142'), {
         wrapper: createWrapper(),
@@ -362,7 +274,7 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.versionHistory).toEqual(mockVersions);
+        expect(result.current.isPublishing).toBe(false);
       });
     });
   });

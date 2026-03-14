@@ -2,30 +2,23 @@ package ch.batbern.events.service.publishing;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
-import ch.batbern.events.domain.PublishingVersion;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.dto.AutoPublishScheduleRequest;
 import ch.batbern.events.dto.AutoPublishScheduleResponse;
-import ch.batbern.events.dto.ChangeLogResponse;
 import ch.batbern.events.dto.PublishPhaseResponse;
 import ch.batbern.events.dto.PublishPreviewResponse;
 import ch.batbern.events.dto.PublishValidationError;
 import ch.batbern.events.dto.PublishingStatusResponse;
-import ch.batbern.events.dto.RollbackResponse;
 import ch.batbern.events.dto.UnpublishPhaseResponse;
-import ch.batbern.events.dto.VersionHistoryResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
-import ch.batbern.events.repository.PublishingVersionRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.shared.types.EventWorkflowState;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -35,9 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,10 +39,8 @@ import java.util.stream.Collectors;
  * Handles:
  * - Phase publishing (topic, speakers, agenda) with validation
  * - Unpublishing phases
- * - Version tracking and rollback
  * - CDN cache invalidation
  * - Auto-publish scheduling
- * - Change log tracking
  * - Preview generation
  */
 @Service
@@ -63,17 +52,15 @@ public class PublishingService {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
-    private final PublishingVersionRepository publishingVersionRepository;
     private final PublishingConfigRepository publishingConfigRepository;
     private final EventTypeRepository eventTypeRepository;
-    private final ObjectMapper objectMapper;
     private final CacheManager cacheManager;
     private final CdnInvalidationService cdnInvalidationService;
 
     /**
      * Publish a specific phase (topic, speakers, or agenda)
      */
-    public PublishPhaseResponse publishPhase(String eventCode, String phase, String publishedBy) {
+    public PublishPhaseResponse publishPhase(String eventCode, String phase) {
         log.info("Publishing phase {} for event {}", phase, eventCode);
 
         Event event = eventRepository.findByEventCode(eventCode)
@@ -100,14 +87,10 @@ public class PublishingService {
         String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
         boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
 
-        // Create version snapshot
-        Integer versionNumber = createVersionSnapshot(event, phase, publishedBy, cdnInvalidationId);
-
         return PublishPhaseResponse.builder()
                 .phase(phase)
                 .published(true)
                 .publishedAt(Instant.now())
-                .version(versionNumber)
                 .cdnInvalidated(cdnInvalidated)
                 .build();
     }
@@ -189,79 +172,6 @@ public class PublishingService {
                 .agendaPublished(agendaPublished)
                 .speakers(speakers)
                 .sessions(sessions)
-                .build();
-    }
-
-    /**
-     * Get version history
-     */
-    public VersionHistoryResponse getVersionHistory(String eventCode) {
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        List<PublishingVersion> versions = publishingVersionRepository
-                .findByEventIdOrderByVersionNumberDesc(event.getId());
-
-        List<VersionHistoryResponse.VersionDetail> versionDetails = versions.stream()
-                .map(v -> VersionHistoryResponse.VersionDetail.builder()
-                        .versionNumber(v.getVersionNumber())
-                        .phase(v.getPublishedPhase())
-                        .publishedAt(v.getPublishedAt())
-                        .publishedBy(v.getPublishedBy())
-                        .isCurrent(v.getIsCurrent())
-                        .build())
-                .collect(Collectors.toList());
-
-        return VersionHistoryResponse.builder()
-                .versions(versionDetails)
-                .build();
-    }
-
-    /**
-     * Rollback to a previous version
-     */
-    public RollbackResponse rollbackToVersion(String eventCode, Integer versionNumber) {
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        PublishingVersion targetVersion = publishingVersionRepository
-                .findByEventIdAndVersionNumber(event.getId(), versionNumber)
-                .orElseThrow(() -> new RuntimeException("Version not found: " + versionNumber));
-
-        // Mark all versions as not current
-        publishingVersionRepository.markAllVersionsAsNotCurrent(event.getId());
-
-        // Mark target version as current
-        targetVersion.setIsCurrent(true);
-        publishingVersionRepository.save(targetVersion);
-
-        // Update event state to match target version
-        event.setCurrentPublishedPhase(targetVersion.getPublishedPhase().toLowerCase());
-        eventRepository.save(event);
-
-        // Evict cache for this event
-        evictEventCache(event.getEventCode());
-
-        // Invalidate CDN cache (Story BAT-16, AC6)
-        String cdnInvalidationId = cdnInvalidationService.invalidateCache(
-                event.getEventCode(), targetVersion.getPublishedPhase());
-        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
-
-        return RollbackResponse.builder()
-                .rolledBack(true)
-                .currentVersion(versionNumber)
-                .cdnInvalidated(cdnInvalidated)
-                .build();
-    }
-
-    /**
-     * Get change log
-     */
-    public ChangeLogResponse getChangeLog(String eventCode) {
-        // For simplicity, returning a basic change log structure
-        // In a full implementation, this would track actual field changes between versions
-        return ChangeLogResponse.builder()
-                .changes(new ArrayList<>())
                 .build();
     }
 
@@ -471,47 +381,6 @@ public class PublishingService {
                 );
             }
         }
-    }
-
-    /**
-     * Create version snapshot
-     */
-    private Integer createVersionSnapshot(Event event, String phase, String publishedBy, String cdnInvalidationId) {
-        Integer nextVersionNumber = publishingVersionRepository
-                .findMaxVersionNumberByEventId(event.getId()) + 1;
-
-        // Mark all previous versions as not current
-        publishingVersionRepository.markAllVersionsAsNotCurrent(event.getId());
-
-        // Create content snapshot (simplified for now)
-        Map<String, Object> snapshot = new HashMap<>();
-        snapshot.put("eventCode", event.getEventCode());
-        snapshot.put("title", event.getTitle());
-        snapshot.put("phase", phase);
-
-        String snapshotJson;
-        try {
-            snapshotJson = objectMapper.writeValueAsString(snapshot);
-        } catch (JsonProcessingException e) {
-            snapshotJson = "{}";
-        }
-
-        PublishingVersion version = PublishingVersion.builder()
-                .eventId(event.getId())
-                .versionNumber(nextVersionNumber)
-                .publishedPhase(phase)
-                .publishedAt(Instant.now())
-                .publishedBy(publishedBy)
-                .contentSnapshot(snapshotJson)
-                .isCurrent(true)
-                .cdnInvalidationId(cdnInvalidationId)
-                .cdnInvalidationStatus(cdnInvalidationId != null && !cdnInvalidationId.startsWith("error")
-                        ? "completed" : "failed")
-                .build();
-
-        publishingVersionRepository.save(version);
-
-        return nextVersionNumber;
     }
 
     /**

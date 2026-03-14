@@ -60,12 +60,6 @@ vi.mock('@/components/Publishing/LivePreview/LivePreview', () => ({
   ),
 }));
 
-vi.mock('@/components/Publishing/VersionControl/VersionControl', () => ({
-  VersionControl: ({ eventCode }: { eventCode: string }) => (
-    <div data-testid="version-control">{eventCode}</div>
-  ),
-}));
-
 // Mock hooks
 const mockUsePublishing = vi.fn();
 const mockUseSlotAssignment = vi.fn();
@@ -297,7 +291,6 @@ describe('EventPublishingTab Component (Story 5.7 - Task 7)', () => {
       expect(screen.getByTestId('publishing-controls')).toBeInTheDocument();
       expect(screen.getByTestId('publishing-timeline')).toBeInTheDocument();
       expect(screen.getByTestId('live-preview')).toBeInTheDocument();
-      expect(screen.getByTestId('version-control')).toBeInTheDocument();
     });
 
     it('should_passEventCode_to_allComponents', () => {
@@ -314,7 +307,6 @@ describe('EventPublishingTab Component (Story 5.7 - Task 7)', () => {
       expect(screen.getByTestId('publishing-controls')).toHaveTextContent('BAT2025-FULL-DAY');
       expect(screen.getByTestId('publishing-timeline')).toHaveTextContent('BAT2025-FULL-DAY');
       expect(screen.getByTestId('live-preview')).toHaveTextContent('BAT2025-FULL-DAY');
-      expect(screen.getByTestId('version-control')).toHaveTextContent('BAT2025-FULL-DAY');
     });
   });
 

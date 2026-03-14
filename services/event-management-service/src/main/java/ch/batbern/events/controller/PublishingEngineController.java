@@ -2,14 +2,11 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.dto.AutoPublishScheduleRequest;
 import ch.batbern.events.dto.AutoPublishScheduleResponse;
-import ch.batbern.events.dto.ChangeLogResponse;
 import ch.batbern.events.dto.PublishPhaseResponse;
 import ch.batbern.events.dto.PublishPreviewResponse;
 import ch.batbern.events.dto.PublishValidationError;
 import ch.batbern.events.dto.PublishingStatusResponse;
-import ch.batbern.events.dto.RollbackResponse;
 import ch.batbern.events.dto.UnpublishPhaseResponse;
-import ch.batbern.events.dto.VersionHistoryResponse;
 import ch.batbern.events.service.publishing.PublishingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,9 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
  * - POST /api/v1/events/{eventCode}/unpublish/{phase} - Unpublish a phase
  * - GET /api/v1/events/{eventCode}/publish/status - Get publishing validation status
  * - GET /api/v1/events/{eventCode}/publish/preview - Get preview
- * - GET /api/v1/events/{eventCode}/publish/versions - Get version history
- * - POST /api/v1/events/{eventCode}/publish/rollback/{versionNumber} - Rollback
- * - GET /api/v1/events/{eventCode}/publish/changelog - Get change log
  * - POST /api/v1/events/{eventCode}/publish/schedule - Configure auto-publish
  * - GET /api/v1/events/{eventCode}/publish/schedule - Get auto-publish schedule
  */
@@ -58,14 +51,11 @@ public class PublishingEngineController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PublishPhaseResponse> publishPhase(
             @PathVariable String eventCode,
-            @PathVariable String phase,
-            Authentication authentication) {
+            @PathVariable String phase) {
 
         log.info("Publishing phase {} for event {}", phase, eventCode);
 
-        String publishedBy = authentication != null ? authentication.getName() : "system";
-
-        PublishPhaseResponse response = publishingService.publishPhase(eventCode, phase, publishedBy);
+        PublishPhaseResponse response = publishingService.publishPhase(eventCode, phase);
 
         return ResponseEntity.ok(response);
     }
@@ -113,53 +103,6 @@ public class PublishingEngineController {
         log.info("Getting preview for event {}", eventCode);
 
         PublishPreviewResponse response = publishingService.getPreview(eventCode);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Get version history
-     * AC26: Track all publishing versions with timestamp
-     */
-    @GetMapping("/{eventCode}/publish/versions")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<VersionHistoryResponse> getVersionHistory(@PathVariable String eventCode) {
-
-        log.info("Getting version history for event {}", eventCode);
-
-        VersionHistoryResponse response = publishingService.getVersionHistory(eventCode);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Rollback to a previous version
-     * AC27: Rollback to previous version capability
-     */
-    @PostMapping("/{eventCode}/publish/rollback/{versionNumber}")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<RollbackResponse> rollbackVersion(
-            @PathVariable String eventCode,
-            @PathVariable Integer versionNumber) {
-
-        log.info("Rolling back event {} to version {}", eventCode, versionNumber);
-
-        RollbackResponse response = publishingService.rollbackToVersion(eventCode, versionNumber);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Get change log
-     * AC28: Change log for all post-publish updates
-     */
-    @GetMapping("/{eventCode}/publish/changelog")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ChangeLogResponse> getChangeLog(@PathVariable String eventCode) {
-
-        log.info("Getting change log for event {}", eventCode);
-
-        ChangeLogResponse response = publishingService.getChangeLog(eventCode);
 
         return ResponseEntity.ok(response);
     }

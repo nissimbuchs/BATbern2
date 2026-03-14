@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests functionality:
  * - Manual publish/unpublish per phase
  * - Content validation before publishing
- * - Version tracking and rollback
  * - CDN cache invalidation
  * - Preview mode
  */
@@ -198,7 +196,6 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("topic"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.cdnInvalidated").value(true));
 
         // Verify event workflow state updated
@@ -224,7 +221,6 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("speakers"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.cdnInvalidated").value(true));
 
         // Verify event state updated
@@ -251,7 +247,6 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("agenda"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.cdnInvalidated").value(true));
 
         // Verify workflow state transition
@@ -338,86 +333,6 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.speakers").isArray())
                 .andExpect(jsonPath("$.speakers", hasSize(2)))
                 .andExpect(jsonPath("$.sessions").isEmpty()); // Sessions not published yet
-    }
-
-    /**
-     * Test: Track publishing versions
-     * AC26: Track all publishing versions with timestamp
-     */
-    @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
-    void should_trackVersion_when_contentPublished() throws Exception {
-        // Publish topic
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
-                .andExpect(jsonPath("$.version").value(1));
-
-        // Update and re-publish
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
-                .andExpect(jsonPath("$.version").value(2));
-
-        // Get version history
-        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/versions", eventCode))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.versions").isArray())
-                .andExpect(jsonPath("$.versions", hasSize(2)))
-                .andExpect(jsonPath("$.versions[0].versionNumber").value(2))
-                .andExpect(jsonPath("$.versions[0].phase").value("topic"))
-                .andExpect(jsonPath("$.versions[0].publishedAt").exists());
-    }
-
-    /**
-     * Test: Rollback to previous version
-     * AC27: Rollback to previous version capability
-     */
-    @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
-    void should_rollbackVersion_when_rollbackRequested() throws Exception {
-        // Publish and update multiple times
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode));
-
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode));
-
-        // Rollback to version 1
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/rollback/1", eventCode))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rolledBack").value(true))
-                .andExpect(jsonPath("$.currentVersion").value(1))
-                .andExpect(jsonPath("$.cdnInvalidated").value(true));
-    }
-
-    /**
-     * Test: Get change log after publish
-     * AC28: Change log for all post-publish updates
-     */
-    @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
-    @org.junit.jupiter.api.Disabled("TODO: Implement change log tracking - needs diff logic between versions")
-    void should_getChangeLog_when_updatesOccurAfterPublish() throws Exception {
-        // Publish topic
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode));
-
-        // Update event details
-        String updateRequest = """
-                {
-                  "eventName": "BATbern 2025 Full Day Conference - Updated"
-                }
-                """;
-        mockMvc.perform(patch("/api/v1/events/{eventCode}", eventCode)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateRequest));
-
-        // Re-publish to create new version
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode));
-
-        // Get change log
-        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/changelog", eventCode))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.changes").isArray())
-                .andExpect(jsonPath("$.changes", hasSize(greaterThan(0))))
-                .andExpect(jsonPath("$.changes[0].field").exists())
-                .andExpect(jsonPath("$.changes[0].oldValue").exists())
-                .andExpect(jsonPath("$.changes[0].newValue").exists())
-                .andExpect(jsonPath("$.changes[0].changedAt").exists());
     }
 
     /**
