@@ -142,9 +142,13 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      expect(screen.getByText('CONFIRMED')).toBeInTheDocument();
-      expect(screen.getByText('REGISTERED')).toBeInTheDocument();
-      expect(screen.getByText('WAITLISTED')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantFilters.status.confirmed')).toBeInTheDocument();
+      expect(
+        screen.getByText('eventPage.participantFilters.status.registered')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('eventPage.participantFilters.status.waitlisted')
+      ).toBeInTheDocument();
     });
   });
 

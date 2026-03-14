@@ -95,6 +95,17 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
+  const getStatusLabel = (status: RegistrationStatus): string => {
+    const key: Record<RegistrationStatus, string> = {
+      CONFIRMED: 'confirmed',
+      REGISTERED: 'registered',
+      ATTENDED: 'attended',
+      CANCELLED: 'cancelled',
+      WAITLIST: 'waitlisted',
+    };
+    return t(`eventPage.participantFilters.status.${key[status] ?? status.toLowerCase()}`);
+  };
+
   const getStatusChipColor = (
     status: RegistrationStatus
   ): 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
@@ -265,7 +276,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
               </TableCell>
               <TableCell>
                 <Chip
-                  label={participant.status}
+                  label={getStatusLabel(participant.status)}
                   size="small"
                   color={getStatusChipColor(participant.status)}
                 />
