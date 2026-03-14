@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Acces refuse",
+  "organizerOnly": "Cette page est reservee aux organisateurs.",
+  "tabs": {
+    "eventTypes": "Types d'evenements",
+    "importData": "Importer des donnees",
+    "taskTemplates": "Modeles de taches",
+    "emailTemplates": "Modeles d'e-mails",
+    "presentationSettings": "Presentation",
+    "exportImport": "Export / Import",
+    "aiPrompts": "Prompts IA",
+    "settings": "Parametres",
+    "globalImages": "Images globales"
+  },
+  "globalImages": {
+    "title": "Images teaser globales",
+    "description": "Images affichees en plein ecran sur TOUTES les presentations d'evenements. Des images specifiques a un evenement peuvent etre ajoutees par evenement dans l'onglet Parametres.",
+    "uploadButton": "Ajouter une image globale",
+    "uploading": "Telechargement en cours...",
+    "limitReached": "Maximum de {{max}} images teaser globales atteint.",
+    "uploadError": "Le telechargement a echoue. Veuillez reessayer.",
+    "removeError": "La suppression a echoue. Veuillez reessayer.",
+    "positionError": "La mise a jour de la position de la diapositive a echoue. Veuillez reessayer."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Transfert d'e-mails",
+      "subtitle": "Configurer les destinataires de transfert d'e-mails pour les adresses batbern.ch.",
+      "supportContacts": "Destinataires support@batbern.ch",
+      "supportContactsHelp": "Adresses e-mail separees par des virgules. Si vide, les e-mails a support@batbern.ch sont transferes a tous les organisateurs."
+    },
+    "save": "Enregistrer",
+    "saved": "Parametres enregistres.",
+    "saveFailed": "Echec de l'enregistrement. Veuillez reessayer."
+  }
+}

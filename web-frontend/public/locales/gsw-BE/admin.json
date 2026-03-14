@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Zuegriff verweigeret",
+  "organizerOnly": "Die Syte isch nume für Organisatore.",
+  "tabs": {
+    "eventTypes": "Veranstautigstype",
+    "importData": "Date importiere",
+    "taskTemplates": "Ufgabevorlage",
+    "emailTemplates": "E-Mail-Vorlage",
+    "presentationSettings": "Präsentation",
+    "exportImport": "Export / Import",
+    "aiPrompts": "KI-Prompts",
+    "settings": "Iistellige",
+    "globalImages": "Globali Biuder"
+  },
+  "globalImages": {
+    "title": "Globali Teaser-Biuder",
+    "description": "Biuder, wo as Voubiud-Foliene bi ALLNE Veranstautigspräsentatione aazeigt wärde. Veranstaltigsspezifischi Biuder chöi pro Veranstautig im Iistellige-Tab hinzuegfüegt wärde.",
+    "uploadButton": "Globaus Biud hinzuefüege",
+    "uploading": "Am Uelade...",
+    "limitReached": "S Maximum vo {{max}} globale Teaser-Biuder isch erreicht.",
+    "uploadError": "S Uelade het nid klappt. Bitte probiers noumou.",
+    "removeError": "S Lösche het nid klappt. Bitte probiers noumou.",
+    "positionError": "D Folieposition het nid chönne aktualisiert wärde. Bitte probiers noumou."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "E-Mail-Witerleitung",
+      "subtitle": "E-Mail-Witerleitigsempfänger für batbern.ch-Adrässe konfiguriere.",
+      "supportContacts": "support@batbern.ch Empfänger",
+      "supportContactsHelp": "Kommatrännti E-Mail-Adrässe. We leer, wärde E-Mails a support@batbern.ch a alli Organisatore witergschoutet."
+    },
+    "save": "Spychere",
+    "saved": "Iistellige gspycheret.",
+    "saveFailed": "S Spychere het nid klappt. Bitte probiers noumou."
+  }
+}

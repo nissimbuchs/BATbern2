@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "アクセス拒否",
+  "organizerOnly": "このページは主催者専用です。",
+  "tabs": {
+    "eventTypes": "イベントタイプ",
+    "importData": "データインポート",
+    "taskTemplates": "タスクテンプレート",
+    "emailTemplates": "メールテンプレート",
+    "presentationSettings": "プレゼンテーション",
+    "exportImport": "エクスポート / インポート",
+    "aiPrompts": "AIプロンプト",
+    "settings": "設定",
+    "globalImages": "グローバル画像"
+  },
+  "globalImages": {
+    "title": "グローバルティーザー画像",
+    "description": "すべてのイベントプレゼンテーションでフルスクリーンスライドとして表示される画像です。イベント固有の画像は、各イベントの設定タブで追加できます。",
+    "uploadButton": "グローバル画像を追加",
+    "uploading": "アップロード中...",
+    "limitReached": "グローバルティーザー画像の上限{{max}}枚に達しました。",
+    "uploadError": "アップロードに失敗しました。もう一度お試しください。",
+    "removeError": "削除に失敗しました。もう一度お試しください。",
+    "positionError": "スライド位置の更新に失敗しました。もう一度お試しください。"
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "メール転送",
+      "subtitle": "batbern.chアドレスのメール転送先を設定します。",
+      "supportContacts": "support@batbern.ch 受信者",
+      "supportContactsHelp": "カンマ区切りのメールアドレス。空の場合、support@batbern.ch宛のメールはすべての主催者に転送されます。"
+    },
+    "save": "保存",
+    "saved": "設定を保存しました。",
+    "saveFailed": "保存に失敗しました。もう一度お試しください。"
+  }
+}

@@ -1,4 +1,27 @@
 {
+  "accessDenied": "Access Denied",
+  "organizerOnly": "This page is for organizers only.",
+  "tabs": {
+    "eventTypes": "Event Types",
+    "importData": "Import Data",
+    "taskTemplates": "Task Templates",
+    "emailTemplates": "Email Templates",
+    "presentationSettings": "Presentation",
+    "exportImport": "Export / Import",
+    "aiPrompts": "AI Prompts",
+    "settings": "Settings",
+    "globalImages": "Global Images"
+  },
+  "globalImages": {
+    "title": "Global Teaser Images",
+    "description": "Images shown as full-screen slides on ALL event presentations. Event-specific images can be added per event in the event Settings tab.",
+    "uploadButton": "Add Global Image",
+    "uploading": "Uploading...",
+    "limitReached": "Maximum of {{max}} global teaser images reached.",
+    "uploadError": "Upload failed. Please try again.",
+    "removeError": "Remove failed. Please try again.",
+    "positionError": "Failed to update slide position. Please try again."
+  },
   "settings": {
     "emailForwarding": {
       "title": "Email Forwarding",
@@ -9,8 +32,5 @@
     "save": "Save",
     "saved": "Settings saved.",
     "saveFailed": "Save failed. Please try again."
-  },
-  "tabs": {
-    "settings": "Settings"
   }
 }

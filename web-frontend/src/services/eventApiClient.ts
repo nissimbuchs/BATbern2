@@ -528,15 +528,29 @@ class EventApiClient {
     }
   }
 
-  // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
+  // ── Teaser Images (event-specific or global when eventCode is null/_global) ──
+
+  private teaserBasePath(eventCode?: string | null): string {
+    const code = eventCode != null && eventCode.length > 0 ? eventCode : '_global';
+    return `${EVENT_API_PATH}/${code}/teaser-images`;
+  }
+
+  async listTeaserImages(eventCode?: string | null): Promise<TeaserImageItem[]> {
+    try {
+      const response = await apiClient.get<TeaserImageItem[]>(this.teaserBasePath(eventCode));
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
 
   async requestTeaserImageUploadUrl(
-    eventCode: string,
+    eventCode: string | null | undefined,
     request: TeaserImageUploadUrlRequest
   ): Promise<TeaserImageUploadUrlResponse> {
     try {
       const response = await apiClient.post<TeaserImageUploadUrlResponse>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/upload-url`,
+        `${this.teaserBasePath(eventCode)}/upload-url`,
         request
       );
       return response.data;
@@ -546,12 +560,12 @@ class EventApiClient {
   }
 
   async confirmTeaserImageUpload(
-    eventCode: string,
+    eventCode: string | null | undefined,
     request: TeaserImageConfirmRequest
   ): Promise<TeaserImageItem> {
     try {
       const response = await apiClient.post<TeaserImageItem>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/confirm`,
+        `${this.teaserBasePath(eventCode)}/confirm`,
         request
       );
       return response.data;
@@ -561,13 +575,13 @@ class EventApiClient {
   }
 
   async updateTeaserImage(
-    eventCode: string,
+    eventCode: string | null | undefined,
     imageId: string,
     request: TeaserImageUpdateRequest
   ): Promise<TeaserImageItem> {
     try {
       const response = await apiClient.patch<TeaserImageItem>(
-        `${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`,
+        `${this.teaserBasePath(eventCode)}/${imageId}`,
         request
       );
       return response.data;
@@ -576,9 +590,9 @@ class EventApiClient {
     }
   }
 
-  async deleteTeaserImage(eventCode: string, imageId: string): Promise<void> {
+  async deleteTeaserImage(eventCode: string | null | undefined, imageId: string): Promise<void> {
     try {
-      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}/teaser-images/${imageId}`);
+      await apiClient.delete(`${this.teaserBasePath(eventCode)}/${imageId}`);
     } catch (error) {
       throw this.transformError(error);
     }

@@ -166,6 +166,9 @@ public class SecurityConfig {
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 
+                // Global teaser images: public list for presenter view (_global = all events)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/_global/teaser-images").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()

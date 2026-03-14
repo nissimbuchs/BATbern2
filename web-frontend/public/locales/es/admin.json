@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Acceso denegado",
+  "organizerOnly": "Esta pagina es solo para organizadores.",
+  "tabs": {
+    "eventTypes": "Tipos de evento",
+    "importData": "Importar datos",
+    "taskTemplates": "Plantillas de tareas",
+    "emailTemplates": "Plantillas de correo",
+    "presentationSettings": "Presentacion",
+    "exportImport": "Exportar / Importar",
+    "aiPrompts": "Prompts de IA",
+    "settings": "Configuracion",
+    "globalImages": "Imagenes globales"
+  },
+  "globalImages": {
+    "title": "Imagenes teaser globales",
+    "description": "Imagenes mostradas a pantalla completa en TODAS las presentaciones de eventos. Se pueden agregar imagenes especificas por evento en la pestana Configuracion.",
+    "uploadButton": "Agregar imagen global",
+    "uploading": "Subiendo...",
+    "limitReached": "Se alcanzo el maximo de {{max}} imagenes teaser globales.",
+    "uploadError": "Error al subir. Intentelo de nuevo.",
+    "removeError": "Error al eliminar. Intentelo de nuevo.",
+    "positionError": "Error al actualizar la posicion de la diapositiva. Intentelo de nuevo."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Reenvio de correo",
+      "subtitle": "Configurar los destinatarios de reenvio de correo para las direcciones batbern.ch.",
+      "supportContacts": "Destinatarios de support@batbern.ch",
+      "supportContactsHelp": "Direcciones de correo separadas por comas. Si esta vacio, los correos a support@batbern.ch se reenvian a todos los organizadores."
+    },
+    "save": "Guardar",
+    "saved": "Configuracion guardada.",
+    "saveFailed": "Error al guardar. Intentelo de nuevo."
+  }
+}

@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Accesso negato",
+  "organizerOnly": "Questa pagina e riservata agli organizzatori.",
+  "tabs": {
+    "eventTypes": "Tipi di evento",
+    "importData": "Importa dati",
+    "taskTemplates": "Modelli di attivita",
+    "emailTemplates": "Modelli e-mail",
+    "presentationSettings": "Presentazione",
+    "exportImport": "Esporta / Importa",
+    "aiPrompts": "Prompt IA",
+    "settings": "Impostazioni",
+    "globalImages": "Immagini globali"
+  },
+  "globalImages": {
+    "title": "Immagini teaser globali",
+    "description": "Immagini mostrate a schermo intero su TUTTE le presentazioni degli eventi. Immagini specifiche per evento possono essere aggiunte per ogni evento nella scheda Impostazioni.",
+    "uploadButton": "Aggiungi immagine globale",
+    "uploading": "Caricamento in corso...",
+    "limitReached": "Raggiunto il massimo di {{max}} immagini teaser globali.",
+    "uploadError": "Caricamento fallito. Riprova.",
+    "removeError": "Rimozione fallita. Riprova.",
+    "positionError": "Aggiornamento della posizione della diapositiva fallito. Riprova."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Inoltro e-mail",
+      "subtitle": "Configura i destinatari dell'inoltro e-mail per gli indirizzi batbern.ch.",
+      "supportContacts": "Destinatari support@batbern.ch",
+      "supportContactsHelp": "Indirizzi e-mail separati da virgole. Se vuoto, le e-mail a support@batbern.ch vengono inoltrate a tutti gli organizzatori."
+    },
+    "save": "Salva",
+    "saved": "Impostazioni salvate.",
+    "saveFailed": "Salvataggio fallito. Riprova."
+  }
+}

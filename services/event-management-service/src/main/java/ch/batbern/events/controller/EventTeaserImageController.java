@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,16 +21,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
- * REST controller for event teaser image management.
+ * REST controller for teaser image management (event-specific and global).
  * <p>
- * Story 10.22: Event Teaser Images for Moderator Presentation Page
- * <p>
- * All endpoints are ORGANIZER-only.
- * No API gateway changes needed: POST/DELETE to /api/v1/events/** already route
- * to event-management-service and require auth.
+ * Uses the same endpoints for both. eventCode="_global" maps to null in the
+ * service layer, meaning the image has no event association and is shown on
+ * all event presentations.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -37,26 +37,30 @@ import java.util.UUID;
 @Slf4j
 public class EventTeaserImageController {
 
+    static final String GLOBAL_CODE = "_global";
+
     private final EventTeaserImageService teaserImageService;
 
-    /**
-     * Phase 1: Generate presigned S3 PUT URL for teaser image upload.
-     * AC2 — Upload flow
-     */
+    private static String resolveEventCode(String eventCode) {
+        return GLOBAL_CODE.equals(eventCode) ? null : eventCode;
+    }
+
+    @GetMapping("/events/{eventCode}/teaser-images")
+    @PreAuthorize("hasRole('ORGANIZER') or #eventCode == '_global'")
+    public ResponseEntity<List<TeaserImageItem>> listImages(@PathVariable String eventCode) {
+        return ResponseEntity.ok(teaserImageService.listByEventCode(resolveEventCode(eventCode)));
+    }
+
     @PostMapping("/events/{eventCode}/teaser-images/upload-url")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TeaserImageUploadUrlResponse> generateUploadUrl(
             @PathVariable String eventCode,
             @RequestBody TeaserImageUploadUrlRequest request) {
         return ResponseEntity.ok(
-                teaserImageService.generateUploadUrl(eventCode, request.getContentType(), request.getFileName())
-        );
+                teaserImageService.generateUploadUrl(
+                        resolveEventCode(eventCode), request.getContentType(), request.getFileName()));
     }
 
-    /**
-     * Phase 3: Confirm upload and persist new teaser image.
-     * AC2 — Upload flow; AC6 — 422 on limit
-     */
     @PostMapping("/events/{eventCode}/teaser-images/confirm")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
@@ -64,13 +68,9 @@ public class EventTeaserImageController {
             @PathVariable String eventCode,
             @RequestBody TeaserImageConfirmRequest request) {
         return ResponseEntity.ok(
-                teaserImageService.confirmUpload(eventCode, request.getS3Key())
-        );
+                teaserImageService.confirmUpload(resolveEventCode(eventCode), request.getS3Key()));
     }
 
-    /**
-     * Update the presentation position of a teaser image.
-     */
     @PatchMapping("/events/{eventCode}/teaser-images/{imageId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
@@ -79,21 +79,17 @@ public class EventTeaserImageController {
             @PathVariable UUID imageId,
             @RequestBody TeaserImageUpdateRequest request) {
         return ResponseEntity.ok(
-                teaserImageService.updatePresentationPosition(eventCode, imageId, request.getPresentationPosition())
-        );
+                teaserImageService.updatePresentationPosition(
+                        resolveEventCode(eventCode), imageId, request.getPresentationPosition()));
     }
 
-    /**
-     * Delete a teaser image (DB record + S3 object, best-effort).
-     * AC3 — Delete
-     */
     @DeleteMapping("/events/{eventCode}/teaser-images/{imageId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> deleteTeaserImage(
             @PathVariable String eventCode,
             @PathVariable UUID imageId) {
-        teaserImageService.deleteTeaserImage(eventCode, imageId);
+        teaserImageService.deleteTeaserImage(resolveEventCode(eventCode), imageId);
         return ResponseEntity.noContent().build();
     }
 }

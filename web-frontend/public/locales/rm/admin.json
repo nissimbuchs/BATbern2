@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Access refusà",
+  "organizerOnly": "Questa pagina è be per organisaturs.",
+  "tabs": {
+    "eventTypes": "Tips d'occurrenzas",
+    "importData": "Importar datas",
+    "taskTemplates": "Modals da incumbensas",
+    "emailTemplates": "Modals dad e-mail",
+    "presentationSettings": "Presentaziun",
+    "exportImport": "Export / Import",
+    "aiPrompts": "Prompts IA",
+    "settings": "Configuraziun",
+    "globalImages": "Maletgs globals"
+  },
+  "globalImages": {
+    "title": "Maletgs teaser globals",
+    "description": "Maletgs che vegnan mussads sco dias a scherm entir tar TUTTAS las presentaziuns d'occurrenzas. Maletgs specifics per occurrenza pon vegnir agiuntads per occurrenza en il tab Configuraziun.",
+    "uploadButton": "Agiuntar maletg global",
+    "uploading": "Chargiar si...",
+    "limitReached": "Il maximum da {{max}} maletgs teaser globals è cuntanschì.",
+    "uploadError": "Il chargiar si n'è betg reussì. Empruvai anc ina giada.",
+    "removeError": "L'allontanar n'è betg reussì. Empruvai anc ina giada.",
+    "positionError": "L'actualisar da la posiziun da la dia n'è betg reussì. Empruvai anc ina giada."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Renviament dad e-mails",
+      "subtitle": "Configurar ils destinaturs da renviament dad e-mails per las adressas batbern.ch.",
+      "supportContacts": "Destinaturs support@batbern.ch",
+      "supportContactsHelp": "Adressas dad e-mail separadas cun commas. Sche vid, vegnan e-mails a support@batbern.ch renviadads a tuts ils organisaturs."
+    },
+    "save": "Memorisar",
+    "saved": "Configuraziun memorisada.",
+    "saveFailed": "Il memorisar n'è betg reussì. Empruvai anc ina giada."
+  }
+}

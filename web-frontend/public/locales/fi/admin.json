@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Paasy estetty",
+  "organizerOnly": "Tama sivu on tarkoitettu vain jarjestajille.",
+  "tabs": {
+    "eventTypes": "Tapahtumatyypit",
+    "importData": "Tuo tietoja",
+    "taskTemplates": "Tehtavapohjat",
+    "emailTemplates": "Sahkopostipohjat",
+    "presentationSettings": "Esitys",
+    "exportImport": "Vienti / Tuonti",
+    "aiPrompts": "Tekoalykehotteet",
+    "settings": "Asetukset",
+    "globalImages": "Yleiset kuvat"
+  },
+  "globalImages": {
+    "title": "Yleiset teaser-kuvat",
+    "description": "Kuvat, jotka nahdaan koko nayton dioina KAIKISSA tapahtumien esityksissa. Tapahtumakohtaisia kuvia voidaan lisata tapahtuman Asetukset-valilehdella.",
+    "uploadButton": "Lisaa yleinen kuva",
+    "uploading": "Ladataan...",
+    "limitReached": "Enimmaismaara {{max}} yleista teaser-kuvaa saavutettu.",
+    "uploadError": "Lataus epaonnistui. Yrita uudelleen.",
+    "removeError": "Poisto epaonnistui. Yrita uudelleen.",
+    "positionError": "Dian sijainnin paivitys epaonnistui. Yrita uudelleen."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "Sahkopostin edelleenlahetys",
+      "subtitle": "Maarita sahkopostin edelleenlahetyksen vastaanottajat batbern.ch-osoitteille.",
+      "supportContacts": "support@batbern.ch vastaanottajat",
+      "supportContactsHelp": "Pilkulla erotetut sahkopostiosoitteet. Jos tyhja, sahkopostit osoitteeseen support@batbern.ch lahetetaan kaikille jarjestajille."
+    },
+    "save": "Tallenna",
+    "saved": "Asetukset tallennettu.",
+    "saveFailed": "Tallennus epaonnistui. Yrita uudelleen."
+  }
+}

@@ -1,1 +1,36 @@
-{}
+{
+  "accessDenied": "Toegang geweigerd",
+  "organizerOnly": "Deze pagina is alleen voor organisatoren.",
+  "tabs": {
+    "eventTypes": "Evenementtypes",
+    "importData": "Gegevens importeren",
+    "taskTemplates": "Taaksjablonen",
+    "emailTemplates": "E-mailsjablonen",
+    "presentationSettings": "Presentatie",
+    "exportImport": "Exporteren / Importeren",
+    "aiPrompts": "AI-prompts",
+    "settings": "Instellingen",
+    "globalImages": "Globale afbeeldingen"
+  },
+  "globalImages": {
+    "title": "Globale teaserafbeeldingen",
+    "description": "Afbeeldingen die als volledig scherm dia's worden getoond bij ALLE evenementpresentaties. Evenementspecifieke afbeeldingen kunnen per evenement worden toegevoegd in het tabblad Instellingen.",
+    "uploadButton": "Globale afbeelding toevoegen",
+    "uploading": "Uploaden...",
+    "limitReached": "Maximum van {{max}} globale teaserafbeeldingen bereikt.",
+    "uploadError": "Upload mislukt. Probeer het opnieuw.",
+    "removeError": "Verwijderen mislukt. Probeer het opnieuw.",
+    "positionError": "Bijwerken van diapositie mislukt. Probeer het opnieuw."
+  },
+  "settings": {
+    "emailForwarding": {
+      "title": "E-mail doorsturen",
+      "subtitle": "Configureer ontvangers voor het doorsturen van e-mails voor batbern.ch-adressen.",
+      "supportContacts": "support@batbern.ch ontvangers",
+      "supportContactsHelp": "Door komma's gescheiden e-mailadressen. Indien leeg worden e-mails naar support@batbern.ch doorgestuurd naar alle organisatoren."
+    },
+    "save": "Opslaan",
+    "saved": "Instellingen opgeslagen.",
+    "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
+  }
+}

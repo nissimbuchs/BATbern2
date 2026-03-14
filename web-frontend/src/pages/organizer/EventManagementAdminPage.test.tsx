@@ -15,7 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import EventManagementAdminPage from './EventManagementAdminPage';
 
-// Mock child tab components to isolate page-level tests
+// Mock ALL child tab components to isolate page-level tests and avoid
+// transitive dependency issues (e.g. tinymce from EmailTemplatesTab)
 vi.mock('@/components/organizer/Admin/EventTypesTab', () => ({
   EventTypesTab: () => <div data-testid="event-types-tab-content">EventTypes</div>,
 }));
@@ -24,6 +25,26 @@ vi.mock('@/components/organizer/Admin/ImportDataTab', () => ({
 }));
 vi.mock('@/components/organizer/Admin/TaskTemplatesTab', () => ({
   TaskTemplatesTab: () => <div data-testid="task-templates-tab-content">TaskTemplates</div>,
+}));
+vi.mock('@/components/organizer/Admin/EmailTemplatesTab', () => ({
+  EmailTemplatesTab: () => <div data-testid="email-templates-tab-content">EmailTemplates</div>,
+}));
+vi.mock('@/components/organizer/Admin/PresentationSettingsTab', () => ({
+  PresentationSettingsTab: () => (
+    <div data-testid="presentation-settings-tab-content">PresentationSettings</div>
+  ),
+}));
+vi.mock('@/components/organizer/Admin/ExportImportTab', () => ({
+  ExportImportTab: () => <div data-testid="export-import-tab-content">ExportImport</div>,
+}));
+vi.mock('@/components/organizer/Admin/AiPromptsTab', () => ({
+  AiPromptsTab: () => <div data-testid="ai-prompts-tab-content">AiPrompts</div>,
+}));
+vi.mock('@/components/organizer/Admin/AdminSettingsTab', () => ({
+  AdminSettingsTab: () => <div data-testid="admin-settings-tab-content">AdminSettings</div>,
+}));
+vi.mock('@/components/organizer/Admin/GlobalImagesTab', () => ({
+  GlobalImagesTab: () => <div data-testid="global-images-tab-content">GlobalImages</div>,
 }));
 
 // Mock i18n

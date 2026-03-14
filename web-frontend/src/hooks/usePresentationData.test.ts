@@ -15,6 +15,7 @@ vi.mock('@/services/presentationService', () => ({
   getPublicOrganizers: vi.fn(),
   getUpcomingEvents: vi.fn(),
   getPresentationSettings: vi.fn(),
+  getGlobalTeaserImages: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/contexts/useConfig', () => ({

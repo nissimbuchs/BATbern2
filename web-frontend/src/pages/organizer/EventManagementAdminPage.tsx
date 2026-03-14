@@ -1,7 +1,7 @@
 /**
  * EventManagementAdminPage (Story 10.1 - Task 1)
  *
- * Tabbed administration page at /organizer/admin with 8 tabs:
+ * Tabbed administration page at /organizer/admin with 9 tabs:
  *   0 - Event Types
  *   1 - Import Data
  *   2 - Task Templates
@@ -10,6 +10,7 @@
  *   5 - Export / Import (Story 10.20)
  *   6 - AI Prompts
  *   7 - Settings (Story 10.26)
+ *   8 - Global Images
  *
  * Tab index is persisted in URL as ?tab=N.
  * ORGANIZER role guard enforced.
@@ -30,16 +31,17 @@ import { PresentationSettingsTab } from '@/components/organizer/Admin/Presentati
 import { ExportImportTab } from '@/components/organizer/Admin/ExportImportTab';
 import { AiPromptsTab } from '@/components/organizer/Admin/AiPromptsTab';
 import { AdminSettingsTab } from '@/components/organizer/Admin/AdminSettingsTab';
+import { GlobalImagesTab } from '@/components/organizer/Admin/GlobalImagesTab';
 
 const EventManagementAdminPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('admin');
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabIndex = Math.max(0, Math.min(7, Number(searchParams.get('tab') ?? 0)));
+  const tabIndex = Math.max(0, Math.min(8, Number(searchParams.get('tab') ?? 0)));
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
-    () => [{ label: t('menu.administration', 'Administration') }],
+    () => [{ label: t('common:menu.administration', 'Administration') }],
     [t]
   );
 
@@ -51,25 +53,26 @@ const EventManagementAdminPage: React.FC = () => {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="error">
-          <Typography variant="h6">{t('admin.accessDenied', 'Access Denied')}</Typography>
-          <Typography>{t('admin.organizerOnly', 'This page is for organizers only.')}</Typography>
+          <Typography variant="h6">{t('accessDenied', 'Access Denied')}</Typography>
+          <Typography>{t('organizerOnly', 'This page is for organizers only.')}</Typography>
         </Alert>
       </Container>
     );
   }
 
   const tabs = [
-    { label: t('admin.tabs.eventTypes', 'Event Types'), component: <EventTypesTab /> },
-    { label: t('admin.tabs.importData', 'Import Data'), component: <ImportDataTab /> },
-    { label: t('admin.tabs.taskTemplates', 'Task Templates'), component: <TaskTemplatesTab /> },
-    { label: t('admin.tabs.emailTemplates', 'Email Templates'), component: <EmailTemplatesTab /> },
+    { label: t('tabs.eventTypes', 'Event Types'), component: <EventTypesTab /> },
+    { label: t('tabs.importData', 'Import Data'), component: <ImportDataTab /> },
+    { label: t('tabs.taskTemplates', 'Task Templates'), component: <TaskTemplatesTab /> },
+    { label: t('tabs.emailTemplates', 'Email Templates'), component: <EmailTemplatesTab /> },
     {
-      label: t('admin.tabs.presentationSettings', 'Presentation'),
+      label: t('tabs.presentationSettings', 'Presentation'),
       component: <PresentationSettingsTab />,
     },
-    { label: t('admin.tabs.exportImport', 'Export / Import'), component: <ExportImportTab /> },
-    { label: t('admin.tabs.aiPrompts', 'AI Prompts'), component: <AiPromptsTab /> },
-    { label: t('admin.tabs.settings', 'Settings'), component: <AdminSettingsTab /> },
+    { label: t('tabs.exportImport', 'Export / Import'), component: <ExportImportTab /> },
+    { label: t('tabs.aiPrompts', 'AI Prompts'), component: <AiPromptsTab /> },
+    { label: t('tabs.settings', 'Settings'), component: <AdminSettingsTab /> },
+    { label: t('tabs.globalImages', 'Global Images'), component: <GlobalImagesTab /> },
   ];
 
   return (
@@ -77,7 +80,7 @@ const EventManagementAdminPage: React.FC = () => {
       <Breadcrumbs items={breadcrumbItems} />
 
       <Typography variant="h4" component="h1" gutterBottom>
-        {t('menu.administration', 'Administration')}
+        {t('common:menu.administration', 'Administration')}
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

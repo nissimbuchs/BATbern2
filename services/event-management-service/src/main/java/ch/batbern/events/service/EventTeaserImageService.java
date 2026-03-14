@@ -9,6 +9,7 @@ import ch.batbern.events.exception.TeaserImageNotFoundException;
 import ch.batbern.events.repository.EventTeaserImageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -26,18 +27,15 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Service for event teaser image management (upload, confirm, delete).
+ * Service for teaser image management (upload, confirm, delete).
  * <p>
- * Story 10.22: Event Teaser Images for Moderator Presentation Page
+ * Handles both event-specific images (eventCode != null) and global images
+ * (eventCode == null, shown on all event presentations).
  * <p>
  * Uses the 3-phase presigned PUT pattern:
  * 1. generateUploadUrl — generate presigned S3 URL
  * 2. Client PUT directly to S3 (no backend involved)
  * 3. confirmUpload — verify S3 presence, persist EventTeaserImage record
- * <p>
- * Pattern follows SpeakerProfilePhotoService and EventPhotoService.
- * ADR-002: Entity-specific service (not GenericLogoService) because teaser images
- * always target an EXISTING event — no circular dependency problem.
  */
 @Service
 @Transactional
@@ -70,9 +68,9 @@ public class EventTeaserImageService {
 
     /**
      * Phase 1: Generate presigned PUT URL for direct S3 upload.
-     * AC2 — Upload flow; H1 — content type validation
+     * @param eventCode event code, or null for global images
      */
-    public TeaserImageUploadUrlResponse generateUploadUrl(String eventCode,
+    public TeaserImageUploadUrlResponse generateUploadUrl(@Nullable String eventCode,
                                                           String contentType,
                                                           String fileName) {
         if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
@@ -81,7 +79,9 @@ public class EventTeaserImageService {
                     + ". Allowed: image/jpeg, image/png, image/webp, image/svg+xml");
         }
         String ext = resolveExtension(fileName, contentType);
-        String s3Key = String.format("events/%s/teaser/%s.%s", eventCode, UUID.randomUUID(), ext);
+        String s3Key = eventCode != null
+                ? String.format("events/%s/teaser/%s.%s", eventCode, UUID.randomUUID(), ext)
+                : String.format("global/teaser/%s.%s", UUID.randomUUID(), ext);
 
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
@@ -105,25 +105,28 @@ public class EventTeaserImageService {
 
     /**
      * Phase 3: Confirm upload — verify S3 presence, persist EventTeaserImage.
-     * AC2 — Upload flow; AC6 — max-limit guard; M1 — pessimistic lock prevents race conditions.
-     *
-     * A single SELECT ... FOR UPDATE replaces the separate countByEventCode +
-     * findMaxDisplayOrderByEventCode calls, ensuring that concurrent confirms for the
-     * same event serialize correctly (no over-limit bypass, no duplicate displayOrder).
+     * @param eventCode event code, or null for global images
      */
-    public TeaserImageItem confirmUpload(String eventCode, String s3Key) {
-        // Validate s3Key belongs to this event (prevent cross-event key injection)
-        String expectedPrefix = String.format("events/%s/teaser/", eventCode);
+    public TeaserImageItem confirmUpload(@Nullable String eventCode, String s3Key) {
+        // Validate s3Key prefix matches the scope
+        String expectedPrefix = eventCode != null
+                ? String.format("events/%s/teaser/", eventCode)
+                : "global/teaser/";
         if (s3Key == null || !s3Key.startsWith(expectedPrefix)) {
-            throw new IllegalArgumentException("s3Key must belong to event " + eventCode);
+            throw new IllegalArgumentException("s3Key must start with " + expectedPrefix);
         }
 
-        // Lock existing teaser-image rows for this event so concurrent confirms serialize.
-        List<EventTeaserImage> existing = teaserImageRepository.findByEventCodeForUpdate(eventCode);
+        // Lock existing rows so concurrent confirms serialize
+        List<EventTeaserImage> existing = eventCode != null
+                ? teaserImageRepository.findByEventCodeForUpdate(eventCode)
+                : teaserImageRepository.findGlobalForUpdate();
 
-        // AC6: max-limit guard (check BEFORE S3 headObject)
         if (existing.size() >= MAX_TEASER_IMAGES) {
-            throw new TeaserImageLimitExceededException(eventCode, MAX_TEASER_IMAGES);
+            if (eventCode != null) {
+                throw new TeaserImageLimitExceededException(eventCode, MAX_TEASER_IMAGES);
+            } else {
+                throw new TeaserImageLimitExceededException(MAX_TEASER_IMAGES);
+            }
         }
 
         // Verify S3 presence
@@ -149,19 +152,18 @@ public class EventTeaserImageService {
         entity.setDisplayOrder(displayOrder);
 
         EventTeaserImage saved = teaserImageRepository.save(entity);
-        log.info("Teaser image {} confirmed for event {}, displayOrder={}", saved.getId(), eventCode, displayOrder);
+        log.info("Teaser image {} confirmed for {}, displayOrder={}",
+                saved.getId(), eventCode != null ? "event " + eventCode : "global", displayOrder);
 
         return toItem(saved);
     }
 
     /**
-     * Delete a teaser image: remove DB record and S3 object.
-     * S3 delete is best-effort — failures are logged but do not block DB delete.
-     * AC3 — Delete
+     * Delete a teaser image: remove DB record and S3 object (best-effort).
+     * @param eventCode event code, or null for global images
      */
-    public void deleteTeaserImage(String eventCode, UUID imageId) {
-        EventTeaserImage image = teaserImageRepository.findByIdAndEventCode(imageId, eventCode)
-                .orElseThrow(() -> new TeaserImageNotFoundException(imageId.toString()));
+    public void deleteTeaserImage(@Nullable String eventCode, UUID imageId) {
+        EventTeaserImage image = findImage(eventCode, imageId);
 
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
@@ -173,36 +175,44 @@ public class EventTeaserImageService {
         }
 
         teaserImageRepository.delete(image);
-        log.info("Teaser image {} deleted from event {}", imageId, eventCode);
+        log.info("Teaser image {} deleted from {}", imageId,
+                eventCode != null ? "event " + eventCode : "global");
     }
 
     /**
-     * List all teaser images for an event, ordered by displayOrder ascending.
-     * Used by EventMapper enrichment (AC4 — teaserImages in EventResponse).
+     * List teaser images ordered by displayOrder ascending.
+     * @param eventCode event code, or null for global images
      */
     @Transactional(readOnly = true)
-    public List<TeaserImageItem> listByEventCode(String eventCode) {
-        return teaserImageRepository.findByEventCodeOrderByDisplayOrderAsc(eventCode)
-                .stream()
-                .map(this::toItem)
-                .toList();
+    public List<TeaserImageItem> listByEventCode(@Nullable String eventCode) {
+        List<EventTeaserImage> images = eventCode != null
+                ? teaserImageRepository.findByEventCodeOrderByDisplayOrderAsc(eventCode)
+                : teaserImageRepository.findByEventCodeIsNullOrderByDisplayOrderAsc();
+        return images.stream().map(this::toItem).toList();
     }
 
     /**
-     * Update the presentation position of an existing teaser image.
-     * The position controls which slide the image appears after in the moderator presentation.
+     * Update the presentation position of a teaser image.
+     * @param eventCode event code, or null for global images
      */
-    public TeaserImageItem updatePresentationPosition(String eventCode, UUID imageId,
+    public TeaserImageItem updatePresentationPosition(@Nullable String eventCode, UUID imageId,
                                                       TeaserImagePresentationPosition position) {
-        EventTeaserImage image = teaserImageRepository.findByIdAndEventCode(imageId, eventCode)
-                .orElseThrow(() -> new TeaserImageNotFoundException(imageId.toString()));
+        EventTeaserImage image = findImage(eventCode, imageId);
         image.setPresentationPosition(position.getValue());
         EventTeaserImage saved = teaserImageRepository.save(image);
-        log.info("Teaser image {} position updated to {} for event {}", imageId, position.getValue(), eventCode);
+        log.info("Teaser image {} position updated to {} for {}",
+                imageId, position.getValue(), eventCode != null ? "event " + eventCode : "global");
         return toItem(saved);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────
+
+    private EventTeaserImage findImage(@Nullable String eventCode, UUID imageId) {
+        return (eventCode != null
+                ? teaserImageRepository.findByIdAndEventCode(imageId, eventCode)
+                : teaserImageRepository.findByIdAndEventCodeIsNull(imageId))
+                .orElseThrow(() -> new TeaserImageNotFoundException(imageId.toString()));
+    }
 
     private TeaserImageItem toItem(EventTeaserImage entity) {
         return new TeaserImageItem(

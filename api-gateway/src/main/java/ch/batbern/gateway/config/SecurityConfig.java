@@ -25,6 +25,11 @@ import java.util.Base64;
  * - This is a stateless REST API using JWT tokens in Authorization headers
  * - No session cookies are used (stateless session management)
  * - CSRF attacks target cookie-based authentication, which this API doesn't use
+ *
+ * IMPORTANT: When adding public (permitAll) endpoints, you must ALSO add the same
+ * rule to the target service's SecurityConfig (e.g. event-management-service's
+ * SecurityConfig.java). Both the gateway AND the downstream service enforce auth
+ * independently. Forgetting the service-side rule causes 401 even if the gateway permits.
  */
 @Configuration
 @EnableWebSecurity
@@ -226,6 +231,9 @@ public class SecurityConfig {
 
                         // Public organizers endpoint for About page
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+
+                        // Global teaser images: public list for presenter view (_global = all events)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/_global/teaser-images").permitAll()
 
                         // Story 10.8a: Public presentation settings (moderator page)
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()

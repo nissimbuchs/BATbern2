@@ -1,4 +1,27 @@
 {
+  "accessDenied": "Zugriff verweigert",
+  "organizerOnly": "Diese Seite ist nur für Organisatoren.",
+  "tabs": {
+    "eventTypes": "Veranstaltungstypen",
+    "importData": "Daten importieren",
+    "taskTemplates": "Aufgabenvorlagen",
+    "emailTemplates": "E-Mail-Vorlagen",
+    "presentationSettings": "Präsentation",
+    "exportImport": "Export / Import",
+    "aiPrompts": "KI-Prompts",
+    "settings": "Einstellungen",
+    "globalImages": "Globale Bilder"
+  },
+  "globalImages": {
+    "title": "Globale Teaser-Bilder",
+    "description": "Bilder, die als Vollbild-Folien bei ALLEN Veranstaltungspräsentationen angezeigt werden. Veranstaltungsspezifische Bilder können pro Veranstaltung im Einstellungen-Tab hinzugefügt werden.",
+    "uploadButton": "Globales Bild hinzufügen",
+    "uploading": "Wird hochgeladen...",
+    "limitReached": "Maximal {{max}} globale Teaser-Bilder erreicht.",
+    "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "removeError": "Entfernen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "positionError": "Folienposition konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
+  },
   "settings": {
     "emailForwarding": {
       "title": "E-Mail-Weiterleitung",
@@ -9,8 +32,5 @@
     "save": "Speichern",
     "saved": "Einstellungen gespeichert.",
     "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut."
-  },
-  "tabs": {
-    "settings": "Einstellungen"
   }
 }
