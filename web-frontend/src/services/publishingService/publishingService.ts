@@ -17,7 +17,6 @@ import type {
   UnpublishPhaseResponse,
   PublishPreviewResponse,
   PublishingStatusResponse,
-  ChangeLogResponse,
   AutoPublishScheduleRequest,
   AutoPublishScheduleResponse,
   CancelAutoPublishResponse,
@@ -84,17 +83,6 @@ async function getPublishPreview(
 }
 
 /**
- * Get change log for published content
- *
- * @param eventCode - Event code
- * @returns Change log entries
- */
-async function getChangeLog(eventCode: string): Promise<ChangeLogResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/changelog`);
-  return response.data;
-}
-
-/**
  * Schedule auto-publish for a phase
  *
  * @param eventCode - Event code
@@ -137,7 +125,6 @@ export const publishingService = {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,
 };
@@ -148,7 +135,6 @@ export {
   unpublishPhase,
   getPublishingStatus,
   getPublishPreview,
-  getChangeLog,
   scheduleAutoPublish,
   cancelAutoPublish,
 };

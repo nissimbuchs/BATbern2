@@ -141,37 +141,6 @@ describe('publishingService', () => {
     });
   });
 
-  describe('getChangeLog', () => {
-    it('should get change log for published event', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        changes: [
-          {
-            timestamp: '2025-01-15T14:00:00Z',
-            changedBy: 'john.doe',
-            changeType: 'SPEAKER_ADDED',
-            description: 'Added speaker: Jane Smith',
-            affectedPhase: 'SPEAKERS',
-          },
-          {
-            timestamp: '2025-01-15T13:00:00Z',
-            changedBy: 'john.doe',
-            changeType: 'SESSION_TIMING_UPDATED',
-            description: 'Updated session timing for John Doe',
-            affectedPhase: 'AGENDA',
-          },
-        ],
-      };
-
-      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
-
-      const result = await publishingService.getChangeLog('BATbern142');
-
-      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/changelog');
-      expect(result).toEqual(mockData);
-    });
-  });
-
   describe('scheduleAutoPublish', () => {
     it('should schedule auto-publish for phase', async () => {
       const mockData = {

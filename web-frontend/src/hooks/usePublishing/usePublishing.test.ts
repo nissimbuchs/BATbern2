@@ -17,7 +17,6 @@ import React from 'react';
 vi.mock('@/services/publishingService/publishingService', () => ({
   publishingService: {
     getPublishingStatus: vi.fn(),
-    getChangeLog: vi.fn(),
     publishPhase: vi.fn(),
     unpublishPhase: vi.fn(),
     getPublishPreview: vi.fn(),
@@ -30,7 +29,6 @@ import { publishingService } from '@/services/publishingService/publishingServic
 import { usePublishing } from './usePublishing';
 
 const mockGetStatus = vi.mocked(publishingService.getPublishingStatus);
-const mockGetChangeLog = vi.mocked(publishingService.getChangeLog);
 const mockPublishPhase = vi.mocked(publishingService.publishPhase);
 const mockUnpublishPhase = vi.mocked(publishingService.unpublishPhase);
 const mockGetPublishPreview = vi.mocked(publishingService.getPublishPreview);
@@ -48,7 +46,6 @@ const wrapper =
     React.createElement(QueryClientProvider, { client: qc }, children);
 
 const MOCK_STATUS = { topic: 'PUBLISHED', speakers: 'DRAFT', agenda: 'DRAFT' };
-const MOCK_CHANGELOG = { entries: [{ changedAt: '2025-01-01', field: 'title' }] };
 
 describe('usePublishing', () => {
   let qc: QueryClient;
@@ -57,17 +54,15 @@ describe('usePublishing', () => {
     qc = createQC();
     vi.clearAllMocks();
     mockGetStatus.mockResolvedValue(MOCK_STATUS as never);
-    mockGetChangeLog.mockResolvedValue(MOCK_CHANGELOG as never);
   });
 
-  it('should fetch publishing status and change log on mount', async () => {
+  it('should fetch publishing status on mount', async () => {
     const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
 
     expect(mockGetStatus).toHaveBeenCalledWith('BAT142');
     expect(result.current.publishingStatus).toEqual(MOCK_STATUS);
-    expect(result.current.changeLog).toEqual(MOCK_CHANGELOG);
   });
 
   it('should start with empty validationErrors', async () => {

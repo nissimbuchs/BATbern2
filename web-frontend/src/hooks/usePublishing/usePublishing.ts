@@ -4,10 +4,8 @@
  * State management hook for progressive publishing functionality
  * Features:
  * - Publish/unpublish phases (topic → speakers → agenda)
- * - Version history and rollback
  * - Publishing preview
  * - Auto-publish scheduling
- * - Change log tracking
  * - Real-time updates via React Query
  */
 
@@ -17,7 +15,6 @@ import type {
   PublishingPhase,
   PublishPreviewResponse,
   PublishingStatusResponse,
-  ChangeLogResponse,
   AutoPublishScheduleRequest,
   PublishValidationError,
 } from '@/types/event.types';
@@ -41,10 +38,6 @@ export interface UsePublishingReturn {
   isLoadingPreview: boolean;
   previewError: Error | null;
 
-  // Change log
-  changeLog: ChangeLogResponse | undefined;
-  isLoadingChangeLog: boolean;
-
   // Auto-publish scheduling
   scheduleAutoPublish: (phase: PublishingPhase, options: AutoPublishScheduleRequest) => void;
   cancelAutoPublish: (phase: PublishingPhase) => void;
@@ -63,7 +56,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Query keys
   const statusKey = ['publishing', 'status', eventCode];
-  const changeLogKey = ['publishing', 'changeLog', eventCode];
   const previewKey = ['publishing', 'preview', eventCode];
 
   // Publishing status query (auto-fetched)
@@ -71,13 +63,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     queryKey: statusKey,
     queryFn: () => publishingService.getPublishingStatus(eventCode),
     staleTime: 10000, // 10 seconds - validation can change frequently
-  });
-
-  // Change log query (auto-fetched)
-  const { data: changeLog, isLoading: isLoadingChangeLog } = useQuery({
-    queryKey: changeLogKey,
-    queryFn: () => publishingService.getChangeLog(eventCode),
-    staleTime: 30000, // 30 seconds
   });
 
   // Preview query (manually triggered via fetchPreview)
@@ -93,7 +78,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     onSuccess: () => {
       // Invalidate status, version history and change log to refetch
       queryClient.invalidateQueries({ queryKey: statusKey });
-      queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
   });
 
@@ -102,7 +86,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     mutationFn: (phase: PublishingPhase) => publishingService.unpublishPhase(eventCode, phase),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: statusKey });
-      queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
   });
 
@@ -162,10 +145,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     fetchPreview: (phase) => fetchPreviewMutation.mutate(phase),
     isLoadingPreview: fetchPreviewMutation.isPending,
     previewError: fetchPreviewMutation.error,
-
-    // Change log
-    changeLog,
-    isLoadingChangeLog,
 
     // Auto-publish scheduling
     scheduleAutoPublish: (phase, options) => scheduleAutoPublishMutation.mutate({ phase, options }),

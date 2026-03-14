@@ -155,35 +155,6 @@ describe('usePublishing', () => {
     });
   });
 
-  describe('change log', () => {
-    it('should fetch change log', async () => {
-      const mockChangeLog = {
-        eventCode: 'BATbern142',
-        changes: [
-          {
-            timestamp: '2025-01-15T14:00:00Z',
-            changedBy: 'john.doe',
-            changeType: 'SPEAKER_ADDED',
-            description: 'Added speaker: Jane Smith',
-            affectedPhase: 'SPEAKERS',
-          },
-        ],
-      };
-
-      vi.mocked(publishingService.getChangeLog).mockResolvedValue(mockChangeLog);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.changeLog).toEqual(mockChangeLog);
-      });
-
-      expect(publishingService.getChangeLog).toHaveBeenCalledWith('BATbern142');
-    });
-  });
-
   describe('auto-publish scheduling', () => {
     it('should schedule auto-publish successfully', async () => {
       const mockScheduleResponse = {
