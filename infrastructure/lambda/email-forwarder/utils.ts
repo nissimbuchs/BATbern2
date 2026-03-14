@@ -49,3 +49,9 @@ export function truncateEmail(email: string): string {
   if (email.length <= 5) return email + '***';
   return email.substring(0, 5) + '***';
 }
+
+/** Exclude sender from recipients to prevent bounce loops. */
+export function excludeSender(recipients: string[], senderEmail: string): string[] {
+  const senderLower = senderEmail.toLowerCase();
+  return recipients.filter((r) => r.toLowerCase() !== senderLower);
+}

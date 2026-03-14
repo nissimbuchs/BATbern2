@@ -19,6 +19,7 @@ import {
   extractSenderEmail,
   extractSenderName,
   truncateEmail,
+  excludeSender,
 } from './utils';
 
 const s3 = new S3Client({});
@@ -68,6 +69,17 @@ export const handler = async (event: S3Event): Promise<void> => {
       return;
     }
 
+    // Exclude sender from recipients to prevent bounce loops
+    const filteredRecipients = excludeSender(recipients, senderEmail);
+    if (filteredRecipients.length < recipients.length) {
+      console.log('Excluded sender from recipients', { sender: truncatedSender });
+    }
+    if (filteredRecipients.length === 0) {
+      console.warn('No recipients after excluding sender', { to: toAddress });
+      await publishMetric('EmailsUnresolved');
+      return;
+    }
+
     // Rewrite email headers
     const rewrittenEmail = rewriteEmail(rawEmail, {
       originalFrom: headers.from,
@@ -79,7 +91,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     // Send to each recipient with rate limiting
     let sentCount = 0;
     let failCount = 0;
-    for (const recipient of recipients) {
+    for (const recipient of filteredRecipients) {
       try {
         await ses.send(
           new SendRawEmailCommand({
@@ -93,7 +105,7 @@ export const handler = async (event: S3Event): Promise<void> => {
         failCount++;
         console.error('Failed to send to recipient', { recipient: truncateEmail(recipient), error: err });
       }
-      if (sentCount + failCount < recipients.length) {
+      if (sentCount + failCount < filteredRecipients.length) {
         await delay(RATE_DELAY_MS);
       }
     }

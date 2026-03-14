@@ -401,3 +401,40 @@ describe('T9 — Email rewriting and forwarding', () => {
     expect(result).not.toContain('DKIM-Signature:');
   });
 });
+
+// ========================
+// T10: Sender Exclusion (bounce prevention)
+// ========================
+
+import { excludeSender } from '../../lambda/email-forwarder/utils';
+
+describe('T10 — Sender excluded from recipients to prevent bounce loops', () => {
+  test('should_excludeSender_when_senderIsInRecipientList', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch', 'org3@test.ch'];
+    const result = excludeSender(recipients, 'org1@test.ch');
+    expect(result).toEqual(['org2@test.ch', 'org3@test.ch']);
+  });
+
+  test('should_excludeSender_when_caseInsensitiveMatch', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch'];
+    const result = excludeSender(recipients, 'ORG1@TEST.CH');
+    expect(result).toEqual(['org2@test.ch']);
+  });
+
+  test('should_returnAllRecipients_when_senderNotInList', () => {
+    const recipients = ['org1@test.ch', 'org2@test.ch'];
+    const result = excludeSender(recipients, 'other@test.ch');
+    expect(result).toEqual(['org1@test.ch', 'org2@test.ch']);
+  });
+
+  test('should_returnEmpty_when_senderIsOnlyRecipient', () => {
+    const recipients = ['sender@test.ch'];
+    const result = excludeSender(recipients, 'sender@test.ch');
+    expect(result).toEqual([]);
+  });
+
+  test('should_handleEmptyRecipients', () => {
+    const result = excludeSender([], 'sender@test.ch');
+    expect(result).toEqual([]);
+  });
+});
