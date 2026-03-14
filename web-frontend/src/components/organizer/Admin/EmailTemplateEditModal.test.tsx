@@ -116,7 +116,9 @@ describe('EmailTemplateEditModal — layout mode', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useLayoutTemplates).mockReturnValue({ data: [] } as never);
+    vi.mocked(useLayoutTemplates).mockReturnValue({
+      data: [{ templateKey: 'batbern-default', locale: 'de', category: 'LAYOUT', isLayout: true }],
+    } as never);
     vi.mocked(useCreateEmailTemplate).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -245,7 +247,9 @@ describe('EmailTemplateEditModal — create mode (no template)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useLayoutTemplates).mockReturnValue({ data: [] } as never);
+    vi.mocked(useLayoutTemplates).mockReturnValue({
+      data: [{ templateKey: 'batbern-default', locale: 'de', category: 'LAYOUT', isLayout: true }],
+    } as never);
     vi.mocked(useCreateEmailTemplate).mockReturnValue({
       mutateAsync: mockCreateMutateAsync,
       isPending: false,

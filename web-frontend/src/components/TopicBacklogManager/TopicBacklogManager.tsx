@@ -112,11 +112,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           title: event.title,
         });
       });
-      const sampleKeys = Array.from(map.keys()).slice(0, 5);
-      console.debug(`✅ Event lookup map created with ${map.size} events`);
-      console.debug(`Sample eventCodes:`, sampleKeys);
-    } else {
-      console.debug('❌ No event data available for lookup map');
     }
     return map;
   }, [allEventsData]);

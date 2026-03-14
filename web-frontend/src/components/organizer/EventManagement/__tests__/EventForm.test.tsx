@@ -60,7 +60,7 @@ describe('EventForm Component', () => {
     eventDate: '2025-04-15T18:00:00Z',
     eventType: 'full_day',
     status: 'draft',
-    workflowState: 'initial_setup',
+    workflowState: 'CREATED',
     registrationDeadline: '2025-04-08T23:59:59Z',
     capacity: 200,
     theme: 'Cloud & DevOps',

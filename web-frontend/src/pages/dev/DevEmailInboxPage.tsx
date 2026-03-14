@@ -136,20 +136,29 @@ export default function DevEmailInboxPage() {
             sx={{ mr: 2 }}
           />
           <Tooltip title="Refresh">
-            <IconButton onClick={() => void load()} disabled={loading} size="small" sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton
+                onClick={() => void load()}
+                disabled={loading}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
           <Tooltip title="Clear all emails">
-            <Button
-              onClick={() => void handleClear()}
-              color="error"
-              size="small"
-              startIcon={<DeleteSweepIcon />}
-              disabled={emails.length === 0}
-            >
-              Clear All
-            </Button>
+            <span>
+              <Button
+                onClick={() => void handleClear()}
+                color="error"
+                size="small"
+                startIcon={<DeleteSweepIcon />}
+                disabled={emails.length === 0}
+              >
+                Clear All
+              </Button>
+            </span>
           </Tooltip>
         </Toolbar>
       </AppBar>
