@@ -293,6 +293,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
               onEditorChange={(val: string) => {
                 tinymceContentRef.current = val;
               }}
+              licenseKey="gpl"
               init={{
                 height: 400,
                 menubar: false,
