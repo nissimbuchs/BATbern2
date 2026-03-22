@@ -24,7 +24,7 @@ export const stagingConfig: EnvironmentConfig = {
     instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance
     instanceSize: ec2.InstanceSize.MICRO, // Sufficient for ~300 users, 3 events/year
     multiAz: false, // Single-AZ for cost savings (low traffic use case)
-    backupRetention: cdk.Duration.days(14), // 2-week grace window (production)
+    backupRetention: cdk.Duration.days(7), // 1-week retention (sufficient for low-traffic platform)
     allocatedStorage: 20, // Sufficient for current data volume
     deletionProtection: true, // Production data protection
   },

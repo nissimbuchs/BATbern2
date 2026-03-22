@@ -99,6 +99,20 @@ echo ""
 echo "🚀 Tunnel active! You can now connect to staging database:"
 echo "   Connection available at localhost:5433"
 echo ""
+echo "⏹️  When done, press Ctrl+C — the bastion will be stopped automatically to save costs."
+echo "   To stop it manually:  AWS_PROFILE=batbern-staging aws ec2 stop-instances --instance-ids $BASTION_ID --region $AWS_REGION"
+echo ""
+
+# Auto-stop bastion on exit to avoid unnecessary costs (~$2/mo if left running)
+cleanup() {
+  echo ""
+  echo "🛑 Stopping bastion instance to save costs..."
+  aws ec2 stop-instances \
+    --instance-ids $BASTION_ID \
+    --region $AWS_REGION >/dev/null 2>&1
+  echo "✅ Bastion stopped. It will be started automatically next time you run this script."
+}
+trap cleanup EXIT
 
 # Start the tunnel
 aws ssm start-session \

@@ -297,6 +297,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
               init={{
                 height: 400,
                 menubar: false,
+                z_index: 1400, // Must exceed MUI Dialog z-index (1300) so source code dialog is clickable
                 plugins: 'code table lists link',
                 toolbar:
                   'code | blocks | bold italic underline' +

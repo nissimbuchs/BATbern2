@@ -38,7 +38,7 @@ export class IncidentManagementStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: IncidentManagementStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
+    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
     const envName = props.config.envName;
 
     // Create stable log groups for all Lambda functions

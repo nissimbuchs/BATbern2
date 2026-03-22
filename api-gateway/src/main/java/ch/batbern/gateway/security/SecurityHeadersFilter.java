@@ -99,6 +99,9 @@ public class SecurityHeadersFilter implements Filter {
         // Connect sources (for API calls) - self, AWS Cognito, and CloudFront CDN
         csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://cdn.staging.batbern.ch; ");
 
+        // Frame sources - allow Google Maps embeds on public pages
+        csp.append("frame-src 'self' https://maps.google.com https://www.google.com; ");
+
         // Object sources - none (prevent Flash/Java/ActiveX)
         csp.append("object-src 'none'; ");
 

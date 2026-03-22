@@ -47,13 +47,13 @@ export class MicroservicesStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
-    const isProd = envName === 'production';
+    const isProd = props.config.isProduction ?? (envName === 'production');
 
     // Create ECS cluster
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {
       vpc: props.vpc,
       clusterName: `batbern-${envName}`,
-      containerInsightsV2: isProd ? ecs.ContainerInsights.ENABLED : ecs.ContainerInsights.DISABLED, // Enable Container Insights V2 for production
+      containerInsightsV2: ecs.ContainerInsights.DISABLED, // Disabled — $48/mo not justified for current traffic volume
     });
 
     // Common environment variables for all services

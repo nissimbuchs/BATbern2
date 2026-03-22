@@ -70,6 +70,9 @@ public class SecurityHeadersHandler {
         // Font sources
         csp.append("font-src 'self'; ");
 
+        // Frame sources - allow Google Maps embeds on public pages
+        csp.append("frame-src 'self' https://maps.google.com https://www.google.com; ");
+
         // Object sources
         csp.append("object-src 'none'; ");
 
