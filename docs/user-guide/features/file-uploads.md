@@ -6,6 +6,8 @@ The BATbern file upload system provides secure, direct-to-S3 file handling for:
 
 - **Company Logos** - Brand images for partner directories and event materials
 - **Speaker Materials** - Presentation slides, handouts, and supporting documents
+- **Event Photos** - Multi-file photo uploads with parallel presigned URL generation
+- **Event Teaser Images** - Global or event-specific teaser images with multilingual metadata
 - **Event Assets** - Venue maps, promotional images, sponsor materials `[PLANNED]`
 
 The system uses **presigned S3 URLs** to enable secure, direct browser-to-cloud uploads without proxying files through the backend, ensuring:
@@ -142,6 +144,11 @@ sequenceDiagram
    - Speaker status updates to "Material Submitted"
    - Notification sent to speaker confirming receipt
    - File available for organizer review and attendee distribution
+
+7. **Deleting Materials**
+   - Click the delete button next to an uploaded material file
+   - Confirm deletion in the dialog
+   - File is removed from S3 and the session record is updated
 
 ### Supported File Formats
 

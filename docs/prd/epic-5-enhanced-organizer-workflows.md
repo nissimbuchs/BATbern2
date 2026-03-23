@@ -2,7 +2,7 @@
 
 **Status:** ✅ **COMPLETE** - MVP Ready (8/8 stories, 100%)
 
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-03-23
 **Completed:** 2026-01-24
 
 **Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 8 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
@@ -1287,3 +1287,30 @@ As an **organizer**, I want to coordinate partner meetings scheduled on same day
 - Partner Coordination Service: Step 16 (partner meetings) - extends Story 2.7
 - Frontend: React organizer dashboard with workflow interface
 - Infrastructure: AWS SES integration for newsletters (Story 5.12)
+
+---
+
+## Post-MVP Enhancements (2026-03)
+
+The following enhancements were delivered after Epic 5 was marked complete, extending the event management and organizer workflow capabilities:
+
+### Newsletter Improvements
+- **Subscriber management page** — Paginated, searchable, sortable list of newsletter subscribers with unsubscribe/resubscribe/delete actions. Backend sort migration from in-memory to database-driven sorting.
+- **Async newsletter send** — Fixed critical P0 thread-pool overflow bug (~2890/3000 emails lost). Replaced synchronous send with `@Async` fire-and-forget pattern, progress polling, SES rate limiting (70ms/email), status tracking (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), duplicate prevention (409), and retry endpoint for partial failures.
+
+### Task System Enhancements
+- **Task deletion** — `DELETE /api/v1/events/{code}/tasks/{taskId}` (ORGANIZER only). Default template tasks cannot be deleted. Red delete IconButton on Kanban cards with confirmation dialog.
+
+### Event Management Enhancements
+- **Global teaser images** — Teaser images can now be uploaded without being linked to a specific event (`event_code` nullable in V90 migration). GlobalImagesTab in admin UI supports multilingual metadata (10 locales). Presentation pages merge global images with event-specific ones.
+- **Auto-enrollment** — Organizers and partners are automatically enrolled as stakeholders when a new event is created (`EventCreatedEvent` listener). Quick-action button available for manual idempotent re-enrollment.
+- **Session materials deletion** — Delete button added for uploaded session materials (speaker presentations).
+
+### Public Website Enhancements
+- **Structural session filtering** — Break, lunch, and networking sessions are filtered out of public SessionCards grid.
+- **Post-event materials** — Materials download block shown in POST_EVENT and ARCHIVE phases via presigned URLs.
+- **Registration CTA visibility** — Register button hidden for COMING_SOON, POST_EVENT, and ARCHIVE phases.
+
+### Email Infrastructure
+- **SES email forwarding** — Serverless forwarding for 6 platform inboxes via SES receipt rules + Lambda. See [Backend Architecture: Email Forwarding](../architecture/06-backend-architecture.md#email-forwarding-serverless).
+- **Environment-specific email routing** — Staging and production use separate SES domains and reply-to addresses.

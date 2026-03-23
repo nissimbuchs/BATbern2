@@ -7,7 +7,9 @@ This document consolidates security implementation, performance standards, acces
 ### Frontend Security
 - **CSP Headers**: Strict content security policy with CloudFront CDN support
   - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domain (`cdn.batbern.ch`)
-  - Configured in `SecurityHeadersFilter.java` for API Gateway
+  - `frame-src`: Allows Google Maps embeds (`https://www.google.com/maps/`)
+  - Configured in `SecurityHeadersFilter.java` (API Gateway) and `SecurityHeadersHandler.java`
+- **COEP/CORP**: Cross-Origin-Embedder-Policy (COEP) header **removed** to allow third-party embeds (Google Maps). Cross-Origin-Resource-Policy (CORP) relaxed from `same-origin` to `cross-origin` for CDN asset delivery.
 - **XSS Prevention**: Input sanitization and output encoding
 - **Secure Storage**: Encrypted localStorage for sensitive data
 
@@ -20,6 +22,18 @@ This document consolidates security implementation, performance standards, acces
 - **Token Storage**: Secure JWT storage with automatic refresh
 - **Session Management**: Cognito-based session management
 - **Password Policy**: Strong password requirements
+
+## Cost Optimizations (2026-03)
+
+The following cost optimizations were applied to the production (staging) environment:
+
+| Change | Savings | Rationale |
+|--------|---------|-----------|
+| **Container Insights V2 disabled** | ~$48/month | Not justified for current low traffic volume |
+| **RDS backup retention reduced** 14 → 7 days | ~$4/month | 7 days sufficient for a low-traffic community platform |
+| **Bastion auto-stop on tunnel close** | ~$2/month | `start-db-tunnel.sh` now automatically stops the bastion EC2 instance when the SSH tunnel is closed |
+
+**`isProd` bug fix (2026-03-22):** The `cluster-stack.ts` and `incident-management-stack.ts` stacks were incorrectly using `envName === 'production'` to determine production behavior. Since the consolidated environment uses `envName: 'staging'` but serves production traffic, this was changed to use `config.isProduction` (which is `true`). This ensures production-grade behavior (alerts, scaling) is correctly applied.
 
 ## Performance Benchmarks and SLAs
 

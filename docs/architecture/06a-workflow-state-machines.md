@@ -495,6 +495,25 @@ public class EventTaskService implements ApplicationListener<EventWorkflowTransi
     }
 
     /**
+     * Delete a task (ORGANIZER only).
+     * Default template tasks cannot be deleted — throws IllegalStateException (HTTP 400).
+     * Custom tasks are permanently removed.
+     */
+    @Transactional
+    public void deleteTask(UUID taskId, String deletedBy) {
+        EventTask task = eventTaskRepository.findById(taskId)
+            .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+
+        if (task.getTemplateId() != null && taskTemplateRepository.findById(task.getTemplateId())
+                .map(TaskTemplate::isDefault).orElse(false)) {
+            throw new IllegalStateException("Cannot delete default template task");
+        }
+
+        eventTaskRepository.delete(task);
+        log.info("Task '{}' deleted by {}", task.getTaskName(), deletedBy);
+    }
+
+    /**
      * Get tasks for organizer
      */
     public List<EventTask> getTasksForOrganizer(String username) {
@@ -513,6 +532,8 @@ Organizers see tasks grouped by status:
 **Critical tasks filter:** `getCriticalTasksForOrganizer()` returns only tasks that are overdue or due within the next 3 days. This is separate from the status-based grouping above.
 
 **Task reassignment:** `reassignTask(taskId, newOrganizerUsername)` allows changing the assigned organizer on any open task.
+
+**Task deletion:** `DELETE /api/v1/events/{code}/tasks/{taskId}` (ORGANIZER only). Default template tasks cannot be deleted — throws `IllegalStateException` (HTTP 400). Custom tasks are permanently removed. The frontend shows a red delete `IconButton` on Kanban cards with a confirmation dialog.
 
 **Task creation idempotency:** Calling `createTasksForEvent` twice for the same template/event pair does not create duplicate tasks. The creation guard prevents duplicates even if a workflow transition event is replayed.
 
@@ -667,6 +688,8 @@ public class QualityReviewService {
 - `submission_version` — version counter for resubmissions
 
 ## Overflow Management & Voting System
+
+> **Scope Note (2026-01-24):** Overflow Management (Story 5.6) was **removed from MVP scope**. Manual speaker selection by organizers is sufficient for launch. Democratic voting on overflow speakers is deferred to Phase 2+ backlog. The design below is retained as a reference for the future implementation.
 
 ```java
 @Service

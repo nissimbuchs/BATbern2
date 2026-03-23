@@ -72,6 +72,16 @@ The following endpoints are accessible without any token at the domain-service l
 | `POST /api/v1/events/{code}/registrations` | Attendee registration creation |
 | `POST /api/v1/events/{code}/registrations/confirm` | Registration confirmation |
 
+**VPC-Internal Endpoints (no JWT required):**
+
+Some endpoints are designed for cross-service communication within the VPC only. These are protected by `VpcInternalAuthorizationManager` (which validates the request originates from within the VPC) rather than JWT-based role checks. Example:
+
+| Pattern | Service | Notes |
+|---|---|---|
+| `GET /api/v1/users/by-company` | Company-User Management | Used by partner-coordination-service to fetch contacts without requiring an organizer JWT |
+
+This pattern avoids the need to forward end-user JWTs for internal service-to-service calls that don't require user-level authorization.
+
 Role-gated endpoints (e.g. `POST /api/v1/events`, organizer-only mutations) are enforced at the **API Gateway** layer before requests reach domain services.
 
 ```java
@@ -602,6 +612,38 @@ public class RoleManagementService {
     }
 }
 ```
+
+## Newsletter Async Processing
+
+The newsletter send system uses an asynchronous fire-and-forget pattern to handle large recipient lists without blocking the API or exhausting thread pools:
+
+- **Trigger**: `POST /api/v1/events/{code}/newsletter/send` returns `202 Accepted` immediately
+- **Processing**: `@Async` method sends emails sequentially with SES rate limiting (~70ms/email to stay within SES quotas)
+- **Progress tracking**: `newsletter_send_status` table tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with `sent_count` and `total_count` for progress polling
+- **Duplicate prevention**: A second send attempt while `IN_PROGRESS` returns `409 Conflict`
+- **Retry**: Dedicated retry endpoint to re-send only failed recipients from a previous partial/failed send
+- **Orphan recovery**: On service startup, any stuck `IN_PROGRESS` records (from a crash mid-send) are reset to `FAILED` for manual retry
+
+## Email Forwarding (Serverless)
+
+Inbound email forwarding for platform mailboxes (ok@, info@, events@, partner@, support@, batbernNN@batbern.ch) is handled entirely serverlessly:
+
+```
+SES Receipt Rule → S3 (raw email) → Lambda (email-forwarder)
+                                          ├─ address-resolver: maps inbox → recipients via role/registration APIs
+                                          ├─ sender-auth: validates sender
+                                          ├─ email-rewriter: rewrites From/Reply-To headers
+                                          └─ SES sendRawEmail → forwarded to resolved recipients
+```
+
+- **Environment isolation**: Staging uses `replies@staging.batbern.ch`; production uses `replies@batbern.ch` (separate MX records and SES receipt rules)
+- **Outbound sender**: Staging uses `noreply@berner-architekten-treffen.ch` (verified SES domain); production uses `noreply@batbern.ch`
+- **Sender exclusion**: The original sender is excluded from forwarding recipients to prevent bounce loops
+- **Admin configuration**: Organizers can manage forwarding rules via Admin Settings UI
+
+## Auto-Enrollment on Event Creation
+
+When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).
 
 ## Real-time Notifications and Escalation
 
