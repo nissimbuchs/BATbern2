@@ -1,6 +1,7 @@
 # Epic 8: Partner Coordination
 
 **Status:** ✅ **COMPLETE** — Stories 8.0–8.4 done (deployed to staging 2026-02-22; Story 8.4 Partner Notes added 2026-02-23)
+**Last Updated:** 2026-03-23
 
 **Simplified (2026-02-21):** Epic 8 was originally scoped with QuickSight, Microsoft Graph, materialized views, and tier-based voting. These were cut as massively over-engineered for a community of ~5–10 partners and ~3 events/year. The three stories below reflect what was actually decided and built.
 
@@ -145,17 +146,27 @@ As an **organizer**, I want to manage the Spring and Autumn partner meetings, so
 - Meeting list: all past and upcoming meetings with status (invite sent / not sent)
 - Organizer-only access (partners do not interact with this screen)
 
-**What was cut:**
+**Post-MVP Enhancements (2026-03):**
+- **Meeting edit/delete** — `EditMeetingDialog` UI, `DELETE` endpoint sends `METHOD:CANCEL` ICS to all attendees
+- **Inline iCal** — Calendar invites sent with `Content-Disposition: inline` for better client compatibility
+- **Session-based VEVENT times** — Meeting VEVENT times derived from linked session start/end times; event-code prefix in SUMMARY
+- **Collapsible meeting cards** — UI shows time and agenda in collapsible partner meeting cards
+- **iCal RSVP tracking** — V9 migration adds `partner_meeting_rsvps` table. Inbound email router parses `METHOD:REPLY` ICS responses. `PartnerMeetingRsvpPanel` UI shows RSVP status per partner with auto-refresh. Endpoints:
+  - `POST /api/v1/partner-meetings/{meetingId}/rsvps` — Upsert RSVP from parsed iCal reply
+  - `GET  /api/v1/partner-meetings/{meetingId}/rsvps` — List RSVPs for a meeting
+  - `GET  /api/v1/partner-meetings/{meetingId}/rsvps/summary` — Grouped RSVP summary (accepted/declined/tentative)
+
+**What was cut (original scope):**
 - Microsoft Graph / Outlook API integration — standard ICS works with any calendar app
 - Automated Spring/Autumn scheduling — date comes from the BATbern event
-- RSVP tracking (attending / not attending / tentative)
+- ~~RSVP tracking (attending / not attending / tentative)~~ — **now implemented** via iCal REPLY parsing (2026-03)
 - Automated reminder emails
 - Attendance prediction
-- Cancellation and rescheduling handling
+- ~~Cancellation and rescheduling handling~~ — **delete with METHOD:CANCEL now implemented** (2026-03)
 - Pre-meeting pack compilation, material distribution
 - Post-meeting follow-up email
 - EventBridge scheduled rules
-- `meeting_rsvps` and `meeting_materials` tables
+- ~~`meeting_rsvps` and `meeting_materials` tables~~ — `partner_meeting_rsvps` **now implemented** (V9 migration, 2026-03); `meeting_materials` still cut
 
 **Architecture:**
 ```
@@ -177,6 +188,8 @@ PartnerMeetingController (202 Accepted immediately)
 - `GET  /api/v1/partner-meetings/{meetingId}` (ORGANIZER)
 - `PATCH /api/v1/partner-meetings/{meetingId}` — agenda or notes update (ORGANIZER)
 - `POST /api/v1/partner-meetings/{meetingId}/send-invite` → 202 Accepted (ORGANIZER)
+- `PUT  /api/v1/partner-meetings/{meetingId}` — Edit meeting (ORGANIZER)
+- `DELETE /api/v1/partner-meetings/{meetingId}` — Delete meeting + send METHOD:CANCEL ICS (ORGANIZER)
 
 **Performance targets:** Meeting list P95 < 3s | Invite 202 response < 200ms (async send)
 
@@ -218,12 +231,12 @@ As an **organizer**, I want to record and manage private notes about a partner c
 | Microsoft Graph / Outlook calendar integration | Standard ICS (RFC 5545) works everywhere |
 | Tier-based vote weighting + influence cap algorithm | 5–10 partners; simple count is fair |
 | Drag-and-drop topic ranking (react-beautiful-dnd) | Sort by vote count is enough |
-| RSVP tracking | Not needed |
+| ~~RSVP tracking~~ | **Now implemented** (2026-03) — iCal REPLY parsing + `partner_meeting_rsvps` table |
 | Automated Spring/Autumn scheduling | Date comes from the BATbern event |
 | EventBridge scheduled rules | Not needed |
 | Automated reminder emails, attendance prediction | Not needed |
 | Pre-meeting pack, material distribution | Not needed |
-| `meeting_rsvps` + `meeting_materials` tables | Not needed |
+| ~~`meeting_rsvps`~~ + `meeting_materials` tables | `partner_meeting_rsvps` **now implemented** (2026-03); `meeting_materials` still cut |
 | Mobile-responsive analytics layout | Desktop only for partner portal |
 | Department breakdown, comparative analytics | No department data tracked; anonymized comparison not needed |
 | Individual attendee tracking | Not allowed (GDPR) |
