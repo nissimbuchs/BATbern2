@@ -53,11 +53,11 @@ dependencies {
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
     // Resilience4j for circuit breaker, bulkhead, and retry patterns
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-retry:2.3.0'
-    implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.4.0'
 
     // ThreadFactoryBuilder for bounded thread pools
     implementation 'com.google.guava:guava:33.5.0-jre'
