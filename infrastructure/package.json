@@ -62,7 +62,7 @@
     "@types/jest": "^29.5.11",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.9.1",
-    "@types/pg": "^8.16.0",
+    "@types/pg": "^8.20.0",
     "aws-cdk": "latest",
     "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.27.0",
@@ -78,7 +78,7 @@
     "aws-cdk-lib": "^2.236.0",
     "constructs": "^10.4.5",
     "js-yaml": "^4.1.0",
-    "pg": "^8.18.0",
+    "pg": "^8.20.0",
     "source-map-support": "^0.5.21"
   },
   "overrides": {
