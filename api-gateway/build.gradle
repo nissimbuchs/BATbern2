@@ -3,7 +3,7 @@ plugins {
     id 'org.springframework.boot' // Version from root buildscript
     id 'io.spring.dependency-management' // Version from root buildscript
     id 'checkstyle'
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.7'
 }
 
 group = 'ch.batbern'
