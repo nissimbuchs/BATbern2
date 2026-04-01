@@ -3,7 +3,7 @@
   "description": "Single source of truth for technology versions in BATbern platform. This file is automatically updated by scripts/update-versions.js when dependencies change.",
   "lastUpdated": "2026-04-01",
   "frontend": {
-    "typescript": "5.x",
+    "typescript": "6.x",
     "react": "19.x",
     "mui": "7.x",
     "tanstack-query": "5.x",
@@ -12,7 +12,7 @@
     "vitest": "4.x",
     "react-testing-library": "16.x",
     "playwright": "1.x",
-    "eslint": "9.x",
+    "eslint": "10.x",
     "prettier": "3.x",
     "axios": "1.x",
     "react-router-dom": "7.x",
