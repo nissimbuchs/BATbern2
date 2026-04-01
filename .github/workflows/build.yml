@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-shared-kernel
           path: |
@@ -249,7 +249,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.service }}
           path: |
@@ -472,7 +472,7 @@ jobs:
 
       - name: Upload test reports artifact
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-frontend
           path: |
@@ -490,7 +490,7 @@ jobs:
 
       - name: Upload build artifacts
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: web-frontend/dist/

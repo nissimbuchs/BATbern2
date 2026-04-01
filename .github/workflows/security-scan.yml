@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload HTML report — ${{ matrix.api }}
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-api-report-${{ matrix.api }}
           path: report_html.html
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload JSON report — ${{ matrix.api }}
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-json-${{ matrix.api }}
           path: zap-json-stage/
@@ -144,7 +144,7 @@ jobs:
 
       - name: Upload HTML report — frontend
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-frontend-report
           path: report_html.html
@@ -152,7 +152,7 @@ jobs:
 
       - name: Upload JSON report — frontend
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-json-frontend
           path: zap-json-stage/
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload combined ZAP JSON reports (for projectdoc)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-reports
           path: security-reports/
