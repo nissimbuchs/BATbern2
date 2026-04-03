@@ -33,8 +33,9 @@ export function useAiGenerateDescription(eventCode: string) {
         return response.data;
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } };
-        if (axiosErr?.response?.status === 503) throw new Error(t('aiAssist.disabled'));
-        throw new Error(t('aiAssist.error'));
+        if (axiosErr?.response?.status === 503)
+          throw new Error(t('aiAssist.disabled'), { cause: err });
+        throw new Error(t('aiAssist.error'), { cause: err });
       }
     },
   });

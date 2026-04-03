@@ -803,6 +803,37 @@ npm run deploy:staging:selective -- \
 
 ---
 
+### Branch Protection Rules
+
+The `develop` branch has GitHub branch protection rules to prevent broken code from being merged:
+
+**Required Status Checks** (`strict: true` — branch must be up-to-date before merging):
+
+| Check | Description |
+|-------|-------------|
+| `build-frontend` | Lint, unit tests, and production build |
+| `build-shared-kernel` | Shared kernel compilation and tests |
+| `build-services (api-gateway)` | API Gateway build and tests |
+| `build-services (event-management-service)` | Event Management build and tests |
+| `build-services (company-user-management-service)` | Company/User Management build and tests |
+| `build-services (speaker-coordination-service)` | Speaker Coordination build and tests |
+| `build-services (partner-coordination-service)` | Partner Coordination build and tests |
+| `build-services (attendee-experience-service)` | Attendee Experience build and tests |
+
+**Why this matters for Dependabot:** The monthly batch-merge workflow (`dependabot-batch-merge.yml`) uses `gh pr merge --auto --squash`. The `--auto` flag makes GitHub wait for all required status checks to pass before merging. Without required checks, PRs merge immediately — even if the Build Pipeline later fails.
+
+**Managing protection rules** (API-only, not file-configurable):
+```bash
+# View current checks
+gh api repos/nissimbuchs/BATbern2/branches/develop/protection/required_status_checks
+
+# Update checks (e.g., after adding a new service)
+gh api repos/nissimbuchs/BATbern2/branches/develop/protection/required_status_checks \
+  --method PATCH --input checks.json
+```
+
+---
+
 ### Daily Build Pipeline
 
 **Continuous Integration (Every Push to `develop`):**

@@ -82,7 +82,8 @@ export async function loadRuntimeConfig(): Promise<AppConfig> {
 
     // In production, fail fast - don't allow app to start with wrong config
     throw new Error(
-      'Failed to load application configuration. Please refresh the page or contact support if the problem persists.'
+      'Failed to load application configuration. Please refresh the page or contact support if the problem persists.',
+      { cause: error }
     );
   }
 }
