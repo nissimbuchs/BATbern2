@@ -261,7 +261,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker image
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
