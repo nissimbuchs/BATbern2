@@ -185,8 +185,9 @@ public class RegistrationService {
         if (request.getCommunicationPreferences() != null
                 && Boolean.TRUE.equals(request.getCommunicationPreferences().getNewsletterSubscribed())) {
             try {
+                String displayName = (request.getFirstName() + " " + request.getLastName()).trim();
                 newsletterSubscriberService.subscribe(
-                        request.getEmail(), request.getFirstName(), "de", "registration", username);
+                        request.getEmail(), displayName, "de", "registration", username);
                 log.info("Auto-subscribed {} to newsletter via registration", request.getEmail());
             } catch (DuplicateSubscriberException e) {
                 // Already subscribed — silently ignore (AC6)

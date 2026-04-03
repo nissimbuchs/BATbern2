@@ -22,7 +22,7 @@ import {
   TableSortLabel,
   Typography,
 } from '@mui/material';
-import { Cloud as CloudIcon, MoreVert, PeopleAltOutlined } from '@mui/icons-material';
+import { MoreVert, PeopleAltOutlined, PersonOutline as PersonIcon } from '@mui/icons-material';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
@@ -121,8 +121,8 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                     {sub.firstName ?? '—'}
                     {sub.username && (
                       <Tooltip title={t('table.registeredUser')}>
-                        <CloudIcon
-                          sx={{ fontSize: 16, color: 'info.main' }}
+                        <PersonIcon
+                          sx={{ fontSize: 16, color: 'text.secondary' }}
                           aria-label={t('table.registeredUser')}
                           data-testid={`registered-badge-${sub.id}`}
                         />

@@ -48,6 +48,9 @@ public class NewsletterSubscriberService {
     @Transactional(noRollbackFor = DuplicateSubscriberException.class)
     public NewsletterSubscriber subscribe(String email, String firstName, String language,
                                           String source, String username) {
+        // Infer name from email when not provided (e.g. "david.baumgartner@ace.ch" → "David Baumgartner")
+        String resolvedName = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(email);
+
         Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmail(email);
 
         if (existing.isPresent()) {
@@ -59,8 +62,8 @@ public class NewsletterSubscriberService {
             // Reactivate: clear unsubscribedAt, preserve original token
             sub.setUnsubscribedAt(null);
             sub.setSubscribedAt(Instant.now());
-            if (firstName != null && !firstName.isBlank()) {
-                sub.setFirstName(firstName);
+            if (resolvedName != null && !resolvedName.isBlank()) {
+                sub.setFirstName(resolvedName);
             }
             if (language != null && !language.isBlank()) {
                 sub.setLanguage(language);
@@ -76,7 +79,7 @@ public class NewsletterSubscriberService {
         // New subscriber
         NewsletterSubscriber sub = NewsletterSubscriber.builder()
                 .email(email)
-                .firstName(firstName)
+                .firstName(resolvedName)
                 .language(language != null && !language.isBlank() ? language : "de")
                 .source(source != null ? source : "explicit")
                 .username(username)
@@ -317,5 +320,33 @@ public class NewsletterSubscriberService {
                 .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
         subscriberRepository.delete(sub);
         log.info("Organizer deleted subscriber: {}", sub.getEmail());
+    }
+
+    /**
+     * Infer a display name from an email address local part.
+     * E.g. "david.baumgartner@ace.ch" → "David Baumgartner",
+     *      "john_doe@example.com" → "John Doe",
+     *      "info@example.com" → "Info"
+     */
+    static String inferNameFromEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return null;
+        }
+        String local = email.substring(0, email.indexOf('@'));
+        // Split on dots, underscores, hyphens
+        String[] parts = local.split("[._-]");
+        StringBuilder name = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isBlank()) {
+                if (!name.isEmpty()) {
+                    name.append(' ');
+                }
+                name.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) {
+                    name.append(part.substring(1).toLowerCase());
+                }
+            }
+        }
+        return name.isEmpty() ? null : name.toString();
     }
 }
