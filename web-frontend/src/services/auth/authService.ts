@@ -155,7 +155,7 @@ class AuthService {
           const tokens = session.tokens;
 
           if (!tokens?.idToken) {
-            throw new Error('No ID token found in session');
+            throw new Error('No ID token found in session', { cause: error });
           }
 
           const userContext = this.extractUserContextFromToken(

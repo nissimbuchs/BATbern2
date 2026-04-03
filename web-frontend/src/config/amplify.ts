@@ -115,6 +115,6 @@ export const configureAmplify = (runtimeConfig: AppConfig) => {
     );
   } catch (error) {
     console.error('❌ Failed to configure AWS Amplify:', error);
-    throw new Error('Amplify configuration failed');
+    throw new Error('Amplify configuration failed', { cause: error });
   }
 };
