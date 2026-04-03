@@ -29,6 +29,26 @@ export function extractToAddress(to: string | undefined): string | undefined {
   return match?.[1]?.toLowerCase();
 }
 
+/** Extract all email addresses from a header value (To or Cc may contain multiple). */
+export function extractAllAddresses(header: string | undefined): string[] {
+  if (!header || header.trim().length === 0) return [];
+  const addresses: string[] = [];
+  // Match all angle-bracket addresses and bare addresses
+  const angleBrackets = header.matchAll(/<([^>]+)>/g);
+  for (const m of angleBrackets) {
+    addresses.push(m[1].toLowerCase());
+  }
+  if (addresses.length > 0) return addresses;
+  // Fallback: split by comma and extract bare addresses
+  for (const part of header.split(',')) {
+    const match = part.trim().match(/([^\s]+@[^\s]+)/);
+    if (match) {
+      addresses.push(match[1].toLowerCase());
+    }
+  }
+  return addresses;
+}
+
 /** Extract email address from a From header value. */
 export function extractSenderEmail(from: string | undefined): string | undefined {
   if (!from) return undefined;

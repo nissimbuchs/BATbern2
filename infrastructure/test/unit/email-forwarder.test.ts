@@ -15,6 +15,7 @@
 import {
   parseHeaders,
   extractToAddress,
+  extractAllAddresses,
   extractSenderEmail,
   extractSenderName,
   truncateEmail,
@@ -77,6 +78,35 @@ describe('T6 — S3 event parsing and header extraction', () => {
 
   test('should_extractSenderName_when_quotedDisplayName', () => {
     expect(extractSenderName('"John Doe" <john@example.com>')).toBe('John Doe');
+  });
+
+  test('should_extractAllAddresses_when_singlePlainAddress', () => {
+    expect(extractAllAddresses('ok@batbern.ch')).toEqual(['ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_singleAngleBracket', () => {
+    expect(extractAllAddresses('BATbern OK <ok@batbern.ch>')).toEqual(['ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_multipleAddresses', () => {
+    expect(extractAllAddresses('partner@batbern.ch, ok@batbern.ch')).toEqual([
+      'partner@batbern.ch',
+      'ok@batbern.ch',
+    ]);
+  });
+
+  test('should_extractAllAddresses_when_mixedFormats', () => {
+    expect(
+      extractAllAddresses('Partners <partner@batbern.ch>, OK Team <ok@batbern.ch>'),
+    ).toEqual(['partner@batbern.ch', 'ok@batbern.ch']);
+  });
+
+  test('should_extractAllAddresses_when_undefined', () => {
+    expect(extractAllAddresses(undefined)).toEqual([]);
+  });
+
+  test('should_extractAllAddresses_when_emptyString', () => {
+    expect(extractAllAddresses('')).toEqual([]);
   });
 
   test('should_truncateEmail_when_normalLength', () => {
@@ -245,6 +275,39 @@ describe('T7 — Address resolution', () => {
     const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
     const result = await resolveRecipients('random@batbern.ch');
     expect(result).toEqual([]);
+  });
+
+  test('should_resolveMultipleAddresses_when_calledForEach', async () => {
+    mockFetch({
+      'role=PARTNER': {
+        status: 200,
+        body: { data: [{ email: 'partner@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const partnerRecipients = await resolveRecipients('partner@batbern.ch');
+    const okRecipients = await resolveRecipients('ok@batbern.ch');
+    const combined = [...new Set([...partnerRecipients, ...okRecipients])];
+    expect(combined).toEqual(['partner@test.ch', 'org@test.ch']);
+  });
+
+  test('should_deduplicateRecipients_when_overlappingLists', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    // ok@ and info@ both resolve to organizers
+    const okRecipients = await resolveRecipients('ok@batbern.ch');
+    const infoRecipients = await resolveRecipients('info@batbern.ch');
+    const combined = [...new Set([...okRecipients, ...infoRecipients])];
+    expect(combined).toEqual(['org@test.ch']);
   });
 });
 

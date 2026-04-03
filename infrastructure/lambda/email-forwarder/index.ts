@@ -15,7 +15,7 @@ import { isAuthorizedSender } from './sender-auth';
 import { rewriteEmail } from './email-rewriter';
 import {
   parseHeaders,
-  extractToAddress,
+  extractAllAddresses,
   extractSenderEmail,
   extractSenderName,
   truncateEmail,
@@ -39,32 +39,49 @@ export const handler = async (event: S3Event): Promise<void> => {
     const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
     const rawEmail = await obj.Body!.transformToString('utf-8');
 
-    // Parse headers
+    // Parse headers — extract all addresses from To and Cc
     const headers = parseHeaders(rawEmail);
-    const toAddress = extractToAddress(headers.to);
+    const forwardingDomain = process.env.FORWARDING_DOMAIN ?? 'batbern.ch';
+    const toAddresses = extractAllAddresses(headers.to);
+    const ccAddresses = extractAllAddresses(headers.cc);
+    const allAddresses = [...toAddresses, ...ccAddresses].filter(
+      (addr) => addr.endsWith(`@${forwardingDomain}`),
+    );
     const senderEmail = extractSenderEmail(headers.from);
     const senderName = extractSenderName(headers.from);
 
-    if (!toAddress || !senderEmail) {
-      console.warn('Missing To or From header', { key });
+    if (allAddresses.length === 0 || !senderEmail) {
+      console.warn('Missing forwarding addresses or From header', { key });
       continue;
     }
 
     const truncatedSender = truncateEmail(senderEmail);
-    console.log('Processing forwarding', { to: toAddress, sender: truncatedSender });
+    console.log('Processing forwarding', { addresses: allAddresses, sender: truncatedSender });
 
-    // Check sender authorization
-    const authorized = await isAuthorizedSender(toAddress, senderEmail);
-    if (!authorized) {
-      console.warn('Unauthorized sender', { to: toAddress, sender: truncatedSender });
+    // Resolve recipients for each authorized address, then deduplicate
+    const recipientSet = new Set<string>();
+    let anyAuthorized = false;
+    for (const addr of allAddresses) {
+      const authorized = await isAuthorizedSender(addr, senderEmail);
+      if (!authorized) {
+        console.warn('Unauthorized sender for address', { to: addr, sender: truncatedSender });
+        continue;
+      }
+      anyAuthorized = true;
+      const resolved = await resolveRecipients(addr);
+      for (const r of resolved) {
+        recipientSet.add(r);
+      }
+    }
+
+    if (!anyAuthorized) {
       await publishMetric('EmailsRejected');
       return;
     }
 
-    // Resolve recipients
-    const recipients = await resolveRecipients(toAddress);
+    const recipients = [...recipientSet];
     if (recipients.length === 0) {
-      console.warn('No recipients resolved', { to: toAddress });
+      console.warn('No recipients resolved', { addresses: allAddresses });
       await publishMetric('EmailsUnresolved');
       return;
     }
@@ -111,7 +128,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     }
 
     console.log('Forwarded email', {
-      to: toAddress,
+      addresses: allAddresses,
       sender: truncatedSender,
       recipientCount: sentCount,
       failedCount: failCount,
