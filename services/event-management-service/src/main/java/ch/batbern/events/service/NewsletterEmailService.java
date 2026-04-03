@@ -350,10 +350,12 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        emailService.sendHtmlEmailSync(subscriber.getEmail(), subject, mergedHtml, configurationSetName);
+                        emailService.sendHtmlEmailSync(
+                                subscriber.getEmail(), subject, mergedHtml, configurationSetName);
                         sentCount++;
                     } catch (Exception e) {
-                        log.error("Test mode send failed for {}: {}", subscriber.getEmail(), e.getMessage());
+                        log.error("Test mode send failed for {}: {}",
+                                subscriber.getEmail(), e.getMessage());
                         deliveryStatus = "failed";
                         failedCount++;
                     }
