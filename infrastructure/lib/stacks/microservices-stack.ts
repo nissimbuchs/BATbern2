@@ -79,17 +79,17 @@ export class MicroservicesStack extends cdk.Stack {
       {
         name: 'speaker-coordination',
         port: 8080,
-        cpu: 256,
-        memory: 512,
-        desiredCount: isProd ? 2 : 1,
+        cpu: 512,
+        memory: 1024,
+        desiredCount: 1,
         publicLoadBalancer: false,
         healthCheck: '/actuator/health',
       },
       {
         name: 'partner-coordination',
         port: 8080,
-        cpu: 256,
-        memory: 512,
+        cpu: 512,
+        memory: 1024,
         desiredCount: isProd ? 2 : 1,
         publicLoadBalancer: false,
         healthCheck: '/actuator/health',
@@ -106,8 +106,8 @@ export class MicroservicesStack extends cdk.Stack {
       {
         name: 'company-user-management',
         port: 8080,
-        cpu: 256,
-        memory: 512,
+        cpu: 512,
+        memory: 1024,
         desiredCount: isProd ? 2 : 1,
         publicLoadBalancer: false,
         healthCheck: '/actuator/health',
@@ -212,10 +212,10 @@ export class MicroservicesStack extends cdk.Stack {
         unhealthyThresholdCount: 3,
       });
 
-      // Configure auto-scaling
+      // Configure auto-scaling (cap at 2x desired for low-traffic services)
       const scaling = service.service.autoScaleTaskCount({
         minCapacity: serviceConfig.desiredCount,
-        maxCapacity: serviceConfig.desiredCount * 4,
+        maxCapacity: serviceConfig.desiredCount <= 1 ? 2 : serviceConfig.desiredCount * 4,
       });
 
       scaling.scaleOnCpuUtilization(`${serviceConfig.name}-cpu-scaling`, {
