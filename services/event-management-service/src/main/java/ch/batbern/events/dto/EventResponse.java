@@ -43,6 +43,8 @@ public class EventResponse {
     private String themeImageUrl;
     private String themeImageUploadId;
     private String eventType;
+    private String typicalStartTime; // HH:mm resolved from sessions/event type/fallback
+    private String typicalEndTime;   // HH:mm resolved from sessions/event type/fallback
     private String topicCode;
     private String topicSelectionNote;
     private String workflowState;

@@ -115,6 +115,7 @@ public class EventController {
     private final ch.batbern.events.service.SessionService sessionService;
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
+    private final ch.batbern.events.service.EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -244,6 +245,7 @@ public class EventController {
             response = eventMapper.toDto(event);
             enrichWithRegistrationCounts(response, event.getId());
             enrichWithTeaserImages(response);
+            enrichWithEventTimes(response, event);
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
@@ -820,6 +822,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(currentEvent);
         enrichWithRegistrationCounts(response, currentEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, currentEvent);
 
         // Apply resource expansions if requested
         if (include != null && !include.trim().isEmpty()) {
@@ -917,6 +920,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(savedEvent);
         enrichWithRegistrationCounts(response, savedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, savedEvent);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -1067,6 +1071,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(updatedEvent);
         enrichWithRegistrationCounts(response, updatedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, updatedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1170,6 +1175,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(patchedEvent);
         enrichWithRegistrationCounts(response, patchedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, patchedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1336,6 +1342,7 @@ public class EventController {
         EventResponse response = eventMapper.toDto(publishedEvent);
         enrichWithRegistrationCounts(response, publishedEvent.getId());
         enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, publishedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1402,6 +1409,15 @@ public class EventController {
         if (response.getEventCode() != null) {
             response.setTeaserImages(eventTeaserImageService.listByEventCode(response.getEventCode()));
         }
+    }
+
+    /**
+     * Enrich an EventResponse with resolved start/end times.
+     * Uses cascading priority: session times → event type config → fallback 16:00.
+     */
+    private void enrichWithEventTimes(EventResponse response, Event event) {
+        response.setTypicalStartTime(eventTimeResolver.formatStartTime(event));
+        response.setTypicalEndTime(eventTimeResolver.formatEndTime(event));
     }
 
     private void applyPatchUpdates(Event event, PatchEventRequest request) {

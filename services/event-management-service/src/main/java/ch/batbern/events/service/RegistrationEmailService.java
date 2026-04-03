@@ -3,14 +3,9 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.entity.EventTypeConfiguration;
-import ch.batbern.events.repository.EventTypeRepository;
-import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
-import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -50,8 +42,7 @@ public class RegistrationEmailService {
     private final EmailService emailService;
     private final IcsCalendarService icsCalendarService;
     private final EmailTemplateService emailTemplateService;
-    private final EventTypeRepository eventTypeRepository;
-    private final SessionRepository sessionRepository;
+    private final EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -207,78 +198,18 @@ public class RegistrationEmailService {
         }
     }
 
-    /** Workflow states where the agenda (session times) is finalized. */
-    private static final java.util.Set<EventWorkflowState> AGENDA_FINALIZED_STATES = java.util.Set.of(
-            EventWorkflowState.AGENDA_PUBLISHED,
-            EventWorkflowState.EVENT_LIVE,
-            EventWorkflowState.EVENT_COMPLETED,
-            EventWorkflowState.ARCHIVED
-    );
-
-    private record EventTimeRange(ZonedDateTime start, ZonedDateTime end) {}
-
     /**
-     * Resolve event start/end times with cascading priority:
-     * 1. Session times (earliest start / latest end) — only when agenda is published
-     * 2. EventTypeConfiguration (typicalStartTime / typicalEndTime)
-     * 3. Fallback: raw Instant + 4 hours
-     */
-    private EventTimeRange resolveEventTimeRange(Event event) {
-        LocalDate eventDate = event.getDate().atZone(SWISS_ZONE).toLocalDate();
-
-        // Priority 1: Session times when agenda is finalized
-        if (event.getWorkflowState() != null && AGENDA_FINALIZED_STATES.contains(event.getWorkflowState())) {
-            List<Session> sessions = sessionRepository.findByEventIdAndStartTimeIsNotNull(event.getId());
-            if (!sessions.isEmpty()) {
-                Instant earliestStart = sessions.stream()
-                        .map(Session::getStartTime)
-                        .min(Instant::compareTo)
-                        .get();
-                Instant latestEnd = sessions.stream()
-                        .filter(s -> s.getEndTime() != null)
-                        .map(Session::getEndTime)
-                        .max(Instant::compareTo)
-                        .orElse(earliestStart.plusSeconds(4 * 3600));
-                return new EventTimeRange(
-                        earliestStart.atZone(SWISS_ZONE),
-                        latestEnd.atZone(SWISS_ZONE)
-                );
-            }
-        }
-
-        // Priority 2: Event type configuration
-        if (event.getEventType() != null) {
-            Optional<EventTypeConfiguration> config = eventTypeRepository.findByType(event.getEventType());
-            if (config.isPresent()) {
-                LocalTime startTime = config.get().getTypicalStartTime();
-                LocalTime endTime = config.get().getTypicalEndTime();
-                if (startTime != null) {
-                    ZonedDateTime start = eventDate.atTime(startTime).atZone(SWISS_ZONE);
-                    ZonedDateTime end = endTime != null
-                            ? eventDate.atTime(endTime).atZone(SWISS_ZONE)
-                            : start.plusHours(4);
-                    return new EventTimeRange(start, end);
-                }
-            }
-        }
-
-        // Priority 3: Fallback — 16:00 Swiss time (standard BATbern event start)
-        ZonedDateTime start = eventDate.atTime(LocalTime.of(16, 0)).atZone(SWISS_ZONE);
-        return new EventTimeRange(start, start.plusHours(3));
-    }
-
-    /**
-     * Resolve event start time (used for email display and ICS).
+     * Resolve event start time via shared EventTimeResolver.
      */
     private ZonedDateTime resolveEventDateTime(Event event) {
-        return resolveEventTimeRange(event).start();
+        return eventTimeResolver.resolve(event).start();
     }
 
     /**
      * Generate .ics calendar file for the event.
      */
     private byte[] generateCalendarFile(Event event, ZonedDateTime startDateTime) {
-        EventTimeRange range = resolveEventTimeRange(event);
+        EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
 
         String eventDescription = "Berner Architekten Treffen - " + event.getTitle();
 

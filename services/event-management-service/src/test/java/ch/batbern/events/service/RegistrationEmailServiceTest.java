@@ -8,6 +8,7 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.EventTimeResolver;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
@@ -71,6 +72,8 @@ class RegistrationEmailServiceTest {
     @Mock
     private SessionRepository sessionRepository;
 
+    private EventTimeResolver eventTimeResolver;
+
     @InjectMocks
     private RegistrationEmailService registrationEmailService;
 
@@ -88,6 +91,10 @@ class RegistrationEmailServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Create EventTimeResolver with mocked repos and inject into service
+        eventTimeResolver = new EventTimeResolver(eventTypeRepository, sessionRepository);
+        ReflectionTestUtils.setField(registrationEmailService, "eventTimeResolver", eventTimeResolver);
+
         // Set configuration values
         ReflectionTestUtils.setField(registrationEmailService, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(registrationEmailService, "organizerName", "BATbern Team");
