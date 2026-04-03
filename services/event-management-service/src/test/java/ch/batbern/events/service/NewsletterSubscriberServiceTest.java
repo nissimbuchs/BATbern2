@@ -297,6 +297,62 @@ class NewsletterSubscriberServiceTest {
     }
 
     @Nested
+    @DisplayName("unsuppressById (Story 10.29)")
+    class UnsuppressById {
+
+        @Test
+        @DisplayName("should_excludeSuppressedFromActiveCount")
+        void should_excludeSuppressedFromActiveCount() {
+            when(subscriberRepository.countByUnsubscribedAtIsNullAndSuppressedAtIsNull())
+                    .thenReturn(42L);
+
+            long count = newsletterSubscriberService.getActiveCount();
+
+            assertThat(count).isEqualTo(42L);
+            verify(subscriberRepository).countByUnsubscribedAtIsNullAndSuppressedAtIsNull();
+        }
+
+        @Test
+        @DisplayName("should_unsuppressSubscriber_when_organiserRequests")
+        void should_unsuppressSubscriber_when_organiserRequests() {
+            NewsletterSubscriber suppressedSubscriber = NewsletterSubscriber.builder()
+                    .id(UUID.randomUUID())
+                    .email("bounced@example.com")
+                    .firstName("Carol")
+                    .language("de")
+                    .source("explicit")
+                    .unsubscribeToken("token-sup")
+                    .subscribedAt(Instant.now().minusSeconds(86400))
+                    .build();
+            suppressedSubscriber.setSuppressedAt(Instant.now().minusSeconds(3600));
+            suppressedSubscriber.setBounceCount(3);
+            suppressedSubscriber.setBounceType("Permanent");
+
+            when(subscriberRepository.findById(suppressedSubscriber.getId()))
+                    .thenReturn(Optional.of(suppressedSubscriber));
+            when(subscriberRepository.save(any(NewsletterSubscriber.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            NewsletterSubscriber result = newsletterSubscriberService.unsuppressById(suppressedSubscriber.getId());
+
+            assertThat(result.getSuppressedAt()).isNull();
+            assertThat(result.getBounceCount()).isZero();
+            assertThat(result.getBounceType()).isNull();
+            verify(subscriberRepository).save(suppressedSubscriber);
+        }
+
+        @Test
+        @DisplayName("should_throwConflict_when_subscriberNotSuppressed")
+        void should_throwConflict_when_subscriberNotSuppressed() {
+            when(subscriberRepository.findById(activeSubscriber.getId()))
+                    .thenReturn(Optional.of(activeSubscriber));
+
+            assertThatThrownBy(() -> newsletterSubscriberService.unsuppressById(activeSubscriber.getId()))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("toResponse — includes unsubscribedAt (Story 10.28)")
     class ToResponse {
 

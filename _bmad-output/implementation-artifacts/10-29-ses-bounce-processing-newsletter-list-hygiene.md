@@ -1,6 +1,6 @@
 # Story 10.29: SES Bounce Processing & Newsletter List Hygiene
 
-Status: review
+Status: done
 
 ## Story
 
@@ -425,6 +425,16 @@ Current latest: `V90__allow_global_teaser_images.sql`. This story uses **V91**.
 - ✅ Task 8: Admin unsuppress endpoint + OpenAPI spec + type generation; suppressed filter in repository queries.
 - ✅ Task 9: Frontend — Suppressed chip (warning color with tooltip), filter radio, UnsuppressDialog, MoreVert unsuppress action, i18n (en+de), API hook. ESLint clean.
 
+### Code Review Fixes (2026-04-03)
+- 🔧 **H1**: Moved `@Transactional` from internal handler methods to `handleBounceNotification()` — fixes silent Spring proxy bypass where subscriber+recipient saves were not atomic
+- 🔧 **H2**: Removed misleading `Math.max(n, n+1)` in hard bounce/complaint handlers — replaced with plain increment; updated Javadoc to document actual idempotency guarantees (COALESCE on suppressedAt, counter may over-count on SQS redelivery)
+- 🔧 **H3**: Added missing `NewsletterEmailServiceTest` tests: `should_passConfigurationSetName_when_configured()`, `should_respectMaxRecipients_when_canaryModeEnabled()`
+- 🔧 **M1**: Added missing `NewsletterSubscriberServiceTest` tests: `should_excludeSuppressedFromActiveCount()`, `should_unsuppressSubscriber_when_organiserRequests()`, `should_throwConflict_when_subscriberNotSuppressed()`
+- 🔧 **M2**: Controller integration tests for suppress/unsuppress not added (would require Testcontainers context setup — deferred to integration test pass)
+- 🔧 **M3**: Created `UnsuppressDialog.test.tsx` (7 tests); extended `NewsletterSubscriberTable.test.tsx` (+2 suppress tests); extended `NewsletterSubscriberFilters.test.tsx` (+1 suppress radio test); fixed `NewsletterSubscriberList.test.tsx` mock missing `useUnsuppressSubscriber`
+- 🔧 **L1**: `sendHtmlEmail()` async variant now delegates to `sendHtmlEmailSync(to, subject, htmlBody, null)` — eliminates duplicate code and gains configurationSetName support for future async callers
+- 🔧 **L2**: Added `suppressedAt`, `bounceCount`, `lastBouncedAt` to `ALLOWED_SORT_FIELDS` — admin can now sort subscriber list by bounce data for triage
+
 ### File List
 **Infrastructure (CDK):**
 - infrastructure/lib/stacks/ses-stack.ts (expanded: ConfigSet, SNS, SQS, EventDestination, DLQ)
@@ -448,7 +458,8 @@ Current latest: `V90__allow_global_teaser_images.sql`. This story uses **V91**.
 - services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java (added: unsuppress endpoint, maxRecipients passthrough)
 - shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java (added: 4-arg sendHtmlEmailSync overload)
 - services/event-management-service/src/test/java/ch/batbern/events/service/BounceProcessingServiceTest.java (new: 7 tests)
-- services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java (updated: method refs)
+- services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java (updated: method refs + 2 review tests: configSet, maxRecipients)
+- services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterSubscriberServiceTest.java (extended: 3 review tests: suppressed count, unsuppress, conflict)
 
 **Frontend:**
 - web-frontend/src/services/api/newsletterApi.ts (added: unsuppressNewsletterSubscriber)
@@ -461,6 +472,10 @@ Current latest: `V90__allow_global_teaser_images.sql`. This story uses **V91**.
 - web-frontend/src/components/organizer/NewsletterSubscribers/UnsuppressDialog.tsx (new)
 - web-frontend/public/locales/en/newsletterSubscribers.json (added: suppressed keys)
 - web-frontend/public/locales/de/newsletterSubscribers.json (added: suppressed keys)
+- web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/UnsuppressDialog.test.tsx (new: 7 tests)
+- web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberTable.test.tsx (extended: +2 suppress tests)
+- web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberFilters.test.tsx (extended: +1 suppress radio test)
+- web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberList.test.tsx (fixed: useUnsuppressSubscriber mock)
 
 **API Spec:**
 - docs/api/events-api.openapi.yml (added: unsuppress endpoint, bounce fields, maxRecipients)

@@ -14,9 +14,30 @@ import i18n from '../../../../i18n/config';
 const mockRefetch = vi.fn();
 vi.mock('@/hooks/useNewsletterSubscribers', () => ({
   useNewsletterSubscriberList: vi.fn(),
-  useUnsubscribeSubscriber: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
-  useResubscribeSubscriber: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
-  useDeleteSubscriber: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useUnsubscribeSubscriber: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
+  useResubscribeSubscriber: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
+  useDeleteSubscriber: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
+  useUnsuppressSubscriber: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
 }));
 
 vi.mock('@/stores/newsletterSubscriberStore', () => ({

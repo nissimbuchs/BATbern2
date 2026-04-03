@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -427,6 +428,94 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("Zero Trust at SBB");
         assertThat(result).contains("Igor Masen");
         assertThat(result).contains("sbb");
+    }
+
+    // ── Story 10.29: SES Configuration Set & canary send ─────────────────────
+
+    @Test
+    @DisplayName("should_passConfigurationSetName_when_configured")
+    void should_passConfigurationSetName_when_configured() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", "batbern-bounce-tracking");
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "interPageDelayMs", 0L);
+
+        NewsletterSubscriber subscriber = new NewsletterSubscriber();
+        subscriber.setEmail("user@example.com");
+        subscriber.setUnsubscribeToken("tok-config");
+
+        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
+
+        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(Page.empty());
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
+
+        verify(emailService).sendHtmlEmailSync(
+                eq("user@example.com"), any(), any(), eq("batbern-bounce-tracking"));
+    }
+
+    @Test
+    @DisplayName("should_respectMaxRecipients_when_canaryModeEnabled")
+    void should_respectMaxRecipients_when_canaryModeEnabled() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "interPageDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "baseUrl", "https://test.batbern.ch");
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", null);
+
+        // Create 5 subscribers across a single page (more than maxRecipients=2)
+        NewsletterSubscriber sub1 = new NewsletterSubscriber();
+        sub1.setEmail("one@example.com");
+        sub1.setUnsubscribeToken("tok-1");
+        NewsletterSubscriber sub2 = new NewsletterSubscriber();
+        sub2.setEmail("two@example.com");
+        sub2.setUnsubscribeToken("tok-2");
+        NewsletterSubscriber sub3 = new NewsletterSubscriber();
+        sub3.setEmail("three@example.com");
+        sub3.setUnsubscribeToken("tok-3");
+        NewsletterSubscriber sub4 = new NewsletterSubscriber();
+        sub4.setEmail("four@example.com");
+        sub4.setUnsubscribeToken("tok-4");
+        NewsletterSubscriber sub5 = new NewsletterSubscriber();
+        sub5.setEmail("five@example.com");
+        sub5.setUnsubscribeToken("tok-5");
+
+        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(sub1, sub2, sub3, sub4, sub5));
+
+        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
+                .thenReturn(page);
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(
+                sendId, testEvent, false, "de", "newsletter-event", 2);
+
+        // Only 2 emails should have been sent despite 5 subscribers being available
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), any(), any(), any());
     }
 
 }

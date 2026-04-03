@@ -233,7 +233,8 @@ public class NewsletterSubscriberService {
     // ── Story 10.28: Organizer subscriber management ────────────────────────
 
     private static final java.util.Set<String> ALLOWED_SORT_FIELDS =
-            java.util.Set.of("email", "firstName", "subscribedAt", "unsubscribedAt", "source", "language");
+            java.util.Set.of("email", "firstName", "subscribedAt", "unsubscribedAt", "source", "language",
+                    "suppressedAt", "bounceCount", "lastBouncedAt");
 
     /**
      * Find subscribers with filtering, search, sorting, and pagination.

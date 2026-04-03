@@ -75,39 +75,7 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
-        // In test/local environments without SES, capture or log the email
-        if (sesClient == null) {
-            log.warn("SES client not configured - skipping email send (local/test mode)");
-            if (localEmailCapture != null) {
-                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
-            } else {
-                log.info("Would send email to: {}, subject: {}", to, subject);
-            }
-            return;
-        }
-
-        try {
-            log.debug("Sending HTML email to: {}, subject: {}", to, subject);
-
-            SendEmailRequest request = SendEmailRequest.builder()
-                    .source(String.format("%s <%s>", fromName, fromEmail))
-                    .replyToAddresses(replyToEmail)
-                    .destination(Destination.builder().toAddresses(to).build())
-                    .message(software.amazon.awssdk.services.ses.model.Message.builder()
-                            .subject(Content.builder().data(subject).charset("UTF-8").build())
-                            .body(Body.builder()
-                                    .html(Content.builder().data(htmlBody).charset("UTF-8").build())
-                                    .build())
-                            .build())
-                    .build();
-
-            SendEmailResponse response = sesClient.sendEmail(request);
-            log.info("Email sent successfully to: {}, MessageId: {}", to, response.messageId());
-
-        } catch (SesException e) {
-            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
-            throw new EmailSendException("Failed to send email to: " + to, e);
-        }
+        sendHtmlEmailSync(to, subject, htmlBody, null);
     }
 
     /**

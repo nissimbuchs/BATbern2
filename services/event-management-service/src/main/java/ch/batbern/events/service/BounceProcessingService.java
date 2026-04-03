@@ -30,8 +30,9 @@ import java.util.UUID;
  *
  * <p>This bean is only loaded when {@code aws.ses.bounce.enabled=true} (staging/production).
  *
- * <p><strong>Idempotency:</strong> Uses GREATEST/COALESCE semantics — reprocessing the same
- * bounce does not double-count or overwrite an earlier suppression timestamp.
+ * <p><strong>Idempotency:</strong> Uses COALESCE semantics for suppression — reprocessing the same
+ * bounce does not overwrite an earlier suppression timestamp. Bounce count may increment on
+ * SQS redelivery (at-least-once), which is acceptable for a diagnostic counter.
  */
 @Service
 @Slf4j
@@ -55,6 +56,7 @@ public class BounceProcessingService {
     }
 
     @SqsListener("${aws.ses.bounce.queue-url}")
+    @Transactional
     public void handleBounceNotification(String messageBody) {
         try {
             // Parse SNS envelope
@@ -105,7 +107,6 @@ public class BounceProcessingService {
         }
     }
 
-    @Transactional
     void handleHardBounce(String email, UUID sendId) {
         log.info("Hard bounce for {}", email);
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
@@ -118,7 +119,7 @@ public class BounceProcessingService {
         Instant now = Instant.now();
 
         sub.setBounceType("hard");
-        sub.setBounceCount(Math.max(sub.getBounceCount(), sub.getBounceCount() + 1));
+        sub.setBounceCount(sub.getBounceCount() + 1);
         sub.setLastBouncedAt(now);
         // Suppress immediately — COALESCE: don't overwrite earlier suppression
         if (sub.getSuppressedAt() == null) {
@@ -129,7 +130,6 @@ public class BounceProcessingService {
         updateRecipientBounce(email, sendId, "hard", now);
     }
 
-    @Transactional
     void handleSoftBounce(String email, UUID sendId) {
         log.info("Soft bounce for {}", email);
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
@@ -170,7 +170,6 @@ public class BounceProcessingService {
         }
     }
 
-    @Transactional
     void handleComplaintForEmail(String email, UUID sendId) {
         log.info("Complaint for {}", email);
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
@@ -183,7 +182,7 @@ public class BounceProcessingService {
         Instant now = Instant.now();
 
         sub.setBounceType("complaint");
-        sub.setBounceCount(Math.max(sub.getBounceCount(), sub.getBounceCount() + 1));
+        sub.setBounceCount(sub.getBounceCount() + 1);
         sub.setLastBouncedAt(now);
         // Suppress immediately — COALESCE: don't overwrite earlier suppression
         if (sub.getSuppressedAt() == null) {
