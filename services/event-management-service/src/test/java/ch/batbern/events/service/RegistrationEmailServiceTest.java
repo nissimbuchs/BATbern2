@@ -2,8 +2,13 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.entity.EventTypeConfiguration;
+import ch.batbern.events.repository.EventTypeRepository;
+import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,9 +25,12 @@ import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,6 +65,12 @@ class RegistrationEmailServiceTest {
     @Mock
     private EmailTemplateService emailTemplateService;
 
+    @Mock
+    private EventTypeRepository eventTypeRepository;
+
+    @Mock
+    private SessionRepository sessionRepository;
+
     @InjectMocks
     private RegistrationEmailService registrationEmailService;
 
@@ -81,6 +95,33 @@ class RegistrationEmailServiceTest {
 
         // Default: no DB template — use classpath fallback
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
+
+        // Default event type configurations
+        when(eventTypeRepository.findByType(EventType.AFTERNOON)).thenReturn(Optional.of(
+                EventTypeConfiguration.builder()
+                        .type(EventType.AFTERNOON)
+                        .typicalStartTime(LocalTime.of(13, 0))
+                        .typicalEndTime(LocalTime.of(19, 0))
+                        .minSlots(6).maxSlots(8).slotDuration(45).defaultCapacity(200)
+                        .build()));
+        when(eventTypeRepository.findByType(EventType.EVENING)).thenReturn(Optional.of(
+                EventTypeConfiguration.builder()
+                        .type(EventType.EVENING)
+                        .typicalStartTime(LocalTime.of(16, 0))
+                        .typicalEndTime(LocalTime.of(19, 0))
+                        .minSlots(3).maxSlots(4).slotDuration(45).defaultCapacity(200)
+                        .build()));
+        when(eventTypeRepository.findByType(EventType.FULL_DAY)).thenReturn(Optional.of(
+                EventTypeConfiguration.builder()
+                        .type(EventType.FULL_DAY)
+                        .typicalStartTime(LocalTime.of(9, 0))
+                        .typicalEndTime(LocalTime.of(16, 0))
+                        .minSlots(6).maxSlots(8).slotDuration(45).defaultCapacity(300)
+                        .build()));
+
+        // Default: no scheduled sessions
+        when(sessionRepository.findByEventIdAndStartTimeIsNotNull(any(UUID.class)))
+                .thenReturn(List.of());
     }
 
     @Test
@@ -259,6 +300,194 @@ class RegistrationEmailServiceTest {
                 eq("events@batbern.ch"),
                 eq("BATbern Team")
         );
+    }
+
+    @Test
+    @DisplayName("should_useTypicalStartTime_when_afternoonEvent")
+    void should_useTypicalStartTime_when_afternoonEvent() throws InterruptedException {
+        // Given — event date stored as midnight UTC (no time component)
+        // This is the exact bug scenario: date-only input → midnight UTC
+        Instant midnightUtc = Instant.parse("2026-06-19T00:00:00Z");
+
+        Registration registration = Registration.builder()
+                .registrationCode("BATbern142-reg-time123")
+                .eventId(UUID.randomUUID())
+                .eventCode("BATbern142")
+                .attendeeUsername("david.b")
+                .build();
+
+        UserResponse userProfile = new UserResponse()
+                .id("david.b")
+                .firstName("David")
+                .lastName("Baumgartner")
+                .email("david@example.com")
+                .companyId("test-company");
+
+        Event event = Event.builder()
+                .id(registration.getEventId())
+                .eventCode("BATbern142")
+                .title("Erste Erfahrungen mit KI-Agenten im Business")
+                .date(midnightUtc)
+                .venueName("Zentrum Paul Klee")
+                .venueAddress("Monument im Fruchtland 3, 3006 Bern")
+                .eventType(EventType.AFTERNOON)
+                .build();
+
+        // Capture the ZonedDateTime passed to ICS generation
+        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        byte[] mockIcsFile = "mock-ics".getBytes();
+        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
+                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+                .thenReturn(mockIcsFile);
+
+        when(emailService.replaceVariables(anyString(), any(Map.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        registrationEmailService.sendRegistrationConfirmation(
+                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+        Thread.sleep(100);
+
+        // Then — start time should be 13:00 Swiss, NOT 02:00
+        ZonedDateTime capturedStart = startCaptor.getValue();
+        assertThat(capturedStart.getHour()).isEqualTo(13);
+        assertThat(capturedStart.getMinute()).isEqualTo(0);
+        assertThat(capturedStart.getZone()).isEqualTo(ZoneId.of("Europe/Zurich"));
+
+        // End time should be 19:00 Swiss (from config), NOT start + 4h
+        ZonedDateTime capturedEnd = endCaptor.getValue();
+        assertThat(capturedEnd.getHour()).isEqualTo(19);
+        assertThat(capturedEnd.getMinute()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("should_useSessionTimes_when_agendaPublished")
+    void should_useSessionTimes_when_agendaPublished() throws InterruptedException {
+        // Given — event with AGENDA_PUBLISHED state and scheduled sessions
+        Instant midnightUtc = Instant.parse("2026-06-19T00:00:00Z");
+        UUID eventId = UUID.randomUUID();
+
+        Registration registration = Registration.builder()
+                .registrationCode("BATbern142-reg-sess123")
+                .eventId(eventId)
+                .eventCode("BATbern142")
+                .attendeeUsername("session.user")
+                .build();
+
+        UserResponse userProfile = new UserResponse()
+                .id("session.user")
+                .firstName("Session")
+                .lastName("User")
+                .email("session@example.com")
+                .companyId("test-company");
+
+        Event event = Event.builder()
+                .id(eventId)
+                .eventCode("BATbern142")
+                .title("Session Timing Test")
+                .date(midnightUtc)
+                .venueName("Test Venue")
+                .venueAddress("Test Address")
+                .eventType(EventType.AFTERNOON)
+                .workflowState(EventWorkflowState.AGENDA_PUBLISHED)
+                .build();
+
+        // Sessions: 13:30–14:15 and 14:30–15:15 Swiss time (CEST = UTC+2)
+        Session session1 = Session.builder()
+                .startTime(Instant.parse("2026-06-19T11:30:00Z"))  // 13:30 CEST
+                .endTime(Instant.parse("2026-06-19T12:15:00Z"))    // 14:15 CEST
+                .build();
+        Session session2 = Session.builder()
+                .startTime(Instant.parse("2026-06-19T12:30:00Z"))  // 14:30 CEST
+                .endTime(Instant.parse("2026-06-19T13:15:00Z"))    // 15:15 CEST
+                .build();
+        when(sessionRepository.findByEventIdAndStartTimeIsNotNull(eventId))
+                .thenReturn(List.of(session1, session2));
+
+        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        byte[] mockIcsFile = "mock-ics".getBytes();
+        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
+                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+                .thenReturn(mockIcsFile);
+
+        when(emailService.replaceVariables(anyString(), any(Map.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        registrationEmailService.sendRegistrationConfirmation(
+                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+        Thread.sleep(100);
+
+        // Then — should use earliest session start (13:30) and latest session end (15:15)
+        ZonedDateTime capturedStart = startCaptor.getValue();
+        assertThat(capturedStart.getHour()).isEqualTo(13);
+        assertThat(capturedStart.getMinute()).isEqualTo(30);
+
+        ZonedDateTime capturedEnd = endCaptor.getValue();
+        assertThat(capturedEnd.getHour()).isEqualTo(15);
+        assertThat(capturedEnd.getMinute()).isEqualTo(15);
+    }
+
+    @Test
+    @DisplayName("should_useEventTypeTimes_when_noAgendaPublished")
+    void should_useEventTypeTimes_when_noAgendaPublished() throws InterruptedException {
+        // Given — event in SLOT_ASSIGNMENT state (sessions exist but agenda not published)
+        Instant midnightUtc = Instant.parse("2026-06-19T00:00:00Z");
+        UUID eventId = UUID.randomUUID();
+
+        Registration registration = Registration.builder()
+                .registrationCode("BATbern142-reg-pre123")
+                .eventId(eventId)
+                .eventCode("BATbern142")
+                .attendeeUsername("pre.user")
+                .build();
+
+        UserResponse userProfile = new UserResponse()
+                .id("pre.user")
+                .firstName("Pre")
+                .lastName("User")
+                .email("pre@example.com")
+                .companyId("test-company");
+
+        Event event = Event.builder()
+                .id(eventId)
+                .eventCode("BATbern142")
+                .title("Pre-Agenda Test")
+                .date(midnightUtc)
+                .venueName("Test Venue")
+                .venueAddress("Test Address")
+                .eventType(EventType.AFTERNOON)
+                .workflowState(EventWorkflowState.SLOT_ASSIGNMENT)
+                .build();
+
+        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        byte[] mockIcsFile = "mock-ics".getBytes();
+        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
+                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+                .thenReturn(mockIcsFile);
+
+        when(emailService.replaceVariables(anyString(), any(Map.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        registrationEmailService.sendRegistrationConfirmation(
+                registration, userProfile, event, "tok", "ctok", "http://localhost/dereg", Locale.GERMAN);
+        Thread.sleep(100);
+
+        // Then — should use event type times (AFTERNOON: 13:00–19:00), NOT session times
+        ZonedDateTime capturedStart = startCaptor.getValue();
+        assertThat(capturedStart.getHour()).isEqualTo(13);
+        assertThat(capturedStart.getMinute()).isEqualTo(0);
+
+        ZonedDateTime capturedEnd = endCaptor.getValue();
+        assertThat(capturedEnd.getHour()).isEqualTo(19);
+        assertThat(capturedEnd.getMinute()).isEqualTo(0);
+
+        // Verify session repository was NOT called (wrong workflow state)
+        verify(sessionRepository, times(0)).findByEventIdAndStartTimeIsNotNull(any());
     }
 
     @Test
