@@ -30,7 +30,7 @@
   },
   "infrastructure": {
     "aws-cdk": "2.x",
-    "typescript": "5.x",
+    "typescript": "6.x",
     "jest": "30.x",
     "node": "20"
   },
