@@ -72,6 +72,12 @@ export interface AddSpeakerToPoolRequest {
   notes?: string;
 }
 
+export interface PatchSpeakerPoolRequest {
+  assignedOrganizerId?: string;
+  notes?: string;
+  email?: string;
+}
+
 export type SpeakerPoolResponse = SpeakerPoolEntry;
 
 // ============================================================================

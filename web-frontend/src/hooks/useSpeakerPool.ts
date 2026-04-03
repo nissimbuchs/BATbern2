@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerPoolService } from '@/services/speakerPoolService';
 import type {
   AddSpeakerToPoolRequest,
+  PatchSpeakerPoolRequest,
   SendInvitationRequest,
   SendReminderRequest,
 } from '@/types/speakerPool.types';
@@ -81,6 +82,30 @@ export function useAddSpeakerToPool() {
  * const deleteMutation = useDeleteSpeakerFromPool();
  * deleteMutation.mutate({ eventCode: 'BATbern56', speakerId: 'uuid-here' });
  */
+/**
+ * Hook to patch a speaker pool entry (e.g. reassign organizer).
+ */
+export function usePatchSpeakerPool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      eventCode,
+      speakerId,
+      request,
+    }: {
+      eventCode: string;
+      speakerId: string;
+      request: PatchSpeakerPoolRequest;
+    }) => speakerPoolService.patchSpeakerPool(eventCode, speakerId, request),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+    },
+  });
+}
+
 export function useDeleteSpeakerFromPool() {
   const queryClient = useQueryClient();
 
