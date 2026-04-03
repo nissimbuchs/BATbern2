@@ -1995,4 +1995,130 @@ web-frontend/src/services/adminSettingsService.ts                               
 
 ---
 
+### Story 10.29: SES Bounce Processing & Newsletter List Hygiene
+
+**Story file**: `_bmad-output/implementation-artifacts/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
+**Status**: draft
+**Prerequisites**: Story 10.7 (newsletter sending), Story 10.28 (subscriber management page)
+
+**User Story:**
+As an **organizer**, I want emails that permanently bounce or generate spam complaints to be automatically suppressed from future newsletter sends, so that BATbern's SES sender reputation stays healthy and the platform's email delivery is not disrupted.
+
+**Context:**
+All subscribers from the old Mailman 3 mailing list (`lists.hostpoint.ch`) have been imported. Many of these emails likely no longer exist — email lists degrade ~2-3%/year. AWS SES flags accounts at 5% hard bounce rate and can suspend sending at 10%. Since the SES account handles ALL platform email (registrations, partner invitations, speaker coordination), a suspension would break the entire platform.
+
+**Scope:**
+
+- **SES Account-Level Suppression List** — enable via AWS CLI (zero code, immediate safety net)
+- **CDK Infrastructure** — SES Configuration Set (`batbern-newsletter`), SNS Topic for BOUNCE + COMPLAINT events, SQS Queue for reliable processing, event destination routing
+- **Database Migration** (V91) — add `bounce_type`, `bounce_count`, `last_bounced_at`, `suppressed_at` to `newsletter_subscribers`; add `bounce_type`, `bounced_at` to `newsletter_recipients`
+- **EmailService** — optional `configurationSetName` on `SendEmailRequest`, controlled by Spring property
+- **BounceProcessingService** — new `@SqsListener` that processes SNS-wrapped SES bounce/complaint notifications; hard bounce → immediate suppression; soft bounce → increment count, suppress after 3; complaint → immediate suppression
+- **Exclude suppressed from sends** — modify `findByUnsubscribedAtIsNull` queries to also filter `suppressed_at IS NULL`
+- **Batched canary send mode** — optional `maxRecipients` parameter + configurable inter-page delay for safe first sends to imported lists
+- **Admin visibility** — expose bounce status (bounceType, bounceCount, suppressedAt) in subscriber list; add `?status=suppressed` filter; add unsuppress action
+- **Monitoring** — CloudWatch alarms on SES Configuration Set metrics: bounce rate >3% warning, >5% critical; complaint rate >0.05% critical
+
+**Key files (estimated):**
+```
+infrastructure/lib/stacks/ses-stack.ts                                         — SES Config Set, SNS, SQS
+infrastructure/lib/stacks/monitoring-stack.ts                                  — bounce rate alarms
+shared-kernel/.../service/EmailService.java                                    — configurationSetName support
+services/event-management-service/.../domain/NewsletterSubscriber.java         — bounce fields
+services/event-management-service/.../repository/NewsletterSubscriberRepository.java — suppress filter
+services/event-management-service/.../repository/NewsletterRecipientRepository.java  — bounce update
+services/event-management-service/.../service/NewsletterEmailService.java      — exclude suppressed, canary mode
+services/event-management-service/.../service/BounceProcessingService.java     — NEW: SQS bounce listener
+services/event-management-service/.../controller/NewsletterController.java     — expose bounce status in API
+services/event-management-service/src/main/resources/db/migration/V91__*.sql   — NEW: bounce columns
+web-frontend/src/components/organizer/NewsletterSubscribers/                   — suppressed badge, filter
+```
+
+**Definition of Done (Story 10.29):**
+- [ ] SES Account-Level Suppression List enabled (BOUNCE + COMPLAINT)
+- [ ] SES Configuration Set `batbern-newsletter` created via CDK with SNS + SQS event pipeline
+- [ ] Newsletter sends use configuration set (via `configurationSetName` on `SendEmailRequest`)
+- [ ] Hard bounce → subscriber `suppressed_at` set, `bounce_type = 'hard'`
+- [ ] Soft bounce → `bounce_count` incremented; suppressed after 3 soft bounces
+- [ ] Complaint → subscriber immediately suppressed (`bounce_type = 'complaint'`)
+- [ ] Suppressed subscribers excluded from `findByUnsubscribedAtIsNull` queries (no newsletter delivery)
+- [ ] Canary send mode: `maxRecipients` parameter limits first send; configurable inter-page delay
+- [ ] Admin subscriber list shows bounce status badge, filterable by `?status=suppressed`
+- [ ] Organizer can unsuppress a subscriber via admin action
+- [ ] CloudWatch alarm fires on bounce rate >5% or complaint rate >0.05%
+- [ ] Integration tests: BounceProcessingService processes hard/soft/complaint notifications correctly
+- [ ] CDK unit tests pass for ses-stack changes
+- [ ] All existing newsletter tests still pass (no regressions)
+
+---
+
+### Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
+
+**Story file**: `_bmad-output/implementation-artifacts/10-30-speaker-drawer-redesign.md`
+**Status**: ready-for-dev
+
+**User Story:**
+As an **organizer**, I want the speaker detail drawer to be organized into tabs (Overview, Details, Activity) with the ability to edit the assigned organizer inline, so that I can efficiently manage speaker outreach without excessive scrolling, and the drawer works properly on mobile devices.
+
+**Scope:**
+
+**Backend — PATCH endpoint (Phase 1, already committed):**
+- `PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}` — partial update for `assignedOrganizerId`, `notes`, `email`
+- `PatchSpeakerPoolRequest` DTO, `SpeakerPoolService.patchEntry()`, controller endpoint
+- Frontend service (`patchSpeakerPool`), type, `usePatchSpeakerPool` hook (Phase 2, already committed)
+
+**Frontend — Unified Tabbed Drawer (Phase 3):**
+- Replace 823-line `SpeakerOutreachDetailsDrawer` monolith with 7 decomposed components in `web-frontend/src/components/organizer/SpeakerDrawer/`
+- Three tabs: **Overview** (organizer assignment, action buttons), **Details** (response/decline/content info), **Activity** (contact history + mark-contacted form)
+- Default tab selection by speaker workflow state
+- Content submission and quality review rendered as in-drawer sub-views (eliminates "drawer spawns drawer" pattern)
+- Responsive: 520px desktop, full-width mobile, scrollable tabs, sticky action footer
+
+**Wiring & Cleanup (Phase 4–5):**
+- `EventSpeakersTab.tsx` simplified from 3 drawers + 6 state vars to 1 drawer + 2 state vars
+- Delete old `SpeakerOutreachDetailsDrawer.tsx`, `ContentSubmissionDrawer.tsx`, `QualityReviewDrawer.tsx`
+- i18n keys for tab labels
+- Preserve `data-testid` attributes for Playwright compatibility
+
+**Acceptance Criteria:**
+
+1. **AC1**: Organizer can click a speaker card and see a tabbed drawer with Overview, Details, and Activity tabs
+2. **AC2**: Default tab matches speaker state (IDENTIFIED/CONTACTED → Activity, DECLINED/CONTENT_SUBMITTED → Details, others → Overview)
+3. **AC3**: Organizer can edit the assigned organizer via inline autocomplete on the Overview tab, saved via PATCH endpoint
+4. **AC4**: "Submit Content" and "Review Content" render as in-drawer sub-views with back navigation (no separate drawer)
+5. **AC5**: Contact history and mark-contacted form are in the Activity tab with full-height scrolling (no nested scroll)
+6. **AC6**: Drawer is fully functional on mobile (full-width, scrollable tabs, sticky action footer)
+7. **AC7**: All existing `data-testid` attributes preserved for Playwright E2E tests
+8. **AC8**: Frontend builds with zero TypeScript errors; existing tests pass
+
+**Source tree (changed/new):**
+```
+web-frontend/src/components/organizer/SpeakerDrawer/           — NEW directory
+  SpeakerDetailDrawer.tsx                                       — Container with tabs + sub-view state
+  SpeakerDrawerHeader.tsx                                       — Header: name, company, status, close
+  OverviewTabPanel.tsx                                          — Organizer field, action buttons, quick info
+  DetailsTabPanel.tsx                                           — Response/decline/tentative/content sections
+  ActivityTabPanel.tsx                                          — Mark-contacted form + contact history
+  AssignedOrganizerField.tsx                                    — Editable organizer autocomplete + PATCH
+  index.ts                                                      — Barrel export
+web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx — Simplified orchestrator
+web-frontend/src/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/ContentSubmissionDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — DELETED
+```
+
+**Definition of Done (Story 10.30):**
+- [ ] Tabbed drawer renders with 3 tabs (Overview, Details, Activity)
+- [ ] Default tab selection logic works per speaker workflow state
+- [ ] Assigned organizer editable via autocomplete, persisted via PATCH
+- [ ] Content submission and quality review render in-drawer (no second drawer)
+- [ ] Contact history scrolls within Activity tab without nested scrolling
+- [ ] Mobile: full-width drawer, scrollable tabs, sticky action footer
+- [ ] All existing `data-testid` attributes preserved
+- [ ] `npm run build` passes with zero errors
+- [ ] Old drawer files deleted (SpeakerOutreachDetailsDrawer, ContentSubmissionDrawer, QualityReviewDrawer)
+- [ ] i18n keys added for tab labels
+
+---
+
 **END OF EPIC 10**
