@@ -68,6 +68,11 @@ aws:
     queue-url: ${AWS_INBOUND_EMAIL_QUEUE_URL:}
     bucket-name: ${AWS_INBOUND_EMAIL_BUCKET_NAME:}
     enabled: ${AWS_INBOUND_EMAIL_ENABLED:false}
+  ses:
+    bounce:
+      enabled: ${AWS_BOUNCE_ENABLED:false}
+      queue-url: ${AWS_BOUNCE_QUEUE_URL:}
+      soft-threshold: ${SES_BOUNCE_SOFT_THRESHOLD:3}
 
 # User Service Configuration (API-based user data access)
 # Uses ECS Service Connect DNS for service-to-service communication in AWS
@@ -84,6 +89,11 @@ app:
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
     reply-to: ${EMAIL_REPLY_TO:replies@batbern.ch}
+
+# Story 10.29: Newsletter send tuning (canary mode)
+newsletter:
+  send:
+    inter-page-delay-ms: ${NEWSLETTER_INTER_PAGE_DELAY_MS:0}
 
 # OpenAI Configuration (Story 10.4: Topic Similarity + Trending Topics)
 openai:
@@ -115,6 +125,8 @@ workflow:
 batbern:
   ai:
     enabled: ${AI_ENABLED:false}
+  ses:
+    configuration-set-name: ${SES_CONFIGURATION_SET_NAME:}
   reminders:
     enabled: true
     cron: "0 0 8 * * *"  # Daily at 8 AM (before 9 AM registration reminder)

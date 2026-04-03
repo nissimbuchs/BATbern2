@@ -15,7 +15,8 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
-      "unsubscribed": "Unsubscribed"
+      "unsubscribed": "Unsubscribed",
+      "suppressed": "Suppressed"
     },
     "clearAll": "Clear Filters"
   },
@@ -34,12 +35,14 @@
   },
   "status": {
     "active": "Active",
-    "unsubscribed": "Unsubscribed"
+    "unsubscribed": "Unsubscribed",
+    "suppressed": "Suppressed"
   },
   "actions": {
     "openMenu": "Open actions",
     "unsubscribe": "Unsubscribe",
     "resubscribe": "Re-subscribe",
+    "unsuppress": "Unsuppress",
     "delete": "Delete"
   },
   "pagination": {
@@ -57,11 +60,17 @@
     "delete": {
       "title": "Delete subscriber",
       "message": "Permanently delete {{email}}? This cannot be undone."
+    },
+    "unsuppress": {
+      "title": "Unsuppress subscriber",
+      "message": "Unsuppress {{email}}? Their bounce count will be reset and they will receive newsletters again.",
+      "detail": "Bounce type: {{bounceType}}, count: {{bounceCount}}"
     }
   },
   "toast": {
     "unsubscribeSuccess": "{{email}} has been unsubscribed.",
     "resubscribeSuccess": "{{email}} has been re-subscribed.",
-    "deleteSuccess": "{{email}} has been deleted."
+    "deleteSuccess": "{{email}} has been deleted.",
+    "unsuppressSuccess": "{{email}} has been unsuppressed."
   }
 }

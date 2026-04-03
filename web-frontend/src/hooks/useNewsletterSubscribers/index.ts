@@ -3,4 +3,5 @@ export {
   useUnsubscribeSubscriber,
   useResubscribeSubscriber,
   useDeleteSubscriber,
+  useUnsuppressSubscriber,
 } from './useNewsletterSubscriberMutations';

@@ -2024,6 +2024,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/newsletter/subscribers/{id}/unsuppress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unsuppress a subscriber by ID (ORGANIZER) — Story 10.29 */
+    post: operations['unsuppressSubscriberById'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/newsletter/subscribers/{id}': {
     parameters: {
       query?: never;
@@ -2756,6 +2773,8 @@ export interface components {
       locale: 'de' | 'en';
       /** @description Optional template key override. If omitted, uses default 'newsletter-event'. Must be a NEWSLETTER category template key present in DB. */
       templateKey?: string | null;
+      /** @description Story 10.29 AC7: Maximum number of recipients for canary send mode. If omitted, sends to all active subscribers. */
+      maxRecipients?: number | null;
     };
     NewsletterSendResponse: {
       /** Format: uuid */
@@ -2809,6 +2828,17 @@ export interface components {
       subscribedAt: string;
       /** Format: date-time */
       unsubscribedAt?: string | null;
+      /** @description Bounce type: 'hard', 'soft', 'complaint', or null */
+      bounceType?: string | null;
+      /** @description Number of bounces recorded */
+      bounceCount?: number | null;
+      /** Format: date-time */
+      lastBouncedAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Non-null means subscriber is excluded from sends
+       */
+      suppressedAt?: string | null;
     };
     /** @description All-time KPI totals and full event timeline (not filtered by time range) */
     AnalyticsOverviewResponse: {
@@ -8529,6 +8559,48 @@ export interface operations {
         };
       };
       /** @description Subscriber already active */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  unsuppressSubscriberById: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscriber unsuppressed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubscriberResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Subscriber not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Subscriber is not suppressed */
       409: {
         headers: {
           [name: string]: unknown;

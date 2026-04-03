@@ -92,6 +92,10 @@ public class NewsletterEmailService {
     @Value("${newsletter.send.rate-delay-ms:70}")
     private long sendRateDelayMs;
 
+    /** Story 10.29 AC7: Inter-page delay for canary send pacing. 0 = disabled. */
+    @Value("${newsletter.send.inter-page-delay-ms:0}")
+    private long interPageDelayMs;
+
     private static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of("moderation", "break", "lunch");
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
@@ -120,6 +124,10 @@ public class NewsletterEmailService {
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
+
+    /** Story 10.29 AC4: SES Configuration Set name for bounce/complaint tracking. Null = disabled. */
+    @Value("${batbern.ses.configuration-set-name:#{null}}")
+    private String configurationSetName;
 
     /**
      * Self-reference via {@code @Lazy} so that calls to {@code @Async} methods go through
@@ -202,6 +210,16 @@ public class NewsletterEmailService {
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername,
                                                   @Nullable String templateKey) {
+        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, null);
+    }
+
+    /**
+     * Story 10.29 AC7: Overload with maxRecipients for canary send mode.
+     */
+    public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
+                                                  String locale, String sentByUsername,
+                                                  @Nullable String templateKey,
+                                                  @Nullable Integer maxRecipients) {
         String effectiveKey = resolveTemplateKey(templateKey);
 
         // Duplicate-send prevention: reject if a send is already in progress for this event.
@@ -213,17 +231,19 @@ public class NewsletterEmailService {
                 });
 
         long totalCount = subscriberService.getActiveCount();
+        int effectiveCount = (maxRecipients != null && maxRecipients > 0)
+                ? Math.min(maxRecipients, (int) totalCount) : (int) totalCount;
 
         // Persist PENDING audit record first (committed immediately in own transaction).
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
-                (int) totalCount, effectiveKey);
+                effectiveCount, effectiveKey);
 
         // Launch background send job — returns immediately.
         // Must call via `self` proxy so @Async is honoured (direct this.xxx() bypasses the proxy).
-        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey);
+        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey, maxRecipients);
 
-        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}",
-                saved.getId(), event.getEventCode(), totalCount);
+        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}, maxRecipients={}",
+                saved.getId(), event.getEventCode(), totalCount, maxRecipients);
 
         return toResponse(saved);
     }
@@ -239,6 +259,16 @@ public class NewsletterEmailService {
     @Async
     public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
                                             String locale, String effectiveKey) {
+        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, null);
+    }
+
+    /**
+     * Story 10.29 AC7: Background send with optional maxRecipients for canary mode.
+     */
+    @Async
+    public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
+                                            String locale, String effectiveKey,
+                                            @Nullable Integer maxRecipients) {
         markInProgress(sendId);
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
@@ -246,16 +276,23 @@ public class NewsletterEmailService {
 
         int sentCount = 0;
         int failedCount = 0;
+        boolean reachedLimit = false;
 
         try {
             int pageNumber = 0;
             Page<NewsletterSubscriber> page;
 
             do {
-                page = subscriberRepository.findByUnsubscribedAtIsNull(
+                page = subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(
                         PageRequest.of(pageNumber, SEND_PAGE_SIZE));
 
                 for (NewsletterSubscriber subscriber : page.getContent()) {
+                    // Story 10.29 AC7: Early termination for canary send mode
+                    if (maxRecipients != null && sentCount + failedCount >= maxRecipients) {
+                        reachedLimit = true;
+                        break;
+                    }
+
                     String deliveryStatus = "sent";
                     try {
                         String unsubLink = baseUrl + "/unsubscribe?token="
@@ -266,7 +303,8 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        emailService.sendHtmlEmailSync(subscriber.getEmail(), subject, mergedHtml);
+                        emailService.sendHtmlEmailSync(
+                                subscriber.getEmail(), subject, mergedHtml, configurationSetName);
                         sentCount++;
                     } catch (Exception e) {
                         log.error("Newsletter send failed for {}: {}", subscriber.getEmail(), e.getMessage());
@@ -281,13 +319,18 @@ public class NewsletterEmailService {
                 updateSendProgress(sendId, sentCount, failedCount);
                 pageNumber++;
 
-            } while (page.hasNext());
+                // Story 10.29 AC7: Inter-page delay for canary mode pacing
+                if (interPageDelayMs > 0 && page.hasNext() && !reachedLimit) {
+                    sleepQuietly(interPageDelayMs);
+                }
+
+            } while (page.hasNext() && !reachedLimit);
 
             String finalStatus = computeFinalStatus(sentCount, failedCount);
             markCompleted(sendId, sentCount, failedCount, finalStatus);
 
-            log.info("Newsletter send completed: sendId={}, sent={}, failed={}, status={}",
-                    sendId, sentCount, failedCount, finalStatus);
+            log.info("Newsletter send completed: sendId={}, sent={}, failed={}, status={}, maxRecipients={}",
+                    sendId, sentCount, failedCount, finalStatus, maxRecipients);
 
         } catch (Exception e) {
             log.error("Newsletter send job aborted unexpectedly: sendId={}", sendId, e);

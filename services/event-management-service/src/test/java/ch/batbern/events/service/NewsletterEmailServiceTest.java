@@ -357,7 +357,7 @@ class NewsletterEmailServiceTest {
     }
 
     @Test
-    @DisplayName("executeNewsletterSendAsync: uses paginated query — not findByUnsubscribedAtIsNull()")
+    @DisplayName("executeNewsletterSendAsync: uses paginated query — excludes suppressed subscribers")
     void executeNewsletterSendAsync_usesPagedQuery() {
         testEvent.setId(UUID.randomUUID());
         UUID sendId = UUID.randomUUID();
@@ -372,7 +372,7 @@ class NewsletterEmailServiceTest {
         Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
 
         when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.findByUnsubscribedAtIsNull(any(Pageable.class)))
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
                 .thenReturn(page)
                 .thenReturn(Page.empty()); // second call returns empty to stop loop
         when(emailTemplateService.findByKeyAndLocale(any(), any()))
@@ -385,8 +385,8 @@ class NewsletterEmailServiceTest {
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
 
         // Must use paginated query, not the non-paginated one
-        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNull(any(Pageable.class));
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any());
+        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any(), any());
     }
 
     @Test

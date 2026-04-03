@@ -71,6 +71,22 @@ public class NewsletterSubscriber {
     @Column(name = "unsubscribed_at")
     private Instant unsubscribedAt;
 
+    // Story 10.29: Bounce tracking fields (V91 migration)
+    /** Bounce type: 'hard', 'soft', 'complaint', or null if never bounced. */
+    @Column(name = "bounce_type", length = 20)
+    private String bounceType;
+
+    @Column(name = "bounce_count", nullable = false)
+    @Builder.Default
+    private int bounceCount = 0;
+
+    @Column(name = "last_bounced_at")
+    private Instant lastBouncedAt;
+
+    /** Non-null = excluded from sends. Set on hard bounce, complaint, or soft-bounce threshold. */
+    @Column(name = "suppressed_at")
+    private Instant suppressedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

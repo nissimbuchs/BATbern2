@@ -35,6 +35,8 @@ export interface EventManagementStackProps extends cdk.StackProps {
   inboundEmailReplyAddress?: string;
   /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /** Story 10.29: SQS queue URL for bounce/complaint processing. */
+  bounceQueueUrl?: string;
 }
 
 /**
@@ -112,6 +114,11 @@ export class EventManagementStack extends cdk.Stack {
           }),
           ...(props.inboundEmailBucketName && {
             AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
+          }),
+          // Story 10.29: Bounce/complaint processing via SQS
+          ...(props.bounceQueueUrl && {
+            AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
+            AWS_BOUNCE_ENABLED: 'true',
           }),
         },
         additionalSecrets: {

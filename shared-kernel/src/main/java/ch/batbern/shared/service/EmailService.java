@@ -122,6 +122,15 @@ public class EmailService {
      * @param htmlBody HTML content
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody) {
+        sendHtmlEmailSync(to, subject, htmlBody, null);
+    }
+
+    /**
+     * Story 10.29 AC4: Synchronous variant with optional SES Configuration Set.
+     * When configurationSetName is non-null, BOUNCE/COMPLAINT events are routed
+     * through the Configuration Set's event destinations.
+     */
+    public void sendHtmlEmailSync(String to, String subject, String htmlBody, String configurationSetName) {
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
@@ -133,9 +142,10 @@ public class EmailService {
         }
 
         try {
-            log.debug("Sending HTML email (sync) to: {}, subject: {}", to, subject);
+            log.debug("Sending HTML email (sync) to: {}, subject: {}, configSet: {}",
+                    to, subject, configurationSetName);
 
-            SendEmailRequest request = SendEmailRequest.builder()
+            SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
                     .source(String.format("%s <%s>", fromName, fromEmail))
                     .replyToAddresses(replyToEmail)
                     .destination(Destination.builder().toAddresses(to).build())
@@ -144,10 +154,13 @@ public class EmailService {
                             .body(Body.builder()
                                     .html(Content.builder().data(htmlBody).charset("UTF-8").build())
                                     .build())
-                            .build())
-                    .build();
+                            .build());
 
-            SendEmailResponse response = sesClient.sendEmail(request);
+            if (configurationSetName != null && !configurationSetName.isBlank()) {
+                requestBuilder.configurationSetName(configurationSetName);
+            }
+
+            SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
             log.info("Email sent (sync) to: {}, MessageId: {}", to, response.messageId());
 
         } catch (SesException e) {

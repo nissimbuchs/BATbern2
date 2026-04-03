@@ -185,16 +185,16 @@ public class NewsletterSubscriberService {
         return getMySubscription(username, email);
     }
 
-    /** Returns total count of active (non-unsubscribed) subscribers. */
+    /** Returns total count of active (non-unsubscribed, non-suppressed) subscribers. */
     @Transactional(readOnly = true)
     public long getActiveCount() {
-        return subscriberRepository.countByUnsubscribedAtIsNull();
+        return subscriberRepository.countByUnsubscribedAtIsNullAndSuppressedAtIsNull();
     }
 
-    /** Returns all active subscribers (for bulk send). */
+    /** Returns all active subscribers (for bulk send). Excludes suppressed (Story 10.29). */
     @Transactional(readOnly = true)
     public List<NewsletterSubscriber> findActiveSubscribers() {
-        return subscriberRepository.findByUnsubscribedAtIsNull();
+        return subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull();
     }
 
     /**
@@ -223,6 +223,10 @@ public class NewsletterSubscriberService {
                 .username(sub.getUsername())
                 .subscribedAt(sub.getSubscribedAt())
                 .unsubscribedAt(sub.getUnsubscribedAt())
+                .bounceType(sub.getBounceType())
+                .bounceCount(sub.getBounceCount())
+                .lastBouncedAt(sub.getLastBouncedAt())
+                .suppressedAt(sub.getSuppressedAt())
                 .build();
     }
 
@@ -306,6 +310,27 @@ public class NewsletterSubscriberService {
         sub.setUnsubscribedAt(null);
         sub.setSubscribedAt(Instant.now());
         log.info("Organizer re-subscribed subscriber: {}", sub.getEmail());
+        return subscriberRepository.save(sub);
+    }
+
+    /**
+     * Unsuppress a subscriber by ID (organizer action — Story 10.29 AC8).
+     * Clears suppressed_at, resets bounce_count to 0, clears bounce_type.
+     *
+     * @throws NoSuchElementException if not found
+     * @throws IllegalStateException if not suppressed (409)
+     */
+    @Transactional
+    public NewsletterSubscriber unsuppressById(UUID id) {
+        NewsletterSubscriber sub = subscriberRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
+        if (sub.getSuppressedAt() == null) {
+            throw new IllegalStateException("Subscriber is not suppressed: " + sub.getEmail());
+        }
+        sub.setSuppressedAt(null);
+        sub.setBounceCount(0);
+        sub.setBounceType(null);
+        log.info("Organizer unsuppressed subscriber: {}", sub.getEmail());
         return subscriberRepository.save(sub);
     }
 

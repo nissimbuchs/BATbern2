@@ -198,6 +198,17 @@ public class NewsletterController {
     }
 
     /**
+     * Story 10.29 AC8: Unsuppress a subscriber by ID (ORGANIZER only).
+     * Clears suppressed_at, resets bounce_count to 0, clears bounce_type.
+     * Returns 404 if not found, 409 if not suppressed.
+     */
+    @PostMapping("/newsletter/subscribers/{id}/unsuppress")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<SubscriberResponse> unsuppressSubscriber(@PathVariable UUID id) {
+        return ResponseEntity.ok(subscriberService.toResponse(subscriberService.unsuppressById(id)));
+    }
+
+    /**
      * Story 10.28: Delete a subscriber by ID (ORGANIZER only).
      */
     @DeleteMapping("/newsletter/subscribers/{id}")
@@ -240,7 +251,8 @@ public class NewsletterController {
                 Boolean.TRUE.equals(request.getIsReminder()),
                 request.getLocale(),
                 sentByUsername,
-                request.getTemplateKey()
+                request.getTemplateKey(),
+                request.getMaxRecipients()
         );
         return ResponseEntity.ok(response);
     }

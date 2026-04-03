@@ -25,4 +25,10 @@ public class SubscriberResponse {
     private String username;
     private Instant subscribedAt;
     private Instant unsubscribedAt;
+
+    // Story 10.29 AC8: Bounce status fields
+    private String bounceType;
+    private Integer bounceCount;
+    private Instant lastBouncedAt;
+    private Instant suppressedAt;
 }

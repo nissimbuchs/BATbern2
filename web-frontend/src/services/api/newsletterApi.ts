@@ -57,3 +57,11 @@ export const resubscribeNewsletterSubscriber = async (id: string): Promise<Subsc
 export const deleteNewsletterSubscriber = async (id: string): Promise<void> => {
   await apiClient.delete(`${NEWSLETTER_API_PATH}/subscribers/${id}`);
 };
+
+/** Story 10.29 AC8: Unsuppress a subscriber (clears bounce state). */
+export const unsuppressNewsletterSubscriber = async (id: string): Promise<SubscriberResponse> => {
+  const response = await apiClient.post<SubscriberResponse>(
+    `${NEWSLETTER_API_PATH}/subscribers/${id}/unsuppress`
+  );
+  return response.data;
+};

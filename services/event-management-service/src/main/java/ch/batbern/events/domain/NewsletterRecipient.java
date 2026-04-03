@@ -31,4 +31,11 @@ public class NewsletterRecipient {
     @Column(name = "delivery_status", nullable = false, length = 50)
     @Builder.Default
     private String deliveryStatus = "sent";
+
+    // Story 10.29: Per-send bounce tracking
+    @Column(name = "bounce_type", length = 20)
+    private String bounceType;
+
+    @Column(name = "bounced_at")
+    private java.time.Instant bouncedAt;
 }

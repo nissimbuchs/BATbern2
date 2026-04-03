@@ -4654,6 +4654,42 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /newsletter/subscribers/{id}/unsuppress:
+    post:
+      tags: [Newsletter]
+      summary: Unsuppress a subscriber by ID (ORGANIZER) — Story 10.29
+      operationId: unsuppressSubscriberById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscriber unsuppressed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberResponse'
+        '404':
+          description: Subscriber not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Subscriber is not suppressed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /newsletter/subscribers/{id}:
     delete:
       tags: [Newsletter]
@@ -5938,6 +5974,12 @@ components:
           description: >
             Optional template key override. If omitted, uses default 'newsletter-event'.
             Must be a NEWSLETTER category template key present in DB.
+        maxRecipients:
+          type: integer
+          nullable: true
+          description: >
+            Story 10.29 AC7: Maximum number of recipients for canary send mode.
+            If omitted, sends to all active subscribers.
 
     NewsletterSendResponse:
       type: object
@@ -6034,6 +6076,23 @@ components:
           type: string
           format: date-time
           nullable: true
+        bounceType:
+          type: string
+          nullable: true
+          description: "Bounce type: 'hard', 'soft', 'complaint', or null"
+        bounceCount:
+          type: integer
+          nullable: true
+          description: Number of bounces recorded
+        lastBouncedAt:
+          type: string
+          format: date-time
+          nullable: true
+        suppressedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Non-null means subscriber is excluded from sends
 
     # ── Analytics Dashboard Schemas (Story 10.5) ─────────────────────────────
 
