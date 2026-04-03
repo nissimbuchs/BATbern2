@@ -20,4 +20,7 @@ public class NewsletterSendRequest {
 
     /** Story 10.29 AC7: Max recipients for canary send mode. Null → send to all. */
     private Integer maxRecipients;
+
+    /** Test mode: send only to organizer-role subscribers. Null/false → send to all. */
+    private Boolean testMode;
 }

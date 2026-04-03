@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterRecipient;
 import ch.batbern.events.domain.NewsletterRecipientId;
@@ -121,6 +122,7 @@ public class NewsletterEmailService {
     private final SessionRepository sessionRepository;
     private final SessionUserService sessionUserService;
     private final EventRepository eventRepository;
+    private final UserApiClient userApiClient;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -181,6 +183,15 @@ public class NewsletterEmailService {
     @Transactional(readOnly = true)
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
                                               @Nullable String templateKey) {
+        return preview(event, isReminder, locale, templateKey, false);
+    }
+
+    /**
+     * Builds a preview with test-mode-aware recipient count.
+     */
+    @Transactional(readOnly = true)
+    public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
+                                              @Nullable String templateKey, boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
         Map<String, String> vars = buildVariables(event, locale, isReminder,
                 baseUrl + "/unsubscribe?token=PREVIEW");
@@ -188,12 +199,20 @@ public class NewsletterEmailService {
         String mergedHtml = emailService.replaceVariables(
                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
         String subject = buildSubject(event, isReminder, locale, vars, effectiveKey);
-        int count = (int) subscriberService.getActiveCount();
+        int count = testMode ? getTestModeRecipientCount() : (int) subscriberService.getActiveCount();
         return NewsletterPreviewResponse.builder()
                 .subject(subject)
                 .htmlPreview(mergedHtml)
                 .recipientCount(count)
                 .build();
+    }
+
+    /** Returns the number of active subscribers who are also organizers. */
+    public int getTestModeRecipientCount() {
+        List<String> organizerUsernames = userApiClient.getOrganizerUsernames();
+        return subscriberRepository
+                .findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(organizerUsernames)
+                .size();
     }
 
     // ── Send (fire-and-forget) ────────────────────────────────────────────────
@@ -210,7 +229,7 @@ public class NewsletterEmailService {
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername,
                                                   @Nullable String templateKey) {
-        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, null);
+        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, null, false);
     }
 
     /**
@@ -220,6 +239,18 @@ public class NewsletterEmailService {
                                                   String locale, String sentByUsername,
                                                   @Nullable String templateKey,
                                                   @Nullable Integer maxRecipients) {
+        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, maxRecipients, false);
+    }
+
+    /**
+     * Full overload with test mode support. When {@code testMode} is true, sends only to
+     * newsletter subscribers who also hold the ORGANIZER role.
+     */
+    public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
+                                                  String locale, String sentByUsername,
+                                                  @Nullable String templateKey,
+                                                  @Nullable Integer maxRecipients,
+                                                  boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
 
         // Duplicate-send prevention: reject if a send is already in progress for this event.
@@ -230,20 +261,31 @@ public class NewsletterEmailService {
                             + event.getEventCode() + " (sendId=" + active.getId() + ")");
                 });
 
-        long totalCount = subscriberService.getActiveCount();
-        int effectiveCount = (maxRecipients != null && maxRecipients > 0)
-                ? Math.min(maxRecipients, (int) totalCount) : (int) totalCount;
+        int effectiveCount;
+        if (testMode) {
+            effectiveCount = getTestModeRecipientCount();
+            if (effectiveCount == 0) {
+                throw new IllegalStateException(
+                        "No organizer subscribers found for test mode — "
+                        + "ensure organizers are subscribed to the newsletter");
+            }
+        } else {
+            long totalCount = subscriberService.getActiveCount();
+            effectiveCount = (maxRecipients != null && maxRecipients > 0)
+                    ? Math.min(maxRecipients, (int) totalCount) : (int) totalCount;
+        }
 
         // Persist PENDING audit record first (committed immediately in own transaction).
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
-                effectiveCount, effectiveKey);
+                effectiveCount, effectiveKey, testMode);
 
         // Launch background send job — returns immediately.
         // Must call via `self` proxy so @Async is honoured (direct this.xxx() bypasses the proxy).
-        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey, maxRecipients);
+        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey,
+                maxRecipients, testMode);
 
-        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}, maxRecipients={}",
-                saved.getId(), event.getEventCode(), totalCount, maxRecipients);
+        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}, testMode={}",
+                saved.getId(), event.getEventCode(), effectiveCount, testMode);
 
         return toResponse(saved);
     }
@@ -259,16 +301,27 @@ public class NewsletterEmailService {
     @Async
     public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
                                             String locale, String effectiveKey) {
-        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, null);
+        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, null, false);
     }
 
     /**
-     * Story 10.29 AC7: Background send with optional maxRecipients for canary mode.
+     * Story 10.29 AC7: Backward-compatible overload without testMode.
      */
     @Async
     public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
                                             String locale, String effectiveKey,
                                             @Nullable Integer maxRecipients) {
+        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, maxRecipients, false);
+    }
+
+    /**
+     * Background send with test mode and canary mode support.
+     * When {@code testMode} is true, sends only to organizer-role subscribers without paging.
+     */
+    @Async
+    public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
+                                            String locale, String effectiveKey,
+                                            @Nullable Integer maxRecipients, boolean testMode) {
         markInProgress(sendId);
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
@@ -276,6 +329,51 @@ public class NewsletterEmailService {
 
         int sentCount = 0;
         int failedCount = 0;
+
+        // ── Test mode: send only to organizer subscribers (no paging) ────────
+        if (testMode) {
+            try {
+                List<String> organizerUsernames = userApiClient.getOrganizerUsernames();
+                List<NewsletterSubscriber> testRecipients = subscriberRepository
+                        .findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(organizerUsernames);
+
+                log.info("Test mode send: sendId={}, organizer recipients={}", sendId, testRecipients.size());
+
+                for (NewsletterSubscriber subscriber : testRecipients) {
+                    String deliveryStatus = "sent";
+                    try {
+                        String unsubLink = baseUrl + "/unsubscribe?token="
+                                + subscriber.getUnsubscribeToken();
+                        Map<String, String> recipientVars = new HashMap<>(baseVars);
+                        recipientVars.put("unsubscribeLink", unsubLink);
+                        String contentHtml = renderContent(locale, recipientVars, effectiveKey);
+                        String mergedHtml = emailService.replaceVariables(
+                                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
+                                recipientVars);
+                        emailService.sendHtmlEmailSync(subscriber.getEmail(), subject, mergedHtml, configurationSetName);
+                        sentCount++;
+                    } catch (Exception e) {
+                        log.error("Test mode send failed for {}: {}", subscriber.getEmail(), e.getMessage());
+                        deliveryStatus = "failed";
+                        failedCount++;
+                    }
+                    recordRecipient(sendId, subscriber.getEmail(), deliveryStatus);
+                    sleepQuietly(sendRateDelayMs);
+                }
+
+                String finalStatus = computeFinalStatus(sentCount, failedCount);
+                markCompleted(sendId, sentCount, failedCount, finalStatus);
+
+                log.info("Test mode send completed: sendId={}, sent={}, failed={}, status={}",
+                        sendId, sentCount, failedCount, finalStatus);
+            } catch (Exception e) {
+                log.error("Test mode send aborted: sendId={}", sendId, e);
+                markCompleted(sendId, sentCount, failedCount, STATUS_FAILED);
+            }
+            return;
+        }
+
+        // ── Normal send: paged processing ────────────────────────────────────
         boolean reachedLimit = false;
 
         try {
@@ -505,6 +603,7 @@ public class NewsletterEmailService {
                 .failedCount(send.getFailedCount())
                 .startedAt(send.getStartedAt())
                 .completedAt(send.getCompletedAt())
+                .testMode(send.isTestMode())
                 .build();
     }
 
@@ -541,7 +640,7 @@ public class NewsletterEmailService {
     @Transactional
     protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
                                                    String sentByUsername, int recipientCount,
-                                                   String templateKey) {
+                                                   String templateKey, boolean testMode) {
         NewsletterSend send = NewsletterSend.builder()
                 .eventId(event.getId())
                 .templateKey(templateKey)
@@ -551,6 +650,7 @@ public class NewsletterEmailService {
                 .sentByUsername(sentByUsername)
                 .recipientCount(recipientCount)
                 .status(STATUS_PENDING)
+                .testMode(testMode)
                 .build();
         return sendRepository.save(send);
     }

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
@@ -73,6 +74,8 @@ class NewsletterEmailServiceTest {
     private SessionUserService sessionUserService;
     @Mock
     private EventRepository eventRepository;
+    @Mock
+    private UserApiClient userApiClient;
 
     @InjectMocks
     private NewsletterEmailService newsletterEmailService;
@@ -516,6 +519,134 @@ class NewsletterEmailServiceTest {
 
         // Only 2 emails should have been sent despite 5 subscribers being available
         verify(emailService, times(2)).sendHtmlEmailSync(any(), any(), any(), any());
+    }
+
+    // ── Test mode: organizer-only send ───────────────────────────────────────
+
+    @Test
+    @DisplayName("sendNewsletter testMode=true: uses organizer usernames and records testMode on audit row")
+    void sendNewsletter_testMode_usesOrganizerFilter() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend savedSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_PENDING)
+                .recipientCount(2)
+                .locale("de")
+                .sentByUsername("organizer")
+                .sentAt(Instant.now())
+                .templateKey("newsletter-event")
+                .testMode(true)
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1", "org2"));
+
+        NewsletterSubscriber sub1 = new NewsletterSubscriber();
+        sub1.setEmail("org1@batbern.ch");
+        sub1.setUsername("org1");
+        NewsletterSubscriber sub2 = new NewsletterSubscriber();
+        sub2.setEmail("org2@batbern.ch");
+        sub2.setUsername("org2");
+
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1", "org2"))).thenReturn(List.of(sub1, sub2));
+        when(sendRepository.save(any())).thenReturn(savedSend);
+
+        NewsletterSendResponse response = newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "organizer", null, null, true);
+
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+        assertThat(response.isTestMode()).isTrue();
+        // Called twice: once in sendNewsletter (count), once in executeAsync (fetch recipients)
+        // because self-reference runs synchronously in tests
+        verify(userApiClient, atLeastOnce()).getOrganizerUsernames();
+        verify(subscriberService, never()).getActiveCount();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter testMode=false: does NOT call getOrganizerUsernames")
+    void sendNewsletter_normalMode_doesNotCallOrganizerApi() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend savedSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_PENDING)
+                .recipientCount(100)
+                .locale("de")
+                .sentByUsername("organizer")
+                .sentAt(Instant.now())
+                .templateKey("newsletter-event")
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(subscriberService.getActiveCount()).thenReturn(100L);
+        when(sendRepository.save(any())).thenReturn(savedSend);
+
+        newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "organizer", null, null, false);
+
+        verify(userApiClient, never()).getOrganizerUsernames();
+        verify(subscriberService).getActiveCount();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter testMode=true: throws when no organizer subscribers found")
+    void sendNewsletter_testMode_throwsWhenNoOrganizers() {
+        testEvent.setId(UUID.randomUUID());
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1"));
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1"))).thenReturn(List.of());
+
+        assertThatThrownBy(() ->
+                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null, null, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No organizer subscribers found");
+    }
+
+    @Test
+    @DisplayName("executeNewsletterSendAsync testMode=true: sends only to organizer subscribers")
+    void executeAsync_testMode_sendsOnlyToOrganizers() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).testMode(true).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", null);
+
+        NewsletterSubscriber orgSub = new NewsletterSubscriber();
+        orgSub.setEmail("org@batbern.ch");
+        orgSub.setUsername("org1");
+        orgSub.setUnsubscribeToken("tok-org");
+
+        when(sendRepository.findById(sendId)).thenReturn(Optional.of(send));
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1"));
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1"))).thenReturn(List.of(orgSub));
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(
+                sendId, testEvent, false, "de", "newsletter-event", null, true);
+
+        // Only the organizer subscriber should receive the email
+        verify(emailService, times(1)).sendHtmlEmailSync(eq("org@batbern.ch"), any(), any(), any());
+        // The paginated query should NOT be called in test mode
+        verify(subscriberRepository, never()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
     }
 
 }

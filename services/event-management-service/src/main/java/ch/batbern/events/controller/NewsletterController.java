@@ -231,7 +231,8 @@ public class NewsletterController {
                 event,
                 Boolean.TRUE.equals(request.getIsReminder()),
                 request.getLocale(),
-                request.getTemplateKey()
+                request.getTemplateKey(),
+                Boolean.TRUE.equals(request.getTestMode())
         );
         return ResponseEntity.ok(preview);
     }
@@ -252,7 +253,8 @@ public class NewsletterController {
                 request.getLocale(),
                 sentByUsername,
                 request.getTemplateKey(),
-                request.getMaxRecipients()
+                request.getMaxRecipients(),
+                Boolean.TRUE.equals(request.getTestMode())
         );
         return ResponseEntity.ok(response);
     }

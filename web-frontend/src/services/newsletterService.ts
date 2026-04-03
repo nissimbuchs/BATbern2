@@ -25,6 +25,7 @@ export interface NewsletterSendRequest {
   isReminder: boolean;
   locale: 'de' | 'en';
   templateKey?: string; // Optional override; service defaults to 'newsletter-event' if omitted
+  testMode?: boolean; // Send only to organizer-role subscribers
 }
 
 export interface NewsletterSendResponse {
@@ -37,6 +38,7 @@ export interface NewsletterSendResponse {
   failedCount: number;
   startedAt?: string;
   completedAt?: string;
+  testMode?: boolean;
 }
 
 export interface NewsletterSendStatusResponse {
@@ -67,6 +69,7 @@ export interface NewsletterSendHistoryItem {
   status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
   sentCount?: number;
   failedCount?: number;
+  testMode?: boolean;
 }
 
 export interface SubscriberCountResponse {

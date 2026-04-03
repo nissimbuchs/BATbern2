@@ -46,6 +46,9 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
             + ")")
     List<NewsletterSubscriber> findActiveSubscribersNotInSend(@Param("sendId") UUID sendId);
 
+    /** Active subscribers whose username matches one of the given values (test mode — organizer-only send). */
+    List<NewsletterSubscriber> findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(List<String> usernames);
+
     /** Story 10.29 AC8: Find suppressed subscribers for admin listing. */
     List<NewsletterSubscriber> findBySuppressedAtIsNotNull();
 
