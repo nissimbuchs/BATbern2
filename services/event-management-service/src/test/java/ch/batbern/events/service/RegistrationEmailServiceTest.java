@@ -8,7 +8,6 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.service.EventTimeResolver;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
