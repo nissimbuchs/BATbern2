@@ -695,6 +695,8 @@ jobs:
           npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Re-authenticate after Layer 4
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -712,6 +714,8 @@ jobs:
           npm run deploy:staging:layer5-gateway --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       # Selective deployment - deploy each service individually with re-auth
       - name: Selective Deploy - Company Management
@@ -808,6 +812,8 @@ jobs:
           npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Re-authenticate after API Gateway Service (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')

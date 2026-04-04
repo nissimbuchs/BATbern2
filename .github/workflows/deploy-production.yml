@@ -221,6 +221,8 @@ jobs:
           fi
         env:
           IMAGE_TAG: ${{ github.event.inputs.version }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Wait for ECS services to stabilize
         run: |

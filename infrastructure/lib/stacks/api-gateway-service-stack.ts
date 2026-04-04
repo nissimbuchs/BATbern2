@@ -125,14 +125,12 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
         // Cloudflare Turnstile bot protection (Story 10.31, Task 11.2)
-        // Enabled for staging (production) using Cloudflare always-pass test keys.
-        // For real production keys: set turnstileSecret prop to use Secrets Manager.
+        // TURNSTILE_SECRET_KEY is injected at deploy time via the TURNSTILE_SECRET_KEY
+        // environment variable (set from GitHub secret in the deploy workflow).
         TURNSTILE_ENABLED: isProd ? 'true' : 'false',
-        TURNSTILE_SITE_KEY: isProd ? '1x00000000000000000000AA' : '',
-        // TURNSTILE_SECRET_KEY: set via turnstileSecret prop (Secrets Manager) for prod keys.
-        // Test key below is used when turnstileSecret is not provided (staging CI/CD).
+        TURNSTILE_SITE_KEY: isProd ? (process.env.TURNSTILE_SITE_KEY ?? '') : '',
         ...(!props.turnstileSecret && isProd
-          ? { TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA' }
+          ? { TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '' }
           : {}),
       },
       secrets,
