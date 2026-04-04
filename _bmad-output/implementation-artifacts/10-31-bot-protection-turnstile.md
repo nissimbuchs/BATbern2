@@ -47,18 +47,33 @@ so that bot submissions are rejected before they reach domain services, without 
 - [ ] Task 2: Extend `FrontendConfigDTO` and `ConfigController` (AC: 6)
   - [ ] 2.1 Add `boolean turnstile` to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FeatureFlagsDTO.java` (alongside `notifications`, `analytics`, `pwa`)
   - [ ] 2.2 Add `TurnstileConfigDTO turnstile` field to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FrontendConfigDTO.java`
-  - [ ] 2.3 In `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`: inject `TurnstileProperties turnstileProperties`, conditionally set `features.turnstile` and `turnstile.siteKey` (only include siteKey when enabled — never expose secretKey)
+  - [ ] 2.3 In `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`: **Note:** `ConfigController` currently uses `@Value` field injection (no constructor injection / no `@RequiredArgsConstructor`). Add `TurnstileProperties` as a `@Value`-style or direct field injection using `@Autowired` to stay consistent with the existing class style — do NOT add `@RequiredArgsConstructor` unless you also convert all the existing `@Value` fields, which is out of scope. Conditionally set `features.turnstile` and `turnstile.siteKey` (only include siteKey when enabled — never expose secretKey)
 
 ### Phase 2: Backend Verification Filter (AC: 1–5, 11)
 
+- [ ] Task 3a: Add dedicated `turnstileRestTemplate` bean (AC: 4)
+  - [ ] 3a.1 In `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java`, add a second `@Bean @Qualifier("turnstileRestTemplate")` method:
+    ```java
+    @Bean
+    @Qualifier("turnstileRestTemplate")
+    public RestTemplate turnstileRestTemplate(RestTemplateBuilder builder) {
+        return builder
+            .connectTimeout(Duration.ofSeconds(3))
+            .readTimeout(Duration.ofSeconds(5))
+            .build();
+    }
+    ```
+    **Do NOT** reuse the existing shared `restTemplate` bean — it has a 120-second read timeout (required for large imports in Story 5.9) and would block a servlet thread for up to 2 minutes under a Cloudflare outage before failing-open.
+
 - [ ] Task 3: Implement `TurnstileVerificationFilter` (AC: 1–5)
   - [ ] 3.1 Create `api-gateway/src/main/java/ch/batbern/gateway/security/TurnstileVerificationFilter.java`
-    - `@Component`, `@Order(Ordered.LOWEST_PRECEDENCE - 1)` (runs before `RateLimitingFilter` which is `@Order(Ordered.LOWEST_PRECEDENCE)`)
-    - Inject `TurnstileProperties`, `RestTemplate` or `RestClient`
+    - `@Component`, `@Order(Ordered.LOWEST_PRECEDENCE - 1)` (numerically one before `RateLimitingFilter`'s `@Order(Ordered.LOWEST_PRECEDENCE)` — both run near the end of the chain; Turnstile runs just before rate-limiting)
+    - Inject `TurnstileProperties`, `@Qualifier("turnstileRestTemplate") RestTemplate`
     - `doFilter`: if not enabled → `chain.doFilter` (AC5); skip OPTIONS (CORS preflight)
     - Match `request.getMethod() + ":" + request.getRequestURI()` against `protectedEndpoints` using `AntPathMatcher` (Spring's `org.springframework.util.AntPathMatcher`)
     - If no match → `chain.doFilter`
     - Extract `X-Turnstile-Token` header; if absent → return 403 JSON `{"error":"turnstile_required","message":"Turnstile token required"}` (AC2)
+    - Extract client IP: read the first value of `X-Forwarded-For` header (set by ALB); fall back to `request.getRemoteAddr()` if absent
     - POST to `turnstile.verifyUrl` with form params `secret={secretKey}&response={token}&remoteip={clientIp}`
     - Parse response JSON: if `success: true` → `chain.doFilter` (AC3)
     - If `success: false` → return 403 JSON `{"error":"turnstile_failed","message":"Bot protection check failed. Please try again."}` (AC3)
@@ -265,7 +280,29 @@ Body params: `secret={secretKey}&response={token}&remoteip={clientIp}`
 Success response: `{"success": true, "hostname": "...", "challenge_ts": "..."}`  
 Failure response: `{"success": false, "error-codes": ["invalid-input-response"]}`
 
-Use `RestTemplate` (already available in Spring Boot, no new dependency needed).
+Use the dedicated `@Qualifier("turnstileRestTemplate") RestTemplate` with a 3s/5s timeout (see Task 3a). Do NOT inject the shared `restTemplate` bean — its 120-second read timeout would stall servlet threads during a Cloudflare outage.
+
+### Client IP Extraction (X-Forwarded-For)
+
+The gateway runs behind an AWS ALB which sets the `X-Forwarded-For` header. `request.getRemoteAddr()` will return the ALB's internal IP, not the user's IP — making the `remoteip` hint useless to Cloudflare. Extract the real client IP like this:
+
+```java
+private String getClientIp(HttpServletRequest request) {
+    String xff = request.getHeader("X-Forwarded-For");
+    if (xff != null && !xff.isBlank()) {
+        return xff.split(",")[0].trim();  // first entry is the original client
+    }
+    return request.getRemoteAddr();
+}
+```
+
+### Invisible Widget UX Edge Case
+
+`size: 'invisible'` renders without a visible CAPTCHA box. However, on ambiguous traffic (VPN, unusual UA, etc.) Cloudflare may briefly display a popup challenge. This is expected Turnstile behaviour and not a bug. No special handling is needed in the UI.
+
+### Why No E2E Tests
+
+Turnstile tokens are single-use, CDN-issued, and cannot be generated offline. Playwright tests cannot produce real tokens. The always-pass test keys (`1x000...AA`) are safe for staging CI — a Bruno smoke test with `TURNSTILE_ENABLED=false` covers the bypass path, and the unit tests cover all filter branches. No additional E2E coverage is required.
 
 ### Cloudflare Test Keys (always-pass, safe for staging)
 
@@ -329,6 +366,7 @@ These always return `success: true` — safe for CI/CD without real Cloudflare a
 - `web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts`
 
 **Modified files:**
+- `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java` (add `turnstileRestTemplate` bean)
 - `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FeatureFlagsDTO.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FrontendConfigDTO.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`
