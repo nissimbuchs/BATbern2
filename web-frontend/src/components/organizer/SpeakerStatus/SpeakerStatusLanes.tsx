@@ -45,6 +45,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
+import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
@@ -101,6 +102,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
+  const { organizers } = useOrganizers();
 
   const [dialogState, setDialogState] = useState<{
     open: boolean;
@@ -252,6 +254,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   sessions={sessions}
                   eventCode={eventCode}
                   color={STATUS_COLORS[status]}
+                  organizers={organizers}
                   onSpeakerClick={handleSpeakerClick}
                 />
               </Grid>
@@ -268,6 +271,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   sessions={sessions}
                   eventCode={eventCode}
                   color={STATUS_COLORS[status]}
+                  organizers={organizers}
                   onSpeakerClick={handleSpeakerClick}
                 />
               </Grid>
@@ -281,6 +285,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
               speaker={activeSpeaker}
               sessions={sessions}
               eventCode={eventCode}
+              organizers={organizers}
               isDragging
             />
           ) : null}
@@ -309,6 +314,7 @@ interface StatusLaneProps {
   sessions: SessionUI[];
   eventCode: string;
   color: string;
+  organizers: { id: string; name: string }[];
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
 
@@ -318,6 +324,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   sessions,
   eventCode,
   color,
+  organizers,
   onSpeakerClick,
 }) => {
   const { t } = useTranslation(['organizer']);
@@ -362,6 +369,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               speaker={speaker}
               sessions={sessions}
               eventCode={eventCode}
+              organizers={organizers}
               onSpeakerClick={onSpeakerClick}
             />
           ))}
@@ -376,6 +384,7 @@ interface SpeakerCardProps {
   speaker: SpeakerPoolEntry;
   sessions: SessionUI[];
   eventCode: string;
+  organizers?: { id: string; name: string }[];
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -384,6 +393,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   speaker,
   sessions,
   eventCode,
+  organizers = [],
   isDragging = false,
   onSpeakerClick,
 }) => {
@@ -575,6 +585,33 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                 {speaker.expertise}
               </Typography>
             )}
+
+            {/* Assigned organizer indicator */}
+            {speaker.assignedOrganizerId &&
+              (() => {
+                const org = organizers.find((o) => o.id === speaker.assignedOrganizerId);
+                return org ? (
+                  <Chip
+                    size="small"
+                    label={org.name}
+                    avatar={
+                      <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}>
+                        {org.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)}
+                      </Avatar>
+                    }
+                    variant="outlined"
+                    sx={{
+                      mt: 0.5,
+                      height: 20,
+                      '& .MuiChip-label': { fontSize: '0.65rem', px: 0.5 },
+                    }}
+                  />
+                ) : null;
+              })()}
 
             {/* Speaker Response Details (Story 6.2a) - Show for any speaker who accepted */}
             {speaker.acceptedAt &&

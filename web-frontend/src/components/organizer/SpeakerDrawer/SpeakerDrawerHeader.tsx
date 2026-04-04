@@ -30,7 +30,7 @@ export const SpeakerDrawerHeader: React.FC<SpeakerDrawerHeaderProps> = ({ speake
               )}
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
-                  label={speaker.status}
+                  label={t(`speakerStatus.${speaker.status}`, speaker.status)}
                   size="small"
                   color={
                     speaker.status === 'ACCEPTED'

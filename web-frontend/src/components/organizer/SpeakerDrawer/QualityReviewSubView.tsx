@@ -78,6 +78,7 @@ export const QualityReviewSubView: React.FC<QualityReviewSubViewProps> = ({
     setCopied(false);
     setAiErrorMessage(null);
     analysisMutation.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- analysisMutation is a stable mutation object; including it would cause infinite re-renders
   }, [speaker.id]);
 
   const reviewMutation = useMutation({
@@ -162,7 +163,7 @@ export const QualityReviewSubView: React.FC<QualityReviewSubViewProps> = ({
                 {speaker.company}
               </Typography>
               <Chip
-                label={speaker.status?.replace(/_/g, ' ')}
+                label={t(`speakerStatus.${speaker.status}`, speaker.status?.replace(/_/g, ' '))}
                 size="small"
                 color="primary"
                 sx={{ mt: 1 }}
