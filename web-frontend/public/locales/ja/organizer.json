@@ -324,7 +324,22 @@
     "sendReminder": "リマインダーを送信",
     "sendingReminder": "送信中...",
     "reminderSent": "{{email}}にリマインダーを送信しました",
-    "reminderFailed": "リマインダーの送信に失敗しました"
+    "reminderFailed": "リマインダーの送信に失敗しました",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted"
   },
   "tasks": {
     "taskBoard": "タスクボード",

@@ -324,7 +324,22 @@
     "sendReminder": "Herinnering sturen",
     "sendingReminder": "Verzenden...",
     "reminderSent": "Herinnering verzonden naar {{email}}",
-    "reminderFailed": "Verzenden van herinnering mislukt"
+    "reminderFailed": "Verzenden van herinnering mislukt",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted"
   },
   "tasks": {
     "taskBoard": "Takenbord",

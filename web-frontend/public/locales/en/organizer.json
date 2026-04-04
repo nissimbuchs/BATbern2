@@ -330,7 +330,22 @@
     "sendReminder": "Send Reminder",
     "sendingReminder": "Sending...",
     "reminderSent": "Reminder sent to {{email}}",
-    "reminderFailed": "Failed to send reminder"
+    "reminderFailed": "Failed to send reminder",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted"
   },
   "tasks": {
     "taskBoard": "Task Board",
