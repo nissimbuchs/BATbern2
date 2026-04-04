@@ -127,7 +127,9 @@ export function createDomainService(
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
-        startPeriod: cdk.Duration.seconds(300),
+        // Reduced from 300s: lightweight services start in <60s; 120s gives headroom
+        // while allowing the ECS circuit breaker to fire within ~15 min instead of 45+
+        startPeriod: cdk.Duration.seconds(120),
       },
     });
 
