@@ -167,6 +167,10 @@ so that bot submissions are rejected before they reach domain services, without 
   - [ ] 12.3 Run `npm run build` — no TypeScript errors
   - [ ] 12.4 Verify with `TURNSTILE_ENABLED=false` (local): newsletter + registration still work as before
 
+- [ ] Task 13: Close GH issue
+  - [ ] 13.1 Comment on GH#582 with a brief summary of what was implemented and the PR link
+  - [ ] 13.2 Close GH#582 (`gh issue close 582 --comment "Implemented in PR #<number>"`)
+
 ## Dev Notes
 
 ### Architecture Pattern
