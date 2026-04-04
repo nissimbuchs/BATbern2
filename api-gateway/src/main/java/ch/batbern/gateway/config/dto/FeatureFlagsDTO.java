@@ -29,4 +29,9 @@ public class FeatureFlagsDTO {
      * Enable/disable PWA features (typically disabled in development)
      */
     private boolean pwa;
+
+    /**
+     * Enable/disable Cloudflare Turnstile bot protection (AC6, Story 10.31)
+     */
+    private boolean turnstile;
 }

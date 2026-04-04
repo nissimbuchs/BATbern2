@@ -35,6 +35,15 @@ aws:
     region: ${AWS_REGION:eu-central-1}
     userPoolClientId: ${COGNITO_CLIENT_ID}
 
+turnstile:
+  enabled: ${TURNSTILE_ENABLED:false}
+  site-key: ${TURNSTILE_SITE_KEY:}
+  secret-key: ${TURNSTILE_SECRET_KEY:}
+  verify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify
+  protected-endpoints:
+    - POST:/api/v1/newsletter/subscribe
+    - POST:/api/v1/events/*/registrations
+
 logging:
   level:
     ch.batbern: DEBUG

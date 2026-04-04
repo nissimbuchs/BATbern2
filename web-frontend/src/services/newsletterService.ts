@@ -76,9 +76,17 @@ export interface SubscriberCountResponse {
   totalActive: number;
 }
 
-/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
-export async function subscribe(request: NewsletterSubscribeRequest): Promise<void> {
-  await apiClient.post('/newsletter/subscribe', request);
+/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
+ *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
+ *  X-Turnstile-Token header when present.
+ */
+export async function subscribe(
+  request: NewsletterSubscribeRequest,
+  turnstileToken?: string | null
+): Promise<void> {
+  await apiClient.post('/newsletter/subscribe', request, {
+    headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
+  });
 }
 
 /** Verify an unsubscribe token — returns email if valid, throws 404 if not. */

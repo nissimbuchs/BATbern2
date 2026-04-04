@@ -49,11 +49,11 @@ describe('newsletterService', () => {
 
       await subscribe({ email: 'alice@batbern.ch', firstName: 'Alice', language: 'de' });
 
-      expect(mockPost).toHaveBeenCalledWith('/newsletter/subscribe', {
-        email: 'alice@batbern.ch',
-        firstName: 'Alice',
-        language: 'de',
-      });
+      expect(mockPost).toHaveBeenCalledWith(
+        '/newsletter/subscribe',
+        { email: 'alice@batbern.ch', firstName: 'Alice', language: 'de' },
+        { headers: {} } // no turnstileToken → empty headers (Story 10.31, AC8)
+      );
     });
 
     it('should propagate 409 Conflict errors', async () => {

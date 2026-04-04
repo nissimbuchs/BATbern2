@@ -287,12 +287,14 @@ class EventApiClient {
    */
   async createRegistration(
     eventCode: string,
-    data: CreateRegistrationRequest
+    data: CreateRegistrationRequest,
+    turnstileToken?: string | null
   ): Promise<{ message: string; email: string }> {
     try {
       const response = await apiClient.post<{ message: string; email: string }>(
         `${EVENT_API_PATH}/${eventCode}/registrations`,
-        data
+        data,
+        { headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {} }
       );
       return response.data;
     } catch (error) {
@@ -665,7 +667,12 @@ class EventApiClient {
     if (status === 401) {
       message = 'Unauthorized: Please log in';
     } else if (status === 403) {
-      message = 'Forbidden: You do not have permission to perform this action';
+      // Extract error code from body so callers can detect turnstile_required / turnstile_failed (AC10, Story 10.31)
+      const errorData = axiosError.response.data as { message?: string; error?: string };
+      message =
+        errorData?.error ||
+        errorData?.message ||
+        'Forbidden: You do not have permission to perform this action';
     } else if (status === 404) {
       message = 'Not Found: The requested event was not found';
     } else if (status === 409) {

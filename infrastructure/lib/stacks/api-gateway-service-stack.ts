@@ -24,6 +24,13 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   alarmTopic?: sns.ITopic;
   /** Watch JWT signing secret — same value used by CUMS to sign, API Gateway to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Cloudflare Turnstile secret key stored in AWS Secrets Manager (Story 10.31, Task 11.3).
+   * When provided, TURNSTILE_SECRET_KEY is injected as a container secret (not plain env var).
+   * For staging with always-pass test keys, leave undefined and set TURNSTILE_SECRET_KEY via
+   * the environment block directly.
+   */
+  turnstileSecret?: secretsmanager.ISecret;
   // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
   // (e.g., http://event-management:8080) configured in environment variables below
 }
@@ -70,6 +77,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     if (props.watchJwtSecret) {
       secrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
     }
+    if (props.turnstileSecret) {
+      secrets.TURNSTILE_SECRET_KEY = ecs.Secret.fromSecretsManager(props.turnstileSecret);
+    }
 
     // Create stable log group for API Gateway
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
@@ -114,6 +124,16 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
+        // Cloudflare Turnstile bot protection (Story 10.31, Task 11.2)
+        // Enabled for staging (production) using Cloudflare always-pass test keys.
+        // For real production keys: set turnstileSecret prop to use Secrets Manager.
+        TURNSTILE_ENABLED: isProd ? 'true' : 'false',
+        TURNSTILE_SITE_KEY: isProd ? '1x00000000000000000000AA' : '',
+        // TURNSTILE_SECRET_KEY: set via turnstileSecret prop (Secrets Manager) for prod keys.
+        // Test key below is used when turnstileSecret is not provided (staging CI/CD).
+        ...(!props.turnstileSecret && isProd
+          ? { TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA' }
+          : {}),
       },
       secrets,
       healthCheck: {

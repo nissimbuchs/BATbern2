@@ -24,6 +24,10 @@ export interface AppConfig {
     notifications: boolean;
     analytics: boolean;
     pwa: boolean;
+    turnstile: boolean;
+  };
+  turnstile?: {
+    siteKey: string;
   };
 }
 
@@ -169,6 +173,7 @@ function getDefaultDevelopmentConfig(): AppConfig {
       notifications: true,
       analytics: false,
       pwa: false,
+      turnstile: false,
     },
   };
 }

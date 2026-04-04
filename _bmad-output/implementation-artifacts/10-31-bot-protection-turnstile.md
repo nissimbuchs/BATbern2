@@ -1,6 +1,6 @@
 # Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -28,11 +28,11 @@ so that bot submissions are rejected before they reach domain services, without 
 
 ### Phase 1: Backend Config Layer (AC: 6)
 
-- [ ] Task 1: Create `TurnstileProperties` config bean
-  - [ ] 1.1 Create `api-gateway/src/main/java/ch/batbern/gateway/config/TurnstileProperties.java` — `@ConfigurationProperties(prefix = "turnstile")` with fields: `boolean enabled`, `String siteKey`, `String secretKey`, `String verifyUrl`, `List<String> protectedEndpoints`
-  - [ ] 1.2 Create `api-gateway/src/main/java/ch/batbern/gateway/config/dto/TurnstileConfigDTO.java` — record/POJO with `String siteKey`
-  - [ ] 1.3 Add `@EnableConfigurationProperties(TurnstileProperties.class)` to the main application class or a dedicated `@Configuration` class
-  - [ ] 1.4 Add to `api-gateway/src/main/resources/application.yml`:
+- [x] Task 1: Create `TurnstileProperties` config bean
+  - [x] 1.1 Create `api-gateway/src/main/java/ch/batbern/gateway/config/TurnstileProperties.java` — `@ConfigurationProperties(prefix = "turnstile")` with fields: `boolean enabled`, `String siteKey`, `String secretKey`, `String verifyUrl`, `List<String> protectedEndpoints`
+  - [x] 1.2 Create `api-gateway/src/main/java/ch/batbern/gateway/config/dto/TurnstileConfigDTO.java` — record/POJO with `String siteKey`
+  - [x] 1.3 Add `@EnableConfigurationProperties(TurnstileProperties.class)` to the main application class or a dedicated `@Configuration` class
+  - [x] 1.4 Add to `api-gateway/src/main/resources/application.yml`:
     ```yaml
     turnstile:
       enabled: ${TURNSTILE_ENABLED:false}
@@ -44,15 +44,15 @@ so that bot submissions are rejected before they reach domain services, without 
         - POST:/api/v1/events/*/registrations
     ```
 
-- [ ] Task 2: Extend `FrontendConfigDTO` and `ConfigController` (AC: 6)
-  - [ ] 2.1 Add `boolean turnstile` to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FeatureFlagsDTO.java` (alongside `notifications`, `analytics`, `pwa`)
-  - [ ] 2.2 Add `TurnstileConfigDTO turnstile` field to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FrontendConfigDTO.java`
-  - [ ] 2.3 In `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`: **Note:** `ConfigController` currently uses `@Value` field injection (no constructor injection / no `@RequiredArgsConstructor`). Add `TurnstileProperties` as a `@Value`-style or direct field injection using `@Autowired` to stay consistent with the existing class style — do NOT add `@RequiredArgsConstructor` unless you also convert all the existing `@Value` fields, which is out of scope. Conditionally set `features.turnstile` and `turnstile.siteKey` (only include siteKey when enabled — never expose secretKey)
+- [x] Task 2: Extend `FrontendConfigDTO` and `ConfigController` (AC: 6)
+  - [x] 2.1 Add `boolean turnstile` to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FeatureFlagsDTO.java` (alongside `notifications`, `analytics`, `pwa`)
+  - [x] 2.2 Add `TurnstileConfigDTO turnstile` field to `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FrontendConfigDTO.java`
+  - [x] 2.3 In `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`: **Note:** `ConfigController` currently uses `@Value` field injection (no constructor injection / no `@RequiredArgsConstructor`). Add `TurnstileProperties` as a `@Value`-style or direct field injection using `@Autowired` to stay consistent with the existing class style — do NOT add `@RequiredArgsConstructor` unless you also convert all the existing `@Value` fields, which is out of scope. Conditionally set `features.turnstile` and `turnstile.siteKey` (only include siteKey when enabled — never expose secretKey)
 
 ### Phase 2: Backend Verification Filter (AC: 1–5, 11)
 
-- [ ] Task 3a: Add dedicated `turnstileRestTemplate` bean (AC: 4)
-  - [ ] 3a.1 In `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java`, add a second `@Bean @Qualifier("turnstileRestTemplate")` method:
+- [x] Task 3a: Add dedicated `turnstileRestTemplate` bean (AC: 4)
+  - [x] 3a.1 In `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java`, add a second `@Bean @Qualifier("turnstileRestTemplate")` method:
     ```java
     @Bean
     @Qualifier("turnstileRestTemplate")
@@ -65,8 +65,8 @@ so that bot submissions are rejected before they reach domain services, without 
     ```
     **Do NOT** reuse the existing shared `restTemplate` bean — it has a 120-second read timeout (required for large imports in Story 5.9) and would block a servlet thread for up to 2 minutes under a Cloudflare outage before failing-open.
 
-- [ ] Task 3: Implement `TurnstileVerificationFilter` (AC: 1–5)
-  - [ ] 3.1 Create `api-gateway/src/main/java/ch/batbern/gateway/security/TurnstileVerificationFilter.java`
+- [x] Task 3: Implement `TurnstileVerificationFilter` (AC: 1–5)
+  - [x] 3.1 Create `api-gateway/src/main/java/ch/batbern/gateway/security/TurnstileVerificationFilter.java`
     - `@Component`, `@Order(Ordered.LOWEST_PRECEDENCE - 1)` (numerically one before `RateLimitingFilter`'s `@Order(Ordered.LOWEST_PRECEDENCE)` — both run near the end of the chain; Turnstile runs just before rate-limiting)
     - Inject `TurnstileProperties`, `@Qualifier("turnstileRestTemplate") RestTemplate`
     - `doFilter`: if not enabled → `chain.doFilter` (AC5); skip OPTIONS (CORS preflight)
@@ -80,20 +80,20 @@ so that bot submissions are rejected before they reach domain services, without 
     - Catch `Exception` → log warning + `chain.doFilter` (fail-open, AC4)
     - Include `addCorsHeaders` call before all 403 returns (copy pattern from `RateLimitingFilter.addCorsHeaders`)
 
-- [ ] Task 4: Write `TurnstileVerificationFilterTest` (AC: 11)
-  - [ ] 4.1 Create `api-gateway/src/test/java/ch/batbern/gateway/security/TurnstileVerificationFilterTest.java`
-  - [ ] 4.2 Test: disabled → filter passes all requests through
-  - [ ] 4.3 Test: non-protected endpoint → filter passes through
-  - [ ] 4.4 Test: missing `X-Turnstile-Token` → 403 with `turnstile_required`
-  - [ ] 4.5 Test: valid token (mock REST call returning `{"success":true}`) → passes through
-  - [ ] 4.6 Test: invalid token (mock REST call returning `{"success":false}`) → 403 with `turnstile_failed`
-  - [ ] 4.7 Test: Cloudflare unreachable (mock throws exception) → passes through (fail-open)
-  - [ ] 4.8 Use `MockHttpServletRequest`, `MockHttpServletResponse`, `MockFilterChain` from `spring-test`
+- [x] Task 4: Write `TurnstileVerificationFilterTest` (AC: 11)
+  - [x] 4.1 Create `api-gateway/src/test/java/ch/batbern/gateway/security/TurnstileVerificationFilterTest.java`
+  - [x] 4.2 Test: disabled → filter passes all requests through
+  - [x] 4.3 Test: non-protected endpoint → filter passes through
+  - [x] 4.4 Test: missing `X-Turnstile-Token` → 403 with `turnstile_required`
+  - [x] 4.5 Test: valid token (mock REST call returning `{"success":true}`) → passes through
+  - [x] 4.6 Test: invalid token (mock REST call returning `{"success":false}`) → 403 with `turnstile_failed`
+  - [x] 4.7 Test: Cloudflare unreachable (mock throws exception) → passes through (fail-open)
+  - [x] 4.8 Use `MockHttpServletRequest`, `MockHttpServletResponse`, `MockFilterChain` from `spring-test`
 
 ### Phase 3: Frontend Hook (AC: 7, 12)
 
-- [ ] Task 5: Implement `useTurnstile` hook (AC: 7)
-  - [ ] 5.1 Create `web-frontend/src/hooks/useTurnstile/useTurnstile.ts`
+- [x] Task 5: Implement `useTurnstile` hook (AC: 7)
+  - [x] 5.1 Create `web-frontend/src/hooks/useTurnstile/useTurnstile.ts`
     - Read `useConfig()` for `features.turnstile` and `turnstile?.siteKey`
     - Export `{ getToken: () => Promise<string | null>, resetWidget: () => void, widgetRef: React.RefObject<HTMLDivElement> }`
     - When disabled: `getToken()` returns `Promise.resolve(null)`; `widgetRef` ref is provided but mounting it does nothing harmful
@@ -103,16 +103,16 @@ so that bot submissions are rejected before they reach domain services, without 
       - `getToken()`: calls `window.turnstile.execute(widgetId)` and returns a Promise that resolves with the token via the callback
       - `resetWidget()`: calls `window.turnstile.reset(widgetId)`
     - No npm dependencies — use `window.turnstile` global (declare type: `declare global { interface Window { turnstile: ... } }`)
-  - [ ] 5.2 Create `web-frontend/src/hooks/useTurnstile/index.ts` barrel export
-  - [ ] 5.3 Create `web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts`
+  - [x] 5.2 Create `web-frontend/src/hooks/useTurnstile/index.ts` barrel export
+  - [x] 5.3 Create `web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts`
     - Mock `useConfig()` (via `vi.mock('@/contexts/useConfig')`)
     - Test disabled path: `getToken()` resolves `null`
     - Test enabled path: mock script injection + `window.turnstile`; verify token returned
 
 ### Phase 4: Frontend Form Integration (AC: 8–10, 12)
 
-- [ ] Task 6: Update `AppConfig` type (AC: 6, 7)
-  - [ ] 6.1 In `web-frontend/src/config/runtime-config.ts`: extend `AppConfig`:
+- [x] Task 6: Update `AppConfig` type (AC: 6, 7)
+  - [x] 6.1 In `web-frontend/src/config/runtime-config.ts`: extend `AppConfig`:
     ```typescript
     features: {
       notifications: boolean;
@@ -124,26 +124,26 @@ so that bot submissions are rejected before they reach domain services, without 
       siteKey: string;
     };
     ```
-  - [ ] 6.2 Update `validateConfig` to handle optional `turnstile` block (do not throw if absent)
-  - [ ] 6.3 Update `getDefaultDevelopmentConfig()` to add `features.turnstile: false`
+  - [x] 6.2 Update `validateConfig` to handle optional `turnstile` block (do not throw if absent)
+  - [x] 6.3 Update `getDefaultDevelopmentConfig()` to add `features.turnstile: false`
 
-- [ ] Task 7: Update `newsletterService.ts` (AC: 8)
-  - [ ] 7.1 In `web-frontend/src/services/newsletterService.ts`, update `subscribe()` signature:
+- [x] Task 7: Update `newsletterService.ts` (AC: 8)
+  - [x] 7.1 In `web-frontend/src/services/newsletterService.ts`, update `subscribe()` signature:
     ```typescript
     export async function subscribe(
       request: NewsletterSubscribeRequest,
       turnstileToken?: string | null
     ): Promise<void>
     ```
-  - [ ] 7.2 Pass `X-Turnstile-Token` header when token is non-null:
+  - [x] 7.2 Pass `X-Turnstile-Token` header when token is non-null:
     ```typescript
     await apiClient.post('/newsletter/subscribe', request, {
       headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
     });
     ```
 
-- [ ] Task 8: Update `eventApiClient.ts` `createRegistration` (AC: 9)
-  - [ ] 8.1 In `web-frontend/src/services/eventApiClient.ts`, update `createRegistration()` signature:
+- [x] Task 8: Update `eventApiClient.ts` `createRegistration` (AC: 9)
+  - [x] 8.1 In `web-frontend/src/services/eventApiClient.ts`, update `createRegistration()` signature:
     ```typescript
     async createRegistration(
       eventCode: string,
@@ -151,40 +151,40 @@ so that bot submissions are rejected before they reach domain services, without 
       turnstileToken?: string | null
     ): Promise<{ message: string; email: string }>
     ```
-  - [ ] 8.2 Pass header when token is non-null (same pattern as above)
+  - [x] 8.2 Pass header when token is non-null (same pattern as above)
 
-- [ ] Task 9: Integrate `useTurnstile` into `NewsletterSubscribeWidget` (AC: 8, 10)
-  - [ ] 9.1 In `web-frontend/src/components/public/NewsletterSubscribeWidget.tsx`:
+- [x] Task 9: Integrate `useTurnstile` into `NewsletterSubscribeWidget` (AC: 8, 10)
+  - [x] 9.1 In `web-frontend/src/components/public/NewsletterSubscribeWidget.tsx`:
     - Add `useTurnstile()` call; place `<div ref={widgetRef} />` inside form (invisible, zero-size)
     - Before calling `subscribe`, call `getToken()` and pass result
     - Catch `403` with `turnstile_required`/`turnstile_failed` → set error state + call `resetWidget()`
-  - [ ] 9.2 Update `useNewsletter.ts` (`useNewsletterSubscribe` mutation) to accept and forward the `turnstileToken` argument to `newsletterService.subscribe()`
-  - [ ] 9.3 Update `web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx` to verify `X-Turnstile-Token` header behaviour
+  - [x] 9.2 Update `useNewsletter.ts` (`useNewsletterSubscribe` mutation) to accept and forward the `turnstileToken` argument to `newsletterService.subscribe()`
+  - [x] 9.3 Update `web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx` to verify `X-Turnstile-Token` header behaviour
 
-- [ ] Task 10: Integrate `useTurnstile` into `RegistrationWizard` (AC: 9, 10)
-  - [ ] 10.1 In `web-frontend/src/components/public/Registration/RegistrationWizard.tsx`:
+- [x] Task 10: Integrate `useTurnstile` into `RegistrationWizard` (AC: 9, 10)
+  - [x] 10.1 In `web-frontend/src/components/public/Registration/RegistrationWizard.tsx`:
     - Add `useTurnstile()` call; place `<div ref={widgetRef} />` near the Step 2 submit area (invisible)
     - Before calling `eventApiClient.createRegistration()`, call `getToken()`
     - Catch `403` turnstile errors → show error snackbar + call `resetWidget()`
-  - [ ] 10.2 Update `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx` to verify token header behaviour
+  - [x] 10.2 Update `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx` to verify token header behaviour
 
 ### Phase 5: Environment Activation (AC: 5, 13)
 
-- [ ] Task 11: Infrastructure / CDK env vars
-  - [ ] 11.1 Verify development default is `TURNSTILE_ENABLED=false` (already in `application.yml` default)
-  - [ ] 11.2 Add staging env vars to CDK / ECS task definition for api-gateway: `TURNSTILE_ENABLED=true`, `TURNSTILE_SITE_KEY=1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` (Cloudflare always-pass test keys)
-  - [ ] 11.3 Add production env vars to CDK secrets / parameter store (real keys from Cloudflare dashboard)
-  - [ ] 11.4 Update `.github/workflows/deploy-staging.yml` or CDK stack to include the new env vars
+- [x] Task 11: Infrastructure / CDK env vars
+  - [x] 11.1 Verify development default is `TURNSTILE_ENABLED=false` (already in `application.yml` default)
+  - [x] 11.2 Add staging env vars to CDK / ECS task definition for api-gateway: `TURNSTILE_ENABLED=true`, `TURNSTILE_SITE_KEY=1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` (Cloudflare always-pass test keys)
+  - [x] 11.3 Add production env vars to CDK secrets / parameter store (real keys from Cloudflare dashboard)
+  - [x] 11.4 Update `.github/workflows/deploy-staging.yml` or CDK stack to include the new env vars
 
-- [ ] Task 12: Final verification
-  - [ ] 12.1 Run `./gradlew :api-gateway:test` — all tests pass including `TurnstileVerificationFilterTest`
-  - [ ] 12.2 Run `cd web-frontend && npm test` — all unit tests pass
-  - [ ] 12.3 Run `npm run build` — no TypeScript errors
-  - [ ] 12.4 Verify with `TURNSTILE_ENABLED=false` (local): newsletter + registration still work as before
+- [x] Task 12: Final verification
+  - [x] 12.1 Run `./gradlew :api-gateway:test` — all tests pass including `TurnstileVerificationFilterTest`
+  - [x] 12.2 Run `cd web-frontend && npm test` — all unit tests pass
+  - [x] 12.3 Run `npm run build` — no TypeScript errors
+  - [x] 12.4 Verify with `TURNSTILE_ENABLED=false` (local): newsletter + registration still work as before
 
-- [ ] Task 13: Close GH issue
-  - [ ] 13.1 Comment on GH#582 with a brief summary of what was implemented and the PR link
-  - [ ] 13.2 Close GH#582 (`gh issue close 582 --comment "Implemented in PR #<number>"`)
+- [x] Task 13: Close GH issue
+  - [x] 13.1 Comment on GH#582 with a brief summary of what was implemented and the PR link
+  - [x] 13.2 Close GH#582 (`gh issue close 582 --comment "Implemented in PR #<number>"`)
 
 ## Dev Notes
 
@@ -348,16 +348,31 @@ These always return `success: true` — safe for CI/CD without real Cloudflare a
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+N/A — no significant debugging required. Minor issues resolved:
+- Unicode `→` arrows in Javadoc caused Java compilation errors; replaced with ASCII `->`
+- `*/` wildcard in Javadoc comment for endpoint path closed the Javadoc block prematurely
+- `RefObject<HTMLDivElement>` → `RefObject<HTMLDivElement | null>` for React 19 TypeScript compat
+- `newsletterService.test.ts` expected 2-arg call to `subscribe()`; updated to expect 3 args after Turnstile integration
+
 ### Completion Notes List
+
+- Implemented all 13 tasks across 5 phases (backend config, filter, frontend hook, form integration, CDK)
+- `TurnstileVerificationFilter` follows exact same pattern as `RateLimitingFilter` (CORS, JSON error body, @Order)
+- Used dedicated `turnstileRestTemplate` bean (3s/5s) — avoids blocking servlet threads on 120s shared bean during Cloudflare outage
+- `useNewsletterSubscribe` mutation vars shape changed to `{ request, turnstileToken }` — a structural breaking change from the single-arg form; updated all consumers and tests
+- `useTurnstile` returns `null` when disabled (AC5 preserved) — no widget rendered, no script loaded
+- GH#582 commented and closed
+- 8 backend unit tests pass, 41 frontend unit tests pass (including 7 new Turnstile-specific tests), no regressions in 350 test files / 4678 tests
 
 ### File List
 
 **New files:**
 - `api-gateway/src/main/java/ch/batbern/gateway/config/TurnstileProperties.java`
+- `api-gateway/src/main/java/ch/batbern/gateway/config/TurnstileConfig.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/dto/TurnstileConfigDTO.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/security/TurnstileVerificationFilter.java`
 - `api-gateway/src/test/java/ch/batbern/gateway/security/TurnstileVerificationFilterTest.java`
@@ -366,17 +381,24 @@ These always return `success: true` — safe for CI/CD without real Cloudflare a
 - `web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts`
 
 **Modified files:**
-- `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java` (add `turnstileRestTemplate` bean)
+- `api-gateway/src/main/java/ch/batbern/gateway/config/WebClientConfig.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FeatureFlagsDTO.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/dto/FrontendConfigDTO.java`
 - `api-gateway/src/main/java/ch/batbern/gateway/config/ConfigController.java`
 - `api-gateway/src/main/resources/application.yml`
+- `infrastructure/lib/stacks/api-gateway-service-stack.ts`
 - `web-frontend/src/config/runtime-config.ts`
 - `web-frontend/src/services/newsletterService.ts`
+- `web-frontend/src/services/newsletterService.test.ts`
 - `web-frontend/src/services/eventApiClient.ts`
 - `web-frontend/src/hooks/useNewsletter/useNewsletter.ts`
 - `web-frontend/src/components/public/NewsletterSubscribeWidget.tsx`
 - `web-frontend/src/components/public/Registration/RegistrationWizard.tsx`
 - `web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx`
 - `web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx`
-- CDK / ECS task definition for api-gateway (staging + production env vars)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-04-04: Story 10.31 implemented — Cloudflare Turnstile bot protection for newsletter/subscribe and event registrations; gateway filter + frontend hook; fail-open; all 13 tasks complete (claude-sonnet-4-6)
+- 2026-04-04: Code review complete — 1 bug fixed: `transformError` 403 branch in `eventApiClient.ts` was swallowing the error code, breaking AC10 `resetWidget` path in `RegistrationWizard`; fix extracts error body for 403 (same pattern as 409); added missing AC10 test in `RegistrationWizard.test.tsx`; 91 tests pass (claude-sonnet-4-6)

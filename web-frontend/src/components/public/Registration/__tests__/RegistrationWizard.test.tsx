@@ -27,10 +27,17 @@ const mockUseMyRegistration = vi.mocked(useMyRegistration);
 // Mock useAuth + useUserProfile for prefill tests
 vi.mock('@/hooks/useAuth/useAuth');
 vi.mock('@/hooks/useUserProfile/useUserProfile');
+
+// Mock useTurnstile — returns null token by default (AC5: disabled path)
+vi.mock('@/hooks/useTurnstile', () => ({
+  useTurnstile: vi.fn(),
+}));
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
+import { useTurnstile } from '@/hooks/useTurnstile';
 const mockUseAuth = vi.mocked(useAuth);
 const mockUseUserProfile = vi.mocked(useUserProfile);
+const mockUseTurnstile = vi.mocked(useTurnstile);
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -155,6 +162,12 @@ describe('RegistrationWizard Component', () => {
     mockUseUserProfile.mockReturnValue({ userProfile: undefined } as ReturnType<
       typeof useUserProfile
     >);
+    // Default: Turnstile disabled → getToken returns null (AC5)
+    mockUseTurnstile.mockReturnValue({
+      getToken: vi.fn().mockResolvedValue(null),
+      resetWidget: vi.fn(),
+      widgetRef: { current: null },
+    });
   });
 
   describe('Initial Rendering', () => {
@@ -400,7 +413,8 @@ describe('RegistrationWizard Component', () => {
             company: 'Acme Inc',
             role: 'Developer',
             termsAccepted: true,
-          })
+          }),
+          null // turnstileToken — null when disabled (AC5)
         );
       });
     });
@@ -481,6 +495,101 @@ describe('RegistrationWizard Component', () => {
       await waitFor(() => {
         expect(screen.getByText(/Network error/i)).toBeInTheDocument();
       });
+    });
+
+    test('should_passTurnstileToken_to_createRegistration_when_enabled (AC9)', async () => {
+      const mockGetToken = vi.fn().mockResolvedValue('cf-turnstile-token-xyz');
+      mockUseTurnstile.mockReturnValue({
+        getToken: mockGetToken,
+        resetWidget: vi.fn(),
+        widgetRef: { current: null },
+      });
+
+      const mockRegistration = {
+        registrationCode: 'ABC123',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+      };
+      vi.mocked(eventApiClient.createRegistration).mockResolvedValue(mockRegistration);
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'John' } });
+      fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
+        target: { value: 'john@example.com' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
+        target: { value: 'Acme' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
+        target: { value: 'Dev' },
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
+
+      await waitFor(() => {
+        const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
+        fireEvent.click(termsCheckbox);
+      });
+
+      await waitFor(() => {
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
+        expect(submitButton).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-submit-btn'));
+
+      await waitFor(() => {
+        expect(eventApiClient.createRegistration).toHaveBeenCalledWith(
+          'BAT2025',
+          expect.any(Object),
+          'cf-turnstile-token-xyz'
+        );
+      });
+    });
+
+    test('should_callResetWidgetAndShowError_when_turnstile403Returned (AC10)', async () => {
+      const mockResetWidget = vi.fn();
+      mockUseTurnstile.mockReturnValue({
+        getToken: vi.fn().mockResolvedValue('some-token'),
+        resetWidget: mockResetWidget,
+        widgetRef: { current: null },
+      });
+
+      // transformError extracts the error code from the 403 body (fix: eventApiClient.ts)
+      vi.mocked(eventApiClient.createRegistration).mockRejectedValue(new Error('turnstile_failed'));
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'John' } });
+      fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
+        target: { value: 'john@example.com' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
+        target: { value: 'Acme' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
+        target: { value: 'Dev' },
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
+
+      await waitFor(() => {
+        const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
+        fireEvent.click(termsCheckbox);
+      });
+
+      await waitFor(() => {
+        const submitButton = screen.getByTestId('registration-wizard-submit-btn');
+        expect(submitButton).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-submit-btn'));
+
+      await waitFor(() => {
+        expect(mockResetWidget).toHaveBeenCalled();
+      });
+
+      expect(screen.getByText('Registration failed. Please try again.')).toBeInTheDocument();
     });
 
     test('should_showLoadingState_when_submitting', async () => {
