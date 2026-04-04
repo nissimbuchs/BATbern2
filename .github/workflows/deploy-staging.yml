@@ -603,7 +603,7 @@ jobs:
 
       - name: Deploy Layer 4.1 - Company Management Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.1: Company Management Service"
@@ -637,7 +637,7 @@ jobs:
 
       - name: Deploy Layer 4.3 - Speaker Coordination Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.3: Speaker Coordination Service"
@@ -654,7 +654,7 @@ jobs:
 
       - name: Deploy Layer 4.4 - Partner Coordination Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.4: Partner Coordination Service"
@@ -671,7 +671,7 @@ jobs:
 
       - name: Deploy Layer 4.5 - Attendee Experience Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.5: Attendee Experience Service"
@@ -688,7 +688,7 @@ jobs:
 
       - name: Deploy Layer 4.6 - API Gateway Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.6: API Gateway Service"
@@ -716,6 +716,7 @@ jobs:
       # Selective deployment - deploy each service individually with re-auth
       - name: Selective Deploy - Company Management
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'company-management') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Company Management Service"
@@ -749,6 +750,7 @@ jobs:
 
       - name: Selective Deploy - Speaker Coordination
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Speaker Coordination Service"
@@ -765,6 +767,7 @@ jobs:
 
       - name: Selective Deploy - Partner Coordination
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Partner Coordination Service"
@@ -781,6 +784,7 @@ jobs:
 
       - name: Selective Deploy - Attendee Experience
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Attendee Experience Service"
@@ -797,6 +801,7 @@ jobs:
 
       - name: Selective Deploy - API Gateway Service
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 45
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway Service"
