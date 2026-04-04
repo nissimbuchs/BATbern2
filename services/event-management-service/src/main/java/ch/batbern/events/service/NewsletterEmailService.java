@@ -326,6 +326,9 @@ public class NewsletterEmailService {
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+        if (testMode) {
+            subject = "[Testmailing nur an OK] " + subject;
+        }
 
         int sentCount = 0;
         int failedCount = 0;

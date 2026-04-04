@@ -644,7 +644,10 @@ class NewsletterEmailServiceTest {
                 sendId, testEvent, false, "de", "newsletter-event", null, true);
 
         // Only the organizer subscriber should receive the email
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("org@batbern.ch"), any(), any(), any());
+        verify(emailService, times(1)).sendHtmlEmailSync(
+                eq("org@batbern.ch"),
+                eq("[Testmailing nur an OK] final"),
+                any(), any());
         // The paginated query should NOT be called in test mode
         verify(subscriberRepository, never()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
     }
