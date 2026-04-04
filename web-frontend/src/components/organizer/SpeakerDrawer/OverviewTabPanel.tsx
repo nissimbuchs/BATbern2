@@ -207,6 +207,8 @@ export const OverviewTabPanel: React.FC<OverviewTabPanelProps> = ({
     }
   };
 
+  const buttons = actionButtons();
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flex: 1, p: 2 }}>
@@ -242,12 +244,12 @@ export const OverviewTabPanel: React.FC<OverviewTabPanelProps> = ({
           </Box>
 
           {/* Action Buttons (non-mobile: inline) */}
-          {!isMobile && actionButtons()}
+          {!isMobile && buttons}
         </Stack>
       </Box>
 
       {/* Mobile: sticky action footer */}
-      {isMobile && actionButtons() && (
+      {isMobile && buttons && (
         <Box
           sx={{
             position: 'sticky',
@@ -258,7 +260,7 @@ export const OverviewTabPanel: React.FC<OverviewTabPanelProps> = ({
             borderColor: 'divider',
           }}
         >
-          {actionButtons()}
+          {buttons}
         </Box>
       )}
 

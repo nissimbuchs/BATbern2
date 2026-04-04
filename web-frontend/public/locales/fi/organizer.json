@@ -339,7 +339,8 @@
     "reviewContent": "Review Content",
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
-    "submittedAt": "Submitted"
+    "submittedAt": "Submitted",
+    "noDetails": "Ei tietoja saatavilla"
   },
   "tasks": {
     "taskBoard": "Tehtävätaulu",

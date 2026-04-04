@@ -339,7 +339,8 @@
     "reviewContent": "Review Content",
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
-    "submittedAt": "Submitted"
+    "submittedAt": "Submitted",
+    "noDetails": "Aucun détail disponible"
   },
   "tasks": {
     "taskBoard": "Tableau des tâches",

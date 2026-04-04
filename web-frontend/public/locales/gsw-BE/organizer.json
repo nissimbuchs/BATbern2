@@ -44,6 +44,7 @@
     "reviewContent": "Review Content",
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
-    "submittedAt": "Submitted"
+    "submittedAt": "Submitted",
+    "noDetails": "Kei Details verfüegbar"
   }
 }

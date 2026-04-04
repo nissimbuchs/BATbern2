@@ -172,7 +172,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     <>
       {/* Back Button */}
       <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton onClick={onBack} size="small">
+        <IconButton onClick={onBack} size="small" aria-label={t('speakers.drawer.back')}>
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h6">{t('speakerContent.submitContent')}</Typography>

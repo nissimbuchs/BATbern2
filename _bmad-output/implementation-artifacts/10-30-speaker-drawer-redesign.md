@@ -1,6 +1,6 @@
 # Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
 
-Status: review
+Status: done
 
 ## Story
 
@@ -108,6 +108,13 @@ so that I can manage speaker outreach efficiently on any device without excessiv
     - From QualityReviewDrawer: `approve-content-button`
     - Run `grep -r 'data-testid' web-frontend/src/components/organizer/SpeakerDrawer/` and compare against this list
   - [x] 12.3 Run existing frontend tests — no regressions (344 passed, 1 pre-existing failure in CompanySearch unrelated to this story)
+  - [x] 12.4 Code review fixes applied (CR pass):
+    - [x] 12.4a `actionButtons()` extracted to variable — no more triple render on mobile (`OverviewTabPanel.tsx`)
+    - [x] 12.4b `speakers.drawer.back` i18n key wired to back button `aria-label` in both sub-views (accessibility fix)
+    - [x] 12.4c Inline `formatDate` removed; replaced with `formatDateTime` from `@/utils/date` using `i18n.language` for locale-aware formatting
+    - [x] 12.4d DetailsTabPanel empty state uses `speakers.noDetails` key (not misleading `noContactHistory`)
+    - [x] 12.4e `speakers.noDetails` key added to all 10 locales
+    - [x] 12.4f Tests written: `getDefaultTab.test.ts` (10 cases), `AssignedOrganizerField.test.tsx` (6 cases), `ActivityTabPanel.test.tsx` (13 cases) — 29 total, all passing
 
 ## Dev Notes
 
@@ -212,5 +219,11 @@ Claude Opus 4.6 (1M context)
 - `web-frontend/src/components/organizer/SpeakerOutreach/__tests__/SpeakerOutreachDetailsDrawer.test.tsx`
 - `web-frontend/src/components/organizer/SpeakerStatus/__tests__/QualityReviewDrawer.test.tsx`
 
+**New test files (CR pass):**
+- `web-frontend/src/components/organizer/SpeakerDrawer/__tests__/getDefaultTab.test.ts`
+- `web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx`
+- `web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ActivityTabPanel.test.tsx`
+
 **Other:**
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — added 10-30-speaker-drawer-redesign: in-progress
+- `web-frontend/public/locales/*/organizer.json` — added `speakers.noDetails` key (all 10 locales)

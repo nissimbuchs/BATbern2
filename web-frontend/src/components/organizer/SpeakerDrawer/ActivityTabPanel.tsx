@@ -19,6 +19,7 @@ import {
 import { Email, Phone, Person } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { formatDateTime } from '@/utils/date';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '@/hooks/useSpeakerOutreach';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { ContactMethod } from '@/types/speakerOutreach.types';
@@ -39,7 +40,7 @@ interface FormErrors {
   contactDate?: string;
 }
 
-const getContactMethodIcon = (method: string) => {
+const getContactMethodIcon = (method: string): React.ReactElement | null => {
   switch (method) {
     case 'email':
       return <Email fontSize="small" />;
@@ -52,19 +53,9 @@ const getContactMethodIcon = (method: string) => {
   }
 };
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('de-CH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
 export const ActivityTabPanel: React.FC<ActivityTabPanelProps> = ({ speaker, eventCode }) => {
-  const { t } = useTranslation('organizer');
+  const { t, i18n } = useTranslation('organizer');
+  const fmt = (dateString: string) => formatDateTime(new Date(dateString), i18n.language);
 
   const {
     data: outreachHistory,
@@ -267,7 +258,7 @@ export const ActivityTabPanel: React.FC<ActivityTabPanelProps> = ({ speaker, eve
                   variant="outlined"
                 />
                 <Typography variant="caption" color="text.secondary">
-                  {formatDate(attempt.contactDate)}
+                  {fmt(attempt.contactDate)}
                 </Typography>
               </Box>
 

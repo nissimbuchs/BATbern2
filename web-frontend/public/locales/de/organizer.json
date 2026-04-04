@@ -345,7 +345,8 @@
     "reviewContent": "Inhalte prüfen",
     "revisionRequested": "Überarbeitung angefordert",
     "submittedContent": "Eingereichte Inhalte",
-    "submittedAt": "Eingereicht"
+    "submittedAt": "Eingereicht",
+    "noDetails": "Keine Details verfügbar"
   },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",

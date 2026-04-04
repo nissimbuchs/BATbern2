@@ -171,7 +171,7 @@ development_status:
   10-27-ical-rsvp-tracking-partner-meetings: done                              # iCal REPLY ingestion; partner_meeting_rsvps table (V9); POST /internal/partner-meetings/rsvps; GET /api/v1/partner-meetings/{id}/rsvps; PartnerMeetingRsvpPanel; prereq: 8.3, 10.17
   10-28-newsletter-subscriber-management: done                                 # organizer nav item; paginated/searchable/sortable subscriber list; unsubscribe/resubscribe/delete actions; backend sort; tech debt: UserTable backend sort; prereq: 10.7
   10-29-ses-bounce-processing-newsletter-list-hygiene: done               # SES bounce/complaint pipeline; BounceProcessingService; suppressed subscribers; canary send; admin unsuppress; prereq: 10.7, 10.28
-  10-30-speaker-drawer-redesign: review                                   # tabbed drawer (Overview/Details/Activity); inline organizer assignment; sub-views for content submission + quality review; mobile UX; replaces 3 monolithic drawers
+  10-30-speaker-drawer-redesign: done                                     # tabbed drawer (Overview/Details/Activity); inline organizer assignment; sub-views for content submission + quality review; mobile UX; replaces 3 monolithic drawers
   10-31-bot-protection-turnstile: ready-for-dev                           # Cloudflare Turnstile gateway filter + useTurnstile hook; protects newsletter/subscribe + event registrations; fail-open; GH#582
   epic-10-retrospective: optional
 

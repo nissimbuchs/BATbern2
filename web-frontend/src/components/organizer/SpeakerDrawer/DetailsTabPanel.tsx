@@ -2,25 +2,16 @@ import React from 'react';
 import { Box, Typography, Chip, Button } from '@mui/material';
 import { AttachFile as AttachFileIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { formatDateTime } from '@/utils/date';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 
 interface DetailsTabPanelProps {
   speaker: SpeakerPoolEntry;
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('de-CH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
 export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => {
-  const { t } = useTranslation('organizer');
+  const { t, i18n } = useTranslation('organizer');
+  const fmt = (dateString: string) => formatDateTime(new Date(dateString), i18n.language);
 
   return (
     <Box sx={{ p: 2, overflow: 'auto' }}>
@@ -31,7 +22,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
             {t('speakers.responseDetails')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#212121' }}>
-            {t('speakers.acceptedAt')}: {formatDate(speaker.acceptedAt)}
+            {t('speakers.acceptedAt')}: {fmt(speaker.acceptedAt)}
           </Typography>
           {speaker.preferredTimeSlot && (
             <Typography variant="body2" sx={{ color: '#212121' }}>
@@ -69,7 +60,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
           </Typography>
           {speaker.declinedAt && (
             <Typography variant="body2" sx={{ color: '#212121' }}>
-              {t('speakers.declinedAt')}: {formatDate(speaker.declinedAt)}
+              {t('speakers.declinedAt')}: {fmt(speaker.declinedAt)}
             </Typography>
           )}
           <Typography variant="body2" sx={{ color: '#212121' }}>
@@ -160,7 +151,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
           )}
           {speaker.contentSubmittedAt && (
             <Typography variant="caption" sx={{ color: '#424242', mt: 1, display: 'block' }}>
-              {t('speakers.submittedAt', 'Submitted')}: {formatDate(speaker.contentSubmittedAt)}
+              {t('speakers.submittedAt', 'Submitted')}: {fmt(speaker.contentSubmittedAt)}
             </Typography>
           )}
         </Box>
@@ -174,7 +165,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
         !speaker.submittedTitle && (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">
-              {t('speakerOutreach.noContactHistory')}
+              {t('speakers.noDetails')}
             </Typography>
           </Box>
         )}

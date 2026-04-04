@@ -339,7 +339,8 @@
     "reviewContent": "Review Content",
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
-    "submittedAt": "Submitted"
+    "submittedAt": "Submitted",
+    "noDetails": "Nagins detagls disponibels"
   },
   "tasks": {
     "taskBoard": "Tabla d'activitads",
