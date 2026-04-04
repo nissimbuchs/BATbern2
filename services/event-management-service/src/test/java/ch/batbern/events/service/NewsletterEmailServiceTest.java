@@ -14,6 +14,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.service.IcsCalendarService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -76,6 +77,10 @@ class NewsletterEmailServiceTest {
     private EventRepository eventRepository;
     @Mock
     private UserApiClient userApiClient;
+    @Mock
+    private IcsCalendarService icsCalendarService;
+    @Mock
+    private EventTimeResolver eventTimeResolver;
 
     @InjectMocks
     private NewsletterEmailService newsletterEmailService;
@@ -650,6 +655,89 @@ class NewsletterEmailServiceTest {
                 any(), any());
         // The paginated query should NOT be called in test mode
         verify(subscriberRepository, never()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+    }
+
+    // ── iCal attachment building ─────────────────────────────────────────────
+
+    @Test
+    @DisplayName("buildIcsAttachments: template with {{eventDate}} includes current event ICS")
+    void buildIcsAttachments_withEventDate_includesCurrentEvent() {
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
+        testEvent.setVenueName("Welle 7, Bern");
+
+        String templateHtml = "<p>Date: {{eventDate}}</p><p>Link: {{eventDetailLink}}</p>";
+        Map<String, String> baseVars = Map.of(
+                "eventDate", "6. März 2026",
+                "eventDetailLink", "https://batbern.ch/events/BATbern58",
+                "upcomingEventsSection", "");
+
+        var range = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        when(eventTimeResolver.resolve(testEvent)).thenReturn(range);
+        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
+                .thenReturn("VCALENDAR".getBytes());
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).hasSize(1);
+        assertThat(attachments.get(0).filename()).isEqualTo("batbern-events.ics");
+        assertThat(attachments.get(0).mimeType()).contains("text/calendar");
+        assertThat(attachments.get(0).inline()).isTrue();
+        verify(icsCalendarService).generateMultiEventIcsFile(any(), eq("noreply@batbern.ch"), eq("BATbern"));
+    }
+
+    @Test
+    @DisplayName("buildIcsAttachments: template without event variables returns empty")
+    void buildIcsAttachments_noEventVars_returnsEmpty() {
+        testEvent.setId(UUID.randomUUID());
+
+        String templateHtml = "<p>Hello subscriber!</p><p>Check out our news.</p>";
+        Map<String, String> baseVars = Map.of("upcomingEventsSection", "");
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).isEmpty();
+        verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("buildIcsAttachments: template with upcomingEventsSection includes upcoming events")
+    void buildIcsAttachments_withUpcomingEvents_includesUpcoming() {
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
+
+        Event futureEvent = new Event();
+        futureEvent.setId(UUID.randomUUID());
+        futureEvent.setTitle("Future BAT");
+        futureEvent.setDate(Instant.parse("2026-06-15T14:00:00Z"));
+        futureEvent.setVenueName("PostFinance Arena");
+
+        String templateHtml = "<p>{{upcomingEventsSection}}</p>";
+        Map<String, String> baseVars = Map.of(
+                "upcomingEventsSection", "<table>upcoming events HTML</table>");
+
+        var range1 = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        var range2 = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 6, 15, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 6, 15, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        when(eventTimeResolver.resolve(any())).thenReturn(range1).thenReturn(range2);
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of(futureEvent));
+        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
+                .thenReturn("VCALENDAR".getBytes());
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).hasSize(1);
+        // Should NOT include current event (no {{eventDate}} in template)
+        // but SHOULD include the future event from upcoming section
+        verify(icsCalendarService).generateMultiEventIcsFile(any(), any(), any());
     }
 
 }

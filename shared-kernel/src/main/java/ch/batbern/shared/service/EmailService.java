@@ -234,6 +234,85 @@ public class EmailService {
     }
 
     /**
+     * Send an HTML email with attachments synchronously (for use in newsletter send loops).
+     * Supports configurationSetName for SES bounce/complaint tracking.
+     */
+    public void sendHtmlEmailSyncWithAttachments(
+            String to,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments,
+            String configurationSetName
+    ) {
+        if (sesClient == null) {
+            log.warn("SES client not configured - skipping email send (local/test mode)");
+            if (localEmailCapture != null) {
+                List<CapturedEmail.AttachmentInfo> attachmentInfos = attachments.stream()
+                    .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
+                    .toList();
+                java.util.UUID emailId = localEmailCapture.capture(
+                        to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                for (EmailAttachment attachment : attachments) {
+                    localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
+                }
+            }
+            return;
+        }
+
+        try {
+            log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(), to);
+
+            Session session = Session.getInstance(new Properties());
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail, fromName));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setSubject(subject, "UTF-8");
+            message.setReplyTo(InternetAddress.parse(replyToEmail));
+
+            MimeMultipart multipart = new MimeMultipart("mixed");
+
+            MimeBodyPart htmlPart = new MimeBodyPart();
+            htmlPart.setContent(htmlBody, "text/html; charset=UTF-8");
+            multipart.addBodyPart(htmlPart);
+
+            for (EmailAttachment attachment : attachments) {
+                MimeBodyPart attachmentPart = new MimeBodyPart();
+                attachmentPart.setContent(attachment.content(), attachment.mimeType());
+                attachmentPart.setFileName(attachment.filename());
+                if (attachment.inline()) {
+                    attachmentPart.setDisposition(MimeBodyPart.INLINE);
+                }
+                multipart.addBodyPart(attachmentPart);
+            }
+
+            message.setContent(multipart);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            message.writeTo(outputStream);
+            ByteBuffer rawMessage = ByteBuffer.wrap(outputStream.toByteArray());
+
+            SendRawEmailRequest.Builder rawRequestBuilder = SendRawEmailRequest.builder()
+                    .rawMessage(RawMessage.builder()
+                            .data(SdkBytes.fromByteBuffer(rawMessage))
+                            .build());
+
+            if (configurationSetName != null && !configurationSetName.isBlank()) {
+                rawRequestBuilder.configurationSetName(configurationSetName);
+            }
+
+            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
+            log.info("Email with attachments sent (sync) to: {}, MessageId: {}", to, response.messageId());
+
+        } catch (MessagingException | IOException e) {
+            log.error("Failed to create MIME message for: {}", to, e);
+            throw new EmailSendException("Failed to create email message", e);
+        } catch (SesException e) {
+            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            throw new EmailSendException("Failed to send email to: " + to, e);
+        }
+    }
+
+    /**
      * Replace template variables in email content.
      * Supports simple variables {{variableName}} and Mustache-style conditionals {{#variableName}}...{{/variableName}}.
      *

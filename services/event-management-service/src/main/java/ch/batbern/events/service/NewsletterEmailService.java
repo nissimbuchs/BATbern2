@@ -18,6 +18,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,6 +124,8 @@ public class NewsletterEmailService {
     private final SessionUserService sessionUserService;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
+    private final IcsCalendarService icsCalendarService;
+    private final EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -330,6 +333,17 @@ public class NewsletterEmailService {
             subject = "[Testmailing nur an OK] " + subject;
         }
 
+        // Build iCal attachments once (same for all recipients).
+        // Check raw template HTML for variable markers to decide what to attach.
+        String rawTemplateHtml = emailTemplateService.findByKeyAndLocale(effectiveKey, locale)
+                .map(t -> t.getHtmlBody())
+                .orElse("");
+        List<EmailService.EmailAttachment> icsAttachments =
+                buildIcsAttachments(rawTemplateHtml, baseVars, event);
+        if (!icsAttachments.isEmpty()) {
+            log.info("Newsletter will include {} iCal attachment(s) for sendId={}", icsAttachments.size(), sendId);
+        }
+
         int sentCount = 0;
         int failedCount = 0;
 
@@ -353,8 +367,8 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        emailService.sendHtmlEmailSync(
-                                subscriber.getEmail(), subject, mergedHtml, configurationSetName);
+                        sendWithOptionalAttachments(
+                                subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
                         log.error("Test mode send failed for {}: {}",
@@ -406,8 +420,8 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        emailService.sendHtmlEmailSync(
-                                subscriber.getEmail(), subject, mergedHtml, configurationSetName);
+                        sendWithOptionalAttachments(
+                                subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
                         log.error("Newsletter send failed for {}: {}", subscriber.getEmail(), e.getMessage());
@@ -638,6 +652,78 @@ public class NewsletterEmailService {
         vars.put("preferencesLink", baseUrl + "/account");
         vars.put("logoUrl", baseUrl + "/BATbern_white_logo.svg");
         return vars;
+    }
+
+    // ── Send helper ───────────────────────────────────────────────────────────
+
+    /** Send with attachments when present, otherwise use simple (non-MIME) path. */
+    private void sendWithOptionalAttachments(String to, String subject, String mergedHtml,
+                                              List<EmailService.EmailAttachment> attachments) {
+        if (attachments.isEmpty()) {
+            emailService.sendHtmlEmailSync(to, subject, mergedHtml, configurationSetName);
+        } else {
+            emailService.sendHtmlEmailSyncWithAttachments(
+                    to, subject, mergedHtml, attachments, configurationSetName);
+        }
+    }
+
+    // ── iCal attachment building ────────────────────────────────────────────────
+
+    /**
+     * Build iCal attachments for a newsletter based on template content.
+     * Attaches events as a single .ics file only when the template actually shows them.
+     *
+     * @param templateHtml Raw template HTML (before variable substitution)
+     * @param baseVars     Resolved template variables (to check if upcomingEventsSection is non-empty)
+     * @param event        Current event being sent
+     * @return List of attachments (empty if template doesn't reference events)
+     */
+    List<EmailService.EmailAttachment> buildIcsAttachments(
+            String templateHtml, Map<String, String> baseVars, Event event) {
+        boolean includeCurrentEvent = templateHtml.contains("{{eventDate}}")
+                || templateHtml.contains("{{eventDetailLink}}");
+        String upcomingHtml = baseVars.get("upcomingEventsSection");
+        boolean includeUpcoming = templateHtml.contains("{{upcomingEventsSection}}")
+                && upcomingHtml != null && !upcomingHtml.isBlank();
+
+        if (!includeCurrentEvent && !includeUpcoming) {
+            return List.of();
+        }
+
+        List<IcsCalendarService.IcsEventData> icsEvents = new java.util.ArrayList<>();
+
+        if (includeCurrentEvent && event.getDate() != null) {
+            icsEvents.add(toIcsEventData(event));
+        }
+
+        if (includeUpcoming) {
+            Instant now = Instant.now();
+            eventRepository.findByDateAfter(now).stream()
+                    .filter(e -> !e.getId().equals(event.getId()))
+                    .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                    .map(this::toIcsEventData)
+                    .forEach(icsEvents::add);
+        }
+
+        if (icsEvents.isEmpty()) {
+            return List.of();
+        }
+
+        byte[] icsBytes = icsCalendarService.generateMultiEventIcsFile(
+                icsEvents, "noreply@batbern.ch", "BATbern");
+        return List.of(new EmailService.EmailAttachment(
+                "batbern-events.ics", icsBytes,
+                "text/calendar; charset=utf-8; method=PUBLISH", true));
+    }
+
+    private IcsCalendarService.IcsEventData toIcsEventData(Event event) {
+        EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
+        return new IcsCalendarService.IcsEventData(
+                event.getTitle() != null ? event.getTitle() : event.getEventCode(),
+                "Berner Architekten Treffen - " + (event.getTitle() != null ? event.getTitle() : ""),
+                event.getVenueName() != null ? event.getVenueName() : "",
+                range.start(),
+                range.end());
     }
 
     // ── @Transactional helpers (each in its own short transaction) ────────────
