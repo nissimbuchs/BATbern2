@@ -2121,4 +2121,129 @@ web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — 
 
 ---
 
+### Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
+
+**Story file**: `_bmad-output/implementation-artifacts/10-31-bot-protection-turnstile.md`
+**Status**: ready-for-dev
+**Source**: [GH#582](../../issues/582)
+
+**User Story:**
+As a **platform operator**, I want newsletter subscriptions and event registrations protected by Cloudflare Turnstile, so that bot submissions are rejected before they reach domain services without degrading UX for legitimate users.
+
+**Why Turnstile:**
+- Privacy-first — no tracking cookies, no cross-site data collection → no cookie consent banner needed
+- GDPR / Swiss nFADP compliant out of the box
+- Invisible to most users (no puzzles)
+- Free tier: 1M verifications/month
+- No Cloudflare CDN/DNS required
+
+**Endpoints protected:**
+- `POST /api/v1/newsletter/subscribe` (NewsletterSubscribeWidget)
+- `POST /api/v1/events/{eventCode}/registrations` (RegistrationWizard)
+
+Cognito signup is out of scope (AWS handles its own bot protection).
+
+**Architecture:**
+
+**Gateway-centralized, endpoint-selective filter:**
+A new `TurnstileVerificationFilter` in `api-gateway` intercepts only configured endpoint patterns. Follows the existing `RateLimitingFilter` pattern (`@Component`, `@Order`, `jakarta.servlet.Filter`). Domain service controllers are untouched.
+
+**Token transport:** `X-Turnstile-Token` HTTP header (not request body) — avoids DTO / OpenAPI spec changes.
+
+**Fail-open:** If Cloudflare siteverify is unreachable, log a warning and allow the request. Legitimate users are never blocked by a third-party outage.
+
+**Feature flag:** `turnstile.enabled=false` by default — existing behaviour is fully preserved when disabled.
+
+**Scope:**
+
+**Phase 1 — Backend Config Layer:**
+- `TurnstileProperties` (`@ConfigurationProperties(prefix="turnstile")`) with `enabled`, `siteKey`, `secretKey`, `verifyUrl`, `protectedEndpoints`
+- `TurnstileConfigDTO` — `{ siteKey: String }` (never expose secretKey)
+- `FeatureFlagsDTO.turnstile: boolean` + `FrontendConfigDTO.turnstile: TurnstileConfigDTO`
+- `ConfigController` conditionally includes site key and feature flag
+- `application.yml` turnstile block with `${TURNSTILE_ENABLED:false}` default
+
+**Phase 2 — Backend Verification Filter:**
+- `TurnstileVerificationFilter`: `@Order(Ordered.LOWEST_PRECEDENCE - 1)`, runs before `RateLimitingFilter`
+- AntPathMatcher for wildcard endpoint matching (`events/*/registrations`)
+- Missing header → 403 `turnstile_required`; invalid token → 403 `turnstile_failed`; Cloudflare unreachable → pass (fail-open)
+- Full unit test coverage (6 scenarios)
+
+**Phase 3 — Frontend Hook:**
+- `useTurnstile` hook: reads `useConfig()`, loads Turnstile script from CDN (no npm dependency), renders invisible widget via `window.turnstile`
+- Exports `{ getToken, resetWidget, widgetRef }`; when disabled `getToken()` returns `null`
+
+**Phase 4 — Frontend Form Integration:**
+- `AppConfig` extended with `features.turnstile` + optional `turnstile.siteKey`
+- `newsletterService.subscribe()` and `eventApiClient.createRegistration()` accept optional `turnstileToken` param → passed as header
+- `NewsletterSubscribeWidget` and public `RegistrationWizard` integrated with `useTurnstile`
+- 403 error handling: show user-friendly message + `resetWidget()`
+
+**Phase 5 — Environment Activation:**
+
+| Environment | TURNSTILE_ENABLED | Site Key | Secret Key |
+|---|---|---|---|
+| Development | `false` | — | — |
+| Staging | `true` | `1x00000000000000000000AA` (always-pass test) | `1x0000000000000000000000000000000AA` |
+| Production | `true` | Real key from Cloudflare dashboard | Real secret |
+
+**New files (7):**
+```
+api-gateway/.../config/TurnstileProperties.java
+api-gateway/.../config/dto/TurnstileConfigDTO.java
+api-gateway/.../security/TurnstileVerificationFilter.java
+api-gateway/src/test/.../security/TurnstileVerificationFilterTest.java
+web-frontend/src/hooks/useTurnstile/useTurnstile.ts
+web-frontend/src/hooks/useTurnstile/index.ts
+web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts
+```
+
+**Modified files (12):**
+```
+api-gateway/.../config/dto/FeatureFlagsDTO.java       — add boolean turnstile
+api-gateway/.../config/dto/FrontendConfigDTO.java     — add TurnstileConfigDTO turnstile
+api-gateway/.../config/ConfigController.java          — inject TurnstileProperties, set flags
+api-gateway/src/main/resources/application.yml        — add turnstile.* block
+web-frontend/src/config/runtime-config.ts             — extend AppConfig
+web-frontend/src/services/newsletterService.ts        — add turnstileToken param
+web-frontend/src/services/eventApiClient.ts           — add turnstileToken param
+web-frontend/src/hooks/useNewsletter/useNewsletter.ts — update mutation type
+web-frontend/.../NewsletterSubscribeWidget.tsx         — integrate useTurnstile
+web-frontend/.../Registration/RegistrationWizard.tsx   — integrate useTurnstile
+web-frontend/.../__tests__/NewsletterSubscribeWidget.test.tsx — verify header
+web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify header
++ CDK / ECS task definition (staging + production env vars)
+```
+
+**Acceptance Criteria:**
+
+1. **AC1**: `TurnstileVerificationFilter` intercepts only `POST /api/v1/newsletter/subscribe` and `POST /api/v1/events/*/registrations` when enabled; all other endpoints unaffected
+2. **AC2**: Missing `X-Turnstile-Token` on protected endpoints → 403 `turnstile_required`
+3. **AC3**: Invalid token (Cloudflare `success: false`) → 403 `turnstile_failed`
+4. **AC4**: Cloudflare unreachable → log warning, let request through (fail-open)
+5. **AC5**: `turnstile.enabled=false` (default) → filter is a no-op; all existing behaviour preserved
+6. **AC6**: `GET /api/v1/config` includes `features.turnstile: boolean` and optional `turnstile.siteKey`
+7. **AC7**: `useTurnstile` hook: disabled → `getToken()` returns `null`; enabled → loads widget, returns token
+8. **AC8**: `NewsletterSubscribeWidget` calls `getToken()` before subscribe mutation, passes header
+9. **AC9**: `RegistrationWizard` calls `getToken()` before `createRegistration()`, passes header
+10. **AC10**: 403 with `turnstile_required`/`turnstile_failed` → user-friendly error + `resetWidget()`
+11. **AC11**: `TurnstileVerificationFilterTest` covers 6 scenarios; `./gradlew :api-gateway:test` passes
+12. **AC12**: `useTurnstile.test.ts` and updated component tests pass; `npm run build` passes
+13. **AC13**: All existing tests pass; no regressions
+
+**Definition of Done (Story 10.31):**
+- [ ] `TurnstileVerificationFilter` passes all 6 unit test scenarios
+- [ ] `GET /api/v1/config` includes `features.turnstile` and optional `turnstile.siteKey`
+- [ ] `useTurnstile` hook: disabled path returns null; enabled path resolves token
+- [ ] `NewsletterSubscribeWidget` sends `X-Turnstile-Token` header when token obtained
+- [ ] `RegistrationWizard` sends `X-Turnstile-Token` header when token obtained
+- [ ] 403 error handling shows user-friendly message and resets widget
+- [ ] `turnstile.enabled=false` default — local dev fully functional without any Turnstile config
+- [ ] Staging configured with Cloudflare always-pass test keys
+- [ ] `./gradlew :api-gateway:test` passes
+- [ ] `npm run build` passes with zero errors
+- [ ] All existing tests pass
+
+---
+
 **END OF EPIC 10**
