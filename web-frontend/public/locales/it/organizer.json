@@ -324,7 +324,22 @@
     "sendReminder": "Invia promemoria",
     "sendingReminder": "Invio in corso...",
     "reminderSent": "Promemoria inviato a {{email}}",
-    "reminderFailed": "Invio promemoria non riuscito"
+    "reminderFailed": "Invio promemoria non riuscito",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted"
   },
   "tasks": {
     "taskBoard": "Bacheca attività",

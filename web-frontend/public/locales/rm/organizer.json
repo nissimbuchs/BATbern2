@@ -324,7 +324,22 @@
     "sendReminder": "Trametter ramintur",
     "sendingReminder": "Trasmissiun...",
     "reminderSent": "Ramintur tramess a {{email}}",
-    "reminderFailed": "Trametter ramintur ha fallì"
+    "reminderFailed": "Trametter ramintur ha fallì",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted"
   },
   "tasks": {
     "taskBoard": "Tabla d'activitads",

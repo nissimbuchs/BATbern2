@@ -7,4 +7,3 @@
 
 export { default as MarkContactedModal } from './MarkContactedModal';
 export { default as OutreachHistoryTimeline } from './OutreachHistoryTimeline';
-export { default as SpeakerOutreachDetailsDrawer } from './SpeakerOutreachDetailsDrawer';

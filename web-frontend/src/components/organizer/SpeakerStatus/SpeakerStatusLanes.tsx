@@ -46,8 +46,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
-import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
-import { QualityReviewDrawer } from './QualityReviewDrawer';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
 
@@ -111,14 +109,6 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   }>({ open: false });
 
   const [activeSpeaker, setActiveSpeaker] = useState<SpeakerPoolEntry | null>(null);
-
-  // Content submission drawer state (Story 5.5)
-  const [contentDrawerOpen, setContentDrawerOpen] = useState(false);
-  const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
-
-  // Quality review drawer state (Story 5.5 Phase 4)
-  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
-  const [reviewSpeaker, setReviewSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -190,15 +180,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
           }
         );
       }
-      // Special handling for CONTENT_SUBMITTED - open drawer instead of dialog
-      else if (newStatus === 'CONTENT_SUBMITTED') {
-        setCurrentSpeaker(speaker);
-        setContentDrawerOpen(true);
-      }
-      // Special handling for QUALITY_REVIEWED - open quality review drawer (Story 5.5 Phase 4)
-      else if (newStatus === 'QUALITY_REVIEWED') {
-        setReviewSpeaker(speaker);
-        setReviewDrawerOpen(true);
+      // Special handling for CONTENT_SUBMITTED / QUALITY_REVIEWED - open speaker detail drawer
+      else if (newStatus === 'CONTENT_SUBMITTED' || newStatus === 'QUALITY_REVIEWED') {
+        if (onSpeakerClick) onSpeakerClick(speaker);
       } else {
         // Open confirmation dialog for other status changes
         setDialogState({
@@ -314,22 +298,6 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
           onCancel={handleCancelStatusChange}
         />
       )}
-
-      {/* Content Submission Drawer (Story 5.5) */}
-      <ContentSubmissionDrawer
-        open={contentDrawerOpen}
-        onClose={() => setContentDrawerOpen(false)}
-        speaker={currentSpeaker}
-        eventCode={eventCode}
-      />
-
-      {/* Quality Review Drawer (Story 5.5 Phase 4) */}
-      <QualityReviewDrawer
-        open={reviewDrawerOpen}
-        onClose={() => setReviewDrawerOpen(false)}
-        speaker={reviewSpeaker}
-        eventCode={eventCode}
-      />
     </Box>
   );
 };
