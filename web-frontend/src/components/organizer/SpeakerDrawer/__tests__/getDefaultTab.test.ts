@@ -65,8 +65,7 @@ describe('getDefaultTab', () => {
     });
 
     it('should return 0 for unknown/future statuses via default case', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(getDefaultTab(makeSpeaker('FUTURE_STATUS' as any))).toBe(0);
+      expect(getDefaultTab(makeSpeaker('FUTURE_STATUS' as SpeakerPoolEntry['status']))).toBe(0);
     });
   });
 });

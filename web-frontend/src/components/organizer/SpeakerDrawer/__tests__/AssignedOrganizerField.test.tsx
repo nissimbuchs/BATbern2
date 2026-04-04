@@ -56,10 +56,7 @@ let mutateCallbacks: { onSuccess?: () => void; onError?: () => void } = {};
 
 vi.mock('@/hooks/useSpeakerPool', () => ({
   usePatchSpeakerPool: () => ({
-    mutate: (
-      vars: unknown,
-      callbacks: { onSuccess?: () => void; onError?: () => void }
-    ) => {
+    mutate: (vars: unknown, callbacks: { onSuccess?: () => void; onError?: () => void }) => {
       mutateCallbacks = callbacks;
       mockMutate(vars);
     },
