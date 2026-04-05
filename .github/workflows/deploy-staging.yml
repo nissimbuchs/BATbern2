@@ -620,12 +620,22 @@ jobs:
       - name: Cleanup stuck Company Management deployment
         if: steps.deploy-company.outcome == 'failure'
         run: |
-          echo "⚠️  Company Management deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-CompanyManagement --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "Waiting for rollback to complete (max 5 min)..."
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-CompanyManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-CompanyManagement --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-CompanyManagement"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Company Management deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            echo "Stack in FAILED state — attempting continue-update-rollback..."
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Company Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -649,11 +659,21 @@ jobs:
       - name: Cleanup stuck Event Management deployment
         if: steps.deploy-event.outcome == 'failure'
         run: |
-          echo "⚠️  Event Management deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-EventManagement --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-EventManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-EventManagement --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-EventManagement"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Event Management deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Event Management
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -677,11 +697,21 @@ jobs:
       - name: Cleanup stuck Speaker Coordination deployment
         if: steps.deploy-speaker.outcome == 'failure'
         run: |
-          echo "⚠️  Speaker Coordination deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-SpeakerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-SpeakerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-SpeakerCoordination --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-SpeakerCoordination"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Speaker Coordination deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Speaker Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -705,11 +735,21 @@ jobs:
       - name: Cleanup stuck Partner Coordination deployment
         if: steps.deploy-partner.outcome == 'failure'
         run: |
-          echo "⚠️  Partner Coordination deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-PartnerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-PartnerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-PartnerCoordination --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-PartnerCoordination"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Partner Coordination deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Partner Coordination
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -733,11 +773,21 @@ jobs:
       - name: Cleanup stuck Attendee Experience deployment
         if: steps.deploy-attendee.outcome == 'failure'
         run: |
-          echo "⚠️  Attendee Experience deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-AttendeeExperience --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-AttendeeExperience --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-AttendeeExperience --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-AttendeeExperience"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Attendee Experience deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       - name: Re-authenticate after Attendee Experience
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -763,11 +813,21 @@ jobs:
       - name: Cleanup stuck API Gateway deployment
         if: steps.deploy-gateway.outcome == 'failure'
         run: |
-          echo "⚠️  API Gateway deploy failed/timed out. Cancelling stuck CloudFormation update..."
-          aws cloudformation cancel-update-stack --stack-name BATbern-staging-ApiGatewayService --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-ApiGatewayService --region ${{ env.AWS_REGION }} 2>/dev/null || \
-          aws cloudformation continue-update-rollback --stack-name BATbern-staging-ApiGatewayService --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          echo "✅ Stack recovered"
+          STACK="BATbern-staging-ApiGatewayService"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  API Gateway deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
 
       # Check if any Layer 4 service failed and report
       - name: Check Layer 4 deployment results
