@@ -193,4 +193,132 @@ describe('useMyRegistration', () => {
 
     expect(result.current.data?.status).toBe(status);
   });
+
+  // Retry logic ──────────────────────────────────────────────────────────
+
+  describe('retry callback', () => {
+    it('should not retry on 404 errors (user not registered)', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        user: null,
+        canAccess: vi.fn(),
+        login: vi.fn(),
+        logout: vi.fn(),
+        refreshSession: vi.fn(),
+      } as ReturnType<typeof useAuth>);
+
+      const error404 = Object.assign(new Error('Not Found'), {
+        response: { status: 404 },
+      });
+      mockGetMyRegistration.mockRejectedValue(error404);
+
+      // Use a QueryClient that does NOT override retry so the hook's retry callback is invoked
+      const retryQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            gcTime: 0,
+            retryDelay: 0,
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useMyRegistration('BATbern999'), {
+        wrapper: createWrapper(retryQueryClient),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Service should be called exactly once — no retries for 404
+      expect(mockGetMyRegistration).toHaveBeenCalledTimes(1);
+
+      retryQueryClient.clear();
+    });
+
+    it('should retry on 500 server errors', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        user: null,
+        canAccess: vi.fn(),
+        login: vi.fn(),
+        logout: vi.fn(),
+        refreshSession: vi.fn(),
+      } as ReturnType<typeof useAuth>);
+
+      const error500 = Object.assign(new Error('Internal Server Error'), {
+        response: { status: 500 },
+      });
+      // Fail first, then succeed on retry
+      mockGetMyRegistration
+        .mockRejectedValueOnce(error500)
+        .mockResolvedValueOnce(MOCK_REGISTRATION);
+
+      const retryQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            gcTime: 0,
+            retryDelay: 0,
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useMyRegistration('BATbern999'), {
+        wrapper: createWrapper(retryQueryClient),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Should have retried: at least 2 calls
+      expect(mockGetMyRegistration.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(result.current.data).toEqual(MOCK_REGISTRATION);
+
+      retryQueryClient.clear();
+    });
+
+    it('should retry when error has no response status (network error)', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        user: null,
+        canAccess: vi.fn(),
+        login: vi.fn(),
+        logout: vi.fn(),
+        refreshSession: vi.fn(),
+      } as ReturnType<typeof useAuth>);
+
+      const networkError = new Error('Network Error');
+      // Fail first, then succeed on retry
+      mockGetMyRegistration
+        .mockRejectedValueOnce(networkError)
+        .mockResolvedValueOnce(MOCK_REGISTRATION);
+
+      const retryQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            gcTime: 0,
+            retryDelay: 0,
+          },
+        },
+      });
+
+      const { result } = renderHook(() => useMyRegistration('BATbern999'), {
+        wrapper: createWrapper(retryQueryClient),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Should have retried: at least 2 calls
+      expect(mockGetMyRegistration.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(result.current.data).toEqual(MOCK_REGISTRATION);
+
+      retryQueryClient.clear();
+    });
+  });
 });

@@ -17,4 +17,10 @@ public class NewsletterSendRequest {
 
     /** Optional template key override. Null → use default 'newsletter-event'. */
     private String templateKey;
+
+    /** Story 10.29 AC7: Max recipients for canary send mode. Null → send to all. */
+    private Integer maxRecipients;
+
+    /** Test mode: send only to organizer-role subscribers. Null/false → send to all. */
+    private Boolean testMode;
 }

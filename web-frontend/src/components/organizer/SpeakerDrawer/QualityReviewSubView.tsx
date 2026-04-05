@@ -1,22 +1,5 @@
-/**
- * Quality Review Drawer Component (Story 5.5 Phase 4)
- *
- * Drawer for reviewing speaker presentation content
- * Features:
- * - Slide-in drawer from right side (600px)
- * - Speaker and presentation information display
- * - Quality criteria checklist:
- *   - Abstract length ≤ 1000 characters
- *   - "Lessons learned" detected
- *   - No product promotion
- *   - Professional tone
- * - Approve/Reject actions
- * - Reject requires feedback
- */
-
 import React, { useState, useEffect } from 'react';
 import {
-  Drawer,
   Box,
   Typography,
   IconButton,
@@ -35,7 +18,7 @@ import {
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
-  Close as CloseIcon,
+  ArrowBack as ArrowBackIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
   AttachFile as AttachFileIcon,
@@ -51,11 +34,11 @@ import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { ReviewRequest, SpeakerContentResponse } from '@/services/speakerContentService';
 
-interface QualityReviewDrawerProps {
-  open: boolean;
-  onClose: () => void;
-  speaker: SpeakerPoolEntry | null;
+interface QualityReviewSubViewProps {
+  speaker: SpeakerPoolEntry;
   eventCode: string;
+  onBack: () => void;
+  onClose: () => void;
 }
 
 function getScoreColor(score: number): 'error' | 'warning' | 'success' {
@@ -64,11 +47,11 @@ function getScoreColor(score: number): 'error' | 'warning' | 'success' {
   return 'success';
 }
 
-export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
-  open,
-  onClose,
+export const QualityReviewSubView: React.FC<QualityReviewSubViewProps> = ({
   speaker,
   eventCode,
+  onBack,
+  onClose,
 }) => {
   const { t } = useTranslation('organizer');
   const queryClient = useQueryClient();
@@ -80,38 +63,31 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
   const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
 
   const { aiContentEnabled } = useFeatureFlags();
-  const analysisMutation = useAiAnalyzeAbstract(speaker?.id ?? '');
+  const analysisMutation = useAiAnalyzeAbstract(speaker.id);
 
-  // Fetch speaker content when drawer opens
   const { data: content, isLoading } = useQuery<SpeakerContentResponse>({
-    queryKey: ['speakerContent', eventCode, speaker?.id],
-    queryFn: () => speakerContentService.getSpeakerContent(eventCode, speaker?.id || ''),
-    enabled: open && !!speaker,
+    queryKey: ['speakerContent', eventCode, speaker.id],
+    queryFn: () => speakerContentService.getSpeakerContent(eventCode, speaker.id),
+    enabled: !!speaker,
   });
 
-  // Reset state when drawer opens/closes
   useEffect(() => {
-    if (!open) {
-      setRejecting(false);
-      setFeedback('');
-      setFeedbackError('');
-      setCopied(false);
-      setAiErrorMessage(null);
-      analysisMutation.reset();
-    }
-  }, [open]);
+    setRejecting(false);
+    setFeedback('');
+    setFeedbackError('');
+    setCopied(false);
+    setAiErrorMessage(null);
+    analysisMutation.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- analysisMutation is a stable mutation object; including it would cause infinite re-renders
+  }, [speaker.id]);
 
-  // Mutation for reviewing content
   const reviewMutation = useMutation({
     mutationFn: (request: ReviewRequest) =>
-      speakerContentService.reviewContent(eventCode, speaker?.id || '', request),
+      speakerContentService.reviewContent(eventCode, speaker.id, request),
     onSuccess: () => {
-      // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
       queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
       queryClient.invalidateQueries({ queryKey: ['reviewQueue', eventCode] });
-
-      // Close drawer
       onClose();
     },
   });
@@ -135,11 +111,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
       setFeedbackError(t('qualityReview.errors.feedbackRequired'));
       return;
     }
-
-    reviewMutation.mutate({
-      action: 'REJECT',
-      feedback: feedback.trim(),
-    });
+    reviewMutation.mutate({ action: 'REJECT', feedback: feedback.trim() });
   };
 
   const handleAnalyze = () => {
@@ -164,44 +136,34 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
   return (
     <>
-      <Drawer
-        anchor="right"
-        open={open}
-        onClose={onClose}
-        PaperProps={{
-          sx: {
-            width: { xs: '100%', sm: 600 },
-            p: 3,
-          },
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5">{t('qualityReview.title')}</Typography>
-          <IconButton onClick={onClose} edge="end">
-            <CloseIcon />
-          </IconButton>
-        </Box>
+      {/* Back Button */}
+      <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <IconButton onClick={onBack} size="small" aria-label={t('speakers.drawer.back')}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h6">{t('qualityReview.title')}</Typography>
+      </Box>
 
-        <Divider sx={{ mb: 3 }} />
+      <Divider />
 
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <BATbernLoader size={96} />
           </Box>
         ) : content ? (
-          <>
+          <Stack spacing={2}>
             {/* Speaker Information */}
-            <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.default' }}>
+            <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('common:role.speaker')}
               </Typography>
-              <Typography variant="h6">{speaker?.speakerName}</Typography>
+              <Typography variant="h6">{speaker.speakerName}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {speaker?.company}
+                {speaker.company}
               </Typography>
               <Chip
-                label={speaker?.status?.replace(/_/g, ' ')}
+                label={t(`speakerStatus.${speaker.status}`, speaker.status?.replace(/_/g, ' '))}
                 size="small"
                 color="primary"
                 sx={{ mt: 1 }}
@@ -209,7 +171,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
             </Paper>
 
             {/* Presentation Information */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+            <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('qualityReview.presentationTitle')}
               </Typography>
@@ -226,8 +188,8 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
               </Typography>
             </Paper>
 
-            {/* Material Upload */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+            {/* Material */}
+            <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('qualityReview.material', 'Presentation Material')}
               </Typography>
@@ -253,7 +215,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
             </Paper>
 
             {/* Quality Criteria */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+            <Paper sx={{ p: 2 }}>
               <Box
                 sx={{
                   display: 'flex',
@@ -288,7 +250,6 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
               {analysisMutation.isSuccess && analysisMutation.data ? (
                 <Stack spacing={2} sx={{ mt: 1 }}>
-                  {/* No-promotion score */}
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                       <Chip
@@ -307,7 +268,6 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                     )}
                   </Box>
 
-                  {/* Lessons-learned score */}
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                       <Chip
@@ -326,7 +286,6 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                     )}
                   </Box>
 
-                  {/* Word count + shortened abstract */}
                   {analysisMutation.data.shortenedAbstract && (
                     <Accordion disableGutters>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -356,7 +315,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
             {/* Error Message */}
             {reviewMutation.isError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error">
                 {reviewMutation.error instanceof Error
                   ? reviewMutation.error.message
                   : t('qualityReview.errors.unknown')}
@@ -365,7 +324,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
             {/* Reject Feedback Form */}
             {rejecting ? (
-              <Box sx={{ mb: 2 }}>
+              <Box>
                 <Alert severity="info" sx={{ mb: 2 }}>
                   {t('qualityReview.rejectInstructions')}
                 </Alert>
@@ -410,7 +369,6 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                 </Box>
               </Box>
             ) : (
-              /* Action Buttons */
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   variant="contained"
@@ -439,11 +397,11 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                 </Button>
               </Box>
             )}
-          </>
+          </Stack>
         ) : (
           <Alert severity="warning">{t('qualityReview.noContent')}</Alert>
         )}
-      </Drawer>
+      </Box>
 
       <Snackbar
         open={!!aiErrorMessage}

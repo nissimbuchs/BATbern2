@@ -324,7 +324,23 @@
     "sendReminder": "Enviar recordatorio",
     "sendingReminder": "Enviando...",
     "reminderSent": "Recordatorio enviado a {{email}}",
-    "reminderFailed": "Error al enviar el recordatorio"
+    "reminderFailed": "Error al enviar el recordatorio",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted",
+    "noDetails": "No hay detalles disponibles"
   },
   "tasks": {
     "taskBoard": "Tablero de tareas",

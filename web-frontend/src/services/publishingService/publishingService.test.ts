@@ -115,6 +115,36 @@ describe('publishingService', () => {
     });
   });
 
+  describe('getPublishingStatus', () => {
+    it('should get publishing status successfully', async () => {
+      const mockData = {
+        eventCode: 'BATbern142',
+        currentPhase: 'TOPIC',
+        phases: {
+          topic: { isPublished: true, isValid: true, errors: [] },
+          speakers: { isPublished: false, isValid: false, errors: ['Missing speakers'] },
+          agenda: { isPublished: false, isValid: false, errors: ['No agenda items'] },
+        },
+      };
+
+      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
+
+      const result = await publishingService.getPublishingStatus('BATbern142');
+
+      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/status');
+      expect(result).toEqual(mockData);
+    });
+
+    it('should propagate error when getPublishingStatus fails', async () => {
+      const mockError = new Error('Service unavailable');
+      vi.spyOn(apiClient, 'get').mockRejectedValue(mockError);
+
+      await expect(publishingService.getPublishingStatus('BATbern142')).rejects.toThrow(
+        'Service unavailable'
+      );
+    });
+  });
+
   describe('getPublishPreview', () => {
     it('should get publish preview', async () => {
       const mockData = {

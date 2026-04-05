@@ -477,6 +477,21 @@ describe('AuthService', () => {
 
       expect(user).toBeNull();
     });
+
+    it('should_returnNull_when_sessionHasNoIdToken', async () => {
+      // Covers lines 266-267: session resolves but tokens.idToken is absent
+      mockAuth.getCurrentUser.mockResolvedValue({
+        username: 'test@batbern.ch',
+        userId: 'user-123',
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue({
+        tokens: undefined,
+      });
+
+      const user = await authService.getCurrentUser();
+
+      expect(user).toBeNull();
+    });
   });
 
   describe('signOut', () => {
@@ -589,6 +604,44 @@ describe('AuthService', () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe('USER_NOT_CONFIRMED');
       expect(result.error?.message).toBe('Please confirm your email address');
+    });
+
+    it('should_mapTooManyRequestsException_when_rateLimited', async () => {
+      // Covers line 399: TooManyRequestsException mapping
+      const credentials: LoginCredentials = {
+        email: 'user@example.com',
+        password: 'Password123!',
+      };
+
+      mockAuth.signIn.mockRejectedValue({
+        name: 'TooManyRequestsException',
+        message: 'Rate exceeded',
+      });
+
+      const result = await authService.signIn(credentials);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('TOO_MANY_REQUESTS');
+      expect(result.error?.message).toBe('Too many attempts. Please try again later');
+    });
+
+    it('should_mapUnknownError_when_errorCodeNotRecognized', async () => {
+      // Covers default case in mapCognitoError
+      const credentials: LoginCredentials = {
+        email: 'user@example.com',
+        password: 'Password123!',
+      };
+
+      mockAuth.signIn.mockRejectedValue({
+        name: 'SomeUnknownException',
+        message: 'Something unexpected happened',
+      });
+
+      const result = await authService.signIn(credentials);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('SomeUnknownException');
+      expect(result.error?.message).toBe('Something unexpected happened');
     });
   });
 });

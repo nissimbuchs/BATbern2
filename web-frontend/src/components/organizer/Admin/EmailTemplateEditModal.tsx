@@ -116,7 +116,12 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   }, [template]);
 
   const missingContentPlaceholder = isLayoutMode && !htmlBody.includes('{{content}}');
-  const detectedVars = extractVariables(htmlBody);
+  const detectedVars = [
+    ...new Set([
+      ...(template?.variables ? Object.keys(template.variables) : []),
+      ...extractVariables(htmlBody),
+    ]),
+  ];
 
   const handleSave = async () => {
     setError(null);

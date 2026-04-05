@@ -217,6 +217,42 @@ public class SpeakerPoolService {
     }
 
     /**
+     * Partial update of a speaker pool entry. Only non-null fields are applied.
+     *
+     * @param eventCode the event code (validates ownership)
+     * @param speakerId the speaker pool entry ID
+     * @param request the patch request with optional fields
+     * @return the updated speaker pool response
+     */
+    @Transactional
+    public SpeakerPoolResponse patchEntry(String eventCode, String speakerId,
+                                          ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new ch.batbern.events.exception.EventNotFoundException(
+                        "Event not found: " + eventCode));
+
+        SpeakerPool speakerPool = speakerPoolRepository.findById(java.util.UUID.fromString(speakerId))
+                .orElseThrow(() -> new IllegalArgumentException("Speaker pool entry not found: " + speakerId));
+
+        if (!speakerPool.getEventId().equals(event.getId())) {
+            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
+        }
+
+        if (request.getAssignedOrganizerId() != null) {
+            speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
+        }
+        if (request.getNotes() != null) {
+            speakerPool.setNotes(request.getNotes());
+        }
+        if (request.getEmail() != null) {
+            speakerPool.setEmail(request.getEmail());
+        }
+
+        SpeakerPool updated = speakerPoolRepository.save(speakerPool);
+        return SpeakerPoolResponse.fromEntity(updated);
+    }
+
+    /**
      * Delete a speaker from the event speaker pool.
      *
      * @param eventCode the event code

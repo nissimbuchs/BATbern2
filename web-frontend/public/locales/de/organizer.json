@@ -330,7 +330,23 @@
     "sendReminder": "Erinnerung senden",
     "sendingReminder": "Wird gesendet...",
     "reminderSent": "Erinnerung gesendet an {{email}}",
-    "reminderFailed": "Erinnerung konnte nicht gesendet werden"
+    "reminderFailed": "Erinnerung konnte nicht gesendet werden",
+    "tabs": {
+      "overview": "Übersicht",
+      "details": "Details",
+      "activity": "Aktivität"
+    },
+    "drawer": {
+      "back": "Zurück"
+    },
+    "organizerUpdated": "Organisator aktualisiert",
+    "organizerUpdateFailed": "Organisator konnte nicht aktualisiert werden",
+    "submitContent": "Inhalte einreichen",
+    "reviewContent": "Inhalte prüfen",
+    "revisionRequested": "Überarbeitung angefordert",
+    "submittedContent": "Eingereichte Inhalte",
+    "submittedAt": "Eingereicht",
+    "noDetails": "Keine Details verfügbar"
   },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",

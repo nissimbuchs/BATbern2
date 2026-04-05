@@ -33,6 +33,19 @@ const mockUnsubscribedSubscriber: SubscriberResponse = {
   unsubscribedAt: '2026-02-01T12:00:00Z',
 };
 
+const mockSuppressedSubscriber: SubscriberResponse = {
+  id: 'sub-3',
+  email: 'bounced@example.com',
+  firstName: 'Carol',
+  language: 'en',
+  source: 'website',
+  subscribedAt: '2025-11-01T08:00:00Z',
+  unsubscribedAt: null,
+  suppressedAt: '2026-03-01T08:00:00Z',
+  bounceType: 'Permanent',
+  bounceCount: 3,
+};
+
 const renderComponent = (
   props: Partial<React.ComponentProps<typeof NewsletterSubscriberTable>> = {}
 ) => {
@@ -148,5 +161,28 @@ describe('NewsletterSubscriberTable', () => {
 
     const chips = screen.getAllByText(/active|unsubscribed/i);
     expect(chips.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should_renderSuppressedChip_when_subscriberHasSuppressedAt', () => {
+    renderComponent({
+      subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
+    });
+
+    expect(screen.getByTestId('suppressed-chip-sub-3')).toBeInTheDocument();
+  });
+
+  it('should_showUnsuppressAction_when_suppressedSubscriberMenuOpened', async () => {
+    const user = userEvent.setup();
+    const { props } = renderComponent({
+      subscribers: [mockActiveSubscriber, mockSuppressedSubscriber],
+    });
+
+    const menuButton = screen.getByTestId('actions-sub-3');
+    await user.click(menuButton);
+
+    expect(screen.getByTestId('action-unsuppress')).toBeInTheDocument();
+    expect(screen.getByTestId('action-delete')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-unsubscribe')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe')).not.toBeInTheDocument();
   });
 });

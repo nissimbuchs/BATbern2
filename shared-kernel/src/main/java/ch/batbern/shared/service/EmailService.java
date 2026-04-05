@@ -75,39 +75,7 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
-        // In test/local environments without SES, capture or log the email
-        if (sesClient == null) {
-            log.warn("SES client not configured - skipping email send (local/test mode)");
-            if (localEmailCapture != null) {
-                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
-            } else {
-                log.info("Would send email to: {}, subject: {}", to, subject);
-            }
-            return;
-        }
-
-        try {
-            log.debug("Sending HTML email to: {}, subject: {}", to, subject);
-
-            SendEmailRequest request = SendEmailRequest.builder()
-                    .source(String.format("%s <%s>", fromName, fromEmail))
-                    .replyToAddresses(replyToEmail)
-                    .destination(Destination.builder().toAddresses(to).build())
-                    .message(software.amazon.awssdk.services.ses.model.Message.builder()
-                            .subject(Content.builder().data(subject).charset("UTF-8").build())
-                            .body(Body.builder()
-                                    .html(Content.builder().data(htmlBody).charset("UTF-8").build())
-                                    .build())
-                            .build())
-                    .build();
-
-            SendEmailResponse response = sesClient.sendEmail(request);
-            log.info("Email sent successfully to: {}, MessageId: {}", to, response.messageId());
-
-        } catch (SesException e) {
-            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
-            throw new EmailSendException("Failed to send email to: " + to, e);
-        }
+        sendHtmlEmailSync(to, subject, htmlBody, null);
     }
 
     /**
@@ -122,6 +90,15 @@ public class EmailService {
      * @param htmlBody HTML content
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody) {
+        sendHtmlEmailSync(to, subject, htmlBody, null);
+    }
+
+    /**
+     * Story 10.29 AC4: Synchronous variant with optional SES Configuration Set.
+     * When configurationSetName is non-null, BOUNCE/COMPLAINT events are routed
+     * through the Configuration Set's event destinations.
+     */
+    public void sendHtmlEmailSync(String to, String subject, String htmlBody, String configurationSetName) {
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
@@ -133,9 +110,10 @@ public class EmailService {
         }
 
         try {
-            log.debug("Sending HTML email (sync) to: {}, subject: {}", to, subject);
+            log.debug("Sending HTML email (sync) to: {}, subject: {}, configSet: {}",
+                    to, subject, configurationSetName);
 
-            SendEmailRequest request = SendEmailRequest.builder()
+            SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
                     .source(String.format("%s <%s>", fromName, fromEmail))
                     .replyToAddresses(replyToEmail)
                     .destination(Destination.builder().toAddresses(to).build())
@@ -144,10 +122,13 @@ public class EmailService {
                             .body(Body.builder()
                                     .html(Content.builder().data(htmlBody).charset("UTF-8").build())
                                     .build())
-                            .build())
-                    .build();
+                            .build());
 
-            SendEmailResponse response = sesClient.sendEmail(request);
+            if (configurationSetName != null && !configurationSetName.isBlank()) {
+                requestBuilder.configurationSetName(configurationSetName);
+            }
+
+            SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
             log.info("Email sent (sync) to: {}, MessageId: {}", to, response.messageId());
 
         } catch (SesException e) {
@@ -242,6 +223,85 @@ public class EmailService {
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequest);
             log.info("Email with attachments sent successfully to: {}, MessageId: {}", to, response.messageId());
+
+        } catch (MessagingException | IOException e) {
+            log.error("Failed to create MIME message for: {}", to, e);
+            throw new EmailSendException("Failed to create email message", e);
+        } catch (SesException e) {
+            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            throw new EmailSendException("Failed to send email to: " + to, e);
+        }
+    }
+
+    /**
+     * Send an HTML email with attachments synchronously (for use in newsletter send loops).
+     * Supports configurationSetName for SES bounce/complaint tracking.
+     */
+    public void sendHtmlEmailSyncWithAttachments(
+            String to,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments,
+            String configurationSetName
+    ) {
+        if (sesClient == null) {
+            log.warn("SES client not configured - skipping email send (local/test mode)");
+            if (localEmailCapture != null) {
+                List<CapturedEmail.AttachmentInfo> attachmentInfos = attachments.stream()
+                    .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
+                    .toList();
+                java.util.UUID emailId = localEmailCapture.capture(
+                        to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                for (EmailAttachment attachment : attachments) {
+                    localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
+                }
+            }
+            return;
+        }
+
+        try {
+            log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(), to);
+
+            Session session = Session.getInstance(new Properties());
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail, fromName));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setSubject(subject, "UTF-8");
+            message.setReplyTo(InternetAddress.parse(replyToEmail));
+
+            MimeMultipart multipart = new MimeMultipart("mixed");
+
+            MimeBodyPart htmlPart = new MimeBodyPart();
+            htmlPart.setContent(htmlBody, "text/html; charset=UTF-8");
+            multipart.addBodyPart(htmlPart);
+
+            for (EmailAttachment attachment : attachments) {
+                MimeBodyPart attachmentPart = new MimeBodyPart();
+                attachmentPart.setContent(attachment.content(), attachment.mimeType());
+                attachmentPart.setFileName(attachment.filename());
+                if (attachment.inline()) {
+                    attachmentPart.setDisposition(MimeBodyPart.INLINE);
+                }
+                multipart.addBodyPart(attachmentPart);
+            }
+
+            message.setContent(multipart);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            message.writeTo(outputStream);
+            ByteBuffer rawMessage = ByteBuffer.wrap(outputStream.toByteArray());
+
+            SendRawEmailRequest.Builder rawRequestBuilder = SendRawEmailRequest.builder()
+                    .rawMessage(RawMessage.builder()
+                            .data(SdkBytes.fromByteBuffer(rawMessage))
+                            .build());
+
+            if (configurationSetName != null && !configurationSetName.isBlank()) {
+                rawRequestBuilder.configurationSetName(configurationSetName);
+            }
+
+            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
+            log.info("Email with attachments sent (sync) to: {}, MessageId: {}", to, response.messageId());
 
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", to, e);

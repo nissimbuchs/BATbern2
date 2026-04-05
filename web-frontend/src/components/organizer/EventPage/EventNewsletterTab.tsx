@@ -15,6 +15,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -22,6 +23,7 @@ import {
   DialogContentText,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   LinearProgress,
   Link,
@@ -30,6 +32,7 @@ import {
   Select,
   Skeleton,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -69,6 +72,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   const [pendingSendType, setPendingSendType] = useState<SendType | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('newsletter-event');
+  const [testMode, setTestMode] = useState(false);
   /** sendId of the most recently triggered send — used to poll status. */
   const [activeSendId, setActiveSendId] = useState<string | null>(null);
 
@@ -134,6 +138,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
       isReminder: pendingSendType === 'reminder',
       locale,
       templateKey: selectedTemplateKey,
+      ...(testMode && { testMode: true }),
     };
     sendMutation.mutate(request, {
       onSuccess: (data) => {
@@ -155,6 +160,7 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
       isReminder: false,
       locale,
       templateKey: selectedTemplateKey,
+      ...(testMode && { testMode: true }),
     };
     previewMutation.mutate(
       { eventCode, request },
@@ -298,6 +304,27 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             {t('organizer:newsletter.templateSelect.createNew')} ↗
           </Link>
 
+          {/* Test mode toggle — send only to organizer subscribers */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={testMode}
+                onChange={(e) => setTestMode(e.target.checked)}
+                color="warning"
+                data-testid="newsletter-test-mode-switch"
+              />
+            }
+            label={t('eventPage.newsletter.testMode', 'Test Mode (organizers only)')}
+          />
+          {testMode && (
+            <Alert severity="warning" data-testid="newsletter-test-mode-warning">
+              {t(
+                'eventPage.newsletter.testModeWarning',
+                'Test mode enabled — newsletter will only be sent to organizer subscribers.'
+              )}
+            </Alert>
+          )}
+
           <Stack direction="row" spacing={1} flexWrap="wrap">
             <Button
               variant="outlined"
@@ -395,6 +422,15 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
                         {send.isReminder
                           ? t('eventPage.newsletter.typeReminder', 'Reminder')
                           : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
+                        {send.testMode && (
+                          <Chip
+                            label="TEST"
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            sx={{ ml: 0.5 }}
+                          />
+                        )}
                       </TableCell>
                       <TableCell align="right">
                         {send.id === activeSendId && isJobActive
@@ -465,12 +501,19 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         <DialogTitle>{t('eventPage.newsletter.confirmSendTitle')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t('eventPage.newsletter.confirmSendBody', {
-              type: sendType,
-              count: activeCount,
-              eventTitle,
-              templateKey: selectedTemplateKey,
-            })}
+            {testMode
+              ? t('eventPage.newsletter.confirmSendBodyTestMode', {
+                  type: sendType,
+                  eventTitle,
+                  templateKey: selectedTemplateKey,
+                  defaultValue: `Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?`,
+                })
+              : t('eventPage.newsletter.confirmSendBody', {
+                  type: sendType,
+                  count: activeCount,
+                  eventTitle,
+                  templateKey: selectedTemplateKey,
+                })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

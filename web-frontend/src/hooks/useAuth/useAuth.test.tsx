@@ -562,6 +562,243 @@ describe('useAuth Hook', () => {
     });
   });
 
+  describe('Context Requirement', () => {
+    it('should_throwError_when_usedOutsideAuthProvider', () => {
+      // Suppress console.error for expected error
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      expect(() => {
+        renderHook(() => useAuth());
+      }).toThrow('useAuth must be used within AuthProvider');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Partner CompanyName Resolution', () => {
+    it('should_resolveCompanyName_when_partnerUserSignsIn', async () => {
+      // Mock apiClient for partner company resolution
+      const apiClientModule = await import('@/services/api/apiClient');
+      const getSpy = vi.spyOn(apiClientModule.default, 'get').mockResolvedValue({
+        data: { companyName: 'Partner Corp' },
+      });
+
+      const mockPartnerUser = {
+        userId: 'user-partner',
+        email: 'partner@batbern.ch',
+        emailVerified: true,
+        role: 'partner' as const,
+        companyId: 'company-partner',
+        preferences: {
+          language: 'en' as const,
+          theme: 'light' as const,
+          notifications: { email: true, sms: false, push: true },
+          privacy: { showProfile: true, allowMessages: true },
+        },
+        issuedAt: Math.floor(Date.now() / 1000),
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        tokenId: 'token-partner',
+        // No companyName — triggers resolution
+      };
+
+      mockAuthService.signIn.mockResolvedValue({
+        success: true,
+        user: mockPartnerUser,
+        accessToken: 'partner-token',
+        refreshToken: 'partner-refresh',
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.signIn({
+          email: 'partner@batbern.ch',
+          password: 'password123',
+        });
+      });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user?.companyName).toBe('Partner Corp');
+      });
+
+      getSpy.mockRestore();
+    });
+
+    it('should_resolveCompanyNameOnInit_when_partnerUserHasNoCompanyName', async () => {
+      const apiClientModule = await import('@/services/api/apiClient');
+      const getSpy = vi.spyOn(apiClientModule.default, 'get').mockResolvedValue({
+        data: { companyName: 'Init Partner Corp' },
+      });
+
+      const mockPartnerUser = {
+        userId: 'user-partner-init',
+        email: 'partner-init@batbern.ch',
+        emailVerified: true,
+        role: 'partner' as const,
+        companyId: 'company-partner',
+        preferences: {
+          language: 'en' as const,
+          theme: 'light' as const,
+          notifications: { email: true, sms: false, push: true },
+          privacy: { showProfile: true, allowMessages: true },
+        },
+        issuedAt: Math.floor(Date.now() / 1000),
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        tokenId: 'token-partner-init',
+        // No companyName — triggers resolution on init
+      };
+
+      mockAuthService.getCurrentUser.mockResolvedValue(mockPartnerUser);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: true,
+        accessToken: 'token',
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user?.companyName).toBe('Init Partner Corp');
+      });
+
+      getSpy.mockRestore();
+    });
+
+    it('should_handlePartnerResolutionFailure_when_apiCallFails', async () => {
+      const apiClientModule = await import('@/services/api/apiClient');
+      const getSpy = vi
+        .spyOn(apiClientModule.default, 'get')
+        .mockRejectedValue(new Error('Network error'));
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const mockPartnerUser = {
+        userId: 'user-partner-fail',
+        email: 'partner-fail@batbern.ch',
+        emailVerified: true,
+        role: 'partner' as const,
+        companyId: 'company-partner',
+        preferences: {
+          language: 'en' as const,
+          theme: 'light' as const,
+          notifications: { email: true, sms: false, push: true },
+          privacy: { showProfile: true, allowMessages: true },
+        },
+        issuedAt: Math.floor(Date.now() / 1000),
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        tokenId: 'token-partner-fail',
+      };
+
+      mockAuthService.getCurrentUser.mockResolvedValue(mockPartnerUser);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: true,
+        accessToken: 'token',
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+
+      // companyName should be undefined since resolution failed
+      expect(result.current.user?.companyName).toBeUndefined();
+
+      getSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('Multi-Role Support', () => {
+    it('should_checkRolesArray_when_userHasMultipleRoles', async () => {
+      const mockUser = {
+        userId: 'user-multi',
+        email: 'multi@batbern.ch',
+        emailVerified: true,
+        role: 'organizer' as const,
+        roles: ['organizer', 'speaker'] as const,
+        companyId: 'company-multi',
+        preferences: {
+          language: 'en' as const,
+          theme: 'light' as const,
+          notifications: { email: true, sms: false, push: true },
+          privacy: { showProfile: true, allowMessages: true },
+        },
+        issuedAt: Math.floor(Date.now() / 1000),
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        tokenId: 'token-multi',
+      };
+
+      mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: true,
+        accessToken: 'token',
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      expect(result.current.hasRole('organizer')).toBe(true);
+      expect(result.current.hasRole('speaker')).toBe(true);
+      expect(result.current.hasRole('partner')).toBe(false);
+    });
+  });
+
+  describe('Initialization Error', () => {
+    it('should_setInitError_when_getCurrentUserThrows', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockAuthService.getCurrentUser.mockRejectedValue(new Error('Auth init failed'));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error?.code).toBe('INIT_ERROR');
+        expect(result.current.error?.message).toBe('Failed to initialize authentication');
+      });
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Refresh Token Failure', () => {
+    it('should_returnFalse_when_refreshTokenFails', async () => {
+      mockAuthService.refreshToken.mockRejectedValue(new Error('Refresh failed'));
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      let refreshResult: boolean = false;
+      await act(async () => {
+        refreshResult = await result.current.refreshToken();
+      });
+
+      expect(refreshResult).toBe(false);
+    });
+
+    it('should_returnFalse_when_refreshTokenReturnsUnsuccessful', async () => {
+      mockAuthService.getCurrentUser.mockResolvedValue(null);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: false,
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      let refreshResult: boolean = false;
+      await act(async () => {
+        refreshResult = await result.current.refreshToken();
+      });
+
+      expect(refreshResult).toBe(false);
+    });
+  });
+
   describe('Error Recovery', () => {
     it('should_handleSignInException_when_networkError', async () => {
       mockAuthService.signIn.mockRejectedValue(new Error('Network error'));

@@ -29,14 +29,20 @@ export const NEWSLETTER_QUERY_KEYS = {
   history: (eventCode: string) => ['newsletter', 'history', eventCode] as const,
 };
 
-/** Subscribe anonymous email to newsletter. */
+export interface NewsletterSubscribeMutationVars {
+  request: NewsletterSubscribeRequest;
+  turnstileToken?: string | null;
+}
+
+/** Subscribe anonymous email to newsletter. Accepts optional turnstileToken (Story 10.31, AC8). */
 export function useNewsletterSubscribe(): UseMutationResult<
   void,
   Error,
-  NewsletterSubscribeRequest
+  NewsletterSubscribeMutationVars
 > {
   return useMutation({
-    mutationFn: newsletterService.subscribe,
+    mutationFn: ({ request, turnstileToken }) =>
+      newsletterService.subscribe(request, turnstileToken),
   });
 }
 

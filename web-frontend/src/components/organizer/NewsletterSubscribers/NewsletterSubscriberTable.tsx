@@ -36,7 +36,7 @@ interface NewsletterSubscriberTableProps {
   sortDir: 'asc' | 'desc';
   onSortChange: (field: string, dir: 'asc' | 'desc') => void;
   onAction: (
-    action: 'unsubscribe' | 'resubscribe' | 'delete',
+    action: 'unsubscribe' | 'resubscribe' | 'unsuppress' | 'delete',
     subscriber: SubscriberResponse
   ) => void;
 }
@@ -72,14 +72,15 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
     setMenuSubscriber(null);
   };
 
-  const handleAction = (action: 'unsubscribe' | 'resubscribe' | 'delete') => {
+  const handleAction = (action: 'unsubscribe' | 'resubscribe' | 'unsuppress' | 'delete') => {
     if (menuSubscriber) {
       onAction(action, menuSubscriber);
     }
     handleMenuClose();
   };
 
-  const isActive = (sub: SubscriberResponse) => !sub.unsubscribedAt;
+  const isActive = (sub: SubscriberResponse) => !sub.unsubscribedAt && !sub.suppressedAt;
+  const isSuppressed = (sub: SubscriberResponse) => !!sub.suppressedAt;
 
   if (subscribers.length === 0) {
     return (
@@ -140,11 +141,22 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                   {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
-                    color={isActive(sub) ? 'success' : 'default'}
-                    size="small"
-                  />
+                  {isSuppressed(sub) ? (
+                    <Tooltip title={`${sub.bounceType ?? ''} — ${sub.bounceCount ?? 0} bounce(s)`}>
+                      <Chip
+                        label={t('status.suppressed')}
+                        color="warning"
+                        size="small"
+                        data-testid={`suppressed-chip-${sub.id}`}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Chip
+                      label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
+                      color={isActive(sub) ? 'success' : 'default'}
+                      size="small"
+                    />
+                  )}
                 </TableCell>
                 <TableCell align="right">
                   <IconButton
@@ -168,9 +180,14 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
             {t('actions.unsubscribe')}
           </MenuItem>
         )}
-        {menuSubscriber && !isActive(menuSubscriber) && (
+        {menuSubscriber && !isActive(menuSubscriber) && !isSuppressed(menuSubscriber) && (
           <MenuItem onClick={() => handleAction('resubscribe')} data-testid="action-resubscribe">
             {t('actions.resubscribe')}
+          </MenuItem>
+        )}
+        {menuSubscriber && isSuppressed(menuSubscriber) && (
+          <MenuItem onClick={() => handleAction('unsuppress')} data-testid="action-unsuppress">
+            {t('actions.unsuppress')}
           </MenuItem>
         )}
         <MenuItem

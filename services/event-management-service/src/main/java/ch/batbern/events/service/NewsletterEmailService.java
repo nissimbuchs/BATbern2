@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterRecipient;
 import ch.batbern.events.domain.NewsletterRecipientId;
@@ -17,6 +18,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -92,6 +94,10 @@ public class NewsletterEmailService {
     @Value("${newsletter.send.rate-delay-ms:70}")
     private long sendRateDelayMs;
 
+    /** Story 10.29 AC7: Inter-page delay for canary send pacing. 0 = disabled. */
+    @Value("${newsletter.send.inter-page-delay-ms:0}")
+    private long interPageDelayMs;
+
     private static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of("moderation", "break", "lunch");
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
@@ -117,9 +123,16 @@ public class NewsletterEmailService {
     private final SessionRepository sessionRepository;
     private final SessionUserService sessionUserService;
     private final EventRepository eventRepository;
+    private final UserApiClient userApiClient;
+    private final IcsCalendarService icsCalendarService;
+    private final EventTimeResolver eventTimeResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
+
+    /** Story 10.29 AC4: SES Configuration Set name for bounce/complaint tracking. Null = disabled. */
+    @Value("${batbern.ses.configuration-set-name:#{null}}")
+    private String configurationSetName;
 
     /**
      * Self-reference via {@code @Lazy} so that calls to {@code @Async} methods go through
@@ -173,6 +186,15 @@ public class NewsletterEmailService {
     @Transactional(readOnly = true)
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
                                               @Nullable String templateKey) {
+        return preview(event, isReminder, locale, templateKey, false);
+    }
+
+    /**
+     * Builds a preview with test-mode-aware recipient count.
+     */
+    @Transactional(readOnly = true)
+    public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale,
+                                              @Nullable String templateKey, boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
         Map<String, String> vars = buildVariables(event, locale, isReminder,
                 baseUrl + "/unsubscribe?token=PREVIEW");
@@ -180,12 +202,20 @@ public class NewsletterEmailService {
         String mergedHtml = emailService.replaceVariables(
                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
         String subject = buildSubject(event, isReminder, locale, vars, effectiveKey);
-        int count = (int) subscriberService.getActiveCount();
+        int count = testMode ? getTestModeRecipientCount() : (int) subscriberService.getActiveCount();
         return NewsletterPreviewResponse.builder()
                 .subject(subject)
                 .htmlPreview(mergedHtml)
                 .recipientCount(count)
                 .build();
+    }
+
+    /** Returns the number of active subscribers who are also organizers. */
+    public int getTestModeRecipientCount() {
+        List<String> organizerUsernames = userApiClient.getOrganizerUsernames();
+        return subscriberRepository
+                .findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(organizerUsernames)
+                .size();
     }
 
     // ── Send (fire-and-forget) ────────────────────────────────────────────────
@@ -202,6 +232,28 @@ public class NewsletterEmailService {
     public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
                                                   String locale, String sentByUsername,
                                                   @Nullable String templateKey) {
+        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, null, false);
+    }
+
+    /**
+     * Story 10.29 AC7: Overload with maxRecipients for canary send mode.
+     */
+    public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
+                                                  String locale, String sentByUsername,
+                                                  @Nullable String templateKey,
+                                                  @Nullable Integer maxRecipients) {
+        return sendNewsletter(event, isReminder, locale, sentByUsername, templateKey, maxRecipients, false);
+    }
+
+    /**
+     * Full overload with test mode support. When {@code testMode} is true, sends only to
+     * newsletter subscribers who also hold the ORGANIZER role.
+     */
+    public NewsletterSendResponse sendNewsletter(Event event, boolean isReminder,
+                                                  String locale, String sentByUsername,
+                                                  @Nullable String templateKey,
+                                                  @Nullable Integer maxRecipients,
+                                                  boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
 
         // Duplicate-send prevention: reject if a send is already in progress for this event.
@@ -212,18 +264,31 @@ public class NewsletterEmailService {
                             + event.getEventCode() + " (sendId=" + active.getId() + ")");
                 });
 
-        long totalCount = subscriberService.getActiveCount();
+        int effectiveCount;
+        if (testMode) {
+            effectiveCount = getTestModeRecipientCount();
+            if (effectiveCount == 0) {
+                throw new IllegalStateException(
+                        "No organizer subscribers found for test mode — "
+                        + "ensure organizers are subscribed to the newsletter");
+            }
+        } else {
+            long totalCount = subscriberService.getActiveCount();
+            effectiveCount = (maxRecipients != null && maxRecipients > 0)
+                    ? Math.min(maxRecipients, (int) totalCount) : (int) totalCount;
+        }
 
         // Persist PENDING audit record first (committed immediately in own transaction).
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
-                (int) totalCount, effectiveKey);
+                effectiveCount, effectiveKey, testMode);
 
         // Launch background send job — returns immediately.
         // Must call via `self` proxy so @Async is honoured (direct this.xxx() bypasses the proxy).
-        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey);
+        self.executeNewsletterSendAsync(saved.getId(), event, isReminder, locale, effectiveKey,
+                maxRecipients, testMode);
 
-        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}",
-                saved.getId(), event.getEventCode(), totalCount);
+        log.info("Newsletter send job queued: sendId={}, event={}, recipients={}, testMode={}",
+                saved.getId(), event.getEventCode(), effectiveCount, testMode);
 
         return toResponse(saved);
     }
@@ -239,23 +304,59 @@ public class NewsletterEmailService {
     @Async
     public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
                                             String locale, String effectiveKey) {
+        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, null, false);
+    }
+
+    /**
+     * Story 10.29 AC7: Backward-compatible overload without testMode.
+     */
+    @Async
+    public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
+                                            String locale, String effectiveKey,
+                                            @Nullable Integer maxRecipients) {
+        executeNewsletterSendAsync(sendId, event, isReminder, locale, effectiveKey, maxRecipients, false);
+    }
+
+    /**
+     * Background send with test mode and canary mode support.
+     * When {@code testMode} is true, sends only to organizer-role subscribers without paging.
+     */
+    @Async
+    public void executeNewsletterSendAsync(UUID sendId, Event event, boolean isReminder,
+                                            String locale, String effectiveKey,
+                                            @Nullable Integer maxRecipients, boolean testMode) {
         markInProgress(sendId);
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+        if (testMode) {
+            subject = "[Testmailing nur an OK] " + subject;
+        }
+
+        // Build iCal attachments once (same for all recipients).
+        // Check raw template HTML for variable markers to decide what to attach.
+        String rawTemplateHtml = emailTemplateService.findByKeyAndLocale(effectiveKey, locale)
+                .map(t -> t.getHtmlBody())
+                .orElse("");
+        List<EmailService.EmailAttachment> icsAttachments =
+                buildIcsAttachments(rawTemplateHtml, baseVars, event);
+        if (!icsAttachments.isEmpty()) {
+            log.info("Newsletter will include {} iCal attachment(s) for sendId={}", icsAttachments.size(), sendId);
+        }
 
         int sentCount = 0;
         int failedCount = 0;
 
-        try {
-            int pageNumber = 0;
-            Page<NewsletterSubscriber> page;
+        // ── Test mode: send only to organizer subscribers (no paging) ────────
+        if (testMode) {
+            try {
+                List<String> organizerUsernames = userApiClient.getOrganizerUsernames();
+                List<NewsletterSubscriber> testRecipients = subscriberRepository
+                        .findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(organizerUsernames);
 
-            do {
-                page = subscriberRepository.findByUnsubscribedAtIsNull(
-                        PageRequest.of(pageNumber, SEND_PAGE_SIZE));
+                log.info("Test mode send: sendId={}, organizer recipients={}", sendId, testRecipients.size());
 
-                for (NewsletterSubscriber subscriber : page.getContent()) {
+                for (NewsletterSubscriber subscriber : testRecipients) {
                     String deliveryStatus = "sent";
                     try {
                         String unsubLink = baseUrl + "/unsubscribe?token="
@@ -266,7 +367,61 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        emailService.sendHtmlEmailSync(subscriber.getEmail(), subject, mergedHtml);
+                        sendWithOptionalAttachments(
+                                subscriber.getEmail(), subject, mergedHtml, icsAttachments);
+                        sentCount++;
+                    } catch (Exception e) {
+                        log.error("Test mode send failed for {}: {}",
+                                subscriber.getEmail(), e.getMessage());
+                        deliveryStatus = "failed";
+                        failedCount++;
+                    }
+                    recordRecipient(sendId, subscriber.getEmail(), deliveryStatus);
+                    sleepQuietly(sendRateDelayMs);
+                }
+
+                String finalStatus = computeFinalStatus(sentCount, failedCount);
+                markCompleted(sendId, sentCount, failedCount, finalStatus);
+
+                log.info("Test mode send completed: sendId={}, sent={}, failed={}, status={}",
+                        sendId, sentCount, failedCount, finalStatus);
+            } catch (Exception e) {
+                log.error("Test mode send aborted: sendId={}", sendId, e);
+                markCompleted(sendId, sentCount, failedCount, STATUS_FAILED);
+            }
+            return;
+        }
+
+        // ── Normal send: paged processing ────────────────────────────────────
+        boolean reachedLimit = false;
+
+        try {
+            int pageNumber = 0;
+            Page<NewsletterSubscriber> page;
+
+            do {
+                page = subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                        PageRequest.of(pageNumber, SEND_PAGE_SIZE));
+
+                for (NewsletterSubscriber subscriber : page.getContent()) {
+                    // Story 10.29 AC7: Early termination for canary send mode
+                    if (maxRecipients != null && sentCount + failedCount >= maxRecipients) {
+                        reachedLimit = true;
+                        break;
+                    }
+
+                    String deliveryStatus = "sent";
+                    try {
+                        String unsubLink = baseUrl + "/unsubscribe?token="
+                                + subscriber.getUnsubscribeToken();
+                        Map<String, String> recipientVars = new HashMap<>(baseVars);
+                        recipientVars.put("unsubscribeLink", unsubLink);
+                        String contentHtml = renderContent(locale, recipientVars, effectiveKey);
+                        String mergedHtml = emailService.replaceVariables(
+                                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
+                                recipientVars);
+                        sendWithOptionalAttachments(
+                                subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
                         log.error("Newsletter send failed for {}: {}", subscriber.getEmail(), e.getMessage());
@@ -281,13 +436,18 @@ public class NewsletterEmailService {
                 updateSendProgress(sendId, sentCount, failedCount);
                 pageNumber++;
 
-            } while (page.hasNext());
+                // Story 10.29 AC7: Inter-page delay for canary mode pacing
+                if (interPageDelayMs > 0 && page.hasNext() && !reachedLimit) {
+                    sleepQuietly(interPageDelayMs);
+                }
+
+            } while (page.hasNext() && !reachedLimit);
 
             String finalStatus = computeFinalStatus(sentCount, failedCount);
             markCompleted(sendId, sentCount, failedCount, finalStatus);
 
-            log.info("Newsletter send completed: sendId={}, sent={}, failed={}, status={}",
-                    sendId, sentCount, failedCount, finalStatus);
+            log.info("Newsletter send completed: sendId={}, sent={}, failed={}, status={}, maxRecipients={}",
+                    sendId, sentCount, failedCount, finalStatus, maxRecipients);
 
         } catch (Exception e) {
             log.error("Newsletter send job aborted unexpectedly: sendId={}", sendId, e);
@@ -462,6 +622,7 @@ public class NewsletterEmailService {
                 .failedCount(send.getFailedCount())
                 .startedAt(send.getStartedAt())
                 .completedAt(send.getCompletedAt())
+                .testMode(send.isTestMode())
                 .build();
     }
 
@@ -493,12 +654,84 @@ public class NewsletterEmailService {
         return vars;
     }
 
+    // ── Send helper ───────────────────────────────────────────────────────────
+
+    /** Send with attachments when present, otherwise use simple (non-MIME) path. */
+    private void sendWithOptionalAttachments(String to, String subject, String mergedHtml,
+                                              List<EmailService.EmailAttachment> attachments) {
+        if (attachments.isEmpty()) {
+            emailService.sendHtmlEmailSync(to, subject, mergedHtml, configurationSetName);
+        } else {
+            emailService.sendHtmlEmailSyncWithAttachments(
+                    to, subject, mergedHtml, attachments, configurationSetName);
+        }
+    }
+
+    // ── iCal attachment building ────────────────────────────────────────────────
+
+    /**
+     * Build iCal attachments for a newsletter based on template content.
+     * Attaches events as a single .ics file only when the template actually shows them.
+     *
+     * @param templateHtml Raw template HTML (before variable substitution)
+     * @param baseVars     Resolved template variables (to check if upcomingEventsSection is non-empty)
+     * @param event        Current event being sent
+     * @return List of attachments (empty if template doesn't reference events)
+     */
+    List<EmailService.EmailAttachment> buildIcsAttachments(
+            String templateHtml, Map<String, String> baseVars, Event event) {
+        boolean includeCurrentEvent = templateHtml.contains("{{eventDate}}")
+                || templateHtml.contains("{{eventDetailLink}}");
+        String upcomingHtml = baseVars.get("upcomingEventsSection");
+        boolean includeUpcoming = templateHtml.contains("{{upcomingEventsSection}}")
+                && upcomingHtml != null && !upcomingHtml.isBlank();
+
+        if (!includeCurrentEvent && !includeUpcoming) {
+            return List.of();
+        }
+
+        List<IcsCalendarService.IcsEventData> icsEvents = new java.util.ArrayList<>();
+
+        if (includeCurrentEvent && event.getDate() != null) {
+            icsEvents.add(toIcsEventData(event));
+        }
+
+        if (includeUpcoming) {
+            Instant now = Instant.now();
+            eventRepository.findByDateAfter(now).stream()
+                    .filter(e -> !e.getId().equals(event.getId()))
+                    .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                    .map(this::toIcsEventData)
+                    .forEach(icsEvents::add);
+        }
+
+        if (icsEvents.isEmpty()) {
+            return List.of();
+        }
+
+        byte[] icsBytes = icsCalendarService.generateMultiEventIcsFile(
+                icsEvents, "noreply@batbern.ch", "BATbern");
+        return List.of(new EmailService.EmailAttachment(
+                "batbern-events.ics", icsBytes,
+                "text/calendar; charset=utf-8; method=PUBLISH", true));
+    }
+
+    private IcsCalendarService.IcsEventData toIcsEventData(Event event) {
+        EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
+        return new IcsCalendarService.IcsEventData(
+                event.getTitle() != null ? event.getTitle() : event.getEventCode(),
+                "Berner Architekten Treffen - " + (event.getTitle() != null ? event.getTitle() : ""),
+                event.getVenueName() != null ? event.getVenueName() : "",
+                range.start(),
+                range.end());
+    }
+
     // ── @Transactional helpers (each in its own short transaction) ────────────
 
     @Transactional
     protected NewsletterSend createSendAuditRecord(Event event, boolean isReminder, String locale,
                                                    String sentByUsername, int recipientCount,
-                                                   String templateKey) {
+                                                   String templateKey, boolean testMode) {
         NewsletterSend send = NewsletterSend.builder()
                 .eventId(event.getId())
                 .templateKey(templateKey)
@@ -508,6 +741,7 @@ public class NewsletterEmailService {
                 .sentByUsername(sentByUsername)
                 .recipientCount(recipientCount)
                 .status(STATUS_PENDING)
+                .testMode(testMode)
                 .build();
         return sendRepository.save(send);
     }

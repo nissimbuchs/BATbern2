@@ -11,6 +11,7 @@ import {
   unsubscribeNewsletterSubscriber,
   resubscribeNewsletterSubscriber,
   deleteNewsletterSubscriber,
+  unsuppressNewsletterSubscriber,
 } from '@/services/api/newsletterApi';
 
 export const useUnsubscribeSubscriber = () => {
@@ -37,6 +38,17 @@ export const useDeleteSubscriber = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteNewsletterSubscriber(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['newsletter-subscribers'] });
+    },
+  });
+};
+
+/** Story 10.29 AC8: Unsuppress a bounced subscriber. */
+export const useUnsuppressSubscriber = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unsuppressNewsletterSubscriber(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['newsletter-subscribers'] });
     },

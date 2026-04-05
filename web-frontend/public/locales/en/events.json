@@ -174,7 +174,10 @@
       "sendPartial": "Sent to {{sent}} recipients. {{failed}} failed — use Retry to resend.",
       "sendFailed": "Send failed. Use Retry on the send history row.",
       "retryButton": "Retry",
-      "retryTooltip": "Retry failed recipients"
+      "retryTooltip": "Retry failed recipients",
+      "testMode": "Test Mode (organizers only)",
+      "testModeWarning": "Test mode enabled — newsletter will only be sent to organizer subscribers.",
+      "confirmSendBodyTestMode": "Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",

@@ -173,6 +173,8 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   config,
   githubOwner,
   githubRepo,
+  // Story 10.29: DLQ name for bounce processing alarm
+  bounceProcessingDlqName: `batbern-${config.envName}-bounce-processing-dlq`,
   env,
   description: `BATbern Monitoring & Observability - ${config.envName}`,
   tags: config.tags,
@@ -268,6 +270,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     alarmTopic: monitoringStack.alarmTopic,
     // Story 10.16: Enable AI content generation; requires batbern/{env}/openai/api-key in Secrets Manager
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
+    // Story 10.29: Bounce/complaint processing SQS queue URL
+    bounceQueueUrl: sesStack.bounceQueue.queueUrl,
     // Story 10.17: Inbound email SQS queue URL, S3 bucket name, and env-specific reply address
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
@@ -284,7 +288,13 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(storageStack);
   eventManagementStack.addDependency(monitoringStack);
   eventManagementStack.addDependency(inboundEmailStack);
+  eventManagementStack.addDependency(sesStack); // Story 10.29: bounce queue
   eventManagementStack.addDependency(secretsStack);
+
+  // Grant EMS task role permissions on bounce queue (Story 10.29)
+  sesStack.bounceQueue.grantConsumeMessages(
+    eventManagementStack.service.taskDefinition.taskRole,
+  );
 
   // Grant EMS task role permissions on inbound email resources (Story 10.17)
   inboundEmailStack.inboundQueue.grantConsumeMessages(

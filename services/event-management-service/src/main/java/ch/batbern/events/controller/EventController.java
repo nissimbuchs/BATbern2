@@ -2404,6 +2404,25 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Partial update of a speaker pool entry (e.g. reassign organizer).
+     *
+     * PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}
+     */
+    @PatchMapping("/{eventCode}/speakers/pool/{speakerId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(summary = "Patch speaker pool entry",
+            description = "Partial update of a speaker pool entry (assigned organizer, notes, email)")
+    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> patchSpeakerPoolEntry(
+            @PathVariable String eventCode,
+            @PathVariable String speakerId,
+            @RequestBody ch.batbern.events.dto.PatchSpeakerPoolRequest request) {
+
+        ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.patchEntry(
+                eventCode, speakerId, request);
+        return ResponseEntity.ok(response);
+    }
+
     // ================================
     // Partner Analytics Endpoints (Story 8.1: Partner Attendance Dashboard)
     // ================================

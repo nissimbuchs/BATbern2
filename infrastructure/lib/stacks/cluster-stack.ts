@@ -32,7 +32,10 @@ export class ClusterStack extends cdk.Stack {
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {
       vpc: props.vpc,
       clusterName: `batbern-${envName}`,
-      containerInsightsV2: ecs.ContainerInsights.DISABLED, // Disabled — $48/mo not justified for current traffic volume
+      // Enabled for deployment monitoring: provides RunningTaskCount, DesiredTaskCount
+      // metrics needed by deployment alarms. ~$48/mo but essential for diagnosing
+      // stuck deployments that have plagued production since isProd=true.
+      containerInsightsV2: ecs.ContainerInsights.ENABLED,
       // Enable Service Connect for automatic service-to-service networking
       defaultCloudMapNamespace: {
         name: `batbern.local`,

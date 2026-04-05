@@ -3,7 +3,9 @@ package ch.batbern.gateway.config;
 import ch.batbern.gateway.config.dto.CognitoConfigDTO;
 import ch.batbern.gateway.config.dto.FeatureFlagsDTO;
 import ch.batbern.gateway.config.dto.FrontendConfigDTO;
+import ch.batbern.gateway.config.dto.TurnstileConfigDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +45,9 @@ public class ConfigController {
     @Value("${server.port:8080}")
     private int serverPort;
 
+    @Autowired
+    private TurnstileProperties turnstileProperties;
+
     /**
      * Get frontend runtime configuration
      *
@@ -56,6 +61,8 @@ public class ConfigController {
     public ResponseEntity<FrontendConfigDTO> getConfig() {
         log.debug("Serving frontend config for environment: {}", environment);
 
+        boolean turnstileEnabled = turnstileProperties.isEnabled();
+
         FrontendConfigDTO config = FrontendConfigDTO.builder()
                 .environment(environment)
                 .apiBaseUrl(getApiBaseUrl())
@@ -68,7 +75,13 @@ public class ConfigController {
                         .notifications(true)
                         .analytics(!"development".equals(environment))
                         .pwa(!"development".equals(environment))
+                        .turnstile(turnstileEnabled)
                         .build())
+                .turnstile(turnstileEnabled
+                        ? TurnstileConfigDTO.builder()
+                                .siteKey(turnstileProperties.getSiteKey())
+                                .build()
+                        : null)
                 .build();
 
         return ResponseEntity.ok(config);

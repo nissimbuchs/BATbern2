@@ -1995,4 +1995,255 @@ web-frontend/src/services/adminSettingsService.ts                               
 
 ---
 
+### Story 10.29: SES Bounce Processing & Newsletter List Hygiene
+
+**Story file**: `_bmad-output/implementation-artifacts/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
+**Status**: draft
+**Prerequisites**: Story 10.7 (newsletter sending), Story 10.28 (subscriber management page)
+
+**User Story:**
+As an **organizer**, I want emails that permanently bounce or generate spam complaints to be automatically suppressed from future newsletter sends, so that BATbern's SES sender reputation stays healthy and the platform's email delivery is not disrupted.
+
+**Context:**
+All subscribers from the old Mailman 3 mailing list (`lists.hostpoint.ch`) have been imported. Many of these emails likely no longer exist — email lists degrade ~2-3%/year. AWS SES flags accounts at 5% hard bounce rate and can suspend sending at 10%. Since the SES account handles ALL platform email (registrations, partner invitations, speaker coordination), a suspension would break the entire platform.
+
+**Scope:**
+
+- **SES Account-Level Suppression List** — enable via AWS CLI (zero code, immediate safety net)
+- **CDK Infrastructure** — SES Configuration Set (`batbern-newsletter`), SNS Topic for BOUNCE + COMPLAINT events, SQS Queue for reliable processing, event destination routing
+- **Database Migration** (V91) — add `bounce_type`, `bounce_count`, `last_bounced_at`, `suppressed_at` to `newsletter_subscribers`; add `bounce_type`, `bounced_at` to `newsletter_recipients`
+- **EmailService** — optional `configurationSetName` on `SendEmailRequest`, controlled by Spring property
+- **BounceProcessingService** — new `@SqsListener` that processes SNS-wrapped SES bounce/complaint notifications; hard bounce → immediate suppression; soft bounce → increment count, suppress after 3; complaint → immediate suppression
+- **Exclude suppressed from sends** — modify `findByUnsubscribedAtIsNull` queries to also filter `suppressed_at IS NULL`
+- **Batched canary send mode** — optional `maxRecipients` parameter + configurable inter-page delay for safe first sends to imported lists
+- **Admin visibility** — expose bounce status (bounceType, bounceCount, suppressedAt) in subscriber list; add `?status=suppressed` filter; add unsuppress action
+- **Monitoring** — CloudWatch alarms on SES Configuration Set metrics: bounce rate >3% warning, >5% critical; complaint rate >0.05% critical
+
+**Key files (estimated):**
+```
+infrastructure/lib/stacks/ses-stack.ts                                         — SES Config Set, SNS, SQS
+infrastructure/lib/stacks/monitoring-stack.ts                                  — bounce rate alarms
+shared-kernel/.../service/EmailService.java                                    — configurationSetName support
+services/event-management-service/.../domain/NewsletterSubscriber.java         — bounce fields
+services/event-management-service/.../repository/NewsletterSubscriberRepository.java — suppress filter
+services/event-management-service/.../repository/NewsletterRecipientRepository.java  — bounce update
+services/event-management-service/.../service/NewsletterEmailService.java      — exclude suppressed, canary mode
+services/event-management-service/.../service/BounceProcessingService.java     — NEW: SQS bounce listener
+services/event-management-service/.../controller/NewsletterController.java     — expose bounce status in API
+services/event-management-service/src/main/resources/db/migration/V91__*.sql   — NEW: bounce columns
+web-frontend/src/components/organizer/NewsletterSubscribers/                   — suppressed badge, filter
+```
+
+**Definition of Done (Story 10.29):**
+- [ ] SES Account-Level Suppression List enabled (BOUNCE + COMPLAINT)
+- [ ] SES Configuration Set `batbern-newsletter` created via CDK with SNS + SQS event pipeline
+- [ ] Newsletter sends use configuration set (via `configurationSetName` on `SendEmailRequest`)
+- [ ] Hard bounce → subscriber `suppressed_at` set, `bounce_type = 'hard'`
+- [ ] Soft bounce → `bounce_count` incremented; suppressed after 3 soft bounces
+- [ ] Complaint → subscriber immediately suppressed (`bounce_type = 'complaint'`)
+- [ ] Suppressed subscribers excluded from `findByUnsubscribedAtIsNull` queries (no newsletter delivery)
+- [ ] Canary send mode: `maxRecipients` parameter limits first send; configurable inter-page delay
+- [ ] Admin subscriber list shows bounce status badge, filterable by `?status=suppressed`
+- [ ] Organizer can unsuppress a subscriber via admin action
+- [ ] CloudWatch alarm fires on bounce rate >5% or complaint rate >0.05%
+- [ ] Integration tests: BounceProcessingService processes hard/soft/complaint notifications correctly
+- [ ] CDK unit tests pass for ses-stack changes
+- [ ] All existing newsletter tests still pass (no regressions)
+
+---
+
+### Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
+
+**Story file**: `_bmad-output/implementation-artifacts/10-30-speaker-drawer-redesign.md`
+**Status**: ready-for-dev
+
+**User Story:**
+As an **organizer**, I want the speaker detail drawer to be organized into tabs (Overview, Details, Activity) with the ability to edit the assigned organizer inline, so that I can efficiently manage speaker outreach without excessive scrolling, and the drawer works properly on mobile devices.
+
+**Scope:**
+
+**Backend — PATCH endpoint (Phase 1, already committed):**
+- `PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId}` — partial update for `assignedOrganizerId`, `notes`, `email`
+- `PatchSpeakerPoolRequest` DTO, `SpeakerPoolService.patchEntry()`, controller endpoint
+- Frontend service (`patchSpeakerPool`), type, `usePatchSpeakerPool` hook (Phase 2, already committed)
+
+**Frontend — Unified Tabbed Drawer (Phase 3):**
+- Replace 823-line `SpeakerOutreachDetailsDrawer` monolith with 7 decomposed components in `web-frontend/src/components/organizer/SpeakerDrawer/`
+- Three tabs: **Overview** (organizer assignment, action buttons), **Details** (response/decline/content info), **Activity** (contact history + mark-contacted form)
+- Default tab selection by speaker workflow state
+- Content submission and quality review rendered as in-drawer sub-views (eliminates "drawer spawns drawer" pattern)
+- Responsive: 520px desktop, full-width mobile, scrollable tabs, sticky action footer
+
+**Wiring & Cleanup (Phase 4–5):**
+- `EventSpeakersTab.tsx` simplified from 3 drawers + 6 state vars to 1 drawer + 2 state vars
+- Delete old `SpeakerOutreachDetailsDrawer.tsx`, `ContentSubmissionDrawer.tsx`, `QualityReviewDrawer.tsx`
+- i18n keys for tab labels
+- Preserve `data-testid` attributes for Playwright compatibility
+
+**Acceptance Criteria:**
+
+1. **AC1**: Organizer can click a speaker card and see a tabbed drawer with Overview, Details, and Activity tabs
+2. **AC2**: Default tab matches speaker state (IDENTIFIED/CONTACTED → Activity, DECLINED/CONTENT_SUBMITTED → Details, others → Overview)
+3. **AC3**: Organizer can edit the assigned organizer via inline autocomplete on the Overview tab, saved via PATCH endpoint
+4. **AC4**: "Submit Content" and "Review Content" render as in-drawer sub-views with back navigation (no separate drawer)
+5. **AC5**: Contact history and mark-contacted form are in the Activity tab with full-height scrolling (no nested scroll)
+6. **AC6**: Drawer is fully functional on mobile (full-width, scrollable tabs, sticky action footer)
+7. **AC7**: All existing `data-testid` attributes preserved for Playwright E2E tests
+8. **AC8**: Frontend builds with zero TypeScript errors; existing tests pass
+
+**Source tree (changed/new):**
+```
+web-frontend/src/components/organizer/SpeakerDrawer/           — NEW directory
+  SpeakerDetailDrawer.tsx                                       — Container with tabs + sub-view state
+  SpeakerDrawerHeader.tsx                                       — Header: name, company, status, close
+  OverviewTabPanel.tsx                                          — Organizer field, action buttons, quick info
+  DetailsTabPanel.tsx                                           — Response/decline/tentative/content sections
+  ActivityTabPanel.tsx                                          — Mark-contacted form + contact history
+  AssignedOrganizerField.tsx                                    — Editable organizer autocomplete + PATCH
+  index.ts                                                      — Barrel export
+web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx — Simplified orchestrator
+web-frontend/src/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/ContentSubmissionDrawer.tsx — DELETED
+web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — DELETED
+```
+
+**Definition of Done (Story 10.30):**
+- [ ] Tabbed drawer renders with 3 tabs (Overview, Details, Activity)
+- [ ] Default tab selection logic works per speaker workflow state
+- [ ] Assigned organizer editable via autocomplete, persisted via PATCH
+- [ ] Content submission and quality review render in-drawer (no second drawer)
+- [ ] Contact history scrolls within Activity tab without nested scrolling
+- [ ] Mobile: full-width drawer, scrollable tabs, sticky action footer
+- [ ] All existing `data-testid` attributes preserved
+- [ ] `npm run build` passes with zero errors
+- [ ] Old drawer files deleted (SpeakerOutreachDetailsDrawer, ContentSubmissionDrawer, QualityReviewDrawer)
+- [ ] i18n keys added for tab labels
+
+---
+
+### Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
+
+**Story file**: `_bmad-output/implementation-artifacts/10-31-bot-protection-turnstile.md`
+**Status**: ready-for-dev
+**Source**: [GH#582](../../issues/582)
+
+**User Story:**
+As a **platform operator**, I want newsletter subscriptions and event registrations protected by Cloudflare Turnstile, so that bot submissions are rejected before they reach domain services without degrading UX for legitimate users.
+
+**Why Turnstile:**
+- Privacy-first — no tracking cookies, no cross-site data collection → no cookie consent banner needed
+- GDPR / Swiss nFADP compliant out of the box
+- Invisible to most users (no puzzles)
+- Free tier: 1M verifications/month
+- No Cloudflare CDN/DNS required
+
+**Endpoints protected:**
+- `POST /api/v1/newsletter/subscribe` (NewsletterSubscribeWidget)
+- `POST /api/v1/events/{eventCode}/registrations` (RegistrationWizard)
+
+Cognito signup is out of scope (AWS handles its own bot protection).
+
+**Architecture:**
+
+**Gateway-centralized, endpoint-selective filter:**
+A new `TurnstileVerificationFilter` in `api-gateway` intercepts only configured endpoint patterns. Follows the existing `RateLimitingFilter` pattern (`@Component`, `@Order`, `jakarta.servlet.Filter`). Domain service controllers are untouched.
+
+**Token transport:** `X-Turnstile-Token` HTTP header (not request body) — avoids DTO / OpenAPI spec changes.
+
+**Fail-open:** If Cloudflare siteverify is unreachable, log a warning and allow the request. Legitimate users are never blocked by a third-party outage.
+
+**Feature flag:** `turnstile.enabled=false` by default — existing behaviour is fully preserved when disabled.
+
+**Scope:**
+
+**Phase 1 — Backend Config Layer:**
+- `TurnstileProperties` (`@ConfigurationProperties(prefix="turnstile")`) with `enabled`, `siteKey`, `secretKey`, `verifyUrl`, `protectedEndpoints`
+- `TurnstileConfigDTO` — `{ siteKey: String }` (never expose secretKey)
+- `FeatureFlagsDTO.turnstile: boolean` + `FrontendConfigDTO.turnstile: TurnstileConfigDTO`
+- `ConfigController` conditionally includes site key and feature flag
+- `application.yml` turnstile block with `${TURNSTILE_ENABLED:false}` default
+
+**Phase 2 — Backend Verification Filter:**
+- `TurnstileVerificationFilter`: `@Order(Ordered.LOWEST_PRECEDENCE - 1)`, runs before `RateLimitingFilter`
+- AntPathMatcher for wildcard endpoint matching (`events/*/registrations`)
+- Missing header → 403 `turnstile_required`; invalid token → 403 `turnstile_failed`; Cloudflare unreachable → pass (fail-open)
+- Full unit test coverage (6 scenarios)
+
+**Phase 3 — Frontend Hook:**
+- `useTurnstile` hook: reads `useConfig()`, loads Turnstile script from CDN (no npm dependency), renders invisible widget via `window.turnstile`
+- Exports `{ getToken, resetWidget, widgetRef }`; when disabled `getToken()` returns `null`
+
+**Phase 4 — Frontend Form Integration:**
+- `AppConfig` extended with `features.turnstile` + optional `turnstile.siteKey`
+- `newsletterService.subscribe()` and `eventApiClient.createRegistration()` accept optional `turnstileToken` param → passed as header
+- `NewsletterSubscribeWidget` and public `RegistrationWizard` integrated with `useTurnstile`
+- 403 error handling: show user-friendly message + `resetWidget()`
+
+**Phase 5 — Environment Activation:**
+
+| Environment | TURNSTILE_ENABLED | Site Key | Secret Key |
+|---|---|---|---|
+| Development | `false` | — | — |
+| Staging | `true` | `1x00000000000000000000AA` (always-pass test) | `1x0000000000000000000000000000000AA` |
+| Production | `true` | Real key from Cloudflare dashboard | Real secret |
+
+**New files (7):**
+```
+api-gateway/.../config/TurnstileProperties.java
+api-gateway/.../config/dto/TurnstileConfigDTO.java
+api-gateway/.../security/TurnstileVerificationFilter.java
+api-gateway/src/test/.../security/TurnstileVerificationFilterTest.java
+web-frontend/src/hooks/useTurnstile/useTurnstile.ts
+web-frontend/src/hooks/useTurnstile/index.ts
+web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts
+```
+
+**Modified files (12):**
+```
+api-gateway/.../config/dto/FeatureFlagsDTO.java       — add boolean turnstile
+api-gateway/.../config/dto/FrontendConfigDTO.java     — add TurnstileConfigDTO turnstile
+api-gateway/.../config/ConfigController.java          — inject TurnstileProperties, set flags
+api-gateway/src/main/resources/application.yml        — add turnstile.* block
+web-frontend/src/config/runtime-config.ts             — extend AppConfig
+web-frontend/src/services/newsletterService.ts        — add turnstileToken param
+web-frontend/src/services/eventApiClient.ts           — add turnstileToken param
+web-frontend/src/hooks/useNewsletter/useNewsletter.ts — update mutation type
+web-frontend/.../NewsletterSubscribeWidget.tsx         — integrate useTurnstile
+web-frontend/.../Registration/RegistrationWizard.tsx   — integrate useTurnstile
+web-frontend/.../__tests__/NewsletterSubscribeWidget.test.tsx — verify header
+web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify header
++ CDK / ECS task definition (staging + production env vars)
+```
+
+**Acceptance Criteria:**
+
+1. **AC1**: `TurnstileVerificationFilter` intercepts only `POST /api/v1/newsletter/subscribe` and `POST /api/v1/events/*/registrations` when enabled; all other endpoints unaffected
+2. **AC2**: Missing `X-Turnstile-Token` on protected endpoints → 403 `turnstile_required`
+3. **AC3**: Invalid token (Cloudflare `success: false`) → 403 `turnstile_failed`
+4. **AC4**: Cloudflare unreachable → log warning, let request through (fail-open)
+5. **AC5**: `turnstile.enabled=false` (default) → filter is a no-op; all existing behaviour preserved
+6. **AC6**: `GET /api/v1/config` includes `features.turnstile: boolean` and optional `turnstile.siteKey`
+7. **AC7**: `useTurnstile` hook: disabled → `getToken()` returns `null`; enabled → loads widget, returns token
+8. **AC8**: `NewsletterSubscribeWidget` calls `getToken()` before subscribe mutation, passes header
+9. **AC9**: `RegistrationWizard` calls `getToken()` before `createRegistration()`, passes header
+10. **AC10**: 403 with `turnstile_required`/`turnstile_failed` → user-friendly error + `resetWidget()`
+11. **AC11**: `TurnstileVerificationFilterTest` covers 6 scenarios; `./gradlew :api-gateway:test` passes
+12. **AC12**: `useTurnstile.test.ts` and updated component tests pass; `npm run build` passes
+13. **AC13**: All existing tests pass; no regressions
+
+**Definition of Done (Story 10.31):**
+- [ ] `TurnstileVerificationFilter` passes all 6 unit test scenarios
+- [ ] `GET /api/v1/config` includes `features.turnstile` and optional `turnstile.siteKey`
+- [ ] `useTurnstile` hook: disabled path returns null; enabled path resolves token
+- [ ] `NewsletterSubscribeWidget` sends `X-Turnstile-Token` header when token obtained
+- [ ] `RegistrationWizard` sends `X-Turnstile-Token` header when token obtained
+- [ ] 403 error handling shows user-friendly message and resets widget
+- [ ] `turnstile.enabled=false` default — local dev fully functional without any Turnstile config
+- [ ] Staging configured with Cloudflare always-pass test keys
+- [ ] `./gradlew :api-gateway:test` passes
+- [ ] `npm run build` passes with zero errors
+- [ ] All existing tests pass
+
+---
+
 **END OF EPIC 10**

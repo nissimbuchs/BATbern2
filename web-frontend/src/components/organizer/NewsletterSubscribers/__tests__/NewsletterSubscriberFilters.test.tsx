@@ -76,6 +76,13 @@ describe('NewsletterSubscriberFilters', () => {
     expect(filters.status).toBe('active');
   });
 
+  it('should_renderSuppressedRadio_when_mounted', () => {
+    renderComponent();
+
+    expect(screen.getByTestId('filter-suppressed')).toBeInTheDocument();
+    expect(screen.getByLabelText(/suppressed/i)).toBeInTheDocument();
+  });
+
   it('should_resetFilters_when_clearButtonClicked', async () => {
     const user = userEvent.setup();
 

@@ -30,6 +30,7 @@ import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -70,6 +71,12 @@ export const RegistrationWizard = ({
 
   // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
   const isEventFull = spotsRemaining === 0;
+
+  const {
+    getToken: getTurnstileToken,
+    resetWidget: resetTurnstileWidget,
+    widgetRef: turnstileWidgetRef,
+  } = useTurnstile();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -181,7 +188,8 @@ export const RegistrationWizard = ({
     setError(null);
 
     try {
-      const response = await eventApiClient.createRegistration(eventCode, formData);
+      const turnstileToken = await getTurnstileToken();
+      const response = await eventApiClient.createRegistration(eventCode, formData, turnstileToken);
 
       // Store registration in sessionStorage to show "already registered" on homepage
       sessionStorage.setItem(
@@ -202,6 +210,17 @@ export const RegistrationWizard = ({
       // AC7: Invalidate my-registration cache so banner/guard reflect new status immediately
       queryClient.invalidateQueries({ queryKey: ['my-registration', eventCode] });
     } catch (err) {
+      // Handle Turnstile 403 errors (AC10, Story 10.31)
+      const isTurnstileError =
+        err instanceof Error &&
+        (err.message.includes('turnstile_required') || err.message.includes('turnstile_failed'));
+      if (isTurnstileError) {
+        resetTurnstileWidget();
+        setError(t('wizard.errors.failed'));
+        setIsSubmitting(false);
+        return;
+      }
+
       // Handle duplicate registration (409 Conflict)
       // Backend returns 409 only for confirmed/cancelled registrations
       // For pending registrations, backend returns 200 OK (reuses existing)
@@ -472,6 +491,9 @@ export const RegistrationWizard = ({
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
+
+      {/* Invisible Turnstile widget container (Story 10.31, AC9) */}
+      <div ref={turnstileWidgetRef} />
 
       {/* Navigation Buttons */}
       <div className="mt-8 flex justify-between">

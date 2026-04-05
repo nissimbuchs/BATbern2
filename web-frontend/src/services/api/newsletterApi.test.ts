@@ -11,6 +11,7 @@ import {
   unsubscribeNewsletterSubscriber,
   resubscribeNewsletterSubscriber,
   deleteNewsletterSubscriber,
+  unsuppressNewsletterSubscriber,
 } from './newsletterApi';
 
 describe('Newsletter API Service', () => {
@@ -130,6 +131,18 @@ describe('Newsletter API Service', () => {
       await deleteNewsletterSubscriber('sub-1');
 
       expect(apiClient.delete).toHaveBeenCalledWith('/newsletter/subscribers/sub-1');
+    });
+  });
+
+  describe('unsuppressNewsletterSubscriber', () => {
+    it('should_callPostWithId_when_invoked', async () => {
+      const mockSub = { id: 'sub-1', email: 'a@b.com', status: 'active' };
+      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockSub });
+
+      const result = await unsuppressNewsletterSubscriber('sub-1');
+
+      expect(apiClient.post).toHaveBeenCalledWith('/newsletter/subscribers/sub-1/unsuppress');
+      expect(result).toEqual(mockSub);
     });
   });
 });

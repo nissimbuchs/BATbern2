@@ -30,4 +30,7 @@ public class NewsletterSendResponse {
     private int failedCount;
     private Instant startedAt;
     private Instant completedAt;
+
+    /** True when the send was restricted to organizer-role subscribers (test mode). */
+    private boolean testMode;
 }

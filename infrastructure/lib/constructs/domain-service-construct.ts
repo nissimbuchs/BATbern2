@@ -23,6 +23,9 @@ export interface DomainServiceConfig {
   minCapacity?: number;
   /** Override auto-scaling maximum task count. Defaults to minCapacity * 4. */
   maxCapacity?: number;
+  /** Override health check startPeriod in seconds. Defaults to 120 for lightweight services.
+   *  Set to 300 for services with DB migrations / heavy startup (company-mgmt, event-mgmt). */
+  healthCheckStartPeriodSeconds?: number;
 }
 
 export interface DomainServiceConstructProps {
@@ -127,7 +130,8 @@ export function createDomainService(
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
-        startPeriod: cdk.Duration.seconds(300),
+        // Default 120s for lightweight services; override to 300s for DB-heavy services
+        startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 120),
       },
     });
 
@@ -223,8 +227,14 @@ export function createDomainService(
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      minHealthyPercent: 100, // Ensure zero-downtime deployments
-      maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
+      // minHealthyPercent lowered from 100 to 50: with desiredCount=2 and minHealthy=100,
+      // ECS must run 4 tasks simultaneously (2 old + 2 new) during deployment.
+      // Service Connect registration for 4 tasks frequently hangs, causing deployments
+      // to stay IN_PROGRESS indefinitely. With 50%, ECS can drain old tasks sooner,
+      // reducing the Service Connect registration window. Brief sub-second interruption
+      // during deploy is acceptable for ~300 users / 3 events per year.
+      minHealthyPercent: 50,
+      maxHealthyPercent: 200,
       securityGroups: [serviceSecurityGroup], // Use explicit security group
       enableExecuteCommand: true, // Allow ECS Exec for debugging
       // Circuit breaker to fail fast on repeated task failures
@@ -264,15 +274,37 @@ export function createDomainService(
     cfnService.addPropertyOverride('ServiceConnectConfiguration', {
       Enabled: true,
       Namespace: 'batbern.local',
+      // Log the Envoy sidecar to the same log group for visibility during deployment issues
+      LogConfiguration: {
+        LogDriver: 'awslogs',
+        Options: {
+          'awslogs-group': logGroup.logGroupName,
+          'awslogs-region': props.config.region,
+          'awslogs-stream-prefix': `${serviceName}-envoy`,
+        },
+      },
       Services: [{
-        PortName: `${serviceName}-port`, // Must match container port mapping name
-        DiscoveryName: serviceName, // Service discovery name in CloudMap
+        PortName: `${serviceName}-port`,
+        DiscoveryName: serviceName,
         ClientAliases: [{
-          Port: 8080, // Port where service is accessible
-          DnsName: serviceName, // DNS name for other services to use
+          Port: 8080,
+          DnsName: serviceName,
         }],
+        // Timeouts prevent the Envoy proxy from waiting indefinitely during
+        // deployment registration. Without these, stuck Service Connect
+        // registration causes deployments to hang for hours.
+        Timeout: {
+          PerRequestTimeoutSeconds: 15,
+          IdleTimeoutSeconds: 60,
+        },
       }],
     });
+
+    // NOTE: ECS Deployment Alarms (Change 5 from the plan) removed due to circular dependency:
+    // alarm needs service.serviceName dimension → service needs alarm name → circular.
+    // The remaining fixes (minHealthyPercent=50, Service Connect timeouts, auto-cleanup steps)
+    // address the root cause directly. Deployment alarms can be revisited with Container Insights
+    // metrics once Change 6 (Container Insights) is deployed.
 
     // Configure auto-scaling
     const defaultMin = isProd ? 2 : 1;

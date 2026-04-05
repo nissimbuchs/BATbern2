@@ -7,7 +7,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
-import { getEventRegistrations } from './eventRegistrationService';
+import {
+  getEventRegistrations,
+  updateRegistrationStatus,
+  cancelRegistration,
+  deleteRegistration,
+  promoteFromWaitlist,
+  enrollStakeholders,
+} from './eventRegistrationService';
 import type { EventParticipant, RegistrationStatus } from '@/types/eventParticipant.types';
 
 describe('eventRegistrationService', () => {
@@ -326,6 +333,168 @@ describe('eventRegistrationService', () => {
       mockAxios.onGet(`/events/${eventCode}/registrations`).networkError();
 
       await expect(getEventRegistrations(eventCode)).rejects.toThrow();
+    });
+  });
+
+  describe('updateRegistrationStatus', () => {
+    const eventCode = 'BAT-2024-01';
+    const registrationCode = 'REG-001';
+
+    const mockBackendResponse = {
+      registrationCode: 'REG-001',
+      eventCode: 'BAT-2024-01',
+      attendeeUsername: 'john.doe',
+      attendeeFirstName: 'John',
+      attendeeLastName: 'Doe',
+      attendeeEmail: 'john.doe@example.com',
+      attendeeCompany: 'centris-ag',
+      status: 'CONFIRMED',
+      registrationDate: '2024-01-15T10:30:00Z',
+    };
+
+    it('should update registration status and transform response', async () => {
+      mockAxios
+        .onPatch(`/events/${eventCode}/registrations/${registrationCode}`)
+        .reply(200, mockBackendResponse);
+
+      const result = await updateRegistrationStatus(eventCode, registrationCode, 'CONFIRMED');
+
+      expect(result.registrationCode).toBe('REG-001');
+      expect(result.firstName).toBe('John');
+      expect(result.lastName).toBe('Doe');
+      expect(result.email).toBe('john.doe@example.com');
+      expect(result.company).toEqual({ id: 'centris-ag', name: 'centris-ag' });
+    });
+
+    it('should send lowercase status to backend', async () => {
+      mockAxios
+        .onPatch(`/events/${eventCode}/registrations/${registrationCode}`, {
+          status: 'confirmed',
+        })
+        .reply(200, mockBackendResponse);
+
+      await updateRegistrationStatus(eventCode, registrationCode, 'CONFIRMED');
+
+      expect(mockAxios.history.patch).toHaveLength(1);
+      expect(JSON.parse(mockAxios.history.patch[0].data)).toEqual({ status: 'confirmed' });
+    });
+
+    it('should throw error on API failure', async () => {
+      mockAxios
+        .onPatch(`/events/${eventCode}/registrations/${registrationCode}`)
+        .reply(500, { message: 'Internal server error' });
+
+      await expect(
+        updateRegistrationStatus(eventCode, registrationCode, 'CONFIRMED')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('cancelRegistration', () => {
+    const eventCode = 'BAT-2024-01';
+    const registrationCode = 'REG-001';
+
+    it('should cancel registration by setting status to CANCELLED', async () => {
+      const mockBackendResponse = {
+        registrationCode: 'REG-001',
+        eventCode: 'BAT-2024-01',
+        attendeeUsername: 'john.doe',
+        attendeeFirstName: 'John',
+        attendeeLastName: 'Doe',
+        attendeeEmail: 'john.doe@example.com',
+        status: 'CANCELLED',
+        registrationDate: '2024-01-15T10:30:00Z',
+      };
+
+      mockAxios
+        .onPatch(`/events/${eventCode}/registrations/${registrationCode}`)
+        .reply(200, mockBackendResponse);
+
+      const result = await cancelRegistration(eventCode, registrationCode);
+
+      expect(result.status).toBe('CANCELLED');
+      expect(JSON.parse(mockAxios.history.patch[0].data)).toEqual({ status: 'cancelled' });
+    });
+  });
+
+  describe('deleteRegistration', () => {
+    const eventCode = 'BAT-2024-01';
+    const registrationCode = 'REG-001';
+
+    it('should delete registration', async () => {
+      mockAxios.onDelete(`/events/${eventCode}/registrations/${registrationCode}`).reply(204);
+
+      await expect(deleteRegistration(eventCode, registrationCode)).resolves.toBeUndefined();
+      expect(mockAxios.history.delete).toHaveLength(1);
+    });
+
+    it('should throw error on API failure', async () => {
+      mockAxios
+        .onDelete(`/events/${eventCode}/registrations/${registrationCode}`)
+        .reply(500, { message: 'Internal server error' });
+
+      await expect(deleteRegistration(eventCode, registrationCode)).rejects.toThrow();
+    });
+  });
+
+  describe('promoteFromWaitlist', () => {
+    const eventCode = 'BAT-2024-01';
+    const registrationCode = 'REG-001';
+
+    it('should promote a waitlisted registration', async () => {
+      mockAxios.onPost(`/events/${eventCode}/registrations/${registrationCode}/promote`).reply(200);
+
+      await expect(promoteFromWaitlist(eventCode, registrationCode)).resolves.toBeUndefined();
+      expect(mockAxios.history.post).toHaveLength(1);
+    });
+
+    it('should throw error when registration not found', async () => {
+      mockAxios
+        .onPost(`/events/${eventCode}/registrations/${registrationCode}/promote`)
+        .reply(404, { message: 'Registration not found' });
+
+      await expect(promoteFromWaitlist(eventCode, registrationCode)).rejects.toThrow();
+    });
+
+    it('should throw error when registration is not on waitlist', async () => {
+      mockAxios
+        .onPost(`/events/${eventCode}/registrations/${registrationCode}/promote`)
+        .reply(409, { message: 'Registration is not on waitlist' });
+
+      await expect(promoteFromWaitlist(eventCode, registrationCode)).rejects.toThrow();
+    });
+  });
+
+  describe('enrollStakeholders', () => {
+    const eventCode = 'BAT-2024-01';
+
+    it('should enroll stakeholders and return summary', async () => {
+      mockAxios
+        .onPost(`/events/${eventCode}/enroll-stakeholders`)
+        .reply(200, { enrolled: 5, skipped: 2 });
+
+      const result = await enrollStakeholders(eventCode);
+
+      expect(result).toEqual({ enrolled: 5, skipped: 2 });
+    });
+
+    it('should handle idempotent call where all are already enrolled', async () => {
+      mockAxios
+        .onPost(`/events/${eventCode}/enroll-stakeholders`)
+        .reply(200, { enrolled: 0, skipped: 7 });
+
+      const result = await enrollStakeholders(eventCode);
+
+      expect(result.enrolled).toBe(0);
+      expect(result.skipped).toBe(7);
+    });
+
+    it('should throw error on API failure', async () => {
+      mockAxios
+        .onPost(`/events/${eventCode}/enroll-stakeholders`)
+        .reply(500, { message: 'Internal server error' });
+
+      await expect(enrollStakeholders(eventCode)).rejects.toThrow();
     });
   });
 });

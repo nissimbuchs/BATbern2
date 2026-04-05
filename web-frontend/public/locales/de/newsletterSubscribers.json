@@ -15,7 +15,8 @@
       "label": "Status",
       "all": "Alle",
       "active": "Aktiv",
-      "unsubscribed": "Abgemeldet"
+      "unsubscribed": "Abgemeldet",
+      "suppressed": "Unterdrückt"
     },
     "clearAll": "Filter zurücksetzen"
   },
@@ -34,12 +35,14 @@
   },
   "status": {
     "active": "Aktiv",
-    "unsubscribed": "Abgemeldet"
+    "unsubscribed": "Abgemeldet",
+    "suppressed": "Unterdrückt"
   },
   "actions": {
     "openMenu": "Aktionen öffnen",
     "unsubscribe": "Abmelden",
     "resubscribe": "Erneut anmelden",
+    "unsuppress": "Unterdrückung aufheben",
     "delete": "Löschen"
   },
   "pagination": {
@@ -57,11 +60,17 @@
     "delete": {
       "title": "Abonnent löschen",
       "message": "{{email}} endgültig löschen? Dies kann nicht rückgängig gemacht werden."
+    },
+    "unsuppress": {
+      "title": "Unterdrückung aufheben",
+      "message": "Unterdrückung für {{email}} aufheben? Der Bounce-Zähler wird zurückgesetzt und die Person erhält wieder Newsletter.",
+      "detail": "Bounce-Typ: {{bounceType}}, Anzahl: {{bounceCount}}"
     }
   },
   "toast": {
     "unsubscribeSuccess": "{{email}} wurde abgemeldet.",
     "resubscribeSuccess": "{{email}} wurde erneut angemeldet.",
-    "deleteSuccess": "{{email}} wurde gelöscht."
+    "deleteSuccess": "{{email}} wurde gelöscht.",
+    "unsuppressSuccess": "Unterdrückung für {{email}} wurde aufgehoben."
   }
 }

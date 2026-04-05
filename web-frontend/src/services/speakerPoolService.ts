@@ -13,6 +13,7 @@ import apiClient from '@/services/api/apiClient';
 import type {
   SpeakerPoolEntry,
   AddSpeakerToPoolRequest,
+  PatchSpeakerPoolRequest,
   SpeakerPoolResponse,
   SendInvitationRequest,
   SendInvitationResponse,
@@ -73,6 +74,21 @@ class SpeakerPoolService {
    */
   async deleteSpeakerFromPool(eventCode: string, speakerId: string): Promise<void> {
     await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`);
+  }
+
+  /**
+   * Partial update of a speaker pool entry (e.g. reassign organizer, update notes/email).
+   */
+  async patchSpeakerPool(
+    eventCode: string,
+    speakerId: string,
+    request: PatchSpeakerPoolRequest
+  ): Promise<SpeakerPoolResponse> {
+    const response = await apiClient.patch<SpeakerPoolResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`,
+      request
+    );
+    return response.data;
   }
 
   /**

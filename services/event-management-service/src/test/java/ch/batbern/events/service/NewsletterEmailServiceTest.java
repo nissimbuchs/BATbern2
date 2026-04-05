@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
@@ -13,6 +14,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.service.IcsCalendarService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,6 +75,12 @@ class NewsletterEmailServiceTest {
     private SessionUserService sessionUserService;
     @Mock
     private EventRepository eventRepository;
+    @Mock
+    private UserApiClient userApiClient;
+    @Mock
+    private IcsCalendarService icsCalendarService;
+    @Mock
+    private EventTimeResolver eventTimeResolver;
 
     @InjectMocks
     private NewsletterEmailService newsletterEmailService;
@@ -357,7 +366,7 @@ class NewsletterEmailServiceTest {
     }
 
     @Test
-    @DisplayName("executeNewsletterSendAsync: uses paginated query — not findByUnsubscribedAtIsNull()")
+    @DisplayName("executeNewsletterSendAsync: uses paginated query — excludes suppressed subscribers")
     void executeNewsletterSendAsync_usesPagedQuery() {
         testEvent.setId(UUID.randomUUID());
         UUID sendId = UUID.randomUUID();
@@ -372,7 +381,7 @@ class NewsletterEmailServiceTest {
         Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
 
         when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.findByUnsubscribedAtIsNull(any(Pageable.class)))
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
                 .thenReturn(page)
                 .thenReturn(Page.empty()); // second call returns empty to stop loop
         when(emailTemplateService.findByKeyAndLocale(any(), any()))
@@ -385,8 +394,8 @@ class NewsletterEmailServiceTest {
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
 
         // Must use paginated query, not the non-paginated one
-        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNull(any(Pageable.class));
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any());
+        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any(), any());
     }
 
     @Test
@@ -427,6 +436,308 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("Zero Trust at SBB");
         assertThat(result).contains("Igor Masen");
         assertThat(result).contains("sbb");
+    }
+
+    // ── Story 10.29: SES Configuration Set & canary send ─────────────────────
+
+    @Test
+    @DisplayName("should_passConfigurationSetName_when_configured")
+    void should_passConfigurationSetName_when_configured() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", "batbern-bounce-tracking");
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "interPageDelayMs", 0L);
+
+        NewsletterSubscriber subscriber = new NewsletterSubscriber();
+        subscriber.setEmail("user@example.com");
+        subscriber.setUnsubscribeToken("tok-config");
+
+        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
+
+        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(Page.empty());
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
+
+        verify(emailService).sendHtmlEmailSync(
+                eq("user@example.com"), any(), any(), eq("batbern-bounce-tracking"));
+    }
+
+    @Test
+    @DisplayName("should_respectMaxRecipients_when_canaryModeEnabled")
+    void should_respectMaxRecipients_when_canaryModeEnabled() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "interPageDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "baseUrl", "https://test.batbern.ch");
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", null);
+
+        // Create 5 subscribers across a single page (more than maxRecipients=2)
+        NewsletterSubscriber sub1 = new NewsletterSubscriber();
+        sub1.setEmail("one@example.com");
+        sub1.setUnsubscribeToken("tok-1");
+        NewsletterSubscriber sub2 = new NewsletterSubscriber();
+        sub2.setEmail("two@example.com");
+        sub2.setUnsubscribeToken("tok-2");
+        NewsletterSubscriber sub3 = new NewsletterSubscriber();
+        sub3.setEmail("three@example.com");
+        sub3.setUnsubscribeToken("tok-3");
+        NewsletterSubscriber sub4 = new NewsletterSubscriber();
+        sub4.setEmail("four@example.com");
+        sub4.setUnsubscribeToken("tok-4");
+        NewsletterSubscriber sub5 = new NewsletterSubscriber();
+        sub5.setEmail("five@example.com");
+        sub5.setUnsubscribeToken("tok-5");
+
+        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(sub1, sub2, sub3, sub4, sub5));
+
+        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
+        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
+                .thenReturn(page);
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(
+                sendId, testEvent, false, "de", "newsletter-event", 2);
+
+        // Only 2 emails should have been sent despite 5 subscribers being available
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), any(), any(), any());
+    }
+
+    // ── Test mode: organizer-only send ───────────────────────────────────────
+
+    @Test
+    @DisplayName("sendNewsletter testMode=true: uses organizer usernames and records testMode on audit row")
+    void sendNewsletter_testMode_usesOrganizerFilter() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend savedSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_PENDING)
+                .recipientCount(2)
+                .locale("de")
+                .sentByUsername("organizer")
+                .sentAt(Instant.now())
+                .templateKey("newsletter-event")
+                .testMode(true)
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1", "org2"));
+
+        NewsletterSubscriber sub1 = new NewsletterSubscriber();
+        sub1.setEmail("org1@batbern.ch");
+        sub1.setUsername("org1");
+        NewsletterSubscriber sub2 = new NewsletterSubscriber();
+        sub2.setEmail("org2@batbern.ch");
+        sub2.setUsername("org2");
+
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1", "org2"))).thenReturn(List.of(sub1, sub2));
+        when(sendRepository.save(any())).thenReturn(savedSend);
+
+        NewsletterSendResponse response = newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "organizer", null, null, true);
+
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+        assertThat(response.isTestMode()).isTrue();
+        // Called twice: once in sendNewsletter (count), once in executeAsync (fetch recipients)
+        // because self-reference runs synchronously in tests
+        verify(userApiClient, atLeastOnce()).getOrganizerUsernames();
+        verify(subscriberService, never()).getActiveCount();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter testMode=false: does NOT call getOrganizerUsernames")
+    void sendNewsletter_normalMode_doesNotCallOrganizerApi() {
+        testEvent.setId(UUID.randomUUID());
+        NewsletterSend savedSend = NewsletterSend.builder()
+                .id(UUID.randomUUID())
+                .eventId(testEvent.getId())
+                .status(NewsletterEmailService.STATUS_PENDING)
+                .recipientCount(100)
+                .locale("de")
+                .sentByUsername("organizer")
+                .sentAt(Instant.now())
+                .templateKey("newsletter-event")
+                .build();
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(subscriberService.getActiveCount()).thenReturn(100L);
+        when(sendRepository.save(any())).thenReturn(savedSend);
+
+        newsletterEmailService.sendNewsletter(
+                testEvent, false, "de", "organizer", null, null, false);
+
+        verify(userApiClient, never()).getOrganizerUsernames();
+        verify(subscriberService).getActiveCount();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter testMode=true: throws when no organizer subscribers found")
+    void sendNewsletter_testMode_throwsWhenNoOrganizers() {
+        testEvent.setId(UUID.randomUUID());
+
+        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+                NewsletterEmailService.STATUS_IN_PROGRESS))
+                .thenReturn(Optional.empty());
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1"));
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1"))).thenReturn(List.of());
+
+        assertThatThrownBy(() ->
+                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null, null, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No organizer subscribers found");
+    }
+
+    @Test
+    @DisplayName("executeNewsletterSendAsync testMode=true: sends only to organizer subscribers")
+    void executeAsync_testMode_sendsOnlyToOrganizers() {
+        testEvent.setId(UUID.randomUUID());
+        UUID sendId = UUID.randomUUID();
+        NewsletterSend send = NewsletterSend.builder()
+                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
+                .sentCount(0).failedCount(0).testMode(true).build();
+
+        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
+        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", null);
+
+        NewsletterSubscriber orgSub = new NewsletterSubscriber();
+        orgSub.setEmail("org@batbern.ch");
+        orgSub.setUsername("org1");
+        orgSub.setUnsubscribeToken("tok-org");
+
+        when(sendRepository.findById(sendId)).thenReturn(Optional.of(send));
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("org1"));
+        when(subscriberRepository.findByUsernameInAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                List.of("org1"))).thenReturn(List.of(orgSub));
+        when(emailTemplateService.findByKeyAndLocale(any(), any()))
+                .thenReturn(Optional.of(mockTemplate("newsletter-event", "de", "body")));
+        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
+        when(emailService.replaceVariables(any(), any())).thenReturn("final");
+        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(Optional.of("Subject"));
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
+
+        newsletterEmailService.executeNewsletterSendAsync(
+                sendId, testEvent, false, "de", "newsletter-event", null, true);
+
+        // Only the organizer subscriber should receive the email
+        verify(emailService, times(1)).sendHtmlEmailSync(
+                eq("org@batbern.ch"),
+                eq("[Testmailing nur an OK] final"),
+                any(), any());
+        // The paginated query should NOT be called in test mode
+        verify(subscriberRepository, never()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+    }
+
+    // ── iCal attachment building ─────────────────────────────────────────────
+
+    @Test
+    @DisplayName("buildIcsAttachments: template with {{eventDate}} includes current event ICS")
+    void buildIcsAttachments_withEventDate_includesCurrentEvent() {
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
+        testEvent.setVenueName("Welle 7, Bern");
+
+        String templateHtml = "<p>Date: {{eventDate}}</p><p>Link: {{eventDetailLink}}</p>";
+        Map<String, String> baseVars = Map.of(
+                "eventDate", "6. März 2026",
+                "eventDetailLink", "https://batbern.ch/events/BATbern58",
+                "upcomingEventsSection", "");
+
+        var range = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        when(eventTimeResolver.resolve(testEvent)).thenReturn(range);
+        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
+                .thenReturn("VCALENDAR".getBytes());
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).hasSize(1);
+        assertThat(attachments.get(0).filename()).isEqualTo("batbern-events.ics");
+        assertThat(attachments.get(0).mimeType()).contains("text/calendar");
+        assertThat(attachments.get(0).inline()).isTrue();
+        verify(icsCalendarService).generateMultiEventIcsFile(any(), eq("noreply@batbern.ch"), eq("BATbern"));
+    }
+
+    @Test
+    @DisplayName("buildIcsAttachments: template without event variables returns empty")
+    void buildIcsAttachments_noEventVars_returnsEmpty() {
+        testEvent.setId(UUID.randomUUID());
+
+        String templateHtml = "<p>Hello subscriber!</p><p>Check out our news.</p>";
+        Map<String, String> baseVars = Map.of("upcomingEventsSection", "");
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).isEmpty();
+        verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("buildIcsAttachments: template with upcomingEventsSection includes upcoming events")
+    void buildIcsAttachments_withUpcomingEvents_includesUpcoming() {
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setDate(Instant.parse("2026-03-06T15:00:00Z"));
+
+        Event futureEvent = new Event();
+        futureEvent.setId(UUID.randomUUID());
+        futureEvent.setTitle("Future BAT");
+        futureEvent.setDate(Instant.parse("2026-06-15T14:00:00Z"));
+        futureEvent.setVenueName("PostFinance Arena");
+
+        String templateHtml = "<p>{{upcomingEventsSection}}</p>";
+        Map<String, String> baseVars = Map.of(
+                "upcomingEventsSection", "<table>upcoming events HTML</table>");
+
+        var range1 = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 3, 6, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        var range2 = new EventTimeResolver.TimeRange(
+                java.time.ZonedDateTime.of(2026, 6, 15, 16, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")),
+                java.time.ZonedDateTime.of(2026, 6, 15, 20, 0, 0, 0, java.time.ZoneId.of("Europe/Zurich")));
+        when(eventTimeResolver.resolve(any())).thenReturn(range1).thenReturn(range2);
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of(futureEvent));
+        when(icsCalendarService.generateMultiEventIcsFile(any(), any(), any()))
+                .thenReturn("VCALENDAR".getBytes());
+
+        List<EmailService.EmailAttachment> attachments =
+                newsletterEmailService.buildIcsAttachments(templateHtml, baseVars, testEvent);
+
+        assertThat(attachments).hasSize(1);
+        // Should NOT include current event (no {{eventDate}} in template)
+        // but SHOULD include the future event from upcoming section
+        verify(icsCalendarService).generateMultiEventIcsFile(any(), any(), any());
     }
 
 }

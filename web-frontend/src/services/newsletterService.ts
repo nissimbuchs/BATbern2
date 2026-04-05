@@ -25,6 +25,7 @@ export interface NewsletterSendRequest {
   isReminder: boolean;
   locale: 'de' | 'en';
   templateKey?: string; // Optional override; service defaults to 'newsletter-event' if omitted
+  testMode?: boolean; // Send only to organizer-role subscribers
 }
 
 export interface NewsletterSendResponse {
@@ -37,6 +38,7 @@ export interface NewsletterSendResponse {
   failedCount: number;
   startedAt?: string;
   completedAt?: string;
+  testMode?: boolean;
 }
 
 export interface NewsletterSendStatusResponse {
@@ -67,15 +69,24 @@ export interface NewsletterSendHistoryItem {
   status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
   sentCount?: number;
   failedCount?: number;
+  testMode?: boolean;
 }
 
 export interface SubscriberCountResponse {
   totalActive: number;
 }
 
-/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
-export async function subscribe(request: NewsletterSubscribeRequest): Promise<void> {
-  await apiClient.post('/newsletter/subscribe', request);
+/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
+ *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
+ *  X-Turnstile-Token header when present.
+ */
+export async function subscribe(
+  request: NewsletterSubscribeRequest,
+  turnstileToken?: string | null
+): Promise<void> {
+  await apiClient.post('/newsletter/subscribe', request, {
+    headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
+  });
 }
 
 /** Verify an unsubscribe token — returns email if valid, throws 404 if not. */

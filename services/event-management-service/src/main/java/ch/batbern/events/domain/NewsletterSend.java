@@ -81,6 +81,11 @@ public class NewsletterSend {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    /** True when the send was restricted to organizer-role subscribers (test mode). */
+    @Column(name = "test_mode", nullable = false)
+    @Builder.Default
+    private boolean testMode = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

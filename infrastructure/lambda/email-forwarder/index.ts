@@ -92,7 +92,7 @@ export const handler = async (event: S3Event): Promise<void> => {
       console.log('Excluded sender from recipients', { sender: truncatedSender });
     }
     if (filteredRecipients.length === 0) {
-      console.warn('No recipients after excluding sender', { to: toAddress });
+      console.warn('No recipients after excluding sender', { to: toAddresses });
       await publishMetric('EmailsUnresolved');
       return;
     }

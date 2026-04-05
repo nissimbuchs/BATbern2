@@ -18,6 +18,7 @@ import NewsletterSubscriberTable from './NewsletterSubscriberTable';
 import UnsubscribeDialog from './UnsubscribeDialog';
 import ResubscribeDialog from './ResubscribeDialog';
 import DeleteSubscriberDialog from './DeleteSubscriberDialog';
+import UnsuppressDialog from './UnsuppressDialog';
 import type { components } from '@/types/generated/events-api.types';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
@@ -35,6 +36,7 @@ const NewsletterSubscriberList: React.FC = () => {
   const [unsubscribeTarget, setUnsubscribeTarget] = useState<SubscriberResponse | null>(null);
   const [resubscribeTarget, setResubscribeTarget] = useState<SubscriberResponse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SubscriberResponse | null>(null);
+  const [unsuppressTarget, setUnsuppressTarget] = useState<SubscriberResponse | null>(null);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{
@@ -44,13 +46,19 @@ const NewsletterSubscriberList: React.FC = () => {
   }>({ open: false, message: '', severity: 'success' });
 
   const handleAction = useCallback(
-    (action: 'unsubscribe' | 'resubscribe' | 'delete', subscriber: SubscriberResponse) => {
+    (
+      action: 'unsubscribe' | 'resubscribe' | 'unsuppress' | 'delete',
+      subscriber: SubscriberResponse
+    ) => {
       switch (action) {
         case 'unsubscribe':
           setUnsubscribeTarget(subscriber);
           break;
         case 'resubscribe':
           setResubscribeTarget(subscriber);
+          break;
+        case 'unsuppress':
+          setUnsuppressTarget(subscriber);
           break;
         case 'delete':
           setDeleteTarget(subscriber);
@@ -150,6 +158,19 @@ const NewsletterSubscriberList: React.FC = () => {
           setSnackbar({
             open: true,
             message: t('toast.deleteSuccess', { email: deleteTarget?.email }),
+            severity: 'success',
+          })
+        }
+      />
+
+      <UnsuppressDialog
+        open={Boolean(unsuppressTarget)}
+        subscriber={unsuppressTarget}
+        onClose={() => setUnsuppressTarget(null)}
+        onSuccess={() =>
+          setSnackbar({
+            open: true,
+            message: t('toast.unsuppressSuccess', { email: unsuppressTarget?.email }),
             severity: 'success',
           })
         }

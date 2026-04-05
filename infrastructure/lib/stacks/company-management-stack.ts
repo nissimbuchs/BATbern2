@@ -92,6 +92,7 @@ export class CompanyManagementStack extends cdk.Stack {
         routePattern: '/api/v1/companies,/api/v1/users',
         cpu: 256,
         memoryLimitMiB: 1024, // Increased from 512 MB (Priority 4: ECS Right-Sizing - was at 93-99% utilization)
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA needs more startup time than 120s default
         additionalEnvironment,
         additionalSecrets,
       },

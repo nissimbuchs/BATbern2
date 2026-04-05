@@ -324,7 +324,23 @@
     "sendReminder": "Lähetä muistutus",
     "sendingReminder": "Lähetetään...",
     "reminderSent": "Muistutus lähetetty osoitteeseen {{email}}",
-    "reminderFailed": "Muistutuksen lähettäminen epäonnistui"
+    "reminderFailed": "Muistutuksen lähettäminen epäonnistui",
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "activity": "Activity"
+    },
+    "drawer": {
+      "back": "Back"
+    },
+    "organizerUpdated": "Organizer updated",
+    "organizerUpdateFailed": "Failed to update organizer",
+    "submitContent": "Submit Content",
+    "reviewContent": "Review Content",
+    "revisionRequested": "Revision Requested",
+    "submittedContent": "Submitted Content",
+    "submittedAt": "Submitted",
+    "noDetails": "Ei tietoja saatavilla"
   },
   "tasks": {
     "taskBoard": "Tehtävätaulu",
