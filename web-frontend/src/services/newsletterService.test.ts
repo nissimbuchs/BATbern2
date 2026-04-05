@@ -24,6 +24,8 @@ import {
   getNewsletterHistory,
   previewNewsletter,
   sendNewsletter,
+  getSendStatus,
+  retryFailedRecipients,
 } from './newsletterService';
 
 vi.mock('@/services/api/apiClient', () => ({
@@ -53,6 +55,34 @@ describe('newsletterService', () => {
         '/newsletter/subscribe',
         { email: 'alice@batbern.ch', firstName: 'Alice', language: 'de' },
         { headers: {} } // no turnstileToken → empty headers (Story 10.31, AC8)
+      );
+    });
+
+    it('should send X-Turnstile-Token header when turnstileToken provided (AC8)', async () => {
+      mockPost.mockResolvedValue({ data: undefined });
+
+      await subscribe({ email: 'alice@batbern.ch' }, 'cf-token-xyz');
+
+      expect(mockPost).toHaveBeenCalledWith(
+        '/newsletter/subscribe',
+        { email: 'alice@batbern.ch' },
+        {
+          headers: { 'X-Turnstile-Token': 'cf-token-xyz' },
+        }
+      );
+    });
+
+    it('should send empty headers when turnstileToken is null', async () => {
+      mockPost.mockResolvedValue({ data: undefined });
+
+      await subscribe({ email: 'alice@batbern.ch' }, null);
+
+      expect(mockPost).toHaveBeenCalledWith(
+        '/newsletter/subscribe',
+        { email: 'alice@batbern.ch' },
+        {
+          headers: {},
+        }
       );
     });
 
@@ -215,6 +245,44 @@ describe('newsletterService', () => {
       await expect(sendNewsletter('BAT142', { isReminder: false, locale: 'de' })).rejects.toThrow(
         'Service unavailable'
       );
+    });
+  });
+
+  describe('getSendStatus', () => {
+    it('should GET send status for event and sendId', async () => {
+      const status = { status: 'COMPLETED', recipientCount: 300, sentCount: 298, failedCount: 2 };
+      mockGet.mockResolvedValue({ data: status });
+
+      const result = await getSendStatus('BAT142', 'send-001');
+
+      expect(mockGet).toHaveBeenCalledWith('/events/BAT142/newsletter/sends/send-001/status');
+      expect(result).toEqual(status);
+    });
+
+    it('should URL-encode eventCode and sendId', async () => {
+      mockGet.mockResolvedValue({ data: { status: 'PENDING' } });
+
+      await getSendStatus('BAT/2025', 'send/id');
+
+      expect(mockGet).toHaveBeenCalledWith('/events/BAT%2F2025/newsletter/sends/send%2Fid/status');
+    });
+  });
+
+  describe('retryFailedRecipients', () => {
+    it('should POST retry request for event and sendId', async () => {
+      const retryResult = { recipientCount: 2, sentAt: '2025-12-02T10:00:00Z' };
+      mockPost.mockResolvedValue({ data: retryResult });
+
+      const result = await retryFailedRecipients('BAT142', 'send-001');
+
+      expect(mockPost).toHaveBeenCalledWith('/events/BAT142/newsletter/sends/send-001/retry');
+      expect(result).toEqual(retryResult);
+    });
+
+    it('should propagate errors', async () => {
+      mockPost.mockRejectedValue(new Error('Not Found'));
+
+      await expect(retryFailedRecipients('BAT142', 'bad-id')).rejects.toThrow('Not Found');
     });
   });
 });
