@@ -28,6 +28,7 @@ vi.mock('./api/apiClient', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
@@ -298,6 +299,123 @@ describe('topicService', () => {
       const result = await topicService.getSimilarTopics('topic-unique');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('updateTopic', () => {
+    it('should update an existing topic', async () => {
+      const request: CreateTopicRequest = {
+        title: 'Updated Cloud Native Architecture',
+        description: 'Updated description',
+        category: 'technical',
+      };
+
+      const mockUpdatedTopic: Topic = {
+        id: 'topic-123',
+        ...request,
+        stalenessScore: 85,
+        usageCount: 3,
+        lastUsedDate: '2024-01-15',
+        isActive: true,
+        createdDate: '2023-01-01',
+      };
+
+      vi.mocked(apiClient.put).mockResolvedValue({ data: mockUpdatedTopic });
+
+      const result = await topicService.updateTopic('topic-123', request);
+
+      expect(apiClient.put).toHaveBeenCalledWith('/topics/topic-123', request);
+      expect(result).toEqual(mockUpdatedTopic);
+      expect(result.title).toBe('Updated Cloud Native Architecture');
+    });
+
+    it('should propagate validation errors on update', async () => {
+      const request: CreateTopicRequest = {
+        title: '',
+        description: 'Invalid update',
+        category: 'technical',
+      };
+
+      const error = new Error('Validation failed: title is required');
+      vi.mocked(apiClient.put).mockRejectedValue(error);
+
+      await expect(topicService.updateTopic('topic-123', request)).rejects.toThrow(
+        'Validation failed'
+      );
+    });
+
+    it('should propagate 404 errors for non-existent topic', async () => {
+      const request: CreateTopicRequest = {
+        title: 'Update Attempt',
+        description: 'Non-existent topic',
+        category: 'technical',
+      };
+
+      const error = new Error('Topic not found');
+      vi.mocked(apiClient.put).mockRejectedValue(error);
+
+      await expect(topicService.updateTopic('non-existent', request)).rejects.toThrow(
+        'Topic not found'
+      );
+    });
+  });
+
+  describe('deleteTopic', () => {
+    it('should delete a topic that has never been used', async () => {
+      vi.mocked(apiClient.delete).mockResolvedValue({ data: undefined });
+
+      await topicService.deleteTopic('topic-123');
+
+      expect(apiClient.delete).toHaveBeenCalledWith('/topics/topic-123');
+    });
+
+    it('should propagate error when topic has been used', async () => {
+      const error = new Error('Cannot delete topic: topic has been used in events');
+      vi.mocked(apiClient.delete).mockRejectedValue(error);
+
+      await expect(topicService.deleteTopic('topic-used')).rejects.toThrow('Cannot delete topic');
+    });
+
+    it('should propagate 404 errors for non-existent topic', async () => {
+      const error = new Error('Topic not found');
+      vi.mocked(apiClient.delete).mockRejectedValue(error);
+
+      await expect(topicService.deleteTopic('non-existent')).rejects.toThrow('Topic not found');
+    });
+  });
+
+  describe('getTopicUsageHistory', () => {
+    it('should fetch usage history for a topic', async () => {
+      const mockHistory = [
+        { eventCode: 'BATbern55', eventDate: '2024-06-15', eventTitle: 'BATbern 55' },
+        { eventCode: 'BATbern50', eventDate: '2023-12-01', eventTitle: 'BATbern 50' },
+      ];
+
+      vi.mocked(apiClient.get).mockResolvedValue({ data: mockHistory });
+
+      const result = await topicService.getTopicUsageHistory('topic-123');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/topics/topic-123/usage-history');
+      expect(result).toEqual(mockHistory);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when topic has no usage history', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+
+      const result = await topicService.getTopicUsageHistory('topic-new');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/topics/topic-new/usage-history');
+      expect(result).toEqual([]);
+    });
+
+    it('should propagate 404 errors for non-existent topic', async () => {
+      const error = new Error('Topic not found');
+      vi.mocked(apiClient.get).mockRejectedValue(error);
+
+      await expect(topicService.getTopicUsageHistory('non-existent')).rejects.toThrow(
+        'Topic not found'
+      );
     });
   });
 

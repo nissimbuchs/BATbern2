@@ -26,6 +26,8 @@ vi.mock('@/services/slotAssignmentService/slotAssignmentService', () => ({
     assignSessionTiming: vi.fn(),
     bulkAssignTiming: vi.fn(),
     detectConflicts: vi.fn(),
+    clearAllTimings: vi.fn(),
+    autoAssignTimings: vi.fn(),
   },
 }));
 
@@ -397,6 +399,445 @@ describe('useSlotAssignment Hook (Story 5.7 - Task 4a RED Phase)', () => {
 
       // Then: Conflict state is null
       expect(result.current.conflict).toBeNull();
+    });
+  });
+
+  describe('Bulk Assignment Error Handling', () => {
+    it('should_rollbackAndSetError_when_bulkAssignmentFailsWithGenericError', async () => {
+      // Given: Bulk assignment fails with a generic error
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.bulkAssignTiming
+      ).mockRejectedValue(new Error('Network error'));
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const bulkRequest = {
+        assignments: [
+          {
+            sessionSlug: 'session-1',
+            startTime: '2025-05-15T09:00:00Z',
+            endTime: '2025-05-15T09:45:00Z',
+            room: 'Main Hall',
+          },
+        ],
+        changeReason: 'preference_matching' as const,
+      };
+
+      // When: Bulk assignment fails
+      await act(async () => {
+        try {
+          await result.current.bulkAssignTiming(bulkRequest);
+        } catch {
+          // Expected to fail
+        }
+      });
+
+      // Then: Optimistic update is rolled back and error is set
+      expect(result.current.unassignedSessions).toHaveLength(2);
+      expect(result.current.error).toBe('Network error');
+    });
+
+    it('should_rollbackAndSetError_when_bulkAssignmentFailsWith409Conflict', async () => {
+      // Given: Bulk assignment returns a 409 conflict
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+
+      const conflictError = new AxiosError('Bulk conflict');
+      conflictError.response = {
+        status: 409,
+        data: {
+          message: 'Multiple room overlaps detected',
+        },
+        statusText: 'Conflict',
+        headers: {},
+        config: {} as any,
+      };
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.bulkAssignTiming
+      ).mockRejectedValue(conflictError);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const bulkRequest = {
+        assignments: [
+          {
+            sessionSlug: 'session-1',
+            startTime: '2025-05-15T09:00:00Z',
+            endTime: '2025-05-15T09:45:00Z',
+            room: 'Main Hall',
+          },
+          {
+            sessionSlug: 'session-2',
+            startTime: '2025-05-15T09:00:00Z',
+            endTime: '2025-05-15T09:45:00Z',
+            room: 'Main Hall',
+          },
+        ],
+        changeReason: 'preference_matching' as const,
+      };
+
+      // When: Bulk assignment returns 409
+      await act(async () => {
+        try {
+          await result.current.bulkAssignTiming(bulkRequest);
+        } catch {
+          // Expected conflict
+        }
+      });
+
+      // Then: Sessions are rolled back and error message from response is set
+      expect(result.current.unassignedSessions).toHaveLength(2);
+      expect(result.current.error).toBe('Multiple room overlaps detected');
+    });
+
+    it('should_useFallbackMessage_when_bulkAssignment409HasNoMessage', async () => {
+      // Given: Bulk assignment returns 409 without a message field
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+
+      const conflictError = new AxiosError('Bulk conflict');
+      conflictError.response = {
+        status: 409,
+        data: {},
+        statusText: 'Conflict',
+        headers: {},
+        config: {} as any,
+      };
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.bulkAssignTiming
+      ).mockRejectedValue(conflictError);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const bulkRequest = {
+        assignments: [
+          {
+            sessionSlug: 'session-1',
+            startTime: '2025-05-15T09:00:00Z',
+            endTime: '2025-05-15T09:45:00Z',
+            room: 'Main Hall',
+          },
+        ],
+        changeReason: 'preference_matching' as const,
+      };
+
+      // When: Bulk assignment returns 409 without message
+      await act(async () => {
+        try {
+          await result.current.bulkAssignTiming(bulkRequest);
+        } catch {
+          // Expected conflict
+        }
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Bulk assignment conflicts detected');
+    });
+
+    it('should_useFallbackMessage_when_bulkAssignmentFailsWithNonErrorObject', async () => {
+      // Given: Bulk assignment fails with a non-Error object
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.bulkAssignTiming
+      ).mockRejectedValue('string error');
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const bulkRequest = {
+        assignments: [
+          {
+            sessionSlug: 'session-1',
+            startTime: '2025-05-15T09:00:00Z',
+            endTime: '2025-05-15T09:45:00Z',
+            room: 'Main Hall',
+          },
+        ],
+        changeReason: 'preference_matching' as const,
+      };
+
+      // When: Bulk assignment fails with non-Error
+      await act(async () => {
+        try {
+          await result.current.bulkAssignTiming(bulkRequest);
+        } catch {
+          // Expected
+        }
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Failed to assign timing');
+    });
+  });
+
+  describe('Conflict Detection Error Handling', () => {
+    it('should_setError_when_detectConflictsFails', async () => {
+      // Given: Conflict detection API fails
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.detectConflicts
+      ).mockRejectedValue(new Error('Conflict detection service unavailable'));
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: Conflict detection fails
+      await act(async () => {
+        await result.current.detectConflicts();
+      });
+
+      // Then: Error state is set
+      expect(result.current.error).toBe('Conflict detection service unavailable');
+      expect(result.current.conflictAnalysis).toBeNull();
+    });
+
+    it('should_useFallbackMessage_when_detectConflictsFailsWithNonError', async () => {
+      // Given: Conflict detection fails with non-Error object
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.detectConflicts
+      ).mockRejectedValue('unexpected');
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: Conflict detection fails with non-Error
+      await act(async () => {
+        await result.current.detectConflicts();
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Failed to detect conflicts');
+    });
+  });
+
+  describe('Clear All Timings', () => {
+    it('should_clearAllTimingsAndRefresh_when_clearAllTimingsCalled', async () => {
+      // Given: Sessions exist and clearAllTimings succeeds
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.clearAllTimings
+      ).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: clearAllTimings is called
+      await act(async () => {
+        await result.current.clearAllTimings();
+      });
+
+      // Then: Service was called and sessions were refreshed
+      expect(
+        slotAssignmentServiceModule.slotAssignmentService.clearAllTimings
+      ).toHaveBeenCalledWith(mockEventCode);
+      // getUnassignedSessions called on mount (+ possible re-fire from totalSessions dep) + once on refresh after clear
+      expect(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).toHaveBeenCalledTimes(3);
+      expect(result.current.error).toBeNull();
+    });
+
+    it('should_setErrorAndRethrow_when_clearAllTimingsFails', async () => {
+      // Given: clearAllTimings API fails
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.clearAllTimings
+      ).mockRejectedValue(new Error('Server error'));
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: clearAllTimings fails
+      await act(async () => {
+        try {
+          await result.current.clearAllTimings();
+        } catch {
+          // Expected to rethrow
+        }
+      });
+
+      // Then: Error is set
+      expect(result.current.error).toBe('Server error');
+    });
+
+    it('should_useFallbackMessage_when_clearAllTimingsFailsWithNonError', async () => {
+      // Given: clearAllTimings fails with non-Error
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.clearAllTimings
+      ).mockRejectedValue(42);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: clearAllTimings fails with non-Error
+      await act(async () => {
+        try {
+          await result.current.clearAllTimings();
+        } catch {
+          // Expected
+        }
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Failed to clear all timings');
+    });
+  });
+
+  describe('Auto-Assign Timings', () => {
+    it('should_autoAssignAndRefresh_when_autoAssignTimingsCalled', async () => {
+      // Given: autoAssignTimings succeeds
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.autoAssignTimings
+      ).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: autoAssignTimings is called
+      await act(async () => {
+        await result.current.autoAssignTimings();
+      });
+
+      // Then: Service was called and sessions were refreshed
+      expect(
+        slotAssignmentServiceModule.slotAssignmentService.autoAssignTimings
+      ).toHaveBeenCalledWith(mockEventCode);
+      // getUnassignedSessions called on mount (+ possible re-fire from totalSessions dep) + once on refresh after auto-assign
+      expect(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).toHaveBeenCalledTimes(3);
+      expect(result.current.error).toBeNull();
+    });
+
+    it('should_setErrorAndRethrow_when_autoAssignTimingsFails', async () => {
+      // Given: autoAssignTimings API fails
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.autoAssignTimings
+      ).mockRejectedValue(new Error('No available slots'));
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: autoAssignTimings fails
+      await act(async () => {
+        try {
+          await result.current.autoAssignTimings();
+        } catch {
+          // Expected to rethrow
+        }
+      });
+
+      // Then: Error is set
+      expect(result.current.error).toBe('No available slots');
+    });
+
+    it('should_useFallbackMessage_when_autoAssignTimingsFailsWithNonError', async () => {
+      // Given: autoAssignTimings fails with non-Error
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockResolvedValue(mockUnassignedSessions);
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.autoAssignTimings
+      ).mockRejectedValue(null);
+
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // When: autoAssignTimings fails with non-Error
+      await act(async () => {
+        try {
+          await result.current.autoAssignTimings();
+        } catch {
+          // Expected
+        }
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Failed to auto-assign timings');
+    });
+  });
+
+  describe('Fetch Error Edge Cases', () => {
+    it('should_useFallbackMessage_when_fetchFailsWithNonErrorObject', async () => {
+      // Given: API fetch rejects with a non-Error value
+      vi.mocked(
+        slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
+      ).mockRejectedValue('string error');
+
+      // When: Hook tries to fetch
+      const { result } = renderHook(() => useSlotAssignment(mockEventCode));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Then: Fallback error message is used
+      expect(result.current.error).toBe('Failed to fetch unassigned sessions');
+      expect(result.current.unassignedSessions).toHaveLength(0);
     });
   });
 

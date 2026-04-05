@@ -19,6 +19,7 @@ vi.mock('@/services/speakerPoolService', () => ({
     getSpeakerPool: vi.fn(),
     addSpeakerToPool: vi.fn(),
     deleteSpeakerFromPool: vi.fn(),
+    patchSpeakerPool: vi.fn(),
     sendInvitation: vi.fn(),
     sendReminder: vi.fn(),
   },
@@ -33,11 +34,22 @@ vi.mock('@/services/speakerOutreachService', () => ({
 
 import { speakerPoolService } from '@/services/speakerPoolService';
 import { speakerOutreachService } from '@/services/speakerOutreachService';
-import { useSpeakerPool, useAddSpeakerToPool } from './useSpeakerPool';
+import {
+  useSpeakerPool,
+  useAddSpeakerToPool,
+  useDeleteSpeakerFromPool,
+  usePatchSpeakerPool,
+  useSendInvitation,
+  useSendReminder,
+} from './useSpeakerPool';
 import { useSpeakerOutreachHistory, useRecordOutreach } from './useSpeakerOutreach';
 
 const mockGetSpeakerPool = vi.mocked(speakerPoolService.getSpeakerPool);
 const mockAddSpeakerToPool = vi.mocked(speakerPoolService.addSpeakerToPool);
+const mockDeleteSpeakerFromPool = vi.mocked(speakerPoolService.deleteSpeakerFromPool);
+const mockPatchSpeakerPool = vi.mocked(speakerPoolService.patchSpeakerPool);
+const mockSendInvitation = vi.mocked(speakerPoolService.sendInvitation);
+const mockSendReminder = vi.mocked(speakerPoolService.sendReminder);
 const mockGetOutreachHistory = vi.mocked(speakerOutreachService.getOutreachHistory);
 const mockRecordOutreach = vi.mocked(speakerOutreachService.recordOutreach);
 
@@ -158,6 +170,317 @@ describe('useAddSpeakerToPool', () => {
     await act(async () => {
       await result.current
         .mutateAsync({ eventCode: 'BAT142', request: {} as never })
+        .catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── useDeleteSpeakerFromPool ─────────────────────────────────────────────────
+
+describe('useDeleteSpeakerFromPool', () => {
+  let qc: QueryClient;
+
+  beforeEach(() => {
+    qc = createQC();
+    vi.clearAllMocks();
+  });
+
+  it('should call deleteSpeakerFromPool with eventCode and speakerId', async () => {
+    mockDeleteSpeakerFromPool.mockResolvedValue(undefined as never);
+
+    const { result } = renderHook(() => useDeleteSpeakerFromPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ eventCode: 'BAT142', speakerId: 'sp-1' });
+    });
+
+    expect(mockDeleteSpeakerFromPool).toHaveBeenCalledWith('BAT142', 'sp-1');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('should invalidate speaker pool cache on success', async () => {
+    mockDeleteSpeakerFromPool.mockResolvedValue(undefined as never);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => useDeleteSpeakerFromPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ eventCode: 'BAT142', speakerId: 'sp-1' });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: expect.arrayContaining(['speakerPool']) })
+    );
+  });
+
+  it('should set isError on failure', async () => {
+    mockDeleteSpeakerFromPool.mockRejectedValue(new Error('Not found'));
+
+    const { result } = renderHook(() => useDeleteSpeakerFromPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current
+        .mutateAsync({ eventCode: 'BAT142', speakerId: 'sp-999' })
+        .catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── usePatchSpeakerPool ─────────────────────────────────────────────────────
+
+describe('usePatchSpeakerPool', () => {
+  let qc: QueryClient;
+
+  beforeEach(() => {
+    qc = createQC();
+    vi.clearAllMocks();
+  });
+
+  it('should call patchSpeakerPool with eventCode, speakerId, and request', async () => {
+    const patchedSpeaker = { ...MOCK_SPEAKER, assignedOrganizerId: 'org-new' };
+    mockPatchSpeakerPool.mockResolvedValue(patchedSpeaker as never);
+
+    const { result } = renderHook(() => usePatchSpeakerPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        eventCode: 'BAT142',
+        speakerId: 'sp-1',
+        request: { assignedOrganizerId: 'org-new' },
+      });
+    });
+
+    expect(mockPatchSpeakerPool).toHaveBeenCalledWith('BAT142', 'sp-1', {
+      assignedOrganizerId: 'org-new',
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('should invalidate speaker pool cache on success', async () => {
+    mockPatchSpeakerPool.mockResolvedValue(MOCK_SPEAKER as never);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => usePatchSpeakerPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        eventCode: 'BAT142',
+        speakerId: 'sp-1',
+        request: { notes: 'Updated notes' },
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: expect.arrayContaining(['speakerPool']) })
+    );
+  });
+
+  it('should set isError on failure', async () => {
+    mockPatchSpeakerPool.mockRejectedValue(new Error('Forbidden'));
+
+    const { result } = renderHook(() => usePatchSpeakerPool(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current
+        .mutateAsync({
+          eventCode: 'BAT142',
+          speakerId: 'sp-1',
+          request: { notes: 'test' },
+        })
+        .catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── useSendInvitation ───────────────────────────────────────────────────────
+
+describe('useSendInvitation', () => {
+  let qc: QueryClient;
+
+  beforeEach(() => {
+    qc = createQC();
+    vi.clearAllMocks();
+  });
+
+  it('should call sendInvitation with eventCode, username, and options', async () => {
+    const mockResponse = {
+      token: 'magic-link-token',
+      workflowState: 'INVITED',
+      invitedAt: '2025-12-15T10:00:00Z',
+      email: 'speaker@example.com',
+    };
+    mockSendInvitation.mockResolvedValue(mockResponse as never);
+
+    const { result } = renderHook(() => useSendInvitation('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        username: 'speaker-uuid',
+        options: {
+          responseDeadline: '2026-01-15',
+          contentDeadline: '2026-02-01',
+        },
+      });
+    });
+
+    expect(mockSendInvitation).toHaveBeenCalledWith('BAT142', 'speaker-uuid', {
+      responseDeadline: '2026-01-15',
+      contentDeadline: '2026-02-01',
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockResponse);
+  });
+
+  it('should call sendInvitation without options', async () => {
+    const mockResponse = {
+      token: 'token-123',
+      workflowState: 'INVITED',
+      invitedAt: '2025-12-15T10:00:00Z',
+      email: 'speaker@example.com',
+    };
+    mockSendInvitation.mockResolvedValue(mockResponse as never);
+
+    const { result } = renderHook(() => useSendInvitation('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: 'speaker-uuid' });
+    });
+
+    expect(mockSendInvitation).toHaveBeenCalledWith('BAT142', 'speaker-uuid', undefined);
+  });
+
+  it('should invalidate speaker pool and status summary caches on success', async () => {
+    mockSendInvitation.mockResolvedValue({
+      token: 't',
+      workflowState: 'INVITED',
+      invitedAt: '2025-12-15T10:00:00Z',
+      email: 'a@b.com',
+    } as never);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => useSendInvitation('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: 'speaker-uuid' });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: expect.arrayContaining(['speakerPool']) })
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['speakerStatusSummary', 'BAT142'] })
+    );
+  });
+
+  it('should set isError on failure', async () => {
+    mockSendInvitation.mockRejectedValue(new Error('Speaker not in IDENTIFIED state'));
+
+    const { result } = renderHook(() => useSendInvitation('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: 'speaker-uuid' }).catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── useSendReminder ─────────────────────────────────────────────────────────
+
+describe('useSendReminder', () => {
+  let qc: QueryClient;
+
+  beforeEach(() => {
+    qc = createQC();
+    vi.clearAllMocks();
+  });
+
+  it('should call sendReminder with eventCode, speakerPoolId, and request', async () => {
+    const mockResponse = {
+      message: 'Reminder sent successfully',
+      tier: 'TIER_1',
+      emailAddress: 'speaker@example.com',
+    };
+    mockSendReminder.mockResolvedValue(mockResponse as never);
+
+    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        speakerPoolId: 'sp-pool-1',
+        request: { reminderType: 'RESPONSE' as const },
+      });
+    });
+
+    expect(mockSendReminder).toHaveBeenCalledWith('BAT142', 'sp-pool-1', {
+      reminderType: 'RESPONSE',
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockResponse);
+  });
+
+  it('should send CONTENT reminder type', async () => {
+    const mockResponse = {
+      message: 'Reminder sent',
+      tier: 'TIER_2',
+      emailAddress: 'speaker@example.com',
+    };
+    mockSendReminder.mockResolvedValue(mockResponse as never);
+
+    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        speakerPoolId: 'sp-pool-1',
+        request: { reminderType: 'CONTENT' as const, tier: 'TIER_2' },
+      });
+    });
+
+    expect(mockSendReminder).toHaveBeenCalledWith('BAT142', 'sp-pool-1', {
+      reminderType: 'CONTENT',
+      tier: 'TIER_2',
+    });
+  });
+
+  it('should invalidate speaker pool cache on success', async () => {
+    mockSendReminder.mockResolvedValue({
+      message: 'ok',
+      tier: 'TIER_1',
+      emailAddress: 'a@b.com',
+    } as never);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        speakerPoolId: 'sp-pool-1',
+        request: { reminderType: 'RESPONSE' as const },
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: expect.arrayContaining(['speakerPool']) })
+    );
+  });
+
+  it('should set isError on failure', async () => {
+    mockSendReminder.mockRejectedValue(new Error('Speaker not eligible for reminder'));
+
+    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current
+        .mutateAsync({
+          speakerPoolId: 'sp-pool-1',
+          request: { reminderType: 'RESPONSE' as const },
+        })
         .catch(() => {});
     });
 

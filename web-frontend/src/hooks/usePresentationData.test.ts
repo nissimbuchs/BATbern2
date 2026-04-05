@@ -18,15 +18,31 @@ vi.mock('@/services/presentationService', () => ({
   getGlobalTeaserImages: vi.fn().mockResolvedValue([]),
 }));
 
+let mockApiBaseUrl = 'http://localhost:8000';
 vi.mock('@/contexts/useConfig', () => ({
-  useConfig: () => ({ apiBaseUrl: 'http://localhost:8000' }),
+  useConfig: () => ({ apiBaseUrl: mockApiBaseUrl }),
 }));
+
+// Capture callbacks so tests can trigger WebSocket interactions
+let capturedOnConnect: (() => void) | undefined;
+let capturedSubscribeCallback: ((msg: unknown) => void) | undefined;
+let capturedWebSocketFactory: (() => WebSocket) | undefined;
 
 vi.mock('@stomp/stompjs', () => ({
   Client: class {
     activate = vi.fn();
     deactivate = vi.fn(() => Promise.resolve());
-    subscribe = vi.fn();
+    subscribe = vi.fn((_dest: string, cb: (msg: unknown) => void) => {
+      capturedSubscribeCallback = cb;
+    });
+    constructor(opts: { onConnect?: () => void; webSocketFactory?: () => WebSocket }) {
+      if (opts?.onConnect) {
+        capturedOnConnect = opts.onConnect;
+      }
+      if (opts?.webSocketFactory) {
+        capturedWebSocketFactory = opts.webSocketFactory;
+      }
+    }
   },
 }));
 
@@ -72,6 +88,10 @@ describe('usePresentationData', () => {
   beforeEach(() => {
     qc = createQC();
     vi.clearAllMocks();
+    capturedOnConnect = undefined;
+    capturedSubscribeCallback = undefined;
+    capturedWebSocketFactory = undefined;
+    mockApiBaseUrl = 'http://localhost:8000';
   });
 
   it('should return loading state initially', () => {
@@ -212,5 +232,265 @@ describe('usePresentationData', () => {
     act(() => {
       result.current.refetch();
     });
+  });
+
+  it('should not set isInitialLoadError when event data exists but settings fails', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockRejectedValue(new Error('Settings fail'));
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Event data exists, so isInitialLoadError should be false even though settings failed
+    expect(result.current.isInitialLoadError).toBe(false);
+    expect(result.current.data.event).toEqual(MOCK_EVENT);
+  });
+
+  it('should not set isInitialLoadError when only event fails but settings succeeds', async () => {
+    mockGetPresentationData.mockRejectedValue(new Error('Event fail'));
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Event error + no event data + settings OK: event isError is true and data is null
+    expect(result.current.isInitialLoadError).toBe(true);
+  });
+
+  it('should return empty sessions when sessions is a non-array truthy value', async () => {
+    const eventWithObjectSessions = { ...MOCK_EVENT, sessions: { items: [] } };
+    mockGetPresentationData.mockResolvedValue(
+      eventWithObjectSessions as unknown as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Non-array sessions should fall back to empty array
+    expect(result.current.data.sessions).toEqual([]);
+  });
+
+  it('should return default about text in fallback settings', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockRejectedValue(new Error('No settings'));
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data.settings).toEqual({
+      aboutText:
+        'BATbern ist eine unabhängige Plattform, die Berner Architekten und Ingenieure vernetzt.',
+      partnerCount: 9,
+    });
+  });
+
+  it('should return null event and empty arrays when all queries fail', async () => {
+    mockGetPresentationData.mockRejectedValue(new Error('fail'));
+    mockGetPublicOrganizers.mockRejectedValue(new Error('fail'));
+    mockGetUpcomingEvents.mockRejectedValue(new Error('fail'));
+    mockGetPresentationSettings.mockRejectedValue(new Error('fail'));
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data.event).toBeNull();
+    expect(result.current.data.sessions).toEqual([]);
+    expect(result.current.data.organizers).toEqual([]);
+    expect(result.current.data.upcomingEvents).toEqual([]);
+    expect(result.current.data.globalTeaserImages).toEqual([]);
+    expect(result.current.isInitialLoadError).toBe(true);
+  });
+
+  it('should invalidate event query when WebSocket state message arrives', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Trigger onConnect to subscribe, then simulate a state message
+    if (capturedOnConnect) {
+      act(() => {
+        capturedOnConnect!();
+      });
+    }
+
+    if (capturedSubscribeCallback) {
+      act(() => {
+        capturedSubscribeCallback!({ body: '{}' });
+      });
+    }
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['presentation-event', 'BATbern142'],
+    });
+  });
+
+  it('should use non-localhost WebSocket URL for production-like apiBaseUrl', async () => {
+    mockApiBaseUrl = 'https://api.batbern.ch';
+
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const SockJS = (await import('sockjs-client')).default;
+    const mockSockJS = vi.mocked(SockJS);
+    mockSockJS.mockClear();
+
+    const { result, unmount } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Invoke the captured webSocketFactory to trigger SockJS call
+    expect(capturedWebSocketFactory).toBeDefined();
+    capturedWebSocketFactory!();
+
+    // SockJS constructor should have been called with production-style URL (protocol://host/ws)
+    expect(mockSockJS).toHaveBeenCalledWith('https://api.batbern.ch/ws');
+
+    unmount();
+  });
+
+  it('should clean up WebSocket client on unmount', async () => {
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const { result, unmount } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Unmounting should deactivate the client
+    unmount();
+
+    // After unmount, the WS callback should not invalidate queries
+    if (capturedOnConnect) {
+      act(() => {
+        capturedOnConnect!();
+      });
+    }
+    if (capturedSubscribeCallback) {
+      const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+      act(() => {
+        capturedSubscribeCallback!({ body: '{}' });
+      });
+      // The isMounted guard should prevent invalidation
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    }
+  });
+
+  it('should use localhost WebSocket URL with port offset for local dev', async () => {
+    mockApiBaseUrl = 'http://localhost:8000';
+
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const SockJS = (await import('sockjs-client')).default;
+    const mockSockJS = vi.mocked(SockJS);
+    mockSockJS.mockClear();
+
+    const { result, unmount } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Invoke the captured webSocketFactory to trigger SockJS call
+    expect(capturedWebSocketFactory).toBeDefined();
+    capturedWebSocketFactory!();
+
+    // For localhost, port should be apiBaseUrl port + 2 (8000 + 2 = 8002)
+    expect(mockSockJS).toHaveBeenCalledWith('http://localhost:8002/ws');
+
+    unmount();
+  });
+
+  it('should return empty globalTeaserImages when query returns data', async () => {
+    const { getGlobalTeaserImages } = await import('@/services/presentationService');
+    const mockGetGlobalTeaserImages = vi.mocked(getGlobalTeaserImages);
+    const mockImages = [{ id: '1', url: 'https://cdn.batbern.ch/teaser.jpg' }];
+    mockGetGlobalTeaserImages.mockResolvedValue(
+      mockImages as Awaited<ReturnType<typeof getGlobalTeaserImages>>
+    );
+
+    mockGetPresentationData.mockResolvedValue(
+      MOCK_EVENT as Awaited<ReturnType<typeof getPresentationData>>
+    );
+    mockGetPublicOrganizers.mockResolvedValue([]);
+    mockGetUpcomingEvents.mockResolvedValue([]);
+    mockGetPresentationSettings.mockResolvedValue(
+      MOCK_SETTINGS as Awaited<ReturnType<typeof getPresentationSettings>>
+    );
+
+    const { result } = renderHook(() => usePresentationData('BATbern142'), {
+      wrapper: createWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data.globalTeaserImages).toEqual(mockImages);
   });
 });

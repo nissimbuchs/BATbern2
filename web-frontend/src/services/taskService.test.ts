@@ -23,6 +23,7 @@ import type {
   CreateTasksFromTemplatesRequest,
   CompleteTaskRequest,
   ReassignTaskRequest,
+  UpdateEventTaskRequest,
 } from './taskService';
 
 // Mock the apiClient module
@@ -31,6 +32,7 @@ vi.mock('./api/apiClient', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
   },
 }));
@@ -1276,6 +1278,104 @@ describe('taskService', () => {
     });
   });
 
+  describe('updateTask (patch semantics)', () => {
+    it('should update task notes via patch', async () => {
+      const request: UpdateEventTaskRequest = {
+        notes: 'Updated notes for the task',
+      };
+
+      const mockResponse: EventTaskResponse = {
+        id: 'task-1',
+        eventId: 'event-123',
+        eventCode: 'BATbern56',
+        templateId: 'template-1',
+        taskName: 'Send Newsletter',
+        triggerState: 'SPEAKER_CONFIRMED',
+        dueDate: '2025-12-25T00:00:00Z',
+        assignedOrganizerUsername: 'john.doe',
+        status: 'todo',
+        notes: 'Updated notes for the task',
+        completedDate: null,
+        completedByUsername: null,
+        createdAt: '2025-12-20T10:00:00Z',
+        updatedAt: '2025-12-20T22:00:00Z',
+      };
+
+      vi.mocked(apiClient.patch).mockResolvedValue({ data: mockResponse });
+
+      const result = await taskService.updateTask('task-1', request);
+
+      expect(apiClient.patch).toHaveBeenCalledWith('/tasks/task-1', request);
+      expect(result).toEqual(mockResponse);
+      expect(result.notes).toBe('Updated notes for the task');
+    });
+
+    it('should update task dueDate and assignee via patch', async () => {
+      const request: UpdateEventTaskRequest = {
+        dueDate: '2026-01-15T00:00:00Z',
+        assignedOrganizerUsername: 'alice.wonder',
+      };
+
+      const mockResponse: EventTaskResponse = {
+        id: 'task-1',
+        eventId: 'event-123',
+        eventCode: 'BATbern56',
+        templateId: 'template-1',
+        taskName: 'Send Newsletter',
+        triggerState: 'SPEAKER_CONFIRMED',
+        dueDate: '2026-01-15T00:00:00Z',
+        assignedOrganizerUsername: 'alice.wonder',
+        status: 'todo',
+        notes: null,
+        completedDate: null,
+        completedByUsername: null,
+        createdAt: '2025-12-20T10:00:00Z',
+        updatedAt: '2025-12-20T23:00:00Z',
+      };
+
+      vi.mocked(apiClient.patch).mockResolvedValue({ data: mockResponse });
+
+      const result = await taskService.updateTask('task-1', request);
+
+      expect(apiClient.patch).toHaveBeenCalledWith('/tasks/task-1', request);
+      expect(result.dueDate).toBe('2026-01-15T00:00:00Z');
+      expect(result.assignedOrganizerUsername).toBe('alice.wonder');
+    });
+
+    it('should propagate 404 errors for non-existent task', async () => {
+      const request: UpdateEventTaskRequest = { notes: 'test' };
+
+      const error = new Error('Task not found: task-999');
+      vi.mocked(apiClient.patch).mockRejectedValue(error);
+
+      await expect(taskService.updateTask('task-999', request)).rejects.toThrow('Task not found');
+    });
+  });
+
+  describe('deleteTask', () => {
+    it('should delete a task by ID', async () => {
+      vi.mocked(apiClient.delete).mockResolvedValue({ data: undefined });
+
+      await taskService.deleteTask('task-1');
+
+      expect(apiClient.delete).toHaveBeenCalledWith('/tasks/task-1');
+    });
+
+    it('should propagate 404 errors for non-existent task', async () => {
+      const error = new Error('Task not found: task-999');
+      vi.mocked(apiClient.delete).mockRejectedValue(error);
+
+      await expect(taskService.deleteTask('task-999')).rejects.toThrow('Task not found');
+    });
+
+    it('should propagate authorization errors', async () => {
+      const error = new Error('Forbidden: insufficient permissions');
+      vi.mocked(apiClient.delete).mockRejectedValue(error);
+
+      await expect(taskService.deleteTask('task-1')).rejects.toThrow('Forbidden');
+    });
+  });
+
   describe('Service Singleton', () => {
     it('should export a singleton instance', () => {
       expect(taskService).toBeDefined();
@@ -1292,6 +1392,8 @@ describe('taskService', () => {
       expect(typeof taskService.completeTask).toBe('function');
       expect(typeof taskService.reassignTask).toBe('function');
       expect(typeof taskService.updateTaskStatus).toBe('function');
+      expect(typeof taskService.updateTask).toBe('function');
+      expect(typeof taskService.deleteTask).toBe('function');
     });
 
     it('should maintain state across multiple calls', async () => {
