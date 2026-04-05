@@ -290,13 +290,9 @@ export function createDomainService(
           Port: 8080,
           DnsName: serviceName,
         }],
-        // Timeouts prevent the Envoy proxy from waiting indefinitely during
-        // deployment registration. Without these, stuck Service Connect
-        // registration causes deployments to hang for hours.
-        Timeout: {
-          PerRequestTimeoutSeconds: 15,
-          IdleTimeoutSeconds: 60,
-        },
+        // NOTE: Service Connect Timeout is not supported for TCP protocol.
+        // "Per request timeout can't be set for tcp application" — AWS rejects it.
+        // Timeouts would require switching port mapping to appProtocol: http.
       }],
     });
 
