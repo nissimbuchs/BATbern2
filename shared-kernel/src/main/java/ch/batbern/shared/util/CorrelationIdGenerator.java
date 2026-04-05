@@ -3,6 +3,7 @@ package ch.batbern.shared.util;
 import java.util.UUID;
 
 public class CorrelationIdGenerator {
+    /** Standard HTTP header name for request correlation across microservices. */
     private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
 
     public static String generate() {
