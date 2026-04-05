@@ -623,7 +623,7 @@ jobs:
           echo "⚠️  Company Management deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-CompanyManagement --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "Waiting for rollback to complete (max 5 min)..."
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-CompanyManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-CompanyManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-CompanyManagement --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 
@@ -651,7 +651,7 @@ jobs:
         run: |
           echo "⚠️  Event Management deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-EventManagement --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-EventManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-EventManagement --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-EventManagement --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 
@@ -679,7 +679,7 @@ jobs:
         run: |
           echo "⚠️  Speaker Coordination deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-SpeakerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-SpeakerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-SpeakerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-SpeakerCoordination --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 
@@ -707,7 +707,7 @@ jobs:
         run: |
           echo "⚠️  Partner Coordination deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-PartnerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-PartnerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-PartnerCoordination --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-PartnerCoordination --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 
@@ -735,7 +735,7 @@ jobs:
         run: |
           echo "⚠️  Attendee Experience deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-AttendeeExperience --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-AttendeeExperience --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-AttendeeExperience --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-AttendeeExperience --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 
@@ -765,7 +765,7 @@ jobs:
         run: |
           echo "⚠️  API Gateway deploy failed/timed out. Cancelling stuck CloudFormation update..."
           aws cloudformation cancel-update-stack --stack-name BATbern-staging-ApiGatewayService --region ${{ env.AWS_REGION }} 2>/dev/null || true
-          aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-ApiGatewayService --region ${{ env.AWS_REGION }} 2>/dev/null || \
+          timeout 120 aws cloudformation wait stack-rollback-complete --stack-name BATbern-staging-ApiGatewayService --region ${{ env.AWS_REGION }} 2>/dev/null || \
           aws cloudformation continue-update-rollback --stack-name BATbern-staging-ApiGatewayService --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
           echo "✅ Stack recovered"
 

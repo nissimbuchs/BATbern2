@@ -3,7 +3,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
@@ -301,33 +300,11 @@ export function createDomainService(
       }],
     });
 
-    // Deployment alarm: if memory spikes above 95% during deployment, auto-rollback.
-    // treatMissingData=BREACHING catches the case where new tasks fail to report metrics
-    // (e.g., stuck Service Connect sidecar) — the alarm fires and ECS rolls back.
-    const deploymentAlarm = new cloudwatch.Alarm(scope, 'DeploymentHealthAlarm', {
-      alarmName: `batbern-${envName}-${serviceName}-deployment-health`,
-      alarmDescription: `Auto-rollback ${serviceName} deployment if memory >95% or metrics missing`,
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ECS',
-        metricName: 'MemoryUtilization',
-        dimensionsMap: {
-          ServiceName: service.serviceName,
-          ClusterName: props.cluster.clusterName,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(1),
-      }),
-      threshold: 95,
-      evaluationPeriods: 5,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.BREACHING,
-    });
-
-    cfnService.addPropertyOverride('DeploymentConfiguration.Alarms', {
-      AlarmNames: [deploymentAlarm.alarmName],
-      Enable: true,
-      Rollback: true,
-    });
+    // NOTE: ECS Deployment Alarms (Change 5 from the plan) removed due to circular dependency:
+    // alarm needs service.serviceName dimension → service needs alarm name → circular.
+    // The remaining fixes (minHealthyPercent=50, Service Connect timeouts, auto-cleanup steps)
+    // address the root cause directly. Deployment alarms can be revisited with Container Insights
+    // metrics once Change 6 (Container Insights) is deployed.
 
     // Configure auto-scaling
     const defaultMin = isProd ? 2 : 1;
