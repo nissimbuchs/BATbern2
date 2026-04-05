@@ -78,6 +78,7 @@ export class EventManagementStack extends cdk.Stack {
         routePattern: '/api/v1/events',
         cpu: 256,
         memoryLimitMiB: 2048, // Increased from 1024 MB: JVM non-heap was consuming headroom, memory alarm firing (2026-02-24)
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA + EventBridge needs more startup time than 120s default
         minCapacity: 1,
         maxCapacity: 2, // Scale up under load (sufficient for 3 events/year, ~300 users)
         additionalEnvironment: {

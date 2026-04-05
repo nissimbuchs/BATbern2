@@ -47,6 +47,7 @@ export class SpeakerCoordinationStack extends cdk.Stack {
         routePattern: '/api/v1/speakers',
         cpu: 512,
         memoryLimitMiB: 1024,
+        healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA
       },
       cluster: props.cluster,
       vpc: props.vpc,

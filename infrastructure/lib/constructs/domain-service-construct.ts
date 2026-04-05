@@ -23,6 +23,9 @@ export interface DomainServiceConfig {
   minCapacity?: number;
   /** Override auto-scaling maximum task count. Defaults to minCapacity * 4. */
   maxCapacity?: number;
+  /** Override health check startPeriod in seconds. Defaults to 120 for lightweight services.
+   *  Set to 300 for services with DB migrations / heavy startup (company-mgmt, event-mgmt). */
+  healthCheckStartPeriodSeconds?: number;
 }
 
 export interface DomainServiceConstructProps {
@@ -127,9 +130,8 @@ export function createDomainService(
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
-        // Reduced from 300s: lightweight services start in <60s; 120s gives headroom
-        // while allowing the ECS circuit breaker to fire within ~15 min instead of 45+
-        startPeriod: cdk.Duration.seconds(120),
+        // Default 120s for lightweight services; override to 300s for DB-heavy services
+        startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 120),
       },
     });
 
