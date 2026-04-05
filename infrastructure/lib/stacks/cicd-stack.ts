@@ -60,8 +60,11 @@ export class CICDStack extends cdk.Stack {
             rulePriority: 1,
           },
           {
-            description: 'Keep only last 10 images',
-            maxImageCount: 10,
+            // Increased from 10 to 30: sequential deploys (6 services × up to 25 min each)
+            // can cause older rollback images to be purged before they're needed.
+            // 30 images ≈ ~$1.80/month extra storage (negligible).
+            description: 'Keep last 30 images for safe rollbacks',
+            maxImageCount: 30,
             rulePriority: 2,
           },
         ],

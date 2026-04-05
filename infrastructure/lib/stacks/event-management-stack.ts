@@ -146,11 +146,9 @@ export class EventManagementStack extends cdk.Stack {
       props.watchJwtSecret.grantRead(this.service.taskDefinition.executionRole!);
     }
 
-    // Override desiredCount for Event Management specifically (3 tasks for HA + load capacity)
-    // 2048 MiB / 256 CPU per task; auto-scaling floor is 2, ceiling is 6
-    const cfnService = this.service.node.defaultChild as ecs.CfnService;
-    cfnService.addPropertyOverride('DesiredCount', 3);
-
+    // Removed: desiredCount override to 3 was conflicting with maxCapacity=2 (impossible state).
+    // The domain-service-construct sets desiredCount = isProd ? 2 : 1, which is correct.
+    // Auto-scaling (minCapacity=1, maxCapacity=2) handles load spikes.
 
     // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
     if (props.alarmTopic) {

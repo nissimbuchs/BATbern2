@@ -3,6 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
@@ -227,8 +228,14 @@ export function createDomainService(
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      minHealthyPercent: 100, // Ensure zero-downtime deployments
-      maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
+      // minHealthyPercent lowered from 100 to 50: with desiredCount=2 and minHealthy=100,
+      // ECS must run 4 tasks simultaneously (2 old + 2 new) during deployment.
+      // Service Connect registration for 4 tasks frequently hangs, causing deployments
+      // to stay IN_PROGRESS indefinitely. With 50%, ECS can drain old tasks sooner,
+      // reducing the Service Connect registration window. Brief sub-second interruption
+      // during deploy is acceptable for ~300 users / 3 events per year.
+      minHealthyPercent: 50,
+      maxHealthyPercent: 200,
       securityGroups: [serviceSecurityGroup], // Use explicit security group
       enableExecuteCommand: true, // Allow ECS Exec for debugging
       // Circuit breaker to fail fast on repeated task failures
@@ -268,14 +275,58 @@ export function createDomainService(
     cfnService.addPropertyOverride('ServiceConnectConfiguration', {
       Enabled: true,
       Namespace: 'batbern.local',
+      // Log the Envoy sidecar to the same log group for visibility during deployment issues
+      LogConfiguration: {
+        LogDriver: 'awslogs',
+        Options: {
+          'awslogs-group': logGroup.logGroupName,
+          'awslogs-region': props.config.region,
+          'awslogs-stream-prefix': `${serviceName}-envoy`,
+        },
+      },
       Services: [{
-        PortName: `${serviceName}-port`, // Must match container port mapping name
-        DiscoveryName: serviceName, // Service discovery name in CloudMap
+        PortName: `${serviceName}-port`,
+        DiscoveryName: serviceName,
         ClientAliases: [{
-          Port: 8080, // Port where service is accessible
-          DnsName: serviceName, // DNS name for other services to use
+          Port: 8080,
+          DnsName: serviceName,
         }],
+        // Timeouts prevent the Envoy proxy from waiting indefinitely during
+        // deployment registration. Without these, stuck Service Connect
+        // registration causes deployments to hang for hours.
+        Timeout: {
+          PerRequestTimeoutSeconds: 15,
+          IdleTimeoutSeconds: 60,
+        },
       }],
+    });
+
+    // Deployment alarm: if memory spikes above 95% during deployment, auto-rollback.
+    // treatMissingData=BREACHING catches the case where new tasks fail to report metrics
+    // (e.g., stuck Service Connect sidecar) — the alarm fires and ECS rolls back.
+    const deploymentAlarm = new cloudwatch.Alarm(scope, 'DeploymentHealthAlarm', {
+      alarmName: `batbern-${envName}-${serviceName}-deployment-health`,
+      alarmDescription: `Auto-rollback ${serviceName} deployment if memory >95% or metrics missing`,
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/ECS',
+        metricName: 'MemoryUtilization',
+        dimensionsMap: {
+          ServiceName: service.serviceName,
+          ClusterName: props.cluster.clusterName,
+        },
+        statistic: 'Average',
+        period: cdk.Duration.minutes(1),
+      }),
+      threshold: 95,
+      evaluationPeriods: 5,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.BREACHING,
+    });
+
+    cfnService.addPropertyOverride('DeploymentConfiguration.Alarms', {
+      AlarmNames: [deploymentAlarm.alarmName],
+      Enable: true,
+      Rollback: true,
     });
 
     // Configure auto-scaling
