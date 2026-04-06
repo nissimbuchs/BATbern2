@@ -47,6 +47,7 @@ export class AttendeeExperienceStack extends cdk.Stack {
         routePattern: '/api/v1/content',
         cpu: 256,
         memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 23% utilization)
+        healthCheckStartPeriodSeconds: 300, // Spring Boot takes ~120s to start on 256 CPU / 512 MB — needs headroom
       },
       cluster: props.cluster,
       vpc: props.vpc,
