@@ -130,8 +130,8 @@ export function createDomainService(
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
-        // Default 120s for lightweight services; override to 300s for DB-heavy services
-        startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 120),
+        // Default 300s: Spring Boot on 256 CPU takes 120s+ to start; 300s gives safe headroom
+        startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 300),
       },
     });
 
