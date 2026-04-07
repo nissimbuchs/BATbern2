@@ -161,7 +161,7 @@ function handler(event) {
           contentSecurityPolicy:
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
-            "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+            "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
             "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
             "img-src 'self' data: https:; " +
