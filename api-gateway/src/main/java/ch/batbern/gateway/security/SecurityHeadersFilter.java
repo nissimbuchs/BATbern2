@@ -84,8 +84,9 @@ public class SecurityHeadersFilter implements Filter {
         // Default source - only from same origin
         csp.append("default-src 'self'; ");
 
-        // Script sources - self and inline (for React apps)
-        csp.append("script-src 'self' 'unsafe-inline' 'unsafe-eval'; ");
+        // Script sources - self and inline (for React apps) + Cloudflare Turnstile
+        csp.append("script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; ");
+        csp.append("script-src-elem 'self' 'unsafe-inline' https://challenges.cloudflare.com; ");
 
         // Style sources - self and inline (for Material-UI)
         csp.append("style-src 'self' 'unsafe-inline'; ");
@@ -96,11 +97,11 @@ public class SecurityHeadersFilter implements Filter {
         // Font sources - self and data URIs
         csp.append("font-src 'self' data:; ");
 
-        // Connect sources (for API calls) - self, AWS Cognito, and CloudFront CDN
-        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://cdn.staging.batbern.ch; ");
+        // Connect sources (for API calls) - self, AWS Cognito, CloudFront CDN, and Cloudflare Turnstile
+        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://cdn.staging.batbern.ch https://challenges.cloudflare.com; ");
 
-        // Frame sources - allow Google Maps embeds on public pages
-        csp.append("frame-src 'self' https://maps.google.com https://www.google.com; ");
+        // Frame sources - allow Google Maps embeds and Cloudflare Turnstile
+        csp.append("frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; ");
 
         // Object sources - none (prevent Flash/Java/ActiveX)
         csp.append("object-src 'none'; ");

@@ -51,8 +51,9 @@ public class SecurityHeadersHandler {
         // Default source
         csp.append("default-src 'self'; ");
 
-        // Script sources
-        csp.append("script-src 'self' 'unsafe-inline'; ");
+        // Script sources + Cloudflare Turnstile
+        csp.append("script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; ");
+        csp.append("script-src-elem 'self' 'unsafe-inline' https://challenges.cloudflare.com; ");
 
         // Style sources
         csp.append("style-src 'self' 'unsafe-inline'; ");
@@ -60,18 +61,18 @@ public class SecurityHeadersHandler {
         // Image sources
         csp.append("img-src 'self' data: https:; ");
 
-        // Connect sources (for API calls)
+        // Connect sources (for API calls) + Cloudflare Turnstile
         if (isLocalhost(request)) {
-            csp.append("connect-src 'self' http://localhost:* https://api.batbern.ch; ");
+            csp.append("connect-src 'self' http://localhost:* https://api.batbern.ch https://challenges.cloudflare.com; ");
         } else {
-            csp.append("connect-src 'self' https://api.batbern.ch; ");
+            csp.append("connect-src 'self' https://api.batbern.ch https://challenges.cloudflare.com; ");
         }
 
         // Font sources
         csp.append("font-src 'self'; ");
 
-        // Frame sources - allow Google Maps embeds on public pages
-        csp.append("frame-src 'self' https://maps.google.com https://www.google.com; ");
+        // Frame sources - allow Google Maps embeds and Cloudflare Turnstile
+        csp.append("frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; ");
 
         // Object sources
         csp.append("object-src 'none'; ");
