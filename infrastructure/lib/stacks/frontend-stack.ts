@@ -160,13 +160,14 @@ function handler(event) {
         contentSecurityPolicy: {
           contentSecurityPolicy:
             "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
+            "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
+            "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
             "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
-            "frame-src 'self' https://maps.google.com https://www.google.com; " +
+            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud https://cdn.jsdelivr.net https://challenges.cloudflare.com; " +
+            "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; " +
             "object-src 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'; " +
