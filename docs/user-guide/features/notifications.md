@@ -40,7 +40,7 @@ Three-tier escalation triggered automatically before the content submission dead
 
 ### Registration Confirmation Emails (Epic 4)
 
-Sent automatically when an attendee completes event registration. Includes event details and a QR code for day-of check-in.
+Sent automatically when an attendee completes event registration. Includes event details (including the event's start and end times), a QR code for day-of check-in, and an `.ics` calendar attachment so attendees can add the event to their calendar with accurate times.
 
 ### Partner Calendar Invites (Epic 8)
 
@@ -56,6 +56,8 @@ The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`,
 
 - **Dynamic recipient resolution** — Lambda resolves recipients via role-based and registration-based API calls
 - **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
+- **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
+- **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
 - **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@berner-architekten-treffen.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
 - **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
 
