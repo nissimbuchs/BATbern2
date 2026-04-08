@@ -483,7 +483,9 @@ npm run deploy:staging   # Deploys to production (staging account serves product
 
 The project uses a consolidated single-account setup:
 - `batbern-staging` - Production environment (Account: 188701360969) — serves www.batbern.ch
-- `batbern-mgmt` - Management account (Account: 510187933511) — domain registration only
+- `batbern-mgmt` - Management account (Account: 510187933511) — domain registration + consolidated billing
+
+**Billing Access:** CFO (`cfo-dani-kuehni`) has IAM billing access in the management account. See `docs/guides/aws-setup-guide.md` Phase 6 for details.
 
 > **Note:** The staging account serves production traffic. CloudFormation stacks retain `BATbern-staging-*` names.
 > The former production account (422940799530) is decommissioned.
