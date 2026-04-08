@@ -254,6 +254,73 @@ The following will be automatically provisioned by CDK:
 - AWS Config compliance rules
 - Cross-account IAM roles
 
+## Phase 6: CFO Billing Access
+
+### Overview
+The CFO needs access to view invoices, manage SEPA payments, and monitor costs across all BATbern AWS accounts. This is done via an IAM user in the management account (510187933511), which is the consolidated billing payer.
+
+### Prerequisites
+- Root account must have **IAM User and Role Access to Billing Information** activated
+  - Root login → Account → IAM User and Role Access to Billing Information → Activate IAM Access
+- This is a one-time root-only setting per account
+
+### Step 1: Create CFO IAM User
+```bash
+export AWS_PROFILE=batbern-mgmt
+
+aws iam create-user \
+  --user-name cfo-dani-kuehni \
+  --tags Key=Email,Value=dani.kuehni@bluewin.ch Key=Role,Value=CFO
+
+aws iam create-login-profile \
+  --user-name cfo-dani-kuehni \
+  --password 'TEMPORARY-STRONG-PASSWORD' \
+  --password-reset-required
+```
+
+### Step 2: Attach Required Policies
+Two policies are needed:
+1. **Billing** — full billing access (invoices, payments, Cost Explorer, budgets)
+2. **IAMUserChangePassword** — allows the user to change their own password on first login
+
+```bash
+aws iam attach-user-policy \
+  --user-name cfo-dani-kuehni \
+  --policy-arn arn:aws:iam::aws:policy/job-function/Billing
+
+aws iam attach-user-policy \
+  --user-name cfo-dani-kuehni \
+  --policy-arn arn:aws:iam::aws:policy/IAMUserChangePassword
+```
+
+### Step 3: CFO First Login
+1. Navigate to `https://510187933511.signin.aws.amazon.com/console`
+2. Enter IAM user name (not email) and temporary password
+3. Set new password (must meet account password policy)
+4. Set up MFA: Security credentials → Assign MFA device
+
+### Step 4: (Optional) Set Billing Contact
+```bash
+aws account put-alternate-contact \
+  --alternate-contact-type BILLING \
+  --name "Dani Kuehni" \
+  --email-address "dani.kuehni@bluewin.ch" \
+  --phone-number "+41XXXXXXXXX" \
+  --title "CFO"
+```
+
+### What the CFO Can Do
+- View and download invoices (Billing → Bills)
+- Manage SEPA payment methods (Billing → Payment methods)
+- View cost breakdowns by service/account (Cost Explorer)
+- Create and manage budgets with alerts (Billing → Budgets)
+- View tax settings and purchase orders
+
+### Current CFO Access (as of 2026-04-08)
+| User | Account | Policies | Status |
+|------|---------|----------|--------|
+| `cfo-dani-kuehni` | 510187933511 (Management) | `Billing`, `IAMUserChangePassword` | Active |
+
 ## Security Checklist
 
 - [ ] Root account MFA enabled
