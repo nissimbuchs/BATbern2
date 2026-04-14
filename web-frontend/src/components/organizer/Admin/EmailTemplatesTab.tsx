@@ -6,7 +6,7 @@
  * - Content Templates section: filterable by category/locale, editable with TinyMCE
  */
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import {
   Alert,
   Box,
@@ -41,8 +41,19 @@ import {
 } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/hooks/useEmailTemplates';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { EmailTemplateEditModal } from './EmailTemplateEditModal';
-import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
+
+// Lazy-load the edit modal because it statically imports TinyMCE + Monaco,
+// which run side-effectful init at module load. Keeping this eager would make
+// TinyMCE initialize on every admin page visit (even when the user never opens
+// the Email Templates tab), which can crash the whole admin page if TinyMCE
+// self-init fails (e.g. chunk load / CSP / peer-dep issues). Loading it only
+// when the modal actually opens keeps the rest of the admin page resilient.
+const EmailTemplateEditModal = React.lazy(() =>
+  import('./EmailTemplateEditModal').then((m) => ({ default: m.EmailTemplateEditModal }))
+);
+const EmailTemplatePreviewModal = React.lazy(() =>
+  import('./EmailTemplatePreviewModal').then((m) => ({ default: m.EmailTemplatePreviewModal }))
+);
 
 type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER';
 
@@ -350,26 +361,30 @@ export const EmailTemplatesTab: React.FC = () => {
         )}
       </List>
 
-      {/* Edit Modal */}
+      {/* Edit Modal (lazy — loads TinyMCE/Monaco only when opened) */}
       {editOpen && (
-        <EmailTemplateEditModal
-          template={editTemplate}
-          isLayoutMode={isLayoutEdit}
-          initialCategory={createCategory}
-          cloneFrom={cloneFromTemplate}
-          onClose={() => {
-            setEditOpen(false);
-            setCloneFromTemplate(undefined);
-          }}
-        />
+        <Suspense fallback={null}>
+          <EmailTemplateEditModal
+            template={editTemplate}
+            isLayoutMode={isLayoutEdit}
+            initialCategory={createCategory}
+            cloneFrom={cloneFromTemplate}
+            onClose={() => {
+              setEditOpen(false);
+              setCloneFromTemplate(undefined);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Preview Modal */}
       {previewTemplate && (
-        <EmailTemplatePreviewModal
-          template={previewTemplate}
-          onClose={() => setPreviewTemplate(null)}
-        />
+        <Suspense fallback={null}>
+          <EmailTemplatePreviewModal
+            template={previewTemplate}
+            onClose={() => setPreviewTemplate(null)}
+          />
+        </Suspense>
       )}
 
       <Snackbar
