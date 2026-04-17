@@ -137,10 +137,17 @@ export default defineConfig({
         enabled: false, // Disable PWA in development for faster builds
       },
     }),
-    // Self-hosted TinyMCE assets (skins, icons, models, plugins)
-    // Required because TinyMCE Cloud restricts the 'code' plugin to paid tiers.
+    // Self-hosted TinyMCE assets (core JS, skins, icons, models, plugins, themes).
+    // The core script is loaded at runtime via <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" />
+    // instead of ESM side-effect imports, because Vite's production bundler may reorder
+    // the TinyMCE IIFEs within a chunk so that plugins execute before the core sets
+    // window.tinymce, causing "ReferenceError: Can't find variable: tinymce".
     viteStaticCopy({
       targets: [
+        {
+          src: 'node_modules/tinymce/tinymce.min.js',
+          dest: 'tinymce',
+        },
         {
           src: 'node_modules/tinymce/skins',
           dest: 'tinymce',
@@ -245,7 +252,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
-          if (id.includes('tinymce')) return 'vendor-tinymce';
           return 'vendor';
         },
         // Asset file naming for better caching

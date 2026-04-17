@@ -12,16 +12,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
-// Self-hosted TinyMCE: import core engine before the React wrapper
-// so the wrapper uses the local bundle instead of TinyMCE Cloud.
-import 'tinymce/tinymce';
-import 'tinymce/models/dom/model';
-import 'tinymce/themes/silver/theme';
-import 'tinymce/icons/default/icons';
-import 'tinymce/plugins/code';
-import 'tinymce/plugins/table';
-import 'tinymce/plugins/lists';
-import 'tinymce/plugins/link';
 import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 import {
   Alert,
@@ -294,6 +284,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
         ) : (
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <TinyMCEEditor
+              tinymceScriptSrc="/tinymce/tinymce.min.js"
               initialValue={htmlBody}
               onEditorChange={(val: string) => {
                 tinymceContentRef.current = val;
