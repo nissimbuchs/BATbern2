@@ -207,7 +207,7 @@ describe('EmailTemplatesTab', () => {
     const user = userEvent.setup();
     renderTab();
     await user.click(screen.getByTestId('edit-layout-batbern-default-de'));
-    const modal = screen.getByTestId('email-template-edit-modal');
+    const modal = await screen.findByTestId('email-template-edit-modal');
     expect(modal).toBeInTheDocument();
     expect(modal.dataset.layoutMode).toBe('true');
     expect(modal.dataset.templateKey).toBe('batbern-default');
@@ -217,7 +217,7 @@ describe('EmailTemplatesTab', () => {
     const user = userEvent.setup();
     renderTab();
     await user.click(screen.getByTestId('edit-email-template-speaker-invitation'));
-    const modal = screen.getByTestId('email-template-edit-modal');
+    const modal = await screen.findByTestId('email-template-edit-modal');
     expect(modal.dataset.layoutMode).toBe('false');
     expect(modal.dataset.templateKey).toBe('speaker-invitation');
   });
@@ -227,7 +227,7 @@ describe('EmailTemplatesTab', () => {
     renderTab();
     const previewBtns = screen.getAllByLabelText(/Preview/);
     await user.click(previewBtns[0]);
-    expect(screen.getByTestId('email-template-preview-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('email-template-preview-modal')).toBeInTheDocument();
   });
 
   it('delete calls mutateAsync after confirm', async () => {
