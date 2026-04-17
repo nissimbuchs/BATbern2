@@ -144,22 +144,27 @@ export default defineConfig({
         {
           src: 'node_modules/tinymce/skins',
           dest: 'tinymce',
+          rename: { stripBase: 2 },
         },
         {
           src: 'node_modules/tinymce/icons',
           dest: 'tinymce',
+          rename: { stripBase: 2 },
         },
         {
           src: 'node_modules/tinymce/models',
           dest: 'tinymce',
+          rename: { stripBase: 2 },
         },
         {
           src: 'node_modules/tinymce/plugins',
           dest: 'tinymce',
+          rename: { stripBase: 2 },
         },
         {
           src: 'node_modules/tinymce/themes',
           dest: 'tinymce',
+          rename: { stripBase: 2 },
         },
       ],
     }),
