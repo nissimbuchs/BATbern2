@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training — Phase 2: UX Design Workflow Session</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #E23615;
+    --note-bg: #2e2a1a;
+    --note-border: #FFCA4C;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* -- Navigation -- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  /* -- Layout -- */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* -- Hero -- */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* -- Section headers -- */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-4 { background: rgba(58,123,213,.15); color: var(--user-border); border: 2px solid var(--user-border); }
+  .phase-5 { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* -- Overview cards -- */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(40,175,143,.4); }
+  .overview-card.phase2 { border-color: rgba(226,54,21,.4); }
+  .overview-card.phase3 { border-color: rgba(175,35,34,.4); }
+  .overview-card.phase4 { border-color: rgba(58,123,213,.4); }
+  .overview-card.phase5 { border-color: rgba(255,202,76,.4); }
+
+  /* -- Conversation turns -- */
+  .turn { margin-bottom: 20px; }
+
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin: 12px 0;
+    white-space: pre;
+  }
+
+  /* -- Collapsible -- */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* -- Tags -- */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+  .tag-blue { background: rgba(58,123,213,.12); color: var(--user-border); border: 1px solid rgba(58,123,213,.3); }
+
+  /* -- Divider -- */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* -- Command pill -- */
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  /* -- Connector -- */
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* -- Takeaway grid -- */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#activation">Activation</a>
+  <a href="#discovery">Discovery</a>
+  <a href="#core-design">Core Design</a>
+  <a href="#visual-design">Visual Design</a>
+  <a href="#interaction">Interaction</a>
+  <a href="#patterns">Patterns</a>
+  <a href="#completion">Completion</a>
+  <a href="#takeaways">Takeaways</a>
+  <span class="sep">|</span>
+  <a href="agenda-ux-spec.html">UX Spec</a>
+  <a href="agenda-ux-directions.html">Directions</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">BMAD Hands-On Training &mdash; Phase 2: UX Design</div>
+    <h1>UX Design Workflow<br><span>From Brainstorm to Specification</span></h1>
+    <p>A complete walkthrough of a BMAD UX Design session &mdash; how business analysts interact with the UX Designer Agent (Sally) to transform 35 brainstorming ideas into a comprehensive, implementation-ready UX specification with user journeys, component strategy, and visual design foundations.</p>
+    <div class="hero-meta">
+      <div><div class="label">Steps</div><div class="value">14</div></div>
+      <div><div class="label">Components</div><div class="value">12</div></div>
+      <div><div class="label">Journeys</div><div class="value">5</div></div>
+      <div><div class="label">Duration</div><div class="value">~45 min</div></div>
+      <div><div class="label">Session Date</div><div class="value">2026-04-04</div></div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>Session Overview</h2>
+        <p>BMAD Phase 2 workflow: Create UX Design &mdash; 14 steps from discovery to specification</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">&#x1F50D;</div>
+        <h3>Phase 2.1 &mdash; Discovery (Steps 1-2)</h3>
+        <p>Load input documents (brainstorming session, PRD, front-end-spec, existing wireframes). Synthesize into project understanding. Identify users and design challenges.</p>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">&#x1F3AF;</div>
+        <h3>Phase 2.2 &mdash; Core Design (Steps 3-5)</h3>
+        <p>Define the core experience ("Walk through the agenda, and the meeting documents itself"). Map emotional journey. Analyze inspiration from tools users already love.</p>
+      </div>
+      <div class="overview-card phase3">
+        <div class="icon">&#x1F3A8;</div>
+        <h3>Phase 2.3 &mdash; Visual Design (Steps 6-9)</h3>
+        <p>Extend design system for presenter mode. Define visual foundations. Create 6 interactive HTML mockups. Select composite design direction.</p>
+      </div>
+      <div class="overview-card phase4">
+        <div class="icon">&#x1F6E4;</div>
+        <h3>Phase 2.4 &mdash; Interaction Design (Steps 10-11)</h3>
+        <p>Design 5 complete user journeys with Mermaid diagrams. Gap analysis of MUI components. Specify 12 custom components across 3 implementation layers.</p>
+      </div>
+      <div class="overview-card phase5">
+        <div class="icon">&#x1F4D0;</div>
+        <h3>Phase 2.5 &mdash; Patterns &amp; Standards (Steps 12-14)</h3>
+        <p>Define UX patterns for dual contexts (projector vs portal). Responsive strategy. WCAG 2.1 AA accessibility. Final specification assembly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVATION -->
+  <section id="activation">
+    <div class="section-header">
+      <div class="phase-badge phase-2">&#x1F3A8;</div>
+      <div class="section-header-text">
+        <h2>Activation: Loading the UX Designer Agent</h2>
+        <p>Activating Sally, the BMAD UX Designer agent</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>After completing Phase 1 (Brainstorming) with the Analyst Agent, the next step is <strong>Phase 2: UX Design</strong>. The UX Designer Agent (Sally) transforms raw ideas into interaction patterns, component specifications, and user flows. Activate her with <code>/bmad-agent-bmm-ux-designer</code>.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content">help me create wireframes for the brainstorming session using the ux styleguide</div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally (UX Designer)</div>
+      <div class="turn-content">
+        <p>&#x1F3A8; <strong>Hello, Nissim!</strong> I'm <strong>Sally</strong>, your UX Designer. I see you want to create wireframes &mdash; but I'd recommend running the <strong>[CU] Create UX Design</strong> workflow first.</p>
+        <p><strong>Why workflow before wireframes?</strong></p>
+        <ul>
+          <li><strong>User flows first</strong> &mdash; wireframes without flows are just pretty pictures</li>
+          <li><strong>Interaction patterns</strong> &mdash; the workflow identifies reusable patterns (vote component, doc viewer) before drawing them</li>
+          <li><strong>Component reuse</strong> &mdash; we'll discover which screens share components, avoiding redundant wireframes</li>
+          <li><strong>Screen prioritization</strong> &mdash; the workflow tells us which screens matter most, so we wireframe those first</li>
+        </ul>
+        <p>The workflow will produce a complete UX specification, and <em>then</em> we'll create targeted wireframes for the most critical screens. Shall I start?</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p><strong>Key learning:</strong> The agent redirected the user away from jumping straight to wireframes. This is a real coaching moment &mdash; experienced UX designers know that wireframing without understanding user flows leads to rework. The BMAD workflow enforces the right order.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content">yes</div>
+    </div>
+  </section>
+
+  <!-- PHASE 2.1 DISCOVERY -->
+  <section id="discovery">
+    <div class="section-header">
+      <div class="phase-badge phase-1">2.1</div>
+      <div class="section-header-text">
+        <h2>Phase 2.1: Discovery</h2>
+        <p>Steps 1-2 &mdash; Loading inputs and building project understanding</p>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="connector">Step 1 &mdash; Initialization</div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>Sally automatically scans the project for input documents. She looks for brainstorming sessions, PRDs, style guides, and existing wireframes &mdash; building on whatever the previous BMAD phases produced.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Document Discovery</div>
+      <div class="turn-content">
+        <p>I found the following input documents:</p>
+        <table>
+          <tr><th>#</th><th>Document</th><th>Status</th></tr>
+          <tr><td>1</td><td>PRD (Product Requirements Document)</td><td>Found &mdash; load?</td></tr>
+          <tr><td>2</td><td>Brainstorming Session (35 ideas, 6 themes)</td><td>Auto-loaded</td></tr>
+          <tr><td>3</td><td>Front-end Spec (BATbern style guide)</td><td>Auto-loaded</td></tr>
+          <tr><td>4</td><td>Existing wireframes</td><td>Found &mdash; referenced</td></tr>
+        </table>
+        <p>The brainstorming session and front-end spec are already loaded. Would you like me to also load the PRD?</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>1</code></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p><strong>Key learning:</strong> The agent presented numbered options for efficient selection. Just typing "1" loads the PRD. The workflow tracks which documents are loaded so subsequent steps can reference them.</p>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="connector">Step 2 &mdash; Project Understanding</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Synthesis</div>
+      <div class="turn-content">
+        <p>After loading all documents, Sally synthesized a comprehensive project understanding:</p>
+        <p><strong>5 Target Users Identified:</strong></p>
+        <table>
+          <tr><th>User</th><th>Primary Need</th></tr>
+          <tr><td><strong>Organizer</strong></td><td>Run the meeting efficiently, produce minutes as a byproduct</td></tr>
+          <tr><td><strong>Present Partner</strong></td><td>Follow the agenda, vote, feel informed and included</td></tr>
+          <tr><td><strong>Absent Partner</strong></td><td>Catch up after the meeting, vote on fees asynchronously</td></tr>
+          <tr><td><strong>New Partner</strong></td><td>Understand the platform and community before first meeting</td></tr>
+          <tr><td><strong>Stand-In</strong></td><td>Participate on behalf of an absent partner, no system account</td></tr>
+        </table>
+        <p><strong>5 Key Design Challenges:</strong></p>
+        <ol>
+          <li><strong>Projector-First</strong> &mdash; The presenter screen is projected; partners don't use their own devices during the meeting</li>
+          <li><strong>Bi-Annual Usage</strong> &mdash; Partners use this only twice a year; zero-learning-curve is essential</li>
+          <li><strong>Minutes as Byproduct</strong> &mdash; The meeting should document itself as the organizer walks through it</li>
+          <li><strong>Async Continuity</strong> &mdash; Some actions (fee acceptance, catch-up) happen after the meeting</li>
+          <li><strong>Stand-In Governance</strong> &mdash; Someone with no account needs to be recorded and attributed</li>
+        </ol>
+        <p><em>3 clarifying questions for you:</em></p>
+        <ol>
+          <li>Is the presenter screen projected on a wall, or do partners each have devices?</li>
+          <li>How often do these partner meetings happen?</li>
+          <li>Should we design for the presenter mode only, or also the partner portal?</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User &mdash; Answering clarifying questions</div>
+      <div class="turn-content">
+        <p>1) Yes, presenter screen projected, no partner devices during the meeting.</p>
+        <p>2) Meetings happen 2x/year.</p>
+        <p>3) Design for all 4 layers &mdash; presenter mode, partner portal, organizer prep, and post-meeting.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p><strong>Key learning:</strong> The clarifying questions reveal critical design constraints. "Projector-first with no partner devices" completely changes the interaction model &mdash; everything must be readable from a distance, and only the organizer controls the flow. "2x/year" means the UI must be instantly obvious with zero training. Your domain answers shape every design decision that follows.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Executive Summary</div>
+      <div class="turn-content">
+        <p>Confirmed constraints recorded. Executive Summary written to specification document. Moving to Core Experience definition.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- PHASE 2.2 CORE DESIGN -->
+  <section id="core-design">
+    <div class="section-header">
+      <div class="phase-badge phase-2">2.2</div>
+      <div class="section-header-text">
+        <h2>Phase 2.2: Core Design</h2>
+        <p>Steps 3-5 &mdash; Core experience, emotional journey, and inspiration analysis</p>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="connector">Step 3 &mdash; Core Experience</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Core Experience Definition</div>
+      <div class="turn-content">
+        <p><strong>The One-Line Vision:</strong></p>
+        <p style="font-size: 1.1rem; font-weight: 700; color: var(--accent); text-align: center; padding: 16px 0;">"Walk through the agenda, and the meeting documents itself."</p>
+        <p>The <strong>Presenter Mode</strong> is THE critical interaction. The organizer navigates a slide-like interface. Each agenda item is a "slide" with built-in interactions (vote, upload viewer, notes). As the organizer presents each item, the meeting minutes assemble automatically in the background.</p>
+        <p><strong>5 Experience Principles:</strong></p>
+        <table>
+          <tr><th>Principle</th><th>Meaning</th></tr>
+          <tr><td><strong>One Flow, One Screen</strong></td><td>Linear agenda progression. No branching, no deep navigation.</td></tr>
+          <tr><td><strong>Capture by Using</strong></td><td>Every interaction (vote, note, upload) automatically feeds into minutes.</td></tr>
+          <tr><td><strong>Projector-Readable Always</strong></td><td>Minimum 24px type, high contrast, no fine details.</td></tr>
+          <tr><td><strong>Twice-a-Year Obvious</strong></td><td>Zero training needed. Self-evident controls.</td></tr>
+          <tr><td><strong>Meeting Extends Beyond Room</strong></td><td>Absent partners, async votes, published minutes &mdash; the meeting isn't over when the projector turns off.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="connector">Step 4 &mdash; Emotional Response</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Emotional Journey</div>
+      <div class="turn-content">
+        <p>The emotional arc across the meeting lifecycle:</p>
+        <table>
+          <tr><th>Phase</th><th>Emotion</th><th>Design Response</th></tr>
+          <tr><td>Preparation</td><td><strong>Confidence</strong></td><td>Prep checklist with green checkmarks. "You're ready" state.</td></tr>
+          <tr><td>Presenter Mode Start</td><td><strong>Pride</strong></td><td>Dark theme, professional look. "This is impressive" reaction.</td></tr>
+          <tr><td>During Meeting</td><td><strong>Flow</strong></td><td>One button to advance. No decisions about what to click.</td></tr>
+          <tr><td>Minutes Published</td><td><strong>Delight</strong></td><td>Complete minutes appear "magically" from what was just presented.</td></tr>
+          <tr><td>Absent Partner Access</td><td><strong>Inclusion</strong></td><td>Same content, same depth. No "you missed out" feeling.</td></tr>
+        </table>
+        <p><strong>Emotions to Avoid:</strong> anxiety (am I doing this right?), confusion (what do I click?), embarrassment (broken on the projector), frustration (too many steps), exclusion (absent partners feel left out).</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="connector">Step 5 &mdash; Inspiration Analysis</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Asking for Inspiration</div>
+      <div class="turn-content">
+        <p>What apps do your target users already love? I want to borrow patterns they're already familiar with.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content">OneNote for meeting minutes. Miro for PI days in SAFe, MS PowerPoint, Mentimeter</div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p><strong>Key learning:</strong> This question is deceptively important. By naming tools your users actually use, the agent can borrow familiar interaction patterns. "PowerPoint" tells the agent that the organizer already thinks in terms of slides and presenter mode. "Mentimeter" tells the agent that projector-first voting is a known pattern. Your answers here directly influence the UI metaphors the agent chooses.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Deep Inspiration Analysis</div>
+      <div class="turn-content">
+        <p>Analysis of each tool's transferable patterns:</p>
+        <table>
+          <tr><th>Tool</th><th>Pattern to Borrow</th><th>Applied To</th></tr>
+          <tr><td><strong>OneNote</strong></td><td>Sections = agenda items, invisible auto-save, inline notes</td><td>Meeting minutes structure, per-item notes</td></tr>
+          <tr><td><strong>Miro</strong></td><td>Facilitator mode, dot voting, spatial layout</td><td>Presenter control, topic voting component</td></tr>
+          <tr><td><strong>PowerPoint</strong></td><td>Presenter view vs audience view, linear slide flow, "F5 to start"</td><td>Presenter mode as THE metaphor, "Start Meeting" button</td></tr>
+          <tr><td><strong>Mentimeter</strong></td><td>Projector-first display, animated results, QR code join</td><td>Vote result animation, projector typography scale</td></tr>
+        </table>
+        <p><strong>Anti-patterns to avoid:</strong> PowerPoint's edit mode complexity, Miro's overwhelming canvas, OneNote's notebook hierarchy, Mentimeter's audience device requirement.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- PHASE 2.3 VISUAL DESIGN -->
+  <section id="visual-design">
+    <div class="section-header">
+      <div class="phase-badge phase-3">2.3</div>
+      <div class="section-header-text">
+        <h2>Phase 2.3: Visual Design</h2>
+        <p>Steps 6-9 &mdash; Design system, visual foundations, and design direction selection</p>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="connector">Step 6 &mdash; Design System Extension</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Design System</div>
+      <div class="turn-content">
+        <p>BATbern already has a comprehensive design system (MUI-based, dark/light themes). For the meeting feature, Sally extended it with:</p>
+        <p><strong>8 New Reusable Components:</strong></p>
+        <ul>
+          <li><code>AgendaSidebar</code> &mdash; navigation rail with item progress indicators</li>
+          <li><code>VotePanel</code> &mdash; approve/decline with animated result bar</li>
+          <li><code>DocumentViewer</code> &mdash; PDF/spreadsheet viewer with zoom controls</li>
+          <li><code>NotePanel</code> &mdash; always-visible note area with auto-save</li>
+          <li><code>PartnerGallery</code> &mdash; Who Is Who avatar grid with attendance status</li>
+          <li><code>ActionItemCard</code> &mdash; assignee, description, deadline, carry-forward badge</li>
+          <li><code>VoteResultBanner</code> &mdash; animated result display for projector</li>
+          <li><code>FeedbackPulse</code> &mdash; 3-4 question micro-survey</li>
+        </ul>
+        <p><strong>Projector Typography Scale:</strong> 1.5x multiplier on all font sizes for presenter mode. Body text 24px minimum, headings 36-48px.</p>
+        <p><strong>Dark Theme Semantic Colors for Meetings:</strong> vote-approve (#28AF8F), vote-decline (#AF2322), agenda-active (#E23615), agenda-complete (#8890b5).</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="connector">Step 7 &mdash; Defining Experience</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Experience Mechanics</div>
+      <div class="turn-content">
+        <p><strong>Mental Model:</strong> "PowerPoint slide, but interactive." Each agenda item is a full-screen "slide" with built-in interaction areas. The organizer advances linearly, just like a presentation.</p>
+        <p><strong>Success Criteria:</strong></p>
+        <ul>
+          <li>90%+ of meeting minutes content captured automatically</li>
+          <li>Zero training needed for organizer (self-evident controls)</li>
+          <li>30-second maximum for any vote sequence</li>
+        </ul>
+        <p><strong>Novel Patterns:</strong></p>
+        <ul>
+          <li><strong>Minutes as Byproduct</strong> &mdash; attendance check, vote results, notes all flow into minutes without explicit "save to minutes" actions</li>
+          <li><strong>Proxied Voting</strong> &mdash; organizer casts on behalf of stand-ins with clear attribution chain</li>
+        </ul>
+        <p><strong>Experience Mechanics Flow:</strong> Initiation (Start Meeting button) &rarr; Per-item interactions (present, discuss, vote/note) &rarr; Feedback loop (result shown on projector) &rarr; Completion (all items done, minutes preview).</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="connector">Step 8 &mdash; Visual Foundation</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Visual Foundation</div>
+      <div class="turn-content">
+        <p>Applied the BATbern dark theme to presenter mode with projector-optimized specifications:</p>
+        <p><strong>Three-Zone Layout:</strong></p>
+<pre>&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; SIDEBAR  &#9474;                                &#9474;
+&#9474;          &#9474;     MAIN CONTENT AREA          &#9474;
+&#9474; Agenda   &#9474;     (slides/docs/votes)          &#9474;
+&#9474; Items    &#9474;                                &#9474;
+&#9474;          &#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474; [1] [2]  &#9474;     NOTES PANEL                 &#9474;
+&#9474; [3] [4]  &#9474;     (always visible, auto-save)  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</pre>
+        <p><strong>Keyboard Shortcuts:</strong> Arrow keys (navigate items), Space (toggle vote), N (focus notes), Esc (exit presenter mode).</p>
+        <p><strong>ARIA Specifications:</strong> <code>role="presentation"</code> on slide container, <code>aria-live="polite"</code> on vote results, <code>aria-current="step"</code> on active agenda item.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 9 -->
+    <div class="connector">Step 9 &mdash; Design Directions</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Interactive Design Directions</div>
+      <div class="turn-content">
+        <p>Created <strong>6 interactive HTML mockups</strong> in <code>ux-design-directions.html</code>:</p>
+        <table>
+          <tr><th>Direction</th><th>Name</th><th>Key Characteristic</th></tr>
+          <tr><td><strong>A</strong></td><td>Sidebar Navigation</td><td>Persistent sidebar with agenda items + notes at bottom</td></tr>
+          <tr><td><strong>B</strong></td><td>Progress Bar</td><td>Top progress bar, full-width content, floating notes</td></tr>
+          <tr><td><strong>C</strong></td><td>Split Vote</td><td>Content left, vote/interaction right, 50/50 split</td></tr>
+          <tr><td><strong>D</strong></td><td>Minimal Zen</td><td>Maximum content area, hidden sidebar, distraction-free</td></tr>
+          <tr><td><strong>E</strong></td><td>Doc Viewer</td><td>Document-centric, PDF/spreadsheet takes 80% of space</td></tr>
+          <tr><td><strong>F</strong></td><td>Minutes Preview</td><td>Live minutes assembly visible alongside current item</td></tr>
+        </table>
+        <p>Sally recommended a <strong>composite approach</strong> &mdash; different directions for different contexts.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Generated Artifact</div>
+      <div class="turn-content">
+        <p><strong>File:</strong> <code>docs/ux-design-directions.html</code></p>
+        <p>6 clickable, interactive mockups in a single HTML file. Each direction can be viewed at full-screen to simulate the projector experience. This is the key decision-making tool &mdash; you SEE the options instead of reading about them.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User &mdash; Selecting composite direction</div>
+      <div class="turn-content">I like A for presenter, E for doc viewer but notes always at bottom like A, and F for post-meeting minutes</div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p><strong>Key learning:</strong> The user didn't pick a single direction &mdash; they composed their own from parts of three directions. This is exactly what the design directions HTML is for. Direction A's sidebar for navigation, Direction E's document viewer layout (modified with always-visible bottom notes), and Direction F's minutes preview for the post-meeting review screen. The agent documents this composite decision with layout specifications for each context.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Composite Direction Documented</div>
+      <div class="turn-content">
+        <p><strong>Selected: A + E(modified) + F</strong></p>
+        <ul>
+          <li><strong>Presenter Mode:</strong> Direction A &mdash; sidebar with agenda items, main content area, notes panel always at bottom</li>
+          <li><strong>Document Items (Audit PDF, Budget):</strong> Direction E modified &mdash; document viewer takes main area, notes still at bottom (not floating)</li>
+          <li><strong>Post-Meeting Minutes Review:</strong> Direction F &mdash; assembled minutes with edit capability</li>
+        </ul>
+        <p>Layout specifications written to UX design document.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- PHASE 2.4 INTERACTION DESIGN -->
+  <section id="interaction">
+    <div class="section-header">
+      <div class="phase-badge phase-4">2.4</div>
+      <div class="section-header-text">
+        <h2>Phase 2.4: Interaction Design</h2>
+        <p>Steps 10-11 &mdash; User journeys and component strategy</p>
+      </div>
+    </div>
+
+    <!-- Step 10 -->
+    <div class="connector">Step 10 &mdash; User Journeys</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; 5 User Journeys with Mermaid Diagrams</div>
+      <div class="turn-content">
+        <p>Designed 5 complete user journeys, each with edge cases and error states:</p>
+        <table>
+          <tr><th>#</th><th>Journey</th><th>Primary Actor</th><th>Key Flow</th></tr>
+          <tr><td>1</td><td><strong>Create &amp; Prepare Meeting</strong></td><td>Organizer</td><td>Create meeting &rarr; Build agenda &rarr; Upload documents &rarr; Send invite &rarr; Prep checklist green</td></tr>
+          <tr><td>2</td><td><strong>Run Meeting in Presenter Mode</strong></td><td>Organizer</td><td>Start Meeting &rarr; Walk agenda items &rarr; Per-item interactions &rarr; End Meeting</td></tr>
+          <tr><td>3</td><td><strong>Review &amp; Publish Minutes</strong></td><td>Organizer</td><td>Auto-assembled minutes &rarr; Edit/annotate &rarr; Publish &amp; Send to all</td></tr>
+          <tr><td>4</td><td><strong>Absent Partner Catch Up</strong></td><td>Absent Partner</td><td>Receive minutes notification &rarr; Read minutes &rarr; Async fee vote &rarr; Feedback pulse</td></tr>
+          <tr><td>5</td><td><strong>Next Meeting with Carry-Forward</strong></td><td>Organizer</td><td>Create meeting &rarr; Auto-import open action items &rarr; Carry-forward badge on items</td></tr>
+        </table>
+        <p>Each journey includes Mermaid sequence diagrams showing system interactions, edge cases (what if the organizer loses connection?), and error recovery paths.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 11 -->
+    <div class="connector">Step 11 &mdash; Component Strategy</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Component Gap Analysis &amp; Custom Components</div>
+      <div class="turn-content">
+        <p><strong>Gap Analysis:</strong> MUI provides base components (buttons, cards, dialogs, tables). The meeting feature needs 12 custom components that don't exist in MUI or the current BATbern design system.</p>
+        <p><strong>12 Custom Components Specified:</strong></p>
+        <table>
+          <tr><th>Layer</th><th>Component</th><th>Purpose</th></tr>
+          <tr><td rowspan="4"><strong>Layer 1<br>Foundation</strong></td><td><code>AgendaSidebar</code></td><td>Navigation rail with progress indicators</td></tr>
+          <tr><td><code>VotePanel</code></td><td>Approve/decline with animated result</td></tr>
+          <tr><td><code>DocumentViewer</code></td><td>PDF/XLSX viewer with zoom</td></tr>
+          <tr><td><code>NotePanel</code></td><td>Always-visible notes with auto-save</td></tr>
+          <tr><td rowspan="4"><strong>Layer 2<br>Meeting Flow</strong></td><td><code>PartnerGallery</code></td><td>Avatar grid with attendance status</td></tr>
+          <tr><td><code>MeetingPrepChecklist</code></td><td>Pre-flight check with green/amber/red</td></tr>
+          <tr><td><code>ActionItemCard</code></td><td>Assignee + deadline + carry-forward</td></tr>
+          <tr><td><code>MinutesDocument</code></td><td>Read/edit view of assembled minutes</td></tr>
+          <tr><td rowspan="4"><strong>Layer 3<br>Enhancement</strong></td><td><code>VoteResultBanner</code></td><td>Animated projector-scale result display</td></tr>
+          <tr><td><code>AgendaBuilder</code></td><td>Drag-and-drop agenda item editor</td></tr>
+          <tr><td><code>FeeAcceptanceWidget</code></td><td>Async fee review + accept/decline</td></tr>
+          <tr><td><code>FeedbackPulse</code></td><td>3-4 question micro-survey</td></tr>
+        </table>
+        <p><strong>3-Layer Implementation Roadmap:</strong> Layer 1 components are prerequisites for everything. Layer 2 builds the meeting flow. Layer 3 adds polish and post-meeting features. Each layer can be shipped independently.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- PHASE 2.5 PATTERNS & STANDARDS -->
+  <section id="patterns">
+    <div class="section-header">
+      <div class="phase-badge phase-5">2.5</div>
+      <div class="section-header-text">
+        <h2>Phase 2.5: Patterns &amp; Standards</h2>
+        <p>Steps 12-13 &mdash; UX patterns, responsive strategy, and accessibility</p>
+      </div>
+    </div>
+
+    <!-- Step 12 -->
+    <div class="connector">Step 12 &mdash; UX Patterns</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; UX Patterns (Dual Context)</div>
+      <div class="turn-content">
+        <p>All patterns defined for <strong>dual contexts</strong> &mdash; projector presenter mode and partner portal:</p>
+        <table>
+          <tr><th>Pattern Category</th><th>Presenter Mode</th><th>Partner Portal</th></tr>
+          <tr><td><strong>Button Hierarchy</strong></td><td>Large (48px min), high contrast, keyboard-navigable</td><td>Standard MUI sizing</td></tr>
+          <tr><td><strong>Feedback</strong></td><td>Animated banners (vote results), 3-second auto-dismiss</td><td>Snackbar toasts</td></tr>
+          <tr><td><strong>Navigation</strong></td><td>Arrow keys + sidebar clicks, linear only</td><td>Standard app nav with breadcrumbs</td></tr>
+          <tr><td><strong>Forms</strong></td><td>Minimal &mdash; notes field + vote buttons only</td><td>Full forms (fee acceptance, feedback)</td></tr>
+          <tr><td><strong>Empty States</strong></td><td>"No notes yet" with blinking cursor prompt</td><td>Illustration + call-to-action</td></tr>
+          <tr><td><strong>Loading</strong></td><td>Skeleton screens (never spinners on projector)</td><td>Standard progress indicators</td></tr>
+          <tr><td><strong>Modals</strong></td><td>None &mdash; everything inline to avoid confusion</td><td>Confirmation dialogs for destructive actions</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <!-- Step 13 -->
+    <div class="connector">Step 13 &mdash; Responsive &amp; Accessibility</div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Responsive &amp; Accessibility Strategy</div>
+      <div class="turn-content">
+        <p><strong>Dual Responsive Strategy:</strong></p>
+        <ul>
+          <li><strong>Presenter Mode = Desktop Fixed</strong> &mdash; No responsive breakpoints. Designed for 1920x1080 projector. Sidebar collapses only below 1280px (laptop fallback).</li>
+          <li><strong>Partner Portal = Full Responsive</strong> &mdash; Standard MUI breakpoints (xs/sm/md/lg/xl). Mobile-first for absent partner catch-up on phone.</li>
+        </ul>
+        <p><strong>WCAG 2.1 AA Compliance:</strong></p>
+        <ul>
+          <li>4.5:1 contrast ratio minimum (7:1 for projector text)</li>
+          <li>Full keyboard navigation in presenter mode</li>
+          <li>Screen reader support with ARIA live regions for vote results</li>
+          <li>Focus management: auto-focus on active agenda item</li>
+        </ul>
+        <p><strong>Device Testing Matrix:</strong> Projector (1920x1080), Laptop (1366x768 fallback), Tablet (partner portal), Mobile (partner portal catch-up).</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- COMPLETION -->
+  <section id="completion">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x2705;</div>
+      <div class="section-header-text">
+        <h2>Workflow Complete</h2>
+        <p>14 steps completed &mdash; UX specification and design directions delivered</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Sally &mdash; Completion Summary</div>
+      <div class="turn-content">
+        <p><strong>Create UX Design workflow complete.</strong> Here's what was produced:</p>
+        <ul>
+          <li><strong>14 steps</strong> executed (discovery through patterns &amp; standards)</li>
+          <li><strong>12 custom components</strong> specified across 3 implementation layers</li>
+          <li><strong>5 user journeys</strong> with Mermaid diagrams and edge cases</li>
+          <li><strong>6 design directions</strong> as interactive HTML mockups</li>
+          <li><strong>1 composite direction</strong> selected (A + E-modified + F)</li>
+          <li><strong>5 experience principles</strong> governing all design decisions</li>
+          <li><strong>Dual-context patterns</strong> for projector and portal</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Output: UX Design Specification</div>
+      <div class="turn-content">
+        <p><strong>File:</strong> <code>docs/ux-design-specification.md</code></p>
+        <p>Complete UX specification document with all 14 sections. Implementation-ready &mdash; hand this to developers alongside the design directions HTML.</p>
+        <div class="tags">
+          <span class="tag tag-purple">14 SECTIONS</span>
+          <span class="tag tag-green">IMPLEMENTATION READY</span>
+          <span class="tag tag-yellow">WCAG 2.1 AA</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Output: Design Directions HTML</div>
+      <div class="turn-content">
+        <p><strong>File:</strong> <code>docs/ux-design-directions.html</code></p>
+        <p>6 interactive mockups showing different layout approaches. Used during Step 9 for design direction selection. Remains a reference for the development team.</p>
+        <div class="tags">
+          <span class="tag tag-purple">6 MOCKUPS</span>
+          <span class="tag tag-green">INTERACTIVE</span>
+          <span class="tag tag-blue">PROJECTOR PREVIEW</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAKEAWAYS -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F4A1;</div>
+      <div class="section-header-text">
+        <h2>Key Takeaways for Business Analysts</h2>
+        <p>What to remember when running the UX Design workflow with BMAD</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>&#x27A1;&#xFE0F; Let the Workflow Guide You</h3>
+        <p>Typing <code>c</code> moves you through the 14 steps in order. The workflow enforces the right sequence &mdash; understanding before design, principles before pixels, journeys before components. Trust the order.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F3AF; Your Domain Expertise Matters Most</h3>
+        <p>The agent asked only 3 clarifying questions in Step 2, but those answers ("projector-first, no devices, 2x/year") shaped every subsequent design decision. Your domain knowledge is the critical input &mdash; the agent is the structured process.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x267B;&#xFE0F; Garbage In, Garbage Out</h3>
+        <p>The agent builds on YOUR answers. When asked "what apps do your users love?" &mdash; naming PowerPoint led to the slide-based presenter mode metaphor. Naming Mentimeter led to projector-first voting. The more specific your input, the more tailored the output.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F440; Design Directions Let You SEE</h3>
+        <p>Step 9 produced an interactive HTML file with 6 layout options you can click through at full screen. This is where design decisions become tangible. Don't just pick one &mdash; compose from multiple directions like the user did (A + E + F).</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F4CB; The Spec Is Implementation-Ready</h3>
+        <p>The final <code>ux-design-specification.md</code> includes component specs, accessibility requirements, responsive strategy, and user journeys with edge cases. Hand it to developers directly &mdash; no separate "translation" step needed.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F517; It Feeds the Next Phase</h3>
+        <p>Just like brainstorming feeds UX, the UX specification feeds Architecture and PRD. The Architect Agent reads the component list and user journeys to design APIs and entities. The PM Agent reads the journeys to create epics and stories. Each phase builds on the last.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
+      <p><strong>BMAD Framework</strong> &mdash; Business Analyst Training: Phase 2 UX Design</p>
+      <p>BATbern Project &mdash; Active Partner Meeting Agenda</p>
+      <p>Session Date: 2026-04-04 &mdash; 14 steps &mdash; 12 components &mdash; 5 journeys</p>
+      <p style="margin-top: 12px;">Previous: <a href="agenda-brainstorm-session.html" style="color: var(--accent2);">Phase 1 Brainstorming</a> &mdash; Next: Architecture &rarr; PRD</p>
+    </div>
+  </section>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brainstorming Session Results — Active Partner Meeting Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #E23615; --accent2: #28AF8F; --accent3: #AF2322; --accent4: #FFCA4C;
+    --text: #e8eaf6; --text-muted: #8890b5; --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 1.4rem; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent2); }
+  h3 { font-size: 1.1rem; font-weight: 700; margin: 28px 0 12px; }
+  h4 { font-size: 0.95rem; font-weight: 700; margin: 20px 0 8px; }
+  p { margin-bottom: 10px; }
+  .meta { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+  .meta strong { color: var(--text); }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 4px; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+
+  .idea { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 12px; }
+  .idea .id { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.5px; text-transform: uppercase; }
+  .idea h4 { margin: 2px 0 6px; font-size: 0.95rem; }
+  .idea p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 4px; }
+  .idea p:last-child { margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 16px 0; white-space: pre; }
+
+  .badge { display: inline-block; background: var(--accent); color: white; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 12px; border-radius: 20px; }
+  .badge-green { background: rgba(40,175,143,.15); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .badge-yellow { background: rgba(255,202,76,.15); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .badge-red { background: rgba(175,35,34,.15); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .back-link { display: inline-block; color: var(--accent2); text-decoration: none; font-size: 0.85rem; margin-bottom: 24px; }
+  .back-link:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) { h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<main>
+
+<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+  <a href="master.html" class="back-link" style="margin:0;display:inline-flex;align-items:center;gap:8px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">&larr; Training Hub</a>
+  <a href="agenda-brainstorm-session.html" class="back-link" style="margin:0">Brainstorming Session</a>
+</div>
+
+<h1>Brainstorming Session <span>Results</span></h1>
+<div class="meta">
+  <strong>Facilitator:</strong> Nissim &nbsp;|&nbsp;
+  <strong>Date:</strong> 2026-04-04 &nbsp;|&nbsp;
+  <strong>Ideas:</strong> 35 &nbsp;|&nbsp;
+  <span class="badge">Workflow Complete</span>
+</div>
+
+<h2>Session Overview</h2>
+<p><strong>Topic:</strong> Active Partner Meeting Agenda — transforming 6 static agenda items into interactive, system-supported features within the BATbern event management platform.</p>
+<p><strong>Goals:</strong></p>
+<ul>
+  <li>Make each of the 6 agenda items system-supported (not just text in an ICS invite)</li>
+  <li>Identify new functionality that enhances each agenda point</li>
+  <li>Explore how partner engagement before, during, and after the meeting can be improved</li>
+</ul>
+
+<h3>Current Agenda Items (Static)</h3>
+<ol>
+  <li>Greet all partners present (partners = users with role PARTNER)</li>
+  <li>Analytics on past years events, attendances, and attendee feedback</li>
+  <li>Show costs of past years + auditor's revision PDF + get sign-off for books</li>
+  <li>Show last year's costs + present year's budget + new fee per partner + get sign-off</li>
+  <li>Discuss current year's topics (topic voting + blob game for topic selection)</li>
+  <li>Discuss other current hot architecture topics partners are interested in</li>
+</ol>
+
+<h3>Existing Platform Capabilities</h3>
+<ul>
+  <li>Partner roles &amp; auth (Epic 8 complete)</li>
+  <li>Attendance analytics + XLSX export</li>
+  <li>Topic voting system</li>
+  <li>ICS meeting invites</li>
+  <li>Partner portal with login</li>
+</ul>
+
+<h2>Technique Selection</h2>
+<p><strong>Approach:</strong> AI-Recommended Techniques</p>
+<ul>
+  <li><strong>Morphological Analysis:</strong> Systematically map 6 agenda items &times; interaction dimensions</li>
+  <li><strong>Role Playing:</strong> Walk through from Partner, Organizer, Auditor, and Absent Partner perspectives</li>
+  <li><strong>Cross-Pollination:</strong> Borrow proven patterns from conference platforms, workshop tools, and retrospective tools</li>
+</ul>
+
+<h2>Technique Execution Results</h2>
+
+<h3>Phase 1: Morphological Analysis</h3>
+<p><em>Matrix: 6 agenda items &times; 5 interaction dimensions (PRE / LIVE / POST / ARTIFACT / NOTIFICATION)</em></p>
+
+<h4>A1 — Partner Greeting / Attendance</h4>
+
+<div class="idea"><div class="id">A1-PRE #1</div><h4>RSVP Attendance Dashboard</h4><p>Partners confirm attendance via the portal ahead of the meeting. Organizers see a live RSVP dashboard showing confirmed / declined / pending, with a headcount forecast.</p><p><em>Novelty: Turns passive "who showed up" into proactive planning.</em></p></div>
+
+<div class="idea"><div class="id">A1-PRE #2</div><h4>Partner Profile Cards</h4><p>Each confirmed partner gets a visible profile card (photo, company, role, years as partner). Especially valuable when new partners join.</p><p><em>Novelty: Removes the awkward "who are you?" moment.</em></p></div>
+
+<div class="idea"><div class="id">A1-LIVE #3</div><h4>Who Is Who — Partner Gallery View</h4><p>Clicking the "Greeting" agenda item opens a gallery grid of all partner companies, each showing logo, delegate name, photo, and role. Present partners get a green "Present" badge; absent ones greyed.</p><p><em>Novelty: Zero ceremony — no check-in ritual, no roll call.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-CUTTING #4</div><h4>Auto-Generated Meeting Minutes</h4><p>The system maintains a PartnerMeetingMinutes entity that builds itself as the organizer walks through the active agenda. Each agenda item contributes its section. Exportable as PDF.</p><p><em>Novelty: Eliminates "someone takes notes." The system already knows what was shown and decided.</em></p></div>
+
+<div class="idea"><div class="id">A1-POST #5</div><h4>Attendance Section in Minutes</h4><p>Who Is Who presence data auto-populates the "Attendees" section of the meeting minutes.</p><p><em>Novelty: First section of minutes writes itself.</em></p></div>
+
+<h4>A2 — Analytics Review</h4>
+
+<div class="idea"><div class="id">A2-PRE #6</div><h4>Analytics Deep-Link in Meeting Invite</h4><p>The ICS invite includes a direct link to the analytics page. Zero development cost.</p><p><em>Novelty: Turns the invite into a preparation tool.</em></p></div>
+
+<div class="idea"><div class="id">A2-LIVE #7</div><h4>Analytics Snapshot for Minutes</h4><p>System captures a snapshot of current analytics data and attaches it to the meeting minutes as an immutable historical record.</p><p><em>Novelty: Analytics page evolves, but minutes always reflect what was presented that day.</em></p></div>
+
+<div class="idea"><div class="id">A2-POST #8</div><h4>Historized Analytics Archive</h4><p>Each partner meeting creates a dated analytics snapshot. Builds a browsable year-over-year archive.</p><p><em>Novelty: Routine presentations become institutional memory.</em></p></div>
+
+<h4>A3 — Financial Audit Sign-off</h4>
+
+<div class="idea"><div class="id">A3-LIVE #9</div><h4>Audit Report Upload &amp; Viewer</h4><p>Organizer uploads the auditor's revision PDF. Embedded PDF viewer opens on click. Permanently attached to meeting record.</p><p><em>Novelty: No emailing PDFs around. Document lives in the system.</em></p></div>
+
+<div class="idea"><div class="id">A3-LIVE #10</div><h4>Simple Approve/Decline Vote</h4><p>Organizer triggers a vote. Each present partner: Approve / Decline. System tallies and logs result.</p><p><em>Novelty: Replaces verbal nod with traceable record. One click per partner.</em></p></div>
+
+<div class="idea"><div class="id">A3-POST #11</div><h4>Audit Section in Meeting Minutes</h4><p>Minutes get: uploaded PDF as attachment, vote result, discussion notes. PDF historized permanently.</p><p><em>Novelty: Complete audit trail years later.</em></p></div>
+
+<h4>A4 — Budget &amp; Fee Approval</h4>
+
+<div class="idea"><div class="id">A4-LIVE #12</div><h4>Budget Spreadsheet Upload &amp; Viewer</h4><p>Same upload/viewer pattern as audit PDF. Consistent UX.</p><p><em>Novelty: Reuses the same component.</em></p></div>
+
+<div class="idea"><div class="id">A4-LIVE #13</div><h4>Live Vote on Budget Direction</h4><p>Simple approve/decline vote for budget direction and proposed new fee. Captures room sentiment.</p><p><em>Novelty: Softer vote — directional agreement, not binding.</em></p></div>
+
+<div class="idea"><div class="id">A4-POST #14</div><h4>Async Fee Acceptance in Partner Portal</h4><p>After meeting, each partner reviews and confirms new fee in portal. Deadline reminder if no response. 100% coverage.</p><p><em>Novelty: Meeting creates the decision, portal operationalizes it.</em></p></div>
+
+<div class="idea"><div class="id">A4-POST #15</div><h4>Fee Acceptance Tracker</h4><p>Organizer dashboard: accepted / pending / declined. Feeds into invoicing pipeline.</p><p><em>Novelty: Closes the loop between meeting decision and operational execution.</em></p></div>
+
+<h4>A5 — Topic Discussion &amp; Voting</h4>
+
+<div class="idea"><div class="id">A5-PRE #16</div><h4>Topic Voting Deep-Link in Meeting Invite</h4><p>ICS invite includes direct link to topic selection/voting page. Zero new development.</p><p><em>Novelty: Same deep-link pattern.</em></p></div>
+
+<div class="idea"><div class="id">A5-POST #17</div><h4>Topic Discussion Results in Minutes</h4><p>Minutes capture which topics discussed, blob game results, decisions and action items per topic.</p><p><em>Novelty: Blob game results historized.</em></p></div>
+
+<h4>A6 — Hot Architecture Topics</h4>
+
+<div class="idea"><div class="id">A6 #18</div><h4>Open Discussion — Future Enhancement</h4><p>Left as free-form. Organizer adds free-text notes to minutes.</p><p><em>Novelty: Intentionally unstructured.</em></p></div>
+
+<hr class="divider">
+
+<h3>Phase 2: Role Playing</h3>
+
+<h4>Perspective: The New Partner</h4>
+
+<div class="idea"><div class="id">ROLE-NEW #19</div><h4>New Partner Onboarding Tour</h4><p>First-login guided tour of the partner platform: analytics, topic voting, partner directory, meeting agenda.</p><p><em>Novelty: Turns overwhelming first login into confident "I know what's going on."</em></p></div>
+
+<div class="idea"><div class="id">ROLE-NEW #20</div><h4>New Partner Context Package</h4><p>System surfaces: current fee, last year's analytics, organizers, other partner companies. Auto-assembled briefing.</p><p><em>Novelty: No organizer prepares a welcome packet manually.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-NEW #21</div><h4>"New Partner" Badge in Who Is Who</h4><p>New partners (first year) get a subtle "New" badge. Signals to veterans to be welcoming.</p><p><em>Novelty: Tiny UI touch, huge social impact.</em></p></div>
+
+<h4>Perspective: The Absent Partner</h4>
+
+<div class="idea"><div class="id">ROLE-ABSENT #22</div><h4>Post-Meeting Minutes Access</h4><p>All partners notified when minutes published. Absent partners review everything at their own pace.</p><p><em>Novelty: No partner ever out of the loop.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #23</div><h4>Async Fee Vote for Absent Partners</h4><p>Same fee acceptance flow, without being in the room.</p><p><em>Novelty: Decouples fee decision from physical presence.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #24</div><h4>Stand-In Delegation Record</h4><p>Organizer records: "Company Y represented by [name], delegated by [partner]." No system login needed. "Represented by" badge in Who Is Who.</p><p><em>Novelty: Handles non-system-users. Governance trail preserved.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ABSENT #25</div><h4>Stand-In Vote Attribution</h4><p>Organizer casts votes on behalf. Minutes log clear attribution chain.</p><p><em>Novelty: Clear proxy voting trail.</em></p></div>
+
+<h4>Perspective: The Organizer</h4>
+
+<div class="idea"><div class="id">ROLE-ORG #26</div><h4>Agenda Builder — Select Active Items</h4><p>Toggle active item types, reorder via drag-and-drop. Every meeting tailored.</p><p><em>Novelty: Annual meeting has all items; mid-year check-in might only have Analytics + Topics.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #27</div><h4>Custom Passive Agenda Items</h4><p>Free-form items (title + description) as discussion placeholders.</p><p><em>Novelty: Agenda never limited to what the system knows about.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #28</div><h4>Meeting Prep Checklist</h4><p>Auto-generated checklist based on enabled items: uploads needed, RSVP count, deadlines.</p><p><em>Novelty: System knows what each item needs.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #29</div><h4>Agenda Controller / Presenter Mode</h4><p>Agenda sidebar, current item highlighted, each shows its interaction. Quick note button always visible.</p><p><em>Novelty: Meeting driven like a presentation, each "slide" is interactive.</em></p></div>
+
+<div class="idea"><div class="id">ROLE-ORG #30</div><h4>Per-Item Note Taking</h4><p>Free-text notes at any agenda item, contextualized in minutes under the right heading.</p><p><em>Novelty: Notes always contextualized.</em></p></div>
+
+<h4>Perspective: The Auditor</h4>
+
+<div class="idea"><div class="id">ROLE-AUDITOR #31</div><h4>Auditor Email Configuration</h4><p>Admin field for auditor email. Conditional auto-invite when audit item on agenda. PDF via organizer upload.</p><p><em>Novelty: Zero system overhead. One config field.</em></p></div>
+
+<hr class="divider">
+
+<h3>Phase 3: Cross-Pollination</h3>
+
+<div class="idea"><div class="id">CROSS-POLL #32</div><h4>Post-Meeting Feedback Pulse</h4><p>Short survey after minutes published: productivity rating, missed topics, suggestions. Aggregated over time.</p><p><em>Novelty: The meeting improves itself. Track satisfaction trends.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #33</div><h4>Manual Minutes Publication &amp; Distribution</h4><p>Organizer reviews, edits, clicks "Publish &amp; Send." All participants receive email with minutes.</p><p><em>Novelty: Organizer controls; system does heavy lifting.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #34</div><h4>Action Items with Owner Assignment</h4><p>Title, description, assigned owner, optional deadline. Distinct section in minutes.</p><p><em>Novelty: Decisions don't evaporate. Every action has a name.</em></p></div>
+
+<div class="idea"><div class="id">CROSS-POLL #35</div><h4>Action Item Carry-Forward</h4><p>Open items from previous meetings auto-surface when creating next meeting's agenda.</p><p><em>Novelty: Nothing falls through the cracks. System remembers.</em></p></div>
+
+<h2>Idea Organization and Prioritization</h2>
+
+<h3>Thematic Organization</h3>
+<table>
+  <tr><th>Theme</th><th>Ideas</th><th>Description</th></tr>
+  <tr><td>1. Configurable Meeting Agenda Engine</td><td>#26-#30</td><td>Agenda builder, presenter mode, notes</td></tr>
+  <tr><td>2. Meeting Minutes as Living Document</td><td>#4,5,7,8,11,33</td><td>Auto-assembled, historized, manually published</td></tr>
+  <tr><td>3. Partner Interaction Components</td><td>#1-3,9,10,12,13</td><td>RSVP, gallery, voting, document viewer — reusable</td></tr>
+  <tr><td>4. Post-Meeting Workflows</td><td>#14,15,23,32,34,35</td><td>Async fee acceptance, feedback, action items</td></tr>
+  <tr><td>5. New Partner &amp; Stand-In Experience</td><td>#19-21,24,25</td><td>Onboarding tour, context package, delegation</td></tr>
+  <tr><td>6. Smart Meeting Invite</td><td>#6,16,31</td><td>Deep-links, conditional auditor invite</td></tr>
+</table>
+
+<h3>Prioritization Results</h3>
+<p><span class="badge badge-green">P1 — Must-Have</span> Themes 1, 2, 3, 4 — 28 ideas forming the complete meeting lifecycle.</p>
+<p><span class="badge badge-yellow">P2 — Quick Wins</span> Theme 6 + reusable components — deep-links, auditor invite, profile cards.</p>
+<p><span class="badge badge-red">P3 — Nice-to-Have</span> Theme 5 — new partner onboarding, stand-in delegation. Phase later.</p>
+
+<h3>Suggested Build Order (P1)</h3>
+<pre>LAYER 1 — Foundation
+├── #26  Agenda Builder (core entity + UI)
+├── #9   Document Upload &amp; Viewer component
+├── #10  Approve/Decline Vote component
+└── #1   RSVP Dashboard
+
+LAYER 2 — Meeting Flow
+├── #3   Who Is Who Gallery + presence badges
+├── #27  Custom Passive Agenda Items
+├── #29  Presenter/Controller Mode
+├── #30  Per-Item Note Taking
+└── #4   Meeting Minutes entity (auto-assembly)
+
+LAYER 3 — Agenda Item Interactions
+├── #5   Attendance → minutes
+├── #7   Analytics snapshot → minutes
+├── #11  Audit PDF + vote → minutes
+├── #12  Budget doc + vote → minutes
+├── #28  Meeting Prep Checklist
+└── #34  Action Items with Owners
+
+LAYER 4 — Post-Meeting &amp; Lifecycle
+├── #33  Publish &amp; Distribute minutes
+├── #35  Action Item Carry-Forward
+├── #32  Feedback Pulse
+├── #14  Async Fee Acceptance
+├── #15  Fee Acceptance Tracker
+└── #23  Absent Partner Fee Vote</pre>
+
+<h3>Key Architectural Decisions</h3>
+<ol>
+  <li><strong>PartnerMeeting entity</strong> — agenda definition (active + passive items, ordered), linked documents, vote results, minutes</li>
+  <li><strong>Reusable Vote component</strong> — approve/decline for audit, budget, and future use</li>
+  <li><strong>Reusable Document Viewer</strong> — upload + embedded view for PDF and spreadsheet</li>
+  <li><strong>Meeting Minutes</strong> — assembled progressively from agenda item artifacts, editable, manually published</li>
+  <li><strong>Action Item entity</strong> — title, owner, deadline, status, linked to meeting + agenda item, carry-forward logic</li>
+</ol>
+
+<h2>Session Summary and Insights</h2>
+
+<p><strong>Key Achievements:</strong></p>
+<ul>
+  <li>35 ideas generated across 3 complementary techniques</li>
+  <li>Clear system architecture emerged organically</li>
+  <li>4 reusable components identified (agenda builder, vote, document viewer, minutes engine)</li>
+  <li>Natural 4-layer build sequence with clean dependency chain</li>
+  <li>Cross-cutting meeting minutes pattern discovered as the backbone artifact</li>
+</ul>
+
+<p><strong>Breakthrough Moments:</strong></p>
+<ul>
+  <li>Meeting minutes as a living document that builds itself from agenda item interactions</li>
+  <li>Async fee acceptance extending the meeting beyond the room (ties to invoicing)</li>
+  <li>Configurable agenda with active + passive items — not a hardcoded sequence</li>
+  <li>Stand-in delegation for non-system-users — real governance need</li>
+</ul>
+
+<p><strong>Session Techniques:</strong> Morphological Analysis → Role Playing → Cross-Pollination<br>
+<strong>Total Ideas:</strong> 35 &nbsp;|&nbsp; <strong>Must-Have:</strong> 28 &nbsp;|&nbsp; <strong>Quick Wins:</strong> 4 &nbsp;|&nbsp; <strong>Nice-to-Have:</strong> 5</p>
+
+<hr class="divider">
+<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">
+  Generated from <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code><br>
+  <a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Training Session</a> &nbsp;|&nbsp;
+  <a href="agenda-brainstorm-detailed.html" style="color:var(--accent2)">Detailed Walkthrough</a>
+</p>
+
+</main>
+</body>
+</html>

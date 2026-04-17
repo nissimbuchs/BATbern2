@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training (Detailliert) — Aktive Partner-Meeting-Agenda: Vom Brainstorming zur Spezifikation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #00d4aa;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #6c63ff;
+    --note-bg: #2e2a1a;
+    --note-border: #ffd166;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover, nav a.active { background: var(--accent); color: white; }
+  nav .sep { color: var(--border); font-size: 11px; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  .hero { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 60px; }
+  .hero .badge { display: inline-block; background: var(--accent); color: white; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .hero .version-note { margin-top: 20px; font-size: 0.85rem; color: var(--accent4); }
+
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .phase-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-weight: 800; font-size: 1rem; flex-shrink: 0; }
+  .phase-1 { background: rgba(0,212,170,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(108,99,255,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(255,107,107,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,209,102,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(0,212,170,.4); }
+  .overview-card.phase2 { border-color: rgba(108,99,255,.4); }
+  .overview-card.phase3 { border-color: rgba(255,107,107,.4); }
+  .overview-card.bridge { border-color: rgba(255,209,102,.4); }
+
+  .turn { margin-bottom: 20px; }
+  .turn-user { background: var(--user-bg); border: 1px solid var(--user-border); border-left: 4px solid var(--user-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-agent { background: var(--agent-bg); border: 1px solid var(--agent-border); border-left: 4px solid var(--agent-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-artifact { background: var(--artifact-bg); border: 1px solid var(--artifact-border); border-left: 4px solid var(--artifact-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-note { background: var(--note-bg); border: 1px solid var(--note-border); border-left: 4px solid var(--note-border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.88rem; }
+
+  .turn-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .turn-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .label-user { color: var(--user-border); }  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 12px 0; white-space: pre; }
+
+  details { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 10px; }
+  details.agent-full { background: var(--agent-bg); border-color: var(--agent-border); }
+  summary { padding: 10px 14px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); line-height: 1.7; }
+  .details-body p { margin-bottom: 8px; }
+  .details-body ul, .details-body ol { margin: 8px 0 8px 20px; }
+  .details-body li { margin-bottom: 4px; }
+
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+  .tag-green { background: rgba(0,212,170,.12); color: var(--accent2); border: 1px solid rgba(0,212,170,.3); }
+  .tag-purple { background: rgba(108,99,255,.12); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+  .tag-yellow { background: rgba(255,209,102,.12); color: var(--accent4); border: 1px solid rgba(255,209,102,.3); }
+  .tag-red { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .connector { display: flex; align-items: center; gap: 12px; padding: 8px 20px; color: var(--text-muted); font-size: 0.82rem; }
+  .connector::before, .connector::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .idea-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 8px; }
+  .idea-card .idea-id { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.5px; }
+  .idea-card h4 { font-size: 0.9rem; font-weight: 700; margin: 2px 0 4px; }
+  .idea-card p { font-size: 0.82rem; color: var(--text-muted); }
+
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  .future-phase { background: var(--surface); border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px; text-align: center; }
+  .future-phase .icon { font-size: 2rem; margin-bottom: 12px; }
+  .future-phase h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .future-phase p { color: var(--text-muted); font-size: 0.9rem; }
+
+  @media (max-width: 640px) { .hero h1 { font-size: 1.7rem; } nav a { font-size: 11px; padding: 3px 8px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#overview" class="active">Überblick</a>
+  <a href="#setup">Agent-Setup</a>
+  <a href="#session-setup">Session-Setup</a>
+  <a href="#technique-selection">Techniken</a>
+  <a href="#morphological">Morphologisch</a>
+  <a href="#roleplaying">Rollenspiel</a>
+  <a href="#crosspollination">Cross-Pollination</a>
+  <a href="#organization">Organisation</a>
+  <a href="#artifact">Artefakt</a>
+  <span class="sep">|</span>
+  <a href="#next-ux" style="opacity:.5">UX</a>
+  <a href="#next-arch" style="opacity:.5">Arch</a>
+  <a href="#next-prd" style="opacity:.5">PRD</a>
+  <a href="#takeaways">Erkenntnisse</a>
+</nav>
+
+<main>
+
+<!-- ══════════════ HERO ══════════════ -->
+<div class="hero">
+  <div class="badge">BMAD Praxis-Training &mdash; Session 2 (Detailliert)</div>
+  <h1>Aktive Partner-Meeting-Agenda<br><span>Vom Brainstorming zur Spezifikation</span></h1>
+  <p>Vollständiger, ungekürzter Durchgang einer BMAD-Brainstorming-Session mit allen Agent-Antworten und Benutzer-Prompts. Aufklappbare Abschnitte zeigen die vollständige Agent-Ausgabe bei jedem Schritt.</p>
+  <div class="hero-meta">
+    <div><div class="label">Projekt</div><div class="value">BATbern</div></div>
+    <div><div class="label">Feature</div><div class="value">Aktive Meeting-Agenda</div></div>
+    <div><div class="label">Session-Datum</div><div class="value">2026-04-04</div></div>
+    <div><div class="label">Generierte Ideen</div><div class="value">35</div></div>
+    <div><div class="label">Abgedeckte Phasen</div><div class="value">1 (Analyse)</div></div>
+  </div>
+  <div class="version-note">Dies ist die <strong>detaillierte Version</strong> mit vollständiger Agent-Ausgabe. Siehe auch: <a href="index-de.html" style="color:var(--accent2)">Zusammenfassung</a> | <a href="detailed.html" style="color:var(--accent2)">English version</a></div>
+</div>
+
+<!-- ══════════════ OVERVIEW ══════════════ -->
+<section id="overview">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+    <div class="section-header-text"><h2>Session-Überblick</h2><p>Durchgeführte BMAD-Phasen und nächste Schritte</p></div>
+  </div>
+  <div class="overview-grid">
+    <div class="overview-card phase1"><div class="icon">&#x1F4CA;</div><h3>Phase 1 &mdash; Analyse (Diese Session)</h3><p>Analysten-Agent (Mary). 3 KI-empfohlene Techniken. 35 entdeckte Ideen, thematisch gruppiert und priorisiert in eine 4-Schichten-Bausequenz.</p></div>
+    <div class="overview-card phase2"><div class="icon">&#x1F3A8;</div><h3>Phase 2 &mdash; UX-Design (Folgt)</h3><p>UX-Designer-Agent. Wireframes und Benutzerflüsse für die aktive Agenda-Erfahrung.</p></div>
+    <div class="overview-card phase3"><div class="icon">&#x1F3D7;</div><h3>Phase 3 &mdash; Architektur (Folgt)</h3><p>Architektur-Agent. Entity-Design, APIs, Komponentenarchitektur.</p></div>
+    <div class="overview-card bridge"><div class="icon">&#x1F4DD;</div><h3>PRD (Folgt)</h3><p>PM-Agent. Epics, Stories, Akzeptanzkriterien.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════ AGENT SETUP ══════════════ -->
+<section id="setup">
+  <div class="section-header">
+    <div class="phase-badge phase-1">1</div>
+    <div class="section-header-text"><h2>Schritt 1: Laden des Analysten-Agents</h2><p>Mary aktivieren über <code>/bmad-agent-bmm-analyst</code></p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+    <div class="turn-content"><code>/bmad-agent-bmm-analyst</code></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort (Mary)</div>
+    <div class="turn-content">
+      <p><strong>Hallo Nissim!</strong> Ich bin <strong>Mary</strong>, deine Strategische Business-Analystin. Stell dir mich als Schatzjägerin für Erkenntnisse vor &mdash; jede geschäftliche Herausforderung hat Ursachen und Muster, die darauf warten, entdeckt zu werden, und ich <em>brenne</em> darauf, mit dir loszulegen!</p>
+      <p>Hier ist, was wir gemeinsam erkunden können:</p>
+      <table>
+        <tr><th>#</th><th>Befehl</th><th>Beschreibung</th></tr>
+        <tr><td>1</td><td><strong>[MH]</strong></td><td>Menühilfe erneut anzeigen</td></tr>
+        <tr><td>2</td><td><strong>[CH]</strong></td><td>Mit dem Agent über alles chatten</td></tr>
+        <tr><td>3</td><td><strong>[BP]</strong></td><td>Projekt-Brainstorming: Experten-geführte Moderation durch einzelne oder mehrere Techniken mit Abschlussbericht</td></tr>
+        <tr><td>4</td><td><strong>[MR]</strong></td><td>Marktforschung: Marktanalyse, Wettbewerbslandschaft, Kundenbedürfnisse und Trends</td></tr>
+        <tr><td>5</td><td><strong>[DR]</strong></td><td>Domänenforschung: Tiefgehende Branchenanalyse, Fachwissen und Terminologie</td></tr>
+        <tr><td>6</td><td><strong>[TR]</strong></td><td>Technische Forschung: Technische Machbarkeit, Architekturoptionen und Implementierungsansätze</td></tr>
+        <tr><td>7</td><td><strong>[CB]</strong></td><td>Briefing erstellen: Eine geführte Erfahrung, um deine Produktidee in ein Executive Briefing zu fassen</td></tr>
+        <tr><td>8</td><td><strong>[DP]</strong></td><td>Projekt dokumentieren: Ein bestehendes Projekt analysieren und nützliche Dokumentation erstellen</td></tr>
+        <tr><td>9</td><td><strong>[PM]</strong></td><td>Party-Modus starten</td></tr>
+        <tr><td>10</td><td><strong>[DA]</strong></td><td>Agent entlassen</td></tr>
+      </table>
+      <p>Du kannst jederzeit <code>/bmad-help</code> eingeben, um Hilfe zu erhalten &mdash; du kannst es sogar mit deiner Frage kombinieren, z.B. <code>/bmad-help where should I start with an idea I have that does XYZ</code></p>
+      <p>Was wollen wir heute aufdecken, Nissim?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p>Du kannst <code>bp</code>, <code>BP</code> oder Fuzzy-Match wie "brainstorm" verwenden, um Menüpunkte auszuwählen.</p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+    <div class="turn-content"><code>bp</code></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Der Agent lädt den Brainstorming-Workflow, erstellt eine Session-Datei und fragt:</p>
+      <p><strong>1. Worüber brainstormen wir?</strong> (Das zentrale Thema oder die Herausforderung)</p>
+      <p><strong>2. Welche konkreten Ergebnisse erhoffst du dir?</strong> (Arten von Ideen, Lösungen oder Erkenntnissen)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SESSION SETUP ══════════════ -->
+<section id="session-setup">
+  <div class="section-header">
+    <div class="phase-badge phase-1">2</div>
+    <div class="section-header-text"><h2>Schritt 2: Definition des Brainstorming-Themas</h2><p>Reichhaltiger Kontext über den aktuellen Stand + was wir erreichen wollen</p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+    <div class="turn-content">
+      <p>i want to brainstorm on additional features for the partner meeting functionality. as organizers we send an invite with an agenda in text format, the partners receive it, accept the invite, and thats it. I want to make the agenda items active.</p>
+      <p>today we have the following agenda normally:</p>
+      <ol>
+        <li>greet all partners present (we know the partners are the users with role PARTNER)</li>
+        <li>analytics on past years events and attendances and feedback from attendees (we have a toplevel analytics page we show)</li>
+        <li>show the costs of past years events and the auditors revision pdf and get the sign of for the organizers from the partners, that books are well managed</li>
+        <li>show last years costs and present years budget assumption, resulting in the new fee per partner. get sign off of this new fee</li>
+        <li>discuss current years topics, the partners would be interested in (partners can login and add topics, and vote on other partners topics). we also have the topic selection blob game to help us find good topics</li>
+        <li>discuss any other current hot architecture topic partners are interested in.</li>
+      </ol>
+      <p>help me brainstorm, how we could create such an active agenda, that is supported by the batbern event management system, and where we could add functionality, to make it even better</p>
+    </div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort &mdash; Session-Analyse</div>
+    <div class="turn-content">
+      <p>Oh Nissim, was für eine <em>fantastische</em> Herausforderung &mdash; das ist wie eine Schatzkarte mit sechs klar markierten X-en! Du hast bereits das Skelett von etwas Mächtigem, und jetzt werden wir jeden Knochen zum Leben erwecken. Lass mich sicherstellen, dass ich das Gesamtbild erfasst habe, bevor wir eintauchen.</p>
+      <p><strong>Session-Analyse:</strong></p>
+      <p>Basierend auf deiner Beschreibung verstehe ich, dass wir uns darauf konzentrieren, <strong>die statische Partner-Meeting-Agenda in einen interaktiven, systemunterstützten Workflow zu transformieren</strong>, bei dem jeder Agendapunkt zu einem aktiven, funktionsreichen Feature innerhalb von BATbern wird.</p>
+      <p><strong>Session-Parameter:</strong></p>
+      <ul>
+        <li><strong>Themenfokus:</strong> Aktive/interaktive Partner-Meeting-Agenden &mdash; eine textbasierte ICS-Einladung in ein lebendiges, funktionsreiches Meeting-Erlebnis verwandeln</li>
+        <li><strong>Primäre Ziele:</strong> Jede der 6 Agendapunkte systemunterstützt machen; neue Funktionalitäten identifizieren; Vor/Während/Nach-Engagement erkunden</li>
+        <li><strong>Bestehende Grundlage:</strong> Partner-Rollen &amp; Authentifizierung (Epic 8), Teilnahme-Analytik + XLSX-Export, Themen-Abstimmungssystem, ICS-Meeting-Einladungen, Partner-Portal mit Login</li>
+      </ul>
+      <p><strong>Kontexthinweise, die mich jetzt schon begeistern:</strong></p>
+      <ul>
+        <li>Du hast 6 verschiedene Agendapunkte, jeder mit unterschiedlichen Interaktionsmustern (Ansehen, Abstimmen, Genehmigen, Diskutieren)</li>
+        <li>Einige sind <em>informativ</em> (Analytik, Kosten), einige sind <em>entscheidungsbezogen</em> (Genehmigungen, Gebührenzustimmung), einige sind <em>kollaborativ</em> (Themendiskussion)</li>
+        <li>Das bildet sich natürlich auf verschiedene UI-Komponenten und Workflows ab</li>
+      </ul>
+      <p><strong>Habe ich korrekt erfasst, was du erreichen möchtest?</strong></p>
+      <p>Und sobald bestätigt, wähle deinen Technik-Ansatz:</p>
+      <ol>
+        <li><strong>Vom Benutzer gewählte Techniken</strong> &mdash; Durchstöbere unsere komplette Technik-Bibliothek</li>
+        <li><strong>KI-empfohlene Techniken</strong> &mdash; Erhalte massgeschneiderte Vorschläge basierend auf deinen Zielen</li>
+        <li><strong>Zufällige Technik-Auswahl</strong> &mdash; Entdecke unerwartete kreative Methoden</li>
+        <li><strong>Progressiver Technik-Fluss</strong> &mdash; Beginne breit, dann systematisch eingrenzen</li>
+      </ol>
+      <p>Welcher Ansatz spricht dich am meisten an? <em>(Gib 1-4 ein)</em></p>
+    </div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Der Agent klassifizierte die 6 Agendapunkte in Interaktionstypen (informativ, entscheidungsbezogen, kollaborativ). Diese Analyse erfolgt automatisch &mdash; der Agent erkennt, dass verschiedene Typen unterschiedliche Systemunterstützung benötigen.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════ TECHNIQUE SELECTION ══════════════ -->
+<section id="technique-selection">
+  <div class="section-header">
+    <div class="phase-badge phase-1">3</div>
+    <div class="section-header-text"><h2>Schritt 3: KI-empfohlene Technik-Auswahl</h2><p>Agent analysiert den Kontext und empfiehlt 3 komplementäre Techniken</p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+    <div class="turn-content"><code>2</code></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort &mdash; Vollständige KI-Analyse</div>
+    <div class="turn-content">
+      <p>Ausgezeichnete Wahl, Nissim! Lass mich deinen Session-Kontext gegen unsere Bibliothek von über 60 Techniken analysieren...</p>
+      <p><strong>Analyse deiner Session-Ziele:</strong></p>
+      <ul>
+        <li><strong>Thema:</strong> Transformation von 6 statischen Partner-Meeting-Agendapunkten in interaktive, systemunterstützte Features</li>
+        <li><strong>Ziele:</strong> Feature-Entdeckung für jeden Agendapunkt + neue Funktionalitätsideen</li>
+        <li><strong>Session-Typ:</strong> Produkterweiterung auf einer bestehenden, gut verstandenen Domäne</li>
+        <li><strong>Komplexität:</strong> Mittel-hoch &mdash; 6 verschiedene Interaktionsmuster</li>
+        <li><strong>Deine Energie:</strong> Praktisch, Builder-orientiert, Expertenniveau</li>
+      </ul>
+      <p><strong>KI-Analyse-Ergebnisse:</strong></p>
+      <p>Deine Herausforderung hat eine einzigartige Form &mdash; du startest nicht bei null, du <em>aktivierst</em> etwas, das bereits existiert. Das bedeutet, wir brauchen Techniken, die hervorragend darin sind, bekannte Strukturen systematisch zu verbessern und gleichzeitig in neues Terrain vorzustossen.</p>
+
+      <p><strong>Phase 1: Grundlage &mdash; Morphologische Analyse (Morphological Analysis)</strong><br>
+      <em>Kategorie: Tiefgehend | Energie: Mittel | Dauer: ~20 Min.</em></p>
+      <ul>
+        <li><strong>Warum das passt:</strong> Du hast 6 konkrete Agendapunkte, jeder mit verschiedenen Interaktionstypen. Die Morphologische Analyse erstellt ein Raster aus Agendapunkten &times; Interaktionsdimensionen (Vorher/Während/Nachher &times; Ansehen/Abstimmen/Genehmigen/Diskutieren/Exportieren). Das bildet systematisch jede mögliche Feature-Kombination ab.</li>
+        <li><strong>Erwartetes Ergebnis:</strong> Eine umfassende Matrix, die verborgene Feature-Möglichkeiten an jeder Kreuzung aufdeckt.</li>
+      </ul>
+
+      <p><strong>Phase 2: Ideenerweiterung &mdash; Rollenspiel (Role Playing)</strong><br>
+      <em>Kategorie: Kollaborativ | Energie: Hoch | Dauer: ~20 Min.</em></p>
+      <ul>
+        <li><strong>Warum das auf Phase 1 aufbaut:</strong> Sobald wir die Matrix haben, gehen wir sie aus <strong>vier verschiedenen Perspektiven</strong> durch &mdash; der Partner, der Organisator, der Revisor und der abwesende Partner. Jede Persona bringt unterschiedliche Prioritäten und Schmerzpunkte aus demselben Raster hervor.</li>
+        <li><strong>Erwartetes Ergebnis:</strong> Ideen, die in realen Stakeholder-Bedürfnissen verankert sind.</li>
+      </ul>
+
+      <p><strong>Phase 3: Innovationsimpuls &mdash; Cross-Pollination (Kreuzbestäubung)</strong><br>
+      <em>Kategorie: Kreativ | Energie: Hoch | Dauer: ~15 Min.</em></p>
+      <ul>
+        <li><strong>Warum das effektiv abschliesst:</strong> Nach systematischer Analyse und Stakeholder-Perspektiven schauen wir, wie <em>andere Domänen</em> interaktive Governance-Meetings handhaben &mdash; Aktionärsversammlungen, Verwaltungsratssitzungen, Hausverwaltungen, parlamentarische Abstimmungen. Verhindert, dass wir nur BATbern-förmige Lösungen sehen.</li>
+        <li><strong>Erwartetes Ergebnis:</strong> Durchbruch-Feature-Ideen, die von Domänen entlehnt sind, die ähnliche Probleme gelöst haben.</li>
+      </ul>
+
+      <p><strong>Geschätzte Gesamtdauer:</strong> ~55-60 Minuten</p>
+      <p><strong>Klingt dieser Ansatz richtig?</strong></p>
+      <ul>
+        <li><strong>[C]</strong> Weiter &mdash; Mit der Morphologischen Analyse beginnen</li>
+        <li><strong>[Modify]</strong> &mdash; Die Technik-Auswahl anpassen</li>
+        <li><strong>[Details]</strong> &mdash; Erzähl mir mehr über eine bestimmte Technik</li>
+        <li><strong>[Back]</strong> &mdash; Zurück zur Ansatz-Auswahl</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer-Prompt</div>
+    <div class="turn-content"><code>c</code></div>
+  </div>
+</section>
+
+<!-- ══════════════ MORPHOLOGICAL ANALYSIS ══════════════ -->
+<section id="morphological">
+  <div class="section-header">
+    <div class="phase-badge phase-1">T1</div>
+    <div class="section-header-text"><h2>Technik 1: Morphologische Analyse (Morphological Analysis)</h2><p>6 Agendapunkte &times; 5 Interaktionsdimensionen &mdash; Zelle für Zelle durch das Raster</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent erstellt die Matrix</div>
+    <div class="turn-content">
+      <p>Lass uns eintauchen, Nissim!</p>
+      <p>So gehen wir vor: Ich richte die Matrix-Dimensionen ein, und dann gehen wir sie gemeinsam Zelle für Zelle durch. Stell dir das als Schatzsuche auf einer Karte mit Koordinaten vor.</p>
+      <p><strong>Zeilen &mdash; 6 Agendapunkte:</strong></p>
+      <table>
+        <tr><th>#</th><th>Agendapunkt</th><th>Aktueller Modus</th></tr>
+        <tr><td>A1</td><td>Partner-Begrüssung / Anwesenheit</td><td>Passiv (einfach Hallo sagen)</td></tr>
+        <tr><td>A2</td><td>Analytik-Überblick</td><td>Informativ (eine Seite zeigen)</td></tr>
+        <tr><td>A3</td><td>Finanz-Audit-Genehmigung</td><td>Entscheidungsbezogen (PDF zeigen, mündliches OK)</td></tr>
+        <tr><td>A4</td><td>Budget &amp; Gebühren-Genehmigung</td><td>Entscheidungsbezogen (Zahlen präsentieren, mündliches OK)</td></tr>
+        <tr><td>A5</td><td>Themendiskussion &amp; Abstimmung</td><td>Kollaborativ (Login + Abstimmung)</td></tr>
+        <tr><td>A6</td><td>Aktuelle Architektur-Themen</td><td>Kollaborativ (offene Diskussion)</td></tr>
+      </table>
+      <p><strong>Spalten &mdash; 5 Dimensionen:</strong></p>
+      <table>
+        <tr><th>Dimension</th><th>Bedeutung</th></tr>
+        <tr><td><strong>PRE</strong></td><td>Was passiert <em>vor</em> dem Meeting?</td></tr>
+        <tr><td><strong>LIVE</strong></td><td>Was passiert <em>während</em> des Meetings in Echtzeit?</td></tr>
+        <tr><td><strong>POST</strong></td><td>Was passiert <em>nach</em> dem Meeting?</td></tr>
+        <tr><td><strong>ARTIFACT</strong></td><td>Welches digitale Artefakt entsteht daraus?</td></tr>
+        <tr><td><strong>NOTIFICATION</strong></td><td>Welche Trigger/Benachrichtigungen unterstützen das?</td></tr>
+      </table>
+      <p>Beginnen wir in der oberen linken Ecke:</p>
+      <p><strong>A1 &times; PRE: Partner-Begrüssung &mdash; Vor dem Meeting</strong></p>
+      <p>Aktuell kommen die Partner einfach und du begrüsst, wer da ist. Aber was, wenn das System <em>vor</em> dem Meeting etwas tun würde?</p>
+      <ul>
+        <li><strong>Zusage mit Anwesenheitsbestätigung</strong> &mdash; Partner bestätigen ihre Teilnahme, Organisatoren sehen eine Live-Prognose</li>
+        <li><strong>Partner-Profilkarten</strong> &mdash; Foto, Firma und Rolle jedes bestätigten Partners vorgeladen</li>
+        <li><strong>Stellvertreter-Delegation</strong> &mdash; abwesender Partner bestimmt einen Kollegen mit Stimmrecht</li>
+      </ul>
+      <p>Was inspiriert dich hier, Nissim? Was würde die "Wer kommt?"-Phase nützlicher machen?</p>
+    </div>
+  </div>
+
+  <!-- ═══ A1 conversation ═══ -->
+  <div class="connector">A1: Partner-Begrüssung / Anwesenheit</div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">rsvp view and partner profile, so all know who is who (especially if we have new partners in the room)</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Grossartig! Der Aspekt "neuer Partner im Raum" ist ein <em>Juwel</em> &mdash; genau diese Art von sozialer Reibung kann ein System wunderbar glätten. Lass mich das festhalten:</p>
+      <div class="idea-card"><div class="idea-id">A1-PRE #1</div><h4>RSVP-Anwesenheits-Dashboard</h4><p>Partner bestätigen ihre Teilnahme vorab über das Portal. Organisatoren sehen ein Live-RSVP-Dashboard mit bestätigt / abgelehnt / ausstehend und einer Teilnehmerprognose. Partner können auch sehen, wer sonst kommt.</p><p><em>Neuheit:</em> Verwandelt passives "Wer ist aufgetaucht?" in proaktive Planung &mdash; Organisatoren können bei Nicht-Antwortenden nachfassen, und Partner fühlen sich erwartet.</p></div>
+      <div class="idea-card"><div class="idea-id">A1-PRE #2</div><h4>Partner-Profilkarten</h4><p>Jeder bestätigte Partner erhält eine sichtbare Profilkarte (Foto, Firma, Rolle, Jahre als Partner, evtl. ein Einzeiler-Bio). Besonders wertvoll, wenn neue Partner dazukommen &mdash; jeder sieht auf einen Blick, wer neu ist und welche Firma er vertritt.</p><p><em>Neuheit:</em> Beseitigt den unangenehmen "Wer bist du?"-Moment. Neue Partner fühlen sich willkommen, Veteranen können sich auf die Vorstellung vorbereiten.</p></div>
+      <p>Die Idee der Stellvertreter-Delegation &mdash; trifft das einen Nerv? Kann ein Partner jemand anderen an seiner Stelle schicken, und bräuchte diese Person Stimmrecht für die späteren Genehmigungspunkte?</p>
+      <p>Bleiben wir bei A1 und bewegen uns eine Spalte nach rechts:</p>
+      <p><strong>A1 &times; LIVE: Partner-Begrüssung &mdash; Während des Meetings</strong></p>
+      <p>Einige Ansätze:</p>
+      <ul>
+        <li><strong>Live Check-in</strong> &mdash; Partner tippen auf einen Button oder scannen QR-Code, Status wechselt von "bestätigt" zu "anwesend"</li>
+        <li><strong>"Willkommen [Name]"-Anzeige</strong> &mdash; präsentationsfertige Ansicht, die durch Profilkarten rotiert</li>
+        <li><strong>Quorum-Anzeige</strong> &mdash; "8 von 12 Partnern anwesend &mdash; Quorum erreicht"</li>
+      </ul>
+      <p>Was würde die ersten 5 Minuten strukturierter und einladender machen?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Steuerung Richtung Einfachheit</div>
+    <div class="turn-content">just one click on the agenda who is who, showing all partner companies, with their partner delegate card and photo (all already stored in the user entity). no welcome, no live checkin, but show present badge on who is who view</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Der Benutzer lehnt Live-Check-in, Willkommensanzeige und Quorum ab &mdash; zu zeremoniell. Ein-Klick-Galerie mit Anwesenheits-Badges reicht aus. <strong>Du bist der Domänenexperte</strong> &mdash; akzeptiere keine Ideen, die nicht zu deinem realen Kontext passen.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Ich liebe die Zurückhaltung &mdash; keine Zeremonie, nur Nutzen. Klick auf den Agendapunkt, <em>zack</em>, du siehst deine Leute. So sollten Tools funktionieren.</p>
+      <div class="idea-card"><div class="idea-id">A1-LIVE #3</div><h4>Wer ist Wer &mdash; Partner-Galerie-Ansicht</h4><p>Ein Klick auf den "Begrüssung"-Agendapunkt öffnet ein Galerieraster aller Partnerfirmen, jeweils mit Firmenlogo, Partner-Delegiertenname, Foto und Rolle &mdash; alles aus bestehenden User-Entitäten gezogen. Partner, die mit "anwesend" geantwortet haben, erhalten ein grünes "Anwesend"-Badge; abwesende werden ausgegraut oder entsprechend markiert. Ein Blick, und jeder weiss, wer im Raum ist.</p><p><em>Neuheit:</em> Null Zeremonien-Overhead &mdash; kein Check-in-Ritual, kein Namenaufruf. Der Organisator öffnet es einfach, und der Raum orientiert sich selbst.</p></div>
+      <p>Kurze Frage &mdash; soll das "Anwesend"-Badge vom Organisator gesetzt werden (Anwesenheit zu Beginn umschalten), oder basierend auf dem RSVP-Status?</p>
+      <p>Gehen wir weiter zu A1 &times; POST:</p>
+      <p><strong>A1 &times; POST: Partner-Begrüssung &mdash; Nach dem Meeting</strong></p>
+      <ul>
+        <li><strong>Anwesenheitsdaten persistent gespeichert</strong> &mdash; System protokolliert, wer anwesend war, erstellt historische Aufzeichnung</li>
+        <li><strong>Sitzungsprotokoll automatisch befüllt</strong> &mdash; Teilnehmerliste wird in die Kopfzeile des Protokolls geschrieben</li>
+      </ul>
+      <p>Was ist hier nützlich?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Der Durchbruch-Moment</div>
+    <div class="turn-content">yes, i think we should anyway have meeting notes of the meeting, with the info shown, the decisions taken, actions, ... where the attendance is one part of it</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis &mdash; DURCHBRUCH</div>
+    <div class="turn-content"><p><strong>Dies ist die grösste Entdeckung der Session.</strong> Eine beiläufige Bemerkung über Sitzungsnotizen enthüllte ein <strong>übergreifendes Artefakt</strong>, das ALLE 6 Agendapunkte umfasst. Das Sitzungsprotokoll wird zum Rückgrat des gesamten Systems &mdash; jeder Agendapunkt trägt automatisch einen Abschnitt bei. Diese einzelne Erkenntnis verwandelte "6 separate Features" in "ein zusammenhängendes System."</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Oh, <em>jetzt</em> decken wir etwas Strukturelles auf! Du hast gerade ein übergreifendes Artefakt enthüllt, das alle sechs Agendapunkte umfasst &mdash; <strong>Sitzungsprotokoll als lebendes Dokument, das sich progressiv aufbaut, während du durch die Agenda gehst</strong>. Das ist nicht nur ein Feature, das ist eine <em>Architekturentscheidung</em>.</p>
+      <div class="idea-card"><div class="idea-id">CROSS-CUTTING #4</div><h4>Automatisch generiertes Sitzungsprotokoll</h4><p>Das System pflegt ein Sitzungsprotokoll-Dokument (PartnerMeetingMinutes-Entität), das sich selbst aufbaut, während der Organisator durch die aktive Agenda geht. Jeder Agendapunkt trägt automatisch seinen Abschnitt bei &mdash; Anwesenheitsliste aus Wer-ist-Wer, Analytik-Snapshots, Entscheidungen aus Genehmigungen, Aktionspunkte aus Diskussionen. Der Organisator kann bei jedem Schritt Freitextnotizen hinzufügen. Endgültiges Protokoll als PDF exportierbar.</p><p><em>Neuheit:</em> Eliminiert das "Jemand führt Protokoll"-Problem vollständig. Das System <em>weiss</em> bereits, was gezeigt wurde, wer abgestimmt hat, was entschieden wurde &mdash; es muss es nur zusammensetzen.</p></div>
+      <div class="idea-card"><div class="idea-id">A1-POST #5</div><h4>Anwesenheitsabschnitt im Protokoll</h4><p>Die Anwesenheitsdaten der Wer-ist-Wer-Ansicht befüllen automatisch den "Teilnehmer"-Abschnitt des Sitzungsprotokolls. Kein manuelles Tippen.</p><p><em>Neuheit:</em> Der erste Abschnitt des Protokolls schreibt sich selbst, bevor das Meeting überhaupt richtig beginnt.</p></div>
+      <p>Das begeistert mich, Nissim. Das Protokoll wird ein <em>Nebenprodukt</em> der aktiven Agenda &mdash; keine Mehrarbeit. Bei jedem Agendapunkt, den wir ab jetzt gestalten, sollten wir fragen: <strong>Was trägt dieser Punkt zum Protokoll bei?</strong></p>
+    </div>
+  </div>
+
+  <!-- ═══ A2 conversation ═══ -->
+  <div class="connector">A2: Analytik-Überblick</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zu A2 &times; PRE</div>
+    <div class="turn-content">
+      <p>Nehmen wir diese Energie mit in die nächste Zeile:</p>
+      <p><strong>A2 &times; PRE: Analytik-Überblick &mdash; Vor dem Meeting</strong></p>
+      <p>Heute zeigst du während des Meetings eine Top-Level-Analytik-Seite. Aber was könnte <em>vorher</em> passieren?</p>
+      <ul>
+        <li><strong>Analytik-Zusammenfassung vor dem Meeting</strong> &mdash; zusammenfassende E-Mail/Benachrichtigung einige Tage vorher</li>
+        <li><strong>Partner-spezifische Analytik-Ansicht</strong> &mdash; jeder Partner sieht die Geschichte seiner eigenen Firma vs. Gruppendurchschnitt</li>
+        <li><strong>Automatisch generierter Jahresvergleich</strong> &mdash; System erstellt vorab Vergleichsdiagramme</li>
+      </ul>
+      <p>Was würde den Analytik-Teil wertvoller machen? Kommen die Partner unvorbereitet?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">i think a link to the analytics page in the meeting invite is already enough.</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Perfekt &mdash; kein Over-Engineering. Die Daten sind schon da, einfach darauf verlinken.</p>
+      <div class="idea-card"><div class="idea-id">A2-PRE #6</div><h4>Analytik-Direktlink in der Meeting-Einladung</h4><p>Die ICS-Einladung enthält einen Direktlink zur Analytik-Seite. Null Entwicklungsaufwand &mdash; einfach klügerer Einladungsinhalt.</p></div>
+      <p><strong>A2 &times; LIVE:</strong> Heute zeigst du die Analytik-Seite auf dem Bildschirm. Einige Ideen:</p>
+      <ul>
+        <li><strong>Präsentationsmodus</strong> &mdash; vereinfachte Vollbildansicht für den Projektor</li>
+        <li><strong>Live-Annotation</strong> &mdash; bestimmte Datenpunkte hervorheben, im Protokoll erfasst</li>
+        <li><strong>Partner-Fragen erfassen</strong> &mdash; Fragen als Diskussionspunkte protokollieren</li>
+      </ul>
+      <p>Was fehlt, wenn du es tatsächlich <em>präsentierst</em>? Ist die aktuelle Seite gut genug auf einem Projektor?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">nothing missing here. just be sure to historize the data and attach the graphs to the meeting notes</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Das ist eine entscheidende Erkenntnis &mdash; die Analytik-Seite zeigt <em>Live</em>-Daten, aber das Protokoll braucht einen <strong>eingefrorenen Snapshot</strong> von dem, was an diesem Tag gezeigt wurde.</p>
+      <div class="idea-card"><div class="idea-id">A2-LIVE #7</div><h4>Analytik-Snapshot für das Protokoll</h4><p>Wenn der Organisator den Analytik-Agendapunkt präsentiert, erfasst das System einen Snapshot &mdash; Schlüsselmetriken, Grafiken als Bilder oder serialisierte Daten &mdash; und hängt ihn an das Sitzungsprotokoll an. Unveränderliche historische Aufzeichnung.</p></div>
+      <div class="idea-card"><div class="idea-id">A2-POST #8</div><h4>Historisiertes Analytik-Archiv</h4><p>Jedes Partner-Meeting erstellt einen datierten Analytik-Snapshot. Über die Jahre entsteht ein durchsuchbares Archiv: "Wie sahen die Zahlen im April 2024 vs. 2025 vs. 2026 aus?"</p></div>
+    </div>
+  </div>
+
+  <!-- ═══ A3 conversation ═══ -->
+  <div class="connector">A3: Finanz-Audit-Genehmigung</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zu A3 &times; PRE</div>
+    <div class="turn-content">
+      <p>Kommen wir zum spannenden Teil. Heute zeigst du das Revisions-PDF des Wirtschaftsprüfers und holst ein mündliches OK. Vor dem Meeting:</p>
+      <ul>
+        <li><strong>Audit-PDF vorab verteilt</strong> &mdash; hochgeladen und in der Einladung verlinkt</li>
+        <li><strong>Vorab-Fragen</strong> &mdash; Partner reichen Fragen vor dem Meeting ein</li>
+        <li><strong>Dokumentenversionierung</strong> &mdash; bei Überarbeitung sehen Partner die neueste Version</li>
+      </ul>
+      <p>Erhalten die Partner das Audit-PDF vor dem Meeting, oder sehen sie es zum ersten Mal auf dem Bildschirm?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">no, none of this. we are doing all this aside our real job, so no time for preparation. we create the report for that meeting day ;-)</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Reale Einschränkungen sind Design-Inputs!</strong> Der Agent schlug Vorab-Verteilung vor, aber der Bericht wird am Tag selbst erstellt. Der Agent überspringt PRE komplett und konzentriert sich auf LIVE. Verstecke deine Einschränkungen nicht &mdash; sie formen das System hin zu dem, was tatsächlich nutzbar ist.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Ha! Das ist die reale Welt &mdash; ich liebe es. Ehrenamtlich geführte Konferenz, der Hauptjob geht vor. Der Bericht kommt druckfrisch. Keine Vorab-Durchsicht, und das ist <em>völlig in Ordnung</em>.</p>
+      <p><strong>A3 &times; LIVE:</strong> Dies ist ein <strong>Governance-Moment</strong>. Ansätze:</p>
+      <ul>
+        <li><strong>PDF-Viewer in der Agenda</strong> &mdash; Klick, eingebetteter Viewer öffnet sich</li>
+        <li><strong>Formale digitale Genehmigung</strong> &mdash; jeder Partner klickt "genehmigen", zeitgestempelte Aufzeichnung</li>
+        <li><strong>Diskussionserfassung</strong> &mdash; Fragen/Bedenken vor der Abstimmung notieren</li>
+        <li><strong>Quorum-Prüfung</strong> &mdash; "7 von 10 anwesend &mdash; ausreichend für Genehmigung"</li>
+      </ul>
+      <p>Wie formell muss das sein? Reicht ein einfacher "Genehmigen"-Button, oder braucht es mehr Struktur?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">yes, pdf viewer (upload the report first). no formal digital approval. just a button to approve or decline the report. then the meeting notes log, that all present partners approved</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Sauber und pragmatisch. Keine Bürokratie, aber trotzdem eine Aufzeichnung. Das ist der Sweet Spot.</p>
+      <div class="idea-card"><div class="idea-id">A3-LIVE #9</div><h4>Audit-Bericht Upload &amp; Viewer</h4><p>Der Organisator lädt das Revisions-PDF des Wirtschaftsprüfers zum Agendapunkt hoch, vor oder während des Meetings. Ein Klick öffnet einen eingebetteten PDF-Viewer. Dauerhaft mit dem Meeting-Datensatz verknüpft.</p></div>
+      <div class="idea-card"><div class="idea-id">A3-LIVE #10</div><h4>Einfache Genehmigen/Ablehnen-Abstimmung</h4><p>Nach der Durchsicht löst der Organisator eine Abstimmung aus. Jeder anwesende Partner: Genehmigen / Ablehnen. System zählt und protokolliert: "Finanzbericht 2025 genehmigt &mdash; 8 von 8 anwesenden Partnern genehmigt." Bei Ablehnung wird dies mit optionalem Kommentar vermerkt.</p></div>
+      <div class="idea-card"><div class="idea-id">A3-POST #11</div><h4>Audit-Abschnitt im Sitzungsprotokoll</h4><p>Das Protokoll erhält: hochgeladenes PDF als Anhang, Abstimmungsergebnis, Diskussionsnotizen. PDF dauerhaft historisiert.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══ A4 conversation ═══ -->
+  <div class="connector">A4: Budget &amp; Gebühren-Genehmigung</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zu A4</div>
+    <div class="turn-content">
+      <p>Gleiches Governance-Muster: Zahlen zeigen, Genehmigung einholen. Aber reichhaltigere Daten hier. Das gleiche Muster wie A3, aber mit:</p>
+      <ul>
+        <li><strong>Budget-Präsentationsansicht</strong> &mdash; strukturierte Ansicht von Ist-Werten vs. Budget vs. vorgeschlagener Gebühr</li>
+        <li><strong>Gleiche Genehmigen/Ablehnen-Abstimmung</strong> &mdash; wiederverwendbare Komponente</li>
+        <li><strong>Gebühren-Aufschlüsselung Transparenz</strong> &mdash; jeder Partner sieht, wie die Gebühr berechnet wird</li>
+      </ul>
+      <p>Sind die Budgetdaten etwas, das aus dem System kommen könnte, oder immer ein manuell erstelltes Dokument?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Entdeckung einer Zeitphasen-Aufteilung</div>
+    <div class="turn-content">yes, this is a spreadsheet today. i have another feature, where we add invoicing to partner management service. so for now, this is showing the spreadsheet, and then record the new partner fee, same as before. but here it might be interesting to ask the partners if they would be ready to login prior to it, and then see and approve the expected new budget, or better, we ask them to do this after the meeting and approve the new fee in the system.</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Wichtige Erkenntnis:</strong> Der Benutzer teilte dies in zwei Phasen auf &mdash; Live-Präsentation + asynchrone Genehmigung nach dem Meeting. Realistischer als eine formelle Einigung im Raum zu erzwingen. Der Agent erkannte, dass dies mit dem geplanten Rechnungsstellungs-Feature zusammenhängt.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Oh, <em>jetzt</em> finden wir vergrabene Schätze! Du hast diesen Agendapunkt gerade über zwei Zeitphasen aufgeteilt &mdash; eine <strong>Live-Präsentation</strong> und eine <strong>asynchrone Genehmigung nach dem Meeting</strong>. Das ist tatsächlich realistischer, als eine formelle Gebührenvereinbarung in einem Raum zu erzwingen. Die Leute wollen darüber nachdenken, vielleicht mit ihrer Finanzabteilung Rücksprache halten. Und es bindet sich wunderbar an das Rechnungsstellungs-Feature an.</p>
+      <div class="idea-card"><div class="idea-id">A4-LIVE #12</div><h4>Budget-Tabelle Upload &amp; Viewer</h4><p>Gleiches Muster wie das Audit-PDF &mdash; Hochladen, eingebetteter Viewer. Konsistente UX.</p></div>
+      <div class="idea-card"><div class="idea-id">A4-LIVE #13</div><h4>Live-Abstimmung zur Budget-Richtung</h4><p>Einfach Genehmigen/Ablehnen &mdash; hier geht es um "Stimmen wir der Richtung zu?" Erfasst die Stimmung im Raum. Weichere Abstimmung &mdash; richtungsweisend, nicht bindend.</p></div>
+      <div class="idea-card"><div class="idea-id">A4-POST #14</div><h4>Asynchrone Gebühren-Akzeptanz im Partner-Portal</h4><p>Nach dem Meeting setzt das System die neue Gebühr und jeder Partner erhält eine Benachrichtigung: "Bitte prüfen und bestätigen." Partner loggen sich ein, sehen die Budget-Zusammenfassung, klicken Akzeptieren/Ablehnen. Erinnerung bei Nichtantwort. Abwesende Partner können ebenfalls teilnehmen.</p></div>
+      <div class="idea-card"><div class="idea-id">A4-POST #15</div><h4>Gebühren-Akzeptanz-Tracker</h4><p>Organisator-Dashboard: akzeptiert / ausstehend / abgelehnt. Speist die Rechnungspipeline &mdash; Rechnungen können erst generiert werden, wenn die Akzeptanz erfasst ist.</p></div>
+      <p>Das ist ein grossartiges Muster &mdash; das Meeting wird zum <em>Startschuss</em> für einen asynchronen Workflow, nicht der Ort, an dem alles sofort entschieden werden muss.</p>
+    </div>
+  </div>
+
+  <!-- ═══ A5-A6 ═══ -->
+  <div class="connector">A5: Themen-Abstimmung &amp; A6: Offene Diskussion</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zu A5</div>
+    <div class="turn-content">
+      <p>Dieser Punkt ist bereits der aktivste, den du hast. Die Frage ist also: <strong>Was fehlt?</strong></p>
+      <ul>
+        <li><strong>Themen-Einreichungsfrist</strong> &mdash; Deadline 1 Woche vorher</li>
+        <li><strong>Themen-Clustering</strong> &mdash; Vorschlag, ähnliche Themen zusammenzulegen</li>
+        <li><strong>Themen-Champion</strong> &mdash; benannter Vorschlagender sichtbar</li>
+        <li><strong>Blob-Game-Ergebnisse persistent gespeichert</strong> &mdash; Ergebnis im Protokoll festgehalten</li>
+      </ul>
+      <p>Was funktioniert gut, und wo hapert es?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">i think, all is here. just a link in the meeting invite, to the topic selection page for the partners</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #16-#17, fragt zu A6</div>
+    <div class="turn-content">
+      <p>Gut &mdash; wenn es nicht kaputt ist, einfach darauf verlinken!</p>
+      <div class="idea-card"><div class="idea-id">A5-PRE #16</div><h4>Themen-Abstimmungs-Direktlink in der Meeting-Einladung</h4><p>Gleiches Muster wie A2. Keine neue Entwicklung nötig. Klügerer Einladungsinhalt.</p></div>
+      <div class="idea-card"><div class="idea-id">A5-POST #17</div><h4>Themendiskussions-Ergebnisse im Protokoll</h4><p>Das Protokoll erfasst, welche Themen diskutiert wurden, Blob-Game-Ergebnisse, Entscheidungen und Aktionspunkte pro Thema.</p></div>
+      <p>Nun die letzte Zeile: <strong>A6 Aktuelle Architektur-Themen</strong>. Ist das absichtlich unstrukturiert, oder würdest du Struktur wünschen?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">lets leave this as an open item (or we will just discuss on the topics they submitted. might enhance that later)</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent erfasst #18, deckt verbleibende Spalten ab</div>
+    <div class="turn-content">
+      <p>Klug &mdash; offen lassen, bei Bedarf später erweitern.</p>
+      <div class="idea-card"><div class="idea-id">A6 #18</div><h4>Offene Diskussion &mdash; Spätere Erweiterung</h4><p>Frei gestaltbar. Organisator fügt Freitextnotizen zum Protokoll hinzu. Nicht alles braucht ein Feature.</p></div>
+      <p>Nun die ARTIFACT- und NOTIFICATION-Spalten durchgehen:</p>
+      <table>
+        <tr><th>Agendapunkt</th><th>Artefakt</th></tr>
+        <tr><td>A1 Begrüssung</td><td>Anwesenheitsliste (automatisch im Protokoll)</td></tr>
+        <tr><td>A2 Analytik</td><td>Snapshot von Grafiken + Metriken (eingefroren)</td></tr>
+        <tr><td>A3 Audit</td><td>Hochgeladenes PDF + Abstimmungsergebnis</td></tr>
+        <tr><td>A4 Budget/Gebühr</td><td>Hochgeladene Tabelle + Live-Abstimmung + async Akzeptanz</td></tr>
+        <tr><td>A5 Themen</td><td>Blob-Game-Ergebnisse + Diskussionsnotizen</td></tr>
+        <tr><td>A6 Offen</td><td>Freitext-Notizen</td></tr>
+        <tr><td><strong>Übergreifend</strong></td><td><strong>Vollständiges Sitzungsprotokoll (PDF-Export)</strong></td></tr>
+      </table>
+      <table>
+        <tr><th>Zeitpunkt</th><th>Benachrichtigung</th></tr>
+        <tr><td>Meeting erstellt</td><td>ICS-Einladung mit Direktlinks zu Analytik + Themen-Abstimmung</td></tr>
+        <tr><td>RSVP-Frist</td><td>Erinnerung an Nicht-Antwortende</td></tr>
+        <tr><td>Nach dem Meeting</td><td>Protokoll veröffentlicht, Benachrichtigung an alle</td></tr>
+        <tr><td>Nach dem Meeting (A4)</td><td>Gebühren-Akzeptanz-Anfrage an jeden Partner</td></tr>
+        <tr><td>Gebühr ausstehend</td><td>Erinnerung an Nicht-Antwortende</td></tr>
+      </table>
+      <p><strong>18 Ideen aus der Morphologischen Analyse.</strong> Wichtige strukturelle Entdeckungen: Sitzungsprotokoll als Rückgrat, wiederverwendbare Abstimmungskomponente, wiederverwendbarer Dokument-Viewer, intelligente ICS-Einladung.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ ROLE PLAYING ══════════════ -->
+<section id="roleplaying">
+  <div class="section-header">
+    <div class="phase-badge phase-1">T2</div>
+    <div class="section-header-text"><h2>Technik 2: Rollenspiel (Role Playing)</h2><p>4 Stakeholder-Perspektiven: Neuer Partner, Abwesender Partner, Organisator, Revisor</p></div>
+  </div>
+
+  <div class="connector">Perspektive: Der neue Partner</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent stellt die Perspektive vor</div>
+    <div class="turn-content">
+      <p>Lass uns mit verschiedenen Hüten durch diese aktive Agenda gehen. Ich will sehen, was wir <em>verpasst</em> haben, wenn wir nur vom Organisator-Stuhl aus denken.</p>
+      <p><strong>Erste Perspektive: Der neue Partner.</strong> Stell dir vor, es ist dein allererstes Partner-Meeting. Du bist gerade beigetreten. Du erhältst die ICS-Einladung. Du loggst dich im Portal ein.</p>
+      <ul>
+        <li>Was ist verwirrend?</li>
+        <li>Was wünschst du dir, dass das System dir sagt?</li>
+        <li>Wenn die Wer-ist-Wer-Ansicht erscheint &mdash; du siehst alle, aber niemand kennt dich noch</li>
+      </ul>
+      <p>Was braucht ein Erstzeit-Partner deiner Meinung nach, Nissim? Gibt es Reibungspunkte beim Onboarding neuer Partner?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">as a first time partner, when logging in, a tour on the platform and the partner functionality and what will happen during the meeting and what the current fees are, would be great. also show him the analytics, the organizers, the other partners. so he is already up to speed in the meeting start.</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Das ist eine <em>brillante</em> Entdeckung &mdash; du hast gerade die "Tag Null"-Erfahrung gefunden, an die niemand denkt, bis er sie selbst erlebt! Ein neuer Partner kommt heute ohne Vorwissen herein und holt im Grunde in Echtzeit auf.</p>
+      <div class="idea-card"><div class="idea-id">ROLE-NEW #19</div><h4>Onboarding-Tour für neue Partner</h4><p>Wenn ein Benutzer mit der Rolle PARTNER sich zum ersten Mal einloggt, bietet das System eine geführte Tour an: "Willkommen bei BATbern! So funktioniert die Partner-Plattform." Schritt-für-Schritt-Durchgang von Analytik, Themen-Abstimmung, Partner-Verzeichnis, Meeting-Agenda.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-NEW #20</div><h4>Kontextpaket für neue Partner</h4><p>Über die UI-Tour hinaus zeigt das System wichtigen Kontext: aktuelle Jahresgebühr, Analytik-Zusammenfassung des letzten Jahres, Liste der Organisatoren mit Fotos, andere Partnerfirmen und Delegierte. Automatisch zusammengestelltes "Partner-Briefing-Paket."</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-NEW #21</div><h4>"Neuer Partner"-Badge in Wer-ist-Wer</h4><p>Neue Partner (erstes Jahr) erhalten ein dezentes "Neu"-Badge. Signalisiert allen, einladend zu sein. Verschwindet nach dem ersten Meeting.</p></div>
+    </div>
+  </div>
+
+  <div class="connector">Perspektive: Der abwesende Partner</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent stellt die Perspektive vor</div>
+    <div class="turn-content">
+      <p><strong>Zweite Perspektive: Der abwesende Partner.</strong> Hat mit "Nein" geantwortet oder kann nicht kommen. Heute verpasst er alles. Mit unserem neuen System:</p>
+      <ul>
+        <li><strong>Zugang zum Sitzungsprotokoll nach dem Meeting</strong> &mdash; vollständiges Protokoll mit Anhängen und Abstimmungen</li>
+        <li><strong>Asynchroner Nachhol-Flow</strong> &mdash; System zeigt, was verpasst wurde, Punkt für Punkt</li>
+        <li><strong>Asynchrone Abstimmung für abwesende Partner</strong> &mdash; Genehmigen/Ablehnen innerhalb eines Zeitfensters</li>
+      </ul>
+      <p>Sollten abwesende Partner nachträglich abstimmen können, oder gilt die Regel "du musstest dabei sein"?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">yes, he would need meeting minutes access and vote on the fee A4. A3 is already approved. he could send in a standin, so we should be able to record that, even if he has no batbern partner access</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Das Rollenspiel fand einen Governance-Randfall:</strong> Stellvertreter-Delegation für jemanden ohne Systemkonto. Das würde beim reinen Feature-Brainstorming <em>nie</em> auftauchen. Indem man den abwesenden Partner <em>ist</em>, dachte der Benutzer natürlich darüber nach, was diese Person braucht.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Oh, der Stellvertreter ist ein grossartiges Muster aus der realen Welt! Jemand erscheint und vertritt Partner X, aber er ist nicht im System. Der Organisator muss festhalten "Firma Y wurde vertreten durch [Name], delegiert von [Partnername]."</p>
+      <div class="idea-card"><div class="idea-id">ROLE-ABSENT #22</div><h4>Protokollzugang für abwesende Partner nach dem Meeting</h4><p>Alle Partner erhalten eine Benachrichtigung mit Link zum veröffentlichten Protokoll. Abwesende Partner können alles in ihrem eigenen Tempo durchgehen.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ABSENT #23</div><h4>Asynchrone Gebühren-Abstimmung für abwesende Partner</h4><p>Abwesende Partner erhalten trotzdem die A4-Gebühren-Akzeptanz-Anfrage. Gleicher Workflow, ohne im Raum zu sein. 100% Abdeckung garantiert.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ABSENT #24</div><h4>Stellvertreter-Delegationsprotokoll</h4><p>Der Organisator erfasst: "Firma Y vertreten durch [Freitext-Name], delegiert von [Partnername]." Kein System-Login nötig. Wer-ist-Wer zeigt "Vertreten durch [Name]"-Badge statt "Abwesend."</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ABSENT #25</div><h4>Stellvertreter-Abstimmungszuordnung</h4><p>Der Organisator gibt die Stimme im Namen dieser Partnerfirma ab. Das Protokoll vermerkt: "Firma Y &mdash; genehmigt (vertreten durch [Stellvertreter], delegiert von [Partner])." Klare Zuordnungskette.</p></div>
+    </div>
+  </div>
+
+  <div class="connector">Perspektive: Der Organisator</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent stellt die Perspektive vor</div>
+    <div class="turn-content">
+      <p><strong>Dritte Perspektive: Der Organisator (du!).</strong> Was braucht der Organisator?</p>
+      <ul>
+        <li><strong>Agenda-Controller</strong> &mdash; das Meeting steuern, durch Punkte klicken. Jede "Folie" ist interaktiv</li>
+        <li><strong>Meeting-Vorbereitungs-Checkliste</strong> &mdash; "Audit-PDF hochgeladen? Budget-Tabelle hochgeladen? RSVP-Anzahl?"</li>
+        <li><strong>Schnelle Notizerfassung</strong> &mdash; jederzeit Freitext zum aktuellen Agendapunkt hinzufügen</li>
+      </ul>
+      <p>Was ist der nervigste Teil beim <em>Leiten</em> des Partner-Meetings heute?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Zentrale Design-Anforderung</div>
+    <div class="turn-content">yes, that are all great important ideas. we should also be able to select, which active agenda items are relevant for that meeting, and maybe add additional passive agenda points manually to be discussed or presented</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Fundamentale Design-Erkenntnis:</strong> Die Agenda kann nicht fest codiert sein &mdash; manche Meetings überspringen das Audit, manche brauchen zusätzliche Punkte. <strong>Konfigurierbare Agenda mit aktiven + passiven Punkten</strong> wurde zur Grundlage des gesamten Systems.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p><em>Ja!</em> Das ist eine fundamentale Design-Erkenntnis &mdash; die Agenda ist nicht jedes Jahr gleich. Das System muss ein <strong>konfigurierbarer Agenda-Builder</strong> sein, keine fest codierte Abfolge.</p>
+      <div class="idea-card"><div class="idea-id">ROLE-ORG #26</div><h4>Agenda-Builder &mdash; Aktive Punkte auswählen</h4><p>Beim Erstellen eines Partner-Meetings sieht der Organisator alle verfügbaren aktiven Punkttypen und schaltet ein, welche relevant sind. Per Drag-and-Drop neu ordnen. Nicht ausgewählte Punkte erscheinen nicht.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ORG #27</div><h4>Benutzerdefinierte passive Agendapunkte</h4><p>Der Organisator fügt Freitext-Punkte hinzu &mdash; nur Titel und optionale Beschreibung. Erscheinen als "passive" Punkte ohne Systeminteraktion, nur als Diskussionsplatzhalter.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ORG #28</div><h4>Meeting-Vorbereitungs-Checkliste</h4><p>Basierend auf aktivierten Punkten generiert das System: "Audit-PDF hochgeladen? Budget-Tabelle hochgeladen? RSVP-Anzahl: 8/12. Themenabstimmung schliesst in 2 Tagen."</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ORG #29</div><h4>Agenda-Controller / Präsentationsmodus</h4><p>Der Organisator hat eine Controller-Ansicht: Agenda-Seitenleiste, aktueller Punkt hervorgehoben. Klick auf Weiter, Hauptansicht aktualisiert sich. Jeder Punkt zeigt seine Interaktion (Viewer, Abstimmung, Galerie). Schnellnotiz-Button immer sichtbar.</p></div>
+      <div class="idea-card"><div class="idea-id">ROLE-ORG #30</div><h4>Notizen pro Agendapunkt</h4><p>Bei jedem Punkt (aktiv oder passiv) tippt der Organisator Notizen, die an diesen Punkt im Protokoll angehängt werden. Immer kontextualisiert unter der richtigen Überschrift.</p></div>
+    </div>
+  </div>
+
+  <div class="connector">Perspektive: Der Revisor</div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zum Revisor</div>
+    <div class="turn-content"><p>Ist der Revisor ein Systembenutzer oder rein extern? Nimmt der Revisor am Meeting teil?</p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">let's keep it simple, so the auditor email can be set on the admin page, then he also gets the partner meeting invite, if his agenda point is on the agenda. he can then send the pdf to an organizer who uploads it</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Perfekt &mdash; minimaler Fussabdruck. Kein Konto, kein Login, nur eine E-Mail-Adresse.</p>
+      <div class="idea-card"><div class="idea-id">ROLE-AUDITOR #31</div><h4>Revisor-E-Mail-Konfiguration</h4><p>Die Admin-Seite hat ein Feld für die Revisor-E-Mail. Wenn das Partner-Meeting den Audit-Genehmigungs-Punkt enthält, erhält der Revisor automatisch die ICS-Einladung. Wenn der Audit-Punkt nicht auf der Agenda steht, keine Einladung. PDF via Organisator-Upload.</p></div>
+      <p><strong>13 Ideen aus dem Rollenspiel (#19-#31).</strong> Wichtige Entdeckungen: Neuer-Partner-Onboarding, Stellvertreter-Delegation, konfigurierbarer Agenda-Builder, Präsentationsmodus.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CROSS-POLLINATION ══════════════ -->
+<section id="crosspollination">
+  <div class="section-header">
+    <div class="phase-badge phase-1">T3</div>
+    <div class="section-header-text"><h2>Technik 3: Cross-Pollination (Kreuzbestäubung)</h2><p>Muster aus anderen Domänen entlehnen &mdash; inklusive einer vollständigen Ablehnung</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent schlägt Corporate-Governance-Muster vor</div>
+    <div class="turn-content">
+      <p>Zeit, <em>ausserhalb</em> von BATbern zu schauen. Andere Domänen lösen "interaktive Governance-Meetings" seit Jahren:</p>
+      <p><strong>Aktionärsversammlungen (Fintech/Corporate Governance):</strong></p>
+      <ul>
+        <li><strong>Abstimmung über Beschlüsse mit Quorum-Tracking</strong> &mdash; Live-Abstimmungszähler auf dem Bildschirm, während Stimmen eingehen</li>
+        <li><strong>Stellvertretende Abstimmung</strong> &mdash; formalisiertes Vollmachtsformular im Voraus eingereicht</li>
+      </ul>
+      <p><strong>Verwaltungsrats-Meeting-Plattformen (BoardEffect, Diligent):</strong></p>
+      <ul>
+        <li><strong>Board Book</strong> &mdash; kuratiertes Paket aller Dokumente, als ein Bündel verteilt</li>
+        <li><strong>Consent Agenda</strong> &mdash; Routinepunkte gruppiert und in einer Abstimmung genehmigt</li>
+      </ul>
+      <p><strong>Hausverwaltungs-Plattformen:</strong></p>
+      <ul>
+        <li><strong>Aktionspunkte-Tracker mit Verantwortlichen</strong> &mdash; jedes Meeting produziert zugewiesene Aktionspunkte mit Fristen, die ins nächste Meeting übertragen werden</li>
+      </ul>
+      <p>Was springt dir ins Auge?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer &mdash; Lehnt gesamten Vorschlag ab</div>
+    <div class="turn-content">none of these.</div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Trainingshinweis</div>
+    <div class="turn-content"><p><strong>Es ist völlig in Ordnung, einen ganzen Vorschlag abzulehnen!</strong> Corporate Governance war zu formell für ein von der Community geführtes Architektur-Meetup. Der Agent schwenkt sofort auf leichtere Domänen um. Fühl dich nicht verpflichtet, Ideen zu akzeptieren, die nicht passen.</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent schwenkt auf leichtere Domänen um</div>
+    <div class="turn-content">
+      <p>Fair! Die waren zu geschäftlich/formell für das, was BATbern ist. Lass mich komplett andere Domänen versuchen:</p>
+      <p><strong>Konferenz-/Meetup-Plattformen (Meetup, Sessionize, Eventbrite):</strong></p>
+      <ul>
+        <li><strong>Feedback-Puls nach dem Meeting</strong> &mdash; schnelle 3-Fragen-Umfrage nach dem Meeting</li>
+        <li><strong>Meeting-Aufnahme-Link</strong> &mdash; falls aufgezeichnet, Link dem Protokoll beigefügt</li>
+      </ul>
+      <p><strong>Kollaborative Workshop-Tools (Miro, Mentimeter):</strong></p>
+      <ul>
+        <li><strong>Live-Wortwolke</strong> &mdash; Partner tippen aktuelle Themen auf dem Handy, Wortwolke baut sich in Echtzeit auf</li>
+      </ul>
+      <p><strong>Retrospektive-Tools (EasyRetro, TeamRetro):</strong></p>
+      <ul>
+        <li><strong>Aktionspunkte mit Übertragung</strong> &mdash; Entscheidungen und Aktionen tauchen automatisch auf der Agenda des nächsten Meetings auf</li>
+      </ul>
+      <p>Passen diese besser zur BATbern-Atmosphäre?</p>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">yes, feedback pulse is great. also send out the meeting minutes after the meeting manually by the organizer to all invited. yes, action items should always be there. so the organizer can add notes on each presented item, but also add action items with an owner (one of the organizers or partners)</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent-Antwort</div>
+    <div class="turn-content">
+      <p>Jetzt kochen wir! Diese beiden Ergänzungen vervollständigen den Meeting-Lebenszyklus &mdash; Aktionspunkte geben dem Meeting <em>Biss</em>, und der Feedback-Puls schliesst den Kreis.</p>
+      <div class="idea-card"><div class="idea-id">CROSS-POLL #32</div><h4>Feedback-Puls nach dem Meeting</h4><p>Nachdem der Organisator das Protokoll veröffentlicht, erhält jeder Partner eine kurze Umfrage (3-4 Fragen): "War das Meeting produktiv? (1-5) / Themen, die wir hätten besprechen sollen? / Vorschläge fürs nächste Meeting?" Ergebnisse für Organisatoren sichtbar, über die Zeit aggregiert, um Trends zu erkennen.</p><p><em>Neuheit:</em> Das Meeting verbessert sich selbst. Über die Jahre: "Zufriedenheit stieg von 3.2 auf 4.5 seit Einführung der aktiven Agenden."</p></div>
+      <div class="idea-card"><div class="idea-id">CROSS-POLL #33</div><h4>Manuelle Protokoll-Veröffentlichung &amp; Verteilung</h4><p>Nach dem Meeting überprüft der Organisator das automatisch zusammengestellte Protokoll, bearbeitet es bei Bedarf, klickt "Veröffentlichen &amp; Senden." Alle eingeladenen Teilnehmer (Partner, Revisor, Stellvertreter falls E-Mail vorhanden) erhalten E-Mail mit Protokoll-PDF oder Portal-Link.</p><p><em>Neuheit:</em> Der Organisator behält die Kontrolle &mdash; die Schwerstarbeit erledigt das System.</p></div>
+      <div class="idea-card"><div class="idea-id">CROSS-POLL #34</div><h4>Aktionspunkte mit Verantwortlichenzuweisung</h4><p>Bei jedem Agendapunkt fügt der Organisator Aktionspunkte hinzu: Titel, Beschreibung, zugewiesener Verantwortlicher (Dropdown aus Organisatoren + Partner), optionale Frist. Eigenständiger Abschnitt im Protokoll.</p><p><em>Neuheit:</em> Entscheidungen verdampfen nicht. Jede Aktion hat einen Namen daneben.</p></div>
+      <div class="idea-card"><div class="idea-id">CROSS-POLL #35</div><h4>Aktionspunkte-Übertragung</h4><p>Beim Erstellen der Agenda des nächsten Partner-Meetings zeigt das System offene Aktionspunkte aus vorherigen Meetings als Abschnitt "Offene Aktionen überprüfen." Jeder wird überprüft &mdash; als erledigt markieren, aktualisieren oder übertragen.</p><p><em>Neuheit:</em> Nichts fällt zwischen den Meetings durch die Ritzen. Das System erinnert sich an das, was Menschen vergessen.</p></div>
+      <p><strong>4 Ideen aus der Cross-Pollination (#32-#35).</strong> Diese vervollständigen den Lebenszyklus nach dem Meeting.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ ORGANIZATION ══════════════ -->
+<section id="organization">
+  <div class="section-header">
+    <div class="phase-badge phase-1">4</div>
+    <div class="section-header-text"><h2>Schritt 4: Organisation &amp; Priorisierung</h2><p>35 Ideen &rarr; 6 Themen &rarr; 3 Prioritätsstufen &rarr; 4-Schichten-Bausequenz</p></div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent organisiert in Themen</div>
+    <div class="turn-content">
+      <p><strong>Hervorragende kreative Arbeit, Nissim!</strong> 35 Ideen über 3 Techniken hinweg. Eine klare Systemarchitektur ist organisch entstanden.</p>
+      <table>
+        <tr><th>Thema</th><th>Ideen</th><th>Kernkonzept</th></tr>
+        <tr><td><strong>1. Konfigurierbarer Agenda-Motor</strong></td><td>#26-#30</td><td>Agenda-Builder, Präsentationsmodus, Notizen</td></tr>
+        <tr><td><strong>2. Sitzungsprotokoll (Lebendes Dokument)</strong></td><td>#4,5,7,8,11,33</td><td>Automatisch zusammengestellt, historisiert, veröffentlichbar</td></tr>
+        <tr><td><strong>3. Partner-Interaktionskomponenten</strong></td><td>#1-3,9,10,12,13</td><td>RSVP, Galerie, Abstimmung, Dokument-Viewer</td></tr>
+        <tr><td><strong>4. Workflows nach dem Meeting</strong></td><td>#14,15,23,32,34,35</td><td>Async Gebühren-Akzeptanz, Feedback, Aktionen</td></tr>
+        <tr><td><strong>5. Neuer Partner &amp; Stellvertreter</strong></td><td>#19-21,24,25</td><td>Onboarding-Tour, Delegation</td></tr>
+        <tr><td><strong>6. Intelligente Meeting-Einladung</strong></td><td>#2,6,16,31</td><td>Direktlinks, bedingte Revisor-Einladung</td></tr>
+      </table>
+      <p><strong>Was fällt dir auf, Nissim?</strong></p>
+      <ol>
+        <li><strong>Top 3 Must-Haves</strong> &mdash; ohne was kann nicht gestartet werden?</li>
+        <li><strong>Einfachste Quick Wins</strong> &mdash; was ist fast kostenlos zu implementieren?</li>
+        <li><strong>Was kann warten</strong> &mdash; schön, aber nicht dringend?</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer priorisiert</div>
+    <div class="turn-content">
+      <p><strong>1 (must-have):</strong> theme 1, 2, 3</p>
+      <p><strong>2 (quick wins):</strong> 6, the deep links and the 3, voting, upload/download</p>
+      <p><strong>3 (can wait):</strong> 5 new partners</p>
+    </div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent fragt zu Thema 4</div>
+    <div class="turn-content"><p>Glasklar. Und Thema 4 (Workflows nach dem Meeting &mdash; Aktionspunkte, Feedback-Puls, asynchrone Gebühren-Akzeptanz)? Ich vermute, das liegt zwischen Must-Have und Quick-Win &mdash; Aktionspunkte fühlen sich essentiell für den Protokoll-Motor an, und async Gebühr hängt mit der Rechnungsstellung zusammen. Wo würdest du Thema 4 einordnen?</p></div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content">yes, add it to must have</div>
+  </div>
+
+  <div class="turn turn-agent">
+    <div class="turn-label label-agent"><span class="dot"></span>Agent erstellt finale Bausequenz</div>
+    <div class="turn-content">
+      <p><strong>P1 &mdash; Must-Have:</strong> Themen 1, 2, 3, 4 (28 Ideen)</p>
+      <p><strong>P2 &mdash; Quick Wins:</strong> Thema 6 + wiederverwendbare Komponenten (4 Ideen)</p>
+      <p><strong>P3 &mdash; Nice-to-Have:</strong> Thema 5 (5 Ideen)</p>
+      <p><strong>Vorgeschlagene Baureihenfolge:</strong></p>
+<pre>SCHICHT 1 &mdash; Grundlage
+&#9500;&#9472;&#9472; #26  Agenda-Builder (Kern-Entität + UI)
+&#9500;&#9472;&#9472; #9   Dokument-Upload &amp; Viewer-Komponente
+&#9500;&#9472;&#9472; #10  Genehmigen/Ablehnen-Abstimmungskomponente
+&#9492;&#9472;&#9472; #1   RSVP-Dashboard
+
+SCHICHT 2 &mdash; Meeting-Ablauf
+&#9500;&#9472;&#9472; #3   Wer-ist-Wer-Galerie
+&#9500;&#9472;&#9472; #27  Benutzerdefinierte passive Agendapunkte
+&#9500;&#9472;&#9472; #29  Präsentations-/Controller-Modus
+&#9500;&#9472;&#9472; #30  Notizen pro Agendapunkt
+&#9492;&#9472;&#9472; #4   Sitzungsprotokoll-Entität
+
+SCHICHT 3 &mdash; Agendapunkt-Interaktionen
+&#9500;&#9472;&#9472; #5   Anwesenheit &rarr; Protokoll
+&#9500;&#9472;&#9472; #7   Analytik-Snapshot &rarr; Protokoll
+&#9500;&#9472;&#9472; #11  Audit-PDF + Abstimmung &rarr; Protokoll
+&#9500;&#9472;&#9472; #12  Budget-Dokument + Abstimmung &rarr; Protokoll
+&#9500;&#9472;&#9472; #28  Meeting-Vorbereitungs-Checkliste
+&#9492;&#9472;&#9472; #34  Aktionspunkte mit Verantwortlichen
+
+SCHICHT 4 &mdash; Nach dem Meeting &amp; Lebenszyklus
+&#9500;&#9472;&#9472; #33  Protokoll veröffentlichen &amp; verteilen
+&#9500;&#9472;&#9472; #35  Aktionspunkte-Übertragung
+&#9500;&#9472;&#9472; #32  Feedback-Puls
+&#9500;&#9472;&#9472; #14  Asynchrone Gebühren-Akzeptanz
+&#9500;&#9472;&#9472; #15  Gebühren-Akzeptanz-Tracker
+&#9492;&#9472;&#9472; #23  Gebühren-Abstimmung abwesender Partner</pre>
+      <p><strong>Wichtige aufgedeckte Architekturentscheidungen:</strong></p>
+      <ol>
+        <li><strong>PartnerMeeting-Entität</strong> &mdash; Agenda-Definition, verknüpfte Dokumente, Abstimmungsergebnisse, Protokoll</li>
+        <li><strong>Wiederverwendbare Abstimmungskomponente</strong> &mdash; Genehmigen/Ablehnen für Audit, Budget, zukünftige Nutzung</li>
+        <li><strong>Wiederverwendbarer Dokument-Viewer</strong> &mdash; Upload + eingebettete Ansicht für PDF/Tabelle</li>
+        <li><strong>Sitzungsprotokoll</strong> &mdash; progressiv zusammengestellt, editierbar, manuell veröffentlicht</li>
+        <li><strong>Aktionspunkt-Entität</strong> &mdash; Titel, Verantwortlicher, Frist, Status, Übertragungslogik</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="turn turn-user">
+    <div class="turn-label label-user"><span class="dot"></span>Benutzer</div>
+    <div class="turn-content"><code>c</code> &mdash; Complete and save session</div>
+  </div>
+</section>
+
+<!-- ══════════════ ARTIFACT ══════════════ -->
+<section id="artifact">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">&#x1F4BE;</div>
+    <div class="section-header-text"><h2>Ausgabe-Artefakt</h2><p>Das vollständige Brainstorming-Session-Dokument</p></div>
+  </div>
+
+  <div class="turn turn-artifact">
+    <div class="turn-label label-artifact"><span class="dot"></span>Generiertes Dokument</div>
+    <div class="turn-content">
+      <p><strong>Datei:</strong> <code>_bmad-output/brainstorming/brainstorming-session-2026-04-04.md</code></p>
+      <p><strong>Inhalt:</strong></p>
+      <ul>
+        <li>YAML-Frontmatter mit Session-Status-Tracking</li>
+        <li>Session-Überblick: Thema, Ziele, bestehende Fähigkeiten</li>
+        <li>Technik-Auswahl-Begründung (3 KI-empfohlene)</li>
+        <li>Alle 35 Ideen im strukturierten Format (ID, Titel, Konzept, Neuheit)</li>
+        <li>6 thematische Cluster mit Muster-Erkenntnissen</li>
+        <li>3-stufige Priorisierung (P1 Must-Have / P2 Quick-Win / P3 Nice-to-Have)</li>
+        <li>4-Schichten-Bausequenz mit Abhängigkeits-Mapping</li>
+        <li>5 wichtige Architekturentscheidungen</li>
+        <li>Session-Narrativ und Durchbruch-Momente</li>
+      </ul>
+      <p>Dieses Artefakt fliesst direkt in die Phasen UX-Design, Architektur und PRD ein.</p>
+    </div>
+  </div>
+
+  <div class="turn turn-artifact">
+    <div class="turn-label label-artifact"><span class="dot"></span>Entstandene Systemarchitektur</div>
+    <div class="turn-content">
+<pre>VOR DEM MEETING         WÄHREND DES MEETINGS     NACH DEM MEETING
+&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;       &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;       &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+Intelligente ICS-       Agenda-Controller        Protokoll
+  Einladung mit           Präsentationsmodus       veröffentlichen
+  Direktlinks           Interaktionen pro Punkt:  Feedback-Puls
+RSVP-Tracking             - Wer-ist-Wer-Galerie  Async Gebühren-
+Meeting-Vorbereitung       - PDF/Dok-Viewer         Abstimmung
+  Checkliste               - Genehmigen/Ablehnen  Aktionspunkte-
+Neuer-Partner-Tour         - Themen-Abstimmung      Übertragung zum
+Revisor-Auto-Einladung     - Notizen &amp; Aktionen    nächsten Meeting
+                        Stellvertreter-Erfassung
+
+         &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+         &#9474;   SITZUNGSPROTOKOLL (lebendes Dok.) &#9474;
+         &#9474;   Baut sich progressiv auf, während &#9474;
+         &#9474;   jeder Agendapunkt präsentiert wird &#9474;
+         &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FUTURE PHASES ══════════════ -->
+<section id="next-ux">
+  <div class="future-phase">
+    <div class="icon">&#x1F3A8;</div>
+    <h3>Als Nächstes: Phase 2 &mdash; UX-Design</h3>
+    <p>Der UX-Designer-Agent transformiert 35 Ideen in Interaktionsmuster, Wireframes und Benutzerflüsse.</p>
+    <div class="tags" style="justify-content:center;margin-top:16px"><span class="tag tag-purple">UX DESIGNER</span><span class="tag tag-purple">WIREFRAMES</span><span class="tag tag-purple">BENUTZERFLÜSSE</span></div>
+  </div>
+</section>
+<section id="next-arch">
+  <div class="future-phase">
+    <div class="icon">&#x1F3D7;</div>
+    <h3>Als Nächstes: Phase 3 &mdash; Architektur</h3>
+    <p>Der Architektur-Agent entwirft Entitäten, APIs und Komponentenarchitektur.</p>
+    <div class="tags" style="justify-content:center;margin-top:16px"><span class="tag tag-red">ARCHITEKT</span><span class="tag tag-red">ENTITÄTEN</span><span class="tag tag-red">APIS</span></div>
+  </div>
+</section>
+<section id="next-prd">
+  <div class="future-phase">
+    <div class="icon">&#x1F4DD;</div>
+    <h3>Als Nächstes: PRD &mdash; Anforderungen</h3>
+    <p>Der PM-Agent synthetisiert alles in Epics, Stories und Akzeptanzkriterien.</p>
+    <div class="tags" style="justify-content:center;margin-top:16px"><span class="tag tag-yellow">PM AGENT</span><span class="tag tag-yellow">EPICS</span><span class="tag tag-yellow">STORIES</span></div>
+  </div>
+</section>
+
+<!-- ══════════════ TAKEAWAYS ══════════════ -->
+<section id="takeaways">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">&#x1F4A1;</div>
+    <div class="section-header-text"><h2>Wichtige Erkenntnisse für Business-Analysten</h2><p>Was man beim Brainstorming mit dem BMAD Analysten-Agent beachten sollte</p></div>
+  </div>
+
+  <div class="takeaway-grid">
+    <div class="takeaway"><h3>&#x1F3AF; Gib reichhaltigen Kontext</h3><p>Beschreibe detailliert, was heute existiert &mdash; Entitäten, Rollen, Seiten, Workflows. Je reichhaltiger der Input, desto zielgerichteter die Ideen.</p></div>
+    <div class="takeaway"><h3>&#x2702;&#xFE0F; Steuere und lehne frei ab</h3><p>Du bist der Domänenexperte. Sag "nichts davon" zu einem ganzen Vorschlag. Der Agent passt sich sofort an.</p></div>
+    <div class="takeaway"><h3>&#x1F50D; Achte auf übergreifende Muster</h3><p>Das Sitzungsprotokoll als lebendes Dokument entstand aus einer beiläufigen Bemerkung. Übergreifende Artefakte verstecken sich in Einzelfeature-Diskussionen.</p></div>
+    <div class="takeaway"><h3>&#x1F3AD; Rollenspiel findet Randfälle</h3><p>Stellvertreter-Delegation, Abstimmung abwesender Partner &mdash; kamen davon, diese Stakeholder zu <em>sein</em>, nicht vom Feature-Brainstorming.</p></div>
+    <div class="takeaway"><h3>&#x1F6A7; Einschränkungen sind Design-Inputs</h3><p>"Wir erstellen den Bericht am Meeting-Tag" eliminierte 3 Features &mdash; und formte das System hin zu dem, was tatsächlich nutzbar ist.</p></div>
+    <div class="takeaway"><h3>&#x1F4CA; Vertraue der KI-Technikauswahl</h3><p>Morphologische Analyse (Raster), Rollenspiel (Perspektiven), Cross-Pollination (externe Muster) &mdash; jede baute auf der vorherigen auf.</p></div>
+    <div class="takeaway"><h3>&#x1F4C4; Das Artefakt baut sich selbst</h3><p>Jede Idee im strukturierten Format erfasst. Organisation war nur Gruppierung des bereits Vorhandenen.</p></div>
+    <div class="takeaway"><h3>&#x1F517; Es speist die nächste Phase</h3><p>Der UX-Designer liest Features, der Architekt liest Entitäten, der PM liest Prioritäten. Jede BMAD-Phase baut auf der vorherigen auf.</p></div>
+  </div>
+
+  <hr class="divider">
+  <div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px 0">
+    <p><strong>BMAD Framework</strong> &mdash; Business-Analyst Training Session 2 (Detaillierte Version)</p>
+    <p>BATbern-Projekt &mdash; Aktive Partner-Meeting-Agenda</p>
+    <p>Session-Datum: 2026-04-04 &mdash; 35 Ideen &mdash; 3 Techniken &mdash; 6 Themen</p>
+    <p style="margin-top:12px">Siehe auch: <a href="index-de.html" style="color:var(--accent2)">Zusammenfassung</a> | <a href="detailed.html" style="color:var(--accent2)">English version</a> | Nächste Sessions: UX-Design &rarr; Architektur &rarr; PRD</p>
+  </div>
+</section>
+
+</main>
+</body>
+</html>

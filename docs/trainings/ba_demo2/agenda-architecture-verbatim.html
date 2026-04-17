@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training &mdash; Architecture Design Session (Active Partner Meeting Agenda)</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3350;
+    --accent: #E23615; --accent2: #28AF8F; --accent3: #AF2322; --accent4: #FFCA4C;
+    --text: #e8eaf6; --text-muted: #8890b5;
+    --user-bg: #1e2a45; --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a; --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45; --artifact-border: #E23615;
+    --note-bg: #2e2a1a; --note-border: #FFCA4C;
+    --radius: 12px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,17,23,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 100; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 20px; transition: all .2s; white-space: nowrap; }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  .hero { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 60px; }
+  .hero .badge { display: inline-block; background: var(--accent); color: white; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 20px; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .phase-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-weight: 800; font-size: 1rem; flex-shrink: 0; }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Overview cards */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 24px; }
+  .overview-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(40,175,143,.4); }
+  .overview-card.phase2 { border-color: rgba(226,54,21,.4); }
+  .overview-card.phase3 { border-color: rgba(175,35,34,.4); }
+  .overview-card.bridge { border-color: rgba(255,202,76,.4); }
+
+  .turn { margin-bottom: 20px; }
+  .turn-user { background: var(--user-bg); border: 1px solid var(--user-border); border-left: 4px solid var(--user-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-agent { background: var(--agent-bg); border: 1px solid var(--agent-border); border-left: 4px solid var(--agent-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-artifact { background: var(--artifact-bg); border: 1px solid var(--artifact-border); border-left: 4px solid var(--artifact-border); border-radius: var(--radius); padding: 16px 20px; }
+  .turn-note { background: var(--note-bg); border: 1px solid var(--note-border); border-left: 4px solid var(--note-border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.88rem; }
+
+  .turn-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .turn-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .label-user { color: var(--user-border); } .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); } .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); } .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); } .label-note .dot { background: var(--accent4); }
+  .ts { font-weight: 400; opacity: 0.6; }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: #b0d0c8; font-style: italic; }
+  .turn-content code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content h2, .turn-content h3, .turn-content h4 { margin: 14px 0 8px; color: white; font-weight: 700; }
+  .turn-content h2 { font-size: 1.1rem; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .turn-content h3 { font-size: 1rem; color: var(--accent4); }
+  .turn-content h4 { font-size: 0.95rem; color: var(--text); }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .turn-content pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; overflow-x: auto; font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', monospace; margin: 12px 0; white-space: pre; line-height: 1.5; }
+  .turn-content hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .connector { display: flex; align-items: center; gap: 12px; padding: 8px 20px; color: var(--text-muted); font-size: 0.82rem; margin: 4px 0 4px; }
+  .connector::before, .connector::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  @media (max-width: 640px) { .hero h1 { font-size: 1.7rem; } nav a { font-size: 11px; padding: 3px 8px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#overview">Overview</a>
+  <a href="#setup">Agent Setup</a>
+  <a href="#context">Context Loading</a>
+  <a href="#decisions">Architectural Decisions</a>
+  <a href="#patterns">Implementation Patterns</a>
+  <a href="#structure">Project Structure</a>
+  <a href="#validation">Validation</a>
+  <a href="#completion">Completion</a>
+</nav>
+
+<main>
+
+<div class="hero">
+  <div class="badge">BMAD Hands-On Training &mdash; Complete Session</div>
+  <h1>Active Partner Meeting Agenda<br><span>Architecture Design Session</span></h1>
+  <p>Complete architecture session with Winston &mdash; verbatim output plus training annotations.</p>
+  <div class="hero-meta">
+    <div><div class="label">Project</div><div class="value">BATbern</div></div>
+    <div><div class="label">Agent</div><div class="value">Winston (Architect)</div></div>
+    <div><div class="label">Session Date</div><div class="value">2026-04-05</div></div>
+    <div><div class="label">User Turns</div><div class="value">6</div></div>
+    <div><div class="label">Agent Turns</div><div class="value">26</div></div>
+  </div>
+</div>
+
+<!-- SECTION 0: OVERVIEW -->
+<section id="overview">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+    <div class="section-header-text"><h2>Session Overview</h2><p>Where this session fits in the BMAD workflow</p></div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Context</div>
+    <div class="turn-content">
+      <p>Before this session, three prior BMAD sessions produced key artifacts:</p>
+      <ol>
+        <li><strong><a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Brainstorming Session</a></strong> (Analyst Agent &mdash; Mary) &rarr; 35 ideas across 6 themes</li>
+        <li><strong><a href="agenda-ux-session.html" style="color:var(--accent2)">UX Design Specification</a></strong> (UX Designer Agent) &rarr; 5 user journeys, 12 custom components, Presenter Mode layout</li>
+        <li><strong><a href="agenda-prd-session.html" style="color:var(--accent2)">PRD Creation Session</a></strong> (PM Agent &mdash; John) &rarr; 12-section PRD with 35 functional requirements</li>
+      </ol>
+      <p>This session uses the <strong>Architect Agent (Winston)</strong> to translate the PRD into an implementation-ready architecture document. The Create Architecture (CA) workflow has 8 steps &mdash; from document loading through validation and handoff.</p>
+    </div>
+  </div>
+
+  <div class="overview-grid">
+    <div class="overview-card phase1">
+      <div class="icon">&#x1F4CA;</div>
+      <h3>Phase 1 &mdash; Context Analysis</h3>
+      <p>Load all input documents, analyze requirements, classify constraints, identify cross-cutting concerns.</p>
+    </div>
+    <div class="overview-card phase2">
+      <div class="icon">&#x1F3D7;</div>
+      <h3>Phase 2 &mdash; Design Decisions</h3>
+      <p>Entity model, minutes assembly pattern, Presenter Mode layout, auto-save API, authentication boundaries.</p>
+    </div>
+    <div class="overview-card phase3">
+      <div class="icon">&#x1F4D0;</div>
+      <h3>Phase 3 &mdash; Patterns &amp; Structure</h3>
+      <p>Implementation patterns for AI agent consistency: naming, format, communication, process, and enforcement rules.</p>
+    </div>
+    <div class="overview-card bridge">
+      <div class="icon">&#x2705;</div>
+      <h3>Phase 4 &mdash; Validation</h3>
+      <p>Coherence checks, requirements coverage, gap analysis, and readiness assessment before implementation handoff.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1: AGENT SETUP -->
+<section id="setup">
+  <div class="section-header">
+    <div class="phase-badge phase-1">1</div>
+    <div class="section-header-text"><h2>Agent Activation &amp; Session Start</h2><p>Loading Winston via <code>/bmad-mmm-agents-architect</code>, then reading the PRD to initialize the architecture workflow</p></div>
+  </div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+    <div class="turn-content">
+      <p>The <strong>Architect Agent (Winston)</strong> is a principal-level solutions architect. He "thinks in systems, not features" and focuses on decisions that will prevent AI agents from diverging during implementation. His slash command is <code>/bmad-agent-bmm-architect</code>.</p>
+    </div>
+  </div>
+
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><p>/bmad-bmm-agents-architect</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>🏗️ <strong>Winston — Architect</strong></p>
+<p>Good day, Nissim. Winston here — ready to help you think through the hard architectural decisions so your team can ship with confidence.</p>
+<hr class="divider">
+<p><strong>What can I help you with?</strong></p>
+<ol><li><strong>[MH]</strong> Redisplay Menu Help</li><li><strong>[CH]</strong> Chat with the Agent about anything</li><li><strong>[CA]</strong> Create Architecture — Guided workflow to document technical decisions to keep implementation on track</li><li><strong>[IR]</strong> Implementation Readiness — Ensure the PRD, UX, Architecture, Epics &amp; Stories are all aligned</li><li><strong>[PM]</strong> Start Party Mode</li><li><strong>[DA]</strong> Dismiss Agent</li></ol>
+<hr class="divider">
+<p>💡 You can type <code>/bmad-help</code> at any time to get advice on what to do next. For example: <code>/bmad-help where should I start with an idea I have that does XYZ</code></p>
+<p>What would you like to tackle?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><p>ls docs/trainings/ba_demo2</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Here's the contents of <code>docs/trainings/ba_demo2/</code>, Nissim. Looks like a training module with brainstorming sessions, PRD artifacts, UX specs, and course descriptions — both HTML presentations and markdown source files.</p>
+<p>Anything specific you'd like me to look at or work on architecturally with these?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><p>Show me all files</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Here's the full tree:</p>
+<p><strong><code>docs/trainings/ba_demo1/</code></strong> (6 files)</p>
+<ul><li><code>bmad-analyst-training.html</code> / <code>bmad-analyst-training-de.html</code></li><li><code>prd.md</code> / <code>prd.html</code> / <code>prd-de.html</code></li><li><code>project_partner_enhancements.md</code> / <code>.html</code> / <code>-de.html</code></li></ul>
+<p><strong><code>docs/trainings/ba_demo2/</code></strong> (24 files)</p>
+<ul><li><strong>Course info:</strong> <code>course-description-instructor-led.md</code>, <code>course-description-self-guided.md</code></li><li><strong>BMAD intro:</strong> <code>bmad-intro.html</code></li><li><strong>Brainstorming:</strong> <code>quick-brainstorm.md/.html</code>, <code>brainstorming-session-2026-04-04.md</code>, <code>brainstorming-session-de.html</code>, <code>agenda-brainstorm-session.html</code>, <code>agenda-brainstorm-detailed.html</code>, <code>agenda-brainstorm-results.html</code></li><li><strong>PRD:</strong> <code>prd.md</code>, <code>quick-prd.md/.html</code>, <code>agenda-prd-session.html</code>, <code>agenda-prd.html</code></li><li><strong>UX:</strong> <code>ux-design-specification.md</code>, <code>agenda-ux-session.html</code>, <code>agenda-ux-spec.html</code>, <code>agenda-ux-directions.html</code></li><li><strong>Overview:</strong> <code>index-de.html</code>, <code>detailed-de.html</code>, <code>master.html</code>, <code>quick-session.html</code></li></ul>
+<p>Two training modules — <code>ba_demo1</code> appears to be an earlier/simpler version, <code>ba_demo2</code> is much more comprehensive with full agenda slides across brainstorming, PRD, and UX workflows.</p>
+<p>What would you like to dig into?</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><p>CA docs/trainings/ba_demo2/prd.md</p></div>
+</div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>What Happens Behind the Scenes</div>
+    <div class="turn-content">
+      <p>The <code>CA</code> command triggers the Create Architecture workflow. Winston accepts a path to the PRD as the primary input document, then automatically scans for related files: UX specs, brainstorming output, product briefs, research, and project context.</p>
+    </div>
+  </div>
+
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now let me load step 1 of the workflow.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>No existing architecture document for this specific feature. This is a fresh workflow. Now let me discover all relevant input documents for the Active Partner Meeting Agenda.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Good. Now let me load the template so I can set up the document.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Excellent. Here's my analysis of what I've discovered, Nissim.</p>
+<hr class="divider">
+<p>🏗️ <strong>Architecture Workflow — Initialization</strong></p>
+<p><strong>Feature:</strong> Active Partner Meeting Agenda (from PRD in <code>docs/trainings/ba_demo2/prd.md</code>)</p>
+<p><strong>Documents Discovered:</strong></p>
+<table><tr><th>Type</th><th>Found</th><th>File</th></tr><tr><td><strong>PRD</strong></td><td>✅ 1</td><td><code>docs/trainings/ba_demo2/prd.md</code></td></tr><tr><td><strong>UX Design</strong></td><td>✅ 1</td><td><code>docs/trainings/ba_demo2/ux-design-specification.md</code></td></tr><tr><td><strong>Brainstorming</strong></td><td>✅ 2</td><td><code>docs/trainings/ba_demo2/brainstorming-session-2026-04-04.md</code>, <code>quick-brainstorm.md</code></td></tr><tr><td><strong>Project Context</strong></td><td>✅ 1</td><td><code>_bmad-output/project-context.md</code></td></tr><tr><td><strong>Product Brief</strong></td><td>❌ None</td><td>—</td></tr><tr><td><strong>Research</strong></td><td>❌ None</td><td>—</td></tr></table>
+<p><strong>PRD Requirement:</strong> ✅ Validated — comprehensive PRD with executive summary, 6 user journeys, 10 functional requirement groups, NFRs, design system, and phasing.</p>
+<p><strong>Plan:</strong> I'll create the architecture document at <code>docs/trainings/ba_demo2/architecture.md</code> (keeping it co-located with the other training artifacts).</p>
+<hr class="divider">
+<p>Before I proceed, two questions:</p>
+<ol><li><strong>Are these the right documents?</strong> Shall I include all 4 files listed above, or exclude any?</li><li><strong>Any additional documents</strong> you'd like me to consider (e.g., existing BATbern architecture docs from <code>docs/architecture/</code>)?</li></ol>
+<p><strong>[C]</strong> Continue to project context analysis when ready.</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><ol><li>yes. Correct documents</li><li>yes concider the documents in docs/architecture, but only use what is relevant and keep same coding guidelines and adr's</li></ol></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now let me read the UX spec and the most relevant architecture docs.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Good — I now have a thorough understanding of the existing platform architecture, ADRs, and coding guidelines. Let me now create the architecture document and report.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Excellent, Nissim. Initialization complete. Here's the summary:</p>
+<hr class="divider">
+<p>🏗️ <strong>Architecture Workspace — Initialized</strong></p>
+<p><strong>Created:</strong> <code>docs/trainings/ba_demo2/architecture.md</code></p>
+<p><strong>Documents Loaded:</strong></p>
+<table><tr><th>Type</th><th>Count</th><th>Files</th></tr><tr><td>PRD</td><td>1</td><td><code>prd.md</code> — 10 FR groups, 6 user journeys, NFRs, design system</td></tr><tr><td>UX Design</td><td>1</td><td><code>ux-design-specification.md</code> — Presenter Mode, emotional design, component specs</td></tr><tr><td>Brainstorming</td><td>2</td><td><code>brainstorming-session-2026-04-04.md</code> (35 ideas), <code>quick-brainstorm.md</code></td></tr><tr><td>Project Context</td><td>1</td><td><code>project-context.md</code> — 65 rules for AI agent consistency</td></tr></table>
+<p><strong>Existing Architecture Context Absorbed:</strong></p>
+<ul><li><strong>ADR-003</strong>: Meaningful identifiers — <code>companyName</code> not UUID in cross-service refs</li><li><strong>ADR-004</strong>: Factor user fields from domain entities — enrich via HTTP, don't duplicate</li><li><strong>ADR-006</strong>: OpenAPI contract-first — specs are source of truth, controllers implement generated interfaces</li><li><strong>Data architecture</strong>: Single PostgreSQL DB, shared <code>public</code> schema, Flyway per-service</li><li><strong>Backend pattern</strong>: Controller → Service → Repository, generated <code>*Api</code> interfaces</li><li><strong>Partner Coordination Service</strong>: Existing service handles partners, contacts, topic voting, meetings — this feature extends it</li><li><strong>Cross-service pattern</strong>: HTTP clients with JWT propagation, 15-min Caffeine cache</li></ul>
+<p>All existing coding guidelines and ADRs will be carried through every architectural decision.</p>
+<hr class="divider">
+<p><strong>[C]</strong> Continue to project context analysis — ready when you are.</p></div>
+</div>
+</section>
+
+<!-- SECTION 2: CONTEXT LOADING -->
+<section id="context">
+  <div class="section-header">
+    <div class="phase-badge phase-1">2</div>
+    <div class="section-header-text"><h2>Step 2: Project Context Analysis</h2><p>Analyzing all loaded documents to extract requirements, constraints, and concerns</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Alright Nissim, let me work through the loaded documents and reflect my architectural understanding back to you for validation.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 2: Project Context Analysis</strong></p>
+<p>I'm reviewing your project documentation for BATbern Active Partner Meeting Agenda.</p>
+<p>I found <strong>10 functional requirement groups (FR1–FR10)</strong> organized into: Meeting Management, RSVP &amp; Attendance, Presenter Mode, Document Upload &amp; Viewing, Voting, Meeting Minutes, Meeting Prep, Post-Meeting Workflows, Action Items, and Analytics Snapshot. I also found your UX specification which defines the complete user experience including emotional design and component-level interaction patterns.</p>
+<p><strong>Key architectural aspects I notice:</strong></p>
+<ol><li><strong>Meeting lifecycle engine</strong> — A new state machine (DRAFT → SCHEDULED → IN_PROGRESS → COMPLETED) layered on top of the existing Partner Coordination Service. This is the backbone entity: <code>PartnerMeeting</code> with a configurable agenda of active + passive items.</li></ol>
+<ol><li><strong>Minutes-as-byproduct pattern</strong> — The most architecturally significant requirement. Every organizer action (attendance toggle, vote cast, document upload, note entry) must silently contribute to a <code>PartnerMeetingMinutes</code> entity. This means each agenda item interaction needs a consistent "contribution" interface — write to minutes as a side effect.</li></ol>
+<ol><li><strong>Presenter Mode is a frontend-heavy feature</strong> — Three-zone fixed layout (280px sidebar + main + 180px notes), dark theme (zinc-950), keyboard shortcuts, auto-save within 2 seconds, all content pre-loaded before entering. No WebSocket needed — standard HTTP with optimistic UI. This is a rich SPA view, not a complex backend challenge.</li></ol>
+<ol><li><strong>Reusable interaction components</strong> — Four core components recur across all agenda items: VotePanel, DocumentViewer, NotePanel, PartnerGallery. Architecture must ensure these are composable and consistently feed the minutes entity.</li></ol>
+<ol><li><strong>Proxied group voting</strong> — Novel pattern: organizer casts votes on behalf of individual partners (like a parliamentary teller). Requires per-partner vote attribution with clear audit trail, including stand-in delegation chains.</li></ol>
+<ol><li><strong>Post-meeting async workflows</strong> — Fee acceptance, feedback pulse, minutes distribution, action item carry-forward. These extend the meeting beyond the room and require scheduled triggers (email reminders at 7/14 days).</li></ol>
+<ol><li><strong>Brownfield constraint</strong> — This extends the existing Partner Coordination Service (Epic 8). Must follow all existing patterns: ADR-003 meaningful IDs, ADR-004 no user field duplication, ADR-006 contract-first OpenAPI, Flyway migrations, Testcontainers integration tests.</li></ol>
+<p><strong>NFRs that will drive decisions:</strong></p>
+<table><tr><th>NFR</th><th>Architectural Impact</th></tr><tr><td>Auto-save &lt; 2s</td><td>Debounced PATCH endpoints, optimistic UI, no explicit save</td></tr><tr><td>Presenter Mode load &lt; 3s</td><td>Pre-fetch all meeting data before entering; single API call or parallel batch</td></tr><tr><td>Item transition &lt; 300ms</td><td>All data already in memory; pure frontend navigation</td></tr><tr><td>Document viewer &lt; 5s for 20MB PDF</td><td>S3 presigned URL + browser-native PDF rendering or pdf.js</td></tr><tr><td>Mobile minutes viewing</td><td>Responsive partner portal; minutes as structured data, not just PDF</td></tr><tr><td>WCAG 2.1 AAA for Presenter Mode</td><td>7:1+ contrast on dark backgrounds — zinc-950 + zinc-100 achieves 15.8:1</td></tr><tr><td>Single concurrent user per meeting</td><td>No collaborative editing complexity — simplifies locking/conflict</td></tr></table>
+<p><strong>Scale indicators:</strong></p>
+<ul><li><strong>Project complexity: Medium</strong> — Rich frontend, straightforward backend extending an existing service</li><li><strong>Primary technical domain: Full-stack web</strong> — Frontend-heavy (Presenter Mode), with backend entity management and scheduled workflows</li><li><strong>Cross-cutting concerns identified:</strong></li></ul>
+<p>  - Auto-save / persistence reliability (every organizer action must persist)</p>
+<p>  - Minutes assembly (cross-cutting across all agenda item types)</p>
+<p>  - Email notifications (ICS invites, minutes distribution, fee reminders, feedback pulse)</p>
+<p>  - Document storage (S3 presigned URLs — reuses existing pattern)</p>
+<p>  - Cross-service data enrichment (partner company logos, user profiles via HTTP — existing pattern)</p>
+<p><strong>Does this match your understanding of the project scope and requirements?</strong></p>
+<hr class="divider">
+<p>Here's what I'll add to the architecture document:</p>
+<hr class="divider">
+<pre>## Project Context Analysis
+
+### Requirements Overview
+
+**Functional Requirements:**
+10 requirement groups (FR1–FR10) covering the complete meeting lifecycle:
+- **Meeting entity management** (FR1): Configurable agenda with active + passive items, ordering, ICS invites, status lifecycle (DRAFT → SCHEDULED → IN_PROGRESS → COMPLETED)
+- **RSVP &amp; Attendance** (FR2): Pre-meeting RSVP, live presence toggling, stand-in delegation with "New" badge for first-year partners
+- **Presenter Mode** (FR3): Full-screen dark-themed projector interface with three-zone layout, linear + sidebar navigation, keyboard shortcuts, persistent auto-saving notes, auto-save indicator
+- **Document Upload &amp; Viewing** (FR4): PDF/spreadsheet upload via S3 presigned URLs, embedded viewer in Presenter Mode, permanent attachment to meeting record
+- **Voting** (FR5): Proxied approve/decline voting — organizer casts on behalf of each partner with per-partner attribution, stand-in proxy chains, reversible before completion
+- **Meeting Minutes** (FR6): Auto-assembled from agenda item interactions (attendance, votes, documents, snapshots, notes), editable post-meeting, publishable with email distribution
+- **Meeting Prep** (FR7): Dynamic checklist based on enabled items — green/yellow/red status, soft-blocking Presenter Mode start
+- **Post-Meeting Workflows** (FR8): Async fee acceptance with reminders (7/14 days), feedback pulse survey (3 questions, 24h after publish), organizer tracking dashboards
+- **Action Items** (FR9): Created at any agenda item, assigned owners + deadlines, carry-forward to next meeting, urgency indicators for 2+ carry-overs
+- **Analytics Snapshot** (FR10): Embed existing analytics dashboard, capture immutable snapshot attached to minutes
+
+**Non-Functional Requirements:**
+- Performance: Presenter Mode load &lt; 3s (pre-fetch all), item transitions &lt; 300ms (client-side), auto-save &lt; 2s, document render &lt; 5s
+- Security: Existing Cognito auth, organizer-only for meeting management/voting/publishing, partner-only for minutes viewing/fee acceptance/feedback
+- Reliability: Auto-save every action server-side, draft persistence, graceful Presenter Mode exit with resume, single-user editing (no conflict resolution needed)
+- Accessibility: WCAG 2.1 AAA (7:1+) for Presenter Mode dark theme, WCAG 2.1 AA for partner portal, no color-only information
+- Scalability: Up to 30 partners per meeting, unlimited meeting history, S3-backed documents
+
+**Scale &amp; Complexity:**
+- Primary domain: Event Management / Community Governance (brownfield extension)
+- Complexity level: Medium — rich frontend (Presenter Mode), straightforward backend extending existing Partner Coordination Service
+- Estimated architectural components: ~15 (6 backend entities, 4 reusable frontend components, 3 API endpoint groups, 2 scheduled workflows)
+
+### Technical Constraints &amp; Dependencies
+
+**Platform Dependencies (Existing — Reuse):**
+- Partner Coordination Service (Epic 8) — partner entities, contacts, portal auth, topic voting
+- Company/User Management Service — partner company data, logos, user profiles (HTTP enrichment, ADR-004)
+- S3 presigned URL upload — existing file upload pattern (ADR-002)
+- AWS Cognito — existing auth for organizer and partner roles
+- SES email — existing infrastructure for notifications
+
+**Architectural Constraints (Existing — Follow):**
+- ADR-003: Meaningful identifiers in public APIs — no UUIDs exposed; use companyName, username
+- ADR-004: No user field duplication in domain entities — enrich via HTTP + Caffeine cache
+- ADR-006: OpenAPI contract-first — specs are source of truth, controllers implement generated interfaces
+- Single PostgreSQL database, shared public schema, Flyway per-service migrations
+- Backend layered architecture: Controller → Service → Repository with generated DTOs
+- Frontend: React 19 + TypeScript, MUI + Tailwind, service layer for API calls, generated types from OpenAPI
+
+**New Constraints (From PRD):**
+- Single-operator model — no multi-user real-time editing, no WebSocket requirement
+- Bi-annual usage — UI must be self-explanatory with zero learning curve
+- Projector-first — Presenter Mode designed for 1920x1080 projected, min 1280px
+- Swiss governance context — financial sign-off records may be audited years later
+
+### Cross-Cutting Concerns Identified
+
+1. **Minutes auto-assembly** — Every agenda item interaction must contribute to the minutes entity as a side effect. This is the core architectural pattern: a consistent "minutes contribution" interface across all item types.
+2. **Auto-save reliability** — Every organizer action persisted within 2 seconds. Debounced PATCH pattern with optimistic UI and visible save indicator.
+3. **Email notifications** — ICS meeting invites, minutes distribution, fee acceptance requests, fee reminders (7/14 day scheduled), feedback pulse (24h scheduled).
+4. **Document storage** — S3 presigned URL upload (existing pattern) for audit PDFs, budget spreadsheets. Documents permanently attached to meeting records.
+5. **Cross-service enrichment** — Partner gallery requires company logos + user profile photos/names via HTTP calls to Company/User services (existing Caffeine-cached pattern).
+6. **Action item lifecycle** — Spans across meetings: created in one, carried forward to next, urgency escalation at 2+ carry-overs. Requires meeting-to-meeting linkage.</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — dive deeper into architectural implications</li><li><strong>[P]</strong> Party Mode — bring different perspectives to analyze requirements</li><li><strong>[C]</strong> Continue — save this analysis and begin architectural decisions</li></ul></div>
+</div>
+</section>
+
+<!-- SECTION 3: ARCHITECTURAL DECISIONS -->
+<section id="decisions">
+  <div class="section-header">
+    <div class="phase-badge phase-2">3</div>
+    <div class="section-header-text"><h2>Steps 3 &amp; 4: Starter Evaluation &amp; Core Architectural Decisions</h2><p>Brownfield assessment and the heart of the architecture — entity models, patterns, and key design choices</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Context analysis saved. Now — Step 3: Starter Template Evaluation.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 3: Starter Template Evaluation</strong></p>
+<p>Nissim, before I research starters, let me check the existing technical preferences from your project context — and here's the thing: <strong>this is a brownfield project with a fully established tech stack.</strong></p>
+<p><strong>Existing Technical Stack (from project-context.md):</strong></p>
+<table><tr><th>Layer</th><th>Technology</th><th>Version</th></tr><tr><td>Frontend framework</td><td>React</td><td>19.2.4</td></tr><tr><td>Language</td><td>TypeScript</td><td>5.3</td></tr><tr><td>Component library</td><td>MUI 7.x + Radix/shadcn</td><td>—</td></tr><tr><td>Styling</td><td>Tailwind CSS</td><td>4.x</td></tr><tr><td>Build tool</td><td>Vite</td><td>7.x</td></tr><tr><td>Server state</td><td>TanStack Query</td><td>5.90</td></tr><tr><td>Client state</td><td>Zustand</td><td>5.x</td></tr><tr><td>Routing</td><td>React Router</td><td>7.x</td></tr><tr><td>Forms</td><td>react-hook-form 7.x + zod 4.x</td><td>—</td></tr><tr><td>i18n</td><td>i18next 25.x + react-i18next 16.x</td><td>—</td></tr><tr><td>Auth</td><td>aws-amplify 6.x (Cognito)</td><td>—</td></tr><tr><td>Backend</td><td>Java 21 + Spring Boot 3.x</td><td>—</td></tr><tr><td>Database</td><td>PostgreSQL 15+</td><td>—</td></tr><tr><td>Migrations</td><td>Flyway</td><td>—</td></tr><tr><td>API generation</td><td>OpenAPI Generator 7.2</td><td>—</td></tr><tr><td>Testing (FE)</td><td>Vitest 4.x + React Testing Library 16.x + Playwright 1.x</td><td>—</td></tr><tr><td>Testing (BE)</td><td>JUnit 5.x + Testcontainers 1.x</td><td>—</td></tr><tr><td>Build (BE)</td><td>Gradle 8.x</td><td>—</td></tr><tr><td>Infrastructure</td><td>AWS CDK 2.x + ECS Fargate</td><td>—</td></tr></table>
+<p><strong>My architectural assessment:</strong> There is no starter template decision to make. This is a feature extension of an existing, mature platform. The "starter" is the existing codebase itself — specifically:</p>
+<ol><li><strong>Backend</strong>: Extends the existing <code>partner-coordination-service</code> — same package structure, same layered architecture, same Flyway migration chain</li><li><strong>Frontend</strong>: New route group (<code>/partner/meetings/*</code>) and components within the existing <code>web-frontend</code> SPA — same component conventions, same service layer pattern</li><li><strong>No new service</strong>: The PRD explicitly states this extends the Partner Coordination Service, not creates a new one</li></ol>
+<p>The only "new" architectural element is the <strong>Presenter Mode layout</strong> (<code>PresenterLayout</code>) — a dedicated full-screen layout component alongside the existing <code>OrganizerLayout</code>. But that's a component-level decision, not a starter template decision.</p>
+<hr class="divider">
+<p>Here's what I'll add to the document:</p>
+<pre>## Starter Template Evaluation
+
+### Primary Technology Domain
+
+Brownfield web application — full-stack extension of the existing BATbern platform.
+
+### Starter Options Considered
+
+**No starter template evaluation needed.** This is a brownfield feature extension, not a greenfield project. The entire technology stack, project structure, build tooling, testing infrastructure, and deployment pipeline are already established and production-proven through Epics 1-8.
+
+### Selected Approach: Extend Existing Codebase
+
+**Rationale:**
+- The Active Partner Meeting Agenda extends the existing Partner Coordination Service (backend) and web-frontend (React SPA)
+- All technology decisions are already made and documented in project-context.md (65 rules)
+- Creating a separate service or frontend would violate the established microservice boundaries — partner meetings belong in the partner coordination domain
+- The existing component conventions, service layer patterns, and testing infrastructure provide the foundation
+
+**What the existing codebase provides:**
+
+- **Language &amp; Runtime:** Java 21 (backend) + TypeScript 5.3 / React 19 (frontend)
+- **Styling:** Tailwind CSS 4.x + MUI 7.x — Presenter Mode adds a dark theme variant using the existing zinc-950 + blue-400 palette
+- **Build Tooling:** Gradle 8.x (backend, from repo root) + Vite 7.x (frontend)
+- **Testing:** JUnit 5 + Testcontainers PostgreSQL (backend), Vitest + RTL + Playwright (frontend)
+- **Code Organization:** Established layered architecture (Controller → Service → Repository), React component structure (src/components/{role}/)
+- **API Pattern:** OpenAPI 3.1 contract-first (ADR-006), generated interfaces + DTOs
+- **State Management:** TanStack Query (server state) + Zustand (client state)
+
+**New architectural elements to introduce:**
+1. `PresenterLayout` — dedicated full-screen layout for Presenter Mode (alongside existing OrganizerLayout)
+2. Meeting lifecycle state machine — DRAFT → SCHEDULED → IN_PROGRESS → COMPLETED (follows existing event workflow pattern)
+3. Auto-save debounce pattern — new frontend hook for &lt; 2s persistence
+4. Minutes auto-assembly — new backend pattern for aggregating agenda item contributions
+
+**Note:** No project initialization story needed. First implementation story begins directly with database schema and entity design.</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — explore any unconventional approaches</li><li><strong>[P]</strong> Party Mode — evaluate from different perspectives</li><li><strong>[C]</strong> Continue — save and move to architectural decisions</li></ul></div>
+</div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Why Brownfield Matters</div>
+    <div class="turn-content">
+      <p><strong>Winston correctly identified this as brownfield</strong> &mdash; an important distinction. For greenfield projects, this step would evaluate starter templates (Next.js, Spring Initializr, etc.) and make foundational tech choices. For brownfield, the step instead documents the existing tech stack and identifies only the <em>new</em> patterns needed.</p>
+      <p>This saves significant architecture time. Instead of debating frameworks, the architect focuses on the 4 genuinely new elements. Every other decision is "follow what already works." This is a key efficiency gain in the BMAD workflow for brownfield projects.</p>
+    </div>
+  </div>
+
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Starter evaluation saved. Now — Step 4: Core Architectural Decisions.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 4: Core Architectural Decisions</strong></p>
+<p>Nissim, given this is a brownfield extension with a mature tech stack, many decisions are already made. Let me focus on the <strong>remaining decisions specific to this feature</strong> — the ones that will shape how the Active Partner Meeting Agenda gets built.</p>
+<p><strong>Already Decided (inherited from platform):</strong></p>
+<ul><li>Database: PostgreSQL 15, shared public schema, Flyway migrations</li><li>Auth: Cognito + JWT, role-based (organizer/partner)</li><li>API: REST + OpenAPI 3.1 contract-first (ADR-006)</li><li>Frontend state: TanStack Query (server) + Zustand (client)</li><li>File storage: S3 presigned URLs</li><li>Cross-service: HTTP + Caffeine cache (ADR-003/004)</li><li>Deployment: ECS Fargate + CDK</li></ul>
+<p><strong>Decisions we need to make together:</strong></p>
+<hr class="divider">
+<h4>Category 1: Data Architecture</h4>
+<p><strong>Decision 1.1: Entity Model Structure</strong></p>
+<p>The meeting domain introduces ~6 new entities. Here's my proposed entity map following existing ADR-003/004 patterns:</p>
+<table><tr><th>Entity</th><th>Key Fields</th><th>Cross-Service Refs</th></tr><tr><td><code>PartnerMeetingEntity</code></td><td>UUID PK, <code>meetingCode</code> (meaningful ID, e.g. <code>PM-2026-Spring</code>), status, date, location, auditorEmail</td><td>—</td></tr><tr><td><code>MeetingAgendaItemEntity</code></td><td>UUID PK, meetingId (UUID FK — same service), itemType (enum), sortOrder, isActive, customTitle</td><td>—</td></tr><tr><td><code>MeetingAttendanceEntity</code></td><td>UUID PK, meetingId (UUID FK), <code>companyName</code> (ADR-003), presenceStatus, standInName, standInDelegatedBy</td><td><code>companyName</code> → Company Service</td></tr><tr><td><code>MeetingVoteEntity</code></td><td>UUID PK, agendaItemId (UUID FK), voteType, result</td><td>—</td></tr><tr><td><code>MeetingVoteRecordEntity</code></td><td>UUID PK, voteId (UUID FK), <code>companyName</code> (ADR-003), decision (APPROVE/DECLINE), voterType (PARTNER/STAND_IN), standInName</td><td><code>companyName</code> → Company Service</td></tr><tr><td><code>MeetingMinutesEntity</code></td><td>UUID PK, meetingId (UUID FK), status (DRAFT/PUBLISHED), content (JSONB), publishedAt</td><td>—</td></tr><tr><td><code>MeetingActionItemEntity</code></td><td>UUID PK, meetingId (UUID FK), agendaItemId (UUID FK), title, description, <code>ownerUsername</code> (ADR-003), deadline, status, sourceItemId (self-ref for carry-forward)</td><td><code>ownerUsername</code> → User Service</td></tr><tr><td><code>MeetingDocumentEntity</code></td><td>UUID PK, agendaItemId (UUID FK), s3Key, fileName, fileSize, mimeType</td><td>—</td></tr><tr><td><code>FeeAcceptanceEntity</code></td><td>UUID PK, meetingId (UUID FK), <code>companyName</code> (ADR-003), amount, status, respondedAt, comment</td><td><code>companyName</code> → Company Service</td></tr><tr><td><code>FeedbackPulseEntity</code></td><td>UUID PK, meetingId (UUID FK), <code>username</code> (ADR-003), responses (JSONB), submittedAt</td><td><code>username</code> → User Service</td></tr><tr><td><code>AnalyticsSnapshotEntity</code></td><td>UUID PK, meetingId (UUID FK), snapshotData (JSONB), capturedAt</td><td>—</td></tr></table>
+<p><strong>Key design choices:</strong></p>
+<ul><li><code>meetingCode</code> as meaningful ID (ADR-003) — pattern: <code>PM-{year}-{Spring|Autumn}</code> (e.g., <code>PM-2026-Spring</code>)</li><li>Minutes content stored as <strong>JSONB</strong> — structured sections (attendance, votes, notes per item, documents) rather than flat text. Allows auto-assembly from item contributions and structured rendering.</li><li>Action item <code>sourceItemId</code> for carry-forward chain — self-referencing FK to track origin across meetings</li><li>All cross-service references use meaningful IDs (<code>companyName</code>, <code>ownerUsername</code>) per ADR-003</li></ul>
+<p><strong>Does this entity model look right to you? Any entities to add, merge, or rename?</strong></p>
+<hr class="divider">
+<h4>Category 2: Authentication &amp; Security</h4>
+<p><strong>Decision 2.1: Presenter Mode Authorization</strong></p>
+<p>No new auth mechanism needed — standard JWT role check. But we need a rule:</p>
+<ul><li><strong>Organizer role</strong> required for: create/edit meeting, start Presenter Mode, cast votes, publish minutes</li><li><strong>Partner role</strong> required for: view published minutes, RSVP, fee acceptance, feedback pulse</li><li><strong>Public</strong>: None — all endpoints are authenticated</li></ul>
+<p>One nuance: <strong>Should Presenter Mode have a "lock" so only one organizer can be in Presenter Mode for a given meeting at a time?</strong> Given the single-operator model, I'd suggest a simple <code>presenterSessionStartedBy</code> field on the meeting entity — not a distributed lock, just a soft indicator. If another organizer tries to start, they see "Meeting is being presented by [name]."</p>
+<p><strong>Your thoughts on the presenter lock approach?</strong></p>
+<hr class="divider">
+<h4>Category 3: API &amp; Communication</h4>
+<p><strong>Decision 3.1: Minutes Auto-Assembly Pattern</strong></p>
+<p>This is the most architecturally significant decision. Two approaches:</p>
+<p><strong>Option A — Backend Assembly:</strong> Each agenda item interaction (attendance toggle, vote cast, note save) calls its own endpoint. The backend <code>MeetingMinutesService</code> assembles the minutes by querying all related entities when the organizer clicks "Review Minutes."</p>
+<ul><li>Pro: Simple API design, no special pattern needed, minutes always fresh from source data</li><li>Pro: Each endpoint is straightforward CRUD</li><li>Con: Minutes review requires multiple DB queries to assemble</li></ul>
+<p><strong>Option B — Event-Sourced Contribution:</strong> Each interaction writes a "minutes contribution" record. Minutes are assembled by replaying contributions in order.</p>
+<ul><li>Pro: Audit trail of every contribution</li><li>Con: Over-engineered for bi-annual usage with single operator, adds complexity</li></ul>
+<p><strong>My lean: Option A</strong> — Query-based assembly. The entities already hold all the data (attendance, votes, documents, notes). The minutes service simply queries and structures them. No new pattern needed — just a well-designed query.</p>
+<p><strong>Do you agree with Option A, or do you see value in the event-sourced approach?</strong></p>
+<hr class="divider">
+<p><strong>Decision 3.2: Auto-Save API Pattern</strong></p>
+<p>For Presenter Mode auto-save (&lt; 2s):</p>
+<ul><li><strong>Frontend</strong>: Debounced <code>useMutation</code> (TanStack Query) — saves 2 seconds after last keystroke</li><li><strong>Backend</strong>: <code>PATCH /api/v1/partner-meetings/{meetingCode}/agenda-items/{itemId}/notes</code> — partial update endpoint</li><li><strong>Optimistic UI</strong>: Show "Saved ✓" immediately, roll back on error</li></ul>
+<p>This follows the standard TanStack Query mutation pattern already used elsewhere in the app. No new infrastructure.</p>
+<hr class="divider">
+<h4>Category 4: Frontend Architecture</h4>
+<p><strong>Decision 4.1: Presenter Mode Layout Strategy</strong></p>
+<p>Two options for the three-zone Presenter Mode layout:</p>
+<p><strong>Option A — Dedicated PresenterLayout component:</strong> A new top-level layout (like <code>OrganizerLayout</code>) that renders at <code>/partner/meetings/{code}/present</code>. Full-screen, no nav bar, dark theme forced.</p>
+<p><strong>Option B — Modal/overlay on existing layout:</strong> Presenter Mode as a full-screen overlay on the existing partner meeting page.</p>
+<p><strong>My lean: Option A</strong> — Clean separation. Presenter Mode has fundamentally different layout requirements (no nav, fixed zones, keyboard shortcuts, projector-optimized). A dedicated layout component is cleaner than fighting the existing layout.</p>
+<p><strong>Decision 4.2: Agenda Item Component Architecture</strong></p>
+<p>Each agenda item type (Greeting, Analytics, Audit, Budget, Topics, Custom) needs a specific interaction in the main zone. I'd propose:</p>
+<pre>src/components/presenter/
+  ├── PresenterLayout.tsx          # Three-zone layout shell
+  ├── AgendaSidebar.tsx            # Navigation sidebar
+  ├── NotePanel.tsx                # Always-visible notes (bottom zone)
+  ├── items/
+  │   ├── GreetingItem.tsx         # Partner gallery + presence toggle
+  │   ├── AnalyticsItem.tsx        # Embedded analytics + snapshot capture
+  │   ├── AuditSignoffItem.tsx     # Document viewer + vote
+  │   ├── BudgetApprovalItem.tsx   # Document viewer + vote
+  │   ├── TopicDiscussionItem.tsx  # Topic results + notes
+  │   └── CustomItem.tsx           # Free-form notes only
+  └── shared/
+      ├── VotePanel.tsx            # Reusable vote component
+      ├── DocumentViewer.tsx       # Embedded PDF/spreadsheet viewer
+      └── ActionItemForm.tsx       # Quick action item creation</pre>
+<p>Each item component receives the agenda item data and renders its specific interaction. The <code>PresenterLayout</code> orchestrates navigation and renders the active item.</p>
+<p><strong>Does this component structure work for you?</strong></p>
+<hr class="divider">
+<h4>Category 5: Infrastructure &amp; Deployment</h4>
+<p><strong>Decision 5.1: Scheduled Workflows (Fee Reminders, Feedback Pulse)</strong></p>
+<p>The PRD requires scheduled triggers: fee reminders at 7/14 days, feedback pulse 24h after publish. Options:</p>
+<p><strong>Option A — Spring <code>@Scheduled</code> in partner-coordination-service:</strong> Simple cron jobs that query for pending items and send emails. Already running in the same service.</p>
+<p><strong>Option B — AWS EventBridge / Step Functions:</strong> External scheduling for better observability.</p>
+<p><strong>My lean: Option A</strong> — <code>@Scheduled</code> is the simplest approach. The service already runs 24/7 on Fargate. A daily check for "meetings with published minutes where feedback pulse hasn't been sent and it's been 24h+" is trivial. Same for fee reminders. No new infrastructure.</p>
+<p><strong>Do you agree, or do you want external scheduling?</strong></p>
+<hr class="divider">
+<p>Here's the complete content I'll add to the document:</p>
+<pre>## Core Architectural Decisions
+
+### Decision Priority Analysis
+
+**Critical Decisions (Block Implementation):**
+1. Entity model structure — defines the database schema and all service interfaces
+2. Minutes auto-assembly pattern — core architectural innovation
+3. Presenter Mode layout strategy — shapes the entire frontend feature
+
+**Important Decisions (Shape Architecture):**
+4. Auto-save API pattern — affects UX reliability
+5. Agenda item component architecture — determines frontend extensibility
+6. Presenter Mode authorization — ensures single-operator integrity
+
+**Deferred Decisions (Post-MVP):**
+- Minutes PDF export format/library — Phase 3
+- Historized analytics archive browsing UI — Phase 3
+- New partner onboarding tour implementation — Phase 3
+
+### Data Architecture
+
+**Entity Model:** 11 entities within the Partner Coordination Service database, following existing Flyway migration patterns.
+
+| Entity | Meaningful ID (ADR-003) | Cross-Service Refs |
+|--------|------------------------|-------------------|
+| PartnerMeetingEntity | `meetingCode` (e.g., PM-2026-Spring) | — |
+| MeetingAgendaItemEntity | — (UUID FK to meeting) | — |
+| MeetingAttendanceEntity | — | `companyName` → Company Service |
+| MeetingVoteEntity | — (UUID FK to agenda item) | — |
+| MeetingVoteRecordEntity | — | `companyName` → Company Service |
+| MeetingMinutesEntity | — (UUID FK to meeting) | — |
+| MeetingActionItemEntity | — | `ownerUsername` → User Service |
+| MeetingDocumentEntity | — (UUID FK to agenda item) | — |
+| FeeAcceptanceEntity | — | `companyName` → Company Service |
+| FeedbackPulseEntity | — | `username` → User Service |
+| AnalyticsSnapshotEntity | — (UUID FK to meeting) | — |
+
+**Key Design Decisions:**
+- `meetingCode` as meaningful public identifier (pattern: `PM-{year}-{Spring|Autumn}`)
+- Minutes content as JSONB — structured sections for auto-assembly and rendering
+- Action item carry-forward via self-referencing `sourceItemId` FK
+- All cross-service references use meaningful IDs per ADR-003 (`companyName`, `ownerUsername`)
+- Meeting status lifecycle: DRAFT → SCHEDULED → IN_PROGRESS → COMPLETED
+- Minutes status: DRAFT → PUBLISHED (immutable after publish)
+- Vote immutability: vote records locked once vote is completed
+
+**Database Migration:** New Flyway migrations in partner-coordination-service (V-next sequential).
+
+### Authentication &amp; Security
+
+**Authorization Model:**
+- Organizer role: create/edit meetings, Presenter Mode, voting, minutes publishing
+- Partner role: RSVP, view published minutes, fee acceptance, feedback pulse
+- No public endpoints for meeting features
+
+**Presenter Mode Soft Lock:**
+- `presenterSessionStartedBy` (username) + `presenterSessionStartedAt` (timestamp) on PartnerMeetingEntity
+- Not a distributed lock — informational only for multi-organizer awareness
+- Cleared when meeting transitions to COMPLETED or organizer exits Presenter Mode
+
+### API &amp; Communication Patterns
+
+**Minutes Auto-Assembly: Query-Based Assembly (Option A)**
+- Each organizer action persists to its own entity (attendance, votes, documents, notes, action items)
+- `MeetingMinutesService.assembleMinutes(meetingCode)` queries all related entities and structures them into the JSONB minutes content
+- Minutes assembled on-demand when organizer clicks "Review Minutes" — always reflects current state
+- After organizer edits and publishes, the JSONB content becomes the immutable published record
+- Rationale: Simple, no new patterns, source data always authoritative, bi-annual usage doesn't justify event sourcing complexity
+
+**Auto-Save Pattern:**
+- Frontend: Debounced `useMutation` via TanStack Query — fires 2 seconds after last input
+- Backend: `PATCH /api/v1/partner-meetings/{meetingCode}/agenda-items/{itemId}/notes`
+- Optimistic UI with "Saved ✓" indicator (fades after 2s)
+- Error handling: toast notification + retry on transient failure
+
+**API Endpoint Groups:**
+1. Meeting management: CRUD + status transitions + agenda configuration
+2. Presenter Mode: attendance toggling, voting, note saving, document upload, snapshot capture
+3. Post-meeting: minutes review/publish, fee acceptance, feedback pulse
+
+### Frontend Architecture
+
+**Presenter Mode: Dedicated PresenterLayout**
+- New top-level layout at `/partner/meetings/{meetingCode}/present`
+- Full-screen, no navigation bar, dark theme (zinc-950) forced
+- Three fixed zones: 280px sidebar + fluid main + 180px bottom notes
+- Keyboard shortcuts: →/← (navigate), 1-9 (jump), N (focus notes), V (start vote), Esc (exit with confirm)
+
+### Infrastructure &amp; Deployment
+
+**Scheduled Workflows: Spring @Scheduled**
+- Fee acceptance reminders: daily cron checks for pending acceptances past 7/14 day thresholds
+- Feedback pulse trigger: daily cron checks for published minutes past 24h without pulse sent
+- Runs within existing partner-coordination-service Fargate task — no new infrastructure
+- Rationale: Service already runs 24/7, bi-annual meeting cadence doesn't justify external scheduling
+
+**No New Infrastructure Required:**
+- No new ECS services — extends partner-coordination-service
+- No new databases — extends existing PostgreSQL schema
+- No WebSocket infrastructure — standard HTTP sufficient
+- No new CDN configuration — documents served via existing S3 presigned URL pattern</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — explore any specific decision deeper</li><li><strong>[P]</strong> Party Mode — review decisions from multiple perspectives</li><li><strong>[C]</strong> Continue — save these decisions and move to implementation patterns</li></ul></div>
+</div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Minutes-as-Byproduct Pattern</div>
+    <div class="turn-content">
+      <p>The <strong>minutes-as-byproduct decision</strong> is the core architectural innovation. Winston evaluated two approaches:</p>
+      <ul>
+        <li><strong>Option A (Query-Based Assembly):</strong> Each action saves to its own entity. Minutes are assembled on-demand by querying all related data. Simple, no new patterns.</li>
+        <li><strong>Option B (Event-Sourced):</strong> Each action emits a domain event. Minutes replay the event stream. More elegant but adds significant complexity.</li>
+      </ul>
+      <p>Winston chose Option A because: the data is always authoritative (no stale projections), bi-annual usage does not justify event sourcing overhead, and it follows the existing CRUD patterns. This is a textbook example of choosing the simpler architecture when the usage pattern does not demand complexity.</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- SECTION 4: IMPLEMENTATION PATTERNS -->
+<section id="patterns">
+  <div class="section-header">
+    <div class="phase-badge phase-3">4</div>
+    <div class="section-header-text"><h2>Step 5: Implementation Patterns &amp; Consistency Rules</h2><p>Defining exact patterns so AI agents cannot diverge during implementation</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Decisions saved. Now — Step 5: Implementation Patterns &amp; Consistency Rules.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 5: Implementation Patterns</strong></p>
+<p>Nissim, since BATbern already has 65 rules in <code>project-context.md</code>, most naming/structure/format patterns are established. I'll focus on <strong>patterns specific to this feature</strong> where AI agents could make divergent choices if not explicitly specified.</p>
+<p>Here's what I'll add to the document. These are the areas where agents working on different meeting feature stories could conflict:</p>
+<hr class="divider">
+<pre>## Implementation Patterns &amp; Consistency Rules
+
+### Pattern Categories Defined
+
+**Critical Conflict Points Identified:** 12 areas specific to the Active Partner Meeting Agenda where AI agents could make different choices. General BATbern patterns (ADR-003, ADR-004, ADR-006, naming conventions, layered architecture) are already documented in project-context.md and apply unchanged.
+
+### Naming Patterns (Meeting-Specific)
+
+**Database Tables — Meeting Domain:**
+All new tables prefixed with `partner_meeting_` to namespace within the shared public schema:</pre>
+<p>partner_meetings              -- main entity</p>
+<p>partner_meeting_agenda_items  -- agenda configuration</p>
+<p>partner_meeting_attendance    -- presence records</p>
+<p>partner_meeting_votes         -- vote sessions</p>
+<p>partner_meeting_vote_records  -- per-partner vote attribution</p>
+<p>partner_meeting_minutes       -- auto-assembled minutes</p>
+<p>partner_meeting_action_items  -- action items with carry-forward</p>
+<p>partner_meeting_documents     -- uploaded files</p>
+<p>partner_meeting_fee_acceptance -- async fee responses</p>
+<p>partner_meeting_feedback_pulse -- post-meeting survey</p>
+<p>partner_meeting_analytics_snapshots -- immutable analytics captures</p>
+<pre>
+**Meeting Code Format:**
+- Pattern: `PM-{YYYY}-{Spring|Autumn}` (e.g., `PM-2026-Spring`)
+- Generated on creation, immutable after
+- Used in all API URLs: `/api/v1/partner-meetings/PM-2026-Spring`
+- Column: `meeting_code VARCHAR(20) UNIQUE NOT NULL`
+
+**Agenda Item Type Enum:**</pre>
+<p>public enum AgendaItemType {</p>
+<p>    GREETING,           // Who Is Who partner gallery</p>
+<p>    ANALYTICS_REVIEW,   // Embedded analytics + snapshot</p>
+<p>    AUDIT_SIGNOFF,      // Document viewer + vote</p>
+<p>    BUDGET_APPROVAL,    // Document viewer + vote</p>
+<p>    TOPIC_DISCUSSION,   // Topic voting results + notes</p>
+<p>    HOT_TOPICS,         // Free-form discussion</p>
+<p>    CUSTOM              // User-defined passive items</p>
+<p>}</p>
+<pre>- Database: stored as `lowercase_snake_case` (e.g., `'analytics_review'`)
+- JSON/API: `UPPER_CASE` (e.g., `"ANALYTICS_REVIEW"`)
+- No `@JsonValue` annotation — default serialization per project-context.md
+
+**Meeting Status Enum:**</pre>
+<p>public enum MeetingStatus {</p>
+<p>    DRAFT,          // Created, agenda being configured</p>
+<p>    SCHEDULED,      // ICS invites sent, accepting RSVPs</p>
+<p>    IN_PROGRESS,    // Presenter Mode active</p>
+<p>    COMPLETED       // Meeting ended, minutes in review or published</p>
+<p>}</p>
+<pre>
+**Minutes Status Enum:**</pre>
+<p>public enum MinutesStatus {</p>
+<p>    DRAFT,       // Auto-assembling during/after meeting</p>
+<p>    PUBLISHED    // Immutable, distributed to partners</p>
+<p>}</p>
+<pre>
+**Vote Decision Enum:**</pre>
+<p>public enum VoteDecision {</p>
+<p>    APPROVE,</p>
+<p>    DECLINE</p>
+<p>}</p>
+<pre>
+**Fee Acceptance Status Enum:**</pre>
+<p>public enum FeeAcceptanceStatus {</p>
+<p>    PENDING,</p>
+<p>    ACCEPTED,</p>
+<p>    DECLINED</p>
+<p>}</p>
+<pre>
+### Structure Patterns (Meeting-Specific)
+
+**Backend Package Structure:**</pre>
+<p>ch.batbern.partnercoordination/</p>
+<p>  ├── meeting/</p>
+<p>  │   ├── controller/</p>
+<p>  │   │   ├── PartnerMeetingController.java    # implements generated PartnerMeetingApi</p>
+<p>  │   │   └── MeetingMinutesController.java    # implements generated MeetingMinutesApi</p>
+<p>  │   ├── service/</p>
+<p>  │   │   ├── PartnerMeetingService.java       # meeting CRUD + status transitions</p>
+<p>  │   │   ├── MeetingPresenterService.java     # attendance, voting, notes, snapshots</p>
+<p>  │   │   ├── MeetingMinutesService.java       # minutes assembly + publish</p>
+<p>  │   │   ├── FeeAcceptanceService.java        # async fee workflow</p>
+<p>  │   │   └── MeetingScheduledTasks.java       # @Scheduled reminders</p>
+<p>  │   ├── repository/ ...</p>
+<p>  │   ├── domain/ (11 entities + 6 enums)</p>
+<p>  │   └── mapper/</p>
+<pre>
+**Frontend Route Structure:**</pre>
+<p>/partner/meetings                           → MeetingListPage (organizer)</p>
+<p>/partner/meetings/create                    → MeetingCreatePage (organizer)</p>
+<p>/partner/meetings/:meetingCode              → MeetingDetailPage (organizer — prep dashboard)</p>
+<p>/partner/meetings/:meetingCode/present      → PresenterModePage (organizer — full-screen)</p>
+<p>/partner/meetings/:meetingCode/minutes      → MinutesReviewPage (organizer — edit + publish)</p>
+<p>/partner/meetings/:meetingCode/view         → MeetingViewPage (partner — published minutes)</p>
+<p>/partner/meetings/:meetingCode/fee          → FeeAcceptancePage (partner)</p>
+<p>/partner/meetings/:meetingCode/feedback     → FeedbackPulsePage (partner)</p>
+<pre>
+### Format Patterns (Meeting-Specific)
+
+**Minutes JSONB Structure:**
+All agents must use this exact structure for the minutes content field:</pre>
+<p>{</p>
+<p>  "meetingCode": "PM-2026-Spring",</p>
+<p>  "date": "2026-05-15",</p>
+<p>  "location": "Bern, Kulturhof",</p>
+<p>  "sections": [</p>
+<p>    {</p>
+<p>      "agendaItemType": "GREETING",</p>
+<p>      "title": "Who Is Who — Attendance",</p>
+<p>      "attendance": {</p>
+<p>        "present": [</p>
+<p>          { "companyName": "TechCorp", "delegateName": "Max Müller", "isStandIn": false }</p>
+<p>        ],</p>
+<p>        "absent": [</p>
+<p>          { "companyName": "DesignCo", "delegateName": null, "isStandIn": false }</p>
+<p>        ]</p>
+<p>      },</p>
+<p>      "notes": "Welcome remarks by organizer..."</p>
+<p>    },</p>
+<p>    {</p>
+<p>      "agendaItemType": "AUDIT_SIGNOFF",</p>
+<p>      "title": "Financial Report 2025 — Audit Sign-off",</p>
+<p>      "document": { "fileName": "audit-2025.pdf", "s3Key": "..." },</p>
+<p>      "vote": {</p>
+<p>        "result": "APPROVED",</p>
+<p>        "tally": { "approve": 8, "decline": 0 },</p>
+<p>        "records": [</p>
+<p>          { "companyName": "TechCorp", "decision": "APPROVE", "voterType": "PARTNER" }</p>
+<p>        ]</p>
+<p>      },</p>
+<p>      "notes": "Auditor confirmed clean report..."</p>
+<p>    }</p>
+<p>  ],</p>
+<p>  "actionItems": [</p>
+<p>    {</p>
+<p>      "title": "Review venue options",</p>
+<p>      "ownerUsername": "sarah.mueller",</p>
+<p>      "deadline": "2026-08-01",</p>
+<p>      "status": "OPEN",</p>
+<p>      "carriedForwardFrom": null</p>
+<p>    }</p>
+<p>  ]</p>
+<p>}</p>
+<pre>
+**Auto-Save Debounce — Exact Pattern:**
+All agents implementing auto-save must use this hook pattern:</pre>
+<p>// useAutoSave.ts — single implementation, used by all auto-save components</p>
+<p>const useAutoSave = (mutationFn: MutationFunction, delayMs = 2000) =&gt; {</p>
+<p>  const mutation = useMutation({ mutationFn });</p>
+<p>  const debouncedSave = useMemo(</p>
+<p>    () =&gt; debounce((data) =&gt; mutation.mutate(data), delayMs),</p>
+<p>    [mutation, delayMs]</p>
+<p>  );</p>
+<p>  return { save: debouncedSave, status: mutation.status };</p>
+<p>};</p>
+<pre>
+### Communication Patterns (Meeting-Specific)
+
+**Meeting Status Transitions:**</pre>
+<p>DRAFT → SCHEDULED          # Triggered by: organizer saves + confirms (sends ICS invites)</p>
+<p>SCHEDULED → IN_PROGRESS    # Triggered by: organizer clicks "Start Presenter Mode"</p>
+<p>IN_PROGRESS → COMPLETED    # Triggered by: organizer clicks "End Meeting"</p>
+<pre>- No backward transitions allowed (COMPLETED → IN_PROGRESS is forbidden)
+- Status transitions are auditable: `statusChangedAt`, `statusChangedBy` fields
+
+**Email Notification Types:**
+Agents adding email functionality must use these exact template identifiers:</pre>
+<p>partner_meeting_invite          — ICS invite on DRAFT → SCHEDULED</p>
+<p>partner_meeting_minutes         — Minutes published notification</p>
+<p>partner_meeting_fee_request     — Async fee acceptance request</p>
+<p>partner_meeting_fee_reminder    — Fee reminder at 7/14 days</p>
+<p>partner_meeting_feedback_pulse  — Feedback survey 24h after publish</p>
+<pre>
+### Process Patterns (Meeting-Specific)
+
+**Presenter Mode Entry/Exit:**</pre>
+<p>Entry:</p>
+<p>  1. Pre-fetch ALL meeting data (agenda items, partners, documents, previous action items)</p>
+<p>  2. Validate meeting status = SCHEDULED</p>
+<p>  3. Transition meeting to IN_PROGRESS</p>
+<p>  4. Set presenterSessionStartedBy/At</p>
+<p>  5. Render PresenterLayout with first agenda item</p>
+<p>Exit (normal):</p>
+<p>  1. Organizer clicks "End Meeting" on last item</p>
+<p>  2. Confirm dialog: "End meeting and proceed to minutes review?"</p>
+<p>  3. Transition meeting to COMPLETED</p>
+<p>  4. Clear presenterSession fields</p>
+<p>  5. Navigate to MinutesReviewPage</p>
+<p>Exit (escape):</p>
+<p>  1. Organizer presses Esc</p>
+<p>  2. Confirm dialog: "Exit Presenter Mode? Your progress is saved."</p>
+<p>  3. Navigate back to meeting detail (meeting stays IN_PROGRESS)</p>
+<p>  4. Organizer can re-enter Presenter Mode to resume</p>
+<pre>
+**Minutes Assembly Sequence:**</pre>
+<ol><li>Query MeetingAttendanceRepository → build attendance section</li><li>For each agenda item (sorted by sortOrder):</li></ol>
+<p>   a. Query item-specific data (votes, documents, snapshots)</p>
+<p>   b. Query notes for this item</p>
+<p>   c. Build section with type-appropriate structure</p>
+<ol><li>Query MeetingActionItemRepository → build action items section</li><li>Merge into JSONB structure</li><li>Store in MeetingMinutesEntity (DRAFT)</li></ol>
+<pre>
+### Enforcement Guidelines
+
+**All AI Agents MUST:**
+1. Follow the table naming prefix `partner_meeting_` for all new tables
+2. Use the exact JSONB structure for minutes content — no variations
+3. Use the `useAutoSave` hook for all auto-save functionality — no custom implementations
+4. Follow the Presenter Mode entry/exit sequence exactly — no shortcuts
+5. Use meaningful IDs (`meetingCode`, `companyName`, `ownerUsername`) in all API URLs and responses — never expose UUIDs
+6. Store enum values as `lowercase_snake_case` in the database, `UPPER_CASE` in JSON/API
+7. Place all Presenter Mode components under `src/components/presenter/` — not in `organizer/` or `shared/`
+
+### Anti-Patterns to Avoid
+
+| Anti-Pattern | Correct Approach |
+|-------------|-----------------|
+| Storing partner email/name in attendance entity | Store `companyName` only, enrich via HTTP (ADR-004) |
+| Creating a separate "meeting-service" microservice | Extend partner-coordination-service |
+| Using WebSocket for auto-save | Debounced HTTP PATCH is sufficient |
+| Storing minutes as flat HTML/text | Use structured JSONB with typed sections |
+| Hardcoding agenda items in frontend | All items from backend AgendaItem entities |
+| Adding `@JsonValue` to meeting enums | Default Jackson serialization (project-context.md rule) |
+| Direct `fetch()` calls for auto-save | Use TanStack Query `useMutation` via service layer |
+| Mutable votes after completion | VoteRecords are immutable once vote is completed |</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — explore additional consistency patterns</li><li><strong>[P]</strong> Party Mode — review from different implementation perspectives</li><li><strong>[C]</strong> Continue — save these patterns and move to project structure</li></ul></div>
+</div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Why Enforcement Guidelines Matter</div>
+    <div class="turn-content">
+      <p>The <strong>7 enforcement guidelines and 8 anti-patterns</strong> are the most operationally important part of the architecture document. In an AI-assisted development workflow, multiple agents (or the same agent across sessions) will implement different stories from this architecture.</p>
+      <p>Without these explicit rules, common divergences include: one agent using WebSocket for auto-save while another uses HTTP PATCH, one storing partner names directly while another follows ADR-004, one placing Presenter components in <code>organizer/</code> while another uses <code>presenter/</code>.</p>
+      <p>The enforcement guidelines act as a contract between the architect and every implementing agent. They eliminate ambiguity at the exact points where AI agents are most likely to make inconsistent choices. This is unique to AI-assisted architecture &mdash; human teams use code reviews to catch drift; AI agents need the rules upfront.</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- SECTION 5: PROJECT STRUCTURE -->
+<section id="structure">
+  <div class="section-header">
+    <div class="phase-badge phase-3">5</div>
+    <div class="section-header-text"><h2>Step 6: Project Structure &amp; Boundaries</h2><p>Complete file listing, API boundaries, service boundaries, and data flow</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now let me read the end of the current file to append correctly.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Patterns saved. Now — Step 6: Project Structure &amp; Boundaries.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 6: Project Structure &amp; Boundaries</strong></p>
+<p>Nissim, since this is brownfield, I'll focus on the <strong>new files and directories</strong> this feature adds to the existing codebase, plus the boundary definitions that agents need to respect.</p>
+<p>Here's what I'll add:</p>
+<pre>## Project Structure &amp; Boundaries
+
+### Complete Project Structure (New Files Only)
+
+This feature adds files within the existing BATbern monorepo. Only new/modified paths shown.
+
+**Backend — Partner Coordination Service:**</pre>
+<p>services/partner-coordination-service/</p>
+<p>  └── src/</p>
+<p>      ├── main/java/ch/batbern/partnercoordination/</p>
+<p>      │   └── meeting/</p>
+<p>      │       ├── controller/</p>
+<p>      │       │   ├── PartnerMeetingController.java</p>
+<p>      │       │   └── MeetingMinutesController.java</p>
+<p>      │       ├── service/</p>
+<p>      │       │   ├── PartnerMeetingService.java</p>
+<p>      │       │   ├── MeetingPresenterService.java</p>
+<p>      │       │   ├── MeetingMinutesService.java</p>
+<p>      │       │   ├── FeeAcceptanceService.java</p>
+<p>      │       │   └── MeetingScheduledTasks.java</p>
+<p>      │       ├── repository/ (11 interfaces)</p>
+<p>      │       ├── domain/ (11 entities + 6 enums)</p>
+<p>      │       └── mapper/ (3 mappers)</p>
+<p>      └── main/resources/db/migration/ (10 Flyway migrations)</p>
+<pre>
+**Frontend — New Components:**</pre>
+<p>web-frontend/src/</p>
+<p>  ├── components/</p>
+<p>  │   ├── organizer/meetings/ (MeetingListPage, MeetingCreateForm, AgendaBuilder, MinutesEditor, FeeAcceptanceTracker)</p>
+<p>  │   ├── presenter/ (PresenterLayout, AgendaSidebar, NotePanel, 6 item types, 3 shared)</p>
+<p>  │   └── partner/meetings/ (PublishedMinutesView, FeeAcceptanceWidget, FeedbackPulseForm)</p>
+<p>  ├── hooks/ (useAutoSave, usePresenterKeyboard, usePresenterNavigation)</p>
+<p>  ├── services/ (partnerMeetingService.ts)</p>
+<p>  └── stores/ (presenterStore.ts)</p>
+<pre>
+### Architectural Boundaries
+
+**API Boundaries:**
+
+| Boundary | Endpoints | Auth | Notes |
+|----------|----------|------|-------|
+| Meeting Management | `POST/GET/PUT /api/v1/partner-meetings/**` | Organizer | CRUD, agenda config, status transitions |
+| Presenter Mode | `PATCH /api/v1/partner-meetings/{code}/presenter/**` | Organizer | Attendance, votes, notes, snapshots |
+| Minutes | `GET/PUT/POST /api/v1/partner-meetings/{code}/minutes` | Organizer (edit/publish), Partner (view published) |
+| Fee Acceptance | `GET/PUT /api/v1/partner-meetings/{code}/fee-acceptance` | Partner | Accept/decline fee |
+| Feedback | `POST /api/v1/partner-meetings/{code}/feedback` | Partner | Submit feedback pulse |
+| Documents | `POST/GET /api/v1/partner-meetings/{code}/documents/**` | Organizer (upload), Partner (view via minutes) |
+
+**Service Boundaries — What the Meeting Feature Can Access:**
+
+| Target Service | Access Pattern | Data Retrieved |
+|---------------|---------------|----------------|
+| Company Service | HTTP GET `/api/v1/companies/{companyName}` | Company logo, displayName |
+| User Service | HTTP GET `/api/v1/users/{username}` | Profile photo, firstName, lastName |
+| Partner Service (same DB) | Direct repository access | Partner entities, contacts |
+| S3 | Presigned URL generation | Document upload/download URLs |
+| SES | Email sending | ICS invites, minutes distribution, reminders |
+
+**Data Boundaries:**
+- All `partner_meeting_*` tables owned by Partner Coordination Service
+- Cross-service: only `companyName` and `username` strings stored — never UUIDs from other services
+- Minutes JSONB: self-contained document — no foreign key references, only meaningful IDs
+- Analytics snapshots: immutable JSONB — captured data, not live references
+
+### Requirements to Structure Mapping
+
+| FR Group | Backend Package | Frontend Components | API Spec Section |
+|----------|----------------|--------------------|--------------------|
+| FR1: Meeting Management | `meeting/service/PartnerMeetingService` | `organizer/meetings/MeetingCreateForm`, `AgendaBuilder` | `partner-meetings` |
+| FR2: RSVP &amp; Attendance | `meeting/service/MeetingPresenterService` | `presenter/items/GreetingItem` | `presenter/attendance` |
+| FR3: Presenter Mode | `meeting/controller/*` | `presenter/PresenterLayout`, `AgendaSidebar`, `NotePanel` | `presenter/*` |
+| FR4: Documents | `meeting/service/MeetingPresenterService` | `presenter/shared/DocumentViewer` | `documents` |
+| FR5: Voting | `meeting/service/MeetingPresenterService` | `presenter/shared/VotePanel` | `presenter/votes` |
+| FR6: Minutes | `meeting/service/MeetingMinutesService` | `organizer/meetings/MinutesEditor`, `partner/meetings/PublishedMinutesView` | `minutes` |
+| FR7: Meeting Prep | `meeting/service/PartnerMeetingService` | `organizer/meetings/MeetingPrepDashboard` | `partner-meetings/{code}` |
+| FR8: Post-Meeting | `meeting/service/FeeAcceptanceService`, `MeetingScheduledTasks` | `partner/meetings/FeeAcceptanceWidget`, `FeedbackPulseForm` | `fee-acceptance`, `feedback` |
+| FR9: Action Items | `meeting/service/MeetingPresenterService` | `presenter/shared/ActionItemForm` | `presenter/action-items` |
+| FR10: Analytics Snapshot | `meeting/service/MeetingPresenterService` | `presenter/items/AnalyticsItem` | `presenter/snapshots` |
+
+### Data Flow</pre>
+<p>Pre-Meeting:</p>
+<p>  Organizer → MeetingCreateForm → partnerMeetingService → POST /api/v1/partner-meetings</p>
+<p>  Organizer → AgendaBuilder → partnerMeetingService → PUT /api/v1/partner-meetings/{code}/agenda</p>
+<p>  System → SES → Partner (ICS invite email)</p>
+<p>  Partner → RSVP → partnerMeetingService → PUT /api/v1/partner-meetings/{code}/rsvp</p>
+<p>During Meeting (Presenter Mode):</p>
+<p>  Organizer → PresenterLayout → presenterStore (Zustand) → navigation state</p>
+<p>  Organizer → GreetingItem → partnerMeetingService → PATCH .../presenter/attendance</p>
+<p>  Organizer → VotePanel → partnerMeetingService → POST .../presenter/votes</p>
+<p>  Organizer → NotePanel → useAutoSave → PATCH .../presenter/notes (debounced 2s)</p>
+<p>  Organizer → DocumentViewer → S3 presigned URL → direct browser render</p>
+<p>  All actions → auto-persisted → available for minutes assembly</p>
+<p>Post-Meeting:</p>
+<p>  Organizer → "Review Minutes" → MeetingMinutesService.assembleMinutes() → JSONB</p>
+<p>  Organizer → MinutesEditor → PUT .../minutes → edits</p>
+<p>  Organizer → "Publish" → POST .../minutes/publish → SES → all partners</p>
+<p>  Partner → PublishedMinutesView → GET .../minutes (published)</p>
+<p>  Partner → FeeAcceptanceWidget → PUT .../fee-acceptance</p>
+<p>  System → @Scheduled → fee reminders (7/14 days) → SES</p>
+<p>  System → @Scheduled → feedback pulse (24h) → SES</p>
+<p>  Partner → FeedbackPulseForm → POST .../feedback</p>
+<pre></pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — explore project organization deeper</li><li><strong>[P]</strong> Party Mode — review structure from different perspectives</li><li><strong>[C]</strong> Continue — save and move to architecture validation</li></ul></div>
+</div>
+</section>
+
+<!-- SECTION 6: VALIDATION -->
+<section id="validation">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">6</div>
+    <div class="section-header-text"><h2>Step 7: Architecture Validation</h2><p>Systematic verification of coherence, coverage, and readiness</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Let me find the exact end of the file.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Structure saved. Now — Step 7: Architecture Validation.</p>
+<hr class="divider">
+<p>🏗️ <strong>Step 7: Architecture Validation &amp; Completion</strong></p>
+<p>Nissim, I've run a comprehensive validation across all sections of the architecture document. Here's the full assessment:</p>
+<hr class="divider">
+<h4>Coherence Validation</h4>
+<p><strong>Decision Compatibility: ✅ PASS</strong></p>
+<ul><li>All technology choices are from the existing BATbern stack — no version conflicts possible</li><li>JSONB for minutes content is fully supported by PostgreSQL 15</li><li>TanStack Query + Zustand + debounced mutations is a proven pattern in the existing frontend</li><li>Spring <code>@Scheduled</code> runs in the same Fargate task — no additional infrastructure dependencies</li></ul>
+<p><strong>Pattern Consistency: ✅ PASS</strong></p>
+<ul><li>All naming conventions align with project-context.md (65 rules)</li><li>Database table prefix <code>partner_meeting_*</code> is consistent with existing <code>partner_*</code> tables</li><li>Enum handling (lowercase DB, UPPER_CASE JSON) follows the established convention exactly</li><li>API URL pattern <code>/api/v1/partner-meetings/{meetingCode}</code> follows ADR-003 meaningful ID pattern</li></ul>
+<p><strong>Structure Alignment: ✅ PASS</strong></p>
+<ul><li>Backend <code>meeting/</code> sub-package within <code>partnercoordination</code> follows existing service package structure</li><li>Frontend <code>presenter/</code> component directory is properly separated from <code>organizer/</code> and <code>partner/</code></li><li>Test structure mirrors source structure per existing conventions</li><li>Bruno test collection follows existing collection naming pattern</li></ul>
+<h4>Requirements Coverage Validation</h4>
+<p><strong>Functional Requirements Coverage: ✅ ALL 10 FR GROUPS COVERED</strong></p>
+<table><tr><th>FR</th><th>Architecture Coverage</th><th>Verdict</th></tr><tr><td>FR1: Meeting Management</td><td>PartnerMeetingEntity + PartnerMeetingService + MeetingCreateForm + AgendaBuilder</td><td>✅</td></tr><tr><td>FR2: RSVP &amp; Attendance</td><td>MeetingAttendanceEntity + MeetingPresenterService + GreetingItem</td><td>✅</td></tr><tr><td>FR3: Presenter Mode</td><td>PresenterLayout + AgendaSidebar + NotePanel + presenterStore + keyboard hooks</td><td>✅</td></tr><tr><td>FR4: Documents</td><td>MeetingDocumentEntity + S3 presigned URLs + DocumentViewer</td><td>✅</td></tr><tr><td>FR5: Voting</td><td>MeetingVoteEntity + MeetingVoteRecordEntity + VotePanel + proxy attribution</td><td>✅</td></tr><tr><td>FR6: Minutes</td><td>MeetingMinutesEntity (JSONB) + MeetingMinutesService.assembleMinutes() + MinutesEditor + PublishedMinutesView</td><td>✅</td></tr><tr><td>FR7: Meeting Prep</td><td>MeetingPrepDashboard + dynamic checklist from enabled items</td><td>✅</td></tr><tr><td>FR8: Post-Meeting</td><td>FeeAcceptanceEntity + FeedbackPulseEntity + MeetingScheduledTasks + partner widgets</td><td>✅</td></tr><tr><td>FR9: Action Items</td><td>MeetingActionItemEntity + sourceItemId carry-forward + urgencyFlag + ActionItemForm</td><td>✅</td></tr><tr><td>FR10: Analytics Snapshot</td><td>AnalyticsSnapshotEntity (JSONB) + AnalyticsItem + capture endpoint</td><td>✅</td></tr></table>
+<p><strong>Non-Functional Requirements Coverage: ✅ ALL ADDRESSED</strong></p>
+<table><tr><th>NFR</th><th>How Addressed</th><th>Verdict</th></tr><tr><td>Presenter load &lt; 3s</td><td>Pre-fetch all data before entering; TanStack Query <code>staleTime: Infinity</code></td><td>✅</td></tr><tr><td>Item transition &lt; 300ms</td><td>All data in memory; pure frontend navigation via Zustand store</td><td>✅</td></tr><tr><td>Auto-save &lt; 2s</td><td>Debounced <code>useMutation</code> with 2s delay; optimistic UI</td><td>✅</td></tr><tr><td>Document render &lt; 5s</td><td>S3 presigned URL + browser-native PDF rendering</td><td>✅</td></tr><tr><td>WCAG 2.1 AAA (Presenter)</td><td>zinc-950 + zinc-100 = 15.8:1 contrast; full keyboard nav specified</td><td>✅</td></tr><tr><td>WCAG 2.1 AA (Portal)</td><td>Existing partner portal compliance; 44x44 touch targets</td><td>✅</td></tr><tr><td>Security (role-based)</td><td>Organizer/Partner role boundaries clearly defined per endpoint</td><td>✅</td></tr><tr><td>Vote immutability</td><td>Records locked once vote completed — documented as enforcement rule</td><td>✅</td></tr><tr><td>Single concurrent user</td><td>Soft lock via presenterSessionStartedBy — no distributed lock needed</td><td>✅</td></tr></table>
+<h4>Implementation Readiness Validation</h4>
+<p><strong>Decision Completeness: ✅ PASS</strong></p>
+<ul><li>11 entities fully specified with field types and cross-service references</li><li>6 enums defined with exact values and serialization rules</li><li>API endpoint groups with auth requirements documented</li><li>Minutes JSONB structure specified with concrete example</li><li>Auto-save hook pattern defined with code example</li></ul>
+<p><strong>Structure Completeness: ✅ PASS</strong></p>
+<ul><li>Every FR group mapped to specific backend package, frontend component, and API spec section</li><li>Complete data flow documented for pre-meeting, during-meeting, and post-meeting phases</li><li>Integration boundaries clearly specified (which services, what data, what access pattern)</li></ul>
+<p><strong>Pattern Completeness: ✅ PASS</strong></p>
+<ul><li>7 enforcement guidelines for AI agents</li><li>8 anti-patterns explicitly documented</li><li>Presenter Mode entry/exit sequence fully specified</li><li>Minutes assembly sequence fully specified</li><li>Action item carry-forward logic fully specified</li></ul>
+<h4>Gap Analysis Results</h4>
+<p><strong>Critical Gaps: None found</strong> ✅</p>
+<p><strong>Important Gaps (non-blocking):</strong></p>
+<ol><li><strong>ICS invite generation</strong> — The architecture references sending ICS invites but doesn't specify the library or generation pattern. Recommendation: Use <code>ical4j</code> (Java) for ICS generation — it's the standard library for this. This can be decided during implementation.</li></ol>
+<ol><li><strong>PDF viewer library</strong> — DocumentViewer references embedded PDF viewing but doesn't specify the frontend library. Options: browser-native <code>&lt;object&gt;</code> tag (simplest), <code>react-pdf</code> / <code>pdfjs-dist</code> (more control). Recommendation: Start with browser-native <code>&lt;object&gt;</code> + <code>&lt;iframe&gt;</code> fallback — add <code>react-pdf</code> only if rendering issues arise.</li></ol>
+<ol><li><strong>Email template content</strong> — Five email template identifiers defined, but the actual template HTML/content structure isn't specified. This is an implementation detail — content follows existing SES template patterns.</li></ol>
+<p><strong>Nice-to-Have Gaps:</strong></p>
+<ul><li>Presenter Mode animation/transition specifications (not critical for MVP)</li><li>Drag-and-drop library choice for AgendaBuilder (recommend <code>@dnd-kit</code> — already available in ecosystem)</li></ul>
+<hr class="divider">
+<pre>## Architecture Validation Results
+
+### Coherence Validation ✅
+
+**Decision Compatibility:** All technology choices are from the existing BATbern stack — zero version conflicts.
+
+**Pattern Consistency:** All naming conventions align with project-context.md. Database prefix `partner_meeting_*` consistent with existing tables.
+
+**Structure Alignment:** Backend sub-package structure matches existing services. Frontend Presenter Mode properly separated.
+
+### Requirements Coverage Validation ✅
+
+**All 10 Functional Requirement Groups:** Fully covered by architectural decisions, entity model, component structure, and API boundaries.
+
+**All Non-Functional Requirements:** Addressed through specific patterns (pre-fetch for performance, debounced save for reliability, dark theme contrast for accessibility, role boundaries for security).
+
+### Implementation Readiness Validation ✅
+
+**Decision Completeness:** 11 entities, 6 enums, API boundaries, JSONB structure example, and auto-save hook pattern — all specified with sufficient detail for AI agent implementation.
+
+**Structure Completeness:** Every FR group mapped to backend package + frontend component + API spec section.
+
+**Pattern Completeness:** 7 enforcement rules, 8 anti-patterns, 3 detailed process sequences.
+
+### Gap Analysis
+
+**Critical Gaps:** None
+
+**Important Gaps (resolve during implementation):**
+1. ICS invite library → recommend `ical4j` (standard Java library)
+2. PDF viewer approach → start with browser-native `&lt;object&gt;`/`&lt;iframe&gt;`, add `react-pdf` if needed
+3. Email template HTML content → follows existing SES template patterns
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION
+
+**Confidence Level:** High — brownfield extension with established patterns, no novel infrastructure, medium complexity</pre>
+<hr class="divider">
+<p><strong>What would you like to do?</strong></p>
+<ul><li><strong>[A]</strong> Advanced Elicitation — address any architectural concerns</li><li><strong>[P]</strong> Party Mode — review validation from different perspectives</li><li><strong>[C]</strong> Continue — complete the architecture and finish the workflow</li></ul></div>
+</div>
+
+  <div class="turn turn-note">
+    <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; How Validation Catches Gaps</div>
+    <div class="turn-content">
+      <p><strong>The validation step is not ceremonial.</strong> Winston systematically checks three dimensions:</p>
+      <ol>
+        <li><strong>Coherence</strong> &mdash; do the decisions contradict each other? (e.g., choosing WebSocket but then saying no new infrastructure)</li>
+        <li><strong>Coverage</strong> &mdash; is every functional requirement traceable to a specific entity, component, and API endpoint?</li>
+        <li><strong>Readiness</strong> &mdash; is there enough detail for an AI agent to implement without making assumptions?</li>
+      </ol>
+      <p>In this case, validation found <strong>zero critical gaps</strong> and only 3 important items (library selections) that can be resolved during implementation. This is the green light for creating epics and stories. Without validation, missing gaps would surface as blockers during implementation, causing rework.</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- SECTION 7: COMPLETION -->
+<section id="completion">
+  <div class="section-header">
+    <div class="phase-badge phase-bridge">7</div>
+    <div class="section-header-text"><h2>Step 8: Completion &amp; Handoff</h2><p>Architecture finalized, next steps guidance, and training output request</p></div>
+  </div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now loading step 8 — the completion step.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now let me load the help task for next steps guidance.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><hr class="divider">
+<p>🏗️ <strong>Architecture Workflow — COMPLETE</strong></p>
+<p>Nissim, congratulations! We just built a comprehensive architecture decision document together in one smooth session. Here's what we accomplished:</p>
+<p><strong>What we produced:</strong> <code>docs/trainings/ba_demo2/architecture.md</code> — a complete, validated architecture for the <strong>Active Partner Meeting Agenda</strong> feature.</p>
+<p><strong>What's in it:</strong></p>
+<ul><li><strong>Project Context Analysis</strong> — 10 FR groups mapped, all NFRs assessed, 6 cross-cutting concerns identified</li><li><strong>Starter Evaluation</strong> — Correctly identified this as brownfield (no starter needed)</li><li><strong>11 Core Decisions</strong> — Entity model (11 entities), minutes auto-assembly pattern, Presenter Mode layout, auto-save pattern, component architecture, scheduling approach</li><li><strong>Implementation Patterns</strong> — 6 enums defined, JSONB structure specified, 7 enforcement rules, 8 anti-patterns, 3 detailed process sequences</li><li><strong>Complete Project Structure</strong> — Every new file mapped, API boundaries defined, FR-to-structure mapping, end-to-end data flow</li><li><strong>Validation</strong> — All 10 FRs covered, all NFRs addressed, zero critical gaps, high confidence</li></ul>
+<p>The document is designed so that any AI agent can pick it up and implement consistently — from database schema to frontend components — without making conflicting choices.</p>
+<hr class="divider">
+<p><strong>What's next in the BMAD workflow?</strong></p>
+<p>Your next <strong>required</strong> steps in the <code>3-solutioning</code> phase:</p>
+<ol><li><strong>Create Epics and Stories (CE)</strong> — <code>/bmad-bmm-create-epics-and-stories</code></li></ol>
+<p>   📋 John (Product Manager) — Break the PRD + Architecture into implementable epics and user stories</p>
+<p>   <em>Run in a fresh context window</em></p>
+<ol><li><strong>Check Implementation Readiness (IR)</strong> — <code>/bmad-bmm-check-implementation-readiness</code></li></ol>
+<p>   🏗️ Winston (Architect) — Validate that PRD, UX, Architecture, and Epics/Stories are all aligned before development begins</p>
+<p>   <em>Run in a fresh context window. Consider using a different LLM for independent validation.</em></p>
+<p>After those, you move to <strong>Phase 4 — Implementation</strong>:</p>
+<ul><li>Sprint Planning (SP) → Create Story (CS) → Dev Story (DS) → Code Review (CR)</li></ul>
+<p><strong>Optional anytime workflows you might find useful:</strong></p>
+<ul><li><strong>Validate PRD (VP)</strong> — <code>/bmad-bmm-validate-prd</code> — Verify PRD completeness before epics</li><li><strong>Adversarial Review (AR)</strong> — <code>/bmad-review-adversarial-general</code> — Critical review of the architecture document</li></ul>
+<hr class="divider">
+<p>Any questions about the architecture document or the decisions we made? I'm here.</p></div>
+</div>
+<div class="turn turn-user">
+  <div class="turn-label label-user"><span class="dot"></span>Nissim <span class="ts">2026-04-05</span></div>
+  <div class="turn-content"><p>i want to use this session as a training session for ba's and architects, to learn how to work with bmad. create html version of the session wit all i said, all you said, also for the created architecture.md and then connect it to the master.html training</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Let me also look at one of the existing session HTML files for the conversation format style.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Good, I understand the format well. This is a substantial HTML file to create. Let me use an agent to build it in the background while I also update the master.html.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Good, both files created. Now let me update the master.html to replace the placeholder architecture card and add the artifact.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Now add the architecture artifact to the artifacts section.</p></div>
+</div>
+<div class="turn turn-agent">
+  <div class="turn-label label-agent"><span class="dot"></span>Winston — System Architect Agent</div>
+  <div class="turn-content"><p>Done. Here's what was created and updated:</p>
+<p><strong>New files:</strong></p>
+<ul><li><code>docs/trainings/ba_demo2/agenda-architecture-session.html</code> — Full session walkthrough with all 8 steps, your inputs, Winston's responses, entity models, component trees, and 4 training annotations explaining key architectural decisions</li><li><code>docs/trainings/ba_demo2/agenda-architecture.html</code> — Rendered architecture document as a browsable HTML artifact</li></ul>
+<p><strong>Updated:</strong></p>
+<ul><li><code>docs/trainings/ba_demo2/master.html</code> — Replaced the "Coming Soon" placeholder with a live link to the architecture session, and added the architecture artifact to the Generated Artifacts section</li></ul>
+<p>The Phase 3: Solutioning section now has the architecture session card linked and active. The Epics &amp; Stories session remains as a placeholder for when that's done.</p></div>
+</div>
+
+  <div class="turn turn-artifact">
+    <div class="turn-label label-artifact"><span class="dot"></span>Generated Artifact</div>
+    <div class="turn-content">
+      <p><strong>Architecture Decision Document</strong> &mdash; <a href="agenda-architecture.html" style="color:var(--accent)">View rendered architecture</a></p>
+      <p>Source: <code>docs/trainings/ba_demo2/architecture.md</code></p>
+      <p>A complete implementation-ready architecture document containing: entity model, naming conventions, JSONB structures, component trees, API boundaries, process sequences, enforcement guidelines, and validation results. Ready for epic/story creation.</p>
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<script>
+const navLinks = document.querySelectorAll('nav a[href^="#"]');
+const sections = document.querySelectorAll('section[id]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.getAttribute('id');
+      navLinks.forEach(a => {
+        a.classList.remove('active');
+        if (a.getAttribute('href') === '#' + id) a.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

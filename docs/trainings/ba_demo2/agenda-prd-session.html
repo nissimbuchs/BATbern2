@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training — PRD Creation Session: From Brainstorm to Product Requirements</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #E23615;
+    --note-bg: #2e2a1a;
+    --note-border: #FFCA4C;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  /* Layout */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Overview cards */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(40,175,143,.4); }
+  .overview-card.phase2 { border-color: rgba(226,54,21,.4); }
+  .overview-card.phase3 { border-color: rgba(175,35,34,.4); }
+  .overview-card.bridge { border-color: rgba(255,202,76,.4); }
+
+  /* Conversation turns */
+  .turn { margin-bottom: 20px; }
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Collapsible */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* Tags */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Takeaway grid */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  /* Result stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+  .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 4px; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#step1-agent">1. Agent</a>
+  <a href="#step2-init">2. Init</a>
+  <a href="#step3-discovery">3. Discovery</a>
+  <a href="#step4-vision">4. Vision</a>
+  <a href="#step5-autonomous">5. Full PRD</a>
+  <a href="#result">Result</a>
+  <a href="#takeaways">Takeaways</a>
+  <span class="sep">|</span>
+  <a href="agenda-prd.html">View PRD</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">BMAD Hands-On Training &mdash; Session 3</div>
+    <h1>PRD Creation Session<br><span>From Brainstorm &amp; UX Spec to Product Requirements</span></h1>
+    <p>A complete walkthrough of a real BMAD PRD creation session &mdash; how business analysts interact with the PM Agent (John) to transform brainstorming output and UX specifications into a comprehensive, production-ready Product Requirements Document.</p>
+    <div class="hero-meta">
+      <div><div class="label">Agent</div><div class="value">PM (John)</div></div>
+      <div><div class="label">Input Docs</div><div class="value">Brainstorm + UX Spec</div></div>
+      <div><div class="label">PRD Sections</div><div class="value">12</div></div>
+      <div><div class="label">Functional Reqs</div><div class="value">35 FRs</div></div>
+      <div><div class="label">Session Date</div><div class="value">2026-04-04</div></div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>Session Overview</h2>
+        <p>Where this session fits in the BMAD workflow</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Context</div>
+      <div class="turn-content">
+        <p>Before this session, two prior BMAD sessions produced key artifacts:</p>
+        <ol>
+          <li><strong><a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Brainstorming Session</a></strong> (Analyst Agent &mdash; Mary) &rarr; 35 ideas across 6 themes, prioritized into 4 build layers</li>
+          <li><strong><a href="agenda-ux-spec.html" style="color:var(--accent2)">UX Design Specification</a></strong> (UX Designer Agent) &rarr; 5 user journeys, 12 custom components, full design system, presenter mode layout</li>
+        </ol>
+        <p>This session uses the <strong>PM Agent (John)</strong> to synthesize both artifacts into a comprehensive PRD. The PRD workflow has 12 steps &mdash; we walk through them, showing how the agent discovers, classifies, and generates each section.</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">&#x1F4CA;</div>
+        <h3>Phase 1 &mdash; Analysis</h3>
+        <p>Already done. Brainstorming session produced 35 feature ideas organized into 6 themes with a 4-layer build order.</p>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">&#x1F3A8;</div>
+        <h3>Phase 2 &mdash; UX Design</h3>
+        <p>Already done. UX spec defines presenter mode, 5 user journeys, 12 custom components, projector-optimized dark theme.</p>
+      </div>
+      <div class="overview-card phase3">
+        <div class="icon">&#x1F4DD;</div>
+        <h3>Phase 3 &mdash; PRD (This Session)</h3>
+        <p>PM Agent synthesizes brainstorming + UX into a 12-section PRD with 35 functional requirements, success criteria, scope &amp; phasing.</p>
+      </div>
+      <div class="overview-card bridge">
+        <div class="icon">&#x1F3D7;</div>
+        <h3>Next &mdash; Architecture &amp; Epics</h3>
+        <p>Architect Agent designs entities and APIs. PM Agent creates epics and stories from the PRD.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1: LOADING THE PM AGENT -->
+  <section id="step1-agent">
+    <div class="section-header">
+      <div class="phase-badge phase-3">1</div>
+      <div class="section-header-text">
+        <h2>Step 1: Loading the PM Agent</h2>
+        <p>Activating John, the BMAD Product Manager agent</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The <strong>PM Agent (John)</strong> is a product management veteran &mdash; 8+ years launching B2B and consumer products. He "asks WHY relentlessly like a detective on a case" and cuts through fluff to what actually matters. His slash command is <code>/bmad-agent-bmm-pm</code>.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>/bmad-agent-bmm-pm</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John)</div>
+      <div class="turn-content">
+        <p>&#x1F4CB; <strong>Hey Nissim! John here &mdash; your Product Manager.</strong></p>
+        <p>Good to have you. Let's cut straight to what matters &mdash; what are we building, and <em>why</em> does it need to exist? That's always the first question worth answering.</p>
+        <table>
+          <tr><th>#</th><th>Cmd</th><th>Description</th></tr>
+          <tr><td>1</td><td><strong>[MH]</strong></td><td>Redisplay Menu Help</td></tr>
+          <tr><td>2</td><td><strong>[CH]</strong></td><td>Chat with the Agent about anything</td></tr>
+          <tr><td>3</td><td><strong>[CP]</strong></td><td>Create PRD &mdash; Expert-led facilitation to produce your PRD</td></tr>
+          <tr><td>4</td><td><strong>[VP]</strong></td><td>Validate PRD</td></tr>
+          <tr><td>5</td><td><strong>[EP]</strong></td><td>Edit PRD</td></tr>
+          <tr><td>6</td><td><strong>[CE]</strong></td><td>Create Epics and Stories</td></tr>
+          <tr><td>7</td><td><strong>[IR]</strong></td><td>Implementation Readiness Check</td></tr>
+          <tr><td>8</td><td><strong>[CC]</strong></td><td>Course Correction</td></tr>
+          <tr><td>9</td><td><strong>[PM]</strong></td><td>Start Party Mode</td></tr>
+          <tr><td>10</td><td><strong>[DA]</strong></td><td>Dismiss Agent</td></tr>
+        </table>
+        <div class="tags">
+          <span class="tag tag-green">AGENT LOADED</span>
+          <span class="tag tag-purple">PM PERSONA</span>
+          <span class="tag tag-yellow">MENU DISPLAYED</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Key Takeaway</div>
+      <div class="turn-content">
+        <p>The PM agent offers the full product management toolkit. For creating a PRD from scratch, we select <strong>[CP] Create PRD</strong>. This triggers the 12-step PRD workflow.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: WORKFLOW INITIALIZATION -->
+  <section id="step2-init">
+    <div class="section-header">
+      <div class="phase-badge phase-3">2</div>
+      <div class="section-header-text">
+        <h2>Step 2: PRD Workflow Initialization</h2>
+        <p>Starting the Create PRD workflow &mdash; document discovery and setup</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>cp</code></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>What Happens Behind the Scenes</div>
+      <div class="turn-content">
+        <p>The agent loads the PRD creation workflow (12 steps). <strong>Step 1</strong> is automatic initialization:</p>
+        <ul>
+          <li>Checks if a PRD already exists (continuation vs. fresh start)</li>
+          <li>Scans the project for input documents: briefs, research, brainstorming, project docs</li>
+          <li>Creates the PRD file from a template with proper frontmatter</li>
+          <li>Reports what it found and asks for confirmation</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Document Discovery</div>
+      <div class="turn-content">
+        <p><strong>Create Mode: Creating a new PRD from scratch.</strong></p>
+        <p>The agent scans the project and reports:</p>
+        <p><strong>Input Documents Discovered:</strong></p>
+        <ul>
+          <li>Product briefs: <strong>0 files</strong> (none found)</li>
+          <li>Research: <strong>0 files</strong> (none found)</li>
+          <li>Brainstorming: <strong>1 file</strong> &mdash; brainstorming-session-2026-04-04.md (35 ideas)</li>
+          <li>Project docs: <strong>3 files</strong> (project-context.md, ux-design-specification.md, prd-enhanced.md)</li>
+        </ul>
+        <p>&#x1F4CB; <strong>Note:</strong> This is a <strong>brownfield project</strong>. BATbern is a mature platform through Epic 8.</p>
+        <p><em>"Do you have any other documents you'd like me to include, or shall we continue?"</em></p>
+        <p><strong>[C] Continue</strong> &mdash; Save this and move to Project Discovery (Step 2 of 11)</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The agent auto-discovers relevant documents but <strong>always confirms with you</strong> before proceeding. This is where you can point it to specific files if it missed something. In our case, we redirected it to the exact files in the training folder:</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content">
+        <p><code>read 'docs/trainings/ba_demo2/brainstorming-session-2026-04-04.md' and 'docs/trainings/ba_demo2/ux-design-specification.md' and run the workflow for it</code></p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Loading Specific Files</div>
+      <div class="turn-content">
+        <p>The agent reads both files completely (brainstorming: 317 lines, UX spec: 1073 lines), then creates the PRD document:</p>
+        <p><strong>Document Setup:</strong></p>
+        <ul>
+          <li>Created: <code>docs/trainings/ba_demo2/prd.md</code> from template</li>
+          <li>Initialized frontmatter with workflow state</li>
+          <li>4 input documents tracked</li>
+        </ul>
+        <p><strong>[C] Continue</strong> &mdash; Save this and move to Project Discovery</p>
+        <div class="tags">
+          <span class="tag tag-green">BRAINSTORM LOADED</span>
+          <span class="tag tag-green">UX SPEC LOADED</span>
+          <span class="tag tag-purple">PRD CREATED</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: PROJECT DISCOVERY & CLASSIFICATION -->
+  <section id="step3-discovery">
+    <div class="section-header">
+      <div class="phase-badge phase-3">3</div>
+      <div class="section-header-text">
+        <h2>Step 3: Project Discovery &amp; Classification</h2>
+        <p>The agent classifies the project type, domain, and complexity</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>What Happens Behind the Scenes</div>
+      <div class="turn-content">
+        <p>The agent loads CSV reference data for project types (web_app, mobile_app, SaaS, etc.) and domain complexity (healthcare, fintech, general, etc.). It matches signals from the loaded documents against these classifications.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Classification</div>
+      <div class="turn-content">
+        <p>This is a <strong>brownfield project</strong> &mdash; BATbern is a mature platform through Epic 8 with partner coordination already in place.</p>
+        <p><em>"The problem is clear: BATbern's bi-annual partner meetings are currently run with verbal agreements, emailed PDFs, handwritten notes... There's no governance trail, no accountability on action items, and absent partners are completely in the dark."</em></p>
+        <p><strong>My classification:</strong></p>
+        <table>
+          <tr><td><strong>Project Type</strong></td><td>Web App (SPA &mdash; React 19, browser-based, projector-optimized)</td></tr>
+          <tr><td><strong>Domain</strong></td><td>Event Management / Community Governance</td></tr>
+          <tr><td><strong>Complexity</strong></td><td>Medium (partner voting, financial sign-offs, governance records)</td></tr>
+          <tr><td><strong>Project Context</strong></td><td>Brownfield &mdash; extending existing platform</td></tr>
+        </table>
+        <p><em>"Does this sound right, or would you refine anything?"</em></p>
+        <p><strong>Select:</strong> [A] Advanced Elicitation &nbsp; [P] Party Mode &nbsp; [C] Continue to Product Vision</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The classification step uses <strong>data-driven matching</strong> from CSV reference files. The agent detected "SPA, browser, React" signals for web_app, and matched governance patterns for medium complexity. At each step, you can choose:</p>
+        <ul>
+          <li><strong>[A] Advanced Elicitation</strong> &mdash; deeper questioning to refine the classification</li>
+          <li><strong>[P] Party Mode</strong> &mdash; get input from all BMAD agents simultaneously</li>
+          <li><strong>[C] Continue</strong> &mdash; accept and move on</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: VISION DISCOVERY -->
+  <section id="step4-vision">
+    <div class="section-header">
+      <div class="phase-badge phase-3">4</div>
+      <div class="section-header-text">
+        <h2>Step 4: Vision Discovery</h2>
+        <p>The agent probes for what makes this product special</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Vision Questions</div>
+      <div class="turn-content">
+        <p><em>"We've established this is a brownfield web app in event management / community governance with medium complexity. Now let's get to the WHY."</em></p>
+        <p><strong>What I think the core insight is:</strong></p>
+        <p><em>"The partner meeting already happens. Six agenda items already get covered. Votes already happen (verbally). Notes already get taken (by someone, hopefully). But none of it leaves the room in a structured, traceable way. The meeting is a black box."</em></p>
+        <p><em>"The breakthrough here isn't 'build a meeting tool.' It's: <strong>make the meeting document itself as a byproduct of running it.</strong>"</em></p>
+        <p><strong>Three sharpening questions:</strong></p>
+        <ol>
+          <li><strong>What's the real cost of the current approach?</strong> Efficiency issue or governance/accountability gap?</li>
+          <li><strong>Who's the primary champion?</strong> Organizer wanting better meetings or partners wanting transparency?</li>
+          <li><strong>What would make the organizer say "I can't go back to the old way"?</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>Notice how John is a <strong>facilitator, not a template-filler</strong>. He synthesized the core insight from the brainstorming docs and asked targeted "WHY" questions. In a normal session, you'd answer these questions. But since all the information was already in the brainstorming and UX spec, we accelerated:</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5: AUTONOMOUS PRD GENERATION -->
+  <section id="step5-autonomous">
+    <div class="section-header">
+      <div class="phase-badge phase-3">5</div>
+      <div class="section-header-text">
+        <h2>Step 5: Autonomous PRD Generation</h2>
+        <p>Instructing the agent to fill all remaining sections from loaded documents</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content">
+        <p><code>now continue the workflow and fill in all the chapters with all you know from the documents. only ask back, when s.t. is unclear or missing</code></p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Key Teaching Moment</div>
+      <div class="turn-content">
+        <p>This is a <strong>power-user move</strong>. The normal workflow has 12 steps with a review cycle at each step. But when your input documents are comprehensive (we had a detailed brainstorming session + a complete UX spec), you can instruct the agent to <strong>drive autonomously</strong> and only interrupt when something is genuinely unclear.</p>
+        <p>The agent then:</p>
+        <ol>
+          <li>Loaded all 12 remaining step definitions to understand the full structure</li>
+          <li>Synthesized the brainstorming (35 ideas, 6 themes, 4 layers) and UX spec (5 journeys, 12 components)</li>
+          <li>Wrote the complete PRD in one pass &mdash; all 12 sections</li>
+          <li>Reported "No gaps I need to flag &mdash; the input documents were comprehensive"</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (John) &mdash; Full PRD Written</div>
+      <div class="turn-content">
+        <p><em>"Understood &mdash; you want me to drive. I'll synthesize everything and only ask if something is genuinely unclear or missing."</em></p>
+        <p>The agent wrote the complete PRD covering all workflow steps:</p>
+
+        <details>
+          <summary>Steps 2b-2c: Executive Summary &amp; Classification</summary>
+          <div class="details-body">
+            <p>Vision, target users, problem statement, 5 differentiators (minutes as byproduct, proxied voting, configurable agenda, meeting extends beyond room, action item carry-forward), and project classification table.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 3: Success Criteria (17 measurable targets)</summary>
+          <div class="details-body">
+            <p><strong>User success:</strong> Full meeting in presenter mode, 90%+ minutes completeness, zero training, vote recording &lt;30s, distribution &lt;5min, 100% carry-forward, absent partner inclusion &lt;24h.</p>
+            <p><strong>Business success:</strong> Governance trail for sign-offs, reduced prep time, institutional memory archive, satisfaction trends, 100% fee acceptance.</p>
+            <p><strong>Technical success:</strong> Zero presenter mode crashes, auto-save &lt;2s, 20MB document support, PDF generation, mobile minutes viewing.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 4: User Journeys (6 journeys)</summary>
+          <div class="details-body">
+            <ol>
+              <li><strong>Organizer &mdash; Create &amp; Prepare</strong>: Agenda builder, document uploads, RSVP monitoring, prep checklist</li>
+              <li><strong>Organizer &mdash; Run Meeting</strong>: Presenter mode flow through all 6 agenda items with votes, documents, notes</li>
+              <li><strong>Organizer &mdash; Review &amp; Publish Minutes</strong>: Auto-assembled review, inline editing, publish &amp; distribute</li>
+              <li><strong>Absent Partner &mdash; Catch Up &amp; Act</strong>: Minutes review, fee acceptance, feedback pulse</li>
+              <li><strong>New Partner &mdash; First Meeting</strong>: Onboarding tour, "New" badge, context package</li>
+              <li><strong>Next Meeting &mdash; Action Item Carry-Forward</strong>: Open items surfaced, reviewed during meeting</li>
+            </ol>
+          </div>
+        </details>
+
+        <details>
+          <summary>Steps 5-6: Domain (skipped &mdash; general) &amp; Innovation Focus</summary>
+          <div class="details-body">
+            <p>Domain step skipped (general domain, no regulatory constraints). Innovation section documents 5 novel/adapted UX patterns with validation approach for the core innovation (minutes as byproduct).</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 7: Project-Type Requirements</summary>
+          <div class="details-body">
+            <p>Browser/device matrix (presenter = desktop only, portal = full responsive), SPA architecture, accessibility (WCAG 2.1 AA/AAA), real-time strategy (no WebSocket needed, auto-save via HTTP).</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 8: Scope &amp; Phasing (4 phases)</summary>
+          <div class="details-body">
+            <p><strong>Phase 1 MVP:</strong> 4 layers &mdash; foundation (entities, agenda builder, RSVP, doc viewer, vote component), meeting flow (presenter mode, gallery, notes, minutes), agenda interactions (attendance/analytics/audit/budget&rarr;minutes, checklist, action items), post-meeting (publish, fee acceptance, carry-forward, stand-ins).</p>
+            <p><strong>Phase 2 Quick Wins:</strong> ICS deep-links, auditor email config, profile cards, feedback pulse.</p>
+            <p><strong>Phase 3 Nice-to-Have:</strong> Onboarding tour, context package, analytics archive, PDF export.</p>
+            <p><strong>Out of Scope:</strong> Multi-device interaction, WebSocket, video conferencing, AI summaries.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 9: Functional Requirements (10 groups, 35 FRs)</summary>
+          <div class="details-body">
+            <table>
+              <tr><th>Group</th><th>FRs</th><th>Coverage</th></tr>
+              <tr><td>FR1: Meeting Management</td><td>7</td><td>CRUD, agenda config, ICS, status lifecycle, auditor</td></tr>
+              <tr><td>FR2: RSVP &amp; Attendance</td><td>5</td><td>RSVP, presence toggle, stand-ins, "New" badge</td></tr>
+              <tr><td>FR3: Presenter Mode</td><td>8</td><td>Full-screen, sidebar, navigation, notes, auto-save, keyboard</td></tr>
+              <tr><td>FR4: Document Upload</td><td>4</td><td>Upload, viewer, permanent attachment, S3 presigned</td></tr>
+              <tr><td>FR5: Voting</td><td>7</td><td>Start vote, per-partner, stand-in proxy, results, attribution</td></tr>
+              <tr><td>FR6: Meeting Minutes</td><td>8</td><td>Auto-assembly, edit, publish, distribute, mobile view</td></tr>
+              <tr><td>FR7: Meeting Prep</td><td>3</td><td>Checklist, status indicators, soft-blocking</td></tr>
+              <tr><td>FR8: Post-Meeting</td><td>6</td><td>Fee acceptance, reminders, feedback pulse, trends</td></tr>
+              <tr><td>FR9: Action Items</td><td>5</td><td>Create, assign, carry-forward, urgency indicators</td></tr>
+              <tr><td>FR10: Analytics Snapshot</td><td>3</td><td>Embed, capture, historize</td></tr>
+            </table>
+          </div>
+        </details>
+
+        <details>
+          <summary>Step 10: Non-Functional Requirements</summary>
+          <div class="details-body">
+            <p><strong>Performance:</strong> Presenter load &lt;3s, transitions &lt;300ms, auto-save &lt;2s, mobile minutes &lt;2s on 4G.</p>
+            <p><strong>Security:</strong> Cognito auth, role-based access, S3 presigned URLs, immutable vote records.</p>
+            <p><strong>Reliability:</strong> Server-side auto-save, persistent drafts, graceful exit, single-operator model.</p>
+            <p><strong>Accessibility:</strong> Presenter AAA contrast, portal AA, keyboard shortcuts, ARIA live regions.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Steps 11-12: Polish &amp; Completion</summary>
+          <div class="details-body">
+            <p>Document polished for flow and coherence. Added Design System section (colors, typography, 11 key components), Constraints &amp; Dependencies, and Glossary (9 domain terms). Workflow marked complete.</p>
+          </div>
+        </details>
+
+        <div class="tags">
+          <span class="tag tag-green">PRD COMPLETE</span>
+          <span class="tag tag-green">12/12 STEPS</span>
+          <span class="tag tag-purple">35 FRs</span>
+          <span class="tag tag-yellow">6 JOURNEYS</span>
+          <span class="tag tag-yellow">17 SUCCESS CRITERIA</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result">
+    <div class="section-header">
+      <div class="phase-badge phase-1">&#x2714;</div>
+      <div class="section-header-text">
+        <h2>Result: The Complete PRD</h2>
+        <p>What the autonomous generation produced</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">PRD Sections</div></div>
+      <div class="stat-card"><div class="stat-value">35</div><div class="stat-label">Functional Reqs</div></div>
+      <div class="stat-card"><div class="stat-value">6</div><div class="stat-label">User Journeys</div></div>
+      <div class="stat-card"><div class="stat-value">17</div><div class="stat-label">Success Criteria</div></div>
+      <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">Scope Phases</div></div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Generated Artifact</div>
+      <div class="turn-content">
+        <p><strong>Product Requirements Document &mdash; BATbern Active Partner Meeting Agenda</strong></p>
+        <p>The full PRD is available as a rendered HTML document:</p>
+        <p style="margin-top:12px">
+          <a href="agenda-prd.html" style="display:inline-block;background:var(--accent);color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.95rem;">View Full PRD &rarr;</a>
+        </p>
+        <p style="margin-top:16px"><strong>PRD Table of Contents:</strong></p>
+        <ol>
+          <li>Executive Summary &amp; What Makes This Special</li>
+          <li>Project Classification</li>
+          <li>Success Criteria (User / Business / Technical)</li>
+          <li>User Journeys (6 narrative journeys)</li>
+          <li>Innovation Focus (5 novel patterns)</li>
+          <li>Project-Type Requirements (browser, SPA, accessibility)</li>
+          <li>Scope &amp; Phasing (MVP + 3 phases)</li>
+          <li>Functional Requirements (FR1-FR10, 35 individual FRs)</li>
+          <li>Non-Functional Requirements (performance, security, reliability, accessibility)</li>
+          <li>Design System &amp; Visual Direction</li>
+          <li>Constraints &amp; Dependencies</li>
+          <li>Glossary</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAKEAWAYS -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F4A1;</div>
+      <div class="section-header-text">
+        <h2>Takeaways for Business Analysts</h2>
+        <p>Key lessons from this PRD creation session</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>&#x1F4C4; Input Quality = Output Quality</h3>
+        <p>The PRD was strong because the inputs were strong. A detailed brainstorming session (35 ideas, prioritized) and a comprehensive UX spec (5 journeys, 12 components) gave the PM agent everything it needed. Garbage in, garbage out &mdash; invest in your analysis phase.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F3AF; Point to Specific Files</h3>
+        <p>When the agent auto-discovered the wrong files, we redirected it to the exact files we wanted. Don't let the agent guess &mdash; be explicit about your inputs. <code>read 'path/to/file.md'</code> is your friend.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x26A1; Know When to Accelerate</h3>
+        <p>The workflow has 12 interactive steps. When your inputs are comprehensive, you can tell the agent: <em>"fill in all chapters, only ask when unclear."</em> This collapsed 10 review cycles into a single generation pass. Use this when you trust your inputs.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F50D; The Agent Asks WHY</h3>
+        <p>John didn't just fill a template. He identified the <em>core insight</em> ("the meeting documents itself") and asked three sharpening questions. Even when you accelerate, the vision discovery step ensures the PRD captures <em>why</em> the product matters, not just what it does.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F517; Artifacts Chain Together</h3>
+        <p>Brainstorming &rarr; UX Spec &rarr; PRD. Each artifact builds on the previous one. The PRD's functional requirements map directly to brainstorming ideas. The user journeys come from the UX spec. The scope phases match the brainstorming's 4-layer build order. This traceability is the BMAD advantage.</p>
+      </div>
+      <div class="takeaway">
+        <h3>&#x1F4CB; Review the Classification</h3>
+        <p>The project classification (type, domain, complexity, context) shapes everything downstream. It determines which PRD sections are relevant, which NFRs matter, and whether domain-specific steps run. Always validate the classification before continuing.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>What Comes Next</div>
+      <div class="turn-content">
+        <p>With the PRD complete, the next BMAD phases are:</p>
+        <ol>
+          <li><strong>Architecture</strong> (<code>/bmad-agent-bmm-architect</code>) &mdash; Design the PartnerMeeting entity, APIs, and component architecture based on the PRD's functional requirements</li>
+          <li><strong>Epics &amp; Stories</strong> (<code>/bmad-agent-bmm-pm</code> &rarr; [CE]) &mdash; Break the PRD into implementable epics and stories following the 4-phase scope</li>
+          <li><strong>Implementation Readiness</strong> (<code>/bmad-agent-bmm-pm</code> &rarr; [IR]) &mdash; Validate PRD, UX, Architecture, and Epics are all aligned before development begins</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction to the BMAD Method</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 72px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 24px; }
+  .hero-link {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .hero-link:hover { background: var(--accent2); color: var(--bg); }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .b-analysis { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .b-planning { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .b-solutioning { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .b-implementation { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .b-neutral { background: rgba(232,234,246,.1); color: var(--text); border: 2px solid var(--border); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .card p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 6px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card.c-analysis { border-color: rgba(40,175,143,.4); }
+  .card.c-planning { border-color: rgba(226,54,21,.4); }
+  .card.c-solutioning { border-color: rgba(175,35,34,.4); }
+  .card.c-implementation { border-color: rgba(255,202,76,.4); }
+
+  /* Agent cards */
+  .agent-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .agent-icon {
+    font-size: 2rem;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .agent-info h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+  .agent-info .agent-title { font-size: 0.82rem; color: var(--accent2); font-weight: 600; margin-bottom: 6px; }
+  .agent-info p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
+  .agent-info .cmd { font-family: 'Cascadia Code', monospace; font-size: 0.78rem; color: var(--accent4); background: var(--surface2); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  .flow-item {
+    text-align: center;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    min-width: 160px;
+  }
+  .flow-item h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+  .flow-item p { font-size: 0.75rem; color: var(--text-muted); }
+  .flow-arrow { font-size: 1.5rem; color: var(--border); padding: 0 4px; }
+  .f-analysis { background: rgba(40,175,143,.1); border: 1px solid rgba(40,175,143,.3); color: var(--accent2); }
+  .f-planning { background: rgba(226,54,21,.1); border: 1px solid rgba(226,54,21,.3); color: var(--accent); }
+  .f-solutioning { background: rgba(175,35,34,.1); border: 1px solid rgba(175,35,34,.3); color: var(--accent3); }
+  .f-implementation { background: rgba(255,202,76,.1); border: 1px solid rgba(255,202,76,.3); color: var(--accent4); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-right: 4px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+
+  .note {
+    background: rgba(255,202,76,.06);
+    border: 1px solid rgba(255,202,76,.25);
+    border-left: 4px solid var(--accent4);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    margin: 20px 0;
+  }
+  .note strong { color: var(--accent4); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#what-is-bmad" class="active">What is BMAD</a>
+  <a href="#phases">Phases</a>
+  <a href="#agents">Agents</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#artifacts">Artifacts</a>
+  <a href="#quick-start">Quick Start</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <img src="https://raw.githubusercontent.com/bmad-code-org/BMAD-METHOD/main/banner-bmad-method.png" alt="BMAD Method Banner" style="max-width:100%;height:auto;border-radius:var(--radius);margin-bottom:24px;border:1px solid var(--border);">
+    <div class="badge">BA Training &mdash; Prerequisite Reading</div>
+    <h1>Introduction to the<br><span>BMAD Method</span></h1>
+    <p>Build More Architect Dreams &mdash; an AI-driven development framework that guides you from ideation through planning, solutioning, and implementation using specialized AI agents and structured workflows.</p>
+    <a href="https://docs.bmad-method.org" target="_blank" class="hero-link">Official Documentation &rarr; docs.bmad-method.org</a>
+  </div>
+
+  <!-- WHAT IS BMAD -->
+  <section id="what-is-bmad">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">?</div>
+      <div class="section-header-text">
+        <h2>What is the BMAD Method?</h2>
+        <p>AI agents that think like your team &mdash; analyst, PM, architect, designer, developer</p>
+      </div>
+    </div>
+
+    <p style="font-size:0.95rem;margin-bottom:20px;">The <strong>BMAD Method</strong> (BMM) is a modular AI framework that provides specialized agents for every phase of software development. Instead of one generic AI assistant, you get purpose-built agents &mdash; each with a distinct persona, expertise, and structured workflows &mdash; that produce traceable artifacts feeding into the next phase.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="icon">&#x1F916;</div>
+        <h3>Specialized Agents</h3>
+        <p>7 default agents, each with a name, personality, and domain expertise. They don't just answer questions &mdash; they facilitate structured workflows.</p>
+      </div>
+      <div class="card">
+        <div class="icon">&#x1F504;</div>
+        <h3>Progressive Phases</h3>
+        <p>4 phases where each artifact feeds the next. Analysis informs Planning, Planning drives Solutioning, Solutioning guides Implementation.</p>
+      </div>
+      <div class="card">
+        <div class="icon">&#x1F4C4;</div>
+        <h3>Traceable Artifacts</h3>
+        <p>Every phase produces markdown documents. A brainstorming report feeds the PRD. The PRD feeds architecture. Architecture feeds stories. Nothing is lost.</p>
+      </div>
+      <div class="card">
+        <div class="icon">&#x2699;&#xFE0F;</div>
+        <h3>Adaptive Complexity</h3>
+        <p>From a quick bug fix (<code>/bmad-quick-dev</code>) to an enterprise platform with 10+ epics &mdash; the framework scales to your project's needs.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Key Principle:</strong> Vague thinking produces vague requirements, which compounds into weak architecture and incomplete stories. BMAD's structured phases prevent this compounding by forcing clarity at each stage before moving forward.
+    </div>
+  </section>
+
+  <!-- PHASES -->
+  <section id="phases">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>The Four Phases</h2>
+        <p>Each phase produces artifacts that inform the next</p>
+      </div>
+    </div>
+
+    <!-- Flow diagram -->
+    <div class="flow">
+      <div class="flow-item f-analysis">
+        <h4>Phase 1: Analysis</h4>
+        <p>Explore &amp; validate ideas</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-planning">
+        <h4>Phase 2: Planning</h4>
+        <p>Define what to build</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-solutioning">
+        <h4>Phase 3: Solutioning</h4>
+        <p>Decide how to build it</p>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-item f-implementation">
+        <h4>Phase 4: Implementation</h4>
+        <p>Build it, story by story</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Phase 1 -->
+    <div style="margin-bottom:40px">
+      <h3 style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span class="tag tag-green">Phase 1</span> Analysis &mdash; From Idea to Foundation</h3>
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Optional but recommended. Explores the problem space and validates ideas before committing resources. Prevents "building the wrong thing."</p>
+      <table>
+        <tr><th>Workflow</th><th>Agent</th><th>Purpose</th><th>Output</th></tr>
+        <tr><td>Brainstorming</td><td>Analyst (Mary)</td><td>Guided ideation with structured techniques</td><td><code>brainstorming-report.md</code></td></tr>
+        <tr><td>Domain/Market/Technical Research</td><td>Analyst (Mary)</td><td>Validate assumptions with research</td><td>Research findings</td></tr>
+        <tr><td>Product Brief</td><td>Analyst (Mary)</td><td>1-2 page strategic vision</td><td><code>product-brief.md</code></td></tr>
+        <tr><td>PRFAQ</td><td>Analyst (Mary)</td><td>Stress-test concepts (Amazon working-backwards)</td><td><code>prfaq.md</code></td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 2 -->
+    <div style="margin-bottom:40px">
+      <h3 style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span class="tag tag-purple">Phase 2</span> Planning &mdash; Define What to Build</h3>
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Defines requirements, user experience, and success criteria. Produces the PRD and UX specification that drive all downstream work.</p>
+      <table>
+        <tr><th>Workflow</th><th>Agent</th><th>Purpose</th><th>Output</th></tr>
+        <tr><td>Create PRD</td><td>PM (John)</td><td>Functional/non-functional requirements</td><td><code>prd.md</code></td></tr>
+        <tr><td>Create UX Design</td><td>UX Designer (Sally)</td><td>User experience specification</td><td><code>ux-spec.md</code></td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 3 -->
+    <div style="margin-bottom:40px">
+      <h3 style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span class="tag tag-red">Phase 3</span> Solutioning &mdash; Decide How to Build It</h3>
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Translates requirements into technical architecture and breaks work into implementable stories. Prevents teams from choosing incompatible approaches.</p>
+      <table>
+        <tr><th>Workflow</th><th>Agent</th><th>Purpose</th><th>Output</th></tr>
+        <tr><td>Create Architecture</td><td>Architect (Winston)</td><td>Technical decisions, ADRs</td><td><code>architecture.md</code></td></tr>
+        <tr><td>Create Epics &amp; Stories</td><td>PM (John)</td><td>Break requirements into work units</td><td>Epic &amp; story files</td></tr>
+        <tr><td>Implementation Readiness</td><td>PM + Architect</td><td>Gate check before development</td><td>PASS / CONCERNS / FAIL</td></tr>
+      </table>
+    </div>
+
+    <!-- Phase 4 -->
+    <div>
+      <h3 style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span class="tag tag-yellow">Phase 4</span> Implementation &mdash; Build It, Story by Story</h3>
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Executes the plan one story at a time with sprint planning, code review, and retrospectives.</p>
+      <table>
+        <tr><th>Workflow</th><th>Agent</th><th>Purpose</th><th>Output</th></tr>
+        <tr><td>Sprint Planning</td><td>Developer (Amelia)</td><td>Initialize tracking</td><td><code>sprint-status.yaml</code></td></tr>
+        <tr><td>Dev Story</td><td>Developer (Amelia)</td><td>Implement a story</td><td>Working code + tests</td></tr>
+        <tr><td>Code Review</td><td>Developer (Amelia)</td><td>Validate quality</td><td>Approval or revision</td></tr>
+        <tr><td>Course Correction</td><td>PM (John)</td><td>Handle mid-sprint changes</td><td>Updated plan</td></tr>
+        <tr><td>Retrospective</td><td>PM (John)</td><td>Post-epic review</td><td>Lessons learned</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="agents">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x1F465;</div>
+      <div class="section-header-text">
+        <h2>The 7 Default Agents</h2>
+        <p>Each agent has a name, persona, expertise, and structured workflows</p>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F4CA;</div>
+        <div class="agent-info">
+          <h3>Mary</h3>
+          <div class="agent-title">Business Analyst</div>
+          <p>Strategic analyst with expertise in market research, competitive analysis, and requirements elicitation. Speaks "with the excitement of a treasure hunter." Facilitates brainstorming, research, and product briefs.</p>
+          <span class="cmd">/bmad-agent-bmm-analyst</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F4CB;</div>
+        <div class="agent-info">
+          <h3>John</h3>
+          <div class="agent-title">Product Manager</div>
+          <p>Product management veteran. Asks "WHY?" relentlessly. Creates PRDs through collaborative discovery, manages epics and stories, runs implementation readiness checks and course corrections.</p>
+          <span class="cmd">/bmad-agent-bmm-pm</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F3D7;</div>
+        <div class="agent-info">
+          <h3>Winston</h3>
+          <div class="agent-title">Architect</div>
+          <p>Technical architecture expert. Designs system architecture, documents ADRs (Architecture Decision Records), validates implementation readiness from the technical perspective.</p>
+          <span class="cmd">/bmad-agent-bmm-architect</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F3A8;</div>
+        <div class="agent-info">
+          <h3>Sally</h3>
+          <div class="agent-title">UX Designer</div>
+          <p>User experience specialist. Creates UX specifications with user journeys, interaction patterns, component strategies, design systems, and accessibility standards.</p>
+          <span class="cmd">/bmad-agent-bmm-ux-designer</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F4BB;</div>
+        <div class="agent-info">
+          <h3>Amelia</h3>
+          <div class="agent-title">Developer</div>
+          <p>Full-stack developer. Implements stories, runs code reviews, generates QA tests, handles sprint planning and quick development workflows.</p>
+          <span class="cmd">/bmad-agent-bmm-dev</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F4DD;</div>
+        <div class="agent-info">
+          <h3>Paige</h3>
+          <div class="agent-title">Technical Writer</div>
+          <p>Documentation specialist. Creates project documentation, user guides, API docs, architecture diagrams, and explanations for complex systems.</p>
+          <span class="cmd">/bmad-agent-bmm-tech-writer</span>
+        </div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-icon">&#x1F6E1;</div>
+        <div class="agent-info">
+          <h3>QA Agent</h3>
+          <div class="agent-title">Quality Assurance</div>
+          <p>Validates artifacts at each phase gate. Runs adversarial reviews, checks implementation readiness, and ensures quality standards are met.</p>
+          <span class="cmd">/bmad-agent-bmm-qa</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Activating agents:</strong> Type the slash command in Claude Code (e.g., <code>/bmad-agent-bmm-analyst</code>). The agent loads its persona, reads your project config, and presents a menu of available workflows. You interact conversationally &mdash; the agent facilitates, you provide domain expertise.
+    </div>
+  </section>
+
+  <!-- WORKFLOW STRUCTURE -->
+  <section id="workflow">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x1F504;</div>
+      <div class="section-header-text">
+        <h2>How Workflows Work</h2>
+        <p>Step-by-step facilitated processes with review cycles</p>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>1. Activate an Agent</h3>
+        <p>Type the slash command. The agent greets you, loads the project config, and shows a menu of available workflows.</p>
+        <p><em>Example:</em> <code>/bmad-agent-bmm-pm</code> &rarr; John presents: Create PRD, Validate PRD, Create Epics, etc.</p>
+      </div>
+      <div class="card">
+        <h3>2. Select a Workflow</h3>
+        <p>Choose a menu item (e.g., "CP" for Create PRD). The agent loads a multi-step workflow and begins with Step 1.</p>
+        <p><em>Example:</em> PRD workflow has 12 steps: Init &rarr; Discovery &rarr; Vision &rarr; Executive Summary &rarr; ...</p>
+      </div>
+      <div class="card">
+        <h3>3. Collaborative Discovery</h3>
+        <p>The agent asks questions, synthesizes your answers, and drafts content. It auto-discovers input documents from previous phases.</p>
+        <p><em>Key:</em> The agent is a facilitator, not a template filler. It asks "WHY?" and probes deeper.</p>
+      </div>
+      <div class="card">
+        <h3>4. Review &amp; Continue</h3>
+        <p>After each step, the agent presents its work and offers: <strong>[A]</strong> Advanced Elicitation, <strong>[P]</strong> Party Mode, <strong>[C]</strong> Continue. You review, refine, and approve.</p>
+        <p><em>Power move:</em> When inputs are comprehensive, tell the agent to drive autonomously.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;border-color:rgba(226,54,21,.4)">
+      <h3>Special Modes</h3>
+      <table>
+        <tr><th>Mode</th><th>What It Does</th><th>When to Use</th></tr>
+        <tr><td><strong>Advanced Elicitation</strong></td><td>Deeper questioning with specialized techniques</td><td>When an area needs more exploration</td></tr>
+        <tr><td><strong>Party Mode</strong></td><td>All agents discuss simultaneously</td><td>When you want diverse perspectives</td></tr>
+        <tr><td><strong>Quick Dev</strong></td><td>Unifies clarification + planning + implementation</td><td>Small, well-understood changes</td></tr>
+        <tr><td><strong>Adversarial Review</strong></td><td>Critical examination by a "cynical reviewer"</td><td>Before finalizing important artifacts</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ARTIFACT CHAIN -->
+  <section id="artifacts">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x1F517;</div>
+      <div class="section-header-text">
+        <h2>The Artifact Chain</h2>
+        <p>Each document builds on the previous &mdash; nothing is created in isolation</p>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>Phase</th><th>Input</th><th>Artifact</th><th>Feeds Into</th></tr>
+      <tr>
+        <td><span class="tag tag-green">Analysis</span></td>
+        <td>Your ideas &amp; domain knowledge</td>
+        <td>Brainstorming report, Product brief, Research</td>
+        <td>PRD, UX Spec</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-purple">Planning</span></td>
+        <td>Analysis artifacts</td>
+        <td>PRD (requirements), UX Specification</td>
+        <td>Architecture, Epics</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">Solutioning</span></td>
+        <td>PRD + UX Spec</td>
+        <td>Architecture doc (with ADRs), Epics &amp; Stories</td>
+        <td>Sprint planning, Dev stories</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-yellow">Implementation</span></td>
+        <td>Architecture + Stories</td>
+        <td>Working code, Tests, Sprint status</td>
+        <td>Deployed product</td>
+      </tr>
+    </table>
+
+    <div class="card" style="border-color:rgba(40,175,143,.4);text-align:center;padding:20px">
+      <h3 style="margin-bottom:8px">Official BMAD Workflow Map (Interactive)</h3>
+      <p style="margin-bottom:12px">The complete workflow map showing all phases, agents, and artifact flow.</p>
+      <a href="https://docs.bmad-method.org/workflow-map-diagram.html" target="_blank" style="display:inline-block;background:var(--accent2);color:var(--bg);padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">Open Interactive Workflow Map &#x2197;</a>
+    </div>
+
+    <div class="note">
+      <strong>Traceability:</strong> A functional requirement in the PRD can be traced back to a brainstorming idea. An epic can be traced to a PRD requirement. A code change can be traced to a story. This chain ensures nothing is built without a reason and nothing is forgotten.
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section id="quick-start">
+    <div class="section-header">
+      <div class="phase-badge b-neutral">&#x26A1;</div>
+      <div class="section-header-text">
+        <h2>Quick Start for Business Analysts</h2>
+        <p>Your role focuses on Phases 1-3</p>
+      </div>
+    </div>
+
+    <p style="font-size:0.93rem;margin-bottom:20px;">As a BA, your primary BMAD workflows are in <strong>Analysis</strong> (brainstorming, research, briefs), <strong>Planning</strong> (PRD, UX), and <strong>Solutioning</strong> (architecture review, epics). Here's how to get started:</p>
+
+    <div class="grid">
+      <div class="card c-analysis">
+        <h3>Step 1: Brainstorm</h3>
+        <p>Activate Mary: <code>/bmad-agent-bmm-analyst</code></p>
+        <p>Select <strong>[BP] Brainstorm Project</strong></p>
+        <p>Describe your problem space. Mary guides you through structured techniques (morphological analysis, role playing, cross-pollination) to systematically discover features.</p>
+        <p><strong>Output:</strong> Prioritized feature inventory</p>
+      </div>
+      <div class="card c-planning">
+        <h3>Step 2: Create UX Spec</h3>
+        <p>Activate Sally: <code>/bmad-agent-bmm-ux-designer</code></p>
+        <p>Select <strong>[CU] Create UX Design</strong></p>
+        <p>Sally reads your brainstorming output and facilitates UX decisions: user journeys, interaction patterns, design system, accessibility.</p>
+        <p><strong>Output:</strong> UX Specification</p>
+      </div>
+      <div class="card c-planning">
+        <h3>Step 3: Create PRD</h3>
+        <p>Activate John: <code>/bmad-agent-bmm-pm</code></p>
+        <p>Select <strong>[CP] Create PRD</strong></p>
+        <p>John synthesizes brainstorming + UX into a 12-section PRD with functional requirements, success criteria, scope, and phasing.</p>
+        <p><strong>Output:</strong> Product Requirements Document</p>
+      </div>
+      <div class="card c-solutioning">
+        <h3>Step 4: Architecture &amp; Epics</h3>
+        <p>Activate Winston: <code>/bmad-agent-bmm-architect</code></p>
+        <p>Then John for <strong>[CE] Create Epics</strong></p>
+        <p>Winston designs the technical solution. John breaks the PRD into implementable epics and stories. Run <strong>[IR] Implementation Readiness</strong> as the final gate.</p>
+        <p><strong>Output:</strong> Architecture + Epic files</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:32px;">
+      <a href="master.html" class="hero-link">Explore the Training Sessions &rarr;</a>
+    </div>
+  </section>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

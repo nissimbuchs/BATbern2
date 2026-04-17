@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD — BATbern Active Partner Meeting Agenda</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 96px 24px 80px; }
+
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 40px; }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 56px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent2);
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: var(--accent4);
+  }
+
+  p { margin-bottom: 12px; font-size: 0.93rem; }
+  strong { color: white; }
+  em { color: var(--text-muted); }
+
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .highlight {
+    background: var(--surface2);
+    border-left: 4px solid var(--accent2);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+
+  .fr-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .fr-group h4 { margin-top: 0; color: var(--accent2); }
+  .fr-item { margin-bottom: 8px; font-size: 0.88rem; }
+  .fr-id { color: var(--accent); font-weight: 700; font-family: 'Cascadia Code', monospace; font-size: 0.82rem; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.5rem; }
+    main { padding: 80px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#executive-summary" class="active">Summary</a>
+  <a href="#success-criteria">Success</a>
+  <a href="#user-journeys">Journeys</a>
+  <a href="#scope">Scope</a>
+  <a href="#functional-requirements">FRs</a>
+  <a href="#nfrs">NFRs</a>
+  <a href="#design-system">Design</a>
+  <a href="#glossary">Glossary</a>
+  <span class="sep">|</span>
+  <a href="agenda-prd-session.html">PRD Session</a>
+</nav>
+
+<main>
+
+<h1>Product Requirements Document<br><span>BATbern Active Partner Meeting Agenda</span></h1>
+<p class="subtitle">Author: Nissim &nbsp;|&nbsp; Date: 2026-04-04 &nbsp;|&nbsp; Status: Complete &nbsp;|&nbsp; Classification: Brownfield Web App, Medium Complexity</p>
+
+<!-- EXECUTIVE SUMMARY -->
+<h2 id="executive-summary">Executive Summary</h2>
+
+<p>BATbern's bi-annual partner meetings currently run on verbal agreements, emailed PDFs, handwritten notes, and "someone takes minutes." Six agenda items &mdash; greeting, analytics review, audit sign-off, budget approval, topic discussion, and open topics &mdash; exist only as text in an ICS calendar invite. There is no governance trail for financial sign-offs, no structured record of decisions, and absent partners are completely excluded from the process.</p>
+
+<p>This PRD defines the <strong>Active Partner Meeting Agenda</strong> &mdash; a system that transforms those 6 static agenda items into interactive, system-driven features within the existing BATbern platform. The organizer walks through the meeting in a Presenter Mode, and every action they take (toggling attendance, uploading a document, triggering a vote, typing a note) silently contributes to auto-assembling meeting minutes. The meeting documents itself as a byproduct of use.</p>
+
+<p>The feature extends the meeting beyond the room: absent partners receive published minutes, participate in async fee acceptance, and provide feedback &mdash; ensuring no partner is ever out of the loop.</p>
+
+<p><strong>Target users:</strong> Organizer (meeting driver, sole input device), Present Partners (view projected screen, participate verbally), Absent Partners (async via portal), New Partners (first-year onboarding), Stand-Ins (non-system delegates represented by organizer).</p>
+
+<p><strong>Platform:</strong> Brownfield extension of BATbern (React 19 + Spring Boot microservices on AWS). The partner coordination service (Epic 8) and partner portal already exist.</p>
+
+<h3>What Makes This Special</h3>
+
+<div class="card">
+<p><strong>1. Minutes as byproduct</strong> &mdash; The organizer never "creates minutes." Every interaction auto-populates a structured meeting record. After the meeting, the organizer reviews a near-complete document they barely need to edit.</p>
+<p><strong>2. Proxied group voting</strong> &mdash; Partners don't use devices during the meeting. The organizer casts approve/decline votes on behalf of each present partner, like a teller in parliament.</p>
+<p><strong>3. Configurable agenda engine</strong> &mdash; Not a hardcoded sequence. The organizer toggles which active agenda item types are relevant for each meeting. Custom passive items can be added.</p>
+<p><strong>4. Meeting extends beyond the room</strong> &mdash; Async fee acceptance, feedback pulses, and published minutes ensure absent partners have full context.</p>
+<p><strong>5. Action item carry-forward</strong> &mdash; Action items carry forward to the next meeting automatically. Items carried 2+ meetings get urgency indicators.</p>
+</div>
+
+<h3>Project Classification</h3>
+<table>
+  <tr><td><strong>Project Type</strong></td><td>Web Application (SPA &mdash; React 19, browser-based)</td></tr>
+  <tr><td><strong>Domain</strong></td><td>Event Management / Community Governance</td></tr>
+  <tr><td><strong>Complexity</strong></td><td>Medium</td></tr>
+  <tr><td><strong>Project Context</strong></td><td>Brownfield &mdash; extending existing BATbern platform (Epics 1-8 complete)</td></tr>
+  <tr><td><strong>Primary Service</strong></td><td>Partner Coordination Service (existing)</td></tr>
+  <tr><td><strong>Frontend</strong></td><td>React 19 + TypeScript + MUI + Tailwind (dark theme for presenter mode)</td></tr>
+  <tr><td><strong>Backend</strong></td><td>Java 21 + Spring Boot 3 + PostgreSQL 15</td></tr>
+  <tr><td><strong>Infrastructure</strong></td><td>AWS ECS Fargate + S3 + CDK</td></tr>
+</table>
+
+<hr>
+
+<!-- SUCCESS CRITERIA -->
+<h2 id="success-criteria">Success Criteria</h2>
+
+<h3>User Success</h3>
+<table>
+  <tr><th>Criteria</th><th>Measurable Target</th></tr>
+  <tr><td>Meeting execution</td><td>Full 6-item agenda completed in Presenter Mode without leaving the system</td></tr>
+  <tr><td>Minutes completeness</td><td>Auto-assembled minutes contain 90%+ of meeting content with minimal editing</td></tr>
+  <tr><td>Zero training needed</td><td>New organizer can run a meeting after 2-minute orientation or cold with prep checklist</td></tr>
+  <tr><td>Vote recording speed</td><td>Every vote captured with partner-level attribution in under 30 seconds</td></tr>
+  <tr><td>Post-meeting distribution</td><td>Minutes published and sent to all partners within 5 minutes of meeting end</td></tr>
+  <tr><td>Action item persistence</td><td>100% of action items carry forward to next meeting automatically</td></tr>
+  <tr><td>Absent partner inclusion</td><td>Absent partners can review minutes and participate in async decisions within 24 hours</td></tr>
+</table>
+
+<h3>Business Success</h3>
+<table>
+  <tr><th>Criteria</th><th>Measurable Target</th></tr>
+  <tr><td>Governance trail</td><td>Every financial sign-off has a traceable, dated digital record with per-partner attribution</td></tr>
+  <tr><td>Meeting prep time</td><td>Organizer prep reduced from ad-hoc manual setup to a system-guided checklist</td></tr>
+  <tr><td>Institutional memory</td><td>Year-over-year meeting archives with snapshots, decisions, and action item history</td></tr>
+  <tr><td>Partner satisfaction</td><td>Post-meeting feedback pulse scores trending upward over consecutive meetings</td></tr>
+  <tr><td>Fee acceptance rate</td><td>100% of partners respond to fee acceptance within the deadline</td></tr>
+</table>
+
+<h3>Technical Success</h3>
+<table>
+  <tr><th>Criteria</th><th>Measurable Target</th></tr>
+  <tr><td>Presenter Mode stability</td><td>Zero crashes or data loss during a live meeting session</td></tr>
+  <tr><td>Auto-save reliability</td><td>All organizer actions persisted within 2 seconds</td></tr>
+  <tr><td>Document upload</td><td>PDF/spreadsheet upload and viewing functional with files up to 20MB</td></tr>
+  <tr><td>Minutes PDF generation</td><td>Exportable PDF with attendance, votes, documents, notes, and action items</td></tr>
+  <tr><td>Mobile minutes viewing</td><td>Published minutes readable on mobile (iPhone Safari, Android Chrome)</td></tr>
+</table>
+
+<hr>
+
+<!-- USER JOURNEYS -->
+<h2 id="user-journeys">User Journeys</h2>
+
+<div class="card">
+<h4>Journey 1: Organizer &mdash; Create &amp; Prepare Meeting (Pre-Meeting)</h4>
+<p>Sarah, BATbern organizer, creates a new partner meeting. She selects which active agenda items are relevant, adds a custom passive item ("Venue proposal for 2027"), drags items to reorder, and configures the auditor email. The system sends ICS invites with deep-links. She monitors the Meeting Prep Dashboard &mdash; a checklist shows what's ready (audit PDF, budget doc, RSVP count, topic voting, open action items). When all critical items are green, "Start Presenter Mode" enables.</p>
+</div>
+
+<div class="card">
+<h4>Journey 2: Organizer &mdash; Run Meeting in Presenter Mode (Live)</h4>
+<p>Sarah clicks "Start Presenter Mode." Dark theme activates. She walks through each item: Who Is Who gallery (toggle presence), Analytics (capture snapshot), Audit (PDF viewer + per-partner vote), Budget (vote + fee decision), Topics (discussion notes), Hot Topics (free-form). At every step: note panel visible, sidebar shows progress, auto-save confirms. After the last item, "End Meeting" transitions to Minutes Review.</p>
+</div>
+
+<div class="card">
+<h4>Journey 3: Organizer &mdash; Review &amp; Publish Minutes (Post-Meeting)</h4>
+<p>Auto-assembled minutes appear: attendance, snapshots, documents, votes, notes, action items. Sarah edits sections, adds a clarification, clicks "Publish &amp; Send." All partners receive email with portal link. Fee acceptance and feedback pulse trigger automatically.</p>
+</div>
+
+<div class="card">
+<h4>Journey 4: Absent Partner &mdash; Catch Up &amp; Act (Async)</h4>
+<p>Marco couldn't attend. He receives the minutes email, reads everything on his phone. Fee acceptance request appears: CHF 2,400 (up from CHF 2,200). He clicks "Accept." 24 hours later, he fills in the feedback pulse. Fully informed, fully participating &mdash; despite never being in the room.</p>
+</div>
+
+<div class="card">
+<h4>Journey 5: New Partner &mdash; First Meeting</h4>
+<p>Lisa logs in for the first time. Guided onboarding tour, context package. At the meeting, her company has a purple "New" badge. Veterans welcome her.</p>
+</div>
+
+<div class="card">
+<h4>Journey 6: Next Meeting &mdash; Action Item Carry-Forward</h4>
+<p>Sarah creates the autumn meeting. 3 open action items from spring surface in the prep dashboard. During the meeting: one done, one extended, one carried forward. Items carried 2+ meetings get urgency indicators.</p>
+</div>
+
+<hr>
+
+<!-- INNOVATION -->
+<h2 id="innovation">Innovation Focus</h2>
+<table>
+  <tr><th>Pattern</th><th>Type</th><th>Description</th></tr>
+  <tr><td>Minutes as byproduct</td><td><span class="tag tag-green">Novel</span></td><td>Every organizer action silently contributes to auto-assembling minutes</td></tr>
+  <tr><td>Proxied group voting</td><td><span class="tag tag-green">Novel</span></td><td>Organizer casts votes on behalf of each partner (parliamentary teller model)</td></tr>
+  <tr><td>Action item carry-forward</td><td><span class="tag tag-green">Novel</span></td><td>Open items from previous meetings surface automatically</td></tr>
+  <tr><td>Configurable active agenda</td><td><span class="tag tag-purple">Adapted</span></td><td>Toggle item types per meeting, reorder via drag-and-drop</td></tr>
+  <tr><td>Projector-first presenter mode</td><td><span class="tag tag-purple">Adapted</span></td><td>PowerPoint-like linear flow with interactive "slides"</td></tr>
+</table>
+
+<hr>
+
+<!-- SCOPE -->
+<h2 id="scope">Scope &amp; Phasing</h2>
+
+<h3>Phase 1 &mdash; MVP</h3>
+<div class="highlight">
+<strong>Layer 1: Foundation</strong> &mdash; PartnerMeeting entity, Agenda Builder, RSVP dashboard, Document viewer, Vote component<br>
+<strong>Layer 2: Meeting Flow</strong> &mdash; Presenter Mode, Who Is Who gallery, Note panel, Minutes auto-assembly, Linear navigation<br>
+<strong>Layer 3: Agenda Interactions</strong> &mdash; Attendance&rarr;minutes, Analytics snapshot, Audit+vote, Budget+vote, Prep checklist, Action items<br>
+<strong>Layer 4: Post-Meeting</strong> &mdash; Minutes review &amp; publish, Fee acceptance, Fee tracker, Carry-forward, Stand-in delegation
+</div>
+
+<h3>Phase 2 &mdash; Quick Wins</h3>
+<p>ICS deep-links, auditor email config, partner profile cards, feedback pulse survey.</p>
+
+<h3>Phase 3 &mdash; Nice-to-Have</h3>
+<p>New partner onboarding tour, context package, historized analytics archive, minutes PDF export.</p>
+
+<h3>Out of Scope</h3>
+<p>Multi-device partner interaction, WebSocket features, video conferencing, partner self-scheduling, AI-generated summaries.</p>
+
+<hr>
+
+<!-- FUNCTIONAL REQUIREMENTS -->
+<h2 id="functional-requirements">Functional Requirements</h2>
+
+<div class="fr-group">
+<h4>FR1: Meeting Management (7 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR1.1</span> Create partner meetings with date, time, and location.</p>
+<p class="fr-item"><span class="fr-id">FR1.2</span> Select which active agenda item types are included (Greeting, Analytics, Audit, Budget, Topics, Hot Topics).</p>
+<p class="fr-item"><span class="fr-id">FR1.3</span> Add custom passive agenda items (title + description).</p>
+<p class="fr-item"><span class="fr-id">FR1.4</span> Reorder agenda items via drag-and-drop.</p>
+<p class="fr-item"><span class="fr-id">FR1.5</span> Send ICS calendar invites to all partners.</p>
+<p class="fr-item"><span class="fr-id">FR1.6</span> Maintain meeting status lifecycle: DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED.</p>
+<p class="fr-item"><span class="fr-id">FR1.7</span> Configure auditor email; conditional ICS invite when audit item is on agenda.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR2: RSVP &amp; Attendance (5 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR2.1</span> Partners confirm or decline meeting attendance via portal.</p>
+<p class="fr-item"><span class="fr-id">FR2.2</span> Display RSVP dashboard (confirmed / declined / pending).</p>
+<p class="fr-item"><span class="fr-id">FR2.3</span> Toggle partner presence during meeting via Who Is Who gallery.</p>
+<p class="fr-item"><span class="fr-id">FR2.4</span> Record stand-in delegates (free-text name, delegated by partner).</p>
+<p class="fr-item"><span class="fr-id">FR2.5</span> Display "New" badge for first-year partner companies.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR3: Presenter Mode (8 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR3.1</span> Full-screen dark theme optimized for projector (min 1280px).</p>
+<p class="fr-item"><span class="fr-id">FR3.2</span> Agenda sidebar with upcoming/active/completed/skipped states.</p>
+<p class="fr-item"><span class="fr-id">FR3.3</span> Linear navigation via Next/Previous and keyboard shortcuts (&rarr;/&larr;/1-9).</p>
+<p class="fr-item"><span class="fr-id">FR3.4</span> Jump to any item via sidebar (non-destructive).</p>
+<p class="fr-item"><span class="fr-id">FR3.5</span> Persistent note panel at bottom with auto-save.</p>
+<p class="fr-item"><span class="fr-id">FR3.6</span> Auto-save all actions within 2 seconds.</p>
+<p class="fr-item"><span class="fr-id">FR3.7</span> Display auto-save indicator ("Saved &#10003;").</p>
+<p class="fr-item"><span class="fr-id">FR3.8</span> Keyboard: N (notes), V (vote), Esc (exit with confirmation).</p>
+</div>
+
+<div class="fr-group">
+<h4>FR4: Document Upload &amp; Viewing (4 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR4.1</span> Upload PDF and spreadsheet documents to agenda items.</p>
+<p class="fr-item"><span class="fr-id">FR4.2</span> Embedded document viewer within Presenter Mode.</p>
+<p class="fr-item"><span class="fr-id">FR4.3</span> Permanently attach documents to meeting record.</p>
+<p class="fr-item"><span class="fr-id">FR4.4</span> Support up to 20MB via S3 presigned URL.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR5: Voting (7 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR5.1</span> Start vote on votable agenda items.</p>
+<p class="fr-item"><span class="fr-id">FR5.2</span> Vote panel listing all present partners with approve/decline.</p>
+<p class="fr-item"><span class="fr-id">FR5.3</span> Cast votes on behalf of each present partner.</p>
+<p class="fr-item"><span class="fr-id">FR5.4</span> Cast votes for stand-in delegates with attribution.</p>
+<p class="fr-item"><span class="fr-id">FR5.5</span> Allow vote changes before completion.</p>
+<p class="fr-item"><span class="fr-id">FR5.6</span> Display vote result banner ("Approved &mdash; 8/8").</p>
+<p class="fr-item"><span class="fr-id">FR5.7</span> Record per-partner attribution in minutes.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR6: Meeting Minutes (8 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR6.1</span> Create PartnerMeetingMinutes in DRAFT when Presenter Mode starts.</p>
+<p class="fr-item"><span class="fr-id">FR6.2</span> Auto-populate attendance from Who Is Who data.</p>
+<p class="fr-item"><span class="fr-id">FR6.3</span> Auto-populate with votes, documents, snapshots, notes per item.</p>
+<p class="fr-item"><span class="fr-id">FR6.4</span> Review and edit auto-assembled minutes.</p>
+<p class="fr-item"><span class="fr-id">FR6.5</span> Add, edit, remove action items during review.</p>
+<p class="fr-item"><span class="fr-id">FR6.6</span> Publish minutes (DRAFT &rarr; PUBLISHED).</p>
+<p class="fr-item"><span class="fr-id">FR6.7</span> Email notifications with portal link to all partners.</p>
+<p class="fr-item"><span class="fr-id">FR6.8</span> Mobile-friendly minutes in partner portal.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR7: Meeting Prep (3 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR7.1</span> Prep checklist with readiness status per enabled item.</p>
+<p class="fr-item"><span class="fr-id">FR7.2</span> Green/yellow/red status with actionable links.</p>
+<p class="fr-item"><span class="fr-id">FR7.3</span> Soft-block Start when critical items missing.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR8: Post-Meeting Workflows (6 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR8.1</span> Trigger async fee acceptance after budget vote with fee decision.</p>
+<p class="fr-item"><span class="fr-id">FR8.2</span> Partners accept/decline fee via portal with optional comment.</p>
+<p class="fr-item"><span class="fr-id">FR8.3</span> Fee acceptance tracker (accepted / pending / declined per partner).</p>
+<p class="fr-item"><span class="fr-id">FR8.4</span> Fee reminders at 7d and 14d, then notify organizer.</p>
+<p class="fr-item"><span class="fr-id">FR8.5</span> Feedback pulse survey (3 questions) 24h after publication.</p>
+<p class="fr-item"><span class="fr-id">FR8.6</span> Aggregate feedback with historical trends.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR9: Action Items (5 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR9.1</span> Create action items at any agenda item (title, owner, deadline).</p>
+<p class="fr-item"><span class="fr-id">FR9.2</span> Include action items in minutes.</p>
+<p class="fr-item"><span class="fr-id">FR9.3</span> Surface open items from previous meetings when creating new meeting.</p>
+<p class="fr-item"><span class="fr-id">FR9.4</span> Mark done, extend deadline, or carry forward during review.</p>
+<p class="fr-item"><span class="fr-id">FR9.5</span> Urgency indicator on items carried 2+ meetings.</p>
+</div>
+
+<div class="fr-group">
+<h4>FR10: Analytics Snapshot (3 requirements)</h4>
+<p class="fr-item"><span class="fr-id">FR10.1</span> Embed analytics dashboard in Analytics Review agenda item.</p>
+<p class="fr-item"><span class="fr-id">FR10.2</span> Capture immutable snapshot attached to minutes.</p>
+<p class="fr-item"><span class="fr-id">FR10.3</span> Store snapshots for year-over-year browsing.</p>
+</div>
+
+<hr>
+
+<!-- NFRs -->
+<h2 id="nfrs">Non-Functional Requirements</h2>
+
+<h3>Performance</h3>
+<table>
+  <tr><th>Requirement</th><th>Target</th></tr>
+  <tr><td>Presenter Mode initial load</td><td>&lt; 3 seconds</td></tr>
+  <tr><td>Agenda item transition</td><td>&lt; 300ms</td></tr>
+  <tr><td>Auto-save latency</td><td>&lt; 2 seconds</td></tr>
+  <tr><td>Document viewer render</td><td>&lt; 5 seconds for 20MB PDF</td></tr>
+  <tr><td>Vote result display</td><td>&lt; 500ms</td></tr>
+  <tr><td>Minutes page load (mobile)</td><td>&lt; 2 seconds on 4G</td></tr>
+</table>
+
+<h3>Security</h3>
+<table>
+  <tr><th>Requirement</th><th>Description</th></tr>
+  <tr><td>Authentication</td><td>AWS Cognito; organizer role for meeting management</td></tr>
+  <tr><td>Authorization</td><td>Role-based: organizer creates/edits/publishes; partners view/respond only</td></tr>
+  <tr><td>Document storage</td><td>S3 presigned URLs, not publicly accessible</td></tr>
+  <tr><td>Vote integrity</td><td>Immutable once completed; full audit trail</td></tr>
+</table>
+
+<h3>Accessibility</h3>
+<table>
+  <tr><th>Context</th><th>Standard</th></tr>
+  <tr><td>Presenter Mode</td><td>WCAG 2.1 AAA (7:1+); keyboard: &rarr;/&larr;/1-9/N/V/Esc</td></tr>
+  <tr><td>Partner Portal</td><td>WCAG 2.1 AA (4.5:1); 44x44px touch targets; ARIA</td></tr>
+  <tr><td>All contexts</td><td>No color-only info: badges = color + text + icon</td></tr>
+</table>
+
+<hr>
+
+<!-- DESIGN SYSTEM -->
+<h2 id="design-system">Design System &amp; Visual Direction</h2>
+
+<h3>Presenter Mode (Dark Theme)</h3>
+<table>
+  <tr><th>Element</th><th>Token</th><th>Value</th></tr>
+  <tr><td>Background</td><td>zinc-950</td><td>#09090B</td></tr>
+  <tr><td>Surface</td><td>zinc-900</td><td>#18181B</td></tr>
+  <tr><td>Primary text</td><td>zinc-100</td><td>#F4F4F5 (15.8:1 AAA)</td></tr>
+  <tr><td>Accent</td><td>blue-400</td><td>#60A5FA (7.8:1 AA+)</td></tr>
+  <tr><td>Partner</td><td>orange-400</td><td>#FB923C</td></tr>
+  <tr><td>Present/Approved</td><td>green-400</td><td>#4ADE80</td></tr>
+  <tr><td>Absent/Declined</td><td>red-400</td><td>#F87171</td></tr>
+  <tr><td>New partner</td><td>purple-400</td><td>#C084FC</td></tr>
+</table>
+
+<h3>Key Components (11)</h3>
+<table>
+  <tr><th>Component</th><th>Purpose</th></tr>
+  <tr><td>AgendaSidebar</td><td>Vertical navigation with progress states</td></tr>
+  <tr><td>VotePanel</td><td>Per-partner approve/decline with result animation</td></tr>
+  <tr><td>DocumentViewer</td><td>Embedded PDF/spreadsheet with dark chrome</td></tr>
+  <tr><td>NotePanel</td><td>Always-visible auto-save textarea</td></tr>
+  <tr><td>PartnerGallery</td><td>Grid with presence toggle and badges</td></tr>
+  <tr><td>MeetingPrepChecklist</td><td>Green/yellow/red readiness items</td></tr>
+  <tr><td>ActionItemCard</td><td>Title, owner, deadline, carry-forward indicator</td></tr>
+  <tr><td>MinutesDocument</td><td>Auto-assembled record, editable, publishable</td></tr>
+  <tr><td>AgendaBuilder</td><td>Toggle + drag-and-drop + custom items</td></tr>
+  <tr><td>FeeAcceptanceWidget</td><td>Accept/decline with amount and comment</td></tr>
+  <tr><td>FeedbackPulse</td><td>3-question post-meeting survey</td></tr>
+</table>
+
+<hr>
+
+<!-- CONSTRAINTS -->
+<h2 id="constraints">Constraints &amp; Dependencies</h2>
+
+<h3>Platform Dependencies</h3>
+<ul>
+  <li><strong>Partner Coordination Service</strong> (Epic 8) &mdash; partner entities, roles, portal auth</li>
+  <li><strong>Company/User Management Service</strong> &mdash; partner company data, logos, profiles</li>
+  <li><strong>S3 presigned URL upload</strong> &mdash; existing file upload pattern</li>
+  <li><strong>AWS Cognito</strong> &mdash; organizer and partner role authentication</li>
+  <li><strong>SES email</strong> &mdash; meeting invites and minutes distribution</li>
+</ul>
+
+<h3>Technical Constraints</h3>
+<ul>
+  <li>Single-operator model &mdash; no multi-user real-time editing</li>
+  <li>No WebSocket required &mdash; standard HTTP sufficient</li>
+  <li>PostgreSQL for all data, Flyway for migrations</li>
+  <li>Extends existing dark theme (zinc-950 + blue-400)</li>
+</ul>
+
+<h3>Business Constraints</h3>
+<ul>
+  <li>Bi-annual usage = zero learning curve requirement</li>
+  <li>Projector-first = legible at 5 meters</li>
+  <li>Swiss context = financial sign-off records may be referenced by auditors</li>
+</ul>
+
+<hr>
+
+<!-- GLOSSARY -->
+<h2 id="glossary">Glossary</h2>
+<table>
+  <tr><th>Term</th><th>Definition</th></tr>
+  <tr><td>Active Agenda Item</td><td>System-supported item type with specific interaction (gallery, vote, document viewer). Toggleable per meeting.</td></tr>
+  <tr><td>Passive Agenda Item</td><td>Custom free-form discussion placeholder (title + description + notes only).</td></tr>
+  <tr><td>Presenter Mode</td><td>Full-screen dark-themed interface for running the meeting, projected to the room.</td></tr>
+  <tr><td>Stand-In</td><td>Non-system delegate attending on behalf of a partner company. Free-text name, no login.</td></tr>
+  <tr><td>Proxied Vote</td><td>Vote cast by organizer on behalf of a partner or stand-in. Full attribution recorded.</td></tr>
+  <tr><td>Fee Acceptance</td><td>Post-meeting workflow where partners confirm the new annual fee.</td></tr>
+  <tr><td>Feedback Pulse</td><td>3-question survey sent 24h after minutes publication.</td></tr>
+  <tr><td>Carry-Forward</td><td>Action items from previous meetings surfaced when creating the next meeting.</td></tr>
+  <tr><td>Analytics Snapshot</td><td>Immutable capture of analytics data at meeting time, attached to minutes.</td></tr>
+</table>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

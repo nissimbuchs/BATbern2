@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Steer Your Agent &mdash; A Quick Reference</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 48px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 700px; margin: 0 auto; }
+
+  /* Interaction cards grid */
+  .interaction-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 24px;
+  }
+
+  .interaction-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .interaction-card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .interaction-card h3 .ic-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .ic-green .ic-icon { background: rgba(40,175,143,.15); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .ic-green { border-color: rgba(40,175,143,.3); }
+  .ic-red .ic-icon { background: rgba(175,35,34,.15); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+  .ic-red { border-color: rgba(175,35,34,.3); }
+  .ic-purple .ic-icon { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .ic-purple { border-color: rgba(226,54,21,.3); }
+  .ic-yellow .ic-icon { background: rgba(255,202,76,.15); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .ic-yellow { border-color: rgba(255,202,76,.3); }
+  .ic-neutral .ic-icon { background: rgba(232,234,246,.1); color: var(--text); border: 1px solid var(--border); }
+  .ic-neutral { border-color: rgba(232,234,246,.25); }
+
+  /* Tables inside cards */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td:first-child { color: var(--text-muted); }
+  td:last-child { color: var(--accent2); font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.82rem; }
+
+  .note {
+    background: rgba(226,54,21,.06);
+    border: 1px solid rgba(226,54,21,.25);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    margin: 20px 0;
+  }
+  .note strong { color: var(--accent); }
+
+  .hero-link {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .hero-link:hover { background: var(--accent2); color: var(--bg); }
+
+  code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+    .interaction-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="getting-started.html">Getting Started</a>
+  <span class="sep">|</span>
+  <a href="#approve" class="active">Approve</a>
+  <a href="#correct">Correct</a>
+  <a href="#ask">Ask</a>
+  <a href="#navigate">Navigate</a>
+  <a href="#power">Power</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">Quick Reference Card</div>
+    <h1>How to <span>Steer</span> Your Agent</h1>
+    <p>The micro-skills of working with BMAD agents. Print this page, bookmark it, or keep it open in a tab. These work with ANY BMAD agent &mdash; Analyst, PM, Architect, UX Designer, or Developer.</p>
+  </div>
+
+  <!-- INTERACTION GRID -->
+  <div class="interaction-grid">
+
+    <!-- APPROVING & CONTINUING -->
+    <section id="approve" class="interaction-card ic-green">
+      <h3><span class="ic-icon">&#x2714;</span> Approving &amp; Continuing</h3>
+      <table>
+        <tr><th>You want to...</th><th>Type this</th></tr>
+        <tr><td>Accept and move on</td><td>C &nbsp;or&nbsp; c</td></tr>
+        <tr><td>Approve a proposal</td><td>"yes", "ok", "looks good"</td></tr>
+        <tr><td>Accept with a small note</td><td>"yes, but also consider X"</td></tr>
+        <tr><td>Accept most, change one thing</td><td>"good, but rename X to Y"</td></tr>
+        <tr><td>Skip a step entirely</td><td>"skip this step" or C</td></tr>
+      </table>
+    </section>
+
+    <!-- CORRECTING & REDIRECTING -->
+    <section id="correct" class="interaction-card ic-red">
+      <h3><span class="ic-icon">&#x270F;</span> Correcting &amp; Redirecting</h3>
+      <table>
+        <tr><th>You want to...</th><th>Type this</th></tr>
+        <tr><td>Reject a proposal</td><td>"no, instead do X"</td></tr>
+        <tr><td>Change something specific</td><td>"change the name from X to Y"</td></tr>
+        <tr><td>Merge two things</td><td>"merge epic 2 and 3"</td></tr>
+        <tr><td>Split something</td><td>"split this into two: one for X and one for Y"</td></tr>
+        <tr><td>Remove something</td><td>"remove the feedback feature from MVP"</td></tr>
+        <tr><td>Reorder priorities</td><td>"move item 3 to the top"</td></tr>
+      </table>
+    </section>
+
+    <!-- ASKING FOR MORE -->
+    <section id="ask" class="interaction-card ic-purple">
+      <h3><span class="ic-icon">?</span> Asking for More</h3>
+      <table>
+        <tr><th>You want to...</th><th>Type this</th></tr>
+        <tr><td>Get more detail</td><td>"explain more about X"</td></tr>
+        <tr><td>See alternatives</td><td>"what other options are there?"</td></tr>
+        <tr><td>Understand a decision</td><td>"why did you choose this approach?"</td></tr>
+        <tr><td>Check dependencies</td><td>"does this work with the existing dependencies?"</td></tr>
+        <tr><td>Validate something</td><td>"does this cover all the requirements?"</td></tr>
+        <tr><td>Get a summary</td><td>"summarize what we have so far"</td></tr>
+      </table>
+    </section>
+
+    <!-- NAVIGATING THE WORKFLOW -->
+    <section id="navigate" class="interaction-card ic-yellow">
+      <h3><span class="ic-icon">&#x2699;</span> Navigating the Workflow</h3>
+      <table>
+        <tr><th>You want to...</th><th>Type this</th></tr>
+        <tr><td>See what's next</td><td>/bmad-help</td></tr>
+        <tr><td>Get the menu again</td><td>MH &nbsp;or&nbsp; "show menu"</td></tr>
+        <tr><td>Go deeper on a topic</td><td>A &nbsp;(Advanced Elicitation)</td></tr>
+        <tr><td>Get multiple perspectives</td><td>P &nbsp;(Party Mode)</td></tr>
+        <tr><td>Leave the agent</td><td>DA &nbsp;or&nbsp; "dismiss agent"</td></tr>
+        <tr><td>Switch to a different agent</td><td>DA, then activate the new one</td></tr>
+      </table>
+    </section>
+
+    <!-- POWER MOVES -->
+    <section id="power" class="interaction-card ic-neutral">
+      <h3><span class="ic-icon">&#x26A1;</span> Power Moves (for when you're comfortable)</h3>
+      <table>
+        <tr><th>You want to...</th><th>Type this</th></tr>
+        <tr><td>Rename things to match your project</td><td>"call these epics 8.1, 8.2 instead"</td></tr>
+        <tr><td>Add domain context</td><td>"remember, we already have X from Epic 8"</td></tr>
+        <tr><td>Challenge the agent</td><td>"I disagree &mdash; here's why..."</td></tr>
+        <tr><td>Point out a gap</td><td>"you forgot that custom items also need X"</td></tr>
+        <tr><td>Set constraints</td><td>"keep this to 4 epics maximum"</td></tr>
+        <tr><td>Let the agent drive</td><td>"drive autonomously, I'll review at the end"</td></tr>
+      </table>
+    </section>
+
+  </div>
+
+  <div class="note">
+    <strong>Remember:</strong> These are all natural language. You don't need to memorize exact phrasing. "nah, do X instead" works just as well as "no, instead do X". The agent understands intent, not just keywords.
+  </div>
+
+  <hr>
+
+  <div style="text-align:center;margin-top:32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <a href="getting-started.html" class="hero-link">&larr; Getting Started</a>
+    <a href="course-overview.html" class="hero-link">Course Overview &rarr;</a>
+    <a href="master.html" class="hero-link">Training Hub</a>
+  </div>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>

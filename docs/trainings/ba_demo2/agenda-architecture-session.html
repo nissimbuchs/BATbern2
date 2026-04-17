@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Training — Architecture Session: From PRD to Solution Design</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #E23615;
+    --accent2: #28AF8F;
+    --accent3: #AF2322;
+    --accent4: #FFCA4C;
+    --text: #e8eaf6;
+    --text-muted: #8890b5;
+    --user-bg: #1e2a45;
+    --user-border: #3a7bd5;
+    --agent-bg: #1e2e2a;
+    --agent-border: #28AF8F;
+    --artifact-bg: #2a1e45;
+    --artifact-border: #E23615;
+    --note-bg: #2e2a1a;
+    --note-border: #FFCA4C;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover { background: var(--accent); color: white; }
+  nav a.active { background: var(--surface2); color: var(--text); }
+  nav .sep { color: var(--border); font-size: 11px; }
+  nav .home { background: rgba(226,54,21,.15); color: var(--accent); border: 1px solid rgba(226,54,21,.3); font-weight: 700; }
+  nav .home:hover { background: var(--accent); color: white; }
+
+  /* Layout */
+  main { max-width: 960px; margin: 0 auto; padding: 96px 24px 80px; }
+  section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto 32px; }
+  .hero-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-meta div { text-align: center; }
+  .hero-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .hero-meta .value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .phase-1 { background: rgba(40,175,143,.15); color: var(--accent2); border: 2px solid var(--accent2); }
+  .phase-2 { background: rgba(226,54,21,.15); color: var(--accent); border: 2px solid var(--accent); }
+  .phase-3 { background: rgba(175,35,34,.15); color: var(--accent3); border: 2px solid var(--accent3); }
+  .phase-bridge { background: rgba(255,202,76,.15); color: var(--accent4); border: 2px solid var(--accent4); }
+  .section-header-text h2 { font-size: 1.5rem; font-weight: 700; }
+  .section-header-text p { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* Overview cards */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .overview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .overview-card .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .overview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { color: var(--text-muted); font-size: 0.88rem; }
+  .overview-card.phase1 { border-color: rgba(40,175,143,.4); }
+  .overview-card.phase2 { border-color: rgba(226,54,21,.4); }
+  .overview-card.phase3 { border-color: rgba(175,35,34,.4); }
+  .overview-card.bridge { border-color: rgba(255,202,76,.4); }
+
+  /* Conversation turns */
+  .turn { margin-bottom: 20px; }
+  .turn-user {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-left: 4px solid var(--user-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-agent {
+    background: var(--agent-bg);
+    border: 1px solid var(--agent-border);
+    border-left: 4px solid var(--agent-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-artifact {
+    background: var(--artifact-bg);
+    border: 1px solid var(--artifact-border);
+    border-left: 4px solid var(--artifact-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .turn-note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+  }
+  .turn-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .turn-label .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .label-user { color: var(--user-border); }
+  .label-user .dot { background: var(--user-border); }
+  .label-agent { color: var(--accent2); }
+  .label-agent .dot { background: var(--accent2); }
+  .label-artifact { color: var(--accent); }
+  .label-artifact .dot { background: var(--accent); }
+  .label-note { color: var(--accent4); }
+  .label-note .dot { background: var(--accent4); }
+
+  .turn-content { font-size: 0.92rem; }
+  .turn-content strong { color: white; }
+  .turn-content em { color: var(--text-muted); }
+  .turn-content code {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .turn-content ul, .turn-content ol { margin: 8px 0 8px 20px; }
+  .turn-content li { margin-bottom: 4px; font-size: 0.9rem; }
+  .turn-content p { margin-bottom: 8px; }
+  .turn-content p:last-child { margin-bottom: 0; }
+  .turn-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  .turn-content th, .turn-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .turn-content th { background: var(--surface2); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Collapsible */
+  details {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::before { content: '\25B6'; font-size: 10px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { color: var(--text); }
+  .details-body { padding: 12px 14px; font-size: 0.87rem; border-top: 1px solid var(--border); }
+
+  /* Tags */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .tag-green { background: rgba(40,175,143,.12); color: var(--accent2); border: 1px solid rgba(40,175,143,.3); }
+  .tag-purple { background: rgba(226,54,21,.12); color: var(--accent); border: 1px solid rgba(226,54,21,.3); }
+  .tag-yellow { background: rgba(255,202,76,.12); color: var(--accent4); border: 1px solid rgba(255,202,76,.3); }
+  .tag-red { background: rgba(175,35,34,.12); color: var(--accent3); border: 1px solid rgba(175,35,34,.3); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .cmd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    color: var(--accent4);
+  }
+
+  .connector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .connector::before, .connector::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Takeaway grid */
+  .takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .takeaway h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .takeaway p { font-size: 0.87rem; color: var(--text-muted); }
+
+  /* Result stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+  .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Pre/code blocks */
+  .turn-content pre {
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 10px 0;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    nav a { font-size: 11px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="master.html" class="home" style="display:flex;align-items:center;gap:8px;padding:2px 12px;"><img src="elcai-logo.png" alt="ELCAi" style="height:28px;width:auto;">Training Hub</a>
+  <span class="sep">|</span>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#step0-setup">0. Setup</a>
+  <a href="#step1-init">1. Init</a>
+  <a href="#step2-context">2. Context</a>
+  <a href="#step3-starter">3. Starter</a>
+  <a href="#step4-decisions">4. Decisions</a>
+  <a href="#step5-patterns">5. Patterns</a>
+  <a href="#step6-structure">6. Structure</a>
+  <a href="#step7-validation">7. Validation</a>
+  <a href="#step8-complete">8. Complete</a>
+  <a href="#result">Result</a>
+  <a href="#takeaways">Takeaways</a>
+  <span class="sep">|</span>
+  <a href="agenda-architecture.html">View Architecture</a>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">BMAD Hands-On Training &mdash; Session 4</div>
+    <h1>Architecture Creation Session<br><span>From PRD to Solution Design</span></h1>
+    <p>A complete walkthrough of a real BMAD architecture session &mdash; how business analysts interact with the Architect Agent (Winston) to transform a PRD into a comprehensive, implementation-ready architecture document with entity models, patterns, and validation.</p>
+    <div class="hero-meta">
+      <div><div class="label">Agent</div><div class="value">Architect (Winston)</div></div>
+      <div><div class="label">Workflow Steps</div><div class="value">8</div></div>
+      <div><div class="label">Entities Defined</div><div class="value">11</div></div>
+      <div><div class="label">Decisions + Patterns</div><div class="value">30+</div></div>
+      <div><div class="label">Session Date</div><div class="value">2026-04-05</div></div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">&#x1F5FA;</div>
+      <div class="section-header-text">
+        <h2>Session Overview</h2>
+        <p>Where this session fits in the BMAD workflow</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Context</div>
+      <div class="turn-content">
+        <p>Before this session, three prior BMAD sessions produced key artifacts:</p>
+        <ol>
+          <li><strong><a href="agenda-brainstorm-session.html" style="color:var(--accent2)">Brainstorming Session</a></strong> (Analyst Agent &mdash; Mary) &rarr; 35 ideas across 6 themes</li>
+          <li><strong><a href="agenda-ux-session.html" style="color:var(--accent2)">UX Design Specification</a></strong> (UX Designer Agent) &rarr; 5 user journeys, 12 custom components, Presenter Mode layout</li>
+          <li><strong><a href="agenda-prd-session.html" style="color:var(--accent2)">PRD Creation Session</a></strong> (PM Agent &mdash; John) &rarr; 12-section PRD with 35 functional requirements</li>
+        </ol>
+        <p>This session uses the <strong>Architect Agent (Winston)</strong> to translate the PRD into an implementation-ready architecture document. The Create Architecture (CA) workflow has 8 steps &mdash; from document loading through validation and handoff.</p>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-card phase1">
+        <div class="icon">&#x1F4CA;</div>
+        <h3>Phase 1 &mdash; Context Analysis</h3>
+        <p>Load all input documents, analyze requirements, classify constraints, identify cross-cutting concerns.</p>
+      </div>
+      <div class="overview-card phase2">
+        <div class="icon">&#x1F3D7;</div>
+        <h3>Phase 2 &mdash; Design Decisions</h3>
+        <p>Entity model, minutes assembly pattern, Presenter Mode layout, auto-save API, authentication boundaries.</p>
+      </div>
+      <div class="overview-card phase3">
+        <div class="icon">&#x1F4D0;</div>
+        <h3>Phase 3 &mdash; Patterns &amp; Structure</h3>
+        <p>Implementation patterns for AI agent consistency: naming, format, communication, process, and enforcement rules.</p>
+      </div>
+      <div class="overview-card bridge">
+        <div class="icon">&#x2705;</div>
+        <h3>Phase 4 &mdash; Validation</h3>
+        <p>Coherence checks, requirements coverage, gap analysis, and readiness assessment before implementation handoff.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 0: PRE-SESSION SETUP -->
+  <section id="step0-setup">
+    <div class="section-header">
+      <div class="phase-badge phase-1">0</div>
+      <div class="section-header-text">
+        <h2>Pre-Session: Loading the Architect Agent</h2>
+        <p>Activating Winston and orienting within the project</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note</div>
+      <div class="turn-content">
+        <p>The <strong>Architect Agent (Winston)</strong> is a principal-level solutions architect. He "thinks in systems, not features" and focuses on decisions that will prevent AI agents from diverging during implementation. His slash command is <code>/bmad-agent-bmm-architect</code>.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>/bmad-agent-bmm-architect</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston)</div>
+      <div class="turn-content">
+        <p><strong>Winston here &mdash; your Architect.</strong></p>
+        <p>I think in systems, not features. Let's make sure every AI agent that touches this codebase makes the <em>same</em> decisions.</p>
+        <table>
+          <tr><th>#</th><th>Cmd</th><th>Description</th></tr>
+          <tr><td>1</td><td><strong>[MH]</strong></td><td>Redisplay Menu Help</td></tr>
+          <tr><td>2</td><td><strong>[CH]</strong></td><td>Chat with the Agent</td></tr>
+          <tr><td>3</td><td><strong>[CA]</strong></td><td>Create Architecture &mdash; Step-by-step solution design</td></tr>
+          <tr><td>4</td><td><strong>[PM]</strong></td><td>Start Party Mode</td></tr>
+          <tr><td>5</td><td><strong>[DA]</strong></td><td>Dismiss Agent</td></tr>
+        </table>
+        <div class="tags">
+          <span class="tag tag-green">AGENT LOADED</span>
+          <span class="tag tag-purple">ARCHITECT PERSONA</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>ls docs/trainings/ba_demo2</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston)</div>
+      <div class="turn-content">
+        <p><em>Lists directory contents, showing available files including prd.md, ux-design-specification.md, brainstorming files, and other training materials.</em></p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>Show me all files</code></div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston)</div>
+      <div class="turn-content">
+        <p><em>Shows the full trainings folder structure so the user can identify the correct PRD path for the workflow.</em></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1: INITIALIZATION -->
+  <section id="step1-init">
+    <div class="section-header">
+      <div class="phase-badge phase-1">1</div>
+      <div class="section-header-text">
+        <h2>Step 1: Initialization &amp; Document Discovery</h2>
+        <p>Loading the PRD and discovering all input documents</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>CA docs/trainings/ba_demo2/prd.md</code></div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>What Happens Behind the Scenes</div>
+      <div class="turn-content">
+        <p>The <code>CA</code> command triggers the Create Architecture workflow. Winston accepts a path to the PRD as the primary input document, then automatically scans for related files: UX specs, brainstorming output, product briefs, research, and project context.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Document Discovery</div>
+      <div class="turn-content">
+        <p><strong>Starting Create Architecture workflow.</strong></p>
+        <p><strong>Input Documents Discovered:</strong></p>
+        <table>
+          <tr><th>Category</th><th>Files Found</th></tr>
+          <tr><td>PRD</td><td><code>docs/trainings/ba_demo2/prd.md</code></td></tr>
+          <tr><td>UX Design</td><td><code>docs/trainings/ba_demo2/ux-design-specification.md</code></td></tr>
+          <tr><td>Brainstorming</td><td>2 files &mdash; <code>brainstorming-session-2026-04-04.md</code>, <code>quick-brainstorm.md</code></td></tr>
+          <tr><td>Project Context</td><td><code>_bmad-output/project-context.md</code></td></tr>
+          <tr><td>Product Brief</td><td>None found</td></tr>
+          <tr><td>Research</td><td>None found</td></tr>
+        </table>
+        <p><em>"Are these the correct documents? Do you want me to include any additional files?"</em></p>
+        <p><strong>[C] Continue</strong></p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content">
+        <p>1. yes. Correct documents</p>
+        <p>2. yes consider the documents in <code>docs/architecture</code>, but only use what is relevant and keep same coding guidelines and adr's</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Loading Additional Context</div>
+      <div class="turn-content">
+        <p>Winston reads the existing architecture docs and identifies the relevant ones:</p>
+        <ul>
+          <li><strong>ADR-003</strong> &mdash; Meaningful identifiers in public APIs (no exposed UUIDs)</li>
+          <li><strong>ADR-004</strong> &mdash; No user field duplication in domain entities (HTTP enrichment + Caffeine cache)</li>
+          <li><strong>ADR-006</strong> &mdash; OpenAPI contract-first (specs are source of truth)</li>
+          <li><strong>Data architecture</strong> &mdash; existing database patterns</li>
+          <li><strong>Backend architecture</strong> &mdash; layered architecture, service boundaries</li>
+          <li><strong>Partner coordination API</strong> &mdash; existing partner endpoints to extend</li>
+        </ul>
+        <p>Created <code>docs/trainings/ba_demo2/architecture.md</code> from template with proper frontmatter.</p>
+        <div class="tags">
+          <span class="tag tag-green">PRD LOADED</span>
+          <span class="tag tag-green">UX SPEC LOADED</span>
+          <span class="tag tag-green">ADRS LOADED</span>
+          <span class="tag tag-purple">ARCHITECTURE FILE CREATED</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>C</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 2: PROJECT CONTEXT ANALYSIS -->
+  <section id="step2-context">
+    <div class="section-header">
+      <div class="phase-badge phase-1">2</div>
+      <div class="section-header-text">
+        <h2>Step 2: Project Context Analysis</h2>
+        <p>Analyzing all loaded documents to extract requirements, constraints, and concerns</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Requirements Analysis</div>
+      <div class="turn-content">
+        <p><strong>Functional Requirements &mdash; 10 FR Groups (FR1&ndash;FR10):</strong></p>
+        <table>
+          <tr><th>ID</th><th>Group</th><th>Scope</th></tr>
+          <tr><td>FR1</td><td>Meeting Management</td><td>CRUD, configurable agenda, ICS invites, status lifecycle</td></tr>
+          <tr><td>FR2</td><td>RSVP &amp; Attendance</td><td>Pre-meeting RSVP, live presence toggle, stand-in delegation</td></tr>
+          <tr><td>FR3</td><td>Presenter Mode</td><td>Full-screen dark-themed projector interface, keyboard shortcuts, auto-save</td></tr>
+          <tr><td>FR4</td><td>Document Upload</td><td>PDF/spreadsheet via S3 presigned URLs, embedded viewer</td></tr>
+          <tr><td>FR5</td><td>Voting</td><td>Proxied approve/decline, per-partner attribution, reversible before completion</td></tr>
+          <tr><td>FR6</td><td>Meeting Minutes</td><td>Auto-assembled from interactions, editable post-meeting, publishable</td></tr>
+          <tr><td>FR7</td><td>Meeting Prep</td><td>Dynamic checklist, green/yellow/red status, soft-blocking</td></tr>
+          <tr><td>FR8</td><td>Post-Meeting Workflows</td><td>Async fee acceptance with reminders, feedback pulse survey</td></tr>
+          <tr><td>FR9</td><td>Action Items</td><td>Owner + deadline, carry-forward to next meeting, urgency indicators</td></tr>
+          <tr><td>FR10</td><td>Analytics Snapshot</td><td>Embed existing dashboard, capture immutable snapshot for minutes</td></tr>
+        </table>
+
+        <p><strong>Key Architectural Aspects Identified:</strong></p>
+        <ul>
+          <li><strong>Meeting lifecycle engine</strong> &mdash; DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED state machine</li>
+          <li><strong>Minutes-as-byproduct pattern</strong> &mdash; every agenda item interaction contributes to minutes automatically</li>
+          <li><strong>Presenter Mode (frontend-heavy)</strong> &mdash; full-screen layout designed for projectors, not a modal overlay</li>
+          <li><strong>Reusable components</strong> &mdash; VotePanel, DocumentViewer shared across item types</li>
+          <li><strong>Proxied voting</strong> &mdash; organizer votes on behalf of each partner</li>
+          <li><strong>Post-meeting async workflows</strong> &mdash; fee acceptance reminders, feedback pulse</li>
+          <li><strong>Brownfield constraint</strong> &mdash; must follow all existing ADRs and patterns</li>
+        </ul>
+
+        <p><strong>Non-Functional Requirements:</strong></p>
+        <table>
+          <tr><th>Category</th><th>Requirement</th></tr>
+          <tr><td>Performance</td><td>Presenter Mode load &lt; 3s, item transitions &lt; 300ms, auto-save &lt; 2s</td></tr>
+          <tr><td>Security</td><td>Existing Cognito auth, organizer-only for management, partner-only for viewing</td></tr>
+          <tr><td>Accessibility</td><td>WCAG 2.1 AAA (7:1+) for Presenter Mode dark theme</td></tr>
+          <tr><td>Scalability</td><td>Up to 30 partners per meeting, unlimited history, S3-backed documents</td></tr>
+        </table>
+
+        <p><strong>Scale:</strong> Medium complexity, full-stack web, 6 cross-cutting concerns identified.</p>
+        <p><strong>[A]</strong> Advanced &nbsp; <strong>[P]</strong> Party Mode &nbsp; <strong>[C]</strong> Continue</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>C</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 3: STARTER TEMPLATE EVALUATION -->
+  <section id="step3-starter">
+    <div class="section-header">
+      <div class="phase-badge phase-2">3</div>
+      <div class="section-header-text">
+        <h2>Step 3: Starter Template Evaluation</h2>
+        <p>Determining whether a new project template is needed</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Brownfield Assessment</div>
+      <div class="turn-content">
+        <p><strong>No starter template evaluation needed.</strong></p>
+        <p>This is a <strong>brownfield feature extension</strong>, not a greenfield project. The entire technology stack, project structure, build tooling, testing infrastructure, and deployment pipeline are already established and production-proven through Epics 1&ndash;8.</p>
+
+        <p><strong>What the existing codebase provides:</strong></p>
+        <table>
+          <tr><th>Layer</th><th>Technology</th></tr>
+          <tr><td>Language &amp; Runtime</td><td>Java 21 (backend) + TypeScript 5.3 / React 19 (frontend)</td></tr>
+          <tr><td>Styling</td><td>Tailwind CSS 4.x + MUI 7.x</td></tr>
+          <tr><td>Build Tooling</td><td>Gradle 8.x (backend) + Vite 7.x (frontend)</td></tr>
+          <tr><td>Testing</td><td>JUnit 5 + Testcontainers PostgreSQL, Vitest + RTL + Playwright</td></tr>
+          <tr><td>API Pattern</td><td>OpenAPI 3.1 contract-first (ADR-006)</td></tr>
+          <tr><td>State Management</td><td>TanStack Query (server) + Zustand (client)</td></tr>
+        </table>
+
+        <p><strong>4 new architectural elements to introduce:</strong></p>
+        <ol>
+          <li><code>PresenterLayout</code> &mdash; dedicated full-screen layout for Presenter Mode</li>
+          <li>Meeting lifecycle state machine &mdash; DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED</li>
+          <li>Auto-save debounce pattern &mdash; new frontend hook for &lt; 2s persistence</li>
+          <li>Minutes auto-assembly &mdash; new backend pattern for aggregating agenda item contributions</li>
+        </ol>
+
+        <p><em>No project initialization story needed. First implementation story begins directly with database schema and entity design.</em></p>
+        <div class="tags">
+          <span class="tag tag-green">BROWNFIELD DETECTED</span>
+          <span class="tag tag-yellow">NO TEMPLATE NEEDED</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Why Brownfield Matters</div>
+      <div class="turn-content">
+        <p><strong>Winston correctly identified this as brownfield</strong> &mdash; an important distinction. For greenfield projects, this step would evaluate starter templates (Next.js, Spring Initializr, etc.) and make foundational tech choices. For brownfield, the step instead documents the existing tech stack and identifies only the <em>new</em> patterns needed.</p>
+        <p>This saves significant architecture time. Instead of debating frameworks, the architect focuses on the 4 genuinely new elements. Every other decision is "follow what already works." This is a key efficiency gain in the BMAD workflow for brownfield projects.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>C</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 4: CORE ARCHITECTURAL DECISIONS -->
+  <section id="step4-decisions">
+    <div class="section-header">
+      <div class="phase-badge phase-2">4</div>
+      <div class="section-header-text">
+        <h2>Step 4: Core Architectural Decisions</h2>
+        <p>The heart of the architecture &mdash; entity models, patterns, and key design choices</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; 5 Decision Categories</div>
+      <div class="turn-content">
+
+        <p><strong>1. Data Architecture &mdash; 11-Entity Model</strong></p>
+        <table>
+          <tr><th>Entity</th><th>Meaningful ID (ADR-003)</th><th>Cross-Service Refs</th></tr>
+          <tr><td>PartnerMeetingEntity</td><td><code>meetingCode</code> (PM-2026-Spring)</td><td>&mdash;</td></tr>
+          <tr><td>MeetingAgendaItemEntity</td><td>&mdash; (UUID FK)</td><td>&mdash;</td></tr>
+          <tr><td>MeetingAttendanceEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company</td></tr>
+          <tr><td>MeetingVoteEntity</td><td>&mdash; (UUID FK)</td><td>&mdash;</td></tr>
+          <tr><td>MeetingVoteRecordEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company</td></tr>
+          <tr><td>MeetingMinutesEntity</td><td>&mdash; (UUID FK)</td><td>&mdash;</td></tr>
+          <tr><td>MeetingActionItemEntity</td><td>&mdash;</td><td><code>ownerUsername</code> &rarr; User</td></tr>
+          <tr><td>MeetingDocumentEntity</td><td>&mdash; (UUID FK)</td><td>&mdash;</td></tr>
+          <tr><td>FeeAcceptanceEntity</td><td>&mdash;</td><td><code>companyName</code> &rarr; Company</td></tr>
+          <tr><td>FeedbackPulseEntity</td><td>&mdash;</td><td><code>username</code> &rarr; User</td></tr>
+          <tr><td>AnalyticsSnapshotEntity</td><td>&mdash; (UUID FK)</td><td>&mdash;</td></tr>
+        </table>
+        <p><strong>Key decisions:</strong> <code>meetingCode</code> as meaningful public identifier (pattern: <code>PM-{YYYY}-{Spring|Autumn}</code>). Minutes content as JSONB for auto-assembly. Action item carry-forward via self-referencing <code>sourceItemId</code> FK. All cross-service references use meaningful IDs per ADR-003.</p>
+
+        <hr style="border-color: var(--border); margin: 16px 0;">
+
+        <p><strong>2. Authentication &amp; Security</strong></p>
+        <ul>
+          <li><strong>Organizer role:</strong> create/edit meetings, Presenter Mode, voting, minutes publishing</li>
+          <li><strong>Partner role:</strong> RSVP, view published minutes, fee acceptance, feedback</li>
+          <li><strong>Presenter Mode soft lock:</strong> <code>presenterSessionStartedBy</code> + <code>presenterSessionStartedAt</code> fields &mdash; informational only, not a distributed lock</li>
+        </ul>
+
+        <hr style="border-color: var(--border); margin: 16px 0;">
+
+        <p><strong>3. API &amp; Communication &mdash; Minutes Auto-Assembly</strong></p>
+        <p><strong>Query-Based Assembly (Option A) chosen</strong> over event-sourced approach:</p>
+        <ul>
+          <li>Each organizer action persists to its own entity (attendance, votes, documents, notes)</li>
+          <li><code>MeetingMinutesService.assembleMinutes(meetingCode)</code> queries all entities and structures them into JSONB</li>
+          <li>Assembled on-demand when organizer clicks "Review Minutes" &mdash; always reflects current state</li>
+          <li>After publish, JSONB content becomes the immutable record</li>
+        </ul>
+        <p><em>Rationale: Simple, no new patterns, bi-annual usage doesn't justify event sourcing complexity.</em></p>
+
+        <p><strong>Auto-Save Pattern:</strong> Debounced <code>useMutation</code> via TanStack Query &mdash; fires 2 seconds after last input. Backend: <code>PATCH</code> endpoint. Optimistic UI with "Saved" indicator.</p>
+
+        <p><strong>3 API Endpoint Groups:</strong></p>
+        <ol>
+          <li>Meeting management &mdash; CRUD + status transitions + agenda configuration</li>
+          <li>Presenter Mode &mdash; attendance, voting, notes, documents, snapshots</li>
+          <li>Post-meeting &mdash; minutes review/publish, fee acceptance, feedback pulse</li>
+        </ol>
+
+        <hr style="border-color: var(--border); margin: 16px 0;">
+
+        <p><strong>4. Frontend Architecture &mdash; Dedicated PresenterLayout</strong></p>
+        <p>New top-level layout (not a modal or overlay) with three fixed zones:</p>
+        <pre>src/components/presenter/
+  PresenterLayout.tsx          # Three-zone shell + keyboard handler
+  AgendaSidebar.tsx            # 280px sidebar with item navigation
+  NotePanel.tsx                # 180px bottom zone with auto-save
+  items/
+    GreetingItem.tsx           # Partner gallery + presence toggle
+    AnalyticsItem.tsx          # Embedded analytics + snapshot
+    AuditSignoffItem.tsx       # Document viewer + vote
+    BudgetApprovalItem.tsx     # Document viewer + vote
+    TopicDiscussionItem.tsx    # Voting results + notes
+    CustomItem.tsx             # Free-form notes only
+  shared/
+    VotePanel.tsx              # Reusable proxied voting
+    DocumentViewer.tsx         # PDF/spreadsheet viewer
+    ActionItemForm.tsx         # Quick action item creation</pre>
+
+        <hr style="border-color: var(--border); margin: 16px 0;">
+
+        <p><strong>5. Infrastructure &mdash; No New Services Required</strong></p>
+        <ul>
+          <li>Spring <code>@Scheduled</code> for fee reminders (7/14 day) and feedback pulse (24h) &mdash; not EventBridge</li>
+          <li>No new ECS services, databases, WebSocket, or CDN configuration</li>
+          <li>Extends existing partner-coordination-service Fargate task</li>
+        </ul>
+
+        <p><strong>Implementation Sequence:</strong> Schema &rarr; OpenAPI &rarr; Backend CRUD &rarr; Presenter Layout &rarr; Agenda Items &rarr; Minutes &rarr; Post-Meeting &rarr; Action Items</p>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Minutes-as-Byproduct Pattern</div>
+      <div class="turn-content">
+        <p>The <strong>minutes-as-byproduct decision</strong> is the core architectural innovation. Winston evaluated two approaches:</p>
+        <ul>
+          <li><strong>Option A (Query-Based Assembly):</strong> Each action saves to its own entity. Minutes are assembled on-demand by querying all related data. Simple, no new patterns.</li>
+          <li><strong>Option B (Event-Sourced):</strong> Each action emits a domain event. Minutes replay the event stream. More elegant but adds significant complexity.</li>
+        </ul>
+        <p>Winston chose Option A because: the data is always authoritative (no stale projections), bi-annual usage does not justify event sourcing overhead, and it follows the existing CRUD patterns. This is a textbook example of choosing the simpler architecture when the usage pattern does not demand complexity.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>C</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 5: IMPLEMENTATION PATTERNS -->
+  <section id="step5-patterns">
+    <div class="section-header">
+      <div class="phase-badge phase-3">5</div>
+      <div class="section-header-text">
+        <h2>Step 5: Implementation Patterns &amp; Consistency Rules</h2>
+        <p>Defining exact patterns so AI agents cannot diverge during implementation</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; 12 Conflict Points, 6 Pattern Categories</div>
+      <div class="turn-content">
+
+        <p><strong>12 meeting-specific conflict points identified</strong> &mdash; areas where AI agents could make different choices without explicit guidance.</p>
+
+        <p><strong>Naming Patterns:</strong></p>
+        <ul>
+          <li>Database tables prefixed <code>partner_meeting_*</code> (11 tables)</li>
+          <li>Meeting code format: <code>PM-{YYYY}-{Spring|Autumn}</code></li>
+          <li>6 Java enums with exact values defined:</li>
+        </ul>
+        <pre>AgendaItemType: GREETING, ANALYTICS_REVIEW, AUDIT_SIGNOFF, BUDGET_APPROVAL,
+                TOPIC_DISCUSSION, HOT_TOPICS, CUSTOM
+MeetingStatus:  DRAFT, SCHEDULED, IN_PROGRESS, COMPLETED
+MinutesStatus:  DRAFT, PUBLISHED
+VoteDecision:   APPROVE, DECLINE
+FeeAcceptanceStatus: PENDING, ACCEPTED, DECLINED
+PresenceStatus: PRESENT, ABSENT, STAND_IN</pre>
+
+        <p><strong>Structure Patterns:</strong></p>
+        <ul>
+          <li>Backend package: <code>ch.batbern.partnercoordination.meeting/{controller,service,repository,domain,mapper}/</code></li>
+          <li>8 frontend routes defined (organizer: list, create, detail, present, minutes; partner: view, fee, feedback)</li>
+          <li>Component locations fixed: Presenter Mode under <code>src/components/presenter/</code></li>
+        </ul>
+
+        <p><strong>Format Patterns:</strong></p>
+
+        <details>
+          <summary>Minutes JSONB Structure (exact format)</summary>
+          <div class="details-body">
+<pre>{
+  "meetingCode": "PM-2026-Spring",
+  "date": "2026-05-15",
+  "location": "Bern, Kulturhof",
+  "sections": [
+    {
+      "agendaItemType": "GREETING",
+      "title": "Who Is Who - Attendance",
+      "attendance": {
+        "present": [{ "companyName": "TechCorp", "delegateName": "Max", "isStandIn": false }],
+        "absent": [{ "companyName": "DesignCo", "delegateName": null, "isStandIn": false }]
+      },
+      "notes": "Welcome remarks..."
+    },
+    {
+      "agendaItemType": "AUDIT_SIGNOFF",
+      "title": "Financial Report 2025",
+      "document": { "fileName": "audit-2025.pdf", "s3Key": "..." },
+      "vote": {
+        "result": "APPROVED",
+        "tally": { "approve": 8, "decline": 0 },
+        "records": [{ "companyName": "TechCorp", "decision": "APPROVE", "voterType": "PARTNER" }]
+      }
+    }
+  ],
+  "actionItems": [
+    { "title": "Review venue options", "ownerUsername": "sarah.mueller",
+      "deadline": "2026-08-01", "status": "OPEN", "carriedForwardFrom": null }
+  ]
+}</pre>
+          </div>
+        </details>
+
+        <details>
+          <summary>Auto-Save Hook Pattern (TypeScript)</summary>
+          <div class="details-body">
+<pre>const useAutoSave = (mutationFn: MutationFunction, delayMs = 2000) =&gt; {
+  const mutation = useMutation({ mutationFn });
+  const debouncedSave = useMemo(
+    () =&gt; debounce((data) =&gt; mutation.mutate(data), delayMs),
+    [mutation, delayMs]
+  );
+  return { save: debouncedSave, status: mutation.status };
+};</pre>
+          </div>
+        </details>
+
+        <p><strong>Communication Patterns:</strong></p>
+        <ul>
+          <li>Meeting status transitions: DRAFT &rarr; SCHEDULED &rarr; IN_PROGRESS &rarr; COMPLETED (no backward transitions)</li>
+          <li>5 email notification template identifiers defined: <code>partner_meeting_invite</code>, <code>partner_meeting_minutes</code>, <code>partner_meeting_fee_request</code>, <code>partner_meeting_fee_reminder</code>, <code>partner_meeting_feedback_pulse</code></li>
+        </ul>
+
+        <p><strong>Process Patterns:</strong></p>
+        <ul>
+          <li>Presenter Mode entry/exit sequences &mdash; 5-step entry, normal exit to minutes review, escape exit with resume</li>
+          <li>Minutes assembly sequence &mdash; query attendance, iterate items, merge into JSONB</li>
+          <li>Action item carry-forward logic &mdash; copy open items, set <code>sourceItemId</code>, calculate <code>carryForwardCount</code>, flag urgency at 2+</li>
+        </ul>
+
+        <p><strong>7 Enforcement Guidelines:</strong></p>
+        <ol>
+          <li>Follow the table naming prefix <code>partner_meeting_*</code> for all new tables</li>
+          <li>Use the exact JSONB structure for minutes content &mdash; no variations</li>
+          <li>Use the <code>useAutoSave</code> hook for all auto-save &mdash; no custom implementations</li>
+          <li>Follow the Presenter Mode entry/exit sequence exactly &mdash; no shortcuts</li>
+          <li>Use meaningful IDs in all API URLs and responses &mdash; never expose UUIDs</li>
+          <li>Store enums as <code>lowercase_snake_case</code> in DB, <code>UPPER_CASE</code> in JSON/API</li>
+          <li>Place all Presenter Mode components under <code>src/components/presenter/</code></li>
+        </ol>
+
+        <p><strong>8 Anti-Patterns to Avoid:</strong></p>
+        <table>
+          <tr><th>Anti-Pattern</th><th>Correct Approach</th></tr>
+          <tr><td>Store partner email/name in attendance</td><td>Store <code>companyName</code> only, enrich via HTTP (ADR-004)</td></tr>
+          <tr><td>Create separate meeting-service</td><td>Extend partner-coordination-service</td></tr>
+          <tr><td>Use WebSocket for auto-save</td><td>Debounced HTTP PATCH is sufficient</td></tr>
+          <tr><td>Store minutes as flat HTML/text</td><td>Use structured JSONB with typed sections</td></tr>
+          <tr><td>Hardcode agenda items in frontend</td><td>All items from backend AgendaItem entities</td></tr>
+          <tr><td>Add <code>@JsonValue</code> to meeting enums</td><td>Default Jackson serialization</td></tr>
+          <tr><td>Direct <code>fetch()</code> for auto-save</td><td>Use TanStack Query <code>useMutation</code> via service layer</td></tr>
+          <tr><td>Mutable votes after completion</td><td>VoteRecords are immutable once completed</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; Why Enforcement Guidelines Matter</div>
+      <div class="turn-content">
+        <p>The <strong>7 enforcement guidelines and 8 anti-patterns</strong> are the most operationally important part of the architecture document. In an AI-assisted development workflow, multiple agents (or the same agent across sessions) will implement different stories from this architecture.</p>
+        <p>Without these explicit rules, common divergences include: one agent using WebSocket for auto-save while another uses HTTP PATCH, one storing partner names directly while another follows ADR-004, one placing Presenter components in <code>organizer/</code> while another uses <code>presenter/</code>.</p>
+        <p>The enforcement guidelines act as a contract between the architect and every implementing agent. They eliminate ambiguity at the exact points where AI agents are most likely to make inconsistent choices. This is unique to AI-assisted architecture &mdash; human teams use code reviews to catch drift; AI agents need the rules upfront.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>C</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 6: PROJECT STRUCTURE & BOUNDARIES -->
+  <section id="step6-structure">
+    <div class="section-header">
+      <div class="phase-badge phase-3">6</div>
+      <div class="section-header-text">
+        <h2>Step 6: Project Structure &amp; Boundaries</h2>
+        <p>Complete file listing, API boundaries, service boundaries, and data flow</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Complete Structure</div>
+      <div class="turn-content">
+
+        <p><strong>New Files &mdash; Backend (Partner Coordination Service):</strong></p>
+        <ul>
+          <li>11 entity classes + 6 enums in <code>meeting/domain/</code></li>
+          <li>5 service classes in <code>meeting/service/</code></li>
+          <li>2 controllers in <code>meeting/controller/</code></li>
+          <li>11 repository interfaces in <code>meeting/repository/</code></li>
+          <li>3 mappers in <code>meeting/mapper/</code></li>
+          <li>10 Flyway migrations for all <code>partner_meeting_*</code> tables</li>
+        </ul>
+
+        <p><strong>New Files &mdash; Frontend:</strong></p>
+        <ul>
+          <li>6 organizer meeting components (<code>MeetingListPage</code>, <code>MeetingCreateForm</code>, <code>AgendaBuilder</code>, etc.)</li>
+          <li>10 Presenter Mode components (layout + 6 item types + 3 shared)</li>
+          <li>3 partner meeting components (<code>PublishedMinutesView</code>, <code>FeeAcceptanceWidget</code>, <code>FeedbackPulseForm</code>)</li>
+          <li>3 custom hooks (<code>useAutoSave</code>, <code>usePresenterKeyboard</code>, <code>usePresenterNavigation</code>)</li>
+          <li>1 service (<code>partnerMeetingService.ts</code>), 1 Zustand store, generated types</li>
+        </ul>
+
+        <p><strong>API Boundaries:</strong></p>
+        <table>
+          <tr><th>Boundary</th><th>Endpoints</th><th>Auth</th></tr>
+          <tr><td>Meeting Management</td><td><code>POST/GET/PUT /api/v1/partner-meetings/**</code></td><td>Organizer</td></tr>
+          <tr><td>Presenter Mode</td><td><code>PATCH /api/v1/partner-meetings/{code}/presenter/**</code></td><td>Organizer</td></tr>
+          <tr><td>Minutes</td><td><code>GET/PUT/POST .../minutes</code></td><td>Organizer (edit), Partner (view)</td></tr>
+          <tr><td>Fee Acceptance</td><td><code>GET/PUT .../fee-acceptance</code></td><td>Partner</td></tr>
+          <tr><td>Feedback</td><td><code>POST .../feedback</code></td><td>Partner</td></tr>
+          <tr><td>Documents</td><td><code>POST/GET .../documents/**</code></td><td>Organizer (upload), Partner (view)</td></tr>
+        </table>
+
+        <p><strong>Service Boundaries:</strong></p>
+        <table>
+          <tr><th>Target Service</th><th>Access Pattern</th><th>Data</th></tr>
+          <tr><td>Company Service</td><td>HTTP GET</td><td>Company logo, displayName</td></tr>
+          <tr><td>User Service</td><td>HTTP GET</td><td>Profile photo, name</td></tr>
+          <tr><td>Partner Service</td><td>Direct repository (same DB)</td><td>Partner entities, contacts</td></tr>
+          <tr><td>S3</td><td>Presigned URL generation</td><td>Document upload/download</td></tr>
+          <tr><td>SES</td><td>Email sending</td><td>ICS invites, minutes, reminders</td></tr>
+        </table>
+
+        <p><strong>FR-to-Structure Mapping:</strong> All 10 FR groups mapped to specific backend package + frontend component + API spec section.</p>
+
+        <details>
+          <summary>Complete Data Flow Diagram</summary>
+          <div class="details-body">
+<pre>Pre-Meeting:
+  Organizer &rarr; MeetingCreateForm &rarr; POST /api/v1/partner-meetings
+  Organizer &rarr; AgendaBuilder &rarr; PUT .../agenda
+  System &rarr; SES &rarr; Partner (ICS invite)
+  Partner &rarr; RSVP &rarr; PUT .../rsvp
+
+During Meeting (Presenter Mode):
+  Organizer &rarr; PresenterLayout &rarr; presenterStore (Zustand)
+  Organizer &rarr; GreetingItem &rarr; PATCH .../presenter/attendance
+  Organizer &rarr; VotePanel &rarr; POST .../presenter/votes
+  Organizer &rarr; NotePanel &rarr; useAutoSave &rarr; PATCH .../presenter/notes (2s)
+  All actions &rarr; auto-persisted &rarr; available for minutes assembly
+
+Post-Meeting:
+  Organizer &rarr; "Review Minutes" &rarr; assembleMinutes() &rarr; JSONB
+  Organizer &rarr; MinutesEditor &rarr; PUT .../minutes
+  Organizer &rarr; "Publish" &rarr; POST .../minutes/publish &rarr; SES
+  Partner &rarr; PublishedMinutesView &rarr; GET .../minutes
+  Partner &rarr; FeeAcceptanceWidget &rarr; PUT .../fee-acceptance
+  System &rarr; @Scheduled &rarr; fee reminders (7/14d) &rarr; SES
+  System &rarr; @Scheduled &rarr; feedback pulse (24h) &rarr; SES</pre>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 7: ARCHITECTURE VALIDATION -->
+  <section id="step7-validation">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">7</div>
+      <div class="section-header-text">
+        <h2>Step 7: Architecture Validation</h2>
+        <p>Systematic verification of coherence, coverage, and readiness</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Validation Results</div>
+      <div class="turn-content">
+
+        <p><strong>Coherence Validation:</strong></p>
+        <table>
+          <tr><th>Check</th><th>Status</th><th>Details</th></tr>
+          <tr><td>Decision Compatibility</td><td style="color: var(--accent2);">PASS</td><td>All tech from existing stack, zero version conflicts, JSONB supported by PostgreSQL 15</td></tr>
+          <tr><td>Pattern Consistency</td><td style="color: var(--accent2);">PASS</td><td>All naming conventions align with project-context.md, API URLs follow ADR-003</td></tr>
+          <tr><td>Structure Alignment</td><td style="color: var(--accent2);">PASS</td><td>Backend sub-packages match existing services, frontend properly separated</td></tr>
+        </table>
+
+        <p><strong>Requirements Coverage:</strong></p>
+        <table>
+          <tr><th>FR Group</th><th>Coverage</th></tr>
+          <tr><td>FR1&ndash;FR10 (all 10 groups)</td><td style="color: var(--accent2);">Fully covered by entity model, component structure, and API boundaries</td></tr>
+          <tr><td>Performance NFRs</td><td style="color: var(--accent2);">Pre-fetch pattern for &lt; 3s load, client-side transitions for &lt; 300ms, debounce for &lt; 2s save</td></tr>
+          <tr><td>Security NFRs</td><td style="color: var(--accent2);">Role boundaries defined, Cognito auth reused, soft lock documented</td></tr>
+          <tr><td>Accessibility NFRs</td><td style="color: var(--accent2);">WCAG 2.1 AAA contrast for dark theme, AA for partner portal</td></tr>
+        </table>
+
+        <p><strong>Implementation Readiness:</strong></p>
+        <table>
+          <tr><th>Check</th><th>Status</th></tr>
+          <tr><td>Decision Completeness</td><td style="color: var(--accent2);">PASS &mdash; 11 entities, 6 enums, API boundaries, JSONB example, auto-save hook</td></tr>
+          <tr><td>Structure Completeness</td><td style="color: var(--accent2);">PASS &mdash; Every FR mapped to backend + frontend + API spec</td></tr>
+          <tr><td>Pattern Completeness</td><td style="color: var(--accent2);">PASS &mdash; 7 enforcement rules, 8 anti-patterns, 3 process sequences</td></tr>
+        </table>
+
+        <p><strong>Gap Analysis:</strong></p>
+        <table>
+          <tr><th>Severity</th><th>Count</th><th>Items</th></tr>
+          <tr><td style="color: var(--accent2);">Critical</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td style="color: var(--accent4);">Important</td><td>3</td><td>ICS library selection (recommend <code>ical4j</code>), PDF viewer approach (start with native <code>&lt;object&gt;</code>), email template HTML content</td></tr>
+          <tr><td style="color: var(--text-muted);">Nice-to-Have</td><td>2</td><td>Drag-and-drop library for AgendaBuilder (recommend <code>@dnd-kit</code>), Presenter Mode transition animations</td></tr>
+        </table>
+
+        <p><strong>Architecture Completeness Checklist (4 categories, all checked):</strong></p>
+        <ul>
+          <li>Requirements Analysis &mdash; context analyzed, constraints identified, cross-cutting concerns mapped</li>
+          <li>Architectural Decisions &mdash; entity model, minutes pattern, layout strategy, auto-save, scheduling</li>
+          <li>Implementation Patterns &mdash; naming, enums, JSONB structure, process sequences, enforcement</li>
+          <li>Project Structure &mdash; file structure, API boundaries, service boundaries, data flow</li>
+        </ul>
+
+        <p><strong>Readiness Assessment: HIGH confidence, READY FOR IMPLEMENTATION</strong></p>
+
+        <div class="tags">
+          <span class="tag tag-green">COHERENCE VALIDATED</span>
+          <span class="tag tag-green">COVERAGE COMPLETE</span>
+          <span class="tag tag-green">READY FOR IMPLEMENTATION</span>
+          <span class="tag tag-yellow">3 IMPORTANT GAPS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn turn-note">
+      <div class="turn-label label-note"><span class="dot"></span>Training Note &mdash; How Validation Catches Gaps</div>
+      <div class="turn-content">
+        <p><strong>The validation step is not ceremonial.</strong> Winston systematically checks three dimensions:</p>
+        <ol>
+          <li><strong>Coherence</strong> &mdash; do the decisions contradict each other? (e.g., choosing WebSocket but then saying no new infrastructure)</li>
+          <li><strong>Coverage</strong> &mdash; is every functional requirement traceable to a specific entity, component, and API endpoint?</li>
+          <li><strong>Readiness</strong> &mdash; is there enough detail for an AI agent to implement without making assumptions?</li>
+        </ol>
+        <p>In this case, validation found <strong>zero critical gaps</strong> and only 3 important items (library selections) that can be resolved during implementation. This is the green light for creating epics and stories. Without validation, missing gaps would surface as blockers during implementation, causing rework.</p>
+      </div>
+    </div>
+
+    <div class="turn turn-user">
+      <div class="turn-label label-user"><span class="dot"></span>User Prompt</div>
+      <div class="turn-content"><code>c</code></div>
+    </div>
+  </section>
+
+  <!-- STEP 8: COMPLETION -->
+  <section id="step8-complete">
+    <div class="section-header">
+      <div class="phase-badge phase-bridge">8</div>
+      <div class="section-header-text">
+        <h2>Step 8: Completion &amp; Handoff</h2>
+        <p>Architecture finalized, next steps guidance</p>
+      </div>
+    </div>
+
+    <div class="turn turn-agent">
+      <div class="turn-label label-agent"><span class="dot"></span>Agent Response (Winston) &mdash; Completion</div>
+      <div class="turn-content">
+        <p><strong>Architecture document complete.</strong></p>
+        <p>The architecture document at <code>docs/trainings/ba_demo2/architecture.md</code> is now a comprehensive implementation guide covering:</p>
+        <ul>
+          <li>Project context analysis with all 10 FR groups and NFRs</li>
+          <li>Brownfield assessment with existing tech stack documented</li>
+          <li>5 core decision categories with explicit rationale</li>
+          <li>12 conflict points resolved with exact patterns</li>
+          <li>Complete project structure with file listings</li>
+          <li>6 API boundary groups with auth requirements</li>
+          <li>End-to-end data flow across all meeting phases</li>
+          <li>Validation results confirming HIGH readiness</li>
+        </ul>
+
+        <p><strong>Next Steps:</strong></p>
+        <ol>
+          <li><strong>Create Epics &amp; Stories</strong> &mdash; Use the PM Agent (John) with <code>[CE]</code> to break this architecture into implementable stories</li>
+          <li><strong>Check Implementation Readiness</strong> &mdash; Run <code>[IR]</code> to verify PRD + Architecture + Epics are complete before starting development</li>
+        </ol>
+
+        <div class="tags">
+          <span class="tag tag-green">ARCHITECTURE COMPLETE</span>
+          <span class="tag tag-green">READY FOR EPICS</span>
+          <span class="tag tag-purple">8 STEPS COMPLETED</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result">
+    <div class="section-header">
+      <div class="phase-badge phase-1">&#x2605;</div>
+      <div class="section-header-text">
+        <h2>Session Results</h2>
+        <p>What the architecture session produced</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Workflow Steps</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">11</div>
+        <div class="stat-label">Entities Defined</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Enums Specified</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">12</div>
+        <div class="stat-label">Conflict Points</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">7</div>
+        <div class="stat-label">Enforcement Rules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Anti-Patterns</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">10</div>
+        <div class="stat-label">FR Groups Covered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Critical Gaps</div>
+      </div>
+    </div>
+
+    <div class="turn turn-artifact">
+      <div class="turn-label label-artifact"><span class="dot"></span>Generated Artifact</div>
+      <div class="turn-content">
+        <p><strong>Architecture Decision Document</strong> &mdash; <a href="agenda-architecture.html" style="color:var(--accent)">View rendered architecture</a></p>
+        <p>Source: <code>docs/trainings/ba_demo2/architecture.md</code></p>
+        <p>A complete implementation-ready architecture document containing: entity model, naming conventions, JSONB structures, component trees, API boundaries, process sequences, enforcement guidelines, and validation results. Ready for epic/story creation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAKEAWAYS -->
+  <section id="takeaways">
+    <div class="section-header">
+      <div class="phase-badge phase-2">&#x1F4A1;</div>
+      <div class="section-header-text">
+        <h2>Key Takeaways</h2>
+        <p>What BAs and architects should learn from this session</p>
+      </div>
+    </div>
+
+    <div class="takeaway-grid">
+      <div class="takeaway">
+        <h3>Brownfield Efficiency</h3>
+        <p>For brownfield projects, the architecture session skips template evaluation entirely and focuses on the genuinely new elements. Winston identified only 4 new patterns needed atop a mature, production-proven stack. This prevents over-engineering.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Decisions Over Description</h3>
+        <p>The architecture document is not a restatement of requirements. It is a set of <em>decisions</em> with rationale. "Query-based assembly, not event sourcing, because bi-annual usage does not justify the complexity" &mdash; this is the kind of reasoning that prevents future debates.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Patterns for AI Consistency</h3>
+        <p>The 7 enforcement guidelines and 8 anti-patterns are unique to AI-assisted development. Human teams rely on code reviews and tribal knowledge. AI agents need explicit, upfront rules to avoid drift across independent implementation sessions.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Validation Before Implementation</h3>
+        <p>Winston's systematic validation caught that all 10 FR groups are covered, all NFRs addressed, and no critical gaps exist. Running validation before creating stories prevents discovering architectural holes mid-sprint.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Minimal User Input Required</h3>
+        <p>The user's inputs were remarkably brief: <code>CA docs/.../prd.md</code>, a document confirmation, and then <code>C</code> seven times. The architect agent drove the entire analysis. BAs should focus on reviewing and redirecting, not generating content.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Traceability Chain</h3>
+        <p>The session established a clear traceability chain: Brainstorm (35 ideas) &rarr; UX Spec (5 journeys) &rarr; PRD (10 FR groups) &rarr; Architecture (11 entities, 30+ patterns). Every decision traces back to a requirement, which traces back to a user need.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script>
+(function(){
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  if (!navLinks.length) return;
+  const sections = [];
+  navLinks.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+  if (!sections.length) return;
+  var current = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var match = sections.find(function(s) { return s.el === entry.target; });
+        if (match && match.link !== current) {
+          if (current) current.classList.remove('active');
+          match.link.classList.add('active');
+          current = match.link;
+        }
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+  // Remove initial active class so scroll spy takes over
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  // Set first section as active initially
+  if (sections.length) { sections[0].link.classList.add('active'); current = sections[0].link; }
+})();
+</script>
+</body>
+</html>
