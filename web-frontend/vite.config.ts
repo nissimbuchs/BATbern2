@@ -252,7 +252,10 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@emotion') || id.includes('@mui')) return 'vendor-mui';
-          if (id.includes('tinymce')) return 'vendor-tinymce';
+          // TinyMCE is intentionally NOT bundled — it's loaded at runtime via
+          // <Editor tinymceScriptSrc="/tinymce/tinymce.min.js" /> from vite-plugin-static-copy.
+          // Bundling its IIFE modules causes Vite/Rollup to reorder them so plugins
+          // execute before window.tinymce is set, breaking the editor.
           return 'vendor';
         },
         // Asset file naming for better caching
