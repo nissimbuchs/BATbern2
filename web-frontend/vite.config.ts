@@ -166,6 +166,13 @@ export default defineConfig({
           dest: 'tinymce',
           rename: { stripBase: 2 },
         },
+        // TinyMCE infers base_url from skin_url and tries to load tinymce.min.js
+        // from that location at runtime — it must exist even though TinyMCE is bundled.
+        {
+          src: 'node_modules/tinymce/tinymce.min.js',
+          dest: 'tinymce',
+          rename: { stripBase: 2 },
+        },
       ],
     }),
     // Sitemap generation for SEO (Story 4.1.8)

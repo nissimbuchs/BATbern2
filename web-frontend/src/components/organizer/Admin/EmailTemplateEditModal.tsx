@@ -311,6 +311,8 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
                 entity_encoding: 'raw',
                 valid_elements: '*[*]',
                 branding: false,
+                base_url: '/tinymce',
+                suffix: '.min',
                 skin_url: '/tinymce/skins/ui/oxide',
                 content_css: '/tinymce/skins/content/default/content.min.css',
                 setup: (editor) => {
