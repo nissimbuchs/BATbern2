@@ -125,8 +125,8 @@
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.0.18",
-    "@vitest/ui": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/ui": "^4.1.5",
     "autoprefixer": "^10.4.27",
     "axios-mock-adapter": "^2.1.0",
     "eslint": "^10.1.0",
@@ -151,7 +151,7 @@
     "vite-plugin-pwa": "^1.0.3",
     "vite-plugin-sitemap": "^0.8.2",
     "vite-plugin-static-copy": "^4.0.0",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.5",
     "vitest-axe": "^0.1.0"
   },
   "lint-staged": {
