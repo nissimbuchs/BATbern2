@@ -99,16 +99,16 @@ class NewsletterSubscriberServiceTest {
 
         @org.junit.jupiter.params.ParameterizedTest(name = "rejects {0}")
         @org.junit.jupiter.params.provider.ValueSource(strings = {
-                "user@example.com",
-                "ZAPROXY@Example.COM",
-                "user@example.org",
-                "user@example.net",
-                "user@something.example",
-                "user@something.test",
-                "user@something.invalid",
-                "test-e2e@e2e.batbern.invalid",
-                "user@something.localhost",
-                "user@localhost"
+            "user@example.com",
+            "ZAPROXY@Example.COM",
+            "user@example.org",
+            "user@example.net",
+            "user@something.example",
+            "user@something.test",
+            "user@something.invalid",
+            "test-e2e@e2e.batbern.invalid",
+            "user@something.localhost",
+            "user@localhost"
         })
         void subscribe_reservedDomain_throws(String email) {
             assertThatThrownBy(() -> newsletterSubscriberService
@@ -121,11 +121,11 @@ class NewsletterSubscriberServiceTest {
 
         @org.junit.jupiter.params.ParameterizedTest(name = "accepts {0}")
         @org.junit.jupiter.params.provider.ValueSource(strings = {
-                "user@batbern.ch",
-                "user@batbern-test.ch",
-                "subscriber.0001@local.dev",
-                "user@gmail.com",
-                "user@example.ch"
+            "user@batbern.ch",
+            "user@batbern-test.ch",
+            "subscriber.0001@local.dev",
+            "user@gmail.com",
+            "user@example.ch"
         })
         void subscribe_validDomain_doesNotThrow(String email) {
             when(subscriberRepository.findByEmail(email)).thenReturn(Optional.empty());

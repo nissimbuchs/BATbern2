@@ -103,12 +103,12 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     @DisplayName("POST /newsletter/subscribe — RFC 2606 reserved domain → 400")
     void subscribe_reservedDomain_returns400() throws Exception {
         for (String email : new String[]{
-                "zaproxy@example.com",
-                "user@example.org",
-                "user@example.net",
-                "test-e2e@e2e.batbern.invalid",
-                "user@something.test",
-                "user@localhost"
+            "zaproxy@example.com",
+            "user@example.org",
+            "user@example.net",
+            "test-e2e@e2e.batbern.invalid",
+            "user@something.test",
+            "user@localhost"
         }) {
             mockMvc.perform(post("/api/v1/newsletter/subscribe")
                             .contentType(MediaType.APPLICATION_JSON)
