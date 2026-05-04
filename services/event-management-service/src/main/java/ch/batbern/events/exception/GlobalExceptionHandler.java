@@ -811,6 +811,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle ReservedEmailDomainException — newsletter subscribe attempted with an
+     * RFC 2606 / RFC 6761 reserved domain (e.g. example.com, *.test, *.invalid).
+     * Returns HTTP 400 Bad Request.
+     */
+    @ExceptionHandler(ReservedEmailDomainException.class)
+    public ResponseEntity<ErrorResponse> handleReservedEmailDomainException(
+            ReservedEmailDomainException ex,
+            HttpServletRequest request) {
+        log.warn("Rejected newsletter subscribe — reserved domain: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
      * Handle DuplicateNewsletterSendException (send already in progress for the same event).
      * Returns HTTP 409 Conflict.
      */

@@ -61,7 +61,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("POST /newsletter/subscribe — new email → 200 OK")
     void subscribe_newEmail_returns200() throws Exception {
-        Map<String, Object> body = Map.of("email", "test@example.com", "language", "de");
+        Map<String, Object> body = Map.of("email", "test@batbern-test.ch", "language", "de");
 
         mockMvc.perform(post("/api/v1/newsletter/subscribe")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,13 +74,13 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     void subscribe_duplicateActiveEmail_returns409() throws Exception {
         // Pre-create an active subscriber
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dup@example.com")
+                .email("dup@batbern-test.ch")
                 .language("de")
                 .source("explicit")
                 .unsubscribeToken("tok-dup-1")
                 .build());
 
-        Map<String, Object> body = Map.of("email", "dup@example.com");
+        Map<String, Object> body = Map.of("email", "dup@batbern-test.ch");
 
         mockMvc.perform(post("/api/v1/newsletter/subscribe")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,6 +97,24 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /newsletter/subscribe — RFC 2606 reserved domain → 400")
+    void subscribe_reservedDomain_returns400() throws Exception {
+        for (String email : new String[]{
+            "zaproxy@example.com",
+            "user@example.org",
+            "user@example.net",
+            "test-e2e@e2e.batbern.invalid",
+            "user@something.test",
+            "user@localhost"
+        }) {
+            mockMvc.perform(post("/api/v1/newsletter/subscribe")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(Map.of("email", email))))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     // ── AC3: GET /newsletter/unsubscribe/verify ───────────────────────────────

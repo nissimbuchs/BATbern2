@@ -192,6 +192,9 @@ public class RegistrationService {
             } catch (DuplicateSubscriberException e) {
                 // Already subscribed — silently ignore (AC6)
                 log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
+            } catch (ch.batbern.events.exception.ReservedEmailDomainException e) {
+                // Reserved/test domain (RFC 2606) — let registration succeed but skip subscribe
+                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}", request.getEmail());
             }
         }
 

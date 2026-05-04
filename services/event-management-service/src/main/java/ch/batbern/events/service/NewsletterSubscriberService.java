@@ -4,6 +4,7 @@ import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.dto.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.dto.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
+import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -26,6 +29,36 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class NewsletterSubscriberService {
+
+    /** RFC 2606 reserved second-level domains. */
+    private static final Set<String> RESERVED_DOMAINS = Set.of(
+            "example.com", "example.org", "example.net", "localhost"
+    );
+
+    /** RFC 2606 / RFC 6761 reserved TLDs (matched as suffix). */
+    private static final List<String> RESERVED_TLD_SUFFIXES = List.of(
+            ".example", ".test", ".invalid", ".localhost"
+    );
+
+    static boolean isReservedDomain(String email) {
+        if (email == null) {
+            return false;
+        }
+        int at = email.lastIndexOf('@');
+        if (at < 0 || at == email.length() - 1) {
+            return false;
+        }
+        String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
+        if (RESERVED_DOMAINS.contains(domain)) {
+            return true;
+        }
+        for (String suffix : RESERVED_TLD_SUFFIXES) {
+            if (domain.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private final NewsletterSubscriberRepository subscriberRepository;
 
@@ -45,9 +78,15 @@ public class NewsletterSubscriberService {
      * @param username  cognito username for authenticated users; null for anonymous
      * @return saved subscriber entity
      */
-    @Transactional(noRollbackFor = DuplicateSubscriberException.class)
+    @Transactional(noRollbackFor = {DuplicateSubscriberException.class, ReservedEmailDomainException.class})
     public NewsletterSubscriber subscribe(String email, String firstName, String language,
                                           String source, String username) {
+        // Block RFC 2606 / RFC 6761 reserved domains so test fixtures and scanners
+        // (e.g. zaproxy@example.com, speaker-test-…@example.com) can't pollute prod.
+        if (isReservedDomain(email)) {
+            log.warn("Rejected newsletter subscribe for reserved domain: {}", email);
+            throw new ReservedEmailDomainException(email);
+        }
         // Infer name from email when not provided (e.g. "david.baumgartner@ace.ch" → "David Baumgartner")
         String resolvedName = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(email);
 

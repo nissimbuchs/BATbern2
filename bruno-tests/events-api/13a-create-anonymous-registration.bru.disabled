@@ -14,7 +14,7 @@ body:json {
   {
     "firstName": "Jane",
     "lastName": "Doe",
-    "email": "jane.doe.anonymous@example.com",
+    "email": "jane.doe.anonymous@e2e.batbern.invalid",
     "company": "TestCompany",
     "role": "Architect",
     "termsAccepted": true,
@@ -47,7 +47,7 @@ tests {
     expect(registration.attendeeUsername).to.be.a('string');
     expect(registration.attendeeFirstName).to.equal('Jane');
     expect(registration.attendeeLastName).to.equal('Doe');
-    expect(registration.attendeeEmail).to.equal('jane.doe.anonymous@example.com');
+    expect(registration.attendeeEmail).to.equal('jane.doe.anonymous@e2e.batbern.invalid');
 
     // Registration details
     expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
