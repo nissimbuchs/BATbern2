@@ -49,11 +49,6 @@ vi.mock('@/stores/partnerDetailStore', () => ({
   }),
 }));
 
-import { usePartnerDetail } from '@/hooks/usePartnerDetail';
-import { usePartnerVotes } from '@/hooks/usePartnerVotes';
-import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
-import { usePartnerNotes } from '@/hooks/usePartnerNotes';
-
 // Mock partner data
 const mockPartnerDetail = {
   id: '123e4567-e89b-12d3-a456-426614174000',

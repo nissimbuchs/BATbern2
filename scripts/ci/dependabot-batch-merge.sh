@@ -92,33 +92,38 @@ get_dependabot_prs() {
     echo "$pr_count"
 }
 
-# Attempt to update PR (rebase)
+# Attempt to update PR branch (rebase onto develop)
 update_pr() {
     local pr_number=$1
     local pr_title=$2
 
-    log_info "Attempting to update PR #$pr_number: $pr_title"
+    log_info "Updating branch for PR #$pr_number: $pr_title"
 
     if [ "$DRY_RUN" = "true" ]; then
-        log_warn "[DRY RUN] Would update PR #$pr_number"
+        log_warn "[DRY RUN] Would rebase PR #$pr_number onto develop"
         return 0
     fi
 
-    # Try to update the PR
-    if gh pr comment "$pr_number" --body "🤖 Attempting automatic rebase and merge..."; then
-        # Check if PR is now mergeable
+    # Actually rebase the PR branch onto the base branch
+    if gh pr update-branch "$pr_number" --rebase 2>/dev/null; then
+        log_success "PR #$pr_number branch rebased onto develop"
+        # Allow a moment for GitHub to register the update
+        sleep 5
         local mergeable=$(gh pr view "$pr_number" --json mergeable --jq '.mergeable')
-
         if [ "$mergeable" = "MERGEABLE" ]; then
-            log_success "PR #$pr_number is mergeable"
             return 0
         else
-            log_warn "PR #$pr_number has conflicts"
+            log_warn "PR #$pr_number still has conflicts after rebase"
             return 1
         fi
     else
-        log_error "Failed to update PR #$pr_number"
-        return 1
+        log_warn "Failed to rebase PR #$pr_number — checking for merge conflicts"
+        local mergeable=$(gh pr view "$pr_number" --json mergeable --jq '.mergeable')
+        if [ "$mergeable" = "CONFLICTING" ]; then
+            return 1
+        fi
+        # UNKNOWN state means CI hasn't run yet — treat as updatable
+        return 0
     fi
 }
 
@@ -173,22 +178,20 @@ process_pr() {
     echo "" >> "$SUMMARY_FILE"
     log_info "Processing PR #$pr_number: $pr_title"
 
-    # Check if already mergeable
-    if [ "$mergeable" = "MERGEABLE" ]; then
-        log_success "PR #$pr_number is already mergeable"
-        enable_auto_merge "$pr_number"
-        return 0
-    fi
-
-    # Try to update PR
-    if update_pr "$pr_number" "$pr_title"; then
-        enable_auto_merge "$pr_number"
-        return 0
-    else
-        # PR has conflicts, close it
+    if [ "$mergeable" = "CONFLICTING" ]; then
         close_pr "$pr_number" "Merge conflicts detected. Will be recreated in next dependabot run."
         return 1
     fi
+
+    # Always rebase onto develop first so CI re-runs with up-to-date base
+    # (branch protection has strict:true — PRs behind develop won't auto-merge)
+    if ! update_pr "$pr_number" "$pr_title"; then
+        close_pr "$pr_number" "Merge conflicts after rebase. Will be recreated in next dependabot run."
+        return 1
+    fi
+
+    enable_auto_merge "$pr_number"
+    return 0
 }
 
 # Main execution
@@ -218,8 +221,8 @@ main() {
             ((closed++)) || true
         fi
 
-        # Add delay between PRs to avoid rate limiting
-        sleep 2
+        # Brief delay between PRs to avoid rate limiting
+        sleep 3
     done < /tmp/dependabot-prs.json
 
     # Final summary
