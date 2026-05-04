@@ -14,7 +14,7 @@ body:json {
   {
     "firstName": "Test",
     "lastName": "Attendee",
-    "email": "test.attendee@example.com",
+    "email": "test.attendee@e2e.batbern.invalid",
     "company": "Test Co",
     "role": "Engineer",
     "termsAccepted": true,
@@ -41,7 +41,7 @@ tests {
     // Minimal response for security - full data available after email confirmation
     expect(response.message).to.be.a('string');
     expect(response.message).to.include('Registration submitted');
-    expect(response.email).to.equal('test.attendee@example.com');
+    expect(response.email).to.equal('test.attendee@e2e.batbern.invalid');
   });
 
   test("should verify no UUID id field (Story 2.2a: ADR-003)", function() {

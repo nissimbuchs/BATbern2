@@ -167,7 +167,7 @@ Tests create temporary data with identifiable names:
 - Event Number: 999
 - Venue: "Test Venue"
 - Sessions: "Opening Keynote"
-- Registrations: "test.attendee@example.com"
+- Registrations: "test.attendee@e2e.batbern.invalid" (RFC 6761 reserved domain — blocked by newsletter filter to prevent prod pollution)
 
 The final test (20-delete-event) cleans up the test event and all associated data.
 
