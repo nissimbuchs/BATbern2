@@ -40,7 +40,7 @@ dependencies {
 
     // JWT Processing
     implementation 'com.auth0:java-jwt:4.5.1'
-    implementation 'com.auth0:jwks-rsa:0.22.1'
+    implementation 'com.auth0:jwks-rsa:0.23.1'
 
     // Jackson for JSON processing (version managed by Spring Boot)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
