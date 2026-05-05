@@ -134,6 +134,61 @@ class BounceProcessingServiceTest {
         assertThat(saved.getSuppressedAt()).isNotNull(); // Threshold reached
     }
 
+    /**
+     * Builds the SNS envelope using the {@code eventType} field that SES Configuration Set
+     * Event Destinations produce (vs the older {@code notificationType} field used by
+     * identity-level notifications). Mirrors what AWS publishes in production.
+     */
+    private String buildConfigSetEventEnvelope(String eventType, String bounceType,
+                                                String email, UUID sendId) {
+        String sendIdTag = sendId != null
+                ? ",\"tags\":{\"sendId\":[\"" + sendId + "\"]}"
+                : "";
+        String innerMessage;
+        if ("Bounce".equals(eventType)) {
+            innerMessage = "{\"eventType\":\"Bounce\",\"bounce\":{\"bounceType\":\"" + bounceType
+                    + "\",\"bouncedRecipients\":[{\"emailAddress\":\"" + email + "\"}]}"
+                    + ",\"mail\":{\"messageId\":\"test\"" + sendIdTag + "}}";
+        } else {
+            innerMessage = "{\"eventType\":\"Complaint\",\"complaint\":{\"complainedRecipients\":"
+                    + "[{\"emailAddress\":\"" + email + "\"}]}"
+                    + ",\"mail\":{\"messageId\":\"test\"" + sendIdTag + "}}";
+        }
+        String escaped = innerMessage.replace("\"", "\\\"");
+        return "{\"Type\":\"Notification\",\"Message\":\"" + escaped + "\"}";
+    }
+
+    @Test
+    @DisplayName("should_suppressSubscriber_when_configSetEventDestinationHardBounceReceived")
+    void should_suppressSubscriber_when_configSetEventDestinationHardBounceReceived() {
+        // Configuration Set Event Destinations send "eventType" rather than "notificationType".
+        NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
+        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+
+        service.handleBounceNotification(
+                buildConfigSetEventEnvelope("Bounce", "Permanent", TEST_EMAIL, null));
+
+        ArgumentCaptor<NewsletterSubscriber> captor = ArgumentCaptor.forClass(NewsletterSubscriber.class);
+        verify(subscriberRepository).save(captor.capture());
+        assertThat(captor.getValue().getBounceType()).isEqualTo("hard");
+        assertThat(captor.getValue().getSuppressedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("should_suppressSubscriber_when_configSetEventDestinationComplaintReceived")
+    void should_suppressSubscriber_when_configSetEventDestinationComplaintReceived() {
+        NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
+        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+
+        service.handleBounceNotification(
+                buildConfigSetEventEnvelope("Complaint", null, TEST_EMAIL, null));
+
+        ArgumentCaptor<NewsletterSubscriber> captor = ArgumentCaptor.forClass(NewsletterSubscriber.class);
+        verify(subscriberRepository).save(captor.capture());
+        assertThat(captor.getValue().getBounceType()).isEqualTo("complaint");
+        assertThat(captor.getValue().getSuppressedAt()).isNotNull();
+    }
+
     @Test
     @DisplayName("should_suppressSubscriber_when_complaintReceived")
     void should_suppressSubscriber_when_complaintReceived() {

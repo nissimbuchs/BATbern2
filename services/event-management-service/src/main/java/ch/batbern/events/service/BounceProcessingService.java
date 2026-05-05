@@ -68,15 +68,23 @@ public class BounceProcessingService {
                 return;
             }
 
-            // Extract SES notification from the Message field (JSON string within JSON)
+            // Extract SES notification from the Message field (JSON string within JSON).
+            // Two SES delivery paths produce different field names for the event kind:
+            //   - Identity-level notifications (SetIdentityNotificationTopic) → "notificationType"
+            //   - Configuration Set Event Destinations                        → "eventType"
+            // We use Configuration Set Event Destinations (see infra/lib/stacks/ses-stack.ts),
+            // so accept both — falling back keeps the door open if anyone wires the legacy path.
             String messageJson = snsEnvelope.path("Message").asText();
             JsonNode sesNotification = objectMapper.readTree(messageJson);
-            String notificationType = sesNotification.path("notificationType").asText("");
+            String eventKind = sesNotification.path("eventType").asText("");
+            if (eventKind.isEmpty()) {
+                eventKind = sesNotification.path("notificationType").asText("");
+            }
 
-            switch (notificationType) {
+            switch (eventKind) {
                 case "Bounce" -> handleBounce(sesNotification);
                 case "Complaint" -> handleComplaint(sesNotification);
-                default -> log.debug("Ignoring unknown SES notification type: {}", notificationType);
+                default -> log.debug("Ignoring unknown SES event kind: {}", eventKind);
             }
         } catch (Exception e) {
             log.error("Failed to process bounce notification: {}", e.getMessage(), e);
