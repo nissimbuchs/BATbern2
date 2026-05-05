@@ -54,17 +54,23 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
     }
   };
 
-  // Map Cognito error codes to localized messages
+  // Maps error codes to localized messages.
+  // Handles both application codes (from authService.mapCognitoError) and original Cognito names.
   const getErrorMessage = (error: Error): string => {
     const errorCode = error.message;
 
-    // Map Cognito error codes to translation keys
     const errorMap: Record<string, string> = {
+      // Application codes (produced by authService.mapCognitoError)
+      EMAIL_EXISTS: t('register.errors.usernameExists'),
+      INVALID_PASSWORD: t('register.errors.passwordWeak'),
+      TOO_MANY_REQUESTS: t('register.errors.rateLimitExceeded'),
+      // Original Cognito codes (fallback)
       UsernameExistsException: t('register.errors.usernameExists'),
       InvalidPasswordException: t('register.errors.passwordWeak'),
       InvalidParameterException: t('register.errors.invalidEmail'),
       LimitExceededException: t('register.errors.rateLimitExceeded'),
       TooManyRequestsException: t('register.errors.rateLimitExceeded'),
+      CodeDeliveryFailureException: t('register.errors.emailDeliveryFailed'),
       NetworkError: t('register.errors.networkError'),
       SIGNUP_FAILED: t('register.errors.signupFailed'),
     };

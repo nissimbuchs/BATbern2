@@ -115,8 +115,8 @@ describe('RegistrationWizard Component', () => {
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john.doe@example.com');
-    await user.type(passwordInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmInput, 'Password123!');
     await user.click(continueButton);
 
     await waitFor(() => {
@@ -143,8 +143,8 @@ describe('RegistrationWizard Component', () => {
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john.doe@example.com');
-    await user.type(passwordInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmInput, 'Password123!');
     await user.click(continueButton);
 
     // Wait for Step 2 to render
@@ -176,8 +176,8 @@ describe('RegistrationWizard Component', () => {
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john.doe@example.com');
-    await user.type(passwordInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmInput, 'Password123!');
     await user.click(continueButton);
 
     // Wait for Step 2 to render
@@ -219,8 +219,8 @@ describe('RegistrationWizard Component', () => {
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john.doe@example.com');
-    await user.type(passwordInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmInput, 'Password123!');
     await user.click(continueButton);
 
     // Wait for Step 2 to render
@@ -272,8 +272,8 @@ describe('RegistrationWizard Component', () => {
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john.doe@example.com');
-    await user.type(passwordInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmInput, 'Password123!');
     await user.click(continueButton);
 
     // Wait for Step 2 to render

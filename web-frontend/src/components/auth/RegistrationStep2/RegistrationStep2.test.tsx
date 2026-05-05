@@ -317,10 +317,9 @@ describe('RegistrationStep2 Component', () => {
     });
   });
 
-  // Test 2.11: should_displayError_when_errorPropProvided
+  // Test 2.11: EMAIL_EXISTS (code returned by mapCognitoError for UsernameExistsException)
   it('should_showErrorMessage_when_registrationFails', async () => {
-    // Use Cognito error code that gets mapped to localized message
-    const cognitoError = new Error('UsernameExistsException');
+    const cognitoError = new Error('EMAIL_EXISTS');
 
     await act(async () => {
       render(
@@ -336,8 +335,73 @@ describe('RegistrationStep2 Component', () => {
     });
 
     await waitFor(() => {
-      // Check for the translated error message
       expect(screen.getByText(/an account with this email already exists/i)).toBeInTheDocument();
+    });
+  });
+
+  // Test 2.11b: INVALID_PASSWORD (code returned by mapCognitoError for InvalidPasswordException)
+  it('should_showPasswordWeakError_when_passwordTooSimple', async () => {
+    const passwordError = new Error('INVALID_PASSWORD');
+
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={passwordError}
+          />
+        </FormWrapper>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/password does not meet/i)).toBeInTheDocument();
+    });
+  });
+
+  // Test 2.11c: TOO_MANY_REQUESTS (code returned by mapCognitoError for TooManyRequestsException)
+  it('should_showRateLimitError_when_tooManyAttempts', async () => {
+    const rateLimitError = new Error('TOO_MANY_REQUESTS');
+
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={rateLimitError}
+          />
+        </FormWrapper>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/too many attempts/i)).toBeInTheDocument();
+    });
+  });
+
+  // Test 2.11d: unknown error falls back to generic message
+  it('should_showGenericError_when_unknownErrorCode', async () => {
+    const unknownError = new Error('SOME_UNKNOWN_CODE');
+
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={unknownError}
+          />
+        </FormWrapper>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/account creation failed/i)).toBeInTheDocument();
     });
   });
 

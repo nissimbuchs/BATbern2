@@ -142,6 +142,9 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
             value: 128,
             message: t('register.errors.passwordTooLong'),
           },
+          validate: (value) =>
+            checkPasswordRequirements(value).hasSpecialChar ||
+            t('register.errors.passwordMissingSymbol'),
         })}
         label={t('register.step1.passwordLabel')}
         placeholder={t('register.step1.passwordPlaceholder')}
@@ -219,6 +222,19 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
               </ListItemIcon>
               <ListItemText
                 primary={t('register.passwordRequirements.hasNumber')}
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                {requirements.hasSpecialChar ? (
+                  <CheckCircle color="success" fontSize="small" />
+                ) : (
+                  <RadioButtonUnchecked fontSize="small" />
+                )}
+              </ListItemIcon>
+              <ListItemText
+                primary={t('register.passwordRequirements.hasSpecialChar')}
                 primaryTypographyProps={{ variant: 'body2' }}
               />
             </ListItem>

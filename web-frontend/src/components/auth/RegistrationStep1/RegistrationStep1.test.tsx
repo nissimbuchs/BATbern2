@@ -160,6 +160,7 @@ describe('RegistrationStep1 Component', () => {
       expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
       expect(screen.getByText(/uppercase and lowercase/i)).toBeInTheDocument();
       expect(screen.getByText(/at least one number/i)).toBeInTheDocument();
+      expect(screen.getByText(/at least one special character/i)).toBeInTheDocument();
     });
   });
 
@@ -277,8 +278,8 @@ describe('RegistrationStep1 Component', () => {
     await act(async () => {
       await user.type(nameInput, 'John Doe');
       await user.type(emailInput, 'john.doe@example.com');
-      await user.type(passwordInput, 'Password123');
-      await user.type(confirmInput, 'Password123');
+      await user.type(passwordInput, 'Password123!');
+      await user.type(confirmInput, 'Password123!');
       await user.click(continueButton);
     });
 
@@ -306,6 +307,38 @@ describe('RegistrationStep1 Component', () => {
     });
 
     // Should not call onContinue with empty fields
+    expect(mockOnContinue).not.toHaveBeenCalled();
+  });
+
+  // Test 1.7b: symbol validation blocks continue
+  it('should_notCallOnContinue_when_passwordMissingSpecialChar', async () => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    const nameInput = screen.getByLabelText(/full name/i);
+    const emailInput = screen.getByLabelText(/^email/i);
+    const passwordInput = screen.getByLabelText(/^password$/i);
+    const confirmInput = screen.getByLabelText(/confirm password/i);
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+
+    await act(async () => {
+      await user.type(nameInput, 'John Doe');
+      await user.type(emailInput, 'john.doe@example.com');
+      await user.type(passwordInput, 'Password123');
+      await user.type(confirmInput, 'Password123');
+      await user.click(continueButton);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/must contain at least one special character/i)).toBeInTheDocument();
+    });
     expect(mockOnContinue).not.toHaveBeenCalled();
   });
 
