@@ -159,13 +159,16 @@ export default function ArchiveEventDetailPage() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
-        <Link to={backToArchiveUrl} className="mb-6 text-blue-600 hover:text-blue-800 inline-block">
+        <Link
+          to={backToArchiveUrl}
+          className="mb-6 text-primary hover:text-primary/80 inline-block"
+        >
           {t('archive.detail.backToArchive')}
         </Link>
 
         {/* Loading State */}
         {isLoading && (
-          <div className="text-center py-12 text-gray-600" role="status">
+          <div className="text-center py-12 text-muted-foreground" role="status">
             Loading...
           </div>
         )}
@@ -173,7 +176,7 @@ export default function ArchiveEventDetailPage() {
         {/* Error State */}
         {isError && (
           <div className="text-center py-12">
-            <div className="text-red-600 mb-4">
+            <div className="text-destructive mb-4">
               {isNotFound ? t('archive.errors.notFound') : t('archive.errors.loadFailed')}
             </div>
           </div>
@@ -195,20 +198,20 @@ export default function ArchiveEventDetailPage() {
 
               {/* Topic Badge - Story BAT-109: Use expanded topic object */}
               {event.topic && typeof event.topic === 'object' ? (
-                <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded mb-3">
+                <span className="inline-block px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded mb-3">
                   {event.topic.name}
                 </span>
               ) : event.topicCode ? (
-                <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded mb-3">
+                <span className="inline-block px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded mb-3">
                   {event.topicCode}
                 </span>
               ) : null}
 
               {/* Title */}
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">{event.title}</h1>
+              <h1 className="text-4xl font-bold text-foreground mb-3">{event.title}</h1>
 
               {/* Date */}
-              <div className="text-lg text-gray-600 mb-4">{formattedDate}</div>
+              <div className="text-lg text-muted-foreground mb-4">{formattedDate}</div>
             </div>
 
             {/* Event Description Section (Story 10.23) — positioned after header, before sessions */}
@@ -217,7 +220,7 @@ export default function ArchiveEventDetailPage() {
             {/* Sessions Section */}
             {event.sessions && event.sessions.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-2xl font-bold text-foreground mb-6">
                   {t('archive.detail.sessions')}
                 </h2>
 
@@ -225,13 +228,13 @@ export default function ArchiveEventDetailPage() {
                   {(event.sessions as SessionUI[]).map((session) => (
                     <div
                       key={session.sessionId}
-                      className="bg-white border border-gray-200 rounded-lg p-6"
+                      className="bg-card border border-border rounded-lg p-6"
                     >
                       {/* Session Title and Time */}
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-xl font-semibold text-gray-900">{session.title}</h3>
+                        <h3 className="text-xl font-semibold text-foreground">{session.title}</h3>
                         {session.startTime && session.endTime && (
-                          <span className="text-sm text-gray-600 whitespace-nowrap ml-4">
+                          <span className="text-sm text-muted-foreground whitespace-nowrap ml-4">
                             {session.startTime} - {session.endTime}
                           </span>
                         )}
@@ -239,18 +242,21 @@ export default function ArchiveEventDetailPage() {
 
                       {/* Session Description */}
                       {session.description && (
-                        <p className="text-gray-700 mb-3">{session.description}</p>
+                        <p className="text-foreground mb-3">{session.description}</p>
                       )}
 
                       {/* Speakers */}
                       {session.speakers && session.speakers.length > 0 && (
                         <div className="mb-3">
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             {(session.speakers as SpeakerUI[]).map((speaker, idx) => (
                               <span key={speaker.speakerId}>
                                 <span className="font-medium">{speaker.fullName}</span>
                                 {speaker.companyName && (
-                                  <span className="text-gray-500"> ({speaker.companyName})</span>
+                                  <span className="text-muted-foreground">
+                                    {' '}
+                                    ({speaker.companyName})
+                                  </span>
                                 )}
                                 {idx < session.speakers!.length - 1 && ', '}
                               </span>
@@ -265,12 +271,12 @@ export default function ArchiveEventDetailPage() {
                           href={session.presentationUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 text-sm font-medium"
                         >
                           <span>📥</span>
                           {t('archive.detail.downloadPresentation')}
                           {session.presentationSize && (
-                            <span className="text-gray-500">
+                            <span className="text-muted-foreground">
                               ({formatFileSize(session.presentationSize)})
                             </span>
                           )}
@@ -285,7 +291,7 @@ export default function ArchiveEventDetailPage() {
             {/* Speakers Grid */}
             {allSpeakers.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-2xl font-bold text-foreground mb-6">
                   {t('archive.detail.speakers')}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -298,17 +304,17 @@ export default function ArchiveEventDetailPage() {
                           className="w-24 h-24 rounded-full mx-auto mb-3 object-cover"
                         />
                       ) : (
-                        <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-3 flex items-center justify-center">
-                          <span className="text-2xl font-medium text-gray-600">
+                        <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
+                          <span className="text-2xl font-medium text-muted-foreground">
                             {getInitials(speaker.fullName || '')}
                           </span>
                         </div>
                       )}
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-foreground">
                         {speaker.fullName || 'Unknown'}
                       </div>
                       {speaker.companyName && (
-                        <div className="text-sm text-gray-600">{speaker.companyName}</div>
+                        <div className="text-sm text-muted-foreground">{speaker.companyName}</div>
                       )}
                     </div>
                   ))}
@@ -319,7 +325,7 @@ export default function ArchiveEventDetailPage() {
             {/* Event Photos Marquee (Story 10.21 — AC7): hidden when 0 photos */}
             {photos && photos.length > 0 && (
               <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden py-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 px-4 md:px-8">
+                <h2 className="text-2xl font-bold text-foreground mb-4 px-4 md:px-8">
                   {t('archive.detail.photos', 'Photos')}
                 </h2>
                 <InfiniteMarquee direction="left" speed="slow">

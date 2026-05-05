@@ -253,7 +253,9 @@ export default function ArchivePage() {
                     data-testid="view-toggle-grid"
                     onClick={() => handleViewModeChange('grid')}
                     className={`px-3 py-2 rounded-md text-sm ${
-                      viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                      viewMode === 'grid'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                     aria-label={t('archive.viewToggle.grid')}
                   >
@@ -263,7 +265,9 @@ export default function ArchivePage() {
                     data-testid="view-toggle-list"
                     onClick={() => handleViewModeChange('list')}
                     className={`px-3 py-2 rounded-md text-sm ${
-                      viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                      viewMode === 'list'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                     aria-label={t('archive.viewToggle.list')}
                   >
@@ -275,19 +279,23 @@ export default function ArchivePage() {
 
             {/* Error State */}
             {isError && (
-              <div className="text-center py-12 text-red-600">{t('archive.errors.loadFailed')}</div>
+              <div className="text-center py-12 text-destructive">
+                {t('archive.errors.loadFailed')}
+              </div>
             )}
 
             {/* Loading State */}
             {isLoading && (
-              <div className="text-center py-12 text-gray-600">{t('archive.loading')}</div>
+              <div className="text-center py-12 text-muted-foreground">{t('archive.loading')}</div>
             )}
 
             {/* Event Cards */}
             {!isLoading && !isError && (
               <>
                 {events.length === 0 ? (
-                  <div className="text-center py-12 text-gray-600">{t('archive.noResults')}</div>
+                  <div className="text-center py-12 text-muted-foreground">
+                    {t('archive.noResults')}
+                  </div>
                 ) : (
                   <div
                     className={
@@ -315,9 +323,11 @@ export default function ArchivePage() {
                 {hasNextPage && (
                   <div ref={ref} className="text-center py-32 min-h-[200px]">
                     {isFetchingNextPage ? (
-                      <div className="text-gray-600">{t('archive.loadingMore')}</div>
+                      <div className="text-muted-foreground">{t('archive.loadingMore')}</div>
                     ) : (
-                      <div className="text-gray-400 text-sm">{t('archive.scrollForMore')}</div>
+                      <div className="text-muted-foreground text-sm">
+                        {t('archive.scrollForMore')}
+                      </div>
                     )}
                   </div>
                 )}
