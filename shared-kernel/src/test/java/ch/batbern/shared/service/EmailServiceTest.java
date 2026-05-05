@@ -4,10 +4,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.SendEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendEmailResponse;
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test suite for EmailService template variable replacement functionality.
@@ -454,6 +466,96 @@ class EmailServiceTest {
 
             // Then - entire block removed
             assertThat(result).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("Configuration Set Application (bounce processing pipeline)")
+    class ConfigurationSetApplication {
+
+        private SesClient sesClient;
+
+        @BeforeEach
+        void wireMockSes() {
+            sesClient = mock(SesClient.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
+            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                    .thenReturn(SendRawEmailResponse.builder().messageId("test-id").build());
+        }
+
+        @Test
+        @DisplayName("should_attachConfigurationSet_when_simpleSendAndPropertyConfigured")
+        void should_attachConfigurationSet_when_simpleSendAndPropertyConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-staging-newsletter");
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-staging-newsletter");
+        }
+
+        @Test
+        @DisplayName("should_omitConfigurationSet_when_propertyNotConfigured")
+        void should_omitConfigurationSet_when_propertyNotConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", null);
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isNull();
+        }
+
+        @Test
+        @DisplayName("should_attachConfigurationSet_when_rawSendWithAttachmentsAndPropertyConfigured")
+        void should_attachConfigurationSet_when_rawSendWithAttachmentsAndPropertyConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-staging-newsletter");
+
+            emailService.sendHtmlEmailWithAttachments(
+                    "user@batbern.ch", "subj", "<p>body</p>",
+                    List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                            "text/calendar", true)));
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-staging-newsletter");
+        }
+
+        @Test
+        @DisplayName("should_omitConfigurationSet_when_rawSendWithAttachmentsAndPropertyNotConfigured")
+        void should_omitConfigurationSet_when_rawSendWithAttachmentsAndPropertyNotConfigured() {
+            ReflectionTestUtils.setField(emailService, "configurationSetName", null);
+
+            emailService.sendHtmlEmailWithAttachments(
+                    "user@batbern.ch", "subj", "<p>body</p>",
+                    List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
+                            "text/calendar", true)));
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isNull();
+        }
+
+        @Test
+        @DisplayName("should_useExplicitOverride_when_configurationSetPassedToFourArgSync")
+        void should_useExplicitOverride_when_configurationSetPassedToFourArgSync() {
+            // Even with the bean-level value set, an explicit override (used by NewsletterEmailService)
+            // must take precedence — the 4-arg sync method is the explicit-override entry point.
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "default-cs");
+
+            emailService.sendHtmlEmailSync("user@batbern.ch", "subj", "<p>body</p>", "explicit-override-cs");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("explicit-override-cs");
         }
     }
 }

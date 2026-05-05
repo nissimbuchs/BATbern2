@@ -67,6 +67,15 @@ public class EmailService {
     private String replyToEmail;
 
     /**
+     * Default SES Configuration Set applied to every send so BOUNCE/COMPLAINT events
+     * route to SNS → SQS → BounceProcessingService for ALL email kinds (transactional
+     * and newsletter). Null in local/test or when not configured. Explicit overrides
+     * via the *Sync(... configurationSetName) overloads still work.
+     */
+    @Value("${batbern.ses.configuration-set-name:#{null}}")
+    private String configurationSetName;
+
+    /**
      * Send a simple HTML email asynchronously.
      *
      * @param to Recipient email address
@@ -75,7 +84,7 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
-        sendHtmlEmailSync(to, subject, htmlBody, null);
+        sendHtmlEmailSync(to, subject, htmlBody, configurationSetName);
     }
 
     /**
@@ -90,7 +99,7 @@ public class EmailService {
      * @param htmlBody HTML content
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody) {
-        sendHtmlEmailSync(to, subject, htmlBody, null);
+        sendHtmlEmailSync(to, subject, htmlBody, configurationSetName);
     }
 
     /**
@@ -214,14 +223,18 @@ public class EmailService {
             message.writeTo(outputStream);
             ByteBuffer rawMessage = ByteBuffer.wrap(outputStream.toByteArray());
 
-            // Send raw email via SES
-            SendRawEmailRequest rawRequest = SendRawEmailRequest.builder()
+            // Send raw email via SES — attach the default configuration set so
+            // BOUNCE/COMPLAINT events route through SNS → SQS for transactional emails too.
+            SendRawEmailRequest.Builder rawRequestBuilder = SendRawEmailRequest.builder()
                     .rawMessage(RawMessage.builder()
                             .data(SdkBytes.fromByteBuffer(rawMessage))
-                            .build())
-                    .build();
+                            .build());
 
-            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequest);
+            if (configurationSetName != null && !configurationSetName.isBlank()) {
+                rawRequestBuilder.configurationSetName(configurationSetName);
+            }
+
+            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
             log.info("Email with attachments sent successfully to: {}, MessageId: {}", to, response.messageId());
 
         } catch (MessagingException | IOException e) {
