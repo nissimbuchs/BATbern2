@@ -22,6 +22,13 @@ export interface SesStackProps extends cdk.StackProps {
 export class SesStack extends cdk.Stack {
   public readonly bounceQueue: sqs.Queue;
   public readonly bounceQueueDlq: sqs.Queue;
+  /**
+   * Name of the SES Configuration Set that routes BOUNCE/COMPLAINT events to SNS → SQS.
+   * Consumers (EventManagementStack) inject this as BATBERN_SES_CONFIGURATION_SET_NAME so
+   * each SendEmail attaches the configuration set; without it, SES drops the events
+   * silently and the app's BounceProcessingService never sees them.
+   */
+  public readonly configurationSetName: string;
 
   constructor(scope: Construct, id: string, props: SesStackProps) {
     super(scope, id, props);
@@ -34,8 +41,9 @@ export class SesStack extends cdk.Stack {
     cdk.Tags.of(this).add('Project', 'BATbern');
 
     // Story 10.29 AC2: SES Configuration Set for newsletter sends
+    this.configurationSetName = `batbern-${envName}-newsletter`;
     const configSet = new ses.CfnConfigurationSet(this, 'NewsletterConfigSet', {
-      name: `batbern-${envName}-newsletter`,
+      name: this.configurationSetName,
     });
 
     // Story 10.29 AC2: SNS Topic for BOUNCE + COMPLAINT events

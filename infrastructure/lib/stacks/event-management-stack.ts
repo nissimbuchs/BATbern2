@@ -37,6 +37,12 @@ export interface EventManagementStackProps extends cdk.StackProps {
   watchJwtSecret?: secretsmanager.ISecret;
   /** Story 10.29: SQS queue URL for bounce/complaint processing. */
   bounceQueueUrl?: string;
+  /**
+   * Story 10.29: SES Configuration Set name to attach to newsletter sends so BOUNCE/COMPLAINT
+   * events get routed to SNS → SQS → BounceProcessingService. Without it, SES drops the events
+   * silently and bouncers stay active in newsletter_subscribers.
+   */
+  sesConfigurationSetName?: string;
 }
 
 /**
@@ -120,6 +126,12 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.bounceQueueUrl && {
             AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
             AWS_BOUNCE_ENABLED: 'true',
+          }),
+          // Story 10.29: SES Configuration Set name — Spring reads this as
+          // batbern.ses.configuration-set-name (NewsletterEmailService:135) and
+          // attaches it to each SendEmail so BOUNCE/COMPLAINT events flow to SNS → SQS.
+          ...(props.sesConfigurationSetName && {
+            BATBERN_SES_CONFIGURATION_SET_NAME: props.sesConfigurationSetName,
           }),
         },
         additionalSecrets: {

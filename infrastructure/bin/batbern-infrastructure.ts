@@ -272,6 +272,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
     // Story 10.29: Bounce/complaint processing SQS queue URL
     bounceQueueUrl: sesStack.bounceQueue.queueUrl,
+    // Story 10.29: SES Configuration Set name — required for SES BOUNCE/COMPLAINT events
+    // to reach SNS → SQS → BounceProcessingService.
+    sesConfigurationSetName: sesStack.configurationSetName,
     // Story 10.17: Inbound email SQS queue URL, S3 bucket name, and env-specific reply address
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,

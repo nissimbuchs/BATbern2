@@ -88,6 +88,13 @@ describe('SesStack', () => {
     expect(stack.bounceQueueDlq).toBeDefined();
   });
 
+  // Story 10.29: configuration-set name exposed so consumers (EventManagementStack)
+  // can inject it as BATBERN_SES_CONFIGURATION_SET_NAME — without this, SES drops
+  // bounce/complaint events silently.
+  test('should_exposeConfigurationSetNameAsPublicProperty_when_sesStackCreated', () => {
+    expect(stack.configurationSetName).toBe('batbern-staging-newsletter');
+  });
+
   // Tags applied
   test('should_applyEnvironmentTags_when_sesStackDeployed', () => {
     expect(stack.stackName).toBe('TestSesStack');
