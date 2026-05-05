@@ -58,6 +58,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -1846,9 +1847,9 @@ public class EventController {
     /**
      * List User Registrations - Story BAT-15
      *
-     * GET /api/v1/events/registrations?attendeeUsername={username}
+     * GET /api/v1/events/registrations (X-Attendee-Username header)
      *
-     * @param attendeeUsername Username to list registrations for
+     * @param attendeeUsername Username to list registrations for (passed as header to avoid URL exposure)
      * @return List of registrations enriched with event data
      */
     @GetMapping("/registrations")
@@ -1857,8 +1858,8 @@ public class EventController {
             description = "Retrieve all registrations for a specific user across all events"
     )
     public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
-            @RequestParam String attendeeUsername) {
-        log.debug("GET /api/v1/events/registrations?attendeeUsername={}", attendeeUsername);
+            @RequestHeader("X-Attendee-Username") String attendeeUsername) {
+        log.debug("GET /api/v1/events/registrations for user={}", attendeeUsername);
 
         // Fetch registrations for this user
         List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);

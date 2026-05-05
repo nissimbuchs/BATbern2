@@ -30,8 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * REST controller for topic management (Story 5.2).
@@ -191,6 +193,10 @@ public class TopicController {
         return ResponseEntity.ok(new TopicListResponse(topicDtos, pagination));
     }
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "title", "category", "createdAt", "partnerInfluenceScore", "isActive"
+    );
+
     private Pageable createPageable(int page, int limit, String sort) {
         if (sort == null || sort.isBlank()) {
             return PageRequest.of(page, limit);
@@ -206,6 +212,10 @@ public class TopicController {
             if (parts.length > 1 && parts[1].equalsIgnoreCase("desc")) {
                 direction = Sort.Direction.DESC;
             }
+        }
+        if (!ALLOWED_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid sort field '" + property + "'. Allowed: " + ALLOWED_SORT_FIELDS);
         }
         return PageRequest.of(page, limit, Sort.by(direction, property));
     }

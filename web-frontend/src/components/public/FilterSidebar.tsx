@@ -45,6 +45,7 @@ export function FilterSidebar({
     }, 300);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: debounce fires only on searchValue change
   }, [searchValue]);
 
   // Sync search value with filters prop
@@ -80,7 +81,7 @@ export function FilterSidebar({
         <div>
           <h2 className="text-lg font-semibold">{t('archive.filters.title')}</h2>
           {activeFilterCount > 0 && (
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {t('archive.filters.activeCount', { count: activeFilterCount })}
             </p>
           )}
@@ -88,7 +89,7 @@ export function FilterSidebar({
         <button
           onClick={onClearFilters}
           disabled={!hasActiveFilters}
-          className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="text-sm text-primary hover:text-primary/80 disabled:text-muted-foreground disabled:cursor-not-allowed"
           data-testid="clear-filters"
         >
           {t('archive.filters.clearAll')}
@@ -102,19 +103,19 @@ export function FilterSidebar({
           placeholder={t('archive.filters.search')}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground placeholder:text-muted-foreground"
           data-testid="search-input"
         />
       </div>
 
       {/* Topics */}
       <div data-testid="topic-filter">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">{t('archive.filters.topics')}</h3>
+        <h3 className="text-sm font-medium text-foreground mb-2">{t('archive.filters.topics')}</h3>
         <div className="space-y-2">
           {loading ? (
-            <div className="text-sm text-gray-500">{t('archive.loadingTopics')}</div>
+            <div className="text-sm text-muted-foreground">{t('archive.loadingTopics')}</div>
           ) : topics.length === 0 ? (
-            <div className="text-sm text-gray-500">{t('archive.noTopicsAvailable')}</div>
+            <div className="text-sm text-muted-foreground">{t('archive.noTopicsAvailable')}</div>
           ) : (
             topics.map((topic) => {
               const isChecked = filters.topics?.includes(topic.topicCode) || false;
@@ -126,9 +127,9 @@ export function FilterSidebar({
                     checked={isChecked}
                     onChange={() => handleTopicToggle(topic.topicCode)}
                     aria-label={`${topic.title} (${topic.usageCount})`}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-ring border-border rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
+                  <span className="ml-2 text-sm text-foreground">
                     {topic.title} ({topic.usageCount})
                   </span>
                 </label>
@@ -140,7 +141,7 @@ export function FilterSidebar({
 
       {/* Sort */}
       <div>
-        <label htmlFor="sort-select" className="block text-sm font-medium text-gray-900 mb-2">
+        <label htmlFor="sort-select" className="block text-sm font-medium text-foreground mb-2">
           {t('labels.sortBy')}
         </label>
         <select
@@ -149,7 +150,7 @@ export function FilterSidebar({
           value={currentSort}
           onChange={(e) => onSortChange(e.target.value)}
           aria-label={t('labels.sortBy')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

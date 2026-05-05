@@ -7253,11 +7253,11 @@ export interface operations {
   };
   listUserRegistrations: {
     parameters: {
-      query: {
-        /** @description Username to filter registrations */
-        attendeeUsername: string;
+      query?: never;
+      header: {
+        /** @description Username to filter registrations (passed as header to avoid sensitive data in URL) */
+        'X-Attendee-Username': string;
       };
-      header?: never;
       path?: never;
       cookie?: never;
     };

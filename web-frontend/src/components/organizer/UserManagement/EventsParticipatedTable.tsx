@@ -49,7 +49,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
 
         // Fetch registrations for this user using the new endpoint
         const response = await apiClient.get<Registration[]>(`/events/registrations`, {
-          params: { attendeeUsername: userId },
+          headers: { 'X-Attendee-Username': userId },
         });
 
         // Transform response to table data with Swiss date format (de-CH)
@@ -80,6 +80,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
     };
 
     fetchEventParticipations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation
   }, [userId]);
 
   if (isLoading) {

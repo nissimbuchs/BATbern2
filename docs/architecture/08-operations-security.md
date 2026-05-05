@@ -7,7 +7,8 @@ This document consolidates security implementation, performance standards, acces
 ### Frontend Security
 - **CSP Headers**: Strict content security policy with CloudFront CDN support
   - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domain (`cdn.batbern.ch`)
-  - `frame-src`: Allows Google Maps embeds (`https://www.google.com/maps/`)
+  - `frame-src`: Allows Google Maps embeds (`https://www.google.com/maps/`) and Cloudflare Turnstile captcha (`https://challenges.cloudflare.com`)
+  - `script-src`: Allows Cloudflare Turnstile script (`https://challenges.cloudflare.com`)
   - Configured in `SecurityHeadersFilter.java` (API Gateway) and `SecurityHeadersHandler.java`
 - **COEP/CORP**: Cross-Origin-Embedder-Policy (COEP) header **removed** to allow third-party embeds (Google Maps). Cross-Origin-Resource-Policy (CORP) relaxed from `same-origin` to `cross-origin` for CDN asset delivery.
 - **XSS Prevention**: Input sanitization and output encoding

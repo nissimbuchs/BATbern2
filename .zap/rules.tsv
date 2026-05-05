@@ -102,6 +102,17 @@
 # Verified: SpeakerController.java, SpeakerRepository.java.
 40018	IGNORE	.*
 
+# ─── INTENTIONAL URL TOKENS — email link flows ────────────────────────────────
+#
+# These ?token= query parameters are JWT one-time tokens distributed via email
+# links (registration confirm, cancel, deregister, newsletter unsubscribe).
+# Putting the token in the URL is the standard pattern for email-triggered flows
+# and is intentional by design. The tokens are short-lived and single-use.
+10024	IGNORE	.*/registrations/confirm.*
+10024	IGNORE	.*/registrations/cancel.*
+10024	IGNORE	.*/registrations/deregister/verify.*
+10024	IGNORE	.*/newsletter/unsubscribe/verify.*
+
 # ─── INFORMATIONAL — WARN (non-blocking, report only) ─────────────────────────
 
 # Cookie No HttpOnly Flag: Cognito auth cookies managed by AWS SDK, not us

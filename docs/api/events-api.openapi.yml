@@ -2983,9 +2983,9 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: attendeeUsername
-          in: query
-          description: Username to filter registrations
+        - name: X-Attendee-Username
+          in: header
+          description: Username to filter registrations (passed as header to avoid sensitive data in URL)
           required: true
           schema:
             type: string
