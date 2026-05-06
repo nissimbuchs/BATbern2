@@ -158,7 +158,7 @@ jobs:
 
           if echo "$CHANGED_FILES" | grep -q "^api-gateway/"; then
             echo "✓ API Gateway service changed"
-            CHANGED_SERVICES="$CHANGED_SERVICES api-gateway-service api-gateway"
+            CHANGED_SERVICES="$CHANGED_SERVICES api-gateway"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "^shared-kernel/"; then
@@ -328,7 +328,7 @@ jobs:
         run: |
           echo "🚀 Executing fast-path deployment (bypasses CloudFormation)"
 
-          IFS=',' read -ra SERVICES <<< "${{ steps.changes.outputs.changed_services }}"
+          read -ra SERVICES <<< "$(echo "${{ steps.changes.outputs.changed_services }}" | xargs)"
 
           for SERVICE in "${SERVICES[@]}"; do
             # Trim whitespace
