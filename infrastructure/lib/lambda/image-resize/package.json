@@ -1,0 +1,15 @@
+{
+  "name": "image-resize",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lambda@Edge function for on-the-fly image resizing via CloudFront",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "sharp": "^0.34.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "esbuild": "^0.24.0"
+  }
+}

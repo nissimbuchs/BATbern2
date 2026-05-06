@@ -162,6 +162,59 @@ describe('StorageStack', () => {
     });
   });
 
+  describe('Image Resize Lambda@Edge', () => {
+    test('should_createImageResizeCachePolicy_when_distributionCreated', () => {
+      // Arrange
+      const app = new App();
+
+      // Act
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      // Assert
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::CachePolicy', {
+        CachePolicyConfig: Match.objectLike({
+          ParametersInCacheKeyAndForwardedToOrigin: Match.objectLike({
+            QueryStringsConfig: Match.objectLike({
+              QueryStringBehavior: 'whitelist',
+              QueryStrings: Match.arrayWith(['w', 'h', 'fit']),
+            }),
+          }),
+        }),
+      });
+    });
+
+    test('should_associateLambdaEdgeOriginRequest_when_distributionCreated', () => {
+      // Arrange
+      const app = new App();
+
+      // Act
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      // Assert
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudFront::Distribution', {
+        DistributionConfig: Match.objectLike({
+          DefaultCacheBehavior: Match.objectLike({
+            LambdaFunctionAssociations: Match.arrayWith([
+              Match.objectLike({
+                EventType: 'origin-request',
+              }),
+            ]),
+          }),
+        }),
+      });
+    });
+  });
+
   describe('AC5: Resource Tagging', () => {
     test('should_applyConsistentTags_when_resourcesCreated', () => {
       // Arrange

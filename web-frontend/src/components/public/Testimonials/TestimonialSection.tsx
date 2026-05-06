@@ -171,9 +171,11 @@ export const TestimonialSection = ({ skipPhotoRow = false }: TestimonialSectionP
               ? recentPhotos!.map((photo) => (
                   <img
                     key={photo.id}
-                    src={photo.displayUrl}
+                    src={`${photo.displayUrl}?w=256&h=192&fit=cover`}
                     alt="BATbern event"
                     className="rounded-lg object-cover h-48 w-64 shrink-0"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ))
               : testimonials
