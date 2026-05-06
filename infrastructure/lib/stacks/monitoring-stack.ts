@@ -132,6 +132,10 @@ export class MonitoringStack extends cdk.Stack {
     }
 
     // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
+    // evaluationPeriods=3 + datapointsToAlarm=2: requires 2 of 3 consecutive 5-min periods
+    // above threshold. Prevents a single transactional email from triggering the alarm when
+    // the rolling reputation score is temporarily elevated (e.g. after a large newsletter blast
+    // with stale addresses). treatMissingData=NOT_BREACHING: periods with no sends count as OK.
     const bounceRateWarning = new cloudwatch.Alarm(this, 'BounceRateWarning', {
       alarmName: `batbern-${props.config.envName}-bounce-rate-warning`,
       alarmDescription: 'SES bounce rate exceeds 3% warning threshold',
@@ -142,7 +146,9 @@ export class MonitoringStack extends cdk.Stack {
         period: cdk.Duration.minutes(5),
       }),
       threshold: 0.03,
-      evaluationPeriods: 1,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 
@@ -157,6 +163,7 @@ export class MonitoringStack extends cdk.Stack {
       }),
       threshold: 0.05,
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 

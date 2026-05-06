@@ -334,7 +334,9 @@ describe('MonitoringStack', () => {
         MetricName: 'Reputation.BounceRate',
         Namespace: 'AWS/SES',
         Threshold: 0.03,
-        EvaluationPeriods: 1,
+        EvaluationPeriods: 3,
+        DatapointsToAlarm: 2,
+        TreatMissingData: 'notBreaching',
         Period: 300,
       });
     });
@@ -353,6 +355,7 @@ describe('MonitoringStack', () => {
         Namespace: 'AWS/SES',
         Threshold: 0.05,
         EvaluationPeriods: 1,
+        TreatMissingData: 'notBreaching',
         Period: 300,
       });
     });
