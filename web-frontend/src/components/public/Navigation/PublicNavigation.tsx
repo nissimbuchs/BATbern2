@@ -5,9 +5,11 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/public/ui/popover';
+import LanguageSwitcher from '@/components/shared/LanguageSwitcher/LanguageSwitcher';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
@@ -17,8 +19,9 @@ interface PublicNavigationProps {
 }
 
 export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, signOut } = useAuth();
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
 
   const initials = user
     ? (user.username ?? user.email ?? '')
@@ -30,13 +33,13 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
     : '';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const getPortalPath = () => {
-    // All roles use the same /dashboard route
-    // Role-based access control is handled by ProtectedRoute component
-    return '/dashboard';
-  };
-
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const handleLogout = async () => {
+    closeMobileMenu();
+    await signOut();
+    navigate('/', { replace: true });
+  };
 
   return (
     <>
@@ -75,14 +78,37 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
             {/* CTA Buttons - Right (desktop) */}
             <div className="hidden md:flex items-center gap-3">
               {isAuthenticated ? (
-                <Button asChild>
-                  <Link to={getPortalPath()} className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
-                      {initials}
-                    </span>
-                    {t('public.goToPortal')}
-                  </Link>
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2 px-3">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
+                        {initials}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-foreground/60" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-2">
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        {t('public.goToPortal')}
+                      </Link>
+                      <div className="py-1 px-1">
+                        <LanguageSwitcher />
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-accent hover:text-red-300 transition-colors w-full text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        {t('menu.logout')}
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               ) : (
                 <>
                   <Button variant="secondary" asChild>
@@ -151,18 +177,27 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
         {/* CTA buttons */}
         <div className="px-4 pb-4 flex flex-col gap-3">
           {isAuthenticated ? (
-            <Button asChild className="w-full">
-              <Link
-                to={getPortalPath()}
-                onClick={closeMobileMenu}
-                className="flex items-center gap-2"
+            <>
+              <Button asChild className="w-full">
+                <Link to="/dashboard" onClick={closeMobileMenu} className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
+                    {initials}
+                  </span>
+                  {t('public.goToPortal')}
+                </Link>
+              </Button>
+              <div className="px-1">
+                <LanguageSwitcher />
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-400 hover:text-red-300"
+                onClick={handleLogout}
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
-                  {initials}
-                </span>
-                {t('public.goToPortal')}
-              </Link>
-            </Button>
+                <LogOut className="h-4 w-4 mr-2" />
+                {t('menu.logout')}
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="secondary" asChild className="w-full">

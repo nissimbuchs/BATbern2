@@ -28,3 +28,25 @@ export const getMyRegistration = async (
   );
   return response.data.registered ? response.data : null;
 };
+
+/**
+ * Quick registration for an authenticated attendee.
+ * No form data required — profile is read from the JWT session on the server.
+ * Returns the server message and the attendee's email.
+ */
+export const createMyRegistration = async (
+  eventCode: string
+): Promise<{ message: string; email: string }> => {
+  const response = await apiClient.post<{ message: string; email: string }>(
+    `/events/${eventCode}/my-registration`
+  );
+  return response.data;
+};
+
+/**
+ * Immediately cancel the authenticated user's registration for an event.
+ * No email is sent. Triggers waitlist promotion on the server.
+ */
+export const deleteMyRegistration = async (eventCode: string): Promise<void> => {
+  await apiClient.delete(`/events/${eventCode}/my-registration`);
+};

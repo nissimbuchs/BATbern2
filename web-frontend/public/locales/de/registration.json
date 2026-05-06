@@ -203,7 +203,8 @@
   "registrationStatusGuard": {
     "alreadyRegistered": "Sie sind bereits für diese Veranstaltung angemeldet",
     "goBack": "Zurück",
-    "registerAgain": "Erneut anmelden"
+    "registerAgain": "Erneut anmelden",
+    "unregistered": "Sie haben sich von dieser Veranstaltung abgemeldet. Möchten Sie sich erneut anmelden?"
   },
   "deregistration": {
     "page": {
@@ -231,5 +232,25 @@
     "wizard": {
       "cancelButton": "Anmeldung stornieren"
     }
+  },
+  "attendeeQuickRegister": {
+    "title": "Für dieses Event anmelden?",
+    "subtitle": "Anmeldung als:",
+    "confirmButton": "Jetzt anmelden",
+    "successTitle": "Du bist angemeldet!",
+    "successSubtitle": "Wir sehen uns beim Event.",
+    "cancelButton": "Abbrechen",
+    "error": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "unregister": {
+    "confirmPrompt": "Bist du sicher, dass du dich von diesem Event abmelden möchtest?",
+    "button": "Abmelden",
+    "error": "Abmeldung fehlgeschlagen. Bitte erneut versuchen.",
+    "title": "Anmeldung stornieren",
+    "subtitle": "Dies storniert deine Anmeldung sofort.",
+    "currentStatus": "Aktueller Status",
+    "registeredOn": "Angemeldet am",
+    "cancelButton": "Anmeldung behalten",
+    "confirmButton": "Ja, abmelden"
   }
 }

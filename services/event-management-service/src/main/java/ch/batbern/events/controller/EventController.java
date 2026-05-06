@@ -1642,6 +1642,90 @@ public class EventController {
     }
 
     /**
+     * Quick Registration for Authenticated Attendee
+     *
+     * POST /api/v1/events/{eventCode}/my-registration
+     *
+     * Creates a confirmed registration for the currently authenticated user without
+     * requiring form input or email confirmation. Profile data is read from the JWT
+     * and the User Management Service. No email is sent.
+     *
+     * @param eventCode Event code to register for
+     * @return 201 Created with minimal response
+     */
+    @PostMapping("/{eventCode}/my-registration")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Quick Registration for Authenticated Attendee",
+            description = "Creates a confirmed registration for the logged-in user. "
+                    + "No request body required — profile is read from the JWT session. "
+                    + "No confirmation email is sent. Requires authentication."
+    )
+    public ResponseEntity<CreateRegistrationResponse> createMyRegistration(
+            @PathVariable String eventCode) {
+        log.debug("POST /api/v1/events/{}/my-registration", eventCode);
+
+        String username = securityContextHelper.getCurrentUsername();
+        // Use SecurityContextHelper to extract the email claim — consistent with
+        // other endpoints in this service (e.g. NewsletterController) and handles
+        // both real JWT and @WithMockUser in tests.
+        String email = securityContextHelper.getCurrentUserEmail();
+
+        Registration registration = registrationService.createRegistrationForAuthenticatedUser(
+                eventCode, username, email);
+
+        String message = "waitlist".equals(registration.getStatus())
+                ? "You have been added to the waitlist for this event."
+                : "Registration confirmed.";
+
+        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                .message(message)
+                .email(email)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Cancel My Registration (Authenticated Attendee)
+     *
+     * DELETE /api/v1/events/{eventCode}/my-registration
+     *
+     * Immediately cancels the authenticated user's registration for the given event.
+     * No email is sent. Triggers waitlist promotion if applicable.
+     *
+     * @param eventCode Event code whose registration to cancel
+     * @return 204 No Content on success
+     */
+    @DeleteMapping("/{eventCode}/my-registration")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Cancel My Registration",
+            description = "Immediately cancels the authenticated user's registration. "
+                    + "No email sent. Triggers waitlist promotion. Requires authentication."
+    )
+    public ResponseEntity<Void> deleteMyRegistration(@PathVariable String eventCode) {
+        log.debug("DELETE /api/v1/events/{}/my-registration", eventCode);
+
+        String username = securityContextHelper.getCurrentUsername();
+
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        Registration registration = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), username)
+                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No active registration found for user " + username + " at event " + eventCode));
+
+        registrationService.cancelRegistration(registration);
+        log.info("Authenticated cancellation: registration {} cancelled for user {} at event {}",
+                registration.getRegistrationCode(), username, eventCode);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Create Event Registration (Anonymous) - Story 2.2a (ADR-005)
      *
      * POST /api/v1/events/{eventCode}/registrations

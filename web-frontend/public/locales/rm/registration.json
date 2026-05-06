@@ -203,7 +203,8 @@
   "registrationStatusGuard": {
     "alreadyRegistered": "[MISSING] You are already registered for this event",
     "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again"
+    "registerAgain": "[MISSING] Register again",
+    "unregistered": "Vus avez annullà vossa inscripziun. Vulessas vus inscriver puspè?"
   },
   "deregistration": {
     "page": {
@@ -231,5 +232,25 @@
     "wizard": {
       "cancelButton": "[MISSING] Cancel my registration"
     }
+  },
+  "attendeeQuickRegister": {
+    "title": "Register for this event?",
+    "subtitle": "Registering as:",
+    "confirmButton": "Register Now",
+    "successTitle": "You're registered!",
+    "successSubtitle": "See you at the event.",
+    "cancelButton": "Cancel",
+    "error": "Registration failed. Please try again."
+  },
+  "unregister": {
+    "confirmPrompt": "Are you sure you want to unregister from this event?",
+    "button": "Unregister",
+    "error": "Failed to unregister. Please try again.",
+    "title": "Annullar inscripziun",
+    "subtitle": "Quai annullescha immediatamain tia inscripziun.",
+    "currentStatus": "Status actual",
+    "registeredOn": "Inscrit ils",
+    "cancelButton": "Mantegnair mia inscripziun",
+    "confirmButton": "Gea, annullar inscripziun"
   }
 }

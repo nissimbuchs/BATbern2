@@ -22,6 +22,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
+import { AttendeeQuickRegisterPanel } from './AttendeeQuickRegisterPanel';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
@@ -58,7 +59,7 @@ export const RegistrationWizard = ({
   spotsRemaining,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
-  const { t } = useTranslation(['registration', 'common']);
+  const { t, i18n } = useTranslation(['registration', 'common']);
   const queryClient = useQueryClient();
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
 
@@ -66,7 +67,7 @@ export const RegistrationWizard = ({
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(eventCode);
 
   // Pre-fill form from user profile when authenticated
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { userProfile } = useUserProfile({ enabled: isAuthenticated });
 
   // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
@@ -258,6 +259,23 @@ export const RegistrationWizard = ({
     </div>
   );
 
+  // Quick registration for authenticated ATTENDEEs who are not yet registered:
+  // skip the 2-step form and show a one-click inline confirmation panel.
+  if (
+    isAuthenticated &&
+    user?.role === 'attendee' &&
+    !isRegistrationLoading &&
+    myRegistration == null
+  ) {
+    return (
+      <AttendeeQuickRegisterPanel
+        eventCode={eventCode}
+        onCancel={onCancel ?? (() => {})}
+        inline={inline}
+      />
+    );
+  }
+
   // AC6: Registration Wizard guard (Story 10.10, T11)
   // When the authenticated user already has a non-null registration:
   // - REGISTERED / CONFIRMED / WAITLIST → show guard with "Go back" button
@@ -265,7 +283,11 @@ export const RegistrationWizard = ({
   if (!isRegistrationLoading && myRegistration != null) {
     const isCancelled = myRegistration.status === 'CANCELLED';
     const formattedDate = myRegistration.registrationDate
-      ? new Date(myRegistration.registrationDate).toLocaleDateString()
+      ? new Date(myRegistration.registrationDate).toLocaleDateString(i18n.language, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
       : null;
 
     return (
@@ -276,11 +298,15 @@ export const RegistrationWizard = ({
         <div className="text-center mb-6">
           <AlertCircle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
           <h2 className="text-2xl font-light mb-2">
-            {t('registrationStatusGuard.alreadyRegistered')}
+            {isCancelled
+              ? t('registrationStatusGuard.unregistered')
+              : t('registrationStatusGuard.alreadyRegistered')}
           </h2>
           {formattedDate && (
             <p className="text-sm text-zinc-400">
-              {myRegistration.status} · {formattedDate}
+              {isCancelled
+                ? formattedDate
+                : `${t(`registrationStatusBanner.${(myRegistration.status ?? '').toLowerCase()}`)} · ${formattedDate}`}
             </p>
           )}
         </div>

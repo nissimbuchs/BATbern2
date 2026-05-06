@@ -949,8 +949,23 @@ export interface paths {
      */
     get: operations['getMyRegistration'];
     put?: never;
-    post?: never;
-    delete?: never;
+    /**
+     * Quick registration for authenticated attendee
+     * @description Creates a confirmed registration for the currently authenticated user without
+     *     requiring form input or email confirmation. User profile data is read from the
+     *     session (JWT). No confirmation email is sent.
+     *
+     *     **Security**: Requires Bearer JWT authentication.
+     */
+    post: operations['createMyRegistration'];
+    /**
+     * Cancel my registration
+     * @description Immediately cancels the authenticated user's registration for the given event.
+     *     No email is sent. Triggers waitlist promotion if applicable.
+     *
+     *     **Security**: Requires Bearer JWT authentication.
+     */
+    delete: operations['deleteMyRegistration'];
     options?: never;
     head?: never;
     patch?: never;
@@ -6823,6 +6838,80 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createMyRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration created (confirmed or waitlisted) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration confirmed. */
+            message: string;
+            /**
+             * Format: email
+             * @example john.doe@example.com
+             */
+            email: string;
+          };
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description User is already registered for this event */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteMyRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration cancelled successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No active registration found for this user and event */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

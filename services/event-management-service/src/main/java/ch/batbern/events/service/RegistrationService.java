@@ -552,6 +552,92 @@ public class RegistrationService {
     }
 
     /**
+     * Create a registration for an already-authenticated attendee (quick registration flow).
+     * <p>
+     * Differs from {@link #createRegistration} in that:
+     * - The user profile is fetched by username (user already exists in the system)
+     * - Non-waitlist registrations start as "confirmed" (no email confirmation step)
+     * - No email is sent (user is already identified via their Cognito session)
+     * - Capacity/waitlist logic still applies
+     *
+     * @param eventCode event code (e.g., "BATbern42")
+     * @param username  the Cognito username from the JWT (custom:username claim)
+     * @return the created (or existing) registration
+     * @throws NoSuchElementException  if the event is not found
+     * @throws IllegalStateException   if the user is already actively registered
+     */
+    @Transactional
+    public Registration createRegistrationForAuthenticatedUser(
+            String eventCode, String username, String fallbackEmail) {
+        log.debug("Creating authenticated registration for event: {} by user: {}", eventCode, username);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        // User profile enriches the registration cache fields but may not exist for
+        // ATTENDEEs who were created directly in Cognito. Fall back gracefully.
+        ch.batbern.events.dto.generated.users.UserResponse userProfile = null;
+        try {
+            userProfile = userApiClient.getUserByUsername(username);
+        } catch (ch.batbern.events.exception.UserNotFoundException e) {
+            log.info("User profile not found for username: {} — using JWT email as fallback",
+                    username);
+        }
+
+        Optional<Registration> existing = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), username);
+        if (existing.isPresent()) {
+            Registration reg = existing.get();
+            if ("cancelled".equalsIgnoreCase(reg.getStatus())) {
+                registrationRepository.delete(reg);
+                log.info("Deleted cancelled registration for event: {} by user: {}, allowing re-registration",
+                        eventCode, username);
+            } else {
+                log.warn("Duplicate authenticated registration attempt: event={} user={} status={}",
+                        eventCode, username, reg.getStatus());
+                throw new IllegalStateException(
+                        "User " + username + " is already registered for event " + eventCode);
+            }
+        }
+
+        String registrationCode = generateUniqueRegistrationCode(eventCode);
+
+        Integer capacity = event.getRegistrationCapacity();
+        String registrationStatus = "confirmed"; // authenticated users skip the email-confirmation step
+        Integer waitlistPosition = null;
+        if (capacity != null) {
+            long activeCount = registrationRepository.countByEventIdAndStatusIn(
+                    event.getId(), Registration.CAPACITY_STATUSES);
+            if (activeCount >= capacity) {
+                registrationStatus = "waitlist";
+                waitlistPosition = registrationRepository.getNextWaitlistPosition(event.getId());
+                log.info("Event {} is at capacity, placing authenticated user {} on waitlist at position {}",
+                        eventCode, username, waitlistPosition);
+            }
+        }
+
+        Registration registration = Registration.builder()
+                .registrationCode(registrationCode)
+                .eventId(event.getId())
+                .eventCode(eventCode)
+                .attendeeUsername(username)
+                .attendeeFirstName(userProfile != null ? userProfile.getFirstName() : null)
+                .attendeeLastName(userProfile != null ? userProfile.getLastName() : null)
+                .attendeeEmail(userProfile != null ? userProfile.getEmail() : fallbackEmail)
+                .attendeeCompanyId(userProfile != null ? userProfile.getCompanyId() : null)
+                .status(registrationStatus)
+                .waitlistPosition(waitlistPosition)
+                .deregistrationToken(UUID.randomUUID())
+                .registrationDate(Instant.now())
+                .build();
+
+        Registration saved = registrationRepository.save(registration);
+        log.info("Created authenticated registration: {} for user: {} at event: {} (status={})",
+                registrationCode, username, eventCode, registrationStatus);
+        return saved;
+    }
+
+    /**
      * Enroll all organizers and partners as confirmed participants for the given event.
      * <p>
      * Fetches all users with ORGANIZER and PARTNER roles, then calls

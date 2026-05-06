@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/public/ui/button';
 import { useTranslation } from 'react-i18next';
 import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
+import { AttendeeUnregisterPanel } from '@/components/public/Registration/AttendeeUnregisterPanel';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
@@ -46,6 +47,7 @@ export const HeroSection = ({
 }: HeroSectionProps) => {
   const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
+  const [isUnregisterExpanded, setIsUnregisterExpanded] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState<{
     email: string;
     eventCode: string;
@@ -112,6 +114,34 @@ export const HeroSection = ({
       (document.head || document.body).appendChild(script);
     }
   }, [themeImageUrl]);
+
+  // Scroll-tracking for the unregister drawer (mirrors registration)
+  useEffect(() => {
+    if (!isUnregisterExpanded) return;
+
+    let animationFrame: number;
+    let startTime: number | null = null;
+    const animationDuration = 1500;
+
+    const trackBottom = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const section = document.getElementById('registration-wizard-section');
+      if (section && elapsed < animationDuration) {
+        const rect = section.getBoundingClientRect();
+        window.scrollTo({
+          top: window.pageYOffset + rect.bottom - window.innerHeight,
+          behavior: 'instant',
+        });
+        animationFrame = requestAnimationFrame(trackBottom);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(trackBottom);
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [isUnregisterExpanded]);
 
   // Continuously track wizard bottom during animation
   useEffect(() => {
@@ -269,14 +299,16 @@ export const HeroSection = ({
                               `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
                             )}
                           </p>
-                          {eventCode && (
-                            <Link
-                              to={`/register/${eventCode}`}
-                              className="text-xs text-green-400 underline"
-                            >
-                              {t('registration:registrationStatusBanner.manageLink')}
-                            </Link>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsUnregisterExpanded(true)}
+                            disabled={isUnregisterExpanded}
+                            className="text-xs text-red-400 hover:text-red-300 px-0 h-auto"
+                            data-testid="hero-unregister-btn"
+                          >
+                            {t('registration:unregister.button')}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -318,6 +350,26 @@ export const HeroSection = ({
               inline={true}
               onCancel={() => setIsRegistrationExpanded(false)}
               spotsRemaining={spotsRemaining}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Inline Unregister Drawer - same slide-up pattern */}
+      {isUnregisterExpanded && eventCode && myRegistration && (
+        <section
+          id="registration-wizard-section"
+          className="relative z-20 overflow-hidden"
+          style={{
+            animation: 'slideUp 1.5s ease-out forwards',
+          }}
+        >
+          <div className="container mx-auto px-4 py-16">
+            <AttendeeUnregisterPanel
+              eventCode={eventCode}
+              registration={myRegistration}
+              onCancel={() => setIsUnregisterExpanded(false)}
+              inline={true}
             />
           </div>
         </section>

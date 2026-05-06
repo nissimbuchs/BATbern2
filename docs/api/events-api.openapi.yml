@@ -2379,6 +2379,86 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Registrations
+      summary: Quick registration for authenticated attendee
+      description: |
+        Creates a confirmed registration for the currently authenticated user without
+        requiring form input or email confirmation. User profile data is read from the
+        session (JWT). No confirmation email is sent.
+
+        **Security**: Requires Bearer JWT authentication.
+      operationId: createMyRegistration
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '201':
+          description: Registration created (confirmed or waitlisted)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - email
+                properties:
+                  message:
+                    type: string
+                    example: Registration confirmed.
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: User is already registered for this event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Registrations
+      summary: Cancel my registration
+      description: |
+        Immediately cancels the authenticated user's registration for the given event.
+        No email is sent. Triggers waitlist promotion if applicable.
+
+        **Security**: Requires Bearer JWT authentication.
+      operationId: deleteMyRegistration
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '204':
+          description: Registration cancelled successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No active registration found for this user and event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /events/{eventCode}/registrations/{registrationCode}:
     get:

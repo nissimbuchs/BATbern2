@@ -203,7 +203,8 @@
   "registrationStatusGuard": {
     "alreadyRegistered": "[MISSING] You are already registered for this event",
     "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again"
+    "registerAgain": "[MISSING] Register again",
+    "unregistered": "Ti sei disiscritto da questo evento. Vuoi registrarti di nuovo?"
   },
   "deregistration": {
     "page": {
@@ -231,5 +232,25 @@
     "wizard": {
       "cancelButton": "[MISSING] Cancel my registration"
     }
+  },
+  "attendeeQuickRegister": {
+    "title": "Register for this event?",
+    "subtitle": "Registering as:",
+    "confirmButton": "Register Now",
+    "successTitle": "You're registered!",
+    "successSubtitle": "See you at the event.",
+    "cancelButton": "Cancel",
+    "error": "Registration failed. Please try again."
+  },
+  "unregister": {
+    "confirmPrompt": "Are you sure you want to unregister from this event?",
+    "button": "Unregister",
+    "error": "Failed to unregister. Please try again.",
+    "title": "Annulla iscrizione",
+    "subtitle": "Questo annullerà immediatamente la tua iscrizione.",
+    "currentStatus": "Stato attuale",
+    "registeredOn": "Iscritto il",
+    "cancelButton": "Mantieni la mia iscrizione",
+    "confirmButton": "Sì, annulla iscrizione"
   }
 }
