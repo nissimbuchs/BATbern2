@@ -82,9 +82,11 @@ class TurnstileVerificationFilterTest {
         verify(restTemplate, never()).postForObject(anyString(), any(), any());
     }
 
-    // ------------------------------------------------------------------ AC2
+    // ------------------------------------------------------------------ AC2 (fail-open on missing token)
     @Test
-    void missingToken_returns403WithTurnstileRequired() throws Exception {
+    void missingToken_failsOpen() throws Exception {
+        // Widget may be blocked by ad blocker or corporate firewall — fail open so legitimate
+        // users are not locked out. Email confirmation acts as a secondary bot filter.
         properties.setEnabled(true);
 
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
@@ -93,9 +95,9 @@ class TurnstileVerificationFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        assertThat(response.getStatus()).isEqualTo(403);
-        assertThat(response.getContentAsString()).contains("turnstile_required");
-        assertThat(chain.getRequest()).isNull(); // chain was NOT called
+        assertThat(chain.getRequest()).isNotNull(); // chain WAS called
+        assertThat(response.getStatus()).isEqualTo(200);
+        verify(restTemplate, never()).postForObject(anyString(), any(), any());
     }
 
     // ------------------------------------------------------------------ AC3 (valid)

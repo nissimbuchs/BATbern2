@@ -30,7 +30,7 @@ import java.util.Map;
  * Cloudflare Turnstile tokens before allowing requests through.
  *
  * AC1: Intercepts POST /api/v1/newsletter/subscribe and POST /api/v1/events/{code}/registrations
- * AC2: Missing X-Turnstile-Token -&gt; 403 with turnstile_required
+ * AC2: Missing X-Turnstile-Token -&gt; fail-open (widget may be blocked by ad blocker/firewall)
  * AC3: Invalid token -&gt; 403 with turnstile_failed
  * AC4: Cloudflare unreachable -&gt; fail-open (log warning, let through)
  * AC5: turnstile.enabled=false -&gt; no-op
@@ -78,21 +78,18 @@ public class TurnstileVerificationFilter implements Filter {
             return;
         }
 
-        // AC2: Require X-Turnstile-Token header
+        // AC2: If no token present, fail-open — widget may be blocked by ad blocker or
+        // corporate firewall. Registration requires email confirmation, which acts as a
+        // secondary bot filter.
         String token = httpRequest.getHeader("X-Turnstile-Token");
         if (token == null || token.isBlank()) {
-            log.debug("Turnstile token missing for {} {}", httpRequest.getMethod(),
+            log.debug("Turnstile token missing for {} {} — failing open", httpRequest.getMethod(),
                 httpRequest.getRequestURI());
-            addCorsHeaders(httpRequest, httpResponse);
-            httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            httpResponse.setContentType("application/json");
-            httpResponse.getWriter().write(
-                "{\"error\":\"turnstile_required\",\"message\":\"Turnstile token required\"}"
-            );
+            chain.doFilter(request, response);
             return;
         }
 
-        // AC3/AC4: Verify token with Cloudflare
+        // AC3/AC4: Token present — verify with Cloudflare. Invalid token = active forgery attempt.
         try {
             boolean valid = verifyToken(token, getClientIp(httpRequest));
             if (!valid) {
