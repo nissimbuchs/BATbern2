@@ -290,6 +290,16 @@ export class CICDStack extends cdk.Stack {
       ],
     }));
 
+    // IAM - Simulate policy evaluation for post-deploy permission gates (read-only, no side-effects)
+    githubActionsRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['iam:SimulatePrincipalPolicy'],
+      resources: [
+        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
+        `arn:aws:iam::${this.account}:role/cdk-*`,
+      ],
+    }));
+
     // IAM - Create and manage roles, policies for CDK resources
     githubActionsRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,

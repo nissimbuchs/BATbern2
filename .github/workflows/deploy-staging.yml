@@ -1036,6 +1036,60 @@ jobs:
             echo "::warning::ECS cluster batbern-staging not found yet"
           fi
 
+      - name: Verify SES IAM permissions (simulate-principal-policy)
+        if: steps.deployment-strategy.outputs.code_only != 'true'
+        run: |
+          # Resolve the task role ARN from the live ECS task definition.
+          # simulate-principal-policy is read-only — no side-effects on production.
+          TASK_DEF_ARN=$(aws ecs list-task-definitions \
+            --family-prefix "BATbern-staging-EventManagement" \
+            --sort DESC \
+            --query 'taskDefinitionArns[0]' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          if [ -z "$TASK_DEF_ARN" ] || [ "$TASK_DEF_ARN" = "None" ]; then
+            echo "::warning::No EventManagement task definition found — skipping IAM simulation"
+            exit 0
+          fi
+
+          TASK_ROLE_ARN=$(aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'taskDefinition.taskRoleArn' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          # Resolve configuration set name from SES stack output; fall back to known value
+          CONFIG_SET=$(aws cloudformation describe-stacks \
+            --stack-name BATbern-staging-SES \
+            --query 'Stacks[0].Outputs[?OutputKey==`ConfigurationSetName`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+          CONFIG_SET="${CONFIG_SET:-batbern-staging-newsletter}"
+
+          echo "Task role:    $TASK_ROLE_ARN"
+          echo "Config set:   $CONFIG_SET"
+
+          RESULT=$(aws iam simulate-principal-policy \
+            --policy-source-arn "$TASK_ROLE_ARN" \
+            --action-names ses:SendRawEmail \
+            --resource-arns \
+              "arn:aws:ses:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID || '188701360969' }}:identity/batbern.ch" \
+              "arn:aws:ses:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID || '188701360969' }}:configuration-set/$CONFIG_SET" \
+            --query 'EvaluationResults[].EvalDecision' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          echo "IAM simulation results: $RESULT"
+
+          if echo "$RESULT" | grep -qi "deny"; then
+            echo "::error::SES IAM permission denied for EventManagement task role"
+            echo "::error::The task role cannot call ses:SendRawEmail on the SES identity and/or configuration-set."
+            echo "::error::Check event-management-stack.ts — the configuration-set ARN must be in the SES policy resources."
+            exit 1
+          fi
+          echo "✅ SES IAM permissions verified"
+
       - name: Run smoke tests
         run: |
           if [ -f "scripts/ci/smoke-tests.sh" ]; then
