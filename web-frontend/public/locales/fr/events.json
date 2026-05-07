@@ -59,7 +59,10 @@
       "empty": "Aucun participant inscrit pour l'instant",
       "actions": {
         "cancel": "Annuler l'inscription",
-        "delete": "Supprimer l'inscription"
+        "delete": "Supprimer l'inscription",
+        "resendConfirmation": "Renvoyer l'e-mail de confirmation",
+        "resendSuccess": "E-mail de confirmation renvoyé avec succès",
+        "resendError": "Échec de l'envoi de l'e-mail de confirmation"
       },
       "deleteDialog": {
         "title": "Supprimer l'inscription",

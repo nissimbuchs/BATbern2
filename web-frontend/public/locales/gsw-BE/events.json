@@ -64,7 +64,10 @@
       "empty": "No kei Teilnähmer amäldet",
       "actions": {
         "cancel": "Amäldig storniere",
-        "delete": "Amäldig lösche"
+        "delete": "Amäldig lösche",
+        "resendConfirmation": "Bestätigungsmail nochimol schicke",
+        "resendSuccess": "Bestätigungsmail isch erfolgrig verschickt worde",
+        "resendError": "Fehler bim Versende vo dr Bestätigungsmail"
       },
       "deleteDialog": {
         "title": "Amäldig lösche",

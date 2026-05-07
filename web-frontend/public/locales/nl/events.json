@@ -59,7 +59,10 @@
       "empty": "Nog geen deelnemers geregistreerd",
       "actions": {
         "cancel": "Registratie annuleren",
-        "delete": "Registratie verwijderen"
+        "delete": "Registratie verwijderen",
+        "resendConfirmation": "Bevestigingsmail opnieuw verzenden",
+        "resendSuccess": "Bevestigingsmail succesvol opnieuw verzonden",
+        "resendError": "Fout bij het opnieuw verzenden van de bevestigingsmail"
       },
       "deleteDialog": {
         "title": "Registratie verwijderen",

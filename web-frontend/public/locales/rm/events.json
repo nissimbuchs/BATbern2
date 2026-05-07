@@ -59,7 +59,10 @@
       "empty": "Naguts participonts registrads enfin ussa",
       "actions": {
         "cancel": "Annullar registraziun",
-        "delete": "Stizzar registraziun"
+        "delete": "Stizzar registraziun",
+        "resendConfirmation": "Turnar a trametter il mail da conferma",
+        "resendSuccess": "Mail da conferma tramess cun success",
+        "resendError": "Errur tar il trametter dal mail da conferma"
       },
       "deleteDialog": {
         "title": "Stizzar registraziun",

@@ -59,7 +59,10 @@
       "empty": "Nessun partecipante iscritto",
       "actions": {
         "cancel": "Annulla iscrizione",
-        "delete": "Elimina iscrizione"
+        "delete": "Elimina iscrizione",
+        "resendConfirmation": "Rinvia email di conferma",
+        "resendSuccess": "Email di conferma rinviata con successo",
+        "resendError": "Errore durante il rinvio dell'email di conferma"
       },
       "deleteDialog": {
         "title": "Elimina iscrizione",

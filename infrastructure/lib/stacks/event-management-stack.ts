@@ -188,6 +188,8 @@ export class EventManagementStack extends cdk.Stack {
     // Note: In SES sandbox mode, permissions are required for BOTH sender (FROM) and recipient (TO) identities
     // Using wildcard (*) for recipient identities to support any verified email in sandbox mode
     // In production (out of sandbox), only FROM identity permissions are needed
+    // AWS requires explicit permission on the configuration-set resource when configurationSetName
+    // is specified in SendEmail/SendRawEmail requests.
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -199,6 +201,10 @@ export class EventManagementStack extends cdk.Stack {
           // TO identities - all verified emails (required for sandbox mode)
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+          // Configuration set — required when configurationSetName is passed to SendRawEmail
+          ...(props.sesConfigurationSetName
+            ? [`arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/${props.sesConfigurationSetName}`]
+            : []),
         ],
       })
     );

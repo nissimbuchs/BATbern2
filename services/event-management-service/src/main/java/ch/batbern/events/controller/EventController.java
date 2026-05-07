@@ -1535,6 +1535,69 @@ public class EventController {
     }
 
     /**
+     * Resend registration confirmation email
+     *
+     * POST /api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation
+     *
+     * Organizer-only: generates fresh JWT tokens and re-sends the confirmation email
+     * to the attendee. Only valid for registrations in "registered" (pending) status.
+     */
+    @PostMapping("/{eventCode}/registrations/{registrationCode}/resend-confirmation")
+    @Operation(
+            summary = "Resend Registration Confirmation Email",
+            description = "Organizer-only: resend the confirmation email to an attendee whose "
+                    + "registration is still pending (status=registered). Generates fresh tokens."
+    )
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Map<String, String>> resendConfirmationEmail(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.info("POST /api/v1/events/{}/registrations/{}/resend-confirmation", eventCode, registrationCode);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+
+        if (!event.getId().equals(registration.getEventId())) {
+            throw new RegistrationNotFoundException(registrationCode);
+        }
+
+        if (!"registered".equalsIgnoreCase(registration.getStatus())) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Confirmation email can only be resent for pending registrations. "
+                            + "Current status: " + registration.getStatus()));
+        }
+
+        String confirmationToken = confirmationTokenService.generateConfirmationToken(
+                registration.getId(), eventCode);
+        String cancellationToken = confirmationTokenService.generateCancellationToken(
+                registration.getId(), eventCode);
+
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+
+        String deregistrationUrl = registration.getDeregistrationToken() != null
+                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                : null;
+
+        registrationEmailService.sendRegistrationConfirmation(
+                registration,
+                userProfile,
+                event,
+                confirmationToken,
+                cancellationToken,
+                deregistrationUrl,
+                java.util.Locale.GERMAN
+        );
+
+        log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
+                userProfile.getEmail());
+
+        return ResponseEntity.ok(Map.of("message", "Confirmation email resent to " + userProfile.getEmail()));
+    }
+
+    /**
      * Enroll all organizers and partners as confirmed participants for an existing event.
      *
      * POST /api/v1/events/{eventCode}/enroll-stakeholders

@@ -59,7 +59,10 @@
       "empty": "No hay participantes registrados aún",
       "actions": {
         "cancel": "Cancelar registro",
-        "delete": "Eliminar registro"
+        "delete": "Eliminar registro",
+        "resendConfirmation": "Reenviar email de confirmación",
+        "resendSuccess": "Email de confirmación reenviado con éxito",
+        "resendError": "Error al reenviar el email de confirmación"
       },
       "deleteDialog": {
         "title": "Eliminar registro",

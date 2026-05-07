@@ -174,6 +174,23 @@ export const promoteFromWaitlist = async (
 };
 
 /**
+ * Resend registration confirmation email (organizer only)
+ *
+ * Only works for registrations in REGISTERED (pending) status.
+ *
+ * @param eventCode - Event code
+ * @param registrationCode - Registration code
+ */
+export const resendConfirmationEmail = async (
+  eventCode: string,
+  registrationCode: string
+): Promise<void> => {
+  await apiClient.post(
+    `/events/${eventCode}/registrations/${registrationCode}/resend-confirmation`
+  );
+};
+
+/**
  * Enroll all organizers and partners as confirmed participants for an existing event.
  *
  * ORGANIZER only. Idempotent — already-registered users are counted as skipped.

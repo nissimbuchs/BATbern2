@@ -59,7 +59,10 @@
       "empty": "まだ参加者が登録されていません",
       "actions": {
         "cancel": "登録をキャンセル",
-        "delete": "登録を削除"
+        "delete": "登録を削除",
+        "resendConfirmation": "確認メールを再送",
+        "resendSuccess": "確認メールを再送しました",
+        "resendError": "確認メールの再送に失敗しました"
       },
       "deleteDialog": {
         "title": "登録を削除",

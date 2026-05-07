@@ -101,7 +101,10 @@
       "empty": "No participants registered yet",
       "actions": {
         "cancel": "Cancel Registration",
-        "delete": "Delete Registration"
+        "delete": "Delete Registration",
+        "resendConfirmation": "Resend Confirmation Email",
+        "resendSuccess": "Confirmation email resent successfully",
+        "resendError": "Failed to resend confirmation email"
       },
       "deleteDialog": {
         "title": "Delete Registration",

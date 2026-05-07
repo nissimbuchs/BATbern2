@@ -101,7 +101,10 @@
       "empty": "Noch keine Teilnehmer angemeldet",
       "actions": {
         "cancel": "Anmeldung stornieren",
-        "delete": "Anmeldung löschen"
+        "delete": "Anmeldung löschen",
+        "resendConfirmation": "Bestätigungsmail erneut senden",
+        "resendSuccess": "Bestätigungsmail wurde erfolgreich versendet",
+        "resendError": "Fehler beim Versenden der Bestätigungsmail"
       },
       "deleteDialog": {
         "title": "Anmeldung löschen",

@@ -147,14 +147,17 @@ public class EmailService {
     }
 
     /**
-     * Send an HTML email with attachments asynchronously (e.g., .ics calendar file).
+     * Send an HTML email with attachments synchronously (e.g., .ics calendar file).
+     *
+     * <p>Intentionally NOT @Async — callers (RegistrationEmailService, PartnerInviteEmailService)
+     * are already @Async themselves. A double-@Async dispatch causes exceptions to be silently
+     * swallowed by SimpleAsyncUncaughtExceptionHandler instead of reaching the caller's try/catch.
      *
      * @param to Recipient email address
      * @param subject Email subject
      * @param htmlBody HTML content
      * @param attachments List of email attachments
      */
-    @Async
     public void sendHtmlEmailWithAttachments(
             String to,
             String subject,

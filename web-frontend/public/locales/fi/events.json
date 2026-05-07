@@ -59,7 +59,10 @@
       "empty": "Ei rekisteröityneitä osallistujia vielä",
       "actions": {
         "cancel": "Peruuta rekisteröinti",
-        "delete": "Poista rekisteröinti"
+        "delete": "Poista rekisteröinti",
+        "resendConfirmation": "Lähetä vahvistussähköposti uudelleen",
+        "resendSuccess": "Vahvistussähköposti lähetetty uudelleen",
+        "resendError": "Vahvistussähköpostin lähetys epäonnistui"
       },
       "deleteDialog": {
         "title": "Poista rekisteröinti",
