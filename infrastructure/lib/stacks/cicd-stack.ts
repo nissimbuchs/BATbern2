@@ -21,14 +21,18 @@ export interface CICDStackProps extends cdk.StackProps {
  * - IAM roles for GitHub Actions (OIDC)
  * - CloudWatch log groups for pipeline logs
  *
- * IAM permissions are split into two explicit ManagedPolicies:
+ * IAM permissions are split into three explicit ManagedPolicies:
  *
  *   WorkflowRuntimePolicy — every `aws` CLI call made directly by workflow YAML steps
  *     (deploy-staging.yml, deploy-code-staging.yml, update-ecs-task.sh).
  *     Keep this short; every action here MUST have a test in cicd-stack.test.ts.
  *
- *   CdkDeploymentPolicy — everything `cdk deploy` needs to provision and manage
- *     infrastructure via CloudFormation + CDK bootstrap roles.
+ *   CdkDeploymentPolicy — core deploy mechanics: STS assume, CloudFormation, S3, ECR,
+ *     IAM role/policy management, Lambda. Kept under 6 144 chars (IAM managed policy limit).
+ *
+ *   CdkResourcesPolicy — resource provisioning: EC2/VPC, RDS, ElastiCache, Cognito,
+ *     CloudFront, Secrets Manager, KMS, SSM, CloudWatch/Logs, ACM, Route53, ECS lifecycle,
+ *     Auto Scaling. Split from CdkDeploymentPolicy to stay within the 6 144-char limit.
  *
  * How to keep WorkflowRuntimePolicy in sync with the workflow YAML:
  *   grep -oP 'aws \K[a-z0-9-]+ [a-z0-9-]+' .github/workflows/deploy-staging.yml | sort -u
@@ -220,16 +224,17 @@ export class CICDStack extends cdk.Stack {
     });
 
     // ═══════════════════════════════════════════════════════════
-    // CDK DEPLOYMENT POLICY
+    // CDK DEPLOYMENT POLICY  (core deploy mechanics)
     //
-    // Permissions needed for `cdk deploy` to create and manage all
-    // infrastructure resources via CloudFormation + CDK bootstrap roles.
-    // These are not directly called by workflow YAML steps.
+    // STS, CloudFormation, S3, ECR, IAM, Lambda — kept under the
+    // 6 144-char IAM managed policy limit.
+    // The remaining resource-provisioning permissions live in
+    // CdkResourcesPolicy below.
     // ═══════════════════════════════════════════════════════════
 
     const cdkDeploymentPolicy = new iam.ManagedPolicy(this, 'CdkDeploymentPolicy', {
       managedPolicyName: `batbern-${config.envName}-github-cdk-deployment`,
-      description: 'GitHub Actions CDK — permissions for cdk deploy and asset publishing',
+      description: 'GitHub Actions CDK — core deploy mechanics (STS, CFN, S3, ECR, IAM, Lambda)',
       document: new iam.PolicyDocument({
         statements: [
 
@@ -404,10 +409,29 @@ export class CICDStack extends cdk.Stack {
               'lambda:GetPolicy',
             ],
             resources: [
-              `arn:aws:lambda:${this.region}:${this.account}:function:BATbern-${config.envName}-*`,
-              `arn:aws:lambda:${this.region}:${this.account}:function:cdk-*`,
+              `arn:aws:lambda:*:${this.account}:function:BATbern-${config.envName}-*`,
+              `arn:aws:lambda:*:${this.account}:function:cdk-*`,
             ],
           }),
+
+        ],
+      }),
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // CDK RESOURCES POLICY  (infrastructure resource provisioning)
+    //
+    // Split from CdkDeploymentPolicy to stay within the 6 144-char
+    // IAM managed policy limit.  Covers EC2/VPC, RDS, ElastiCache,
+    // Cognito, CloudFront, Secrets Manager, KMS, SSM, CloudWatch/Logs,
+    // ACM, Route53, ECS lifecycle, and Auto Scaling.
+    // ═══════════════════════════════════════════════════════════
+
+    const cdkResourcesPolicy = new iam.ManagedPolicy(this, 'CdkResourcesPolicy', {
+      managedPolicyName: `batbern-${config.envName}-github-cdk-resources`,
+      description: 'GitHub Actions CDK — resource provisioning (EC2, RDS, Cognito, CloudFront, etc.)',
+      document: new iam.PolicyDocument({
+        statements: [
 
           // EC2 / VPC — network infrastructure provisioning
           new iam.PolicyStatement({
@@ -728,6 +752,7 @@ export class CICDStack extends cdk.Stack {
 
     githubActionsRole.addManagedPolicy(workflowRuntimePolicy);
     githubActionsRole.addManagedPolicy(cdkDeploymentPolicy);
+    githubActionsRole.addManagedPolicy(cdkResourcesPolicy);
 
     this.githubActionsRole = githubActionsRole;
 

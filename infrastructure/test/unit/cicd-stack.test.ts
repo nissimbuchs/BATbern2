@@ -99,6 +99,10 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasManagedPolicy(template, 'github-cdk-deployment')).toBe(true);
   });
 
+  test('should_createCdkResourcesPolicy_as_namedManagedPolicy', () => {
+    expect(hasManagedPolicy(template, 'github-cdk-resources')).toBe(true);
+  });
+
   // ── ECS ──────────────────────────────────────────────────────────────────
   // Used by: deploy-staging.yml (stabilize, cleanup) + update-ecs-task.sh (fast-path)
 
