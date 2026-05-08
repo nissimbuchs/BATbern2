@@ -99,8 +99,12 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasManagedPolicy(template, 'github-cdk-deployment')).toBe(true);
   });
 
-  test('should_createCdkResourcesPolicy_as_namedManagedPolicy', () => {
-    expect(hasManagedPolicy(template, 'github-cdk-resources')).toBe(true);
+  test('should_createCdkNetworkingPolicy_as_namedManagedPolicy', () => {
+    expect(hasManagedPolicy(template, 'github-cdk-networking')).toBe(true);
+  });
+
+  test('should_createCdkServicesPolicy_as_namedManagedPolicy', () => {
+    expect(hasManagedPolicy(template, 'github-cdk-services')).toBe(true);
   });
 
   // ── ECS ──────────────────────────────────────────────────────────────────
