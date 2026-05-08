@@ -247,6 +247,8 @@ export class CICDStack extends cdk.Stack {
         'cloudformation:ExecuteChangeSet',
         'cloudformation:DeleteChangeSet',
         'cloudformation:GetTemplateSummary',
+        'cloudformation:CancelUpdateStack',      // stuck-stack cleanup in deploy-staging.yml
+        'cloudformation:ContinueUpdateRollback', // stuck-stack cleanup in deploy-staging.yml
       ],
       resources: [
         // Support stacks in all regions (DNS/ACM must be in us-east-1, others in primary region)
@@ -489,6 +491,7 @@ export class CICDStack extends cdk.Stack {
         'cognito-idp:SetUserPoolMfaConfig',
         'cognito-idp:TagResource',
         'cognito-idp:UntagResource',
+        'cognito-idp:InitiateAuth', // deploy-staging.yml: authenticate test users step
       ],
       resources: [
         `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
