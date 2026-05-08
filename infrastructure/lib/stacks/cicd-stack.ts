@@ -154,6 +154,7 @@ export class CICDStack extends cdk.Stack {
         'ecs:DescribeTaskDefinition',
         'ecs:DescribeTasks',
         'ecs:ListServices',  // Required for fast-path deployment script
+        'ecs:ListTaskDefinitions',  // Required for post-deploy IAM simulation gate
         'ecs:ListTasks',
         'ecs:RegisterTaskDefinition',
         'ecs:UpdateService',
