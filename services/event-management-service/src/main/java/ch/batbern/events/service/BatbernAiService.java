@@ -162,7 +162,8 @@ public class BatbernAiService {
                 return Optional.empty();
             }
 
-            String s3Key = "ai-themes/" + cacheKey + ".png";
+            // Use colon-free key for S3/CloudFront — colons in URL path segments cause 503s
+            String s3Key = "ai-themes/" + cacheKey.replace(':', '_') + ".png";
             s3Client.putObject(
                 PutObjectRequest.builder()
                     .bucket(s3BucketName)
