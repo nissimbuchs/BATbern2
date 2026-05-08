@@ -46,6 +46,7 @@ TEST_FRONTEND=false
 TEST_SHARED_KERNEL=false
 TEST_API_GATEWAY=false
 TEST_SERVICES="" # Space-separated list of services to test
+CHECK_CICD_PERMISSIONS=false
 
 # Analyze changed files
 while IFS= read -r file; do
@@ -84,7 +85,10 @@ while IFS= read -r file; do
                 TEST_SERVICES="$TEST_SERVICES speaker-coordination-service"
             fi
             ;;
-        infrastructure/*|.github/*|docs/*|*.md)
+        .github/workflows/*.yml|infrastructure/lib/stacks/cicd-stack.ts)
+            CHECK_CICD_PERMISSIONS=true
+            ;;
+        infrastructure/*|docs/*|*.md)
             # Skip - these are tested in CI or don't need pre-push tests
             ;;
     esac
@@ -122,6 +126,11 @@ if [ -n "$TEST_SERVICES" ]; then
         echo "  ✓ Service: $service"
         TESTING_ANYTHING=true
     done
+fi
+
+if [ "$CHECK_CICD_PERMISSIONS" = true ]; then
+    echo "  ✓ CICD permissions sync (workflow YAML → IAM test coverage)"
+    TESTING_ANYTHING=true
 fi
 
 if [ "$TESTING_ANYTHING" = false ]; then
@@ -192,6 +201,64 @@ if [ -n "$TEST_SERVICES" ]; then
 
         echo ""
     done
+fi
+
+# CICD permissions sync check
+# Triggered when workflow YAML or cicd-stack.ts changes.
+# Greps all deploy workflow files for `aws <service> <subcommand>` calls,
+# converts each to its IAM action, and fails if any is missing from the test file.
+if [ "$CHECK_CICD_PERMISSIONS" = true ]; then
+    echo -e "${YELLOW}🔐 Checking CICD permissions sync (workflow YAML → IAM test coverage)...${NC}"
+
+    WORKFLOW_FILES=$(find .github/workflows -name "deploy*.yml" -o -name "build*.yml" 2>/dev/null | tr '\n' ' ')
+    TEST_FILE="infrastructure/test/unit/cicd-stack.test.ts"
+
+    if [ -z "$WORKFLOW_FILES" ]; then
+        echo "  ⚠️  No workflow YAML files found — skipping check"
+    elif [ ! -f "$TEST_FILE" ]; then
+        echo -e "${RED}  ❌ $TEST_FILE not found${NC}"
+        CHECKS_FAILED=1
+    else
+        # Extract `aws <service> <subcommand>` calls from all workflow files,
+        # convert to IAM action format, then check each one has a test.
+        #
+        # Exclusions:
+        #   `wait`  — client-side pollers (aws ecs wait, aws rds wait, aws cloudformation wait)
+        #             They don't map to a single IAM action; the underlying API is already tested.
+        #   `s3`    — s3 cp/sync/rb map to multiple S3 actions depending on source/dest.
+        #             CDK deployment policy covers S3; no per-object action test is practical.
+        MISSING=""
+
+        while IFS=' ' read -r service subcommand; do
+            [ -z "$service" ] || [ -z "$subcommand" ] && continue
+            [ "$subcommand" = "wait" ] && continue
+            [ "$service" = "s3" ] && continue
+
+            # Convert kebab-case subcommand to PascalCase IAM action
+            # e.g. "describe-task-definition" → "DescribeTaskDefinition"
+            IAM_ACTION="${service}:$(python3 -c \
+                "import sys; print(''.join(w.capitalize() for w in sys.argv[1].split('-')))" \
+                "$subcommand" 2>/dev/null || echo "$subcommand")"
+
+            # Check if the action is covered in the test file.
+            # Case-insensitive: aws uses db/arn/etc. in lowercase, IAM uses DB/ARN/etc.
+            if ! grep -iqF "'$IAM_ACTION'" "$TEST_FILE"; then
+                MISSING="${MISSING}  ${IAM_ACTION}\n"
+            fi
+        done < <(cat $WORKFLOW_FILES | grep -oP "aws \K[a-z0-9-]+ [a-z0-9-]+" | sort -u)
+
+        if [ -n "$MISSING" ]; then
+            echo -e "${RED}  ❌ Workflow YAML contains AWS actions not covered in $TEST_FILE:${NC}"
+            echo -e "${RED}${MISSING}${NC}"
+            echo "  For each missing action:"
+            echo "    1. Add a test to $TEST_FILE"
+            echo "    2. Add the permission to infrastructure/lib/stacks/cicd-stack.ts (WorkflowRuntimePolicy)"
+            CHECKS_FAILED=1
+        else
+            echo -e "${GREEN}  ✅ All workflow AWS CLI actions have permission tests${NC}"
+        fi
+    fi
+    echo ""
 fi
 
 # Final summary

@@ -4,25 +4,26 @@
  * These tests document and enforce EVERY AWS CLI action called by the deploy
  * workflows (deploy-staging.yml, deploy-code-staging.yml, update-ecs-task.sh).
  * If a new workflow step calls an AWS API that isn't covered here, add it to
- * both the test AND the CICDStack policy — failing this test is the pre-deploy
- * signal that a permission is missing, not a runtime AccessDeniedException.
+ * BOTH the WorkflowRuntimePolicy in cicd-stack.ts AND a test below.
  *
- * How to keep this in sync:
+ * The pre-push hook enforces this automatically: when deploy-staging.yml or
+ * cicd-stack.ts changes, it greps the workflow for `aws` calls and fails if
+ * any found action is missing from this test file.
+ *
+ * How to find new actions manually:
  *   grep -oP 'aws \K[a-z0-9-]+ [a-z0-9-]+' .github/workflows/deploy-staging.yml | sort -u
  *   Map each CLI sub-command to its IAM action and add a test below if missing.
  *
- * Implementation note — CDK splits the role's policy across two resource types:
- *   AWS::IAM::Policy       (inline, ~6 KB limit)
- *   AWS::IAM::ManagedPolicy (overflow once the inline limit is reached)
- * Both are attached to the same role. The hasAction() helper below checks both
- * so tests remain valid regardless of which resource CDK chooses for overflow.
+ * Policy structure (two explicit ManagedPolicies, no invisible inline overflow):
+ *   WorkflowRuntimePolicy  — actions called directly by workflow YAML steps
+ *   CdkDeploymentPolicy    — everything `cdk deploy` needs to provision infrastructure
  *
  * Incident reference: 2026-05-08 — ecs:ListTaskDefinitions missing, discovered
  * only at runtime when the post-deploy simulate-principal-policy step ran.
  */
 
 import { App } from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Template, Match } from 'aws-cdk-lib/assertions';
 
 import { stagingConfig } from '../../lib/config/staging-config';
 import { CICDStack } from '../../lib/stacks/cicd-stack';
@@ -63,11 +64,39 @@ function hasAction(template: Template, action: string): boolean {
   return false;
 }
 
+/**
+ * Returns true if a ManagedPolicy with the given ManagedPolicyName exists.
+ * Accepts both exact strings and CDK Join tokens (which appear when the name
+ * is constructed with account/region tokens).
+ */
+function hasManagedPolicy(template: Template, nameSubstring: string): boolean {
+  const policies = template.findResources('AWS::IAM::ManagedPolicy');
+  for (const resource of Object.values(policies)) {
+    const name = (resource as { Properties?: { ManagedPolicyName?: unknown } })
+      .Properties?.ManagedPolicyName;
+    // The name may be a plain string or a CloudFormation Join/Sub token
+    const nameStr = JSON.stringify(name ?? '');
+    if (nameStr.includes(nameSubstring)) return true;
+  }
+  return false;
+}
+
 describe('CICDStack — GitHub Actions role permissions', () => {
   let template: Template;
 
   beforeAll(() => {
     template = buildTemplate();
+  });
+
+  // ── Policy structure ──────────────────────────────────────────────────────
+  // Both policies must be explicit ManagedPolicies, not invisible inline overflow.
+
+  test('should_createWorkflowRuntimePolicy_as_namedManagedPolicy', () => {
+    expect(hasManagedPolicy(template, 'github-workflow-runtime')).toBe(true);
+  });
+
+  test('should_createCdkDeploymentPolicy_as_namedManagedPolicy', () => {
+    expect(hasManagedPolicy(template, 'github-cdk-deployment')).toBe(true);
   });
 
   // ── ECS ──────────────────────────────────────────────────────────────────
@@ -148,5 +177,74 @@ describe('CICDStack — GitHub Actions role permissions', () => {
 
   test('should_grantCognitoInitiateAuth_for_testUserAuthentication', () => {
     expect(hasAction(template, 'cognito-idp:InitiateAuth')).toBe(true);
+  });
+
+  // ── Policy separation ─────────────────────────────────────────────────────
+  // Runtime actions must live in WorkflowRuntimePolicy, not bleed into the CDK policy.
+
+  test('should_placeWorkflowRuntimeActions_in_WorkflowRuntimePolicy', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+
+    const runtimePolicy = Object.values(policies).find(p => {
+      const nameStr = JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? '',
+      );
+      return nameStr.includes('github-workflow-runtime');
+    });
+
+    expect(runtimePolicy).toBeDefined();
+
+    // Spot-check: a representative runtime action must appear in this policy
+    const statements: unknown[] =
+      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
+        .Properties?.PolicyDocument?.Statement ?? [];
+
+    const allActions = statements.flatMap(stmt => {
+      const s = stmt as { Action?: unknown };
+      return Array.isArray(s.Action)
+        ? (s.Action as unknown[]).filter((a): a is string => typeof a === 'string')
+        : typeof s.Action === 'string'
+          ? [s.Action]
+          : [];
+    });
+
+    expect(allActions).toContain('ecs:ListTaskDefinitions');
+    expect(allActions).toContain('iam:SimulatePrincipalPolicy');
+    expect(allActions).toContain('cognito-idp:InitiateAuth');
+  });
+
+  // Prove that CDK deployment actions (e.g. cloudformation:CreateStack) are NOT
+  // inside the runtime policy — they should stay in CdkDeploymentPolicy.
+  test('should_notPlaceCdkDeployActions_in_WorkflowRuntimePolicy', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+
+    const runtimePolicy = Object.values(policies).find(p => {
+      const nameStr = JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? '',
+      );
+      return nameStr.includes('github-workflow-runtime');
+    });
+
+    expect(runtimePolicy).toBeDefined();
+
+    const statements: unknown[] =
+      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
+        .Properties?.PolicyDocument?.Statement ?? [];
+
+    const runtimeActions = new Set(
+      statements.flatMap(stmt => {
+        const s = stmt as { Action?: unknown };
+        return Array.isArray(s.Action)
+          ? (s.Action as unknown[]).filter((a): a is string => typeof a === 'string')
+          : typeof s.Action === 'string'
+            ? [s.Action]
+            : [];
+      }),
+    );
+
+    // These are CDK-only actions — they must not appear in the runtime policy
+    expect(runtimeActions.has('cloudformation:CreateStack')).toBe(false);
+    expect(runtimeActions.has('iam:CreateRole')).toBe(false);
+    expect(runtimeActions.has('ec2:CreateVpc')).toBe(false);
   });
 });

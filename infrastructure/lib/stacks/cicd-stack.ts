@@ -20,6 +20,20 @@ export interface CICDStackProps extends cdk.StackProps {
  * - ECR repositories for all services
  * - IAM roles for GitHub Actions (OIDC)
  * - CloudWatch log groups for pipeline logs
+ *
+ * IAM permissions are split into two explicit ManagedPolicies:
+ *
+ *   WorkflowRuntimePolicy — every `aws` CLI call made directly by workflow YAML steps
+ *     (deploy-staging.yml, deploy-code-staging.yml, update-ecs-task.sh).
+ *     Keep this short; every action here MUST have a test in cicd-stack.test.ts.
+ *
+ *   CdkDeploymentPolicy — everything `cdk deploy` needs to provision and manage
+ *     infrastructure via CloudFormation + CDK bootstrap roles.
+ *
+ * How to keep WorkflowRuntimePolicy in sync with the workflow YAML:
+ *   grep -oP 'aws \K[a-z0-9-]+ [a-z0-9-]+' .github/workflows/deploy-staging.yml | sort -u
+ *   Map each CLI sub-command to its IAM action and add a test to cicd-stack.test.ts.
+ *   The pre-push hook enforces this automatically when either file changes.
  */
 export class CICDStack extends cdk.Stack {
   public readonly ecrRepositories: Map<string, ecr.Repository>;
@@ -73,13 +87,10 @@ export class CICDStack extends cdk.Stack {
           : cdk.RemovalPolicy.DESTROY,
       });
 
-      // Add tags
       cdk.Tags.of(repository).add('Service', serviceName);
       cdk.Tags.of(repository).add('ManagedBy', 'CDK');
-
       this.ecrRepositories.set(serviceName, repository);
 
-      // Output repository URIs for easy reference
       new cdk.CfnOutput(this, `${serviceName}-repository-uri`, {
         value: repository.repositoryUri,
         description: `ECR repository URI for ${serviceName}`,
@@ -91,15 +102,12 @@ export class CICDStack extends cdk.Stack {
     // GITHUB ACTIONS OIDC PROVIDER
     // ═══════════════════════════════════════════════════════════
 
-    // Check if OIDC provider already exists (can only have one per account)
-    // This is a known limitation - we reference it by ARN
-    const githubOidcProviderArn = `arn:aws:iam::${this.account}:oidc-provider/token.actions.githubusercontent.com`;
-
     // Note: OIDC provider must be created manually once per AWS account:
     // aws iam create-open-id-connect-provider \
     //   --url https://token.actions.githubusercontent.com \
     //   --client-id-list sts.amazonaws.com \
     //   --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+    const githubOidcProviderArn = `arn:aws:iam::${this.account}:oidc-provider/token.actions.githubusercontent.com`;
 
     // ═══════════════════════════════════════════════════════════
     // IAM ROLE FOR GITHUB ACTIONS (OIDC)
@@ -122,590 +130,604 @@ export class CICDStack extends cdk.Stack {
       maxSessionDuration: cdk.Duration.hours(1),
     });
 
-    // ECR Permissions - Push and pull images
-    this.ecrRepositories.forEach(repository => {
-      repository.grantPullPush(githubActionsRole);
+    // ═══════════════════════════════════════════════════════════
+    // WORKFLOW RUNTIME POLICY
+    //
+    // Every action here maps directly to an `aws` CLI call in a workflow YAML
+    // step. Each action MUST have a corresponding test in cicd-stack.test.ts.
+    // The pre-push hook will fail if you add a new `aws` call to the workflow
+    // without also adding a test here.
+    // ═══════════════════════════════════════════════════════════
+
+    const workflowRuntimePolicy = new iam.ManagedPolicy(this, 'WorkflowRuntimePolicy', {
+      managedPolicyName: `batbern-${config.envName}-github-workflow-runtime`,
+      description: 'GitHub Actions runtime — actions called directly by workflow YAML steps',
+      document: new iam.PolicyDocument({
+        statements: [
+
+          // ECS — stabilize wait, stack-status checks, fast-path deploy, IAM simulation gate
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'ecs:DescribeClusters',       // wait-for-stabilize guard, update-ecs-task.sh
+              'ecs:DescribeServices',       // wait-for-stabilize
+              'ecs:DescribeTaskDefinition', // simulate-principal-policy gate
+              'ecs:ListServices',           // fast-path deployment
+              'ecs:ListTaskDefinitions',    // simulate-principal-policy gate
+              'ecs:RegisterTaskDefinition', // fast-path deployment
+              'ecs:UpdateService',          // fast-path deployment
+            ],
+            resources: ['*'],
+          }),
+
+          // IAM — post-deploy simulate-principal-policy gate (read-only, no side-effects)
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['iam:SimulatePrincipalPolicy'],
+            resources: [
+              `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-*`,
+            ],
+          }),
+
+          // CloudFormation — describe stacks + stuck-stack recovery
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'cloudformation:DescribeStacks',          // deploy status checks, SES config resolution
+              'cloudformation:CancelUpdateStack',       // stuck-stack cleanup steps
+              'cloudformation:ContinueUpdateRollback',  // stuck-stack cleanup steps
+            ],
+            resources: [
+              `arn:aws:cloudformation:*:${this.account}:stack/BATbern-${config.envName}-*/*`,
+              `arn:aws:cloudformation:*:${this.account}:stack/CDKToolkit/*`,
+            ],
+          }),
+
+          // ECR — pre-deploy image existence validation
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['ecr:DescribeImages'],
+            resources: [
+              `arn:aws:ecr:${this.region}:${this.account}:repository/batbern/${config.envName}/*`,
+            ],
+          }),
+
+          // RDS — pre-deploy database snapshot backup
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'rds:CreateDBSnapshot',
+              'rds:DescribeDBInstances',
+            ],
+            resources: [
+              `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
+            ],
+          }),
+
+          // Cognito — authenticate test users in post-deploy smoke step
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['cognito-idp:InitiateAuth'],
+            resources: [
+              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
+            ],
+          }),
+
+        ],
+      }),
     });
 
-    // Additional ECR permissions for Docker operations
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ecr:GetAuthorizationToken',
-        'ecr:BatchCheckLayerAvailability',
-        'ecr:GetDownloadUrlForLayer',
-        'ecr:BatchGetImage',
-        'ecr:PutImage',
-        'ecr:InitiateLayerUpload',
-        'ecr:UploadLayerPart',
-        'ecr:CompleteLayerUpload',
-        'ecr:DescribeRepositories',
-        'ecr:DescribeImages',  // Required for ECR image validation in deployment workflow
-        'ecr:ListImages',
-      ],
-      resources: ['*'], // GetAuthorizationToken requires '*'
-    }));
-
-    // ECS Permissions - Deploy services
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ecs:DescribeServices',
-        'ecs:DescribeTaskDefinition',
-        'ecs:DescribeTasks',
-        'ecs:ListServices',  // Required for fast-path deployment script
-        'ecs:ListTaskDefinitions',  // Required for post-deploy IAM simulation gate
-        'ecs:ListTasks',
-        'ecs:RegisterTaskDefinition',
-        'ecs:UpdateService',
-        'ecs:TagResource',
-      ],
-      resources: ['*'], // Will be refined when ECS services are deployed
-    }));
-
-    // RDS Permissions - Create snapshots for backup before deployment
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'rds:CreateDBSnapshot',
-        'rds:DescribeDBInstances',
-        'rds:DescribeDBSnapshots',
-        'rds:ListTagsForResource',
-        'rds:AddTagsToResource',
-      ],
-      resources: [
-        `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
-      ],
-    }));
-
-    // CloudWatch Logs - Write pipeline logs
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'logs:CreateLogGroup',
-        'logs:CreateLogStream',
-        'logs:PutLogEvents',
-        'logs:DescribeLogGroups',
-        'logs:DescribeLogStreams',
-      ],
-      resources: [
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/ecs/BATbern-${config.envName}-*`,
-      ],
-    }));
-
-    // Secrets Manager - Read database credentials for migrations
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'secretsmanager:GetSecretValue',
-        'secretsmanager:DescribeSecret',
-      ],
-      resources: [
-        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:batbern/${config.envName}/*`,
-        // Allow access to RDS-generated secrets (created by CDK with auto-generated names)
-        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:RdsClusterInstanceSecret*`,
-      ],
-    }));
-
-    // IAM PassRole - Required for ECS task execution
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['iam:PassRole'],
-      resources: [
-        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
-      ],
-      conditions: {
-        StringEquals: {
-          'iam:PassedToService': 'ecs-tasks.amazonaws.com',
-        },
-      },
-    }));
-
     // ═══════════════════════════════════════════════════════════
-    // CDK DEPLOYMENT PERMISSIONS
+    // CDK DEPLOYMENT POLICY
+    //
+    // Permissions needed for `cdk deploy` to create and manage all
+    // infrastructure resources via CloudFormation + CDK bootstrap roles.
+    // These are not directly called by workflow YAML steps.
     // ═══════════════════════════════════════════════════════════
 
-    // CloudFormation - Deploy and manage CDK stacks
-    // Note: Stacks can be in multiple regions (eu-central-1 for main resources, us-east-1 for DNS/ACM)
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cloudformation:CreateStack',
-        'cloudformation:UpdateStack',
-        'cloudformation:DeleteStack',
-        'cloudformation:DescribeStacks',
-        'cloudformation:DescribeStackEvents',
-        'cloudformation:DescribeStackResources',
-        'cloudformation:GetTemplate',
-        'cloudformation:ListStacks',
-        'cloudformation:ListStackResources',
-        'cloudformation:ListExports',
-        'cloudformation:ValidateTemplate',
-        'cloudformation:CreateChangeSet',
-        'cloudformation:DescribeChangeSet',
-        'cloudformation:ExecuteChangeSet',
-        'cloudformation:DeleteChangeSet',
-        'cloudformation:GetTemplateSummary',
-        'cloudformation:CancelUpdateStack',      // stuck-stack cleanup in deploy-staging.yml
-        'cloudformation:ContinueUpdateRollback', // stuck-stack cleanup in deploy-staging.yml
-      ],
-      resources: [
-        // Support stacks in all regions (DNS/ACM must be in us-east-1, others in primary region)
-        `arn:aws:cloudformation:*:${this.account}:stack/BATbern-${config.envName}-*/*`,
-        `arn:aws:cloudformation:*:${this.account}:stack/CDKToolkit/*`,
-      ],
-    }));
+    const cdkDeploymentPolicy = new iam.ManagedPolicy(this, 'CdkDeploymentPolicy', {
+      managedPolicyName: `batbern-${config.envName}-github-cdk-deployment`,
+      description: 'GitHub Actions CDK — permissions for cdk deploy and asset publishing',
+      document: new iam.PolicyDocument({
+        statements: [
 
-    // S3 - CDK asset bucket and application buckets
-    // Note: CDK asset buckets exist in multiple regions (eu-central-1 for main resources, us-east-1 for CloudFront/ACM)
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        's3:CreateBucket',
-        's3:DeleteBucket',
-        's3:PutBucketPolicy',
-        's3:DeleteBucketPolicy',
-        's3:GetBucketPolicy',
-        's3:PutBucketVersioning',
-        's3:PutBucketPublicAccessBlock',
-        's3:PutBucketEncryption',
-        's3:PutBucketLogging',
-        's3:PutBucketCors',
-        's3:PutObject',
-        's3:GetObject',
-        's3:DeleteObject',
-        's3:ListBucket',
-        's3:GetBucketLocation',
-        's3:GetBucketVersioning',
-        's3:PutLifecycleConfiguration',
-      ],
-      resources: [
-        // CDK asset buckets in all regions (wildcards because CDK creates buckets in multiple regions)
-        `arn:aws:s3:::cdk-*-assets-${this.account}-*`,
-        `arn:aws:s3:::cdk-*-assets-${this.account}-*/*`,
-        // Application buckets (CamelCase CDK logical names)
-        `arn:aws:s3:::BATbern-${config.envName}-*`,
-        `arn:aws:s3:::BATbern-${config.envName}-*/*`,
-        // Application buckets (lowercase physical names, e.g. batbern-content-staging)
-        `arn:aws:s3:::batbern-*-${config.envName}`,
-        `arn:aws:s3:::batbern-*-${config.envName}/*`,
-      ],
-    }));
+          // STS — assume CDK bootstrap roles (deploy, cfn-exec, file/image publishing, lookup)
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['sts:AssumeRole', 'sts:TagSession'],
+            resources: [
+              `arn:aws:iam::${this.account}:role/cdk-hnb659fds-deploy-role-${this.account}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-hnb659fds-cfn-exec-role-${this.account}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-hnb659fds-file-publishing-role-${this.account}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-hnb659fds-image-publishing-role-${this.account}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-hnb659fds-lookup-role-${this.account}-*`,
+            ],
+          }),
 
-    // IAM - Simulate policy evaluation for post-deploy permission gates (read-only, no side-effects)
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['iam:SimulatePrincipalPolicy'],
-      resources: [
-        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
-        `arn:aws:iam::${this.account}:role/cdk-*`,
-      ],
-    }));
+          // CloudFormation — full deploy/update lifecycle for CDK stacks
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'cloudformation:CreateStack',
+              'cloudformation:UpdateStack',
+              'cloudformation:DeleteStack',
+              'cloudformation:DescribeStackEvents',
+              'cloudformation:DescribeStackResources',
+              'cloudformation:GetTemplate',
+              'cloudformation:ListStacks',
+              'cloudformation:ListStackResources',
+              'cloudformation:ListExports',
+              'cloudformation:ValidateTemplate',
+              'cloudformation:CreateChangeSet',
+              'cloudformation:DescribeChangeSet',
+              'cloudformation:ExecuteChangeSet',
+              'cloudformation:DeleteChangeSet',
+              'cloudformation:GetTemplateSummary',
+            ],
+            resources: [
+              `arn:aws:cloudformation:*:${this.account}:stack/BATbern-${config.envName}-*/*`,
+              `arn:aws:cloudformation:*:${this.account}:stack/CDKToolkit/*`,
+            ],
+          }),
 
-    // IAM - Create and manage roles, policies for CDK resources
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'iam:CreateRole',
-        'iam:DeleteRole',
-        'iam:GetRole',
-        'iam:UpdateRole',
-        'iam:PutRolePolicy',
-        'iam:DeleteRolePolicy',
-        'iam:GetRolePolicy',
-        'iam:AttachRolePolicy',
-        'iam:DetachRolePolicy',
-        'iam:ListRolePolicies',
-        'iam:ListAttachedRolePolicies',
-        'iam:CreatePolicy',
-        'iam:DeletePolicy',
-        'iam:GetPolicy',
-        'iam:GetPolicyVersion',
-        'iam:ListPolicyVersions',
-        'iam:CreatePolicyVersion',
-        'iam:DeletePolicyVersion',
-        'iam:TagRole',
-        'iam:UntagRole',
-        'iam:TagPolicy',
-        'iam:UntagPolicy',
-      ],
-      resources: [
-        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
-        `arn:aws:iam::${this.account}:role/cdk-*`,
-        `arn:aws:iam::${this.account}:policy/BATbern-${config.envName}-*`,
-      ],
-    }));
+          // S3 — CDK asset buckets (multiple regions) + application buckets
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              's3:CreateBucket',
+              's3:DeleteBucket',
+              's3:PutBucketPolicy',
+              's3:DeleteBucketPolicy',
+              's3:GetBucketPolicy',
+              's3:PutBucketVersioning',
+              's3:PutBucketPublicAccessBlock',
+              's3:PutBucketEncryption',
+              's3:PutBucketLogging',
+              's3:PutBucketCors',
+              's3:PutObject',
+              's3:GetObject',
+              's3:DeleteObject',
+              's3:ListBucket',
+              's3:GetBucketLocation',
+              's3:GetBucketVersioning',
+              's3:PutLifecycleConfiguration',
+            ],
+            resources: [
+              // CDK asset buckets exist in multiple regions (eu-central-1 + us-east-1 for ACM/CloudFront)
+              `arn:aws:s3:::cdk-*-assets-${this.account}-*`,
+              `arn:aws:s3:::cdk-*-assets-${this.account}-*/*`,
+              `arn:aws:s3:::BATbern-${config.envName}-*`,
+              `arn:aws:s3:::BATbern-${config.envName}-*/*`,
+              `arn:aws:s3:::batbern-*-${config.envName}`,
+              `arn:aws:s3:::batbern-*-${config.envName}/*`,
+            ],
+          }),
 
-    // Lambda - CDK custom resources
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'lambda:CreateFunction',
-        'lambda:DeleteFunction',
-        'lambda:GetFunction',
-        'lambda:GetFunctionConfiguration',
-        'lambda:UpdateFunctionCode',
-        'lambda:UpdateFunctionConfiguration',
-        'lambda:InvokeFunction',
-        'lambda:ListFunctions',
-        'lambda:ListVersionsByFunction',
-        'lambda:PublishVersion',
-        'lambda:TagResource',
-        'lambda:UntagResource',
-        'lambda:AddPermission',
-        'lambda:RemovePermission',
-        'lambda:GetPolicy',
-      ],
-      resources: [
-        `arn:aws:lambda:${this.region}:${this.account}:function:BATbern-${config.envName}-*`,
-        `arn:aws:lambda:${this.region}:${this.account}:function:cdk-*`,
-      ],
-    }));
+          // ECR — Docker image push/pull for CDK image-publishing role
+          // GetAuthorizationToken requires '*'; push/pull scoped to our repositories
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['ecr:GetAuthorizationToken'],
+            resources: ['*'],
+          }),
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'ecr:BatchCheckLayerAvailability',
+              'ecr:GetDownloadUrlForLayer',
+              'ecr:BatchGetImage',
+              'ecr:PutImage',
+              'ecr:InitiateLayerUpload',
+              'ecr:UploadLayerPart',
+              'ecr:CompleteLayerUpload',
+              'ecr:DescribeRepositories',
+              'ecr:ListImages',
+            ],
+            resources: [
+              `arn:aws:ecr:${this.region}:${this.account}:repository/batbern/${config.envName}/*`,
+            ],
+          }),
 
-    // VPC and EC2 - Network infrastructure
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ec2:CreateVpc',
-        'ec2:DeleteVpc',
-        'ec2:DescribeVpcs',
-        'ec2:ModifyVpcAttribute',
-        'ec2:CreateSubnet',
-        'ec2:DeleteSubnet',
-        'ec2:DescribeSubnets',
-        'ec2:ModifySubnetAttribute',
-        'ec2:CreateRouteTable',
-        'ec2:DeleteRouteTable',
-        'ec2:DescribeRouteTables',
-        'ec2:CreateRoute',
-        'ec2:DeleteRoute',
-        'ec2:AssociateRouteTable',
-        'ec2:DisassociateRouteTable',
-        'ec2:CreateInternetGateway',
-        'ec2:DeleteInternetGateway',
-        'ec2:AttachInternetGateway',
-        'ec2:DetachInternetGateway',
-        'ec2:DescribeInternetGateways',
-        'ec2:CreateNatGateway',
-        'ec2:DeleteNatGateway',
-        'ec2:DescribeNatGateways',
-        'ec2:AllocateAddress',
-        'ec2:ReleaseAddress',
-        'ec2:DescribeAddresses',
-        'ec2:CreateSecurityGroup',
-        'ec2:DeleteSecurityGroup',
-        'ec2:DescribeSecurityGroups',
-        'ec2:AuthorizeSecurityGroupIngress',
-        'ec2:AuthorizeSecurityGroupEgress',
-        'ec2:RevokeSecurityGroupIngress',
-        'ec2:RevokeSecurityGroupEgress',
-        'ec2:CreateTags',
-        'ec2:DeleteTags',
-        'ec2:DescribeTags',
-        'ec2:DescribeAvailabilityZones',
-        'ec2:DescribeAccountAttributes',
-        'ec2:DescribeNetworkInterfaces',
-        'ec2:CreateNetworkInterface',
-        'ec2:DeleteNetworkInterface',
-        'ec2:ModifyNetworkInterfaceAttribute',
-      ],
-      resources: ['*'], // EC2 VPC operations often require '*'
-    }));
+          // IAM — create/manage roles and policies for CDK-provisioned resources
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'iam:CreateRole',
+              'iam:DeleteRole',
+              'iam:GetRole',
+              'iam:UpdateRole',
+              'iam:PutRolePolicy',
+              'iam:DeleteRolePolicy',
+              'iam:GetRolePolicy',
+              'iam:AttachRolePolicy',
+              'iam:DetachRolePolicy',
+              'iam:ListRolePolicies',
+              'iam:ListAttachedRolePolicies',
+              'iam:CreatePolicy',
+              'iam:DeletePolicy',
+              'iam:GetPolicy',
+              'iam:GetPolicyVersion',
+              'iam:ListPolicyVersions',
+              'iam:CreatePolicyVersion',
+              'iam:DeletePolicyVersion',
+              'iam:TagRole',
+              'iam:UntagRole',
+              'iam:TagPolicy',
+              'iam:UntagPolicy',
+            ],
+            resources: [
+              `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-*`,
+              `arn:aws:iam::${this.account}:policy/BATbern-${config.envName}-*`,
+            ],
+          }),
 
-    // RDS - Database infrastructure (expanded permissions)
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'rds:CreateDBInstance',
-        'rds:DeleteDBInstance',
-        'rds:ModifyDBInstance',
-        'rds:CreateDBCluster',
-        'rds:DeleteDBCluster',
-        'rds:ModifyDBCluster',
-        'rds:CreateDBSubnetGroup',
-        'rds:DeleteDBSubnetGroup',
-        'rds:DescribeDBSubnetGroups',
-        'rds:CreateDBParameterGroup',
-        'rds:DeleteDBParameterGroup',
-        'rds:DescribeDBParameterGroups',
-        'rds:ModifyDBParameterGroup',
-        'rds:AddTagsToResource',
-        'rds:RemoveTagsFromResource',
-        'rds:DescribeDBClusters',
-      ],
-      resources: [
-        `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:subgrp:BATbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:pg:BATbern-${config.envName}-*`,
-      ],
-    }));
+          // IAM PassRole — pass roles to CloudFormation, Lambda, and ECS during CDK deploy
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['iam:PassRole'],
+            resources: [
+              `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
+              `arn:aws:iam::${this.account}:role/cdk-*`,
+            ],
+            conditions: {
+              StringEquals: {
+                'iam:PassedToService': [
+                  'cloudformation.amazonaws.com',
+                  'lambda.amazonaws.com',
+                  'ecs-tasks.amazonaws.com',
+                ],
+              },
+            },
+          }),
 
-    // ElastiCache - Redis infrastructure
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'elasticache:CreateCacheCluster',
-        'elasticache:DeleteCacheCluster',
-        'elasticache:ModifyCacheCluster',
-        'elasticache:DescribeCacheClusters',
-        'elasticache:CreateReplicationGroup',
-        'elasticache:DeleteReplicationGroup',
-        'elasticache:ModifyReplicationGroup',
-        'elasticache:DescribeReplicationGroups',
-        'elasticache:CreateCacheSubnetGroup',
-        'elasticache:DeleteCacheSubnetGroup',
-        'elasticache:DescribeCacheSubnetGroups',
-        'elasticache:CreateCacheParameterGroup',
-        'elasticache:DeleteCacheParameterGroup',
-        'elasticache:DescribeCacheParameterGroups',
-        'elasticache:AddTagsToResource',
-        'elasticache:RemoveTagsFromResource',
-      ],
-      resources: [
-        `arn:aws:elasticache:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:replicationgroup:BATbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:subnetgroup:BATbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:parametergroup:BATbern-${config.envName}-*`,
-      ],
-    }));
+          // Lambda — CDK custom resources and Cognito trigger functions
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'lambda:CreateFunction',
+              'lambda:DeleteFunction',
+              'lambda:GetFunction',
+              'lambda:GetFunctionConfiguration',
+              'lambda:UpdateFunctionCode',
+              'lambda:UpdateFunctionConfiguration',
+              'lambda:InvokeFunction',
+              'lambda:ListFunctions',
+              'lambda:ListVersionsByFunction',
+              'lambda:PublishVersion',
+              'lambda:TagResource',
+              'lambda:UntagResource',
+              'lambda:AddPermission',
+              'lambda:RemovePermission',
+              'lambda:GetPolicy',
+            ],
+            resources: [
+              `arn:aws:lambda:${this.region}:${this.account}:function:BATbern-${config.envName}-*`,
+              `arn:aws:lambda:${this.region}:${this.account}:function:cdk-*`,
+            ],
+          }),
 
-    // Cognito - User authentication
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cognito-idp:CreateUserPool',
-        'cognito-idp:DeleteUserPool',
-        'cognito-idp:UpdateUserPool',
-        'cognito-idp:DescribeUserPool',
-        'cognito-idp:CreateUserPoolClient',
-        'cognito-idp:DeleteUserPoolClient',
-        'cognito-idp:UpdateUserPoolClient',
-        'cognito-idp:DescribeUserPoolClient',
-        'cognito-idp:CreateUserPoolDomain',
-        'cognito-idp:DeleteUserPoolDomain',
-        'cognito-idp:DescribeUserPoolDomain',
-        'cognito-idp:CreateGroup',
-        'cognito-idp:DeleteGroup',
-        'cognito-idp:SetUserPoolMfaConfig',
-        'cognito-idp:TagResource',
-        'cognito-idp:UntagResource',
-        'cognito-idp:InitiateAuth', // deploy-staging.yml: authenticate test users step
-      ],
-      resources: [
-        `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
-      ],
-    }));
+          // EC2 / VPC — network infrastructure provisioning
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'ec2:CreateVpc',
+              'ec2:DeleteVpc',
+              'ec2:DescribeVpcs',
+              'ec2:ModifyVpcAttribute',
+              'ec2:CreateSubnet',
+              'ec2:DeleteSubnet',
+              'ec2:DescribeSubnets',
+              'ec2:ModifySubnetAttribute',
+              'ec2:CreateRouteTable',
+              'ec2:DeleteRouteTable',
+              'ec2:DescribeRouteTables',
+              'ec2:CreateRoute',
+              'ec2:DeleteRoute',
+              'ec2:AssociateRouteTable',
+              'ec2:DisassociateRouteTable',
+              'ec2:CreateInternetGateway',
+              'ec2:DeleteInternetGateway',
+              'ec2:AttachInternetGateway',
+              'ec2:DetachInternetGateway',
+              'ec2:DescribeInternetGateways',
+              'ec2:CreateNatGateway',
+              'ec2:DeleteNatGateway',
+              'ec2:DescribeNatGateways',
+              'ec2:AllocateAddress',
+              'ec2:ReleaseAddress',
+              'ec2:DescribeAddresses',
+              'ec2:CreateSecurityGroup',
+              'ec2:DeleteSecurityGroup',
+              'ec2:DescribeSecurityGroups',
+              'ec2:AuthorizeSecurityGroupIngress',
+              'ec2:AuthorizeSecurityGroupEgress',
+              'ec2:RevokeSecurityGroupIngress',
+              'ec2:RevokeSecurityGroupEgress',
+              'ec2:CreateTags',
+              'ec2:DeleteTags',
+              'ec2:DescribeTags',
+              'ec2:DescribeAvailabilityZones',
+              'ec2:DescribeAccountAttributes',
+              'ec2:DescribeNetworkInterfaces',
+              'ec2:CreateNetworkInterface',
+              'ec2:DeleteNetworkInterface',
+              'ec2:ModifyNetworkInterfaceAttribute',
+            ],
+            resources: ['*'], // EC2 VPC operations require '*'
+          }),
 
-    // CloudFront - CDN for frontend
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cloudfront:CreateDistribution',
-        'cloudfront:GetDistribution',
-        'cloudfront:UpdateDistribution',
-        'cloudfront:DeleteDistribution',
-        'cloudfront:TagResource',
-        'cloudfront:UntagResource',
-        'cloudfront:CreateOriginAccessControl',
-        'cloudfront:GetOriginAccessControl',
-        'cloudfront:UpdateOriginAccessControl',
-        'cloudfront:DeleteOriginAccessControl',
-        'cloudfront:CreateInvalidation',
-      ],
-      resources: ['*'], // CloudFront doesn't support resource-level permissions
-    }));
+          // RDS — database infrastructure provisioning
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'rds:CreateDBInstance',
+              'rds:DeleteDBInstance',
+              'rds:ModifyDBInstance',
+              'rds:CreateDBCluster',
+              'rds:DeleteDBCluster',
+              'rds:ModifyDBCluster',
+              'rds:CreateDBSubnetGroup',
+              'rds:DeleteDBSubnetGroup',
+              'rds:DescribeDBSubnetGroups',
+              'rds:CreateDBParameterGroup',
+              'rds:DeleteDBParameterGroup',
+              'rds:DescribeDBParameterGroups',
+              'rds:ModifyDBParameterGroup',
+              'rds:AddTagsToResource',
+              'rds:RemoveTagsFromResource',
+              'rds:DescribeDBClusters',
+              'rds:DescribeDBSnapshots',
+              'rds:ListTagsForResource',
+            ],
+            resources: [
+              `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:subgrp:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:pg:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
+            ],
+          }),
 
-    // Secrets Manager - Expanded permissions
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'secretsmanager:CreateSecret',
-        'secretsmanager:DeleteSecret',
-        'secretsmanager:UpdateSecret',
-        'secretsmanager:PutSecretValue',
-        'secretsmanager:TagResource',
-        'secretsmanager:UntagResource',
-        'secretsmanager:RotateSecret',
-      ],
-      resources: [
-        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:batbern/${config.envName}/*`,
-      ],
-    }));
+          // ElastiCache — Redis infrastructure provisioning
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'elasticache:CreateCacheCluster',
+              'elasticache:DeleteCacheCluster',
+              'elasticache:ModifyCacheCluster',
+              'elasticache:DescribeCacheClusters',
+              'elasticache:CreateReplicationGroup',
+              'elasticache:DeleteReplicationGroup',
+              'elasticache:ModifyReplicationGroup',
+              'elasticache:DescribeReplicationGroups',
+              'elasticache:CreateCacheSubnetGroup',
+              'elasticache:DeleteCacheSubnetGroup',
+              'elasticache:DescribeCacheSubnetGroups',
+              'elasticache:CreateCacheParameterGroup',
+              'elasticache:DeleteCacheParameterGroup',
+              'elasticache:DescribeCacheParameterGroups',
+              'elasticache:AddTagsToResource',
+              'elasticache:RemoveTagsFromResource',
+            ],
+            resources: [
+              `arn:aws:elasticache:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
+              `arn:aws:elasticache:${this.region}:${this.account}:replicationgroup:BATbern-${config.envName}-*`,
+              `arn:aws:elasticache:${this.region}:${this.account}:subnetgroup:BATbern-${config.envName}-*`,
+              `arn:aws:elasticache:${this.region}:${this.account}:parametergroup:BATbern-${config.envName}-*`,
+            ],
+          }),
 
-    // KMS - Encryption keys
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'kms:CreateKey',
-        'kms:DescribeKey',
-        'kms:EnableKeyRotation',
-        'kms:PutKeyPolicy',
-        'kms:CreateAlias',
-        'kms:DeleteAlias',
-        'kms:UpdateAlias',
-        'kms:TagResource',
-        'kms:UntagResource',
-        'kms:ScheduleKeyDeletion',
-        'kms:Encrypt',
-        'kms:Decrypt',
-        'kms:GenerateDataKey',
-      ],
-      resources: [
-        `arn:aws:kms:${this.region}:${this.account}:key/*`,
-        `arn:aws:kms:${this.region}:${this.account}:alias/BATbern-${config.envName}-*`,
-      ],
-    }));
+          // Cognito — user pool infrastructure provisioning (CDK, not runtime auth)
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'cognito-idp:CreateUserPool',
+              'cognito-idp:DeleteUserPool',
+              'cognito-idp:UpdateUserPool',
+              'cognito-idp:DescribeUserPool',
+              'cognito-idp:CreateUserPoolClient',
+              'cognito-idp:DeleteUserPoolClient',
+              'cognito-idp:UpdateUserPoolClient',
+              'cognito-idp:DescribeUserPoolClient',
+              'cognito-idp:CreateUserPoolDomain',
+              'cognito-idp:DeleteUserPoolDomain',
+              'cognito-idp:DescribeUserPoolDomain',
+              'cognito-idp:CreateGroup',
+              'cognito-idp:DeleteGroup',
+              'cognito-idp:SetUserPoolMfaConfig',
+              'cognito-idp:TagResource',
+              'cognito-idp:UntagResource',
+            ],
+            resources: [
+              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
+            ],
+          }),
 
-    // SSM Parameter Store - Configuration parameters
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ssm:PutParameter',
-        'ssm:GetParameter',
-        'ssm:GetParameters',
-        'ssm:DeleteParameter',
-        'ssm:DescribeParameters',
-        'ssm:AddTagsToResource',
-        'ssm:RemoveTagsFromResource',
-      ],
-      resources: [
-        `arn:aws:ssm:${this.region}:${this.account}:parameter/batbern/${config.envName}/*`,
-        // CDK bootstrap parameters - required for CDK deployments
-        `arn:aws:ssm:*:${this.account}:parameter/cdk-bootstrap/*`,
-      ],
-    }));
+          // CloudFront — CDN provisioning; no resource-level permissions supported
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'cloudfront:CreateDistribution',
+              'cloudfront:GetDistribution',
+              'cloudfront:UpdateDistribution',
+              'cloudfront:DeleteDistribution',
+              'cloudfront:TagResource',
+              'cloudfront:UntagResource',
+              'cloudfront:CreateOriginAccessControl',
+              'cloudfront:GetOriginAccessControl',
+              'cloudfront:UpdateOriginAccessControl',
+              'cloudfront:DeleteOriginAccessControl',
+              'cloudfront:CreateInvalidation',
+            ],
+            resources: ['*'],
+          }),
 
-    // CloudWatch - Alarms, dashboards, and additional log permissions
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cloudwatch:PutMetricAlarm',
-        'cloudwatch:DeleteAlarms',
-        'cloudwatch:DescribeAlarms',
-        'cloudwatch:PutDashboard',
-        'cloudwatch:GetDashboard',
-        'cloudwatch:DeleteDashboards',
-        'cloudwatch:ListDashboards',
-        'logs:DeleteLogGroup',
-        'logs:PutRetentionPolicy',
-        'logs:DeleteRetentionPolicy',
-        'logs:TagLogGroup',
-        'logs:UntagLogGroup',
-      ],
-      resources: [
-        `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:BATbern-${config.envName}-*`,
-        `arn:aws:logs:${this.region}:${this.account}:log-group:*`,
-      ],
-    }));
+          // Secrets Manager — create/manage secrets and read credentials
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'secretsmanager:GetSecretValue',
+              'secretsmanager:DescribeSecret',
+              'secretsmanager:CreateSecret',
+              'secretsmanager:DeleteSecret',
+              'secretsmanager:UpdateSecret',
+              'secretsmanager:PutSecretValue',
+              'secretsmanager:TagResource',
+              'secretsmanager:UntagResource',
+              'secretsmanager:RotateSecret',
+            ],
+            resources: [
+              `arn:aws:secretsmanager:${this.region}:${this.account}:secret:batbern/${config.envName}/*`,
+              // RDS-generated secrets (auto-named by CDK)
+              `arn:aws:secretsmanager:${this.region}:${this.account}:secret:RdsClusterInstanceSecret*`,
+            ],
+          }),
 
-    // ACM - SSL/TLS Certificates
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'acm:RequestCertificate',
-        'acm:DescribeCertificate',
-        'acm:DeleteCertificate',
-        'acm:AddTagsToCertificate',
-        'acm:RemoveTagsFromCertificate',
-        'acm:ListCertificates',
-        'acm:GetCertificate',
-      ],
-      resources: ['*'], // ACM doesn't support resource-level permissions for some actions
-    }));
+          // KMS — encryption key management
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'kms:CreateKey',
+              'kms:DescribeKey',
+              'kms:EnableKeyRotation',
+              'kms:PutKeyPolicy',
+              'kms:CreateAlias',
+              'kms:DeleteAlias',
+              'kms:UpdateAlias',
+              'kms:TagResource',
+              'kms:UntagResource',
+              'kms:ScheduleKeyDeletion',
+              'kms:Encrypt',
+              'kms:Decrypt',
+              'kms:GenerateDataKey',
+            ],
+            resources: [
+              `arn:aws:kms:${this.region}:${this.account}:key/*`,
+              `arn:aws:kms:${this.region}:${this.account}:alias/BATbern-${config.envName}-*`,
+            ],
+          }),
 
-    // Route53 - DNS management
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'route53:CreateHostedZone',
-        'route53:GetHostedZone',
-        'route53:DeleteHostedZone',
-        'route53:ListHostedZones',
-        'route53:ChangeResourceRecordSets',
-        'route53:GetChange',
-        'route53:ListResourceRecordSets',
-        'route53:ChangeTagsForResource',
-      ],
-      resources: [
-        `arn:aws:route53:::hostedzone/*`,
-        `arn:aws:route53:::change/*`,
-      ],
-    }));
+          // SSM Parameter Store — configuration parameters + CDK bootstrap params
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'ssm:PutParameter',
+              'ssm:GetParameter',
+              'ssm:GetParameters',
+              'ssm:DeleteParameter',
+              'ssm:DescribeParameters',
+              'ssm:AddTagsToResource',
+              'ssm:RemoveTagsFromResource',
+            ],
+            resources: [
+              `arn:aws:ssm:${this.region}:${this.account}:parameter/batbern/${config.envName}/*`,
+              // CDK bootstrap parameters — required for CDK deployments
+              `arn:aws:ssm:*:${this.account}:parameter/cdk-bootstrap/*`,
+            ],
+          }),
 
-    // SSO and pass role for various services
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'iam:PassRole',
-      ],
-      resources: [
-        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
-        `arn:aws:iam::${this.account}:role/cdk-*`,
-      ],
-      conditions: {
-        StringEquals: {
-          'iam:PassedToService': [
-            'cloudformation.amazonaws.com',
-            'lambda.amazonaws.com',
-            'ecs-tasks.amazonaws.com',
-          ],
-        },
-      },
-    }));
+          // CloudWatch + Logs — alarms, dashboards, log groups
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'logs:CreateLogGroup',
+              'logs:CreateLogStream',
+              'logs:PutLogEvents',
+              'logs:DescribeLogGroups',
+              'logs:DescribeLogStreams',
+              'logs:DeleteLogGroup',
+              'logs:PutRetentionPolicy',
+              'logs:DeleteRetentionPolicy',
+              'logs:TagLogGroup',
+              'logs:UntagLogGroup',
+              'cloudwatch:PutMetricAlarm',
+              'cloudwatch:DeleteAlarms',
+              'cloudwatch:DescribeAlarms',
+              'cloudwatch:PutDashboard',
+              'cloudwatch:GetDashboard',
+              'cloudwatch:DeleteDashboards',
+              'cloudwatch:ListDashboards',
+            ],
+            resources: [
+              `arn:aws:logs:${this.region}:${this.account}:log-group:*`,
+              `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:BATbern-${config.envName}-*`,
+            ],
+          }),
 
-    // Allow assuming CDK bootstrap roles (required for CDK deployments)
-    // CDK uses role assumption to deploy stacks and publish assets
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'sts:AssumeRole',
-        'sts:TagSession',
-      ],
-      resources: [
-        // CDK deployment role - deploys CloudFormation stacks
-        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-deploy-role-${this.account}-*`,
-        // CloudFormation execution role - used by CloudFormation to create resources
-        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-cfn-exec-role-${this.account}-*`,
-        // File publishing role - uploads assets to S3
-        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-file-publishing-role-${this.account}-*`,
-        // Image publishing role - pushes Docker images to ECR
-        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-image-publishing-role-${this.account}-*`,
-        // Lookup role - reads existing resources for context
-        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-lookup-role-${this.account}-*`,
-      ],
-    }));
+          // ACM — SSL/TLS certificates; no resource-level permissions for some actions
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'acm:RequestCertificate',
+              'acm:DescribeCertificate',
+              'acm:DeleteCertificate',
+              'acm:AddTagsToCertificate',
+              'acm:RemoveTagsFromCertificate',
+              'acm:ListCertificates',
+              'acm:GetCertificate',
+            ],
+            resources: ['*'],
+          }),
 
-    // ECS Cluster management (expanded)
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ecs:CreateCluster',
-        'ecs:DeleteCluster',
-        'ecs:DescribeClusters',
-        'ecs:CreateService',
-        'ecs:DeleteService',
-        'ecs:DeregisterTaskDefinition',
-        'ecs:TagResource',
-        'ecs:UntagResource',
-      ],
-      resources: ['*'],
-    }));
+          // Route53 — DNS record management
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'route53:CreateHostedZone',
+              'route53:GetHostedZone',
+              'route53:DeleteHostedZone',
+              'route53:ListHostedZones',
+              'route53:ChangeResourceRecordSets',
+              'route53:GetChange',
+              'route53:ListResourceRecordSets',
+              'route53:ChangeTagsForResource',
+            ],
+            resources: [
+              'arn:aws:route53:::hostedzone/*',
+              'arn:aws:route53:::change/*',
+            ],
+          }),
 
-    // Application Auto Scaling
-    githubActionsRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'application-autoscaling:RegisterScalableTarget',
-        'application-autoscaling:DeregisterScalableTarget',
-        'application-autoscaling:DescribeScalableTargets',
-        'application-autoscaling:PutScalingPolicy',
-        'application-autoscaling:DeleteScalingPolicy',
-        'application-autoscaling:DescribeScalingPolicies',
-      ],
-      resources: ['*'],
-    }));
+          // ECS — cluster and service lifecycle management (provisioning, not runtime)
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'ecs:CreateCluster',
+              'ecs:DeleteCluster',
+              'ecs:CreateService',
+              'ecs:DeleteService',
+              'ecs:DeregisterTaskDefinition',
+              'ecs:DescribeTasks',
+              'ecs:ListTasks',
+              'ecs:TagResource',
+              'ecs:UntagResource',
+            ],
+            resources: ['*'],
+          }),
+
+          // Application Auto Scaling — ECS service scaling policies
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'application-autoscaling:RegisterScalableTarget',
+              'application-autoscaling:DeregisterScalableTarget',
+              'application-autoscaling:DescribeScalableTargets',
+              'application-autoscaling:PutScalingPolicy',
+              'application-autoscaling:DeleteScalingPolicy',
+              'application-autoscaling:DescribeScalingPolicies',
+            ],
+            resources: ['*'],
+          }),
+
+        ],
+      }),
+    });
+
+    githubActionsRole.addManagedPolicy(workflowRuntimePolicy);
+    githubActionsRole.addManagedPolicy(cdkDeploymentPolicy);
 
     this.githubActionsRole = githubActionsRole;
 
@@ -713,7 +735,6 @@ export class CICDStack extends cdk.Stack {
     // CLOUDWATCH LOG GROUPS
     // ═══════════════════════════════════════════════════════════
 
-    // Log group for CI/CD pipeline logs
     const pipelineLogGroup = new cdk.aws_logs.LogGroup(this, 'PipelineLogGroup', {
       logGroupName: `/aws/cicd/BATbern-${config.envName}/pipeline`,
       retention: config.envName === 'production'
