@@ -400,6 +400,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         handleAutoSave(changedFields);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedFormValues, mode, isDirty, event, hasEditPermission]);
 
   const handleAutoSave = async (changedFields: PartialEventFormData) => {

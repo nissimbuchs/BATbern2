@@ -15,7 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,16 +33,16 @@ import static org.mockito.Mockito.when;
  * Integration test for EventArchivalCleanupService AC5:
  * "Task cancellation is preserved even when best-effort steps fail."
  *
- * Uses a @MockBean for {@link ArchivalBestEffortSteps} to inject controlled failures.
+ * Uses a @MockitoBean for {@link ArchivalBestEffortSteps} to inject controlled failures.
  * This requires a separate Spring context from EventArchivalCleanupIntegrationTest
- * (the @MockBean changes the application context configuration).
+ * (the @MockitoBean changes the application context configuration).
  *
  * NOT annotated with @Transactional — each operation commits its own transaction.
  */
 @SpringBootTest
 class EventArchivalCleanupAc5IntegrationTest extends AbstractIntegrationTest {
 
-    @MockBean
+    @MockitoBean
     private ArchivalBestEffortSteps bestEffortSteps;
 
     @Autowired

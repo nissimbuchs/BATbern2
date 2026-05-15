@@ -129,6 +129,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
       }
       setErrors({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
   const validateEmail = (email: string): boolean => {

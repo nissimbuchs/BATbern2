@@ -106,7 +106,7 @@ const PresentationUpload = ({
 
       return true;
     },
-    [onError]
+    [onError, t]
   );
 
   /**

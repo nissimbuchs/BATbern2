@@ -9,7 +9,7 @@ import ch.batbern.events.service.EventPhotoService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -41,7 +41,7 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     EventPhotoService photoService;
 
     private static final String EVENT_CODE = "BATbern42";

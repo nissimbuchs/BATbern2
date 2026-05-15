@@ -82,6 +82,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
         setShowArchived(includeArchivedParam === 'true');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
   // Update URL when filters change
@@ -107,6 +108,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   useEffect(() => {
     onFiltersChange({ ...filters, search: debouncedSearchQuery });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {

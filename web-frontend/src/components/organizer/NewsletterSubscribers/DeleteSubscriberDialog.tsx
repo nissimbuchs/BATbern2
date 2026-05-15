@@ -45,7 +45,7 @@ const DeleteSubscriberDialog: React.FC<DeleteSubscriberDialogProps> = ({
 
   React.useEffect(() => {
     if (open) mutation.reset();
-  }, [open]);
+  }, [open, mutation]);
 
   const handleConfirm = () => {
     if (!subscriber?.id) return;

@@ -43,7 +43,7 @@ const UnsuppressDialog: React.FC<UnsuppressDialogProps> = ({
 
   React.useEffect(() => {
     if (open) mutation.reset();
-  }, [open]);
+  }, [open, mutation]);
 
   const handleConfirm = () => {
     if (!subscriber?.id) return;

@@ -20,9 +20,9 @@ spring:
       max-lifetime: 1800000
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate # Let Flyway manage schema
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false
     properties:
       hibernate:
@@ -190,7 +190,6 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: true

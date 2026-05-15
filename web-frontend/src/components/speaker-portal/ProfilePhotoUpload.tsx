@@ -96,7 +96,7 @@ const ProfilePhotoUpload = ({
 
       return true;
     },
-    [onError]
+    [onError, t]
   );
 
   /**

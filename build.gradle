@@ -12,9 +12,9 @@ buildscript {
         classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
 
         // Flyway
-        classpath 'org.flywaydb:flyway-gradle-plugin:11.17.0'
+        classpath 'org.flywaydb:flyway-gradle-plugin:11.18.0'
         classpath 'org.postgresql:postgresql:42.7.7'
-        classpath 'org.flywaydb:flyway-database-postgresql:11.17.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:11.18.0'
 
         // OpenAPI Generator
         classpath 'org.openapitools:openapi-generator-gradle-plugin:7.2.0'
@@ -98,6 +98,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             timeout = java.time.Duration.ofMinutes(20)
             systemProperty 'junit.jupiter.execution.timeout.default', '5m'
             systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'
+            jvmArgs '-XX:+EnableDynamicAgentLoading'
         }
         
         // Jacoco configuration

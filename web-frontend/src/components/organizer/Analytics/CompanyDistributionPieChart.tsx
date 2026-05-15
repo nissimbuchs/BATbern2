@@ -81,12 +81,11 @@ const CompanyDistributionPieChart = ({
 
   const { data: eventDistData, isLoading: eventLoading } = useCompanyDistribution(selectedEvent);
 
-  const rawDistribution: CompanyAttendanceShare[] = selectedEvent
-    ? (eventDistData?.distribution ?? [])
-    : allTimeDistribution;
-
   // Apply Top N filter (pin partner company even if outside top N)
   const distribution: CompanyAttendanceShare[] = useMemo(() => {
+    const rawDistribution: CompanyAttendanceShare[] = selectedEvent
+      ? (eventDistData?.distribution ?? [])
+      : allTimeDistribution;
     if (topN == null) {
       return rawDistribution;
     }
@@ -96,7 +95,7 @@ const CompanyDistributionPieChart = ({
       if (own) slice.push(own);
     }
     return slice;
-  }, [rawDistribution, topN, partnerCompany]);
+  }, [selectedEvent, eventDistData?.distribution, allTimeDistribution, topN, partnerCompany]);
 
   const isLoading = parentLoading || (!!selectedEvent && eventLoading);
 

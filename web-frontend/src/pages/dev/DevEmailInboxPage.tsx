@@ -79,6 +79,7 @@ export default function DevEmailInboxPage() {
 
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClear = async () => {

@@ -52,7 +52,7 @@ const SpeakerMagicLoginPage = () => {
         setErrorMessage(message);
         setPageState('error');
       });
-  }, [jwt, navigate]);
+  }, [jwt, navigate, t]);
 
   return (
     <PublicLayout>

@@ -206,7 +206,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
         return null;
       }
     },
-    [validateFile, handleError, onUploadSuccess]
+    [validateFile, handleError, onUploadSuccess, uploadEndpoint]
   );
 
   const reset = useCallback(() => {

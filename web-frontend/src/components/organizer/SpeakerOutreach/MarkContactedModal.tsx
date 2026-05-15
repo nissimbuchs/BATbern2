@@ -80,6 +80,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
       });
       setErrors({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const validateForm = (): boolean => {

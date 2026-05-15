@@ -343,6 +343,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     return () => {
       sim.stop();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── INIT NODES FROM SESSION DATA ─────────────────────────────────────────
@@ -467,6 +468,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     }
 
     renderAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionData]);
 
   // ─── BLOB RESIZE ──────────────────────────────────────────────────────────
@@ -1016,6 +1018,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         .select<SVGPathElement>('path.blob-shape')
         .attr('filter', isSelected ? 'url(#gold-glow)' : null);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── RENDER ALL NODES ─────────────────────────────────────────────────────
@@ -1055,6 +1058,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       );
       simRef.current.alpha(0.3).restart();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderNode = (
@@ -1622,6 +1626,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       ghost.topicCode
     );
     syncTreeSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── ADD BLUE BLOB ────────────────────────────────────────────────────────
@@ -1675,6 +1680,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
       return id;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [eventCode]
   );
 
@@ -1998,6 +2004,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptBlob, showInput, blueBlobIds, renderAll, removeBlueBlobById]);
 
   // ─── WINDOW RESIZE HANDLER ────────────────────────────────────────────────

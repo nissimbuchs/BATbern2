@@ -43,7 +43,7 @@ const UnsubscribeDialog: React.FC<UnsubscribeDialogProps> = ({
 
   React.useEffect(() => {
     if (open) mutation.reset();
-  }, [open]);
+  }, [open, mutation]);
 
   const handleConfirm = () => {
     if (!subscriber?.id) return;

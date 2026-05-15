@@ -166,7 +166,7 @@ export default function ContentSubmissionPage() {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [token, contentInfo?.canSubmitContent, isDirty, formState, isSubmitted]);
+  }, [token, contentInfo?.canSubmitContent, isDirty, formState, isSubmitted, saveDraftMutation]);
 
   // Handle form field changes
   const handleFieldChange = useCallback(

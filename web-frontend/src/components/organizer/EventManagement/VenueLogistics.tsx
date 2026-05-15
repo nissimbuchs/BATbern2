@@ -97,6 +97,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     // Clear errors and save
     setErrors({});
     handleAutoSave(debouncedFormData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedFormData]);
 
   // Validation logic

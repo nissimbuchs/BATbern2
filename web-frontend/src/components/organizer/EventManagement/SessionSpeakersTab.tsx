@@ -84,6 +84,7 @@ export const SessionSpeakersTab: React.FC<SessionSpeakersTabProps> = ({ session 
   // Sync when a different session is opened (sessionSlug changes)
   useEffect(() => {
     setLocalSpeakers(session.speakers ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.sessionSlug]);
 
   const hasPrimary = localSpeakers.some((s) => s.speakerRole === 'PRIMARY_SPEAKER');

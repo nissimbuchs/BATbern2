@@ -26,10 +26,10 @@ interface SpeakerGridProps {
   sessions: Session[];
 }
 
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+
 export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   const { t } = useTranslation('events');
-
-  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
 
   // Aggregate speakers from non-structural sessions only
   const speakersWithSessions = useMemo(() => {
