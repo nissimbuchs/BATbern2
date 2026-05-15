@@ -179,7 +179,7 @@ development_status:
   # Plan: docs/plans/speaker-workflow-refactor.md  ·  Stories: docs/prd/epic-11-speaker-workflow-refactor.md
   epic-11: in-progress
   11-a-1-align-speaker-workflow-documentation-to-adr-009: done                  # rewrite PRD/03-data-arch/06a-state-machines/04-api/06-backend/06b-lifecycle/ADR-004/CLAUDE.md per ADR-009; net-zero code; Phase A; no prereqs
-  11-b-1-reduce-speakerworkflowstate-enum-to-8-states: ready-for-dev           # shared-kernel: remove SLOT_ASSIGNED/CONFIRMED/OVERFLOW/WITHDREW + TENTATIVE; add SpeakerPromotedToReadyEvent; Phase B; no prereqs
+  11-b-1-reduce-speakerworkflowstate-enum-to-8-states: review                  # shared-kernel: remove SLOT_ASSIGNED/CONFIRMED/OVERFLOW/WITHDREW + TENTATIVE; add SpeakerPromotedToReadyEvent; Phase B; no prereqs
   11-b-2-speakerworkflowservice-sole-status-writer: backlog                    # delete StatusTransitionValidator; single-writer transition() with side-effect hooks (provisioning/slot-gate/emails); delegate Status+Response services; Phase B; prereq: 11-b-1
   11-b-3-migrate-legacy-status-drop-tentative-cols-derived-flags: backlog      # Flyway: legacy status mapping per §2.2 + drop overflow tables + drop is_tentative cols + derived is_slot_assigned/is_publishable + tighten PUT status API; Phase B; prereq: 11-b-2
   11-c-1-drop-speakers-table-remove-speaker-coordination-refs: backlog         # Flyway drop speakers; verify user_profiles unchanged; speaker-coordination remains thin shell per §6.2; Phase C; prereq: 11-b-*

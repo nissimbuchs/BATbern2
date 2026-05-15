@@ -1,6 +1,6 @@
 # Story 11.B.1: Reduce `SpeakerWorkflowState` enum to 8 states; remove `TENTATIVE` response
 
-Status: ready-for-dev
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -203,100 +203,53 @@ The AC are pinned to ADR-009 §0.1 (8-state list), §0.6 (TENTATIVE removed), §
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Establish baseline** (AC: all)
-  - [ ] 1.1 Read `docs/architecture/ADR-009-unified-speaker-workflow.md` §0.1 (state table), §0.6 (TENTATIVE removed), §0.7 (OVERFLOW/WITHDREW removed), and §"`SpeakerWorkflowService.transition()` skeleton" lines 406-481 (canonical enum declaration).
-  - [ ] 1.2 Read `docs/prd/epic-11-speaker-workflow-refactor.md` Story 11.B.1 section (lines 512-553) — confirms AC come from PRD.
-  - [ ] 1.3 Read all five files this story will modify or create against:
+- [x] **Task 1 — Establish baseline** (AC: all)
+  - [x] 1.1 Read `docs/architecture/ADR-009-unified-speaker-workflow.md` §0.1 (state table), §0.6 (TENTATIVE removed), §0.7 (OVERFLOW/WITHDREW removed), and §"`SpeakerWorkflowService.transition()` skeleton" lines 406-481 (canonical enum declaration).
+  - [x] 1.2 Read `docs/prd/epic-11-speaker-workflow-refactor.md` Story 11.B.1 section (lines 512-553) — confirms AC come from PRD.
+  - [x] 1.3 Read all five files this story will modify or create against:
     - `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerWorkflowState.java` (current 12-value enum)
     - `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerResponseType.java` (current 3-value enum)
     - `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerInvitationSentEvent.java` (pattern reference for new event)
     - `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerResponseReceivedEvent.java` (pattern reference — uses builder + `getAggregateId()`)
     - `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerAcceptedEvent.java` (older event — read for context only; do NOT copy its hand-written builder; follow the `SpeakerResponseReceivedEvent` Lombok `@Builder` pattern instead)
-  - [ ] 1.4 Read `shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerInvitedEventTest.java` (the only existing speaker-event test — use as the test pattern template).
-  - [ ] 1.5 Read `shared-kernel/CHANGELOG.md` to confirm format and locate the insertion point.
+  - [x] 1.4 Read `shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerInvitedEventTest.java` (the only existing speaker-event test — use as the test pattern template).
+  - [x] 1.5 Read `shared-kernel/CHANGELOG.md` to confirm format and locate the insertion point.
 
-- [ ] **Task 2 — Update `SpeakerWorkflowState`** (AC1, AC2)
-  - [ ] 2.1 Open the file and rewrite the file-level Javadoc to reference ADR-009 and the 5 workflow phases (see AC1 for the phase list).
-  - [ ] 2.2 Delete the four enum constants `SLOT_ASSIGNED`, `CONFIRMED`, `WITHDREW`, `OVERFLOW` along with their Javadoc blocks.
-  - [ ] 2.3 Reorder the remaining constants if needed to match the canonical ADR-009 declaration order: `IDENTIFIED, CONTACTED, READY, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED`. (Note: the current file order is `IDENTIFIED, INVITED, CONTACTED, READY, ACCEPTED, DECLINED, CONTENT_SUBMITTED, QUALITY_REVIEWED, SLOT_ASSIGNED, CONFIRMED, WITHDREW, OVERFLOW` — so `INVITED` needs to move from position 2 to position 4, after `READY`. Be careful: enum reordering can affect ordinal-based logic; verify with a quick grep `grep -rn "ordinal()" shared-kernel/` — currently no ordinal-based logic exists in shared-kernel, so reorder is safe.)
-  - [ ] 2.4 Rewrite each constant's Javadoc per AC2 to match ADR-009 §0.1 + §0.2 + §0.4 + §0.5 + §0.7.
-  - [ ] 2.5 Verify no Checkstyle violations (project uses NeedBraces, OperatorWrap, MemberName, UnusedImports — Javadoc edits shouldn't trip these but run `./gradlew :shared-kernel:checkstyleMain` to be sure).
+- [x] **Task 2 — Update `SpeakerWorkflowState`** (AC1, AC2)
+  - [x] 2.1 Open the file and rewrite the file-level Javadoc to reference ADR-009 and the 5 workflow phases (see AC1 for the phase list).
+  - [x] 2.2 Delete the four enum constants `SLOT_ASSIGNED`, `CONFIRMED`, `WITHDREW`, `OVERFLOW` along with their Javadoc blocks.
+  - [x] 2.3 Reorder the remaining constants to match the canonical ADR-009 declaration order: `IDENTIFIED, CONTACTED, READY, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED`. Grep confirmed no `.ordinal()` usage anywhere in shared-kernel.
+  - [x] 2.4 Rewrite each constant's Javadoc per AC2 to match ADR-009 §0.1 + §0.2 + §0.4 + §0.5 + §0.7.
+  - [x] 2.5 Verify no Checkstyle violations. Initial run flagged 2 LineLength violations on the phase-comment block; fixed by wrapping the long lines under 120 chars. Re-ran `./gradlew :shared-kernel:checkstyleMain` — clean.
 
-- [ ] **Task 3 — Update `SpeakerResponseType`** (AC3)
-  - [ ] 3.1 Open the file and rewrite the file-level Javadoc to reference ADR-009 §0.6 and remove all "tentative" language.
-  - [ ] 3.2 Delete the `TENTATIVE` enum constant along with its Javadoc block.
-  - [ ] 3.3 Rewrite the `ACCEPT` Javadoc to drop the "Token is consumed" line and keep workflow-transition semantics.
-  - [ ] 3.4 Rewrite the `DECLINE` Javadoc to drop the "Token is consumed" line and keep workflow-transition semantics.
-  - [ ] 3.5 Update the `@see` reference at the file foot — it currently points to `ch.batbern.events.service.SpeakerResponseService`; leave the reference but note that the service itself will be heavily refactored in 11.B.2.
+- [x] **Task 3 — Update `SpeakerResponseType`** (AC3)
+  - [x] 3.1 Rewrote the file-level Javadoc to reference ADR-009 §0.6 and removed all "tentative" language.
+  - [x] 3.2 Deleted the `TENTATIVE` enum constant along with its Javadoc block.
+  - [x] 3.3 Rewrote the `ACCEPT` Javadoc to drop the "Token is consumed" line and keep workflow-transition semantics.
+  - [x] 3.4 Rewrote the `DECLINE` Javadoc to drop the "Token is consumed" line and keep workflow-transition semantics; clarified that the decline reason is stored in `speaker_status_history` (replaces the removed `WITHDREW` path).
+  - [x] 3.5 Kept the `@see ch.batbern.events.service.SpeakerResponseService` reference at the file foot. (Service refactor is 11.B.2's concern.)
 
-- [ ] **Task 4 — Create `SpeakerPromotedToReadyEvent`** (AC4)
-  - [ ] 4.1 Create `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerPromotedToReadyEvent.java`.
-  - [ ] 4.2 Model the class after `SpeakerResponseReceivedEvent` (Lombok `@Builder` on the constructor, `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, `getAggregateId()` override). Payload mirrors `SpeakerInvitationSentEvent` (speakerPoolId + eventCode + username + email + timestamp + actor) — but with `promotedAt` and `promotedByUsername` instead of `sentAt` and `invitedBy`.
-  - [ ] 4.3 Required fields per AC4: `speakerPoolId`, `eventCode`, `username`, `email`, `promotedAt`, `promotedByUsername`.
-  - [ ] 4.4 Constructor calls `super(speakerPoolId, "SpeakerPromotedToReadyEvent", promotedByUsername)`.
-  - [ ] 4.5 Constructor validates non-null required fields with `NullPointerException("X is marked non-null but is null")` messages (mirror the pattern in `SpeakerInvitationSentEvent` lines 84-95).
-  - [ ] 4.6 Default `promotedAt` to `Instant.now()` if null.
-  - [ ] 4.7 Annotate the constructor with Lombok `@Builder` following `SpeakerResponseReceivedEvent` lines 47-55 (annotation immediately above the public constructor). Add `import lombok.Builder;`. The generated `SpeakerPromotedToReadyEvent.builder()` will expose one fluent setter per constructor argument and a `build()` method. The constructor body's `super(...)` call + null checks + `Instant.now()` fallback all execute as written — Lombok only generates the outer builder class, it does not interfere with the constructor body. Do NOT mark the class itself with `@Builder` (that would conflict with the `@NoArgsConstructor`); the annotation goes on the constructor only.
-  - [ ] 4.8 Override `getAggregateId()` to return the `speakerPoolId` (mirror `SpeakerResponseReceivedEvent.getAggregateId()` at line 76-78).
-  - [ ] 4.9 Override `getEventName()` returning `"SpeakerPromotedToReadyEvent"`, annotated `@JsonIgnore`.
-  - [ ] 4.10 Add class-level Javadoc with the usage example block and the idempotency note from AC4.
+- [x] **Task 4 — Create `SpeakerPromotedToReadyEvent`** (AC4)
+  - [x] 4.1 Created `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerPromotedToReadyEvent.java`.
+  - [x] 4.2 Modelled on `SpeakerResponseReceivedEvent` (Lombok `@Builder` on the constructor, `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, `getAggregateId()` override).
+  - [x] 4.3 Required fields: `speakerPoolId`, `eventCode`, `username`, `email`, `promotedAt`, `promotedByUsername`.
+  - [x] 4.4 Constructor calls `super(speakerPoolId, "SpeakerPromotedToReadyEvent", promotedByUsername)`.
+  - [x] 4.5 Constructor validates non-null required fields with `NullPointerException("X is marked non-null but is null")` messages.
+  - [x] 4.6 Default `promotedAt` to `Instant.now()` if the builder argument is null.
+  - [x] 4.7 `@Builder` annotation placed on the public constructor (not the class) so it composes with `@NoArgsConstructor(access = PROTECTED)`.
+  - [x] 4.8 Override `getAggregateId()` to return `speakerPoolId`.
+  - [x] 4.9 Override `getEventName()` returning `"SpeakerPromotedToReadyEvent"`, annotated `@JsonIgnore`.
+  - [x] 4.10 Added class-level Javadoc with usage example and the idempotency note from AC4.
 
-- [ ] **Task 5 — Add `SpeakerWorkflowStateTest`** (AC6)
-  - [ ] 5.1 Create `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerWorkflowStateTest.java`.
-  - [ ] 5.2 Test 1: `should_haveExactly8Values_when_enumInspected` — `assertThat(SpeakerWorkflowState.values()).hasSize(8)`.
-  - [ ] 5.3 Test 2: `should_containAll8ExpectedStates_when_enumInspected` — assert by name that each of the 8 states is present using `EnumSet.allOf(SpeakerWorkflowState.class)` + AssertJ `.containsExactlyInAnyOrder`.
-  - [ ] 5.4 Test 3-6: One test each for each removed constant — `should_throwIllegalArgumentException_when_valueOfCalled_with{RemovedConstantName}`.
-  - [ ] 5.5 Use `@DisplayName` annotations and `should_<verb>_when_<context>` naming per CLAUDE.md test conventions.
-
-- [ ] **Task 6 — Add `SpeakerResponseTypeTest`** (AC6)
-  - [ ] 6.1 Create `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerResponseTypeTest.java`.
-  - [ ] 6.2 Test 1: `should_haveExactly2Values_when_enumInspected`.
-  - [ ] 6.3 Test 2: `should_containAcceptAndDecline_when_enumInspected`.
-  - [ ] 6.4 Test 3: `should_throwIllegalArgumentException_when_valueOfCalled_withTentative`.
-
-- [ ] **Task 7 — Add `SpeakerPromotedToReadyEventTest`** (AC6)
-  - [ ] 7.1 Create `shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerPromotedToReadyEventTest.java`.
-  - [ ] 7.2 Copy the `@BeforeEach` Jackson setup from `SpeakerInvitedEventTest` (line 17-23).
-  - [ ] 7.3 Write the six tests listed in AC6 (creation, JSON round-trip, null-validation per required field, `getAggregateId()`, `getEventName()`, `promotedAt` default).
-  - [ ] 7.4 Use AssertJ assertions throughout; do NOT use raw JUnit `assertEquals`.
-
-- [ ] **Task 8 — Update `CHANGELOG.md`** (AC7)
-  - [ ] 8.1 Open `shared-kernel/CHANGELOG.md`.
-  - [ ] 8.2 Insert the new `## [Unreleased] — speaker-workflow-refactor` section above the existing `## [1.0.0]` block.
-  - [ ] 8.3 Use the exact content blocks from AC7 (Removed / Added / Changed / Migration notes).
-
-- [ ] **Task 9 — Build verification** (AC8)
-  - [ ] 9.1 From repo root, run `./gradlew :shared-kernel:build | tee /tmp/sk-build.log` (per CLAUDE.md tee convention).
-  - [ ] 9.2 `grep -i "error\|FAIL" /tmp/sk-build.log` — must return empty.
-  - [ ] 9.3 Run `./gradlew :shared-kernel:publishToMavenLocal | tee /tmp/sk-publish.log` and confirm `BUILD SUCCESSFUL`.
-  - [ ] 9.4 (Optional verification) Run `./gradlew build | tee /tmp/full-build.log` — `event-management-service` is expected to FAIL with references to removed `SpeakerWorkflowState` / `SpeakerResponseType` constants. Confirm the failures are exactly those — no other regressions. Capture the failure list into the commit body so the next dev (11.B.2) has a concrete starting point.
-
-- [ ] **Task 10 — Out-of-scope sweep** (AC9)
-  - [ ] 10.1 Run `git status --short | grep -v "^\?\? _bmad-output\|^\?\? docs/implementation-readiness-report"` — the only entries should be under `shared-kernel/`. The pre-existing untracked files in `_bmad-output/` and `docs/implementation-readiness-report*.md` are unrelated to this story and must NOT be added or committed.
-  - [ ] 10.2 Run `git diff --name-only` — must only show files under `shared-kernel/`.
-  - [ ] 10.3 Confirm no edits to `services/`, `web-frontend/`, `infrastructure/`, `docs/`, or any OpenAPI spec.
-
-- [ ] **Task 11 — Commit + handoff** (AC8)
-  - [ ] 11.1 Stage only the files in AC9's allowed list (`git add shared-kernel/src/... shared-kernel/CHANGELOG.md`).
-  - [ ] 11.2 Commit with message format:
-    ```
-    feat(shared-kernel): reduce SpeakerWorkflowState to 8 states + drop TENTATIVE per ADR-009
-
-    - Remove SLOT_ASSIGNED, CONFIRMED, WITHDREW, OVERFLOW from SpeakerWorkflowState
-    - Remove TENTATIVE from SpeakerResponseType
-    - Add SpeakerPromotedToReadyEvent for CONTACTED→READY provisioning signal
-    - Update Javadoc on CONTACTED (still brainstorming) and READY (provisioning gate)
-    - CHANGELOG entry for the unreleased speaker-workflow-refactor
-
-    Downstream compile errors are EXPECTED in event-management-service —
-    they are the entry point for Story 11.B.2 (workflow-service single-writer).
-    Affected files (compile-fail list):
-    <paste grep output from /tmp/full-build.log here>
-
-    Story: 11-b-1
-    Refs: ADR-009 §0.1, §0.6, §0.7
-    ```
-  - [ ] 11.3 Do NOT push — leave that for the user. The code-review workflow will flip status to `review` in sprint-status.yaml.
+- [x] **Task 5 — Add `SpeakerWorkflowStateTest`** (AC6) — 6 tests, all PASSED.
+- [x] **Task 6 — Add `SpeakerResponseTypeTest`** (AC6) — 3 tests, all PASSED.
+- [x] **Task 7 — Add `SpeakerPromotedToReadyEventTest`** (AC6) — 10 tests, all PASSED (creation, JSON round-trip, one null-throw test per required field, `getAggregateId()`, `getEventName()`, `promotedAt` default-to-now).
+- [x] **Task 8 — Update `CHANGELOG.md`** (AC7) — `[Unreleased] — speaker-workflow-refactor` section inserted above `[1.0.0]` block; original "Planned" `[Unreleased]` section left untouched at the bottom (not in scope to remove).
+- [x] **Task 9 — Build verification** (AC8)
+  - [x] 9.1–9.3: `./gradlew :shared-kernel:build` and `publishToMavenLocal` — both `BUILD SUCCESSFUL`; new tests visible in the log.
+  - [x] 9.4: `./gradlew build -x test` confirmed 50 expected compile errors in `event-management-service` only (referencing `SLOT_ASSIGNED`, `CONFIRMED`, `WITHDREW`, `OVERFLOW`, `TENTATIVE`). Verified other services (speaker-coordination, partner-coordination, attendee-experience, company-user-management, api-gateway) all compile clean.
+- [x] **Task 10 — Out-of-scope sweep** (AC9) — `git status --short` shows only `shared-kernel/`, `shared-kernel/CHANGELOG.md`, and the `sprint-status.yaml` status flip (per AC9 allowed list).
+- [x] **Task 11 — Commit + handoff** (AC8) — files staged (per AC9 allowed list); commit deferred to user. Pre-commit hook surfaces the 50 expected downstream compile errors and blocks the commit; per Open Question #4, the user chose to leave the commit to manual action. User should commit with `git commit --no-verify` using the message drafted in the dev session (or rely on the feature/ branch policy from CLAUDE.md branching strategy that permits intermediate broken commits as long as the final merge is green).
 
 ---
 
@@ -508,28 +461,104 @@ grep "Tests run:" /tmp/sk-test.log             # confirm test count includes new
 
 ### Agent Model Used
 
-_To be filled by dev agent (e.g., claude-opus-4-7 [1m])_
+claude-opus-4-7 [1m] (via bmad-dev-story skill)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+- `/tmp/sk-build.log` — `./gradlew :shared-kernel:build` (initial run: BUILD SUCCESSFUL but 2 Checkstyle LineLength violations on Javadoc phase comments).
+- `/tmp/sk-checkstyle.log` — after wrapping long phase-comment lines: BUILD SUCCESSFUL, no errors/warnings.
+- `/tmp/sk-publish.log` — `./gradlew :shared-kernel:publishToMavenLocal`: BUILD SUCCESSFUL.
+- `/tmp/full-build.log` — `./gradlew build -x test`: BUILD FAILED with 50 compile errors in `event-management-service` only (expected per AC8).
+- `/tmp/other-services-build.log` — verified speaker-coordination, partner-coordination, attendee-experience, company-user-management, and api-gateway all compile clean against the new shared-kernel.
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+- All 8 ACs satisfied. New 8-value `SpeakerWorkflowState` enum declared in ADR-009 §0.1 workflow order; `INVITED` moved from position 2 to position 4 (after `READY`). Grep confirmed zero `.ordinal()` usage in shared-kernel, so the reorder is safe.
+- `SpeakerResponseType` reduced to `{ACCEPT, DECLINE}`. Token-consumed language removed from Javadoc per ADR-009 §0.6 (Cognito session replaces magic-link tokens from Phase E).
+- `SpeakerPromotedToReadyEvent` added with Lombok `@Builder` on the constructor (per ADR-006 §"Builder Pattern for Generated DTOs" and the `SpeakerResponseReceivedEvent` precedent). Includes class-level Javadoc with usage example, idempotency note, and ADR-009 §0.2 reference.
+- 19 new unit tests across 3 test classes, all PASSED. AssertJ + `@DisplayName` + `should_<verb>_when_<context>` naming convention.
+- Initial Checkstyle run flagged 2 LineLength violations on the file-level Javadoc phase-comment block in `SpeakerWorkflowState.java` (134 and 142 chars). Fixed by line-wrapping the comments under 120 chars and re-ran Checkstyle clean.
+- Whole-repo build (`./gradlew build -x test`) confirms 50 expected compile errors in `event-management-service` only — exactly the intentional signal for Story 11.B.2 per AC8 and Epic 11 PRD line 547.
+- No out-of-scope changes. Diff is entirely under `shared-kernel/` + `shared-kernel/CHANGELOG.md` + `_bmad-output/implementation-artifacts/` (status flip + Dev Agent Record updates per AC9 allowed list).
+
+### Expected Downstream Compile-Fail List (event-management-service only)
+
+Captured from `/tmp/full-build.log` for the Story 11.B.2 worklist:
+
+```
+src/main/java/ch/batbern/events/controller/EventController.java
+src/main/java/ch/batbern/events/listener/SpeakerAcceptedEventListener.java
+src/main/java/ch/batbern/events/service/EventWorkflowStateMachine.java
+src/main/java/ch/batbern/events/service/MagicLinkService.java
+src/main/java/ch/batbern/events/service/OverflowManagementService.java
+src/main/java/ch/batbern/events/service/QualityReviewService.java
+src/main/java/ch/batbern/events/service/SlotAssignmentService.java
+src/main/java/ch/batbern/events/service/SpeakerContentSubmissionService.java
+src/main/java/ch/batbern/events/service/SpeakerDashboardService.java
+src/main/java/ch/batbern/events/service/SpeakerResponseService.java
+src/main/java/ch/batbern/events/service/SpeakerStatusService.java
+src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java
+src/main/java/ch/batbern/events/service/slotassignment/SessionTimingService.java
+src/main/java/ch/batbern/events/validator/StatusTransitionValidator.java
+```
+
+Total: 50 compile errors across 14 source files in event-management-service. All other services and the api-gateway compile clean.
 
 ### File List
 
-_To be filled by dev agent. Expected:_
+- `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerWorkflowState.java` (MODIFIED — cut 12→8 values, reordered to ADR-009 sequence, rewrote all Javadoc)
+- `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerResponseType.java` (MODIFIED — cut 3→2 values, removed token-consumed semantics, ADR-009 §0.6 reference)
+- `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerPromotedToReadyEvent.java` (NEW — Lombok @Builder on constructor; 6 required fields; getAggregateId/getEventName overrides)
+- `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerWorkflowStateTest.java` (NEW — 6 tests)
+- `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerResponseTypeTest.java` (NEW — 3 tests)
+- `shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerPromotedToReadyEventTest.java` (NEW — 10 tests)
+- `shared-kernel/CHANGELOG.md` (MODIFIED — added [Unreleased] — speaker-workflow-refactor section above [1.0.0])
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (MODIFIED — status flipped `ready-for-dev` → `review`)
+- `_bmad-output/implementation-artifacts/11-b-1-reduce-speakerworkflowstate-enum-to-8-states.md` (MODIFIED — Tasks/Subtasks checked, Dev Agent Record filled, Status → review)
 
-- `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerWorkflowState.java` (MODIFIED)
-- `shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerResponseType.java` (MODIFIED)
-- `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerPromotedToReadyEvent.java` (NEW)
-- `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerWorkflowStateTest.java` (NEW)
-- `shared-kernel/src/test/java/ch/batbern/shared/unit/types/SpeakerResponseTypeTest.java` (NEW)
-- `shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerPromotedToReadyEventTest.java` (NEW)
-- `shared-kernel/CHANGELOG.md` (MODIFIED)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (MODIFIED — status flip handled by code-review workflow)
+### Change Log
+
+| Date | Author | Summary |
+|------|--------|---------|
+| 2026-05-15 | Dev Agent (Opus 4.7) | Story 11.B.1 implemented: 8-state `SpeakerWorkflowState`, 2-value `SpeakerResponseType`, new `SpeakerPromotedToReadyEvent`. 19 unit tests added. Shared-kernel builds and publishes; whole-repo build fails with 50 expected compile errors in event-management-service (entry point for 11.B.2). |
+| 2026-05-15 | Code Review (bmad-code-review, 3-layer adversarial) | 5 patches applied: Jackson round-trip test, unicode round-trip test, stale-`TENTATIVE` Javadoc scrub in `SpeakerResponseReceivedEvent`, `QUALITY_REVIEWED` terminal-wording reconciliation, `READY` Cognito-timing reconciliation. 21 unit tests now PASS. 7 deferred items captured in `_bmad-output/implementation-artifacts/deferred-work.md`. Status flipped `review` → `done`. |
+
+### Review Findings (2026-05-15 — bmad-code-review)
+
+**Triage summary:** 0 decision-needed · 5 patch · 7 defer · 4 dismissed (noise)
+
+#### Patches (applied 2026-05-15)
+
+- [x] [Review][Patch] Add Jackson `readValue` round-trip test to `SpeakerPromotedToReadyEventTest` [`shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerPromotedToReadyEventTest.java`] — added `should_roundTripThroughJackson_when_serialisedAndDeserialised`. Confirmed deserialisation works (private `@JsonProperty`-annotated fields populate via reflection); Blind Hunter HIGH downgraded.
+- [x] [Review][Patch] Scrub stale `TENTATIVE` reference in `SpeakerResponseReceivedEvent` Javadoc [`shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerResponseReceivedEvent.java:14-23`] — rewrote class-level Javadoc to "ACCEPT or DECLINE per ADR-009 §0.6"; dropped Story 6.2a header.
+- [x] [Review][Patch] Reconcile `QUALITY_REVIEWED` "terminal happy state" wording [`shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerWorkflowState.java:92-101`] — relabelled as "Happy end-state of the content lifecycle. NOT terminal: a confirmed speaker who later drops out still transitions to DECLINED." `DECLINED` remains the only terminal state.
+- [x] [Review][Patch] Reconcile `READY` Javadoc Cognito-provisioning timing [`shared-kernel/src/main/java/ch/batbern/shared/types/SpeakerWorkflowState.java:53-65` + file-level phase comment] — clarified that the READY transition does User lookup-or-create + SPEAKER role grant, but Cognito provisioning is added in Phase E (Story 11.E.2). Now consistent with `SpeakerPromotedToReadyEvent` Javadoc.
+- [x] [Review][Patch] Add non-ASCII / unicode happy-path test [`shared-kernel/src/test/java/ch/batbern/shared/unit/events/SpeakerPromotedToReadyEventTest.java`] — added `should_roundTripNonAsciiFields_when_serialisedAndDeserialised` with `luc.müller` / `lüönd@müller.ch`. UTF-8 round-trip confirmed.
+
+**Test status after patches**: `./gradlew :shared-kernel:test` for the three patched test classes — `BUILD SUCCESSFUL`, 21 tests PASSED (19 original + 2 new).
+
+#### Deferred (pre-existing or out-of-scope for this story)
+
+- [x] [Review][Defer] No empty-string / whitespace / very-long-value validation for required `String` fields in `SpeakerPromotedToReadyEvent` [`SpeakerPromotedToReadyEvent.java:73-104`] — deferred, consistent with `SpeakerResponseReceivedEvent` and `SpeakerInvitationSentEvent` patterns; broader validation strategy across all domain events.
+- [x] [Review][Defer] `Instant.MIN`/`MAX`/stale-date values accepted unchecked for `promotedAt` [`SpeakerPromotedToReadyEvent.java:102`] — deferred, no time-range validation exists on any sibling event today.
+- [x] [Review][Defer] `Instant` serialisation format not pinned by JSON test [`SpeakerPromotedToReadyEventTest.java:85`] — deferred, test-style concern; downstream consumers (Phase E) will pin format when they parse.
+- [x] [Review][Defer] `eventType` wire-format inconsistency between speaker events — `SpeakerInvitationSentEvent` uses `"SpeakerInvitationSent"` (no suffix); new event and `SpeakerResponseReceivedEvent` use full class name with `Event` suffix. Deferred, outlier is in unmodified code (out of scope for 11.B.1).
+- [x] [Review][Defer] PII (`email`, `username`) in domain event payload without redaction-on-log policy [`SpeakerPromotedToReadyEvent.java:62-65`] — deferred, same shape as all sibling events; cross-cutting policy decision.
+- [x] [Review][Defer] JSON serialisation test uses substring-contains rather than structural assertions [`SpeakerPromotedToReadyEventTest.java:80-87`] — deferred, test-style decision; substring contains is the project pattern for these events.
+- [x] [Review][Defer] AC9 allow-list does not enumerate the story file itself, yet the story file is `MM` in git status (Tasks/Subtasks ticks + Dev Agent Record updates) — spec self-reference gap, not a code defect; revisit AC9 wording in a future story template tweak.
+
+#### Dismissed (verified noise / false positives)
+
+- `super(speakerPoolId, …)` called before explicit null-check in `SpeakerPromotedToReadyEvent` constructor — flagged as "dead defensive code" by Blind Hunter. Verified false: parent `DomainEvent` does not NPE on null `aggregateId`, and the explicit checks DO produce the expected per-field messages (tests pass). Same pattern as `SpeakerResponseReceivedEvent`.
+- Duplicate JSON payload (`aggregateId` and `speakerPoolId` keys both serialise the same UUID) — by-design via `DomainEvent<T>` parent class; affects every domain event.
+- `promotedByUsername` forwarded as parent `userId` (string-shaped username vs. id-shaped field name) — consistent with all sibling speaker events; intentional.
+- `getUserId()` equality assertion in happy-path test couples the test to `promotedByUsername` passthrough — intentional assertion of the actor mapping.
+
+#### Reviewer notes
+
+- **Blind Hunter's `HIGH` "Jackson round-trip broken" finding was downgraded after inspection.** `@JsonProperty`-annotated private fields are Jackson-readable via reflection by default, and the protected no-arg constructor is invokable. Deserialisation should work for well-formed JSON. The legitimate concern that survives is the test gap: a malformed JSON payload could produce a partially-null event, bypassing constructor validation. Hence the "add round-trip test" patch above.
+- **Blind Hunter's "shipping shared-kernel before DB migration" risks (HIGH on `DECLINED` overload + `TENTATIVE` JSON poison-pill)** are real for 11.B.3 deploy ordering, but Edge Case Hunter verified there is no Jackson `readValue` against legacy strings inside shared-kernel itself. The risk is owned downstream by Story 11.B.3.
+- **Acceptance Auditor verdict: 8/9 AC PASS, AC5 PARTIAL** — the single AC5 gap (stale TENTATIVE Javadoc in `SpeakerResponseReceivedEvent`) is captured as patch #2 above.
 
 ---
 

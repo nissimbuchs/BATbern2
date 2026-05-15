@@ -1,51 +1,48 @@
 package ch.batbern.shared.types;
 
 /**
- * Speaker Response Type Enum - Story 6.2a
+ * Speaker Response Type Enum — ADR-009 §0.6 (Unified Speaker Workflow).
  *
- * Represents the response type when a speaker responds to an event invitation.
- * Used in the speaker self-service response portal.
+ * Represents the response a speaker gives to an event invitation. Under ADR-009 the
+ * value space is binary: a speaker either accepts the invitation or declines it.
  *
- * Response Behavior:
- * - ACCEPT: Speaker accepts invitation, transitions to ACCEPTED state, token consumed
- * - DECLINE: Speaker declines invitation, transitions to DECLINED state (terminal), token consumed
- * - TENTATIVE: Speaker is undecided, stays in INVITED state with tentative flag, token NOT consumed
+ * Response model:
+ * - ACCEPT  — workflow_state transitions to {@code ACCEPTED}.
+ * - DECLINE — workflow_state transitions to {@code DECLINED} (terminal).
  *
- * Enum Value Flow (per coding-standards.md):
- * - Java/JSON/API: ACCEPT (UPPER_CASE)
- * - Database: Not stored directly (derived from workflow_state + flags)
+ * Speakers who are unsure simply do not respond yet — reminder and escalation flows
+ * handle response delays. A speaker who has already pressed ACCEPT but later changes
+ * their mind transitions through {@code DECLINED}, with the reason recorded in
+ * {@code speaker_status_history} (this path replaces the removed {@code WITHDREW}
+ * state — see ADR-009 §0.7).
+ *
+ * Enum Value Flow (per _bmad-output/project-context.md §"Enum Value Flow"):
+ * - Java/JSON/API: UPPER_CASE (e.g., "ACCEPT")
+ * - Database: not stored directly (derived from workflow_state)
  *
  * @see ch.batbern.events.service.SpeakerResponseService
+ * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.6, §0.7</a>
  */
 public enum SpeakerResponseType {
 
     /**
      * Speaker accepts the invitation.
-     * - workflow_state transitions to ACCEPTED
-     * - accepted_at timestamp is set
-     * - Token is consumed (single-use enforcement)
-     * - Optional preferences are stored
-     * Story 6.2a AC3: Accept Response Flow
+     * <ul>
+     *   <li>{@code workflow_state} transitions to {@code ACCEPTED}.</li>
+     *   <li>{@code accepted_at} timestamp is set.</li>
+     *   <li>Optional preferences are stored.</li>
+     * </ul>
      */
     ACCEPT,
 
     /**
      * Speaker declines the invitation.
-     * - workflow_state transitions to DECLINED (terminal state)
-     * - declined_at timestamp is set
-     * - decline_reason is required and stored
-     * - Token is consumed (single-use enforcement)
-     * Story 6.2a AC4: Decline Response Flow
+     * <ul>
+     *   <li>{@code workflow_state} transitions to {@code DECLINED} (terminal state).</li>
+     *   <li>{@code declined_at} timestamp is set.</li>
+     *   <li>{@code decline_reason} is required and stored in
+     *       {@code speaker_status_history}.</li>
+     * </ul>
      */
-    DECLINE,
-
-    /**
-     * Speaker is tentatively interested but not committing.
-     * - workflow_state stays INVITED
-     * - is_tentative flag set to true
-     * - tentative_reason is required and stored
-     * - Token is NOT consumed (speaker can return and change response)
-     * Story 6.2a AC5: Tentative Response Flow
-     */
-    TENTATIVE
+    DECLINE
 }
