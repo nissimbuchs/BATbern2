@@ -1,372 +1,459 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.Session;
+import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
+import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.exception.SlotCapacityReachedException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
+import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.events.SpeakerAcceptedEvent;
+import ch.batbern.shared.events.SpeakerPromotedToReadyEvent;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
-import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for SpeakerWorkflowService - Linear workflow with orthogonal slot assignment.
+ * Unit tests for {@link SpeakerWorkflowService#transition} — ADR-009 single-writer model.
  *
- * Tests the simplified workflow model:
- * 1. Linear state progression: ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
- * 2. Slot assignment is orthogonal (sets session.startTime, doesn't change state)
- * 3. Auto-confirmation when QUALITY_REVIEWED + slot assigned
+ * <p>Covers: the allow-list, same-state semantics, preconditions, side-effect hook ordering,
+ * and the exception types thrown. Real DB behaviour + full integration coverage lives in
+ * {@link SpeakerWorkflowServiceIntegrationTest}.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SpeakerWorkflowService - Linear Workflow")
 class SpeakerWorkflowServiceTest {
 
     @Mock
     private SpeakerPoolRepository speakerPoolRepository;
-
     @Mock
     private SessionRepository sessionRepository;
+    @Mock
+    private EventRepository eventRepository;
+    @Mock
+    private SpeakerStatusHistoryRepository statusHistoryRepository;
+    @Mock
+    private EventTypeService eventTypeService;
+    @Mock
+    private UserApiClient userApiClient;
+    @Mock
+    private SpeakerProvisioningHook speakerProvisioningHook;
+    @Mock
+    private SpeakerInvitationEmailService invitationEmailService;
+    @Mock
+    private SpeakerAcceptanceEmailService acceptanceEmailService;
+    @Mock
+    private OrganizerNotificationService organizerNotificationService;
+    @Mock
+    private MagicLinkService magicLinkService;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
-    @InjectMocks
-    private SpeakerWorkflowService speakerWorkflowService;
+    private SpeakerWorkflowService service;
 
-    private SpeakerPool testSpeaker;
-    private Session testSession;
-    private UUID speakerId;
-    private UUID sessionId;
-    private String organizerUsername;
+    private static final UUID SPEAKER_ID = UUID.randomUUID();
+    private static final UUID EVENT_ID = UUID.randomUUID();
+    private static final SecurityPrincipal ORGANIZER =
+            new SecurityPrincipal("organizer.user", List.of("ORGANIZER"));
 
     @BeforeEach
     void setUp() {
-        speakerId = UUID.randomUUID();
-        sessionId = UUID.randomUUID();
-        organizerUsername = "test-organizer";
-
-        testSpeaker = new SpeakerPool();
-        testSpeaker.setId(speakerId);
-        testSpeaker.setEventId(UUID.randomUUID());
-        testSpeaker.setSpeakerName("Test Speaker");
-        testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-        testSpeaker.setSessionId(sessionId);
-
-        testSession = new Session();
-        testSession.setId(sessionId);
-        testSession.setEventId(testSpeaker.getEventId());
-        testSession.setTitle("Test Session");
+        service = new SpeakerWorkflowService(
+                speakerPoolRepository,
+                sessionRepository,
+                eventRepository,
+                statusHistoryRepository,
+                eventTypeService,
+                userApiClient,
+                speakerProvisioningHook,
+                invitationEmailService,
+                acceptanceEmailService,
+                organizerNotificationService,
+                magicLinkService,
+                applicationEventPublisher,
+                domainEventPublisher
+        );
     }
 
-    // ==================== Linear Workflow Tests ====================
-
-    @Test
-    @DisplayName("Should allow linear progression: ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED")
-    void shouldAllowLinearProgression() {
-        // Given: Speaker is ACCEPTED
-        testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-
-        // When: Progress to CONTENT_SUBMITTED
-        assertDoesNotThrow(() ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.CONTENT_SUBMITTED,
-                        organizerUsername
-                )
+    static Stream<Arguments> legalForwardEdges() {
+        return Stream.of(
+                Arguments.of(SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.CONTACTED),
+                Arguments.of(SpeakerWorkflowState.CONTACTED, SpeakerWorkflowState.READY),
+                Arguments.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.INVITED),
+                Arguments.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED),
+                Arguments.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.CONTENT_SUBMITTED),
+                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED)
         );
-
-        // Then: State updated
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, atLeastOnce()).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.CONTENT_SUBMITTED, captor.getValue().getStatus());
-
-        // Given: Now in CONTENT_SUBMITTED
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.empty()); // No slot yet
-
-        // When: Progress to QUALITY_REVIEWED
-        assertDoesNotThrow(() ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
-
-        // Then: State updated to QUALITY_REVIEWED (not CONFIRMED because no slot)
-        verify(speakerPoolRepository, atLeast(2)).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, captor.getValue().getStatus());
     }
 
-    @Test
-    @DisplayName("Should reject SLOT_ASSIGNED state transition (slot assignment is not a state)")
-    void shouldRejectSlotAssignedStateTransition() {
-        // Given: Speaker is ACCEPTED
-        testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-
-        // When/Then: Cannot transition to SLOT_ASSIGNED (it's not a valid state in linear model)
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.SLOT_ASSIGNED,
-                        organizerUsername
-                )
+    static Stream<Arguments> someIllegalPairs() {
+        return Stream.of(
+                Arguments.of(SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED),
+                Arguments.of(SpeakerWorkflowState.CONTACTED, SpeakerWorkflowState.ACCEPTED),
+                Arguments.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.CONTENT_SUBMITTED),
+                Arguments.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.CONTENT_SUBMITTED),
+                Arguments.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.QUALITY_REVIEWED),
+                Arguments.of(SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.ACCEPTED),
+                Arguments.of(SpeakerWorkflowState.DECLINED, SpeakerWorkflowState.CONTACTED)
         );
-
-        assertTrue(exception.getMessage().contains("Invalid state transition"));
     }
 
-    // ==================== Auto-Confirmation Tests ====================
-
-    @Test
-    @DisplayName("Flow 1: Quality first, then assign slot → auto-confirm when slot assigned externally")
-    void shouldAutoConfirmWhenSlotAssignedAfterQualityReview() {
-        // Given: Speaker reached QUALITY_REVIEWED (no slot yet)
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
-
-        testSession.setStartTime(null); // No slot initially
-
-        // When: Reach QUALITY_REVIEWED (no auto-confirm yet)
-        speakerWorkflowService.updateSpeakerWorkflowState(
-                speakerId,
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                organizerUsername
+    static Stream<Arguments> sameStateNonTerminal() {
+        return Stream.of(
+                Arguments.of(SpeakerWorkflowState.IDENTIFIED),
+                Arguments.of(SpeakerWorkflowState.CONTACTED),
+                Arguments.of(SpeakerWorkflowState.READY),
+                Arguments.of(SpeakerWorkflowState.INVITED),
+                Arguments.of(SpeakerWorkflowState.ACCEPTED),
+                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED),
+                Arguments.of(SpeakerWorkflowState.QUALITY_REVIEWED)
         );
-
-        // Then: Stays at QUALITY_REVIEWED (no slot assigned)
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, times(1)).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, captor.getValue().getStatus());
-
-        // Given: Now organizer assigns slot (via SlotAssignmentService - sets session.startTime)
-        testSpeaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        testSession.setStartTime(Instant.now()); // Slot now assigned
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-
-        // When: Organizer manually triggers confirmation by calling the workflow service
-        // Note: In practice, this would be triggered after slot assignment
-        speakerWorkflowService.updateSpeakerWorkflowState(
-                speakerId,
-                SpeakerWorkflowState.QUALITY_REVIEWED, // Idempotent call
-                organizerUsername
-        );
-
-        // Then: Auto-confirms (quality done + slot assigned)
-        verify(speakerPoolRepository, atLeast(2)).save(captor.capture());
-        SpeakerPool finalState = captor.getAllValues().get(captor.getAllValues().size() - 1);
-        assertEquals(SpeakerWorkflowState.CONFIRMED, finalState.getStatus());
     }
 
-    @Test
-    @DisplayName("Flow 2: Assign slot first, then quality review → auto-confirm on quality review")
-    void shouldAutoConfirmWhenQualityReviewCompletesWithSlotAlreadyAssigned() {
-        // Given: Speaker is CONTENT_SUBMITTED and already has slot assigned
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        testSession.setStartTime(Instant.now()); // Slot assigned early
+    @ParameterizedTest(name = "allow {0} -> {1}")
+    @MethodSource("legalForwardEdges")
+    @DisplayName("Legal forward transitions are allowed")
+    void should_allow_legalForwardTransitions(SpeakerWorkflowState from, SpeakerWorkflowState to) {
+        SpeakerPool speaker = seedSpeaker(from);
+        Event event = seedEvent();
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        lenient().when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+        lenient().when(eventTypeService.getEventType(any())).thenReturn(slotConfig(8));
+        lenient().when(speakerPoolRepository.countByEventIdAndStatus(any(), any())).thenReturn(0L);
+        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(stubUser());
+        lenient().when(magicLinkService.generateToken(any(), any())).thenReturn("respond-token");
+        lenient().when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("speaker@example.com")
+                .firstName("Test")
+                .lastName("Speaker")
+                .build();
 
-        // When: Quality review completes
-        speakerWorkflowService.updateSpeakerWorkflowState(
-                speakerId,
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                organizerUsername
-        );
+        service.transition(SPEAKER_ID, to, ORGANIZER, payload);
 
-        // Then: Auto-confirms immediately (both conditions met)
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, atLeast(2)).save(captor.capture());
+        ArgumentCaptor<SpeakerStatusHistory> historyCaptor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+        verify(statusHistoryRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getPreviousStatus()).isEqualTo(from);
+        assertThat(historyCaptor.getValue().getNewStatus()).isEqualTo(to);
+        assertThat(historyCaptor.getValue().getChangedByUsername()).isEqualTo("organizer.user");
+        assertThat(speaker.getStatus()).isEqualTo(to);
+    }
 
-        SpeakerPool finalState = captor.getAllValues().get(captor.getAllValues().size() - 1);
-        assertEquals(SpeakerWorkflowState.CONFIRMED, finalState.getStatus());
+    @ParameterizedTest(name = "reject {0} -> {1}")
+    @MethodSource("someIllegalPairs")
+    @DisplayName("Illegal transitions throw InvalidStateTransitionException")
+    void should_throwInvalidStateTransitionException_when_illegalPair(
+            SpeakerWorkflowState from, SpeakerWorkflowState to) {
+        SpeakerPool speaker = seedSpeaker(from);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+
+        TransitionPayload payload = TransitionPayload.builder().reason("test").build();
+        assertThatThrownBy(() -> service.transition(SPEAKER_ID, to, ORGANIZER, payload))
+                .isInstanceOf(InvalidStateTransitionException.class);
+
+        verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
+        verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
+    }
+
+    @ParameterizedTest(name = "same-state {0}")
+    @MethodSource("sameStateNonTerminal")
+    @DisplayName("Same-state writes a self-transition history row and skips hooks/events")
+    void should_writeSelfTransitionHistoryRow_when_sameStateTransition(SpeakerWorkflowState state) {
+        SpeakerPool speaker = seedSpeaker(state);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        TransitionPayload payload = TransitionPayload.builder().reason("re-affirmed").build();
+        service.transition(SPEAKER_ID, state, ORGANIZER, payload);
+
+        ArgumentCaptor<SpeakerStatusHistory> historyCaptor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+        verify(statusHistoryRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getPreviousStatus()).isEqualTo(state);
+        assertThat(historyCaptor.getValue().getNewStatus()).isEqualTo(state);
+        assertThat(historyCaptor.getValue().getChangeReason()).isEqualTo("re-affirmed");
+
+        verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
+        verify(speakerProvisioningHook, never()).grantSpeakerRole(any(), any());
+        verify(invitationEmailService, never()).sendInvitationEmail(any(), any(), any(), any(), any());
+        verify(organizerNotificationService, never()).notifyOrganizerOfResponse(any(), any(), any());
+
+        ArgumentCaptor<SpeakerWorkflowStateChangeEvent> stateChangeCaptor =
+                ArgumentCaptor.forClass(SpeakerWorkflowStateChangeEvent.class);
+        verify(domainEventPublisher).publish(stateChangeCaptor.capture());
+        assertThat(stateChangeCaptor.getValue().getFromState()).isEqualTo(state);
+        assertThat(stateChangeCaptor.getValue().getToState()).isEqualTo(state);
+
+        verify(applicationEventPublisher, never()).publishEvent(any(SpeakerPromotedToReadyEvent.class));
+        verify(applicationEventPublisher, never()).publishEvent(any(SpeakerAcceptedEvent.class));
     }
 
     @Test
-    @DisplayName("Flow 3: Assign slot during content review → auto-confirm on quality review")
-    void shouldAutoConfirmWhenSlotAssignedDuringReview() {
-        // Given: Speaker submitted content, slot assigned during review process
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        testSession.setStartTime(Instant.now()); // Slot assigned during review
+    @DisplayName("READY precondition: email is required to promote from CONTACTED to READY")
+    void should_throwValidationException_when_promotingToReadyWithoutEmail() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        TransitionPayload payload = TransitionPayload.builder().build();
 
-        // When: Quality review completes
-        speakerWorkflowService.updateSpeakerWorkflowState(
-                speakerId,
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                organizerUsername
-        );
+        assertThatThrownBy(() -> service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("email is required");
 
-        // Then: Auto-confirms (quality done + slot assigned)
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, atLeast(2)).save(captor.capture());
-
-        SpeakerPool finalState = captor.getAllValues().get(captor.getAllValues().size() - 1);
-        assertEquals(SpeakerWorkflowState.CONFIRMED, finalState.getStatus());
+        verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
+        verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
+        verify(userApiClient, never()).getOrCreateUser(any());
     }
 
     @Test
-    @DisplayName("Should NOT auto-confirm when quality reviewed but no slot assigned")
-    void shouldNotAutoConfirmWithoutSlot() {
-        // Given: Speaker quality reviewed, but no slot assigned
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        testSession.setStartTime(null); // No slot
+    @DisplayName("INVITED precondition: slot-capacity gate rejects when accepted+invited >= maxSlots")
+    void should_throwSlotCapacityReachedException_when_capacityReached() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.READY);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(eventTypeService.getEventType(any())).thenReturn(slotConfig(3));
+        when(speakerPoolRepository.countByEventIdAndStatus(EVENT_ID, SpeakerWorkflowState.ACCEPTED))
+                .thenReturn(2L);
+        when(speakerPoolRepository.countByEventIdAndStatus(EVENT_ID, SpeakerWorkflowState.INVITED))
+                .thenReturn(1L);
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        TransitionPayload payload = TransitionPayload.builder().build();
 
-        // When: Quality review completes
-        speakerWorkflowService.updateSpeakerWorkflowState(
-                speakerId,
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                organizerUsername
-        );
+        assertThatThrownBy(() -> service.transition(SPEAKER_ID, SpeakerWorkflowState.INVITED, ORGANIZER, payload))
+                .isInstanceOf(SlotCapacityReachedException.class);
 
-        // Then: Stays at QUALITY_REVIEWED (no auto-confirmation without slot)
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, times(1)).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, captor.getValue().getStatus());
-    }
-
-    // ==================== Invalid Transition Tests ====================
-
-    @Test
-    @DisplayName("Should reject skipping states (ACCEPTED → QUALITY_REVIEWED)")
-    void shouldRejectSkippingStates() {
-        // Given: Speaker in ACCEPTED state
-        testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-
-        // When/Then: Cannot skip CONTENT_SUBMITTED
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
-
-        assertTrue(exception.getMessage().contains("Invalid state transition"));
+        verify(invitationEmailService, never()).sendInvitationEmail(any(), any(), any(), any(), any());
+        verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
     }
 
     @Test
-    @DisplayName("Should reject transitions from terminal states")
-    void shouldRejectTransitionFromConfirmed() {
-        // Given: Speaker is CONFIRMED (terminal state)
-        testSpeaker.setStatus(SpeakerWorkflowState.CONFIRMED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
+    @DisplayName("DECLINED precondition: reason is required for INVITED+ source")
+    void should_throwValidationException_when_decliningFromInvitedWithoutReason() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
 
-        // When/Then: Cannot transition from CONFIRMED
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
+        TransitionPayload payload = TransitionPayload.builder().build();
 
-        assertTrue(exception.getMessage().contains("Invalid state transition"));
-    }
-
-    // ==================== Edge Cases ====================
-
-    @Test
-    @DisplayName("Should handle missing session gracefully (no auto-confirmation)")
-    void shouldHandleMissingSessionGracefully() {
-        // Given: Speaker quality reviewed, but session doesn't exist
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.empty());
-
-        // When: Quality review completes
-        assertDoesNotThrow(() ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
-
-        // Then: No error, stays at QUALITY_REVIEWED
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, times(1)).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, captor.getValue().getStatus());
+        assertThatThrownBy(() -> service.transition(SPEAKER_ID, SpeakerWorkflowState.DECLINED, ORGANIZER, payload))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("decline reason is required");
     }
 
     @Test
-    @DisplayName("Should handle null sessionId gracefully")
-    void shouldHandleNullSessionIdGracefully() {
-        // Given: Speaker has no session assigned yet
-        testSpeaker.setSessionId(null);
-        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
+    @DisplayName("CONTACTED -> READY runs provisioning hook + publishes SpeakerPromotedToReadyEvent")
+    void should_runProvisioningAndPublishPromotedEvent_when_transitioningContactedToReady() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(userApiClient.getOrCreateUser(any())).thenReturn(stubUser());
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("speaker@example.com")
+                .firstName("Test")
+                .lastName("Speaker")
+                .build();
 
-        // When: Quality review completes
-        assertDoesNotThrow(() ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
+        InOrder inOrder = inOrder(userApiClient, speakerProvisioningHook,
+                speakerPoolRepository, statusHistoryRepository, applicationEventPublisher);
 
-        // Then: No error, stays at QUALITY_REVIEWED (no auto-confirmation without session)
-        ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
-        verify(speakerPoolRepository, times(1)).save(captor.capture());
-        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, captor.getValue().getStatus());
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
+
+        inOrder.verify(userApiClient).getOrCreateUser(any());
+        inOrder.verify(speakerProvisioningHook).grantSpeakerRole(eq("speaker.user"), eq("speaker@example.com"));
+        inOrder.verify(speakerPoolRepository).save(any(SpeakerPool.class));
+        inOrder.verify(statusHistoryRepository).save(any(SpeakerStatusHistory.class));
+
+        ArgumentCaptor<SpeakerPromotedToReadyEvent> promoted =
+                ArgumentCaptor.forClass(SpeakerPromotedToReadyEvent.class);
+        verify(applicationEventPublisher).publishEvent(promoted.capture());
+        assertThat(promoted.getValue().getUsername()).isEqualTo("speaker.user");
+        assertThat(promoted.getValue().getEmail()).isEqualTo("speaker@example.com");
+        assertThat(promoted.getValue().getPromotedByUsername()).isEqualTo("organizer.user");
+
+        assertThat(speaker.getUsername()).isEqualTo("speaker.user");
     }
 
     @Test
-    @DisplayName("Should allow idempotent state transitions")
-    void shouldAllowIdempotentTransitions() {
-        // Given: Speaker is QUALITY_REVIEWED
-        testSpeaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
-        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
-        when(sessionRepository.findById(sessionId)).thenReturn(Optional.empty());
+    @DisplayName("INVITED -> ACCEPTED publishes SpeakerAcceptedEvent with acceptedBy = actor.username")
+    void should_publishSpeakerAcceptedEvent_when_transitioningInvitedToAccepted() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
+        speaker.setSpeakerName("Test Speaker");
+        speaker.setCompany("Tech Corp");
+        speaker.setExpertise("Architecture");
+        Event event = seedEvent();
 
-        // When: Transition to same state
-        assertDoesNotThrow(() ->
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speakerId,
-                        SpeakerWorkflowState.QUALITY_REVIEWED,
-                        organizerUsername
-                )
-        );
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(magicLinkService.generateToken(eq(SPEAKER_ID), any(), anyLong())).thenReturn("view-token");
 
-        // Then: No error (idempotent)
-        verify(speakerPoolRepository, atLeastOnce()).save(any(SpeakerPool.class));
+        TransitionPayload payload = TransitionPayload.builder().build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.ACCEPTED, ORGANIZER, payload);
+
+        ArgumentCaptor<SpeakerAcceptedEvent> accepted = ArgumentCaptor.forClass(SpeakerAcceptedEvent.class);
+        verify(applicationEventPublisher).publishEvent(accepted.capture());
+        assertThat(accepted.getValue().getSpeakerPoolId()).isEqualTo(SPEAKER_ID);
+        assertThat(accepted.getValue().getAcceptedBy()).isEqualTo("organizer.user");
+        assertThat(speaker.getAcceptedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("DECLINED from INVITED notifies organizer and clears assigned session")
+    void should_notifyOrganizerAndClearSession_when_decliningPostInvitation() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED);
+        UUID sessionId = UUID.randomUUID();
+        speaker.setSessionId(sessionId);
+
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+
+        TransitionPayload payload = TransitionPayload.builder().reason("Speaker withdrew").build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.DECLINED, ORGANIZER, payload);
+
+        verify(organizerNotificationService).notifyOrganizerOfResponse(any(), any(), any());
+        verify(sessionRepository).deleteById(sessionId);
+        assertThat(speaker.getSessionId()).isNull();
+        assertThat(speaker.getDeclinedAt()).isNotNull();
+        assertThat(speaker.getDeclineReason()).isEqualTo("Speaker withdrew");
+    }
+
+    @Test
+    @DisplayName("DECLINED from IDENTIFIED does NOT notify organizer (no real outreach yet)")
+    void should_notNotifyOrganizer_when_decliningFromBrainstormState() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+
+        TransitionPayload payload = TransitionPayload.builder().build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.DECLINED, ORGANIZER, payload);
+
+        verify(organizerNotificationService, never()).notifyOrganizerOfResponse(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Speaker pool not found yields NotFoundException")
+    void should_throwNotFoundException_when_speakerPoolMissing() {
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.empty());
+
+        TransitionPayload payload = TransitionPayload.builder().build();
+        assertThatThrownBy(() -> service.transition(SPEAKER_ID, SpeakerWorkflowState.CONTACTED, ORGANIZER, payload))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Speaker pool entry not found");
+    }
+
+    @Test
+    @DisplayName("Publishing failure for SpeakerWorkflowStateChangeEvent does NOT roll back")
+    void should_notRollBack_when_eventPublishingFails() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+
+        org.mockito.Mockito.doThrow(new RuntimeException("EventBridge unavailable"))
+                .when(domainEventPublisher).publish(any(SpeakerWorkflowStateChangeEvent.class));
+
+        TransitionPayload payload = TransitionPayload.builder().build();
+        // Should NOT throw — the warning is logged and the transaction continues.
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.CONTACTED, ORGANIZER, payload);
+
+        verify(speakerPoolRepository).save(any(SpeakerPool.class));
+        verify(statusHistoryRepository).save(any(SpeakerStatusHistory.class));
+    }
+
+    // ------ helpers ------
+
+    private SpeakerPool seedSpeaker(SpeakerWorkflowState state) {
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(SPEAKER_ID);
+        speaker.setEventId(EVENT_ID);
+        speaker.setStatus(state);
+        speaker.setSpeakerName("Existing Name");
+        speaker.setEmail("existing@example.com");
+        return speaker;
+    }
+
+    private Event seedEvent() {
+        Event event = new Event();
+        event.setId(EVENT_ID);
+        event.setEventCode("BATbern99");
+        event.setTitle("Test Event");
+        event.setEventType(EventType.EVENING);
+        return event;
+    }
+
+    private EventSlotConfigurationResponse slotConfig(int max) {
+        EventSlotConfigurationResponse cfg = new EventSlotConfigurationResponse();
+        cfg.setMinSlots(1);
+        cfg.setMaxSlots(max);
+        return cfg;
+    }
+
+    private GetOrCreateUserResponse stubUser() {
+        GetOrCreateUserResponse resp = new GetOrCreateUserResponse();
+        resp.setUsername("speaker.user");
+        resp.setCreated(true);
+        return resp;
+    }
+
+    private static long anyLong() {
+        return org.mockito.ArgumentMatchers.anyLong();
     }
 }

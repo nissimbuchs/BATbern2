@@ -215,18 +215,18 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         }
 
         @Test
-        @DisplayName("should include CONFIRMED speakers in upcoming events")
-        void should_includeConfirmedSpeakers() throws Exception {
+        @DisplayName("should include QUALITY_REVIEWED speakers in upcoming events")
+        void should_includeQualityReviewedSpeakers() throws Exception {
             SpeakerPool speaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
-            speaker.setStatus(SpeakerWorkflowState.CONFIRMED);
+            speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
             speakerPoolRepository.save(speaker);
 
             mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
                             .param("token", validToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.upcomingEvents", hasSize(1)))
-                    .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("CONFIRMED")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Confirmed")));
+                    .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("QUALITY_REVIEWED")))
+                    .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Quality Reviewed")));
         }
 
         @Test
@@ -283,14 +283,14 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         }
 
         @Test
-        @DisplayName("should NOT show contentUrl for WITHDREW speaker")
-        void should_notShowContentUrl_forWithdrewSpeaker() throws Exception {
+        @DisplayName("should NOT show upcoming events for DECLINED speaker")
+        void should_notShowUpcomingEvents_forDeclinedSpeaker() throws Exception {
             SpeakerPool speaker = speakerPoolRepository
                     .findById(testSpeakerPoolId).orElseThrow();
-            speaker.setStatus(SpeakerWorkflowState.WITHDREW);
+            speaker.setStatus(SpeakerWorkflowState.DECLINED);
             speakerPoolRepository.save(speaker);
 
-            // WITHDREW is not in UPCOMING_STATES, so no upcoming events
+            // DECLINED is not in UPCOMING_STATES, so no upcoming events
             mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
                             .param("token", validToken))
                     .andExpect(status().isOk())
@@ -323,7 +323,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .speakerName("Dashboard Speaker")
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
-                    .status(SpeakerWorkflowState.CONFIRMED)
+                    .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .contentStatus("PENDING")
                     .build();
             speakerPoolRepository.save(soonerSpeaker);
@@ -378,7 +378,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .speakerName("Dashboard Speaker")
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
-                    .status(SpeakerWorkflowState.CONFIRMED)
+                    .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .contentStatus("APPROVED")
                     .build();
             speakerPoolRepository.save(pastSpeaker);

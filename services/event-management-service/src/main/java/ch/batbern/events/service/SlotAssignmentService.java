@@ -186,20 +186,22 @@ public class SlotAssignmentService {
     /**
      * Check if a speaker state is valid for slot assignment.
      *
-     * Slot can be assigned when speaker is:
-     * - ACCEPTED (early slot assignment before content submission)
-     * - CONTENT_SUBMITTED (slot assigned during review process)
-     * - QUALITY_REVIEWED (slot assigned after review complete)
-     * - CONFIRMED (re-assigning to different slot)
+     * <p>Per ADR-009 slot assignment is an orthogonal action (sets {@code session.start_time})
+     * — it does NOT change workflow state. Slot can be assigned at any post-ACCEPTED state
+     * along the content lifecycle:
+     * <ul>
+     *   <li>{@code ACCEPTED} — early slot assignment before content submission</li>
+     *   <li>{@code CONTENT_SUBMITTED} — slot assigned during review</li>
+     *   <li>{@code QUALITY_REVIEWED} — slot assigned after review complete</li>
+     * </ul>
      *
-     * @param state Current speaker workflow state
+     * @param state current speaker workflow state
      * @return true if speaker can be assigned to a slot
      */
     private boolean isValidForSlotAssignment(SpeakerWorkflowState state) {
         return state == SpeakerWorkflowState.ACCEPTED
                 || state == SpeakerWorkflowState.CONTENT_SUBMITTED
-                || state == SpeakerWorkflowState.QUALITY_REVIEWED
-                || state == SpeakerWorkflowState.CONFIRMED;
+                || state == SpeakerWorkflowState.QUALITY_REVIEWED;
     }
 
     /**

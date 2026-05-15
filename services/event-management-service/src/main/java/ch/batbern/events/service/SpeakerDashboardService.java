@@ -48,23 +48,19 @@ public class SpeakerDashboardService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
-    // Upcoming event states (AC2)
+    // Upcoming event states (AC2) — ADR-009 §0.1: post-INVITED states along the content lifecycle.
     private static final Set<SpeakerWorkflowState> UPCOMING_STATES = Set.of(
             SpeakerWorkflowState.INVITED,
             SpeakerWorkflowState.ACCEPTED,
-            SpeakerWorkflowState.CONFIRMED,
             SpeakerWorkflowState.CONTENT_SUBMITTED,
-            SpeakerWorkflowState.QUALITY_REVIEWED,
-            SpeakerWorkflowState.SLOT_ASSIGNED
+            SpeakerWorkflowState.QUALITY_REVIEWED
     );
 
-    // Past event states (AC3)
+    // Past event states (AC3) — post-ACCEPTED states (the speaker actually committed).
     private static final Set<SpeakerWorkflowState> PAST_STATES = Set.of(
             SpeakerWorkflowState.ACCEPTED,
-            SpeakerWorkflowState.CONFIRMED,
             SpeakerWorkflowState.CONTENT_SUBMITTED,
-            SpeakerWorkflowState.QUALITY_REVIEWED,
-            SpeakerWorkflowState.SLOT_ASSIGNED
+            SpeakerWorkflowState.QUALITY_REVIEWED
     );
 
     // Friendly labels for workflow states (AC2)
@@ -72,9 +68,7 @@ public class SpeakerDashboardService {
             SpeakerWorkflowState.INVITED, "Invitation Pending",
             SpeakerWorkflowState.ACCEPTED, "Accepted",
             SpeakerWorkflowState.CONTENT_SUBMITTED, "Content Submitted",
-            SpeakerWorkflowState.QUALITY_REVIEWED, "Content Approved",
-            SpeakerWorkflowState.SLOT_ASSIGNED, "Slot Assigned",
-            SpeakerWorkflowState.CONFIRMED, "Confirmed"
+            SpeakerWorkflowState.QUALITY_REVIEWED, "Quality Reviewed"
     );
 
     // Friendly labels for content status (AC2)
@@ -294,8 +288,8 @@ public class SpeakerDashboardService {
         boolean canSubmitContent = entry.getStatus() != SpeakerWorkflowState.INVITED
                 && entry.getStatus() != SpeakerWorkflowState.IDENTIFIED
                 && entry.getStatus() != SpeakerWorkflowState.CONTACTED
-                && entry.getStatus() != SpeakerWorkflowState.DECLINED
-                && entry.getStatus() != SpeakerWorkflowState.WITHDREW;
+                && entry.getStatus() != SpeakerWorkflowState.READY
+                && entry.getStatus() != SpeakerWorkflowState.DECLINED;
         String contentUrl = canSubmitContent ? "/speaker-portal/content" : null;
 
         return DashboardUpcomingEventDto.builder()

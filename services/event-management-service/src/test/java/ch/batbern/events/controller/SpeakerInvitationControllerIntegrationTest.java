@@ -259,13 +259,14 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
     void should_sendInvitation_when_validRequest() throws Exception {
-        // Given - Create speaker pool entry
+        // Given - Create speaker pool entry at READY (ADR-009: only READY -> INVITED is allowed,
+        // because provisioning runs at CONTACTED -> READY first).
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .username(testUsername)
                 .email(testEmail)
                 .speakerName("Test Speaker")
-                .status(SpeakerWorkflowState.IDENTIFIED)
+                .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

@@ -60,15 +60,13 @@ public class MagicLinkService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
-    // Workflow states indicating speaker has responded
+    // Workflow states indicating speaker has responded (per ADR-009 8-state model).
+    // DECLINED is terminal; ACCEPTED + content-lifecycle states represent committed speakers.
     private static final Set<SpeakerWorkflowState> RESPONDED_STATES = Set.of(
             SpeakerWorkflowState.ACCEPTED,
             SpeakerWorkflowState.DECLINED,
             SpeakerWorkflowState.CONTENT_SUBMITTED,
-            SpeakerWorkflowState.QUALITY_REVIEWED,
-            SpeakerWorkflowState.SLOT_ASSIGNED,
-            SpeakerWorkflowState.CONFIRMED,
-            SpeakerWorkflowState.WITHDREW
+            SpeakerWorkflowState.QUALITY_REVIEWED
     );
 
     private final SpeakerInvitationTokenRepository tokenRepository;

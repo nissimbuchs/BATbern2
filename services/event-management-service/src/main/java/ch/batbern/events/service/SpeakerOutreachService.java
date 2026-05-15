@@ -5,6 +5,9 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +33,17 @@ public class SpeakerOutreachService {
     private final OutreachHistoryRepository outreachHistoryRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SpeakerWorkflowService speakerWorkflowService;
+    private final SecurityContextHelper securityContextHelper;
 
     public SpeakerOutreachService(
             OutreachHistoryRepository outreachHistoryRepository,
             SpeakerPoolRepository speakerPoolRepository,
-            SpeakerWorkflowService speakerWorkflowService
+            SpeakerWorkflowService speakerWorkflowService,
+            SecurityContextHelper securityContextHelper
     ) {
         this.outreachHistoryRepository = outreachHistoryRepository;
         this.speakerPoolRepository = speakerPoolRepository;
+        this.securityContextHelper = securityContextHelper;
         this.speakerWorkflowService = speakerWorkflowService;
     }
 
@@ -99,13 +105,20 @@ public class SpeakerOutreachService {
 
         LOG.info("Created outreach history record {} for speaker {}", savedOutreach.getId(), speakerId);
 
-        // 4. Transition speaker state to CONTACTED (if not already)
+        // 4. Transition speaker state to CONTACTED (if not already) via the sole-writer.
         if (currentState == SpeakerWorkflowState.IDENTIFIED) {
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                    speakerId,
-                    SpeakerWorkflowState.CONTACTED,
-                    organizerUsername
-            );
+            List<String> roles;
+            try {
+                roles = securityContextHelper.getCurrentUserRoles();
+            } catch (SecurityException ex) {
+                roles = List.of();
+            }
+            SecurityPrincipal actor = new SecurityPrincipal(organizerUsername, roles);
+            TransitionPayload payload = TransitionPayload.builder()
+                    .reason("Outreach recorded — speaker contacted")
+                    .build();
+            speakerWorkflowService.transition(
+                    speakerId, SpeakerWorkflowState.CONTACTED, actor, payload);
             LOG.info("Transitioned speaker {} from IDENTIFIED to CONTACTED", speakerId);
         }
 

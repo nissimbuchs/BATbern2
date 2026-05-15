@@ -788,6 +788,38 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
+     * Returns HTTP 409 Conflict.
+     * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).
+     */
+    @ExceptionHandler(SlotCapacityReachedException.class)
+    public ResponseEntity<ErrorResponse> handleSlotCapacityReachedException(
+            SlotCapacityReachedException ex,
+            HttpServletRequest request) {
+        log.warn("Slot capacity reached: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "SLOT_CAPACITY_REACHED");
+        details.put("eventId", ex.getEventId().toString());
+        details.put("acceptedCount", ex.getAcceptedCount());
+        details.put("invitedCount", ex.getInvitedCount());
+        details.put("maxSlots", ex.getMaxSlots());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle DuplicateSubscriberException (email already subscribed to newsletter)
      * Returns HTTP 409 Conflict
      */

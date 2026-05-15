@@ -291,7 +291,10 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     @Test
     @DisplayName("Should allow valid transitions when following workflow")
     void should_allowValidTransitions_when_followingWorkflow() throws Exception {
-        // Transition 1: IDENTIFIED → CONTACTED
+        // Story 11.B.2 (ADR-009): IDENTIFIED → CONTACTED via PUT /status. Promotion to READY
+        // requires an email payload (provisioning) and is handled by POST /promote in
+        // Story 11.D.1; INVITED requires the slot-capacity gate at the dedicated invitation
+        // endpoint. Both are out of scope for this test.
         String contactedRequest = """
                 {
                     "newStatus": "CONTACTED",
@@ -306,38 +309,6 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                         .content(contactedRequest))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentStatus", is("CONTACTED")));
-
-        // Transition 2: CONTACTED → READY
-        String readyRequest = """
-                {
-                    "newStatus": "READY",
-                    "reason": "Speaker confirmed availability"
-                }
-                """;
-
-        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, testSpeaker.getId().toString())
-                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(readyRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.currentStatus", is("READY")));
-
-        // Transition 3: READY → ACCEPTED
-        String acceptedRequest = """
-                {
-                    "newStatus": "ACCEPTED",
-                    "reason": "Speaker officially accepted"
-                }
-                """;
-
-        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, testSpeaker.getId().toString())
-                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(acceptedRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.currentStatus", is("ACCEPTED")));
     }
 
     /**

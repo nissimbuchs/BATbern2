@@ -4,7 +4,6 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.BatchInviteRequest;
 import ch.batbern.events.dto.BatchInviteResponse;
 import ch.batbern.events.dto.InviteSpeakerRequest;
@@ -18,11 +17,11 @@ import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,12 +53,10 @@ public class SpeakerInvitationService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
-    private final MagicLinkService magicLinkService;
-    private final SpeakerInvitationEmailService emailService;
     private final SecurityContextHelper securityContextHelper;
     private final ApplicationEventPublisher eventPublisher;
     private final OutreachHistoryRepository outreachHistoryRepository;
-    private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final SpeakerWorkflowService speakerWorkflowService;
 
     /**
      * Invite a speaker to an event.
@@ -111,7 +108,8 @@ public class SpeakerInvitationService {
         log.debug("User {} for speaker {}, username: {}",
                 userCreated ? "created" : "found", request.email(), userResponse.getUsername());
 
-        // 4. Create SpeakerPool entry (AC1)
+        // 4. Create SpeakerPool entry (AC1) — initial status assignment on INSERT bypasses
+        // transition() by design (ADR-009: speakers enter the workflow at IDENTIFIED).
         SpeakerPool speakerPool = SpeakerPool.builder()
                 .eventId(event.getId())
                 .username(userResponse.getUsername())
@@ -193,61 +191,42 @@ public class SpeakerInvitationService {
             throw new IllegalArgumentException("Speaker email is required to send invitation");
         }
 
-        // 3. Generate magic link tokens
-        String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
-        String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
-
-        // 4. Capture previous status for history tracking
-        SpeakerWorkflowState previousStatus = speaker.getStatus();
-
-        // 5. Update speaker pool entry with invitation details
-        Instant invitedAt = Instant.now();
-        speaker.setInvitedAt(invitedAt);
+        // 3. Pre-mutate invitation params on the speaker (organizer-supplied; not state changes).
         speaker.setResponseDeadline(request.responseDeadline());
         speaker.setContentDeadline(request.contentDeadline());
-        speaker.setStatus(SpeakerWorkflowState.INVITED);
 
-        SpeakerPool updated = speakerPoolRepository.save(speaker);
-
-        // 5. Send invitation email asynchronously (AC3, AC4)
-        Locale locale = request.locale() != null
-                ? Locale.forLanguageTag(request.locale())
-                : Locale.GERMAN;
-
-        emailService.sendInvitationEmail(
-                updated,
-                event,
-                respondToken,
-                dashboardToken,
-                locale
-        );
-
-        // 6. Record outreach history for the automated email invitation
+        // 4. Delegate to SpeakerWorkflowService.transition() — sole writer per ADR-009.
+        //    The INVITED side-effect hook generates magic-link tokens, sends the invitation
+        //    email, sets invitedAt, and writes the speaker_status_history row.
+        //    The slot-capacity gate (READY → INVITED) is enforced inside transition()
+        //    and surfaces as SlotCapacityReachedException → HTTP 409 from GlobalExceptionHandler.
         String currentUser = securityContextHelper.getCurrentUsername();
+        SecurityPrincipal actor = new SecurityPrincipal(
+                currentUser != null ? currentUser : "system",
+                safeRoles());
+        TransitionPayload payload = TransitionPayload.builder()
+                .email(speaker.getEmail())
+                .reason("Invitation email sent")
+                .inviteContext(Map.of("locale", request.locale() != null ? request.locale() : "de"))
+                .build();
+
+        speakerWorkflowService.transition(speaker.getId(), SpeakerWorkflowState.INVITED, actor, payload);
+
+        // 5. Reload to pick up invitedAt (set by INVITED hook) for the response DTO.
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId())
+                .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
+
+        // 6. Record outreach history for the automated email invitation (audit, not state).
         OutreachHistory outreach = new OutreachHistory();
         outreach.setSpeakerPoolId(updated.getId());
-        outreach.setContactDate(invitedAt);
+        outreach.setContactDate(updated.getInvitedAt() != null ? updated.getInvitedAt() : Instant.now());
         outreach.setContactMethod("email");
         outreach.setNotes("Automated invitation email sent via speaker portal");
         outreach.setOrganizerUsername(currentUser != null ? currentUser : "system");
         outreachHistoryRepository.save(outreach);
         log.debug("Created outreach history for invitation to speaker {}", username);
 
-        // 7. Record status history for the transition to INVITED
-        if (previousStatus != SpeakerWorkflowState.INVITED) {
-            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
-            statusHistory.setSpeakerPoolId(updated.getId());
-            statusHistory.setEventId(event.getId());
-            statusHistory.setPreviousStatus(previousStatus != null ? previousStatus : SpeakerWorkflowState.IDENTIFIED);
-            statusHistory.setNewStatus(SpeakerWorkflowState.INVITED);
-            statusHistory.setChangedByUsername(currentUser != null ? currentUser : "system");
-            statusHistory.setChangeReason("Invitation email sent");
-            statusHistory.setChangedAt(invitedAt);
-            statusHistoryRepository.save(statusHistory);
-            log.debug("Created status history for speaker {} transition to INVITED", username);
-        }
-
-        // 8. Publish domain event (AC6)
+        // 7. Publish domain event (AC6)
         SpeakerInvitationSentEvent sentEvent = new SpeakerInvitationSentEvent(
                 updated.getId(),
                 eventCode,
@@ -269,6 +248,14 @@ public class SpeakerInvitationService {
                 updated.getResponseDeadline(),
                 updated.getContentDeadline()
         );
+    }
+
+    private List<String> safeRoles() {
+        try {
+            return securityContextHelper.getCurrentUserRoles();
+        } catch (SecurityException ex) {
+            return List.of();
+        }
     }
 
     /**

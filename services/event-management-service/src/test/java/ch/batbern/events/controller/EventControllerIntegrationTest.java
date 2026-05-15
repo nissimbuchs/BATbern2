@@ -690,7 +690,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .eventId(savedEvent.getId())
                 .speakerName("Alice Johnson")
                 .company("BuildCorp")
-                .status(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED)
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
                 .build());
 
         // Request event with metrics

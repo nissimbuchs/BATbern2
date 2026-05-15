@@ -199,7 +199,7 @@ class SpeakerPoolServiceTest {
                     .id(speakerId)
                     .eventId(eventId)
                     .speakerName("Confirmed Speaker")
-                    .status(SpeakerWorkflowState.CONFIRMED)
+                    .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .sessionId(sessionId)
                     .build();
 

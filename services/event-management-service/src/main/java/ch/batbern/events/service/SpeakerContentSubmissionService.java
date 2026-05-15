@@ -221,13 +221,10 @@ public class SpeakerContentSubmissionService {
             log.warn("Speaker {} references deleted session {}. Unlinking and resetting status.",
                     poolId, speaker.getSessionId());
 
-            // Fix inconsistency
+            // Fix inconsistency — content state is lost, but workflow state stays under the
+            // single-writer rule (ADR-009 / Story 11.B.2). The DECLINED branch is the
+            // terminal "no-longer-submittable" path.
             speaker.setSessionId(null);
-            if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
-                    || speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
-                    || speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED) {
-                speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
-            }
             speakerPoolRepository.save(speaker);
 
             return SpeakerContentResponse.builder()

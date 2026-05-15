@@ -286,9 +286,11 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         assertThat(content.isHasContent()).isFalse();
         assertThat(content.getWarning()).isEqualTo("Content was lost. Please resubmit.");
 
-        // And: Speaker status is reset to ACCEPTED
+        // And: Speaker sessionId is cleared. ADR-009 / Story 11.B.2: workflow status is no
+        // longer reset by orphan recovery — the single-writer rule means status mutations
+        // only flow through SpeakerWorkflowService.transition(). Content-state recovery is
+        // about session/content linkage, not workflow state.
         SpeakerPool speaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
-        assertThat(speaker.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
         assertThat(speaker.getSessionId()).isNull();
     }
 

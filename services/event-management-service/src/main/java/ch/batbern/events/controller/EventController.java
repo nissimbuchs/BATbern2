@@ -539,25 +539,20 @@ public class EventController {
     private void expandMetricsToDTO(Event event, EventResponse response) {
         UUID eventId = event.getId();
 
-        // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
+        // Count speakers along the content lifecycle (ADR-009 §0.1: CONFIRMED + SLOT_ASSIGNED
+        // are removed; the derived is_publishable predicate lands in 11.B.3).
         long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
         long contentSubmittedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
         long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
-        long slotAssignedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED);
-        long confirmedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
 
-        // Total confirmed speakers (accepted or higher)
-        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount
-                + qualityReviewedCount + slotAssignedCount + confirmedCount;
+        // Total committed speakers (ACCEPTED + later content-lifecycle states)
+        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount + qualityReviewedCount;
 
         // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
-        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount
-                + slotAssignedCount + confirmedCount;
+        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount;
 
         // Pending materials = accepted but haven't submitted content yet
         long pendingMaterials = acceptedCount;

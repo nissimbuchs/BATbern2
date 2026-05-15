@@ -1,20 +1,21 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.HtmlUtils;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,18 +24,11 @@ import java.util.List;
 /**
  * Service for quality review workflow (Story 5.5 AC11-15).
  *
- * Handles:
- * - Review queue for speakers with status='content_submitted'
- * - Content approval (quality_reviewed) with timestamp
- * - Content rejection with feedback (status remains content_submitted)
- * - Re-review workflow after rejection
- * - Automatic update to 'confirmed' when both quality_reviewed AND slot_assigned (AC16-17)
- *
- * Quality Review Criteria (AC12):
- * - Abstract length <= 1000 characters
- * - "Lessons learned" detected (auto-flag if missing)
- * - No product promotion detected (auto-flag if found)
- * - Professional tone check
+ * <p>Story 11.B.2 (ADR-009): the state mutation to {@code QUALITY_REVIEWED} delegates to
+ * {@link SpeakerWorkflowService#transition}. The legacy auto-confirm path is gone —
+ * {@code CONFIRMED} no longer exists; the derived {@code is_publishable} predicate
+ * ({@code QUALITY_REVIEWED AND slot_assigned}) is computed at read time (exposure lands
+ * in 11.B.3).
  */
 @Slf4j
 @Service
@@ -44,11 +38,11 @@ public class QualityReviewService {
     private final EventRepository eventRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
-    private final SessionUserRepository sessionUserRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
-    private final ApplicationEventPublisher eventPublisher;
     private final EmailService emailService;
     private final MagicLinkService magicLinkService;
+    private final SpeakerWorkflowService speakerWorkflowService;
+    private final SecurityContextHelper securityContextHelper;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -75,38 +69,39 @@ public class QualityReviewService {
     }
 
     /**
-     * Approve speaker content.
+     * Approve speaker content — delegates the state transition to
+     * {@link SpeakerWorkflowService#transition} (sole writer per ADR-009).
      *
-     * Updates status to 'quality_reviewed' and checks if speaker should auto-update to 'confirmed'
-     * (if slot also assigned). Uses optimistic locking to handle concurrent updates (AC35).
+     * <p>The target state is {@code QUALITY_REVIEWED}; {@code CONFIRMED} is gone. The
+     * "ready for agenda" predicate ({@code is_publishable = QUALITY_REVIEWED && slot_assigned})
+     * is computed at read time (exposed in 11.B.3).
      *
      * @param poolId the speaker pool ID
      * @param moderatorUsername the moderator approving the content
-     * @throws jakarta.persistence.OptimisticLockException if concurrent update detected
      */
     @Transactional
     public void approveContent(String poolId, String moderatorUsername) {
         log.info("Approving content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
-        SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker pool entry not found: " + poolId));
+        java.util.UUID speakerId = java.util.UUID.fromString(poolId);
+        if (!speakerPoolRepository.existsById(speakerId)) {
+            throw new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId);
+        }
 
-        ch.batbern.shared.types.SpeakerWorkflowState previousState = speaker.getStatus();
-        speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
+        SecurityPrincipal actor = new SecurityPrincipal(moderatorUsername, safeRoles());
+        TransitionPayload payload = TransitionPayload.builder()
+                .reason("Content approved by moderator")
+                .build();
 
-        // Publish state change event
-        eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
-                speaker.getId(),
-                speaker.getEventId(),
-                previousState,
-                ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED,
-                moderatorUsername
-        ));
+        speakerWorkflowService.transition(speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, actor, payload);
+    }
 
-        // Check if speaker should auto-update to confirmed (AC17)
-        checkAndUpdateToConfirmed(speaker);
+    private List<String> safeRoles() {
+        try {
+            return securityContextHelper.getCurrentUserRoles();
+        } catch (SecurityException ex) {
+            return List.of();
+        }
     }
 
     /**
@@ -259,67 +254,4 @@ public class QualityReviewService {
             """, safeSpeakerName, safeEventName, safeFeedback, portalUrl, portalUrl, portalUrl);
     }
 
-    /**
-     * Check if speaker should be auto-updated to 'confirmed' status.
-     *
-     * A speaker is confirmed when BOTH conditions are met (AC17):
-     * - Status is 'quality_reviewed' (content approved)
-     * - Session has start_time set (slot assigned)
-     *
-     * Order doesn't matter - quality review and slot assignment can happen in any order (AC16).
-     *
-     * Uses optimistic locking to prevent race conditions when multiple organizers work concurrently (AC35).
-     *
-     * @param speaker the speaker pool entry
-     * @throws jakarta.persistence.OptimisticLockException if concurrent update detected (retry with fresh data)
-     */
-    void checkAndUpdateToConfirmed(SpeakerPool speaker) {
-        log.debug("Checking if speaker {} should be updated to confirmed", speaker.getId());
-
-        // Reload speaker to get fresh data (handles optimistic locking)
-        SpeakerPool freshSpeaker = speakerPoolRepository.findById(speaker.getId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker pool entry not found: " + speaker.getId()));
-
-        // Check condition 1: Status is quality_reviewed
-        boolean isQualityReviewed =
-                freshSpeaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED;
-
-        // Check condition 2: Session has start_time (slot assigned)
-        boolean hasSlotAssigned = false;
-        if (freshSpeaker.getSessionId() != null) {
-            java.util.Optional<Session> sessionOpt = sessionRepository.findById(freshSpeaker.getSessionId());
-            if (sessionOpt.isPresent() && sessionOpt.get().getStartTime() != null) {
-                hasSlotAssigned = true;
-            }
-        }
-
-        // Auto-update to confirmed when BOTH conditions met (AC17)
-        if (isQualityReviewed && hasSlotAssigned) {
-            log.info("Speaker {} meets confirmation criteria, updating status to CONFIRMED", freshSpeaker.getId());
-
-            ch.batbern.shared.types.SpeakerWorkflowState previousState = freshSpeaker.getStatus();
-            freshSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
-            speakerPoolRepository.save(freshSpeaker);
-
-            // Update session_users.is_confirmed
-            java.util.List<ch.batbern.events.domain.SessionUser> sessionUsers =
-                    sessionUserRepository.findBySessionId(freshSpeaker.getSessionId());
-            for (ch.batbern.events.domain.SessionUser sessionUser : sessionUsers) {
-                sessionUser.confirm();
-                sessionUserRepository.save(sessionUser);
-            }
-
-            // Publish state change event
-            eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
-                    freshSpeaker.getId(),
-                    freshSpeaker.getEventId(),
-                    previousState,
-                    ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
-                    null  // System auto-update, not triggered by specific user
-            ));
-
-            log.info("Speaker {} successfully confirmed", freshSpeaker.getId());
-        }
-    }
 }

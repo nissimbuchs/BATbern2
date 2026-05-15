@@ -1,344 +1,437 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
+import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.events.SpeakerAcceptedEvent;
+import ch.batbern.shared.events.SpeakerPromotedToReadyEvent;
 import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import ch.batbern.shared.types.TokenAction;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Speaker Workflow Service - manages speaker state transitions.
- * Story 5.3: Speaker Outreach Tracking
- * Architecture: Linear workflow with orthogonal slot assignment
+ * Speaker workflow service — sole writer of {@code speaker_pool.status} per ADR-009.
  *
- * Handles speaker lifecycle state management with validation.
- * Ensures speakers can only transition through valid workflow states.
+ * <p>Every mutation to a speaker's workflow state flows through {@link #transition} which:
+ * <ol>
+ *   <li>Validates the transition against a single allow-list (no other validator exists)</li>
+ *   <li>Enforces state-specific preconditions (email at READY, slot-capacity at INVITED,
+ *       reason at DECLINED from INVITED+)</li>
+ *   <li>Runs the state-specific side-effect hook (provisioning seam, invitation email,
+ *       organizer notification, session cleanup)</li>
+ *   <li>Persists the new state + writes a {@link SpeakerStatusHistory} row + publishes
+ *       {@link SpeakerWorkflowStateChangeEvent} and state-specific domain events</li>
+ * </ol>
  *
- * State flow (linear):
- * IDENTIFIED → CONTACTED → READY → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
+ * <p>Same-state calls write a self-transition history row (audit "re-affirm") but skip
+ * preconditions, hooks, and state-specific events — see ADR-009 §0.1.
  *
- * Slot assignment (orthogonal action):
- * - Sets session.startTime (not a state transition)
- * - Can happen at any point after ACCEPTED
- * - Auto-confirmation triggers when QUALITY_REVIEWED + slot assigned
- *
- * Three allowed flows:
- * 1. Quality first: ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → [assign slot] → CONFIRMED
- * 2. Slot first: ACCEPTED → [assign slot] → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
- * 3. Slot during: ACCEPTED → CONTENT_SUBMITTED → [assign slot] → QUALITY_REVIEWED → CONFIRMED
- *
- * Alternative flows:
- * - Any state → DECLINED (speaker declines invitation)
- * - ACCEPTED → WITHDREW (speaker backs out after accepting)
- * - ACCEPTED → OVERFLOW (too many speakers)
+ * @see <a href="../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009</a>
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class SpeakerWorkflowService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SpeakerWorkflowService.class);
+    /**
+     * Allow-list of legal forward transitions per ADR-009. Same-state transitions and
+     * (any non-terminal) → DECLINED are also legal but handled explicitly in {@link #transition}.
+     */
+    private static final Map<SpeakerWorkflowState, Set<SpeakerWorkflowState>> ALLOWED = Map.ofEntries(
+            Map.entry(SpeakerWorkflowState.IDENTIFIED,
+                    Set.of(SpeakerWorkflowState.CONTACTED, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.CONTACTED,
+                    Set.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.READY,
+                    Set.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.INVITED,
+                    Set.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.ACCEPTED,
+                    Set.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.CONTENT_SUBMITTED,
+                    Set.of(SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.DECLINED)),
+            Map.entry(SpeakerWorkflowState.QUALITY_REVIEWED,
+                    Set.of(SpeakerWorkflowState.DECLINED))
+            // DECLINED → terminal (no outgoing transitions)
+    );
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final EventRepository eventRepository;
-    private final DomainEventPublisher eventPublisher;
-
-    public SpeakerWorkflowService(
-            SpeakerPoolRepository speakerPoolRepository,
-            SessionRepository sessionRepository,
-            EventRepository eventRepository,
-            DomainEventPublisher eventPublisher
-    ) {
-        this.speakerPoolRepository = speakerPoolRepository;
-        this.sessionRepository = sessionRepository;
-        this.eventRepository = eventRepository;
-        this.eventPublisher = eventPublisher;
-    }
+    private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final EventTypeService eventTypeService;
+    private final UserApiClient userApiClient;
+    private final SpeakerProvisioningHook speakerProvisioningHook;
+    private final SpeakerInvitationEmailService invitationEmailService;
+    private final SpeakerAcceptanceEmailService acceptanceEmailService;
+    private final OrganizerNotificationService organizerNotificationService;
+    private final MagicLinkService magicLinkService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final DomainEventPublisher domainEventPublisher;
 
     /**
-     * Update speaker workflow state with validation.
+     * Sole entry point for mutating {@code speaker_pool.status}. See class-level docs for
+     * the body ordering, allow-list, and side-effect contract.
      *
-     * @param speakerId UUID of the speaker in the pool
-     * @param newState New workflow state to transition to
-     * @param organizerUsername Username of the organizer making the change
-     * @throws IllegalArgumentException if speaker not found
-     * @throws IllegalStateException if state transition is invalid
+     * @param speakerPoolId speaker pool primary key
+     * @param target target workflow state
+     * @param actor authenticated principal that triggered the change
+     * @param payload optional fields used by side-effect hooks (email, reason, preferences, …)
+     * @return persisted speaker pool + status-history row
+     * @throws NotFoundException speaker pool entry not found
+     * @throws InvalidStateTransitionException target not reachable from current state
+     * @throws ValidationException precondition failed (e.g., missing email at READY)
+     * @throws SlotCapacityReachedException slot-capacity gate blocks READY → INVITED
      */
     @Transactional
-    public void updateSpeakerWorkflowState(
-            UUID speakerId,
-            SpeakerWorkflowState newState,
-            String organizerUsername
+    public TransitionResult transition(
+            UUID speakerPoolId,
+            SpeakerWorkflowState target,
+            SecurityPrincipal actor,
+            TransitionPayload payload
     ) {
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Speaker not found: " + speakerId
-                ));
+        TransitionPayload safePayload = payload != null ? payload : TransitionPayload.builder().build();
 
-        SpeakerWorkflowState currentState = speaker.getStatus();
+        // 1. Load speaker pool
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
+                .orElseThrow(() -> new NotFoundException("Speaker pool entry not found: " + speakerPoolId));
 
-        // Validate state transition
-        if (!isValidTransition(currentState, newState)) {
-            throw new IllegalStateException(
-                    String.format("Invalid state transition for speaker %s: %s → %s",
-                            speakerId, currentState, newState)
-            );
+        // 2. Capture current state
+        SpeakerWorkflowState current = speaker.getStatus();
+
+        // 3. Allow-list check
+        if (current == target) {
+            return handleSameStateTransition(speaker, current, actor, safePayload);
         }
 
-        LOG.info("Transitioning speaker {} from {} to {} by organizer {}",
-                speakerId, currentState, newState, organizerUsername);
-
-        speaker.setStatus(newState);
-        speakerPoolRepository.save(speaker);
-
-        // Check for auto-confirmation when quality review completes
-        if (newState == SpeakerWorkflowState.QUALITY_REVIEWED) {
-            checkAndUpdateToConfirmed(speaker, organizerUsername);
+        if (!isAllowed(current, target)) {
+            throw new InvalidStateTransitionException(
+                    String.format("Invalid state transition for speaker pool %s: %s → %s",
+                            speakerPoolId, current.name(), target.name()));
         }
 
-        // Publish SpeakerWorkflowStateChangeEvent to EventBridge (Story 6.0a CODE-001)
-        publishStateChangeEvent(speaker, currentState, newState, organizerUsername);
+        // 4. Preconditions (target-specific)
+        Event event = loadEvent(speaker.getEventId());
+        enforcePrecondition(target, current, event, safePayload);
+
+        // 5. Side-effect hook (target-specific) — may mutate the in-memory speaker
+        runSideEffectHook(speaker, event, current, target, actor, safePayload);
+
+        // 6. Persist new state — the ONLY production-code call to SpeakerPool#setStatus.
+        speaker.setStatus(target);
+        SpeakerPool persisted = speakerPoolRepository.save(speaker);
+
+        // 7. Write status-history row
+        SpeakerStatusHistory historyRow = writeHistoryRow(persisted, current, target, actor, safePayload);
+
+        // 8. Publish SpeakerWorkflowStateChangeEvent (best-effort — failure does NOT roll back)
+        publishWorkflowStateChangeEvent(persisted, current, target, actor);
+
+        // 9. State-specific domain events
+        publishStateSpecificEvents(persisted, event, current, target, actor);
+
+        return new TransitionResult(persisted, historyRow);
     }
 
-    /**
-     * Publish a speaker workflow state change event.
-     * Story 6.0a CODE-001: Domain event publishing
-     *
-     * @param speaker The speaker pool entry
-     * @param fromState Previous workflow state
-     * @param toState New workflow state
-     * @param organizerUsername Username of the organizer making the change
-     */
-    private void publishStateChangeEvent(
+    private boolean isAllowed(SpeakerWorkflowState from, SpeakerWorkflowState to) {
+        Set<SpeakerWorkflowState> allowed = ALLOWED.get(from);
+        return allowed != null && allowed.contains(to);
+    }
+
+    private TransitionResult handleSameStateTransition(
             SpeakerPool speaker,
-            SpeakerWorkflowState fromState,
-            SpeakerWorkflowState toState,
-            String organizerUsername
+            SpeakerWorkflowState state,
+            SecurityPrincipal actor,
+            TransitionPayload payload
+    ) {
+        // Preconditions, side-effects, and state-specific events are all SKIPPED on same-state.
+        SpeakerStatusHistory historyRow = writeHistoryRow(speaker, state, state, actor, payload);
+        publishWorkflowStateChangeEvent(speaker, state, state, actor);
+        return new TransitionResult(speaker, historyRow);
+    }
+
+    private void enforcePrecondition(
+            SpeakerWorkflowState target,
+            SpeakerWorkflowState current,
+            Event event,
+            TransitionPayload payload
+    ) {
+        switch (target) {
+            case READY -> requireEmail(payload);
+            case INVITED -> enforceSlotCapacity(event);
+            case DECLINED -> requireDeclineReasonIfPostInvitation(current, payload);
+            default -> { /* no precondition */ }
+        }
+    }
+
+    private void requireEmail(TransitionPayload payload) {
+        if (payload.email() == null || payload.email().isBlank()) {
+            throw new ValidationException("email is required to promote speaker to READY");
+        }
+    }
+
+    private void enforceSlotCapacity(Event event) {
+        int maxSlots = eventTypeService.getEventType(event.getEventType()).getMaxSlots();
+        long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(), SpeakerWorkflowState.ACCEPTED);
+        long invitedCount = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(), SpeakerWorkflowState.INVITED);
+        if (acceptedCount + invitedCount >= maxSlots) {
+            throw new SlotCapacityReachedException(event.getId(), acceptedCount, invitedCount, maxSlots);
+        }
+    }
+
+    private void requireDeclineReasonIfPostInvitation(SpeakerWorkflowState current, TransitionPayload payload) {
+        if (isPostInvitation(current)
+                && (payload.reason() == null || payload.reason().isBlank())) {
+            throw new ValidationException(
+                    "decline reason is required after a speaker has been invited");
+        }
+    }
+
+    private boolean isPostInvitation(SpeakerWorkflowState state) {
+        return state == SpeakerWorkflowState.INVITED
+                || state == SpeakerWorkflowState.ACCEPTED
+                || state == SpeakerWorkflowState.CONTENT_SUBMITTED
+                || state == SpeakerWorkflowState.QUALITY_REVIEWED;
+    }
+
+    private void runSideEffectHook(
+            SpeakerPool speaker,
+            Event event,
+            SpeakerWorkflowState current,
+            SpeakerWorkflowState target,
+            SecurityPrincipal actor,
+            TransitionPayload payload
+    ) {
+        switch (target) {
+            case READY -> runReadyHook(speaker, payload);
+            case INVITED -> runInvitedHook(speaker, event, payload);
+            case ACCEPTED -> runAcceptedHook(speaker, event);
+            case DECLINED -> runDeclinedHook(speaker, event, current, payload);
+            case CONTENT_SUBMITTED -> {
+                // No-op: content persistence is owned by ContentSubmissionService (11.C.2).
+            }
+            case QUALITY_REVIEWED -> {
+                // No-op: review persistence is owned by QualityReviewService.
+            }
+            default -> { /* IDENTIFIED/CONTACTED have no hooks */ }
+        }
+    }
+
+    private void runReadyHook(SpeakerPool speaker, TransitionPayload payload) {
+        // CONTACTED → READY: provisioning seam. Cognito provisioning lands in 11.E.2; for
+        // 11.B.2 we look up / create the User (cognitoSync=false) and stub the SPEAKER role grant.
+        // The payload's email becomes the canonical speaker_pool.email — it's the one used to
+        // provision the User and the one the SpeakerPromotedToReadyEvent will carry downstream.
+        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
+        userRequest.setEmail(payload.email());
+        userRequest.setFirstName(payload.firstName() != null ? payload.firstName() : firstNameFallback(speaker));
+        userRequest.setLastName(payload.lastName() != null ? payload.lastName() : lastNameFallback(speaker));
+        userRequest.setCognitoSync(false);
+
+        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+        speaker.setUsername(userResponse.getUsername());
+        speaker.setEmail(payload.email());
+
+        speakerProvisioningHook.grantSpeakerRole(userResponse.getUsername(), payload.email());
+    }
+
+    private void runInvitedHook(SpeakerPool speaker, Event event, TransitionPayload payload) {
+        // READY → INVITED: generate magic-link tokens + send invitation email. The magic-link
+        // token system remains until Phase F (11.F.1); Phase E (11.E.2) rewires the email
+        // template to a Cognito login URL + temp password.
+        String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
+        String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
+
+        Locale locale = resolveLocale(payload);
+        invitationEmailService.sendInvitationEmail(speaker, event, respondToken, dashboardToken, locale);
+
+        speaker.setInvitedAt(Instant.now());
+    }
+
+    private void runAcceptedHook(SpeakerPool speaker, Event event) {
+        // INVITED → ACCEPTED: stamp acceptedAt, send confirmation email. SpeakerAcceptedEvent
+        // is published below in publishStateSpecificEvents — its listener auto-creates the session.
+        speaker.setAcceptedAt(Instant.now());
+        speaker.setIsTentative(false);
+        speaker.setTentativeReason(null);
+
+        try {
+            String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
+            acceptanceEmailService.sendAcceptanceConfirmationEmail(
+                    speaker, event, viewToken, Locale.GERMAN);
+        } catch (Exception ex) {
+            log.warn("Failed to send acceptance confirmation email for speaker {}: {}",
+                    speaker.getId(), ex.getMessage());
+        }
+    }
+
+    private void runDeclinedHook(
+            SpeakerPool speaker,
+            Event event,
+            SpeakerWorkflowState current,
+            TransitionPayload payload
+    ) {
+        // (any non-terminal) → DECLINED: stamp declinedAt + reason, notify organizer for
+        // post-invitation declines, clear assigned session.
+        speaker.setDeclinedAt(Instant.now());
+        if (payload.reason() != null) {
+            speaker.setDeclineReason(payload.reason());
+        }
+
+        if (isPostInvitation(current)) {
+            organizerNotificationService.notifyOrganizerOfResponse(
+                    speaker, event, SpeakerResponseType.DECLINE);
+
+            if (speaker.getSessionId() != null) {
+                UUID sessionId = speaker.getSessionId();
+                log.info("Declining speaker {} - deleting associated session {}",
+                        speaker.getId(), sessionId);
+                speaker.setSessionId(null);
+                sessionRepository.deleteById(sessionId);
+            }
+        }
+    }
+
+    private SpeakerStatusHistory writeHistoryRow(
+            SpeakerPool speaker,
+            SpeakerWorkflowState previous,
+            SpeakerWorkflowState next,
+            SecurityPrincipal actor,
+            TransitionPayload payload
+    ) {
+        SpeakerStatusHistory history = new SpeakerStatusHistory();
+        history.setSpeakerPoolId(speaker.getId());
+        history.setEventId(speaker.getEventId());
+        history.setSessionId(speaker.getSessionId());
+        history.setPreviousStatus(previous);
+        history.setNewStatus(next);
+        history.setChangedByUsername(actor.username());
+        history.setChangeReason(payload.reason());
+        history.setChangedAt(Instant.now());
+        return statusHistoryRepository.save(history);
+    }
+
+    private void publishWorkflowStateChangeEvent(
+            SpeakerPool speaker,
+            SpeakerWorkflowState from,
+            SpeakerWorkflowState to,
+            SecurityPrincipal actor
     ) {
         try {
             SpeakerWorkflowStateChangeEvent event = new SpeakerWorkflowStateChangeEvent(
                     speaker.getId(),
                     speaker.getEventId(),
-                    fromState,
-                    toState,
-                    speaker.getUsername() != null ? speaker.getUsername() : organizerUsername
+                    from,
+                    to,
+                    actor.username()
             );
-
-            eventPublisher.publish(event);
-            LOG.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
-                    fromState, toState, speaker.getId());
-        } catch (Exception e) {
-            // Log but don't fail the transaction if event publishing fails
-            LOG.warn("Failed to publish SpeakerWorkflowStateChangeEvent for speaker {}: {}",
-                    speaker.getId(), e.getMessage());
+            domainEventPublisher.publish(event);
+            log.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
+                    from, to, speaker.getId());
+        } catch (Exception ex) {
+            log.warn("Failed to publish SpeakerWorkflowStateChangeEvent for speaker {}: {}",
+                    speaker.getId(), ex.getMessage());
         }
     }
 
-    /**
-     * Validate if a state transition is allowed.
-     *
-     * Business rules (Linear Workflow with Orthogonal Slot Assignment):
-     * - IDENTIFIED can transition to CONTACTED, DECLINED
-     * - CONTACTED can transition to READY, DECLINED
-     * - READY can transition to ACCEPTED, DECLINED
-     * - ACCEPTED can transition to CONTENT_SUBMITTED, DECLINED, WITHDREW, OVERFLOW
-     * - CONTENT_SUBMITTED can transition to QUALITY_REVIEWED, DECLINED, WITHDREW
-     * - QUALITY_REVIEWED can transition to CONFIRMED, DECLINED, WITHDREW
-     * - CONFIRMED auto-triggered when QUALITY_REVIEWED + slot assigned (session.startTime set)
-     * - DECLINED and CONFIRMED are terminal states
-     * - WITHDREW can transition back to ACCEPTED (if speaker wants back in)
-     * - OVERFLOW can transition to ACCEPTED (if slot opens up)
-     *
-     * Note: SLOT_ASSIGNED state removed - slot assignment is an orthogonal action (sets session.startTime)
-     *
-     * @param currentState Current speaker state
-     * @param newState Desired new state
-     * @return true if transition is valid
-     */
-    private boolean isValidTransition(SpeakerWorkflowState currentState, SpeakerWorkflowState newState) {
-        // Allow staying in same state (idempotent operations)
-        if (currentState == newState) {
-            return true;
+    private void publishStateSpecificEvents(
+            SpeakerPool speaker,
+            Event event,
+            SpeakerWorkflowState from,
+            SpeakerWorkflowState to,
+            SecurityPrincipal actor
+    ) {
+        // CONTACTED → READY → SpeakerPromotedToReadyEvent (consumed by Phase E for Cognito email).
+        if (from == SpeakerWorkflowState.CONTACTED && to == SpeakerWorkflowState.READY) {
+            SpeakerPromotedToReadyEvent promoted = SpeakerPromotedToReadyEvent.builder()
+                    .speakerPoolId(speaker.getId())
+                    .eventCode(event.getEventCode())
+                    .username(speaker.getUsername())
+                    .email(speaker.getEmail())
+                    .promotedAt(Instant.now())
+                    .promotedByUsername(actor.username())
+                    .build();
+            applicationEventPublisher.publishEvent(promoted);
         }
 
-        return switch (currentState) {
-            case IDENTIFIED -> newState == SpeakerWorkflowState.CONTACTED
-                    || newState == SpeakerWorkflowState.DECLINED;
-
-            case CONTACTED -> newState == SpeakerWorkflowState.READY
-                    || newState == SpeakerWorkflowState.DECLINED;
-
-            case READY -> newState == SpeakerWorkflowState.ACCEPTED
-                    || newState == SpeakerWorkflowState.DECLINED;
-
-            case ACCEPTED -> newState == SpeakerWorkflowState.CONTENT_SUBMITTED
-                    || newState == SpeakerWorkflowState.DECLINED
-                    || newState == SpeakerWorkflowState.WITHDREW
-                    || newState == SpeakerWorkflowState.OVERFLOW;
-
-            case CONTENT_SUBMITTED -> newState == SpeakerWorkflowState.QUALITY_REVIEWED
-                    || newState == SpeakerWorkflowState.DECLINED
-                    || newState == SpeakerWorkflowState.WITHDREW;
-
-            case QUALITY_REVIEWED -> newState == SpeakerWorkflowState.CONFIRMED
-                    || newState == SpeakerWorkflowState.DECLINED
-                    || newState == SpeakerWorkflowState.WITHDREW;
-
-            case WITHDREW -> newState == SpeakerWorkflowState.ACCEPTED; // Re-acceptance allowed
-
-            case OVERFLOW -> newState == SpeakerWorkflowState.ACCEPTED; // Slot opened up
-
-            // SLOT_ASSIGNED removed - slot assignment is now an action, not a state
-            case SLOT_ASSIGNED -> false; // Should not be used
-
-            case DECLINED, CONFIRMED -> false; // Terminal states
-
-            default -> false;
-        };
-    }
-
-    /**
-     * Check if a speaker can be contacted (is in valid state for outreach).
-     *
-     * @param speakerId UUID of the speaker
-     * @return true if speaker is in IDENTIFIED or OPEN state
-     */
-    public boolean canContactSpeaker(UUID speakerId) {
-        return speakerPoolRepository.findById(speakerId)
-                .map(speaker -> {
-                    SpeakerWorkflowState state = speaker.getStatus();
-                    return state == SpeakerWorkflowState.IDENTIFIED;
-                })
-                .orElse(false);
-    }
-
-    /**
-     * Check if speaker has slot assigned and auto-update to CONFIRMED if so.
-     *
-     * This implements the simple linear workflow where:
-     * - When speaker reaches QUALITY_REVIEWED state
-     * - AND they have a time slot assigned (session.startTime != null)
-     * - THEN auto-confirm them
-     *
-     * @param speaker The speaker to check
-     * @param organizerUsername Username of the organizer (for audit trail)
-     */
-    private void checkAndUpdateToConfirmed(SpeakerPool speaker, String organizerUsername) {
-        // Speaker just reached QUALITY_REVIEWED state
-        // Check if they also have a slot assigned
-        boolean hasSlotAssigned = hasTimeSlotAssigned(speaker);
-
-        if (hasSlotAssigned) {
-            LOG.info("Auto-confirming speaker {} - quality review complete and slot assigned",
-                    speaker.getId());
-
-            speaker.setStatus(SpeakerWorkflowState.CONFIRMED);
-            speakerPoolRepository.save(speaker);
-
-            LOG.info("Speaker {} auto-confirmed by system (triggered by organizer {})",
-                    speaker.getId(), organizerUsername);
-
-            // TODO: Publish SpeakerConfirmedEvent
-        } else {
-            LOG.debug("Speaker {} quality reviewed but no slot assigned yet - staying at QUALITY_REVIEWED",
-                    speaker.getId());
+        // INVITED → ACCEPTED → SpeakerAcceptedEvent (consumed by SpeakerAcceptedEventListener).
+        if (from == SpeakerWorkflowState.INVITED && to == SpeakerWorkflowState.ACCEPTED) {
+            SpeakerAcceptedEvent accepted = SpeakerAcceptedEvent.builder()
+                    .eventId(event.getId())
+                    .eventCode(event.getEventCode())
+                    .speakerPoolId(speaker.getId())
+                    .speakerName(speaker.getSpeakerName())
+                    .company(speaker.getCompany())
+                    .expertise(speaker.getExpertise())
+                    .acceptedBy(actor.username())
+                    .build();
+            applicationEventPublisher.publishEvent(accepted);
         }
     }
 
-    /**
-     * Check if speaker has been assigned a time slot.
-     * A slot is assigned if the speaker's session has a start_time set.
-     *
-     * @param speaker The speaker to check
-     * @return true if time slot is assigned
-     */
-    private boolean hasTimeSlotAssigned(SpeakerPool speaker) {
-        if (speaker.getSessionId() == null) {
-            return false;
+    private Event loadEvent(UUID eventId) {
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventId));
+    }
+
+    private Locale resolveLocale(TransitionPayload payload) {
+        if (payload.inviteContext() != null) {
+            Object locale = payload.inviteContext().get("locale");
+            if (locale instanceof Locale l) {
+                return l;
+            }
+            if (locale instanceof String tag && !tag.isBlank()) {
+                return Locale.forLanguageTag(tag);
+            }
         }
-
-        return sessionRepository.findById(speaker.getSessionId())
-                .map(session -> session.getStartTime() != null)
-                .orElse(false);
+        return Locale.GERMAN;
     }
 
-    /**
-     * Check if an event has speaker overflow (more accepted speakers than max slots).
-     * Story 6.0a CODE-002: Overflow detection
-     *
-     * Counts speakers in ACCEPTED or higher states (CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED)
-     * and compares against the event's venue capacity.
-     *
-     * Note: Currently using venueCapacity as a proxy for max speaker slots.
-     * In a future iteration, Event entity should have a dedicated maxSpeakerSlots field.
-     *
-     * @param eventId UUID of the event to check
-     * @return true if accepted speaker count exceeds the event's max slots
-     * @throws IllegalArgumentException if event not found
-     */
-    public boolean checkForOverflow(UUID eventId) {
-        // Get event to determine max speaker slots
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
-
-        // Count speakers in ACCEPTED or higher workflow states
-        // These are speakers who have committed to speaking
-        List<SpeakerWorkflowState> acceptedStates = List.of(
-                SpeakerWorkflowState.ACCEPTED,
-                SpeakerWorkflowState.CONTENT_SUBMITTED,
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                SpeakerWorkflowState.CONFIRMED
-        );
-
-        long acceptedCount = 0;
-        for (SpeakerWorkflowState state : acceptedStates) {
-            acceptedCount += speakerPoolRepository.countByEventIdAndStatus(eventId, state);
+    private String firstNameFallback(SpeakerPool speaker) {
+        String name = speaker.getSpeakerName();
+        if (name == null || name.isBlank()) {
+            return "Speaker";
         }
-
-        // Use venue capacity as a reasonable default for max speaker slots
-        // A typical BATbern event has 6-8 speaker slots for ~200 attendees
-        // Using venueCapacity / 25 as a heuristic (1 speaker per 25 attendees)
-        int maxSpeakerSlots = Math.max(6, event.getVenueCapacity() / 25);
-
-        boolean isOverflow = acceptedCount > maxSpeakerSlots;
-
-        LOG.debug("Overflow check for event {}: accepted={}, maxSlots={}, overflow={}",
-                eventId, acceptedCount, maxSpeakerSlots, isOverflow);
-
-        return isOverflow;
+        String[] parts = name.trim().split("\\s+", 2);
+        return parts[0];
     }
 
-    /**
-     * Get the current workflow state for a speaker.
-     *
-     * @param speakerId UUID of the speaker in the pool
-     * @return Current workflow state
-     * @throws IllegalArgumentException if speaker not found
-     */
-    public SpeakerWorkflowState getSpeakerWorkflowState(UUID speakerId) {
-        return speakerPoolRepository.findById(speakerId)
-                .map(SpeakerPool::getStatus)
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + speakerId));
-    }
-
-    /**
-     * Get a speaker pool entry by ID.
-     *
-     * @param speakerId UUID of the speaker in the pool
-     * @return SpeakerPool entry
-     * @throws IllegalArgumentException if speaker not found
-     */
-    public SpeakerPool getSpeakerById(UUID speakerId) {
-        return speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + speakerId));
+    private String lastNameFallback(SpeakerPool speaker) {
+        String name = speaker.getSpeakerName();
+        if (name == null || name.isBlank()) {
+            return "Unknown";
+        }
+        String[] parts = name.trim().split("\\s+", 2);
+        return parts.length > 1 ? parts[1] : "";
     }
 }

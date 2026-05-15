@@ -170,9 +170,9 @@ class SpeakerRepositoryIntegrationTest extends AbstractIntegrationTest {
         contacted.setWorkflowState(SpeakerWorkflowState.CONTACTED);
         speakerRepository.save(contacted);
 
-        Speaker confirmed = createSpeaker("confirmed.speaker");
-        confirmed.setWorkflowState(SpeakerWorkflowState.CONFIRMED);
-        speakerRepository.save(confirmed);
+        Speaker qualityReviewed = createSpeaker("quality.speaker");
+        qualityReviewed.setWorkflowState(SpeakerWorkflowState.QUALITY_REVIEWED);
+        speakerRepository.save(qualityReviewed);
 
         // When
         List<Speaker> contactedSpeakers = speakerRepository.findAll(

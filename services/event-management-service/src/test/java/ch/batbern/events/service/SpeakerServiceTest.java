@@ -430,7 +430,7 @@ class SpeakerServiceTest {
         // Given - request with all updatable fields
         SpeakerRequest updateRequest = SpeakerRequest.builder()
                 .availability(SpeakerAvailability.BUSY)
-                .workflowState(SpeakerWorkflowState.CONFIRMED)
+                .workflowState(SpeakerWorkflowState.QUALITY_REVIEWED)
                 .expertiseAreas(List.of("AI/ML", "Data"))
                 .speakingTopics(List.of("Machine Learning", "Deep Learning"))
                 .linkedInUrl("https://linkedin.com/in/johndoe")
@@ -449,7 +449,7 @@ class SpeakerServiceTest {
 
         // Then - verify all fields updated
         assertThat(mockSpeaker.getAvailability()).isEqualTo(SpeakerAvailability.BUSY);
-        assertThat(mockSpeaker.getWorkflowState()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
+        assertThat(mockSpeaker.getWorkflowState()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
         assertThat(mockSpeaker.getExpertiseAreas()).containsExactly("AI/ML", "Data");
         assertThat(mockSpeaker.getSpeakingTopics()).containsExactly("Machine Learning", "Deep Learning");
         assertThat(mockSpeaker.getLinkedInUrl()).isEqualTo("https://linkedin.com/in/johndoe");

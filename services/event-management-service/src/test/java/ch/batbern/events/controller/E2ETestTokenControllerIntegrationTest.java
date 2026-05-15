@@ -164,7 +164,7 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         @DisplayName("should find speaker with session in any workflow status")
         void should_findSpeakerWithSession_inAnyWorkflowStatus() throws Exception {
             // Update speaker to CONFIRMED status (another valid status for speakers with sessions)
-            speakerWithSession.setStatus(SpeakerWorkflowState.CONFIRMED);
+            speakerWithSession.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
             speakerPoolRepository.save(speakerWithSession);
 
             mockMvc.perform(post("/api/v1/e2e-test/tokens/generate-e2e-set")

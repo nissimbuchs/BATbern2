@@ -142,10 +142,13 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * AC17: Approve content auto-updates to confirmed when slot already assigned
+     * Story 11.B.2 (ADR-009): approveContent transitions to QUALITY_REVIEWED.
+     * The legacy auto-confirm path is gone — CONFIRMED no longer exists; the
+     * derived is_publishable predicate (QUALITY_REVIEWED AND slot_assigned) is
+     * computed at read time (exposure in 11.B.3).
      */
     @Test
-    void should_updateToConfirmed_when_approvedAndSlotAlreadyAssigned() {
+    void should_transitionToQualityReviewed_when_approvedAndSlotAlreadyAssigned() {
         // Given: Speaker with content_submitted AND slot assigned
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
         Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
@@ -156,14 +159,9 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         // When: Approve content
         qualityReviewService.approveContent(speaker.getId().toString(), "moderator.user");
 
-        // Then: Status auto-updated to confirmed (not quality_reviewed)
+        // Then: Status transitions to QUALITY_REVIEWED (is_publishable is derived elsewhere)
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
-
-        // And: session_users.is_confirmed updated
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isTrue();
+        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
     }
 
     /**
@@ -307,61 +305,8 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(updated.getNotes()).contains("Previous rejection: Abstract too short.");
     }
 
-    /**
-     * AC17: Auto-update to confirmed when slot assigned AFTER quality review
-     */
-    @Test
-    void should_updateToConfirmed_when_slotAssignedAfterQualityReview() {
-        // Given: Speaker with quality_reviewed (already approved)
-        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
-
-        // When: Assign slot (set start_time)
-        Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        session.setStartTime(Instant.now().plus(90, ChronoUnit.DAYS));
-        session.setEndTime(Instant.now().plus(90, ChronoUnit.DAYS).plus(1, ChronoUnit.HOURS));
-        sessionRepository.save(session);
-
-        // And: Trigger check (simulates workflow event listener)
-        qualityReviewService.checkAndUpdateToConfirmed(speaker);
-
-        // Then: Status auto-updated to confirmed
-        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
-
-        // And: session_users.is_confirmed updated
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isTrue();
-    }
-
-    /**
-     * AC16: Quality review can happen before or after slot assignment (order doesn't matter)
-     */
-    @Test
-    void should_notUpdateToConfirmed_when_onlyQualityReviewedButNoSlot() {
-        // Given: Speaker with quality_reviewed but NO slot assigned
-        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
-
-        // Session has NO start_time (slot not assigned)
-        Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        assertThat(session.getStartTime()).isNull();
-
-        // When: Trigger check
-        qualityReviewService.checkAndUpdateToConfirmed(speaker);
-
-        // Then: Status remains quality_reviewed (not confirmed)
-        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
-
-        // And: session_users.is_confirmed still false
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isFalse();
-    }
+    // Story 11.B.2: legacy auto-confirm + "is_publishable derived from slot" tests removed —
+    // CONFIRMED state is gone; the derived predicate exposure lands in 11.B.3.
 
     /**
      * AC35: Optimistic locking prevents lost updates during concurrent modifications

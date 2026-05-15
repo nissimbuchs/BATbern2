@@ -228,7 +228,8 @@ public class EventWorkflowStateMachine {
                 ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED
         );
 
-        // Check for speakers in later states as well (CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED)
+        // Check for speakers in later content-lifecycle states (ADR-009 §0.1: CONFIRMED is
+        // gone; is_publishable is derived at read time, exposure lands in 11.B.3).
         long contentSubmitted = speakerPoolRepository.countByEventIdAndStatus(
                 event.getId(),
                 ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
@@ -237,12 +238,8 @@ public class EventWorkflowStateMachine {
                 event.getId(),
                 ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
         );
-        long confirmed = speakerPoolRepository.countByEventIdAndStatus(
-                event.getId(),
-                ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED
-        );
 
-        long totalReadyForSlots = acceptedSpeakers + contentSubmitted + qualityReviewed + confirmed;
+        long totalReadyForSlots = acceptedSpeakers + contentSubmitted + qualityReviewed;
 
         if (totalReadyForSlots < 1) {
             throw new WorkflowValidationException(
