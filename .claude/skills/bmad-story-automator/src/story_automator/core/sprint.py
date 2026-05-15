@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .story_keys import sprint_status_file
+from .story_keys import STORY_KEY_WITH_SLUG_RE, sprint_status_file, story_id_to_prefix
 from .utils import file_exists, read_text, trim_lines
 
 
@@ -27,10 +27,12 @@ def sprint_status_get(project_root: str, story_key: str) -> SprintStatus:
         return SprintStatus(True, story_key, status, status == "done")
     prefix = story_key
     if "." in story_key:
-        prefix = story_key.replace(".", "-")
-    elif re.fullmatch(r"\d+-\d+-.+", story_key):
-        prefix = "-".join(story_key.split("-", 2)[:2])
-    if re.fullmatch(r"\d+-\d+", prefix):
+        prefix = story_id_to_prefix(story_key)
+    elif STORY_KEY_WITH_SLUG_RE.match(story_key):
+        match = STORY_KEY_WITH_SLUG_RE.match(story_key)
+        epic, phase, story = match.group(1), (match.group(2) or "").rstrip("-"), match.group(3)
+        prefix = "-".join(part for part in (epic, phase, story) if part)
+    if re.fullmatch(r"\d+-(?:[a-z]-)?\d+", prefix):
         prefix_match = re.search(rf"(?m)^\s*({re.escape(prefix)}-[^:\s]+)\s*:\s*(\S+)", content)
         if prefix_match:
             status = prefix_match.group(2).strip()

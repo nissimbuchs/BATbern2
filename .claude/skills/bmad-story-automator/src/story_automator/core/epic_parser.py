@@ -6,6 +6,13 @@ from pathlib import Path
 from typing import Any
 
 from .common import read_text, trim_lines
+from .story_keys import story_id_sort_key
+
+# Heading shapes supported:
+#   "### Story 10.1: title"     (Epic 10 style: 3 hashes, 2-part numeric ID)
+#   "#### Story 11.A.1: title"  (Epic 11 style: 4 hashes, 3-part with phase letter)
+STORY_HEADING_RE = re.compile(r"^#{3,4}\s+Story\s+(\d+)\.((?:[A-Z]\.)?\d+):\s*(.*)$")
+STORY_NEXT_RE = re.compile(r"^#{3,4}\s+Story\s+")
 
 
 def parse_epic_file(epic_file: str | Path) -> dict[str, Any]:
@@ -16,7 +23,6 @@ def parse_epic_file(epic_file: str | Path) -> dict[str, Any]:
         if line.startswith("# "):
             epic_title = line.removeprefix("# ").strip()
             break
-    story_re = re.compile(r"^###\s+Story\s+(\d+)\.(\d+):\s*(.*)$")
     epic_re = re.compile(r"^##\s+Epic\s+(\d+):\s*(.*)$")
     current_epic_title = ""
     stories: list[dict[str, str]] = []
@@ -25,7 +31,7 @@ def parse_epic_file(epic_file: str | Path) -> dict[str, Any]:
         if epic_match:
             current_epic_title = epic_match.group(2).strip()
             continue
-        story_match = story_re.match(line)
+        story_match = STORY_HEADING_RE.match(line)
         if story_match:
             epic_num, story_num, title = story_match.groups()
             story_id = f"{epic_num}.{story_num}"
@@ -44,7 +50,7 @@ def parse_epic_file(epic_file: str | Path) -> dict[str, Any]:
 def parse_story(epic_file: str | Path, story_id: str, rules_file: str | Path) -> dict[str, Any]:
     content = read_text(epic_file)
     lines = trim_lines(content)
-    header_re = re.compile(rf"^###\s+Story\s+{re.escape(story_id)}:\s*(.*)$")
+    header_re = re.compile(rf"^#{{3,4}}\s+Story\s+{re.escape(story_id)}:\s*(.*)$")
     start_index = -1
     title = ""
     for index, line in enumerate(lines):
@@ -60,7 +66,7 @@ def parse_story(epic_file: str | Path, story_id: str, rules_file: str | Path) ->
     dependencies = ""
     in_ac = False
     for line in lines[start_index + 1 :]:
-        if line.startswith("### Story ") or line.startswith("## Epic "):
+        if STORY_NEXT_RE.match(line) or line.startswith("## Epic "):
             break
         if "Acceptance Criteria" in line:
             in_ac = True
@@ -151,7 +157,7 @@ def epic_complete(epic_file: str | Path, range_csv: str) -> dict[str, Any]:
     story_ids = [story["storyId"] for story in parse_epic_file(epic_file)["stories"]]
     if not story_ids:
         raise ValueError("no_stories_found")
-    max_epic_story = max(story_ids, key=lambda value: tuple(int(part) for part in value.split(".", 1)))
+    max_epic_story = max(story_ids, key=story_id_sort_key)
     selected = [part.strip() for part in range_csv.split(",") if part.strip()]
-    max_range_story = max(selected, key=lambda value: tuple(int(part) for part in value.split(".", 1))) if selected else "0.0"
+    max_range_story = max(selected, key=story_id_sort_key) if selected else "0.0"
     return {"ok": True, "epicComplete": max_range_story == max_epic_story, "maxEpicStory": max_epic_story}

@@ -4,9 +4,10 @@ import json
 import re
 from pathlib import Path
 
+from story_automator.core.epic_parser import STORY_HEADING_RE
 from story_automator.core.frontmatter import find_frontmatter_value, parse_frontmatter
 from story_automator.core.sprint import sprint_status_epic
-from story_automator.core.story_keys import normalize_story_key
+from story_automator.core.story_keys import normalize_story_key, story_id_sort_key
 from story_automator.core.utils import file_exists, get_project_root, iso_now, print_json, read_text, trim_lines
 
 
@@ -32,9 +33,13 @@ def check_epic_complete_action(args: list[str]) -> int:
         stories, _ = sprint_status_epic(get_project_root(), epic)
         source = "sprint_status"
     if stories:
-        stories = sorted(set(stories), key=lambda item: tuple(int(part) for part in item.replace("-", ".").split(".")[:2]))
+        stories = sorted(set(stories), key=story_id_sort_key)
         last = stories[-1]
-        print_json({"ok": True, "isLastStory": story in {last, last.replace("-", ".")}, "epic": int(epic), "storyId": story, "lastInEpic": last, "epicStoryCount": len(stories), "source": source})
+        last_norm = normalize_story_key(get_project_root(), last)
+        last_alts = {last}
+        if last_norm:
+            last_alts.update({last_norm.id, last_norm.prefix, last_norm.key})
+        print_json({"ok": True, "isLastStory": story in last_alts, "epic": int(epic), "storyId": story, "lastInEpic": last, "epicStoryCount": len(stories), "source": source})
         return 0
     print_json({"ok": True, "isLastStory": False, "epic": int(epic), "storyId": story, "reason": "could_not_determine", "source": "fallback"})
     return 0
@@ -61,7 +66,8 @@ def get_epic_stories_action(args: list[str]) -> int:
         return 0
     epic_file = find_epic_file(epic)
     if epic_file:
-        stories = sorted(set(re.findall(rf"\b{re.escape(epic)}\.\d+", read_text(epic_file))), key=lambda item: tuple(int(part) for part in item.split(".")))
+        story_pattern = rf"\b{re.escape(epic)}\.(?:[A-Z]\.)?\d+\b"
+        stories = sorted(set(re.findall(story_pattern, read_text(epic_file))), key=story_id_sort_key)
         if stories:
             print_json({"ok": True, "epic": epic, "stories": stories, "count": len(stories), "source": "epic_file"})
             return 0
@@ -85,9 +91,9 @@ def check_blocking_action(args: list[str]) -> int:
     dependents: list[str] = []
     current_story = ""
     for line in trim_lines(read_text(epic_file)):
-        match = re.match(r"^###\s+Story\s+(\d+\.\d+):", line)
+        match = STORY_HEADING_RE.match(line)
         if match:
-            current_story = match.group(1)
+            current_story = f"{match.group(1)}.{match.group(2)}"
             continue
         if current_story and re.search(r"(?i)Dependencies:|\*\*Dependencies\*\*:", line):
             if norm.id in line or norm.prefix in line:
@@ -170,7 +176,11 @@ def agents_resolve_action(args: list[str]) -> int:
 
 def find_epic_file(epic: str) -> str:
     root = Path(get_project_root())
-    for pattern in (f"_bmad-output/implementation-artifacts/epic-{epic}-*.md", f"docs/epics/epic-{epic}-*.md"):
+    for pattern in (
+        f"_bmad-output/implementation-artifacts/epic-{epic}-*.md",
+        f"docs/epics/epic-{epic}-*.md",
+        f"docs/prd/epic-{epic}-*.md",
+    ):
         matches = sorted(root.glob(pattern))
         if matches:
             return str(matches[0])
