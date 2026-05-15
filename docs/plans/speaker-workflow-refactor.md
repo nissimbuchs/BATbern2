@@ -213,7 +213,8 @@ plus `DECLINED` reachable from any non-terminal state.
 
 | Doc | Change |
 |---|---|
-| `docs/prd-enhanced.md` | Rewrite the "Speaker Workflow (Parallel Per-Speaker Progression)" block in FR2. Update FR3 (automated invitation) and FR17 (intelligent speaker matching) to remove "magic link" terminology in favor of "Cognito passwordless." Remove `CONFIRMED` and `SLOT_ASSIGNED` from any state lists. |
+| `docs/prd-enhanced.md` | Rewrite the "Speaker Workflow (Parallel Per-Speaker Progression)" block in FR2. Update FR3 (automated invitation) and FR17 (intelligent speaker matching) to remove "magic link" terminology in favor of "Cognito with forced password change." Remove `CONFIRMED` and `SLOT_ASSIGNED` from any state lists. |
+| `docs/prd/epic-9-speaker-authentication.md` | **Rewrite in place** against ADR-009. The Epic 9 goal (unified Cognito identity for speakers who are also attendees, zero duplicate accounts) survives; the implementation stories (9.1 JWT magic link, 9.2 on-acceptance account creation, 9.3 dual auth, 9.4 Epic 6 migration) are obsolete. New scope: speaker Cognito provisioning at `CONTACTED → READY`, Cognito-secured speaker portal, multi-role navigation, magic-link teardown. Add a "Supersedes prior Epic 9 plan per ADR-009" note at the top. See §9.3 for the rewrite scope; new story shapes are for Product to write. |
 | `docs/architecture/03-data-architecture.md` | **Delete** the entire `Speaker` entity section. Delete the `speakers` table SQL block in "Speaker Coordination Service Database Schema." Add a paragraph in the `User` section explaining that SPEAKER is a role (`user_roles.role = 'SPEAKER'`) and that the only user-level attributes speakers need (`bio` for short CV, `profile_picture_url` for portrait) are existing User fields per ADR-004 — no schema extension required. |
 | `docs/architecture/06a-workflow-state-machines.md` | Rewrite the "Speaker Workflow Management" section with the new state list, new transition diagram, new semantics for `CONTACTED`, and the explicit `CONTACTED → READY` provisioning gate. Delete the parallel-quality/slot-CONFIRMED auto-confirmation discussion. Add a "Derived flags" section for `slot_assigned` and `publishable`. Remove the `SLOT_ASSIGNED` enum-rejection note (it's gone entirely). |
 | `docs/architecture/04-api-design.md` | Update the speaker-portal API spec: remove `?token=` query parameters; document Cognito Bearer auth. Remove `POST /api/v1/auth/speaker-magic-login` and `POST /api/v1/speaker-portal/validate-token`. Add or repurpose an endpoint to perform the `CONTACTED → READY` promotion (with `email` payload). |
@@ -382,11 +383,11 @@ records, notifications — lives in `ContentSubmissionService`.
 
 | Phase | Theme | Notes |
 |---|---|---|
-| **A. Documentation alignment** | Update PRD, architecture docs, write 3 new ADRs | Independent. Do first so subsequent code reviews have a target. |
+| **A. Documentation alignment** | Update PRD, architecture docs, rewrite the Epic 9 PRD per §9.3, write ADR-009 | Independent. Do first so subsequent code reviews have a target. |
 | **B. State-machine consolidation** | Delete duplicate validator; make `SpeakerWorkflowService` sole writer; remove `SLOT_ASSIGNED` / `CONFIRMED`; introduce derived `publishable` | No UX change. Pure cleanup. Reduces drift risk before bigger changes. |
 | **C. Entity model simplification** | Migrate `speakers` → `user_profiles`; delete table; update repositories | Has DB migration; needs migration drill + rollback plan. |
 | **D. Workflow semantics update** | Introduce promote-to-READY endpoint; tighten brainstorm-phase API; relabel UI lanes; require email at the READY gate | Brings the new model live for organizers. Speakers still authenticate via magic links at this point. |
-| **E. Cognito passwordless** | Cognito Custom Auth Challenge Lambdas; auto-provision Cognito user at READY; refactor speaker-portal endpoints to Cognito auth; refactor frontend speaker pages | Largest change. End-to-end testing of email-OTP UX required. |
+| **E. Cognito with forced password change** | Auto-provision Cognito user at `CONTACTED → READY`; backend generates temp password and sets `FORCE_CHANGE_PASSWORD`; invitation email carries the temp password; refactor speaker-portal endpoints to Cognito Bearer auth; refactor frontend speaker pages to standard Cognito login. **Prerequisite:** Story 7.1 IAM/auth-flow cherry-pick from `feature/epic-6` (see §9.2). | Largest change. End-to-end testing of the invitation → first-login → password-change flow required. No Cognito Lambda triggers needed. |
 | **F. Magic-link removal** | Delete `MagicLinkService`, magic-login controllers, JWT key infra, `speaker_jwt` cookie; drop magic-link DB tables; clean up frontend `?token` handling | Final cleanup, only after Phase E proves stable. |
 
 Phases A–C can run partly in parallel. D depends on B. E depends on C and D. F depends on E.
@@ -442,11 +443,15 @@ recorded here for traceability and to anchor the Scrum Master's story breakdown.
 
 ## 7. Recommended Next Steps
 
-1. Architect drafts **ADR-009: SpeakerWorkflowService** — the single ADR codifying
-   workflow ownership, speaker-as-role, and Cognito-with-forced-password-change auth.
-   It becomes the unambiguous contract every story will cite.
-2. Hand the plan to the Scrum Master for story breakdown, starting with Phase A
-   (documentation alignment).
+1. **ADR-009 drafted and accepted.** `docs/architecture/ADR-009-unified-speaker-workflow.md`
+   exists in `Accepted` status. Other stories cite it as the contract.
+2. **Create the refactor feature branch** off `develop` (e.g.
+   `feature/speaker-workflow-refactor`). See §9.1.
+3. **Cherry-pick the salvageable bits** from `feature/speaker-account-creation` and
+   `feature/epic-6` onto the new branch. Delete those two branches. See §9.2.
+4. **Rewrite the Epic 9 PRD** in place per §9.3 (Phase A docs work).
+5. Hand the plan to the Scrum Master for story breakdown, starting with Phase A
+   (documentation alignment) on the refactor branch.
 
 ## 8. Organizer Kanban UX — Making the Next Action Obvious
 
@@ -606,3 +611,136 @@ independently:
 
 Story 1 alone closes 80% of the UX gap — primary-action button on every card. Stories
 2 and 3 layer triage and safety on top.
+
+## 9. Branch Strategy and Existing Work Reconciliation
+
+This refactor does not start on a clean slate. Two related feature branches already
+exist in the repository, magic-link code has already been merged to `develop`, and an
+Epic 9 PRD describes a now-obsolete plan. This section defines how the team handles
+each of those, and where the new work itself lives.
+
+### 9.1 Dedicated feature branch for this refactor
+
+All work in this plan lands on a dedicated long-lived feature branch off `develop`,
+conventionally named `feature/speaker-workflow-refactor` (or `feature/adr-009`). The
+branch supports the six phases of §5, lives until Phase F completes, and is merged back
+to `develop` in chunks (per phase) or all at once at the end — that scheduling is for
+the team to decide based on review capacity.
+
+Rationale: the changes are deep (state machine + auth + entity model) and span
+backend / frontend / infrastructure / database. A dedicated branch isolates
+work-in-progress from `develop` and gives Phase B–F room to settle before being
+integrated.
+
+### 9.2 Existing branches: cherry-pick the few useful bits, then delete
+
+Two feature branches exist in the repository and contain work that predates ADR-009.
+Most of their content is now obsolete; a small subset of each contains code that
+ADR-009 actively needs and should be salvaged before the branch is deleted.
+
+#### `feature/speaker-account-creation`
+
+10 commits beyond `develop`, all implementing the old Epic 9 (JWT magic link + dual
+auth + magic-link migration). Disposition:
+
+| Commit | Verdict |
+|---|---|
+| `296b6f87` — Story 9.1 JWT magic link | **Drop.** Phase F deletes magic-link auth entirely. |
+| `c6c3da75` + `045499c6` — Story 9.2 account creation | **Drop.** ADR-009 provisions at `CONTACTED → READY` (before invitation), not on speaker acceptance. Useful as reference reading, not as code to merge. |
+| `a747b94e` — Story 9.4 migration script | **Drop.** No in-flight magic-link speakers to migrate. |
+| `73d94688` — Story 9.5 multi-role navigation UI | **Cherry-pick** the Material-UI navigation components (`NavigationMenu.tsx`, `AppHeader.tsx`, `MobileDrawer.tsx`, `UserMenuDropdown.tsx`), `navigationConfig.ts`, the `AuthContext` multi-role-state additions, the role-based test files, and the German/English `common.json` i18n keys. **Skip** `SpeakerLoginPage.tsx` (no separate speaker login under ADR-009 — same Cognito login as everyone else) and the `ProtectedRoute` speaker-JWT branch (no speaker JWT exists under ADR-009). |
+| `396a9045` — null-safe `user.roles` guard in `UserMenuDropdown` | **Cherry-pick** alongside the Story 9.5 UI. |
+| `7ec0e571` — PRD "all stories complete" | **Drop.** PRD is rewritten per §9.3. |
+
+After cherry-picking, the branch is **deleted**
+(`git push origin --delete feature/speaker-account-creation`). It does not merge cleanly
+with ADR-009.
+
+#### `feature/epic-6`
+
+3 commits beyond `develop`. Two are a self-cancelling merge-then-revert pair. The
+substantive commit is:
+
+| Commit | Verdict |
+|---|---|
+| `d5cf0fcc` — Story 7.1 Cognito admin permissions + encryption key | **Cherry-pick the Cognito IAM additions and the app-client auth flow.** Specifically: `ALLOW_ADMIN_USER_PASSWORD_AUTH` on the App Client (required by `AdminInitiateAuth` for the dummy-password login flow), the IAM perms `AdminCreateUser`, `AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser`, and the related CDK unit tests. **Skip** the `COGNITO_PASSWORD_ENCRYPTION_KEY` secret — under ADR-009 the temp password is generated, embedded once in the invitation email, and never stored at rest; nothing to encrypt. |
+
+Naming wrinkle: the commit message references "Epic 7 Unified Speaker Identity" but the
+branch is named `feature/epic-6`. Inconsequential for the cherry-pick. Note it in the
+cherry-pick commit message so the trail stays readable.
+
+After cherry-picking, the branch is **deleted**.
+
+#### Timing of the cherry-picks
+
+The cherry-picks are not all needed at the same point in the phasing:
+
+- **Story 7.1 Cognito IAM** (from `feature/epic-6`) is a **prerequisite for Phase E**.
+  It can land early on the refactor branch — anywhere from Phase A through the start
+  of Phase E.
+- **Story 9.5 multi-role nav UI** (from `feature/speaker-account-creation`) is
+  independent of the auth model and can land any time. Natural home is alongside the
+  Phase E / F frontend work, but it can land earlier without harm.
+
+Cherry-picking both shortly after the refactor branch is created is the simplest
+sequencing.
+
+### 9.3 Epic 9 PRD — rewrite in place
+
+`docs/prd/epic-9-speaker-authentication.md` describes the old plan (JWT magic link,
+dual auth, Epic 6 migration). The high-level **goal** (speakers who are also attendees
+access both portals with one Cognito session, zero duplicate accounts) survives under
+ADR-009 — but the implementation stories (9.1–9.4) are now wrong, and Story 9.5 needs
+re-scoping.
+
+**Recommendation: rewrite in place.** Replace the body of
+`epic-9-speaker-authentication.md` with the new scope, bump the date, and add a
+`Supersedes prior Epic 9 plan per ADR-009` note at the top. Keeps the URL and the
+Epic-9 identifier stable; the historical pre-ADR-009 version remains in git history.
+
+Alternative if Product prefers a clean break: archive the current doc to
+`docs/prd/archived/epic-9-speaker-authentication-pre-adr-009.md` with a deprecation
+banner and create a new file with the rewritten scope.
+
+Rewritten story shapes (suggested — Product owns the final wording):
+
+| Old | Replaced by |
+|---|---|
+| Story 9.1 — JWT magic link | **Deleted.** No magic link under ADR-009. |
+| Story 9.2 — Account creation on acceptance | **9.1' — Speaker Cognito provisioning at READY.** Backend creates Cognito user with `FORCE_CHANGE_PASSWORD` at the `CONTACTED → READY` transition; grants SPEAKER role. |
+| Story 9.3 — Dual authentication (magic link + password) | **9.2' — Cognito-secured speaker portal.** Speaker portal endpoints move to `@PreAuthorize("hasRole('SPEAKER')")`; `permitAll()` is removed; frontend uses standard Cognito login. |
+| Story 9.5 — Frontend multi-role navigation | **9.3' — Multi-role navigation.** Re-scoped from the salvageable Story 9.5 cherry-pick. Same goal, no speaker-JWT branch. |
+| Story 9.4 — Migration of Epic 6 magic-link users | **9.4' — Magic-link teardown.** Delete `MagicLinkService`, `JwtConfig`, `SpeakerMagicLoginController`, `SpeakerPortalTokenController`, the `?token=` / `?jwt=` query-param handling, the `magic_link_tokens` table, and the `speaker_jwt` cookie. (Phase F of this plan.) |
+
+These story shapes are illustrative, not prescriptive. Product writes the final stories.
+
+### 9.4 Magic-link code already on `develop`
+
+Commit `296b6f87` (Story 9.1 JWT magic link) was merged to `develop` before this
+refactor began. The following code currently lives on `develop` and is **scheduled for
+deletion in Phase F**:
+
+- `services/event-management-service/.../service/MagicLinkService.java`
+- `services/event-management-service/.../config/JwtConfig.java` — the speaker-specific
+  JWT config. Confirm it is distinct from the API Gateway's general JWT validation
+  config before deletion.
+- `services/event-management-service/.../controller/SpeakerMagicLoginController.java`
+- `services/event-management-service/.../controller/SpeakerPortalTokenController.java`
+- The `?token=` and `?jwt=` query-param handling on speaker-portal frontend pages
+- The `magic_link_tokens` Flyway-managed table
+- The `speaker_jwt` HTTP-only cookie and its server-side handling
+
+This is **not a prerequisite for Phases A–E.** The new Cognito-based path is added
+before the old path is removed; they coexist on `develop` (or on the refactor branch)
+through Phases B–E. Phase F removes the magic-link code only once the Cognito path
+is proven stable.
+
+### 9.5 Summary of disposition
+
+| Item | Action | When |
+|---|---|---|
+| New work on this refactor | Lives on `feature/speaker-workflow-refactor` (or similar) | From Phase A onward |
+| `feature/speaker-account-creation` branch | Cherry-pick Story 9.5 multi-role-nav UI; delete the rest of the branch | Cherry-pick early on the refactor branch; delete after merge |
+| `feature/epic-6` branch | Cherry-pick `d5cf0fcc` Story 7.1 IAM + auth flow (skip encryption key); delete | Cherry-pick by start of Phase E |
+| `docs/prd/epic-9-speaker-authentication.md` | Rewrite in place per §9.3 | Phase A |
+| Magic-link code on `develop` | Delete in Phase F | Phase F (after Phase E proves Cognito path stable) |
