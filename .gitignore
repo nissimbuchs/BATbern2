@@ -192,4 +192,11 @@ apps/BATspa-old/src/api/anmeldungen.csv
 
 # Auto Claude data directory
 .auto-claude/
+
+# Python bytecode (story-automator skill)
+__pycache__/
+*.pyc
+
+# Story-automator runtime artifacts (per-run logs)
+_bmad-output/story-automator/
 apps/BATbern-watch/BATbern-watch.xcodeproj/project.xcworkspace/xcuserdata/nissim.xcuserdatad/UserInterfaceState.xcuserstate
