@@ -50,10 +50,12 @@ The event progresses through high-level states while speakers progress individua
 | **ARCHIVED** | Event archived | Archival trigger | Terminal state |
 
 **Speaker Workflow (Parallel Per-Speaker Progression):**
-Quality review and slot assignment are independent and can happen in any order:
-- **identified** → **contacted** → **ready** → **accepted/declined**
-- If accepted: **content_submitted** → (**quality_reviewed** ∥ **slot_assigned**) → **confirmed**
-- Additional states: **overflow** (backup speaker), **withdrew** (speaker drops out)
+Per ADR-009, each speaker progresses independently through an 8-state machine:
+- **IDENTIFIED** → **CONTACTED** → **READY** → **INVITED** → **ACCEPTED** → **CONTENT_SUBMITTED** → **QUALITY_REVIEWED** (terminal happy state)
+- **DECLINED** is reachable from any non-terminal state (covers leads that don't pan out, declined invitations, and post-acceptance withdrawals via status-history reason)
+- `slot_assigned` and `publishable` are **derived flags** computed at read time (no persisted columns) — `slot_assigned := session.start_time IS NOT NULL`, `publishable := QUALITY_REVIEWED AND slot_assigned`
+- Speaker provisioning (User row + Cognito account + SPEAKER role grant) occurs at the **CONTACTED → READY** transition, gated by presence of email
+- Capacity is enforced at **READY → INVITED**: organizers cannot exceed `max_slots` for the event
 
 **Task Management System (Configurable Work Items):**
 Tasks are NOT workflow states - they are assignable work items with due dates triggered by workflow transitions:
@@ -72,7 +74,7 @@ Custom tasks can be created with configurable trigger states, due dates, and ass
 
 See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for detailed implementation.
 
-**FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
+**FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates. Speaker authentication uses standard AWS Cognito with `FORCE_CHANGE_PASSWORD` on first login (per ADR-009 §0.5) — the invitation email carries a login link and a temporary password; no magic-link or token-based auth path exists
 
 **FR4**: Partners shall access analytics dashboards showing employee attendance of their company for the past events
 
@@ -98,7 +100,7 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
-**FR17**: The system shall provide intelligent speaker matching and assignment tracking with parallel workflow states (identified → contacted → ready → accepted/declined; then content_submitted → quality_reviewed ∥ slot_assigned → confirmed) supporting independent quality review and slot assignment paths, real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms and automatic promotion from overflow when slots become available
+**FR17**: The system shall provide intelligent speaker matching and assignment tracking with the unified 8-state speaker workflow (IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED; DECLINED reachable from any non-terminal state) per ADR-009, supporting parallel per-speaker progression, real-time organizer collaboration including slot preference collection and technical requirement tracking. Capacity is enforced by a **slot-capacity gate** at the READY → INVITED transition: `(count(ACCEPTED) + count(INVITED)) >= max_slots` blocks further invitations. There is no overflow / parking-lane state and no organizer voting mechanism — if a slot opens up (e.g., an invited speaker declines), the next speaker in READY can be invited
 
 **FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
 
@@ -206,9 +208,9 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 6**: Weeks 36-44 (Speaker Portal & Support) - ✅ **100% COMPLETE** (All stories deployed to staging, Story 6.4 QA passed)
 - **Epic 7**: Weeks 45+ (Attendee Experience Enhancements - 📦 DEFERRED to Phase 3)
 - **Epic 8**: Weeks 45+ (Partner Coordination - ✅ **100% COMPLETE** 2026-02-22)
-- **Epic 9**: Weeks 46+ (Speaker Authentication & Account Integration - 🔨 IN PROGRESS — Story 9.1 JWT magic link complete; 9.2-9.5 planned)
+- **Epic 11**: Weeks 46+ (Unified Speaker Workflow Refactor - 🔨 IN PROGRESS — Phase A doc alignment landing; Phases B–F per ADR-009 and `docs/plans/speaker-workflow-refactor.md`. Supersedes prior Epic 9 plan.)
 
-**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 deferred to Phase 3; Epic 9 planned for unified speaker/attendee JWT authentication.
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 deferred to Phase 3; the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
 
 ### 4.2 Content Management & Storage Architecture
 
@@ -400,7 +402,7 @@ Each epic document contains:
 **Epic 6 Success Criteria (Speaker Portal & Support)** - ✅ **100% COMPLETE (Deployed 2026-02-06, Dashboard 2026-02-16)**
 
 **Completed Features (Stories 6.0-6.5):**
-- ✅ Automated speaker invitation system with magic link authentication operational
+- ✅ Automated speaker invitation system operational (per ADR-009, authentication uses standard Cognito with FORCE_CHANGE_PASSWORD on first login — login link + temporary password delivered in invitation email)
 - ✅ Self-service response portal (accept/decline) with real-time status updates
 - ✅ Speaker material self-submission portal (title, abstract, CV, photo, presentation)
 - ✅ Direct S3 uploads via presigned URLs with progress tracking

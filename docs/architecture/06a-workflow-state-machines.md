@@ -1,6 +1,6 @@
 # Workflow State Machines
 
-This document details the workflow state management systems for the BATbern Event Management Platform, including event lifecycle, speaker coordination, task management, slot assignment, quality review, and overflow management.
+This document details the workflow state management systems for the BATbern Event Management Platform, including event lifecycle, speaker coordination (unified 8-state machine per ADR-009), task management, slot assignment, and quality review.
 
 ## Overview
 
@@ -151,35 +151,44 @@ public class EventWorkflowStateMachine {
     }
 
     /**
-     * Validates all slots have confirmed speakers assigned
+     * Validates all slots have publishable speakers assigned.
+     *
+     * Per ADR-009: `is_publishable` is a DERIVED predicate, not a stored column —
+     * a speaker is publishable when speaker_pool.status = QUALITY_REVIEWED AND
+     * session.start_time IS NOT NULL.
      */
     private void validateAllSlotsHaveSpeakers(Event event) {
         int maxSlots = event.getSlotConfiguration().getMaxSlots();
-        long confirmedSpeakers = speakerPoolRepository
-            .countByEventIdAndStatus(event.getId(), "confirmed");
+        long publishableSpeakers = speakerPoolRepository
+            .countPublishableByEventId(event.getId());  // QUALITY_REVIEWED ∧ session.start_time NOT NULL
 
-        if (confirmedSpeakers < maxSlots) {
+        if (publishableSpeakers < maxSlots) {
             throw new WorkflowValidationException(
                 "Minimum threshold not met",
-                Map.of("maxSlots", maxSlots, "confirmed", confirmedSpeakers)
+                Map.of("maxSlots", maxSlots, "publishable", publishableSpeakers)
             );
         }
     }
 
     /**
-     * Validates all speakers are confirmed (quality_reviewed AND session.startTime exists)
+     * Validates every ACCEPTED speaker is publishable.
+     *
+     * Per ADR-009: there is no CONFIRMED state. `is_publishable` is derived at read
+     * time — a speaker is publishable when speaker_pool.status = QUALITY_REVIEWED
+     * AND session.start_time IS NOT NULL. This predicate is the gate for the
+     * AGENDA_PUBLISHED transition.
      */
     private void validateAllSpeakersConfirmed(Event event) {
         long acceptedSpeakers = speakerPoolRepository
             .countByEventIdAndStatus(event.getId(), "accepted");
 
-        long confirmedSpeakers = speakerPoolRepository
-            .countByEventIdAndStatus(event.getId(), "confirmed");
+        long publishableSpeakers = speakerPoolRepository
+            .countPublishableByEventId(event.getId());  // QUALITY_REVIEWED ∧ session.start_time NOT NULL
 
-        if (acceptedSpeakers > confirmedSpeakers) {
+        if (acceptedSpeakers > publishableSpeakers) {
             throw new WorkflowValidationException(
-                "Not all accepted speakers are confirmed",
-                Map.of("accepted", acceptedSpeakers, "confirmed", confirmedSpeakers)
+                "Not all accepted speakers are publishable",
+                Map.of("accepted", acceptedSpeakers, "publishable", publishableSpeakers)
             );
         }
     }
@@ -188,60 +197,94 @@ public class EventWorkflowStateMachine {
 
 ## Speaker Workflow Management (Per Speaker - Parallel)
 
+Per **ADR-009 (Unified Speaker Workflow)**, the speaker workflow is an 8-state machine. Every change to `speaker_pool.status` flows through a single entry point — `SpeakerWorkflowService.transition()` — which enforces the allow-list, runs state-specific preconditions, executes side-effect hooks, persists the new status, writes a status-history row, and publishes a domain event. There is no separate `StatusTransitionValidator`; there are no direct `setStatus` calls in response handlers. The legacy 10-state model (with `CONFIRMED`, `SLOT_ASSIGNED`, `OVERFLOW`, `WITHDREW`, `TENTATIVE`) and the parallel-quality / slot-confirmed auto-confirmation logic are removed.
+
 ### State Diagram
 
+```mermaid
+stateDiagram-v2
+    [*] --> IDENTIFIED
+    IDENTIFIED --> CONTACTED
+    IDENTIFIED --> DECLINED
+    CONTACTED --> READY: provisioning gate<br/>(requires email)
+    CONTACTED --> DECLINED
+    READY --> INVITED: slot-capacity gate<br/>(accepted+invited < max_slots)
+    READY --> DECLINED
+    INVITED --> ACCEPTED
+    INVITED --> DECLINED
+    ACCEPTED --> CONTENT_SUBMITTED
+    ACCEPTED --> DECLINED
+    CONTENT_SUBMITTED --> QUALITY_REVIEWED
+    CONTENT_SUBMITTED --> DECLINED
+    QUALITY_REVIEWED --> DECLINED
+    QUALITY_REVIEWED --> [*]: terminal happy
+    DECLINED --> [*]: terminal not-happening
 ```
-identified → contacted → ready → accepted/declined
-                                    ↓ (if accepted)
-                                content_submitted
-                                    ↓
-                                quality_reviewed
-                                    ↓
-                                confirmed
-                    (auto-confirmed when quality_reviewed AND session.startTime exists)
 
-overflow (backup speaker)
-withdrew (speaker drops out after accepting)
-```
-
-**Note:** Slot assignment is NOT a speaker state. It's tracked by whether the session has timing assigned (`session.startTime != null`). The speaker reaches CONFIRMED when they are quality_reviewed AND their session has timing.
-
-**Note on `SLOT_ASSIGNED` enum value:** The enum value `SLOT_ASSIGNED` exists but is rejected by the workflow service — it was an early design artefact. Attempting to transition to `SLOT_ASSIGNED` throws `IllegalStateException("Invalid state transition")`.
+`DECLINED` is reachable from every non-terminal state. A speaker who accepts and then drops out transitions to `DECLINED` with a reason recorded in `status_history` — the previous state plus the reason carries exactly the information a separate `WITHDREW` state used to encode.
 
 ### State Definitions
 
-| State | Description | Stored In | Notes |
-|-------|-------------|-----------|-------|
-| **identified** | Added to speaker pool | speaker_pool.status | Initial state when speaker brainstormed |
-| **contacted** | Organizer recorded outreach | speaker_pool.status | Outreach attempt made |
-| **ready** | Speaker ready to accept/decline | speaker_pool.status | Speaker has received invitation |
-| **accepted** | Speaker accepted invitation | speaker_pool.status | Speaker committed to presenting |
-| **declined** | Speaker declined invitation | speaker_pool.status | Speaker not available |
-| **content_submitted** | Title/abstract submitted | speaker_pool.status | Presentation details received |
-| **quality_reviewed** | Content approved by moderator | speaker_pool.status | Abstract meets quality standards |
-| **confirmed** | Quality reviewed AND session timing assigned | speaker_pool.status | **Terminal state.** Auto-confirmed when quality_reviewed AND session.startTime exists. Speaker fully confirmed, ready for publishing. Any further transition throws `IllegalStateException`. |
-| **overflow** | Backup speaker (no slot available) | speaker_pool.status | Accepted but no slots left |
-| **withdrew** | Speaker dropped out after accepting | speaker_pool.status | Speaker cancelled commitment |
+| State | Description | `speaker_pool.username` | Cognito user |
+|-------|-------------|--------------------------|--------------|
+| **IDENTIFIED** | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. | NULL | none |
+| **CONTACTED** | Organizer is reaching out — to the candidate, to partners, to network contacts — to figure out who will actually speak. **Still brainstorming.** All conversations logged via `OutreachHistory`. No User row exists yet; no email is sent at this state. | NULL | none |
+| **READY** | The real speaker has been identified. Organizer has a name + email and has committed to inviting this specific person. **User provisioning happens at the transition into this state** (per ADR-009 §0.5). | populated | created (FORCE_CHANGE_PASSWORD), SPEAKER role granted |
+| **INVITED** | Formal invitation email sent (login URL + temporary password). Speaker can authenticate via standard Cognito. | populated | exists, SPEAKER role |
+| **ACCEPTED** | Speaker committed via the speaker portal (or via organizer-on-behalf). | populated | exists |
+| **CONTENT_SUBMITTED** | Title + abstract submitted (with optional bio/portrait/presentation, by speaker or by organizer). | populated | exists |
+| **QUALITY_REVIEWED** | Moderator approved content. **Terminal happy state.** Combined with `session.start_time IS NOT NULL`, this makes the speaker `publishable`. | populated | exists |
+| **DECLINED** | The single terminal "not happening" state. Reachable from every non-terminal state. Covers leads that didn't pan out (from IDENTIFIED/CONTACTED), refusals to an invitation (from INVITED), and post-acceptance withdrawals (from ACCEPTED/CONTENT_SUBMITTED/QUALITY_REVIEWED). Status-history row records the previous state and reason. | NULL if from IDENTIFIED/CONTACTED, populated otherwise | may exist |
 
-### Key Characteristics
+**Removed states** (per ADR-009 §0.7):
+- `SLOT_ASSIGNED` — replaced by the derived `is_slot_assigned` flag.
+- `CONFIRMED` — replaced by the derived `is_publishable` flag (`QUALITY_REVIEWED ∧ is_slot_assigned`).
+- `OVERFLOW` — replaced by the slot-capacity gate at `READY → INVITED`. If too many speakers accept (e.g., because capacity was reduced after invitations went out), the organizer manually moves the excess to `DECLINED` with a clear reason.
+- `WITHDREW` — collapsed into `DECLINED` with the reason recorded in `status_history`.
+- `TENTATIVE` — removed entirely; speakers respond `ACCEPT` or `DECLINE` only. The side-channel `is_tentative` / `tentative_reason` columns are dropped.
 
-**Parallel Workflow:**
-- Quality review and slot timing assignment are **independent** and can happen in any order
-- Quality review updates `speaker_pool.status = 'quality_reviewed'`
-- Slot timing assignment sets `session.startTime` and `session.endTime` (NOT a speaker state)
-- `confirmed` state reached when BOTH complete (order doesn't matter):
-  - Speaker is `quality_reviewed` AND
-  - Session has timing (`session.startTime != null`)
-- Auto-confirmation is bidirectional:
-  - Quality review completion → checks if session has timing → auto-confirms
-  - Session timing assignment → checks if speaker is quality_reviewed → auto-confirms
+### Derived flags (read-time, no persisted columns)
 
-**Data Model:**
-- **speaker_pool**: Tracks workflow state (10 possible values: identified, contacted, ready, accepted, declined, content_submitted, quality_reviewed, confirmed, overflow, withdrew)
-  - **contentStatus** field tracks content review progress. Possible values: `null` (no content submitted), `"SUBMITTED"`, `"REVISION_NEEDED"` (set when content is rejected), `"APPROVED"`.
-- **sessions**: Stores presentation details AND timing (startTime, endTime, room)
-- **session_users**: Junction table linking speaker (username) to session; `is_confirmed` is set to `true` on auto-confirmation
-- **speaker_pool.session_id**: FK to sessions table (links speaker to their session/slot)
+`is_slot_assigned` and `is_publishable` are predicates computed at read time. They are **not stored on `speaker_pool`**. Per ADR-009 §0.1:
+
+| Predicate | Definition |
+|---|---|
+| `is_slot_assigned` | `session.start_time IS NOT NULL` (looked up via `speaker_pool.session_id → sessions`) |
+| `is_publishable` | `speaker_pool.status = QUALITY_REVIEWED AND is_slot_assigned` |
+
+Use `is_publishable` as the gate for the `AGENDA_PUBLISHED` event-workflow transition (`EventWorkflowStateMachine.validateAllSpeakersConfirmed`, above): every speaker the event depends on must be publishable for the agenda to publish. The repository exposes a `countPublishableByEventId(eventId)` query for this check.
+
+### Critical transition rules
+
+- **`CONTACTED → READY` is the provisioning gate** (ADR-009 §0.2). It REQUIRES `email` to be present in the transition payload, and the side-effect hook performs: User lookup-or-create + Cognito `AdminCreateUser` with `FORCE_CHANGE_PASSWORD` + SPEAKER role grant in `role_assignments` + persisting `username` on `speaker_pool`. Re-running for an already-provisioned user is idempotent.
+- **`READY → INVITED` has the slot-capacity precondition** (ADR-009 §0.2). Blocked when `(count(ACCEPTED) + count(INVITED)) >= max_slots`. If a slot opens up (e.g., an invited speaker declines), the next speaker in `READY` may be invited.
+- **No emails before `READY → INVITED`.** The "send formal invitation" UI is disabled until the speaker is in `READY`.
+- **`IDENTIFIED → DECLINED` and `CONTACTED → DECLINED` are valid** — a lead can fail to pan out before any User has been provisioned. No Cognito teardown is needed because no Cognito user was ever created.
+- **Post-acceptance `DECLINED` carries a reason** — `ACCEPTED → DECLINED`, `CONTENT_SUBMITTED → DECLINED`, and `QUALITY_REVIEWED → DECLINED` record a free-text reason in `status_history` (e.g., "withdrew — schedule conflict"). The audit trail preserves the information a separate `WITHDREW` state used to encode.
+- **`DECLINED` is terminal** — no transitions out of `DECLINED` exist. To re-invite a previously declined candidate for the same event, the organizer creates a new `speaker_pool` row.
+
+### Side-effect hooks
+
+State transitions trigger side effects inside `SpeakerWorkflowService.transition()`, never in controllers or in response handlers:
+
+| Transition | Side effects |
+|---|---|
+| `IDENTIFIED → CONTACTED` | Append `OutreachHistory` row (organizer logs the outreach) |
+| `CONTACTED → READY` | User lookup-or-create (`UserApiClient.provisionUserWithRole(..., SPEAKER)`); Cognito `AdminCreateUser` with `MessageAction=SUPPRESS` + `FORCE_CHANGE_PASSWORD`; SPEAKER role grant in `role_assignments`; persist `username` on `speaker_pool`. Returns `{ username, temporaryPassword }` to the caller for use in the invitation email |
+| `READY → INVITED` | **Precondition**: slot-capacity gate. **Action**: send invitation email (login URL + temporary password from the READY-step provisioning) |
+| `INVITED → ACCEPTED` | Send confirmation email to speaker; notify organizer |
+| `ACCEPTED → CONTENT_SUBMITTED` | Notify moderators of pending review |
+| `CONTENT_SUBMITTED → QUALITY_REVIEWED` | Mark `content_submissions.approved = true`; notify speaker |
+| `(any state) → DECLINED` from `INVITED` or later | Notify organizer; if the slot was held by this speaker, the next speaker in `READY` becomes eligible for `INVITED` |
+
+### Data Model
+
+- **`speaker_pool.status`**: the 8 values above. CHECK constraint enforces the allow-list. No `is_tentative` / `tentative_reason` columns; no `is_overflow` flag.
+- **`speaker_pool.username`**: cross-service reference to `users.username` (ADR-003 meaningful ID). Populated by the `CONTACTED → READY` provisioning hook. NULL before that.
+- **`speaker_pool.session_id`**: FK to `sessions(id)` within the same service. Determines `is_slot_assigned` via the session's `start_time`.
+- **`status_history`**: append-only audit table — one row per `transition()` invocation. Columns: `speaker_pool_id`, `from_status`, `to_status`, `actor_username`, `reason`, `payload`, `at`.
+- **`content_submissions`**: per-event content (title, abstract, presentation file, quality-review feedback). The `submitted_by_username` column distinguishes organizer-on-behalf submissions from speaker-self submissions; the rest of the payload is identical.
+- **`session_users`**: junction between `sessions` and User (`username`). There is no `session_speakers` table (the legacy duplicate is removed per ADR-009).
 
 ### Implementation
 
@@ -250,138 +293,97 @@ withdrew (speaker drops out after accepting)
 @Slf4j
 public class SpeakerWorkflowService {
 
+    private static final Map<SpeakerWorkflowState, Set<SpeakerWorkflowState>> ALLOWED =
+        Map.ofEntries(
+            Map.entry(IDENTIFIED,        Set.of(CONTACTED, DECLINED)),
+            Map.entry(CONTACTED,         Set.of(READY, DECLINED)),
+            Map.entry(READY,             Set.of(INVITED, DECLINED)),
+            Map.entry(INVITED,           Set.of(ACCEPTED, DECLINED)),
+            Map.entry(ACCEPTED,          Set.of(CONTENT_SUBMITTED, DECLINED)),
+            Map.entry(CONTENT_SUBMITTED, Set.of(QUALITY_REVIEWED, DECLINED)),
+            Map.entry(QUALITY_REVIEWED,  Set.of(DECLINED))
+            // DECLINED is terminal — no transitions out
+        );
+
     private final SpeakerPoolRepository speakerPoolRepository;
-    private final SessionRepository sessionRepository;
-    private final SessionUserRepository sessionUserRepository;
-    private final WorkflowNotificationService notificationService;
+    private final StatusHistoryRepository statusHistoryRepository;
+    private final UserApiClient userApiClient;
+    private final SpeakerProvisioningService provisioningService;
+    private final InvitationEmailService invitationEmailService;
     private final DomainEventPublisher eventPublisher;
 
-    public void updateSpeakerWorkflowState(String poolId, String newState, String updatedBy) {
-        SpeakerPool speaker = speakerPoolRepository.findById(poolId)
-            .orElseThrow(() -> new EntityNotFoundException("Speaker not found in pool: " + poolId));
+    /**
+     * The SOLE writer of speaker_pool.status. Every state change goes through here.
+     */
+    @Transactional
+    public SpeakerPool transition(
+        UUID speakerPoolId,
+        SpeakerWorkflowState target,
+        SecurityPrincipal actor,
+        TransitionPayload payload
+    ) {
+        SpeakerPool sp = speakerPoolRepository.findById(speakerPoolId)
+            .orElseThrow(() -> new EntityNotFoundException("speaker_pool: " + speakerPoolId));
+        SpeakerWorkflowState current = sp.getStatus();
 
-        String previousState = speaker.getStatus();
-
-        // Validate state transition
-        validateStateTransition(previousState, newState);
-
-        // Apply state-specific logic
-        switch (newState) {
-            case "contacted":
-                // Organizer recorded outreach
-                notificationService.recordOutreach(speaker);
-                break;
-
-            case "accepted":
-                // Check for overflow
-                checkForOverflow(speaker.getEventId());
-                break;
-
-            case "declined":
-                // Handle decline
-                handleSpeakerDecline(speaker);
-                break;
-
-            case "content_submitted":
-                // Content submitted, can now be reviewed
-                notificationService.notifyModeratorsOfPendingReview(speaker);
-                break;
-
-            case "quality_reviewed":
-                // Content approved, check if session has timing → auto-confirm
-                checkAndUpdateToConfirmed(speaker);
-                break;
-
-            case "confirmed":
-                // Auto-confirmed when quality_reviewed AND session.startTime exists
-                updateSessionUserConfirmation(speaker, true);
-                break;
-
-            case "withdrew":
-                // Speaker dropped out, promote from overflow if available
-                handleSpeakerWithdrawal(speaker);
-                break;
-
-            case "overflow":
-                // Speaker is backup (accepted but no slots)
-                notificationService.notifySpeakerOfOverflowStatus(speaker);
-                break;
+        // 1. Allow-list
+        if (!ALLOWED.getOrDefault(current, Set.of()).contains(target)) {
+            throw new InvalidStateTransitionException(current, target);
         }
 
-        // Update state
-        speaker.setStatus(newState);
-        speakerPoolRepository.save(speaker);
+        // 2. State-specific preconditions
+        switch (target) {
+            case READY     -> requireEmail(sp, payload);
+            case INVITED   -> enforceSlotCapacity(sp.getEventId());
+            default        -> { /* no precondition */ }
+        }
 
-        // Publish workflow state change event
+        // 3. State-specific side effects
+        switch (target) {
+            case READY     -> provisioningService.provisionForSpeaker(sp, payload);
+            case INVITED   -> invitationEmailService.sendInvitation(sp, payload);
+            case ACCEPTED  -> invitationEmailService.sendAcceptanceConfirmation(sp);
+            case DECLINED  -> notifyOrganizerIfPostInvitation(sp, current, payload);
+            default        -> { /* no side effect */ }
+        }
+
+        // 4. Persist + audit + publish event
+        sp.setStatus(target);
+        speakerPoolRepository.save(sp);
+        statusHistoryRepository.save(buildHistoryRow(sp, current, target, actor, payload));
         eventPublisher.publish(new SpeakerWorkflowStateChangeEvent(
-            poolId, speaker.getEventId().toString(), previousState, newState, updatedBy
+            speakerPoolId, sp.getEventId(), current, target, actor.getUsername()
         ));
 
-        log.info("Speaker {} (pool ID: {}) moved from {} to {} by {}",
-                 speaker.getSpeakerName(), poolId, previousState, newState, updatedBy);
+        return sp;
     }
 
-    /**
-     * Checks if speaker has both quality_reviewed AND session timing assigned,
-     * and auto-updates to confirmed if so.
-     *
-     * Parallel workflow: Either quality review or slot timing can happen first.
-     * When the second one completes, speaker is auto-confirmed.
-     */
-    private void checkAndUpdateToConfirmed(SpeakerPool speaker) {
-        boolean isQualityReviewed = "quality_reviewed".equals(speaker.getStatus());
-        boolean hasSessionTiming = speaker.getSessionId() != null &&
-            sessionRepository.findById(speaker.getSessionId())
-                .map(session -> session.getStartTime() != null)
-                .orElse(false);
-
-        if (isQualityReviewed && hasSessionTiming) {
-            // Auto-update to confirmed
-            speaker.setStatus("confirmed");
-            speakerPoolRepository.save(speaker);
-
-            // Update session_users.is_confirmed
-            updateSessionUserConfirmation(speaker, true);
-
-            eventPublisher.publishEvent(new SpeakerConfirmedEvent(
-                speaker.getId().toString(),
-                speaker.getEventId().toString(),
-                speaker.getSpeakerName()
-            ));
-
-            log.info("Speaker {} auto-updated to confirmed (quality reviewed AND session timing assigned)",
-                     speaker.getSpeakerName());
+    private void enforceSlotCapacity(UUID eventId) {
+        long accepted = speakerPoolRepository.countByEventIdAndStatus(eventId, ACCEPTED);
+        long invited  = speakerPoolRepository.countByEventIdAndStatus(eventId, INVITED);
+        int maxSlots  = eventSlotService.getMaxSlots(eventId);
+        if (accepted + invited >= maxSlots) {
+            throw new SlotCapacityReachedException(eventId, accepted, invited, maxSlots);
         }
     }
 
-    private boolean isContentQualityReviewed(SpeakerPool speaker) {
-        // Check if content was previously quality_reviewed
-        // (would be confirmed if it had been, but need to check session data)
-        return speaker.getSessionId() != null; // Simplified check
-    }
-
-    private void updateSessionUserConfirmation(SpeakerPool speaker, boolean confirmed) {
-        if (speaker.getSessionId() != null) {
-            sessionUserRepository.updateIsConfirmed(speaker.getSessionId(), confirmed);
-        }
-    }
-
-    private void checkForOverflow(UUID eventId) {
-        Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EntityNotFoundException("Event not found"));
-
-        int maxSlots = event.getSlotConfiguration().getMaxSlots();
-        long acceptedSpeakers = speakerPoolRepository
-            .countByEventIdAndStatus(eventId, "accepted");
-
-        if (acceptedSpeakers > maxSlots) {
-            eventPublisher.publishEvent(new SpeakerOverflowDetectedEvent(
-                eventId.toString(), acceptedSpeakers, maxSlots
-            ));
+    private void requireEmail(SpeakerPool sp, TransitionPayload payload) {
+        if (payload.email() == null || payload.email().isBlank()) {
+            throw new MissingProvisioningDataException(
+                "CONTACTED → READY requires email in transition payload"
+            );
         }
     }
 }
 ```
+
+**Callers** of `SpeakerWorkflowService.transition()`:
+- `SpeakerStatusController` (organizer kanban PUT `.../status` and POST `.../promote`).
+- `SpeakerResponseController` (speaker portal ACCEPT / DECLINE).
+- `ContentSubmissionService` (shared by organizer-on-behalf and speaker-self content endpoints — both transition to `CONTENT_SUBMITTED` through this entry point).
+- `QualityReviewService` (organizer moderator approves content → `QUALITY_REVIEWED`).
+
+All direct `speaker.setStatus(...)` calls are deleted. `StatusTransitionValidator` is deleted (the allow-list lives inline in `transition()`).
 
 ## Task Management System (Story 5.5+)
 
@@ -576,9 +578,11 @@ public class SlotAssignmentService {
             slot.setAssignedAt(Instant.now());
             slotRepository.save(slot);
 
-            // Note: No speaker state update needed
-            // Slot assignment is tracked via session.startTime, not speaker state
-            // Speaker auto-confirmed to CONFIRMED when quality_reviewed AND session.startTime exists
+            // Note: No speaker state update needed.
+            // Per ADR-009 there is no CONFIRMED state; the derived `is_publishable`
+            // predicate (status = QUALITY_REVIEWED AND session.start_time IS NOT NULL)
+            // is computed at read time. Assigning a slot here populates session.start_time,
+            // which flips `is_publishable` to true for any already-QUALITY_REVIEWED speaker.
         }
 
         log.info("Assigned {} speakers to slots for event {}", assignments.size(), eventId);
@@ -636,9 +640,9 @@ public class QualityReviewService {
         // Notify moderator of pending review
         notificationService.notifyModeratorOfPendingReview(savedReview);
 
-        // Update speaker workflow state to CONTENT_SUBMITTED (not yet reviewed)
-        speakerWorkflowService.updateSpeakerWorkflowState(
-            sessionId, speakerId, SpeakerWorkflowState.CONTENT_SUBMITTED, speakerId
+        // Transition speaker to CONTENT_SUBMITTED via the sole writer of speaker_pool.status (ADR-009)
+        speakerWorkflowService.transition(
+            speakerPoolId, SpeakerWorkflowState.CONTENT_SUBMITTED, actor, TransitionPayload.empty()
         );
 
         return savedReview;
@@ -646,13 +650,13 @@ public class QualityReviewService {
 
     @Transactional
     public ContentQualityReview updateReviewStatus(String reviewId, UpdateReviewRequest request,
-                                                  String moderatorId) {
+                                                  SecurityPrincipal moderator) {
         ContentQualityReview review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new EntityNotFoundException("Review not found"));
 
         review.setStatus(request.getStatus());
         review.setReviewedAt(Instant.now());
-        review.setReviewerId(moderatorId);
+        review.setReviewerId(moderator.getUsername());
         review.setFeedback(request.getFeedback());
 
         if (request.getStatus() == QualityReviewStatus.REQUIRES_CHANGES) {
@@ -662,13 +666,14 @@ public class QualityReviewService {
             // Notify speaker of required changes
             notificationService.notifySpeakerOfRequiredChanges(review);
         } else if (request.getStatus() == QualityReviewStatus.APPROVED) {
-            // Moderator approval transitions speaker to QUALITY_REVIEWED;
-            // auto-confirmation to CONFIRMED happens when session timing is also assigned.
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                review.getSessionId(),
-                review.getSpeakerId(),
+            // Moderator approval transitions speaker to QUALITY_REVIEWED (terminal happy state).
+            // Per ADR-009: there is no CONFIRMED state; `is_publishable` is derived at read time
+            // when session.start_time IS NOT NULL.
+            speakerWorkflowService.transition(
+                review.getSpeakerPoolId(),
                 SpeakerWorkflowState.QUALITY_REVIEWED,
-                moderatorId
+                moderator,
+                TransitionPayload.withReason(request.getFeedback())
             );
         }
 
@@ -687,9 +692,13 @@ public class QualityReviewService {
 - `reviewed_at` — review timestamp
 - `submission_version` — version counter for resubmissions
 
-## Overflow Management & Voting System
+## Overflow Management & Voting System — Removed (legacy, per ADR-009)
 
-> **Scope Note (2026-01-24):** Overflow Management (Story 5.6) was **removed from MVP scope**. Manual speaker selection by organizers is sufficient for launch. Democratic voting on overflow speakers is deferred to Phase 2+ backlog. The design below is retained as a reference for the future implementation.
+> **REMOVED per ADR-009 (2026-05-15).** The `OVERFLOW` state, the `OverflowManagementService`, the speaker-selection voting flow, and the `speaker_selection_votes` table are removed from the architecture. Capacity is now controlled at invitation time by the **slot-capacity gate** on the `READY → INVITED` transition (see "Critical transition rules" above). Organizers can never invite more speakers than `max_slots`, so an "overflow parking lane" is unnecessary. If too many speakers accept (e.g., because capacity is reduced after invitations went out), the organizer manually moves the excess to `DECLINED` with a clear reason.
+>
+> The code block below is preserved verbatim as a historical reference to the design that existed before ADR-009; it is **not the target architecture** and is documented here only to make the deletion explicit during the Epic 11 refactor. Do not implement against this design.
+>
+> _Historical Scope Note (2026-01-24, superseded by ADR-009):_ Overflow Management (Story 5.6) was removed from MVP scope. Manual speaker selection by organizers is sufficient for launch. Democratic voting on overflow speakers is deferred to Phase 2+ backlog.
 
 ```java
 @Service

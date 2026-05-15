@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6 and 8 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 9 planned.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 11 (Unified Speaker Workflow Refactor) supersedes the prior Epic 9 plan.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
 - 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - IN PROGRESS (Story 9.1 JWT magic link done; 9.2-9.5 planned)
+- 🔨 **Epic 11**: Unified Speaker Workflow Refactor - IN PROGRESS (Phase A doc alignment landing; Phases B–F per `docs/plans/speaker-workflow-refactor.md` and ADR-009. Supersedes prior Epic 9 plan.)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -35,7 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 9 in progress (Story 9.1 done); Epic 7 deferred
+**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 11 (Unified Speaker Workflow Refactor) in progress per ADR-009; Epic 7 deferred
 
 ## Project Overview
 
@@ -61,7 +61,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
 - 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
 - ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - **IN PROGRESS** (Story 9.1 JWT magic link complete; 9.2-9.5 planned)
+- 🔨 **Epic 11**: Unified Speaker Workflow Refactor - **IN PROGRESS** (Phase A doc alignment landing; Phases B–F per `docs/plans/speaker-workflow-refactor.md` and ADR-009. Supersedes prior Epic 9 plan.)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -72,9 +72,9 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 **When Adding New Features:**
 - ✅ Platform through Epic 8 is feature-complete (except Epic 7)
-- Epic 9: Stories 9.2-9.5 next (Cognito account creation, dual auth, migration, multi-role nav)
+- Epic 11: Phases B–F (state-machine consolidation, entity simplification, organizer kanban UX, Cognito provisioning, magic-link teardown)
 - Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
-- Prioritize Epic 9 completion, production readiness, and Epic 3 data import
+- Prioritize Epic 11 completion (per ADR-009), production readiness, and Epic 3 data import
 
 ## Build System
 

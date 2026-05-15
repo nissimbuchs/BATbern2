@@ -32,6 +32,8 @@ services/{domain-service}/
 
 ## Authentication and Authorization
 
+> **Single auth flow for all roles** (per **ADR-009**). Speakers authenticate the same way as organizers, partners, and attendees — via **standard AWS Cognito** with a Bearer token. There is no parallel speaker auth stack: no magic-link, no `?token=` / `?jwt=` query auth, no opaque RESPOND/VIEW tokens, no separate `speaker_jwt` cookie. The `/api/v1/speaker-portal/**` endpoints are `@PreAuthorize("hasRole('SPEAKER')")` and are NOT in any `permitAll()` list. See the "Speaker authentication (ADR-009)" subsection below for the provisioning lifecycle.
+
 ### JWT Authentication Flow
 
 ```mermaid
@@ -159,6 +161,36 @@ public class SecurityContextHelper {
     }
 }
 ```
+
+### Speaker authentication (ADR-009)
+
+Speakers are full Cognito users with the SPEAKER role. Provisioning is wired into the speaker workflow state machine — not into a separate auth flow.
+
+**Provisioning lifecycle:**
+
+1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(username, email, firstName, lastName, SPEAKER)`. The company-user-management-service performs, in order:
+   1. `cognito-idp:AdminCreateUser` with `MessageAction=SUPPRESS` and a strong random temporary password. The user is created in Cognito with status `FORCE_CHANGE_PASSWORD`.
+   2. SPEAKER role grant in `role_assignments` (database — NOT Cognito groups, per CLAUDE.md "Authentication & Roles").
+   3. `INSERT INTO user_profiles` (idempotent on existing user).
+   4. Returns `{ username, temporaryPassword }` to the caller. The temporary password is **never persisted on the BATbern side**.
+
+   Re-calling `provisionUserWithRole` for an already-provisioned user is idempotent and returns `{ username, temporaryPassword: null }` — the caller can detect "no fresh credential to send" by checking for the `null` temporary password.
+
+2. **`READY → INVITED` transition**: the invitation email service sends a templated email containing the speaker portal login URL + the temporary password from step 1. The email subject, body, and call-to-action button copy are localised across all 10 supported locales (incl. gsw-BE).
+
+3. **First login**: speaker enters email + temporary password on the standard Cognito hosted/SDK login page. Cognito challenges them with `NEW_PASSWORD_REQUIRED`; the speaker sets a new password. From then on they are a regular Cognito user — `custom:role` JWT claim includes `SPEAKER` (populated by the PreTokenGeneration Lambda from `role_assignments`).
+
+4. **Portal access**: every `/api/v1/speaker-portal/**` endpoint is `@PreAuthorize("hasRole('SPEAKER')")`. The speaker-portal frontend (`web-frontend/src/pages/speaker/**`) reads the Cognito session via `useAuth()` — same pattern as organizer/partner pages — and calls backend endpoints with a Bearer token.
+
+**Components NOT present** (deleted by ADR-009 Decision 3 / Epic 11 Phase F):
+- `MagicLinkService`, `SpeakerPortalTokenController`, `SpeakerMagicLoginController`, `JwtConfig` (speaker-side).
+- The `magic_link_tokens` table.
+- The `speaker_jwt` HTTP-only cookie.
+- `?token=` and `?jwt=` URL parsing in `pages/speaker/**`.
+
+**No Lambda triggers are required.** Standard Cognito invitation flow covers the entire path — no `DefineAuthChallenge` / `CreateAuthChallenge` / `VerifyAuthChallengeResponse` Lambdas; no Custom Auth flow.
+
+See `06b-user-lifecycle-sync.md` ("Pattern N: Speaker Provisioning at CONTACTED → READY") for the cross-service sequence diagram.
 
 ## Error Handling Strategy
 

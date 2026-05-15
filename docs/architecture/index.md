@@ -112,6 +112,16 @@ For detailed technology stack information, see [tech-stack.md](./tech-stack.md).
 
 ## Key Architectural Decisions
 
+### Architecture Decision Records (ADRs)
+
+The architecture is governed by accepted ADRs in `docs/architecture/ADR-*.md`. Most-cited ADRs:
+
+- **ADR-002**: Generic File Upload Service (presigned-URL pattern)
+- **ADR-003**: Meaningful Identifiers in Public APIs (`username`, `eventCode`, `companyName`; no UUIDs in public APIs)
+- **ADR-004**: Factor User Fields from Domain Entities (User is single source of truth for email, name, bio, photo, company)
+- **ADR-007**: Unified User Profile (one User per person; no duplicate identity entities)
+- **ADR-009**: Unified Speaker Workflow — single 8-state machine (`IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED` + `DECLINED`), SPEAKER as a User role (no `Speaker` entity, no `speakers` table), standard Cognito with `FORCE_CHANGE_PASSWORD` on first login (no magic-link / dual-auth). Supersedes the legacy 10-state model and the magic-link auth stack. See `ADR-009-unified-speaker-workflow.md` and the implementation plan in `docs/plans/speaker-workflow-refactor.md`.
+
 ### Domain-Driven Design Approach
 The platform employs a **Domain-Driven Design microservices architecture** with four distinct bounded contexts:
 - **Event Management Domain** - Organizer workflows and automation

@@ -173,6 +173,76 @@ function generateUsername(firstName: string, lastName: string): string {
 - `user_profiles`: Creates user record with Cognito ID
 - `role_assignments`: Creates default ATTENDEE role assignment
 
+## Pattern N: Speaker Provisioning at CONTACTED → READY (per ADR-009)
+
+**Purpose**: Provision a Cognito user, grant the SPEAKER role, and persist a `user_profiles` row at the `CONTACTED → READY` speaker-workflow transition (per ADR-009 §0.5). This is the **organizer-initiated** speaker onboarding flow — distinct from Pattern 1 (which is the self-registration / PostConfirmation flow for attendees).
+
+**Trigger**: `SpeakerWorkflowService.transition()` invoked with `targetState = READY` (typically via the organizer kanban's `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` endpoint).
+
+**Preconditions**:
+- The transition payload MUST contain a non-blank `email`. `transition()` rejects the call with `MissingProvisioningDataException` otherwise.
+- The current `speaker_pool.status` MUST be `CONTACTED`. The allow-list rejects any other origin.
+
+**Sequence**:
+
+```mermaid
+sequenceDiagram
+    participant Org as Organizer (browser)
+    participant EMS as event-management-service
+    participant CUMS as company-user-management-service
+    participant Cognito as AWS Cognito
+    participant DB as PostgreSQL
+
+    Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>{email, firstName?, lastName?}
+    EMS->>EMS: SpeakerWorkflowService.transition(CONTACTED → READY)
+    EMS->>CUMS: UserApiClient.provisionUserWithRole(<br/>username, email, firstName, lastName, SPEAKER)
+    CUMS->>CUMS: passwordGenerator.generate()<br/>(strong random, policy-compliant)
+    CUMS->>Cognito: AdminCreateUser(email, tempPassword,<br/>MessageAction=SUPPRESS, FORCE_CHANGE_PASSWORD)
+    Cognito-->>CUMS: cognitoSub
+    CUMS->>DB: INSERT INTO user_profiles<br/>(cognito_sub, username, email, ...)
+    CUMS->>DB: INSERT INTO role_assignments<br/>(username, role='SPEAKER')
+    CUMS-->>EMS: { username, temporaryPassword }
+    EMS->>DB: UPDATE speaker_pool<br/>SET username = ?, status = 'READY'<br/>WHERE id = ?
+    EMS-->>Org: 200 OK (SpeakerPool DTO)
+
+    Note over EMS,Org: On the next transition (READY → INVITED)<br/>the invitation email service uses the<br/>temporaryPassword from this step. The password<br/>is discarded from memory after dispatch.
+```
+
+**Steps performed by `UserApiClient.provisionUserWithRole(...)` in `company-user-management-service`** (in order):
+
+1. **Generate a strong random temporary password** that satisfies the configured Cognito password policy (min length, character classes). The password lives only in memory for the duration of this call + the subsequent invitation-email dispatch.
+2. **`cognito-idp:AdminCreateUser`** with:
+   - `MessageAction=SUPPRESS` (we send our own invitation email — Cognito's default invitation email is disabled).
+   - `TemporaryPassword=<generated>`.
+   - User created in status `FORCE_CHANGE_PASSWORD` — first login forces the speaker to set a new password.
+3. **Grant SPEAKER role** by inserting a row into `role_assignments` (database — NOT Cognito groups; see "No Cognito Groups" note at the top of this document and Pattern 2 below). The PreTokenGeneration Lambda will pick this up on the speaker's first login and add `SPEAKER` to the `custom:role` JWT claim.
+4. **`INSERT INTO user_profiles`** with the Cognito sub and other profile fields. Idempotent on existing user (the previous PostConfirmation Lambda or a prior speaker promotion may have already created the row — in that case we update `firstName`/`lastName` only if they are NULL and skip if already populated).
+5. **Return `{ username, temporaryPassword }`** to the caller. The caller (the `CONTACTED → READY` hook) passes the temp password to the invitation-email service on the subsequent `READY → INVITED` transition.
+
+**Idempotency contract**: re-calling `provisionUserWithRole` for an already-provisioned user is a **no-op** and returns `{ username, temporaryPassword: null }`. Callers detect "do not re-send a credential email" by checking for the `null` temporary password. This is the safety net for repeated `POST /promote` clicks and for retries after partial failures.
+
+**Failure modes**:
+- **Cognito throttling / 5xx**: the transition is aborted (`@Transactional` rollback). `speaker_pool.status` remains `CONTACTED`. The organizer sees an error and can retry — the next attempt is idempotent.
+- **`role_assignments` insert conflict**: detected by the unique constraint on `(username, role)`. Treated as a no-op (idempotency).
+- **`user_profiles` insert conflict**: detected by the unique constraint on `email` or `cognito_sub`. Treated as a no-op (idempotency) — the existing row's `cognito_sub` must match the Cognito user just created/looked-up.
+
+**The temporary password is never persisted**:
+- Not in `user_profiles`.
+- Not in `role_assignments`.
+- Not in any log line.
+- Not in any audit trail row (only "promoted by X at T" is recorded — not the credential).
+- The `provisionUserWithRole` HTTP response is the only place it appears, and only for the lifetime of the `READY → INVITED` invitation-email dispatch (same request lifecycle).
+
+**Database tables modified**:
+- `user_profiles`: Inserts a new user row (idempotent).
+- `role_assignments`: Inserts `(username, 'SPEAKER')` (idempotent).
+- `speaker_pool` (in event-management-service): Sets `username` and `status = 'READY'`.
+
+**Pattern relationship**:
+- **Pattern 1 (PostConfirmation Lambda)** remains the standard path for self-registered attendees (FR22, Story 1.2.3). When such an attendee is later promoted to SPEAKER via Pattern N, the User row already exists — `provisionUserWithRole` updates `role_assignments` only and returns `{ username, temporaryPassword: null }` (the existing Cognito password remains valid; no re-credentialing).
+- **Pattern 2 (PreTokenGeneration Lambda)** is unchanged: it reads `role_assignments` at login time and adds the roles list to the `custom:role` JWT claim.
+- **Pattern 3 (Spring Security role extraction)** is unchanged: it reads `custom:role` from the JWT and maps to Spring `GrantedAuthority`.
+
 ## Pattern 2: PreTokenGeneration Lambda - JWT Role Enrichment
 
 **Purpose**: Add user roles from database to JWT token as custom claims for API authorization.

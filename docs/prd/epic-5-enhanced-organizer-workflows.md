@@ -90,6 +90,8 @@ AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
 ### Speaker Workflow (Per Speaker - Parallel)
 
+> **⚠️ Superseded by ADR-009 (Unified Speaker Workflow, 2026-05-15).** The state machine and overflow-handling logic described in this section reflect the **pre-refactor implementation** that landed under Epic 5. The current target — an 8-state machine (`IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED`, plus `DECLINED` from any non-terminal state, no `OVERFLOW` / `WITHDREW` / `CONFIRMED` / `SLOT_ASSIGNED` / `TENTATIVE`) and the slot-capacity gate at `READY → INVITED` are documented in `docs/architecture/06a-workflow-state-machines.md` and `docs/architecture/ADR-009-unified-speaker-workflow.md`. Epic 11 (Unified Speaker Workflow Refactor) implements the consolidation. The text below is preserved as historical context for the Epic 5 delivery; it is **not the current target architecture** — do not implement against it.
+
 Each speaker progresses through their own workflow:
 
 ```

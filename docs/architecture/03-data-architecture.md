@@ -282,14 +282,26 @@ interface ActivityHistory {
 }
 ```
 
+#### SPEAKER role (per ADR-009)
+
+Per ADR-009 (Unified Speaker Workflow), **SPEAKER is a role on `User`, not a separate domain entity**. There is no `Speaker` entity, no `speakers` table, no `SpeakerRepository`. "Is this user a speaker?" is answered by `role_assignments.role = 'SPEAKER'` on the same User row (the role grant happens at the `CONTACTED → READY` speaker-workflow transition; see `06a-workflow-state-machines.md`).
+
+The two user-level attributes BATbern needs for a speaker are already existing columns on `user_profiles` per ADR-004 and ADR-007:
+
+- **Short CV / speaker bio** → `user_profiles.bio` (single source of truth, used by Speaker, Attendee, Partner contexts alike).
+- **Speaker portrait** → `user_profiles.profile_picture_url` (managed by the generic logo upload service per ADR-002).
+
+No `user_profiles` schema extension is required. The legacy speaker-only attributes that previously lived on a separate `speakers` table — `availability`, `expertise_areas`, `speaking_topics`, `languages_spoken`, `certifications`, `linkedin_url`, `twitter_handle`, `speaking_history`, `communication_preferences` — are **dropped per ADR-009 §0.3** (not migrated, not retained). They were not used by any production code path the platform depends on. Per-event speaker data (slot preferences, content deadlines) lives on `speaker_pool`; per-event content (title, abstract, presentation, quality-review feedback) lives on `content_submissions` and `session_users`.
+
 #### Relationships
 - **Many-to-One:** User → Company (via `User.companyId`, managed by User Service)
 - **One-to-Many:** User → ActivityHistory (activity tracking)
+- **One-to-Many:** User → role_assignments (a user may hold the SPEAKER, ORGANIZER, PARTNER, ATTENDEE roles in any combination)
 - **Cross-Service Integration:**
-  - Speaker Service: Associates speakers with user accounts
   - Partner Service: Associates partner contacts with user accounts
   - Event Service: Associates event registrations with users
   - Attendee Service: Associates attendee profiles with users
+  - Speaker workflow (`speaker_pool` in event-management-service): references User via `username` (meaningful ID per ADR-003); SPEAKER role grant happens at `CONTACTED → READY` per ADR-009
 
 #### Business Rules
 - **Minimum Organizers:** System must maintain at least 2 active ORGANIZER role users
@@ -302,161 +314,6 @@ interface ActivityHistory {
 - **User Search:** Caffeine in-memory cache, 10-minute TTL
 - **Current User Profile:** Session-based caching for fast authentication lookups
 - **Cache Invalidation:** Automatic on user create/update/delete operations
-
-### Speaker
-
-**Purpose:** Individual speakers with speaking-specific workflow and expertise data. Speaker profile extends User entity per ADR-004.
-
-**ADR-003/ADR-004 Reference Pattern (CRITICAL):**
-- Speaker references User entity via `username` (meaningful ID, NOT userId UUID)
-- **NO database foreign key** to users table (cross-service per ADR-003)
-- API uses `username` as public identifier (e.g., `GET /speakers/john.doe`)
-- User fields (email, name, bio, photo, company) stored in User entity (NEVER duplicated)
-- User data enriched via **HTTP call** to User Management Service (NOT JPQL join)
-- Speaker entity contains ONLY domain-specific fields (availability, expertise, speaking history)
-
-**Key Attributes:**
-- id: UUID - Unique speaker identifier (internal primary key)
-- username: string - Meaningful ID referencing User (ADR-003, NOT userId UUID)
-- availability: SpeakerAvailability - Current availability status
-- workflowState: SpeakerWorkflowState - Speaker coordination workflow state
-- expertiseAreas: string[] - Areas of technical expertise
-- speakingTopics: string[] - Topics the speaker can present
-- speakingHistory: SpeakingEngagement[] - Past session participation
-- linkedInUrl: string - LinkedIn profile (speaker-specific social media)
-- twitterHandle: string - Twitter/X handle (speaker-specific social media)
-- certifications: string[] - Professional certifications
-- languages: string[] - Languages speaker can present in
-- slotPreferences: SpeakerSlotPreferences - Time slot preferences per event
-- deletedAt: Date - Soft delete timestamp (null = active)
-
-**Fields Stored in User Entity (NOT in Speaker):**
-- ❌ email, firstName, lastName (from User.email, User.firstName, User.lastName)
-- ❌ bio (from User.bio - single source of truth)
-- ❌ profilePhotoUrl (from User.profilePictureUrl)
-- ❌ companyId (from User.companyId)
-- ❌ position (removed entirely per ADR-004)
-- ❌ userId UUID (use username per ADR-003)
-
-#### TypeScript Interface
-```typescript
-// Speaker entity references User via username (per ADR-003 + ADR-004)
-// CRITICAL: Uses username (meaningful ID), NOT userId UUID
-interface Speaker {
-  id: string;                              // UUID (internal PK)
-  username: string;                        // Meaningful ID (ADR-003) - NOT userId UUID!
-
-  // API responses include User fields via HTTP enrichment:
-  // username: string;                     // From User (API identifier)
-  // email: string;                        // From User Service HTTP call
-  // firstName: string;                    // From User Service HTTP call
-  // lastName: string;                     // From User Service HTTP call
-  // bio: string;                          // From User Service HTTP call
-  // profilePictureUrl: string;            // From User Service HTTP call
-  // companyId: string;                    // From User Service HTTP call
-
-  // Speaker-specific fields (stored in speakers table):
-  availability: SpeakerAvailability;
-  workflowState: SpeakerWorkflowState;
-  expertiseAreas: string[];
-  speakingTopics: string[];
-  linkedInUrl?: string;
-  twitterHandle?: string;
-  certifications: string[];
-  languages: string[];
-  speakingHistory: SpeakingEngagement[];
-  slotPreferences: SpeakerSlotPreferences;
-  qualityReview: QualityReviewStatus;
-  communicationPreferences: ContactPreferences;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;                        // Soft delete support
-}
-
-enum SpeakerWorkflowState {
-  IDENTIFIED = 'identified',
-  CONTACTED = 'contacted',
-  READY = 'ready',
-  DECLINED = 'declined',
-  ACCEPTED = 'accepted',
-  CONTENT_SUBMITTED = 'content_submitted',
-  QUALITY_REVIEWED = 'quality_reviewed',
-  CONFIRMED = 'confirmed',
-  OVERFLOW = 'overflow',
-  WITHDREW = 'withdrew'
-}
-
-/**
- * Note: Slot assignment is NOT a speaker state.
- * It's tracked by session.startTime existence.
- * Speaker reaches CONFIRMED when:
- * - speaker_pool.status = 'quality_reviewed' AND
- * - session.startTime IS NOT NULL
- */
-
-enum SpeakerAvailability {
-  AVAILABLE = 'available',
-  BUSY = 'busy',
-  UNAVAILABLE = 'unavailable'
-}
-```
-
-#### Relationships
-- **One-to-One:** Speaker → User (via `Speaker.username` referencing `User.username`, NO FK constraint)
-- **Many-to-One:** Speaker → Company (via `User.companyId`, transitive through User HTTP call)
-- **Many-to-Many:** Speaker ↔ Sessions (speakers can present multiple sessions)
-- **One-to-Many:** Speaker → SpeakingEngagements (historical session participation)
-
-#### API Pattern (ADR-003 + ADR-004)
-```http
-# Public API uses username identifier
-GET /api/v1/speakers/john.doe
-
-# Response combines User + Speaker via HTTP enrichment (NOT JPQL join)
-{
-  "username": "john.doe",           // From User Service HTTP call
-  "email": "john@example.com",      // From User Service HTTP call
-  "firstName": "John",               // From User Service HTTP call
-  "lastName": "Doe",                 // From User Service HTTP call
-  "bio": "Experienced architect",    // From User Service HTTP call
-  "profilePictureUrl": "https://...",// From User Service HTTP call
-  "company": "GoogleZH",             // From User Service HTTP call
-  "availability": "available",       // From Speaker table
-  "expertiseAreas": ["Security"],    // From Speaker table
-  "speakingTopics": ["Blockchain"]   // From Speaker table
-}
-```
-
-#### Service Implementation Pattern (ADR-004 HTTP Enrichment)
-```java
-// ✅ CORRECT: HTTP-based access for cross-service data
-@Service
-public class SpeakerService {
-    private final SpeakerRepository speakerRepository;
-    private final UserApiClient userApiClient;  // HTTP client
-
-    public SpeakerResponse getSpeaker(String username) {
-        // 1. Get Speaker from OWN database (uses username)
-        Speaker speaker = speakerRepository.findByUsername(username)
-            .orElseThrow(() -> new SpeakerNotFoundException(username));
-
-        // 2. Enrich with User data via HTTP call (ADR-004)
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
-
-        // 3. Combine into response DTO
-        return SpeakerResponse.builder()
-            .username(user.getUsername())
-            .email(user.getEmail())           // From HTTP call
-            .firstName(user.getFirstName())   // From HTTP call
-            .availability(speaker.getAvailability())  // From Speaker table
-            .expertiseAreas(speaker.getExpertiseAreas())
-            .build();
-    }
-}
-
-// ❌ WRONG: Don't use JPQL joins across services
-// @Query("SELECT ... FROM Speaker s INNER JOIN User u ON s.userId = u.id")
-```
 
 ### Session
 
@@ -1702,89 +1559,9 @@ CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date 
 
 ### Speaker Coordination Service Database Schema
 
-```sql
--- Speakers table (ADR-003 + ADR-004 Compliant)
--- CRITICAL: Uses username (meaningful ID), NOT user_id UUID
--- NO foreign key constraint (cross-service reference per ADR-003)
-CREATE TABLE speakers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+Per **ADR-009 (Unified Speaker Workflow)**, the `speakers` table is deleted and `speaker-coordination-service` no longer owns any entity. SPEAKER is a role on `User` (`role_assignments.role = 'SPEAKER'`); see the User section above for the SPEAKER-role pattern. Per-event speaker data — slot preferences, response state, deadlines — lives on `speaker_pool` in event-management-service. Per-event content lives on `content_submissions` + `session_users` (also event-management-service). There is no `session_speakers` junction table; sessions reference Users directly via `session_users` (cross-service reference by `username` per ADR-003).
 
-    -- ADR-003: Meaningful ID reference to User (NOT userId UUID)
-    -- Cross-service reference - NO foreign key constraint
-    username VARCHAR(100) NOT NULL UNIQUE,
-
-    -- Domain-specific fields only (NO email, name, bio, photo, company, position)
-    availability VARCHAR(50) NOT NULL CHECK (availability IN (
-        'available', 'busy', 'unavailable'
-    )) DEFAULT 'available',
-    workflow_state VARCHAR(50) NOT NULL CHECK (workflow_state IN (
-        'identified', 'contacted', 'ready', 'declined', 'accepted',
-        'content_submitted', 'quality_reviewed', 'confirmed', 'overflow', 'withdrew'
-    )) DEFAULT 'identified',
-    -- Note: slot assignment tracked via session.startTime, NOT as speaker state
-    expertise_areas TEXT[] DEFAULT '{}',
-    speaking_topics TEXT[] DEFAULT '{}',
-    linkedin_url VARCHAR(500),
-    twitter_handle VARCHAR(100),
-    certifications TEXT[] DEFAULT '{}',
-    languages VARCHAR(10)[] DEFAULT ARRAY['de', 'en'],
-    speaking_history JSONB DEFAULT '[]',
-
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE  -- Soft delete support
-
-    -- NO FOREIGN KEY to users table (cross-service per ADR-003)
-);
-
--- Indexes
-CREATE UNIQUE INDEX idx_speakers_username ON speakers(username);
-CREATE INDEX idx_speakers_availability ON speakers(availability);
-CREATE INDEX idx_speakers_workflow_state ON speakers(workflow_state);
-CREATE INDEX idx_speakers_expertise_areas ON speakers USING GIN(expertise_areas);
-CREATE INDEX idx_speakers_speaking_topics ON speakers USING GIN(speaking_topics);
-CREATE INDEX idx_speakers_active ON speakers(deleted_at) WHERE deleted_at IS NULL;
-
--- Session speaker assignments (many-to-many with roles)
--- Note: session_id references sessions table in event-management-service (no FK)
-CREATE TABLE session_speakers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL,  -- Cross-service reference (no FK constraint)
-    speaker_id UUID NOT NULL REFERENCES speakers(id) ON DELETE CASCADE,  -- Same service FK OK
-    role VARCHAR(50) NOT NULL CHECK (role IN (
-        'primary_speaker', 'co_speaker', 'moderator', 'panelist'
-    )),
-    presentation_title VARCHAR(255),
-    is_confirmed BOOLEAN DEFAULT FALSE,
-    invited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    confirmed_at TIMESTAMP WITH TIME ZONE,
-    declined_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(session_id, speaker_id)
-);
-
--- Indexes
-CREATE INDEX idx_session_speakers_session_id ON session_speakers(session_id);
-CREATE INDEX idx_session_speakers_speaker_id ON session_speakers(speaker_id);
-
--- Example: Get speaker with user data (HTTP enrichment, NOT JPQL join)
---
--- // Java Service Pattern (ADR-004)
--- public SpeakerResponse getSpeaker(String username) {
---     Speaker speaker = speakerRepository.findByUsername(username)
---         .orElseThrow(() -> new SpeakerNotFoundException(username));
---
---     // HTTP call to User Management Service
---     UserProfileDTO user = userApiClient.getUserByUsername(username);
---
---     return buildResponse(speaker, user);
--- }
---
--- // ❌ WRONG: Don't use cross-service JPQL joins
--- // SELECT ... FROM Speaker s INNER JOIN User u ON s.userId = u.id
-```
+The service remains in the architecture as a thin shell to host future speaker-related capabilities, but post-ADR-009 it contains no Flyway migrations and no JPA entities.
 
 ### Company Management Service Database Schema
 
