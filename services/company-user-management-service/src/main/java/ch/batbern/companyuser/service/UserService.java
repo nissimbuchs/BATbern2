@@ -4,6 +4,9 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.events.UserCreatedEvent;
@@ -48,6 +51,7 @@ public class UserService {
     private final SlugGenerationService slugService;
     private final UserResponseMapper responseMapper;
     private final CompanyService companyService;
+    private final RoleService roleService;
 
     /**
      * Get current authenticated user
@@ -585,6 +589,148 @@ public class UserService {
     }
 
     /**
+     * Provision a User with a role (idempotent).
+     *
+     * <p>Story 11.C.2 (AR13). Used by
+     * {@link ch.batbern.events.service.SpeakerWorkflowService#transition} at the
+     * CONTACTED → READY hook (called via {@code UserApiClient.provisionUserWithRole}).
+     *
+     * <p>Behaviour:
+     * <ul>
+     *   <li>If a User exists by email (case-insensitive lookup, matching the existing
+     *       {@link #getOrCreateUser} contract), grants the requested role if it is not
+     *       already held and returns the existing username with {@code created=false}.</li>
+     *   <li>If the User does not exist, creates the User row, grants the requested role,
+     *       and returns the generated username with {@code created=true}.</li>
+     *   <li>Idempotent: re-calling for an already-provisioned user is a no-op and returns
+     *       the same username. The {@code role_assignments} UNIQUE constraint plus
+     *       {@link RoleService#addRole}'s duplicate-detection backs the guarantee at the
+     *       persistence layer.</li>
+     * </ul>
+     *
+     * <p>Cognito wiring is deliberately stubbed: the {@code temporaryPassword} field on
+     * the response is always {@code null} in Story 11.C.2 and is reserved for Story 11.E.2
+     * to populate once {@code AdminCreateUser}/{@code AdminSetUserPassword} are wired.
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     * @throws UserValidationException if email or role is missing/invalid
+     */
+    @Counted(value = "users.provisioning", description = "Count of user provisioning calls (Story 11.C.2)")
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new UserValidationException("email", "Email is required for user provisioning");
+        }
+        if (request.getRole() == null) {
+            throw new UserValidationException("role", "Role is required for user provisioning");
+        }
+        Role roleToGrant = parseRole(request.getRole().getValue());
+
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}", request.getEmail(), roleToGrant);
+
+        // 1. Look up existing user by email (case-insensitive on lower(email) — same path as getOrCreateUser).
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            // Idempotent role grant — RoleService.addRole is a no-op if the role is already held.
+            roleService.addRole(user.getUsername(), roleToGrant);
+            log.info("Provisioning: existing user {} has role {} (created=false)",
+                    user.getUsername(), roleToGrant);
+            return new ProvisionUserResponse()
+                    .username(user.getUsername())
+                    .created(false)
+                    .temporaryPassword(null);  // Story 11.E.2 wires Cognito
+        }
+
+        // 2. No user yet — create one, then grant the role.
+        // Reuse the GetOrCreateUserRequest path so a single create-policy lives in one place.
+        // cognitoSync=false: Cognito provisioning is Story 11.E.2's responsibility.
+        GetOrCreateUserRequest createRequest = new GetOrCreateUserRequest()
+                .email(request.getEmail())
+                .firstName(request.getFirstName() != null ? request.getFirstName() : "")
+                .lastName(request.getLastName() != null ? request.getLastName() : "")
+                .createIfMissing(true)
+                .cognitoSync(false);
+        User created = createNewUser(createRequest);
+
+        // The default initial role from createNewUser is ATTENDEE. Grant the requested role if it's not
+        // already there. addRole is idempotent per RoleService.addRole(...) duplicate-detection.
+        roleService.addRole(created.getUsername(), roleToGrant);
+
+        log.info("Provisioning: created user {} with role {} (created=true)", created.getUsername(), roleToGrant);
+        return new ProvisionUserResponse()
+                .username(created.getUsername())
+                .created(true)
+                .temporaryPassword(null);  // Story 11.E.2 wires Cognito (AdminCreateUser + AdminSetUserPassword)
+    }
+
+    /**
+     * Patch user profile fields (bio, profilePictureUrl).
+     *
+     * <p>Story 11.C.2 (AR14). Called by the consolidated
+     * {@code ContentSubmissionService} when an organizer (on behalf) or a speaker (self)
+     * submits content that includes a CV blurb or a portrait.
+     *
+     * <p>Per ADR-009 §"Decision 2" + ADR-007 + Confirmed Decision §6.7: {@code bio} and
+     * {@code profilePictureUrl} are owned by the User entity (single source of truth) and
+     * are overwritten globally — there is no per-event snapshot.
+     *
+     * <p>Authorization (controller-enforced): ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may
+     * patch only their own profile (controller verifies the path variable matches the
+     * current username).
+     *
+     * @param username target user's username
+     * @param request  bio (nullable) + profilePictureUrl (nullable); ≥1 must be non-null
+     * @return updated {@link UserResponse}
+     * @throws UserNotFoundException   if the username does not exist
+     * @throws UserValidationException if both fields are null (no-op patches rejected)
+     */
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+        if (request == null
+                || (request.getBio() == null && request.getProfilePictureUrl() == null)) {
+            throw new UserValidationException(
+                    "patchUserProfile",
+                    "At least one of 'bio' or 'profilePictureUrl' must be present");
+        }
+
+        log.info("Patching user profile (Story 11.C.2): username={}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+
+        User saved = userRepository.save(user);
+
+        // Invalidate user-search caches (matches updateUserByUsername behaviour).
+        searchService.invalidateCache();
+
+        // Publish a UserUpdatedEvent so downstream listeners can refresh their view.
+        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
+        if (request.getBio() != null) {
+            updatedFields.put("bio", request.getBio());
+        }
+        if (request.getProfilePictureUrl() != null) {
+            updatedFields.put("profilePictureUrl", request.getProfilePictureUrl());
+        }
+        UserUpdatedEvent event = new UserUpdatedEvent(
+                saved.getUsername(),
+                updatedFields,
+                null,
+                getAuditUsername());
+        eventPublisher.publish(event);
+
+        log.info("User profile patched: username={}, fields={}", saved.getUsername(), updatedFields.keySet());
+        return responseMapper.mapToResponse(saved);
+    }
+
+    /**
      * Create new user (for ORGANIZER/ADMIN via API)
      * Story 2.5.2 AC4: User Creation
      *
@@ -676,7 +822,7 @@ public class UserService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .companyId(companyId)  // Story 1.16.2: company name (slug)
-                .roles(Set.of(Role.ATTENDEE))
+                .roles(new java.util.HashSet<>(Set.of(Role.ATTENDEE)))  // mutable so callers can add roles
                 .build();
 
         User savedUser = userRepository.save(user);

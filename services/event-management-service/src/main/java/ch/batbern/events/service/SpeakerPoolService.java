@@ -175,8 +175,8 @@ public class SpeakerPoolService {
                         );
                     } else if (session != null && session.getTitle() != null) {
                         // Fallback: use session title/description when no ContentSubmission exists
-                        // This handles content submitted via organizer path (SpeakerContentSubmissionService)
-                        // which stores content on Session, not in speaker_content_submissions table
+                        // (e.g., legacy rows from before Story 11.C.2 consolidation, or sessions
+                        // created without persisting a content_submission row)
                         response = SpeakerPoolResponse.fromEntityWithContent(
                                 speaker,
                                 session,

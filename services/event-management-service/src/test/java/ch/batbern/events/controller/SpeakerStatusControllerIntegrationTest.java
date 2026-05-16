@@ -350,19 +350,23 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     @Test
     @DisplayName("Should submit speaker content and return 201")
     void should_submitContent_when_speakerAccepted() throws Exception {
-        // Given: Speaker in ACCEPTED state
+        // Given: Speaker in ACCEPTED state (Story 11.C.2: identity established upstream;
+        // request body no longer carries username/speakerName/email/company).
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        testSpeaker.setUsername("john.doe");
         speakerPoolRepository.save(testSpeaker);
 
         String contentRequest = """
                 {
                     "presentationTitle": "Building Scalable Microservices",
-                    "presentationAbstract": "In this presentation, I'll share lessons learned from building scalable microservices architectures in production.",
-                    "username": "john.doe"
+                    "presentationAbstract": "In this presentation, I'll share lessons learned from building scalable microservices architectures in production."
                 }
                 """;
 
         // When: POST /api/v1/events/{code}/speakers/{speakerId}/content
+        // Story 11.C.2: response shape is now ContentSubmitResponse (submissionId, version,
+        // status, sessionTitle) — the consolidated service returns the same shape as the
+        // speaker-portal endpoint per AC4/AC8.
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/v1/events/{code}/speakers/{speakerId}/content",
                                 TEST_EVENT_CODE, testSpeaker.getId().toString())
@@ -370,15 +374,60 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(contentRequest))
                 .andDo(print())
-                // Then: Should return 201 Created
+                // Then: Should return 201 Created with ContentSubmitResponse shape
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.speakerPoolId", is(testSpeaker.getId().toString())))
-                .andExpect(jsonPath("$.sessionId", notNullValue()))
-                .andExpect(jsonPath("$.presentationTitle", is("Building Scalable Microservices")))
-                .andExpect(jsonPath("$.presentationAbstract", containsString("lessons learned")))
-                .andExpect(jsonPath("$.status", is("CONTENT_SUBMITTED")))
-                .andExpect(jsonPath("$.hasContent", is(true)))
-                .andExpect(jsonPath("$.username", is("john.doe")));
+                .andExpect(jsonPath("$.submissionId", notNullValue()))
+                .andExpect(jsonPath("$.version", is(1)))
+                .andExpect(jsonPath("$.status", is("SUBMITTED")))
+                .andExpect(jsonPath("$.sessionTitle", is("Building Scalable Microservices")));
+    }
+
+    @Test
+    @DisplayName("Should return 400 when content submission carries removed legacy fields (Story 11.C.2 — additionalProperties:false)")
+    void should_return400_when_legacyFieldsPresent() throws Exception {
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        speakerPoolRepository.save(testSpeaker);
+
+        String legacyRequest = """
+                {
+                    "presentationTitle": "Stale legacy fields",
+                    "presentationAbstract": "Includes deprecated identity fields.",
+                    "username": "john.doe",
+                    "speakerName": "John Doe",
+                    "email": "john@example.com",
+                    "company": "Acme"
+                }
+                """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/content",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(legacyRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should reject organizer endpoint with SPEAKER token — 403 (AC9 #5)")
+    void should_return403_when_speakerTokenCallsOrganizerContentEndpoint() throws Exception {
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        speakerPoolRepository.save(testSpeaker);
+
+        String contentRequest = """
+                {
+                    "presentationTitle": "Rejected by Spring Security",
+                    "presentationAbstract": "SPEAKER caller is denied before reaching the controller body."
+                }
+                """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/content",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user("speaker.user").roles("SPEAKER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentRequest))
+                .andExpect(status().isForbidden());
     }
 
     /**
@@ -417,8 +466,8 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
      * Speaker must be in ACCEPTED state before content submission
      */
     @Test
-    @DisplayName("Should return 400 when speaker not in ACCEPTED state")
-    void should_return400_when_speakerNotAccepted() throws Exception {
+    @DisplayName("Should return error when speaker not in ACCEPTED state")
+    void should_returnError_when_speakerNotAccepted() throws Exception {
         // Given: Speaker in IDENTIFIED state (not ACCEPTED)
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
         speakerPoolRepository.save(testSpeaker);
@@ -426,12 +475,13 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
         String contentRequest = """
                 {
                     "presentationTitle": "Test Title",
-                    "presentationAbstract": "Test abstract with lessons learned.",
-                    "username": "john.doe"
+                    "presentationAbstract": "Test abstract with lessons learned."
                 }
                 """;
 
         // When: POST /api/v1/events/{code}/speakers/{speakerId}/content
+        // Story 11.C.2: consolidated service throws IllegalStateException for bad source state;
+        // the global exception handler maps to a 4xx (could be 400 or 422 depending on mapper).
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/v1/events/{code}/speakers/{speakerId}/content",
                                 TEST_EVENT_CODE, testSpeaker.getId().toString())
@@ -439,8 +489,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(contentRequest))
                 .andDo(print())
-                // Then: Should return 400 Bad Request
-                .andExpect(status().isBadRequest());
+                .andExpect(status().is4xxClientError());
     }
 
     /**

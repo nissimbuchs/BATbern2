@@ -554,6 +554,82 @@ paths:
         '403':
           description: Forbidden - requires ORGANIZER role
 
+  # Story 6.3 + Story 11.C.2: Speaker self-service content submission (magic-link auth)
+  # Auth: magic-link token in request body. Phase E (Story 11.E.3) will replace this with
+  # @PreAuthorize("hasRole('SPEAKER')") on Cognito Bearer. Phase F (Story 11.F.1) deletes the
+  # magic-link bridging code entirely.
+  /speaker-portal/content/submit:
+    post:
+      tags:
+        - Speaker Content
+      summary: Submit speaker content via the speaker portal (magic-link authenticated)
+      description: |
+        Speaker self-service content submission used by the magic-link-authenticated speaker
+        portal. Refactored by Story 11.C.2 to share the consolidated
+        `ContentSubmissionService.submit(...)` backend write path with the organizer-on-behalf
+        endpoint (`POST /events/{eventCode}/speakers/{speakerId}/content`).
+
+        **Auth**: the magic-link `token` in the request body IS the auth mechanism. The
+        controller validates the token via `MagicLinkService` and resolves the speaker pool
+        before delegating to the shared service with a SPEAKER `SecurityPrincipal`.
+
+        **State precondition**: speaker must be in ACCEPTED (first submission) or
+        CONTENT_SUBMITTED (resubmission). Returns 422 otherwise.
+
+        **Downstream effects** (identical to the organizer endpoint, modulo the audit
+        principal):
+        - `speaker_content_submissions` row inserted with the next version.
+        - Session created or updated with the submitted title/abstract.
+        - `speaker_pool.status` transitions to CONTENT_SUBMITTED (or same-state self-transition
+          on resubmission) via `SpeakerWorkflowService.transition()` — the sole status writer
+          per ADR-009.
+        - `speaker_status_history` row written with `changed_by_username = speaker.username`.
+        - `SpeakerContentSubmittedEvent` published.
+
+      operationId: submitSpeakerPortalContent
+      security: []  # Magic-link token IS the credential (Story 11.E.3 swaps to Cognito Bearer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSubmitRequest'
+            examples:
+              minimalSubmit:
+                summary: Title + abstract only
+                value:
+                  token: "ml_abcdef1234567890"
+                  title: "Zero Trust Security in Enterprise Environments"
+                  contentAbstract: "This talk explores Zero Trust principles..."
+              fullSubmit:
+                summary: Submit with bio, portrait, presentation upload
+                value:
+                  token: "ml_abcdef1234567890"
+                  title: "Zero Trust Security in Enterprise Environments"
+                  contentAbstract: "This talk explores Zero Trust principles..."
+                  bio: "Experienced security architect with 15 years in the industry."
+                  profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
+                  presentationUploadId: "upload-abc-123"
+      responses:
+        '201':
+          description: Content submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSubmitResponse'
+        '400':
+          description: Validation error (missing token, blank fields, unknown property, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid state — speaker not in ACCEPTED or CONTENT_SUBMITTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     SpeakerWorkflowState:
@@ -845,8 +921,20 @@ components:
     SubmitContentRequest:
       type: object
       description: |
-        Request to submit speaker content (Story 5.5 AC6-10).
-        Creates a session with the presentation details and links the speaker.
+        Organizer-on-behalf request to submit speaker content (Story 5.5 AC6-10; refactored
+        by Story 11.C.2 to drop ad-hoc user-creation fields). Creates/updates a session with
+        the presentation details and transitions the speaker to CONTENT_SUBMITTED via the
+        consolidated ContentSubmissionService.
+
+        Story 11.C.2 changes:
+        - **Removed** legacy ad-hoc user-identity fields (`username`, `speakerName`, `email`,
+          `company`). The speaker's identity is established on `speaker_pool` at CONTACTED →
+          READY per ADR-009.
+        - **Added** optional `bio`, `profilePictureUrl`, `presentationUploadId` so the
+          organizer drawer can submit on-behalf content with CV/portrait/upload reference.
+        - `additionalProperties: false` enforces strict request validation — payloads with
+          unknown fields (including the removed legacy fields) yield 400.
+      additionalProperties: false
       required:
         - presentationTitle
         - presentationAbstract
@@ -861,27 +949,28 @@ components:
           description: Presentation abstract (becomes session.description). Max 1000 characters.
           maxLength: 1000
           example: "This talk explores the implementation of Zero Trust security principles in large enterprise environments, covering identity verification, micro-segmentation, and continuous monitoring strategies."
-        username:
-          type: string
-          description: Speaker username (if existing user selected, ADR-003)
-          example: john.doe
-        speakerName:
-          type: string
-          description: Speaker name (if creating new user)
-          example: John Doe
-        email:
-          type: string
-          format: email
-          description: Speaker email (if creating new user)
-          example: john.doe@example.com
-        company:
-          type: string
-          description: Speaker company (optional)
-          example: Google Switzerland
         bio:
           type: string
-          description: Speaker bio (optional)
+          maxLength: 5000
+          description: |
+            Optional speaker bio. When present, patched onto `User.bio` for the resolved
+            speaker username via the User Management Service (Story 11.C.2 — AR14).
           example: "Experienced security architect with 15 years in the industry."
+        profilePictureUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: |
+            Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+            presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+          example: "https://cdn.batbern.ch/users/jane.smith.jpg"
+        presentationUploadId:
+          type: string
+          description: |
+            Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+            When present, the consolidated service links the uploaded file to the session via
+            the existing materials-confirm pathway.
+          example: "upload-abc-123"
 
     SpeakerContentResponse:
       type: object
@@ -945,6 +1034,85 @@ components:
           type: string
           description: Material filename for display
           example: "zero-trust-presentation.pdf"
+
+    # Story 6.3 + Story 11.C.2: Speaker-portal content submission DTOs
+    # (kept as token-bearing records until Phase E swaps to Cognito Bearer auth)
+    ContentSubmitRequest:
+      type: object
+      description: |
+        Speaker self-service content submission via the magic-link portal. Story 11.C.2
+        added optional `bio`, `profilePictureUrl`, `presentationUploadId` so the speaker
+        can patch their User profile + attach an uploaded presentation in a single submit.
+        Phase E (Story 11.E.3) will remove the `token` field once the portal moves to
+        Cognito Bearer auth.
+      additionalProperties: false
+      required:
+        - token
+        - title
+        - contentAbstract
+      properties:
+        token:
+          type: string
+          description: Magic-link token (Story 6.3 — Phase E migrates this to Cognito Bearer).
+          example: "ml_abcdef1234567890"
+        title:
+          type: string
+          maxLength: 200
+          description: Presentation title.
+          example: "Zero Trust Security in Enterprise Environments"
+        contentAbstract:
+          type: string
+          maxLength: 1000
+          description: Presentation abstract.
+          example: "This talk explores Zero Trust principles..."
+        bio:
+          type: string
+          maxLength: 5000
+          description: |
+            Optional speaker bio. When present, patched onto `User.bio` for the resolved
+            speaker username via the User Management Service (Story 11.C.2 — AR14).
+          example: "Experienced security architect with 15 years in the industry."
+        profilePictureUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: |
+            Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+            presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+          example: "https://cdn.batbern.ch/users/jane.smith.jpg"
+        presentationUploadId:
+          type: string
+          description: |
+            Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+            When present, the consolidated service links the uploaded file to the session.
+          example: "upload-abc-123"
+
+    ContentSubmitResponse:
+      type: object
+      description: Response after a successful speaker-portal content submission.
+      required:
+        - submissionId
+        - version
+        - status
+        - sessionTitle
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+          description: The content submission record ID.
+        version:
+          type: integer
+          format: int32
+          description: Submission version (1 for first, increments on resubmission).
+          example: 1
+        status:
+          type: string
+          description: Submission status — always "SUBMITTED" after a successful submit.
+          example: "SUBMITTED"
+        sessionTitle:
+          type: string
+          description: Session title (for confirmation display).
+          example: "Zero Trust Security in Enterprise Environments"
 
     ReviewRequest:
       type: object

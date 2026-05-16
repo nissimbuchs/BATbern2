@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.ReviewRequest;
 import ch.batbern.events.dto.SpeakerContentResponse;
 import ch.batbern.events.dto.SpeakerStatusResponse;
@@ -10,9 +11,11 @@ import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
 import ch.batbern.events.dto.UpdateStatusRequest;
 import ch.batbern.events.exception.ReadyRequiresPromoteException;
+import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.QualityReviewService;
-import ch.batbern.events.service.SpeakerContentSubmissionService;
 import ch.batbern.events.service.SpeakerStatusService;
+import ch.batbern.events.service.content.ContentSubmissionPayload;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +57,7 @@ import java.util.UUID;
 public class SpeakerStatusController {
 
     private final SpeakerStatusService speakerStatusService;
-    private final SpeakerContentSubmissionService contentSubmissionService;
+    private final ContentSubmissionService contentSubmissionService;
     private final QualityReviewService qualityReviewService;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
 
@@ -155,7 +158,7 @@ public class SpeakerStatusController {
     @PostMapping("/{speakerId}/content")
     @PreAuthorize("hasRole('ORGANIZER')")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<SpeakerContentResponse> submitContent(
+    public ResponseEntity<ContentSubmitResponse> submitContent(
             @PathVariable String eventCode,
             @PathVariable UUID speakerId,
             @Valid @RequestBody SubmitContentRequest request) {
@@ -163,16 +166,22 @@ public class SpeakerStatusController {
         log.info("POST /api/v1/events/{}/speakers/{}/content - title: {}",
                 eventCode, speakerId, request.getPresentationTitle());
 
-        SpeakerContentResponse response = contentSubmissionService.submitContent(
-                speakerId.toString(),
-                eventCode,
+        // Story 11.C.2 — both content-submission endpoints share ContentSubmissionService.submit().
+        // The organizer principal is built from SecurityContext; the consolidated service handles
+        // session/content/profile-patch/workflow-transition in a single transaction.
+        SecurityPrincipal actor = new SecurityPrincipal(
+                securityContextHelper.getCurrentUsername(),
+                securityContextHelper.getCurrentUserRoles());
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
-                request.getUsername(),
-                request.getSpeakerName(),
-                request.getEmail(),
-                request.getCompany()
+                request.getBio(),
+                request.getProfilePictureUrl(),
+                request.getPresentationUploadId()
         );
+
+        ContentSubmitResponse response = contentSubmissionService.submit(
+                speakerId, eventCode, payload, actor);
 
         return ResponseEntity.status(201).body(response);
     }

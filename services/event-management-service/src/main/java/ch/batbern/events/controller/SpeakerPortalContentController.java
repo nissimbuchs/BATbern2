@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.ContentDraftRequest;
 import ch.batbern.events.dto.ContentDraftResponse;
 import ch.batbern.events.dto.ContentSubmitRequest;
@@ -9,10 +10,15 @@ import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
 import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
 import ch.batbern.events.dto.SpeakerMaterialUploadRequest;
 import ch.batbern.events.dto.SpeakerMaterialUploadResponse;
+import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.ContentSubmissionService;
+import ch.batbern.events.service.MagicLinkService;
 import ch.batbern.events.service.SpeakerPortalMaterialsService;
+import ch.batbern.events.service.content.ContentSubmissionPayload;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,6 +32,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * REST Controller for speaker portal content submission.
@@ -55,12 +63,18 @@ public class SpeakerPortalContentController {
 
     private final ContentSubmissionService contentSubmissionService;
     private final SpeakerPortalMaterialsService materialsService;
+    private final MagicLinkService magicLinkService;
+    private final SpeakerPoolRepository speakerPoolRepository;
 
     public SpeakerPortalContentController(
             ContentSubmissionService contentSubmissionService,
-            SpeakerPortalMaterialsService materialsService) {
+            SpeakerPortalMaterialsService materialsService,
+            MagicLinkService magicLinkService,
+            SpeakerPoolRepository speakerPoolRepository) {
         this.contentSubmissionService = contentSubmissionService;
         this.materialsService = materialsService;
+        this.magicLinkService = magicLinkService;
+        this.speakerPoolRepository = speakerPoolRepository;
     }
 
     /**
@@ -163,7 +177,43 @@ public class SpeakerPortalContentController {
         LOG.info("Content submission request received from IP: {}", clientIp);
 
         try {
-            ContentSubmitResponse response = contentSubmissionService.submitContent(request);
+            // Story 11.C.2 — the controller now owns token validation + principal construction
+            // so the consolidated ContentSubmissionService.submit() can be invoked with a
+            // principal-agnostic payload (matches the organizer endpoint shape).
+            //
+            // NB: NO @PreAuthorize annotation here in 11.C.2 — Phase E (Story 11.E.3) replaces
+            // the magic-link token check with Cognito Bearer + hasRole('SPEAKER').
+            TokenValidationResult validation = validateToken(request.token());
+
+            SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
+                    .orElseThrow(() -> new ValidationException("Speaker not found"));
+
+            // Build a SPEAKER principal. Username is taken from the pool entry (populated at
+            // CONTACTED → READY per Story 11.B.2). For pre-11.B.2 legacy magic-link sessions
+            // where speaker.username may be null, fall back to the speaker_name from the
+            // pool — matches the pattern Story 11.B.2 established in SpeakerResponseService.
+            String actorUsername = speaker.getUsername() != null && !speaker.getUsername().isBlank()
+                    ? speaker.getUsername()
+                    : speaker.getSpeakerName();
+            SecurityPrincipal actor = new SecurityPrincipal(actorUsername, List.of("SPEAKER"));
+
+            ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                    request.title(),
+                    request.contentAbstract(),
+                    request.bio(),
+                    request.profilePictureUrl(),
+                    request.presentationUploadId()
+            );
+
+            ContentSubmitResponse response = contentSubmissionService.submit(
+                    speaker.getId(),
+                    validation.eventCode(),
+                    payload,
+                    actor
+            );
+
+            // Mark token used after a successful submit (existing magic-link path).
+            magicLinkService.markTokenAsUsed(request.token());
 
             LOG.info("Content submitted - submissionId: {}, version: {} from IP: {}",
                     response.submissionId(), response.version(), clientIp);
@@ -180,6 +230,26 @@ public class SpeakerPortalContentController {
                     e.getMessage(), clientIp);
             throw new ValidationException(e.getMessage());
         }
+    }
+
+    /**
+     * Validate a magic-link token and surface a friendly error message per the existing
+     * Story 6.3 mapping. Story 11.C.2 lifted this from
+     * {@code ContentSubmissionService.validateToken(...)} so the controller can build the
+     * principal before delegating to the consolidated {@code submit(...)} method.
+     */
+    private TokenValidationResult validateToken(String token) {
+        TokenValidationResult result = magicLinkService.validateToken(token);
+        if (!result.valid()) {
+            String message = switch (result.error()) {
+                case "NOT_FOUND" -> "Invalid token";
+                case "EXPIRED" -> "Token has expired";
+                case "ALREADY_USED" -> "Token has already been used";
+                default -> "Token validation failed";
+            };
+            throw new ValidationException(message);
+        }
+        return result;
     }
 
     /**

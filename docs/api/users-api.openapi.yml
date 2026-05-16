@@ -1378,6 +1378,135 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/provision:
+    post:
+      tags:
+        - Domain Integration
+      summary: Provision a user with a role (Story 11.C.2 — AR13)
+      description: |
+        Idempotent endpoint for the canonical "create User + grant role" flow used by the
+        Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
+
+        **ADR-009**: Decision 3 — Cognito provisioning skeleton. Cognito wiring (AdminCreateUser,
+        AdminSetUserPassword, AdminAddUserToGroup) is **deliberately stubbed** in Story 11.C.2
+        and will be wired in Story 11.E.2. The `temporaryPassword` field on the response is
+        reserved for that story to populate; it is always `null` in 11.C.2.
+
+        **Behaviour**:
+        - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
+          grants the requested role if not already held; returns existing `username` and `created=false`.
+        - If User does not exist: creates User row, grants role, returns generated `username` and
+          `created=true`. The username is auto-generated from email per the existing
+          `getOrCreateUser` policy.
+        - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
+          the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
+          backs the idempotency guarantee at the DB layer.
+
+        **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
+        propagates the ORGANIZER JWT per `microservices-http-clients.md`).
+
+        **Performance**: <200ms (P95)
+
+      operationId: provisionUserWithRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionUserRequest'
+            examples:
+              speakerProvisioning:
+                summary: Provision a speaker at CONTACTED → READY
+                value:
+                  email: jane.smith@example.com
+                  firstName: Jane
+                  lastName: Smith
+                  role: SPEAKER
+      responses:
+        '200':
+          description: User provisioned (created or already existed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/profile:
+    patch:
+      tags:
+        - User Management
+      summary: Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
+      description: |
+        Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
+        consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
+        (self) submits content that includes a CV blurb or a portrait.
+
+        **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
+        entity (single source of truth). This endpoint overwrites the global values — there
+        is no per-event snapshot.
+
+        **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
+        **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
+        and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
+
+        **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
+        fields are left unchanged.
+
+      operationId: patchUserProfile
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Target user's username (Story 1.16.2)
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: jane.smith
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserProfileRequest'
+            examples:
+              fullPatch:
+                summary: Update bio and profile picture
+                value:
+                  bio: "Experienced security architect with 15 years in the industry."
+                  profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
+              bioOnly:
+                summary: Update bio only
+                value:
+                  bio: "Updated bio for the next event."
+      responses:
+        '200':
+          description: Profile patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/get-or-create:
     post:
       tags:
@@ -1839,6 +1968,95 @@ components:
           maxLength: 500
           description: User biography/description
           example: Software engineer passionate about cloud architecture
+
+    ProvisionUserRequest:
+      type: object
+      description: |
+        Request to provision a User with a role (Story 11.C.2 — AR13).
+        Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+      additionalProperties: false
+      required:
+        - email
+        - role
+      properties:
+        username:
+          type: string
+          description: |
+            Optional. If null, the service generates a username from the email per the
+            existing `getOrCreateUser` policy.
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Required. Lookup key for the existing-user path (case-insensitive).
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Jane
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Smith
+        role:
+          type: string
+          description: |
+            Role to grant. SPEAKER is the only role used by Epic 11; future stories may
+            extend to other roles.
+          enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          example: SPEAKER
+
+    ProvisionUserResponse:
+      type: object
+      description: |
+        Response from the user-provisioning endpoint. The `temporaryPassword` field is
+        reserved for Story 11.E.2 (Cognito wiring) — it is always `null` in 11.C.2.
+      required:
+        - username
+        - created
+      properties:
+        username:
+          type: string
+          description: Canonical username (existing or newly generated).
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: jane.smith
+        created:
+          type: boolean
+          description: True if a new User row was created; false if the user already existed.
+          example: true
+        temporaryPassword:
+          type: string
+          nullable: true
+          description: |
+            Reserved for Story 11.E.2 — Cognito AdminCreateUser/AdminSetUserPassword wiring.
+            Always `null` in 11.C.2.
+          example: null
+
+    PatchUserProfileRequest:
+      type: object
+      description: |
+        Patch the narrow profile fields owned by the consolidated ContentSubmissionService
+        (Story 11.C.2 — AR14). At least one of `bio` or `profilePictureUrl` must be present.
+        Null fields are left unchanged.
+      additionalProperties: false
+      properties:
+        bio:
+          type: string
+          maxLength: 5000
+          description: Updated user biography. Overwrites the global value per ADR-009 §6.7.
+          example: "Experienced security architect with 15 years in the industry."
+        profilePictureUrl:
+          type: string
+          maxLength: 2048
+          description: |
+            Updated profile picture URL (typically a CloudFront URL produced by an earlier
+            presigned-upload flow). Modelled as a plain string (not `format: uri`) so the
+            Bean Validation {@code @Size(max=2048)} constraint generated by the Spring
+            OpenAPI generator applies cleanly.
+          example: "https://cdn.batbern.ch/users/jane.smith.jpg"
 
     GetOrCreateUserRequest:
       type: object

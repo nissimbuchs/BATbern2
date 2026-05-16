@@ -3,6 +3,9 @@ package ch.batbern.events.client;
 import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -131,34 +134,55 @@ public interface UserApiClient {
      */
     List<CompanyBasicDto> getAllCompanies();
 
-    // Profile update methods (Story 6.2b)
+    // Story 11.C.2 (AR13/AR14): canonical speaker-provisioning + profile-patch operations.
+    // Replaces the legacy updateUser/updateUserProfilePicture methods from Story 6.2b
+    // (deleted by Story 11.C.2 — Resolved Decision §1).
 
     /**
-     * Update user profile fields.
-     * Story 6.2b: Speaker Profile Update Portal (AC10)
+     * Provision a User with a role (idempotent).
      *
-     * Used for syncing speaker profile updates to Company Service.
-     * Updates User fields: firstName, lastName, bio, profilePictureUrl.
+     * <p>Story 11.C.2 (AR13). Canonical entry point for the
+     * {@code SpeakerWorkflowService.transition()} CONTACTED → READY hook to materialise
+     * the Speaker as a User + SPEAKER role (replaces the deleted {@code Speaker} entity
+     * per ADR-009 / Story 11.C.1).
      *
-     * @param username User's username
-     * @param updateDto fields to update (null fields are ignored)
-     * @return Updated user profile
-     * @throws UserNotFoundException if user not found (404)
+     * <p>Behaviour:
+     * <ul>
+     *   <li>If the User exists by email (case-insensitive lookup), grants the role if not
+     *       already held and returns the existing username with {@code created=false}.</li>
+     *   <li>If the User does not exist, creates the row, grants the role, and returns the
+     *       generated username with {@code created=true}.</li>
+     *   <li>Idempotent: re-calling for an already-provisioned user is a no-op.</li>
+     * </ul>
+     *
+     * <p>Cognito wiring is deliberately stubbed in Story 11.C.2; {@code temporaryPassword}
+     * on the response is always {@code null}. Story 11.E.2 will wire
+     * {@code AdminCreateUser}/{@code AdminSetUserPassword} and populate that field.
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
-    UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto);
+    ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request);
 
     /**
-     * Update user profile picture URL.
-     * Story 6.2b: Speaker Profile Update Portal - AC7 (Profile Photo Upload)
+     * Patch user profile fields (bio, profilePictureUrl).
      *
-     * Used after successful S3 photo upload confirmation.
-     * Updates only User.profilePictureUrl field.
+     * <p>Story 11.C.2 (AR14). Called by the consolidated
+     * {@code ContentSubmissionService} when an organizer (on behalf) or a speaker (self)
+     * submits content that includes a CV blurb or a portrait. Per ADR-009 §"Decision 2"
+     * + ADR-007: {@code bio} and {@code profilePictureUrl} live on User (single source of
+     * truth) and are overwritten globally.
      *
-     * @param username User's username
-     * @param profilePictureUrl CloudFront URL of the uploaded photo
-     * @throws UserNotFoundException if user not found (404)
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     * <p>Authorization is enforced on the CUMS side: ORGANIZER/ADMIN may patch any user;
+     * SPEAKERS may patch only their own profile.
+     *
+     * @param username target user's username
+     * @param request  bio (nullable, max 5000) + profilePictureUrl (nullable, max 2048);
+     *                 at least one must be present
+     * @return updated user profile
+     * @throws UserNotFoundException if username not found (404)
+     * @throws UserServiceException  if API communication fails (5xx, timeout, network error)
      */
-    void updateUserProfilePicture(String username, String profilePictureUrl);
+    UserResponse patchUserProfile(String username, PatchUserProfileRequest request);
 }

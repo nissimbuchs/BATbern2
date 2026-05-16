@@ -12,10 +12,15 @@ import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
+import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ProfilePictureService;
@@ -262,6 +267,84 @@ public class UserController {
         log.info("Updating user {} by organizer/admin", username);
 
         UserResponse response = userService.updateUserByUsername(username, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR13): Provision a User with a role.
+     * POST /api/v1/users/provision
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.transition()} (event-management-service) at the
+     * CONTACTED → READY hook to materialise the Speaker as a User + SPEAKER role
+     * (replaces the deleted {@code Speaker} entity per ADR-009 / Story 11.C.1).
+     *
+     * <p>Idempotent: re-calling for an already-provisioned user is a no-op and returns
+     * the same canonical username with {@code created=false}.
+     *
+     * <p>Cognito wiring is stubbed (Story 11.E.2 owns it); {@code temporaryPassword} is
+     * always {@code null} in this story.
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     */
+    @PostMapping("/provision")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Timed(value = "users.provisionUser",
+            description = "Time to provision a user with role (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<ProvisionUserResponse> provisionUser(
+            @Valid @RequestBody ProvisionUserRequest request) {
+        log.info("POST /api/v1/users/provision — email: {}, role: {}",
+                request.getEmail(), request.getRole());
+
+        ProvisionUserResponse response = userService.provisionUserWithRole(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR14): Patch user profile fields (bio, profilePictureUrl).
+     * PATCH /api/v1/users/{username}/profile
+     *
+     * <p>Narrow profile-patch entry point used by the consolidated
+     * {@code ContentSubmissionService} when speaker content includes a CV blurb or a
+     * portrait. Replaces the broader Story 6.2b {@code PUT /api/v1/users/{username}}
+     * path for this specific flow with sharper auth semantics.
+     *
+     * <p>Authorization: ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may patch only their own
+     * profile (the method body enforces {@code currentUsername == pathVariable.username}
+     * and throws {@link AccessDeniedException} otherwise).
+     *
+     * @param username target user's username
+     * @param request  bio + profilePictureUrl (≥1 must be present; null fields are left unchanged)
+     * @return updated user profile
+     */
+    @PatchMapping("/{username}/profile")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN', 'SPEAKER')")
+    @Timed(value = "users.patchUserProfile",
+            description = "Time to patch user profile fields (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserResponse> patchUserProfile(
+            @PathVariable String username,
+            @Valid @RequestBody PatchUserProfileRequest request) {
+        log.info("PATCH /api/v1/users/{}/profile", username);
+
+        // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
+        // may patch only their own profile. The class-level @PreAuthorize already
+        // restricts the endpoint to ORGANIZER/ADMIN/SPEAKER principals.
+        if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
+            String currentUsername = securityContextHelper.getCurrentUsername();
+            if (currentUsername == null || !currentUsername.equals(username)) {
+                log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
+                        currentUsername, username);
+                throw new AccessDeniedException(
+                        "SPEAKER may only patch their own profile");
+            }
+        }
+
+        UserResponse response = userService.patchUserProfile(username, request);
 
         return ResponseEntity.ok(response);
     }

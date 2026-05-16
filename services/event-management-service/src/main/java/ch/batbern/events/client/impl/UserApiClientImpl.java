@@ -5,6 +5,9 @@ import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
+import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -13,6 +16,7 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -460,141 +464,152 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Update user profile fields.
-     * Story 6.2b: Speaker Profile Update Portal (AC10)
+     * Provision a User with a role (idempotent).
+     * Story 11.C.2 (AR13). See {@link UserApiClient#provisionUserWithRole(ProvisionUserRequest)}.
      *
-     * @param username User's username
-     * @param updateDto fields to update
-     * @return Updated user profile
+     * <p>Not cached: this is a write operation. Successful calls evict any cached
+     * lookup for the target username because the role set has changed.
      */
     @Override
-    public UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto) {
-        log.debug("Updating user profile for username: {}", username);
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+        log.debug("Provisioning user (Story 11.C.2): email={}, role={}",
+                request.getEmail(), request.getRole());
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+        String url = userServiceBaseUrl + "/api/v1/users/provision";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             headers.set("Content-Type", "application/json");
-            HttpEntity<ch.batbern.events.dto.UserUpdateDto> request = new HttpEntity<>(updateDto, headers);
+            HttpEntity<ProvisionUserRequest> httpRequest = new HttpEntity<>(request, headers);
 
-            ResponseEntity<UserResponse> response = restTemplate.exchange(
+            ResponseEntity<ProvisionUserResponse> response = restTemplate.exchange(
                     url,
-                    HttpMethod.PATCH,
-                    request,
-                    UserResponse.class
+                    HttpMethod.POST,
+                    httpRequest,
+                    ProvisionUserResponse.class
             );
 
-            UserResponse user = response.getBody();
-            log.info("Successfully updated user profile for username: {}", username);
-            return user;
-
-        } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found for update: {}", username);
-            throw new UserNotFoundException(username, e);
+            ProvisionUserResponse result = response.getBody();
+            log.info("Provisioned user: email={}, username={}, created={}",
+                    request.getEmail(),
+                    result != null ? result.getUsername() : "null",
+                    result != null ? result.getCreated() : "null");
+            evictUserCache(result != null ? result.getUsername() : null);
+            return result;
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error updating user {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            log.error("Client error provisioning user {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "Client error updating user: " + username,
+                    "Client error provisioning user: " + request.getEmail(),
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for user {}: {} - {}",
-                    username, e.getStatusCode(), e.getMessage());
+            log.error("Server error from User Management Service for provision {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "User Management Service error for user: " + username,
+                    "User Management Service error provisioning user: " + request.getEmail(),
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for user {}: {}",
-                    username, e.getMessage());
+            log.error("Network error connecting to User Management Service for provision {}: {}",
+                    request.getEmail(), e.getMessage());
             throw new UserServiceException(
-                    "Failed to connect to User Management Service for user: " + username,
+                    "Failed to connect to User Management Service for user: " + request.getEmail(),
                     e
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error updating user {}: {}", username, e.getMessage(), e);
+            log.error("Unexpected error provisioning user {}: {}", request.getEmail(), e.getMessage(), e);
             throw new UserServiceException(
-                    "Unexpected error updating user: " + username,
+                    "Unexpected error provisioning user: " + request.getEmail(),
                     e
             );
         }
     }
 
     /**
-     * Update user profile picture URL.
-     * Story 6.2b: Speaker Profile Update Portal - AC7 (Profile Photo Upload)
+     * Patch user profile fields (bio, profilePictureUrl).
+     * Story 11.C.2 (AR14). See {@link UserApiClient#patchUserProfile(String, PatchUserProfileRequest)}.
      *
-     * Uses PATCH to update only the profilePictureUrl field.
-     *
-     * @param username User's username
-     * @param profilePictureUrl CloudFront URL of the uploaded photo
+     * <p>Successful calls evict the {@code userApiCache} entry for the target username
+     * because the underlying User profile has changed (mirrors the eviction pattern from
+     * the deleted Story 6.2b {@code updateUserProfilePicture} method).
      */
     @Override
-    public void updateUserProfilePicture(String username, String profilePictureUrl) {
-        log.debug("Updating profile picture for username: {}", username);
+    @CacheEvict(value = "userApiCache", key = "#username")
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+        log.debug("Patching user profile (Story 11.C.2) for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile-picture";
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile";
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             headers.set("Content-Type", "application/json");
+            HttpEntity<PatchUserProfileRequest> httpRequest = new HttpEntity<>(request, headers);
 
-            // Simple DTO with just the URL
-            java.util.Map<String, String> body = java.util.Map.of("profilePictureUrl", profilePictureUrl);
-            HttpEntity<java.util.Map<String, String>> request = new HttpEntity<>(body, headers);
-
-            restTemplate.exchange(
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.PATCH,
-                    request,
-                    Void.class
+                    httpRequest,
+                    UserResponse.class
             );
 
-            log.info("Successfully updated profile picture for username: {}", username);
+            UserResponse user = response.getBody();
+            log.info("Successfully patched user profile for username: {}", username);
+            return user;
 
         } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found for profile picture update: {}", username);
+            log.warn("User not found for profile patch: {}", username);
             throw new UserNotFoundException(username, e);
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error updating profile picture for {}: {} - {}",
+            log.error("Client error patching user profile {}: {} - {}",
                     username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "Client error updating profile picture for user: " + username,
+                    "Client error patching user profile: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for profile picture {}: {} - {}",
+            log.error("Server error patching user profile {}: {} - {}",
                     username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
-                    "User Management Service error updating profile picture for user: " + username,
+                    "User Management Service error patching profile for user: " + username,
                     e.getStatusCode().value(),
                     e
             );
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for profile picture {}: {}",
-                    username, e.getMessage());
+            log.error("Network error patching user profile {}: {}", username, e.getMessage());
             throw new UserServiceException(
                     "Failed to connect to User Management Service for user: " + username,
                     e
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error updating profile picture for {}: {}", username, e.getMessage(), e);
+            log.error("Unexpected error patching user profile {}: {}", username, e.getMessage(), e);
             throw new UserServiceException(
-                    "Unexpected error updating profile picture for user: " + username,
+                    "Unexpected error patching user profile: " + username,
                     e
             );
+        }
+    }
+
+    /**
+     * Evict the cached User entry for a username after a write operation
+     * (Story 11.C.2). Wrapped in a helper so the eviction goes through Spring's cache
+     * abstraction even when invoked from within the same bean.
+     */
+    @CacheEvict(value = "userApiCache", key = "#username")
+    public void evictUserCache(String username) {
+        if (username != null) {
+            log.trace("Evicted userApiCache entry for username: {}", username);
         }
     }
 
