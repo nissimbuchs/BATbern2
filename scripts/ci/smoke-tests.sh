@@ -6,10 +6,11 @@
 
 FRONTEND_URL=$1
 API_URL=$2
+CDN_URL=${3:-"https://cdn.batbern.ch"}
 
 if [ -z "$FRONTEND_URL" ] || [ -z "$API_URL" ]; then
-    echo "Usage: $0 <frontend_url> <api_url>"
-    echo "Example: $0 https://www.batbern.ch https://api.batbern.ch"
+    echo "Usage: $0 <frontend_url> <api_url> [cdn_url]"
+    echo "Example: $0 https://www.batbern.ch https://api.batbern.ch https://cdn.batbern.ch"
     exit 1
 fi
 
@@ -106,6 +107,51 @@ if [ "$response" = "200" ]; then
 else
     echo -e "${YELLOW}⚠ WARNING${NC}: Cache health endpoint not available yet (returned $response)"
     ((passed++))  # Don't fail if endpoint doesn't exist yet
+fi
+
+# Test 6: CDN image serving + Lambda@Edge resize
+# Validates that CloudFront can serve images AND that the Lambda@Edge resize function
+# initialises correctly. A missing 'sharp' module crashes the Lambda at init and returns
+# 503 for ALL CDN requests — including plain pass-throughs — so this test catches that
+# entire class of bug immediately after each storage-stack deploy.
+echo -e "\n${YELLOW}Test 6:${NC} CDN image serving and Lambda@Edge resize"
+
+# Find a known image path from the most recent event via the public API
+SAMPLE_IMAGE_PATH=$(curl -s "$API_URL/api/events?status=COMPLETED&size=1" \
+    | jq -r '.content[0].photoPath // empty' 2>/dev/null || echo "")
+
+if [ -z "$SAMPLE_IMAGE_PATH" ]; then
+    # Fall back to a well-known fixture path present in every environment
+    SAMPLE_IMAGE_PATH="events/BATbern58/photos/663b409c-a40a-4dc5-85b5-dd3c6412bae0.jpg"
+fi
+
+# 6a: Plain CDN fetch (no resize params) — Lambda@Edge must pass through to S3
+plain_status=$(curl -s -o /dev/null -w "%{http_code}" \
+    --max-time 10 "$CDN_URL/$SAMPLE_IMAGE_PATH" || echo "000")
+if [ "$plain_status" = "200" ]; then
+    echo -e "  ${GREEN}✓${NC} Plain image fetch: $plain_status"
+    ((passed++))
+else
+    echo -e "  ${RED}✗ FAIL${NC}: Plain image fetch returned $plain_status (expected 200)"
+    echo -e "      URL: $CDN_URL/$SAMPLE_IMAGE_PATH"
+    ((failed++))
+fi
+
+# 6b: Resize request — Lambda@Edge must load sharp and return image/webp
+resize_response=$(curl -s -D - -o /dev/null \
+    --max-time 15 "$CDN_URL/$SAMPLE_IMAGE_PATH?w=100&h=100&fit=cover" || echo "")
+resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
+resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
+
+if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; then
+    echo -e "  ${GREEN}✓${NC} Resize+WebP: $resize_status, $resize_ct"
+    ((passed++))
+else
+    echo -e "  ${RED}✗ FAIL${NC}: Resize request returned HTTP $resize_status, Content-Type: $resize_ct"
+    echo -e "      Expected HTTP 200 + content-type: image/webp"
+    echo -e "      URL: $CDN_URL/$SAMPLE_IMAGE_PATH?w=100&h=100&fit=cover"
+    echo -e "      This usually means the Lambda@Edge function is missing 'sharp' in its package."
+    ((failed++))
 fi
 
 # Summary
