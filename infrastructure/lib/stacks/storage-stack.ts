@@ -165,7 +165,7 @@ export class StorageStack extends cdk.Stack {
           command: [
             'bash', '-c',
             [
-              'npm ci --platform=linux --arch=x64 --libc=glibc',
+              'npm ci --cache /tmp/.npm --platform=linux --arch=x64 --libc=glibc',
               [
                 './node_modules/.bin/esbuild index.ts',
                 '--bundle --platform=node --target=node20 --external:sharp',
