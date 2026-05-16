@@ -297,6 +297,48 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.baseline-on-migrate=true
 ```
 
+### Lambda Handler Testing (Infrastructure)
+
+Lambda handlers are **deployed artifacts**, not just code. CDK unit tests (`Template.fromStack`) verify that a Lambda is *declared* in CloudFormation — they do **not** test that the handler module can load and run. These are two completely different things, and only one of them catches production failures.
+
+**Mandatory for every Lambda function:**
+
+1. **Handler unit test** — directly imports and calls the handler with representative inputs:
+   ```typescript
+   // infrastructure/test/unit/lambda/<handler-name>.test.ts
+   test('module loads without crashing', async () => {
+     const { handler } = await import('../../../lib/lambda/my-handler/index');
+     expect(typeof handler).toBe('function');
+   });
+
+   test('passes through / returns expected shape', async () => {
+     const { handler } = await import('../../../lib/lambda/my-handler/index');
+     const result = await handler(mockEvent as any, {} as any);
+     expect(result).toMatchObject({ statusCode: 200 });
+   });
+   ```
+
+2. This test runs without the production dependencies installed. **If it crashes on import, the Lambda will return 503 in production** — that is the signal the test is designed to catch.
+
+**Bundling rule — native dependencies:**
+
+Any Lambda that uses a native binary package (sharp, pg-native, canvas, etc.) MUST use Docker for production bundling. The local `tryBundle` path MUST NOT include native module installation. Pattern to follow:
+
+```typescript
+local: {
+  tryBundle(outputDir) {
+    if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') {
+      // Lightweight stub for Jest — tests check CFn properties, not Lambda code
+      require('fs').writeFileSync(path.join(outputDir, 'index.js'), 'exports.handler = async () => ({});');
+      return true;
+    }
+    return false; // always use Docker for real deploys → correct Linux x64 binary
+  },
+},
+```
+
+**Why TypeScript and ESLint cannot catch this:** Static analysis operates on source code type correctness. It has no model of what files will exist in the deployed Lambda zip. A static `import nativePkg from 'native-pkg'` type-checks fine; the crash happens at Lambda cold-start when the binary is missing. The handler unit test is the only pre-deploy check that catches this class of failure.
+
 ### End-to-End Testing
 ```typescript
 // Playwright E2E tests
