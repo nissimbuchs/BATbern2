@@ -43,13 +43,15 @@ export interface SpeakerPoolEntry {
   acceptedAt?: string;
   declinedAt?: string;
   declineReason?: string;
-  isTentative?: boolean;
-  tentativeReason?: string;
   preferredTimeSlot?: string;
   travelRequirements?: string;
   technicalRequirements?: string;
   initialPresentationTitle?: string;
   preferenceComments?: string;
+
+  // Story 11.B.3: Derived flags (ADR-009 §0.1) — computed at read time, NOT persisted
+  isSlotAssigned?: boolean;
+  isPublishable?: boolean;
 
   // Story 6.3: Speaker Content Submission Portal fields
   contentStatus?: string; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED

@@ -1,0 +1,556 @@
+# Story 11.D.1: Promote-to-READY endpoint + brainstorm-panel tightening + slot-capacity gate
+
+Status: ready-for-dev
+
+<!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
+
+## Story
+
+**As an** organizer running the speaker-coordination kanban,
+**I want** a clear "this is a real, invitable speaker" moment that captures the email and provisions the User, **and** I want the system to stop me from inviting more speakers than I have slots,
+**So that** brainstorming and concrete-invitation states stay distinct and I never oversubscribe.
+
+## Phase / Dependencies / Requirements Covered
+
+- **Phase:** D — Workflow semantics update + organizer UX (first of four D stories).
+- **Depends on (strict sequencing — must land in order):**
+  1. **Story 11.B.2** — `SpeakerWorkflowService.transition()` is the sole status writer with the READY hook (provisioning seam) and INVITED precondition (slot-capacity gate). **Already landed** on `feature/speaker-workflow-refactor` (commit `c53d02c8`). The slot-capacity gate at INVITED already throws `SlotCapacityReachedException` (mapped to HTTP 409 by `GlobalExceptionHandler`).
+  2. **Story 11.C.2** — `UserApiClient.provisionUserWithRole(...)` + `ContentSubmissionService` consolidation. **Must merge BEFORE this story.** Per Resolved Open Question #1 (2026-05-16, decided by PM): the READY hook in `SpeakerWorkflowService` is refactored by 11.C.2 to call `provisionUserWithRole(...)` in place of the current `getOrCreateUser(...) + speakerProvisioningHook.grantSpeakerRole(...)` pair. Story 11.D.1's `/promote` endpoint observes the post-11.C.2 hook behaviour — i.e., the test assertions for AC1 verify that `provisionUserWithRole` is the provisioning call (matching the strict PRD wording at epic-11 line 841).
+- **Requirements covered:** FR3 (User-provisioning part — Cognito comes in Phase E), FR4 (slot-capacity gate at invitation), FR12 (promote endpoint is the only path that sets `username`), AR22 (new `POST /promote` endpoint), AR23 (tighten `POST /pool` to reject email), UX-DR15 (no email field on IDENTIFIED/CONTACTED form), UX-DR16 ("Promote to speaker" modal).
+- **Plan / ADR anchors:**
+  - Epic 11 PRD §"Story 11.D.1" lines 820-892 — primary AC list this story implements.
+  - ADR-009 §0.2 — `CONTACTED → READY` is the provisioning gate; `READY → INVITED` blocked by slot-capacity.
+  - `docs/plans/speaker-workflow-refactor.md` §4 row "`POST /api/v1/events/{code}/speakers/{speakerId}/promote`" + row "`POST /api/v1/events/{code}/speakers/pool` — **Tighten** — reject `email` payload".
+  - `docs/architecture/04-api-speaker-coordination.md` — already documents the new `/promote` endpoint shape per Story 11.A.1.
+
+---
+
+## Acceptance Criteria
+
+The AC are pinned to the Epic 11 PRD Story 11.D.1 (lines 820-892), ADR-009 §0.2, and the actual file locations confirmed on `feature/speaker-workflow-refactor`. Each AC names the exact file under change. Slot-capacity AC4 verifies an existing-but-untested behaviour (Story 11.B.2 added the precondition; this story is the first to surface it through a documented HTTP contract).
+
+### AC1 — New endpoint `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` exists and drives `CONTACTED → READY` via the workflow service (AR22, FR3, FR12)
+
+**Given** the OpenAPI spec `docs/api/events-api.openapi.yml`,
+**When** I read the paths,
+**Then** a new path entry `/events/{eventCode}/speakers/{speakerId}/promote` exists with a single `post` operation, `operationId: promoteSpeakerToReady`, tags `[Event Actions]`, `security: [{ BearerAuth: [] }]`, parameters `eventCode` (path, `^BATbern[0-9]+$` pattern) and `speakerId` (path, UUID).
+
+**And** the request body schema `#/components/schemas/PromoteSpeakerRequest` has exactly these fields:
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `email` | string | **yes** | `format: email`, `maxLength: 320` |
+| `firstName` | string | no | `maxLength: 100` |
+| `lastName` | string | no | `maxLength: 100` |
+
+**And** the schema has `additionalProperties: false` (consistent with the strict-rejection pattern Resolved Decision §3 of Story 11.C.2 established for refactor-branch endpoints).
+
+**And** the response schema for `200 OK` is the existing `#/components/schemas/SpeakerPoolResponse` (with `status: 'ready'`, `username: <non-null>`, `email: <the submitted email>` populated).
+
+**And** the documented error responses include: `400` (validation — missing/invalid email, malformed body, or unknown fields), `401` (no auth), `403` (not ORGANIZER), `404` (event or speaker not found), `409` (speaker already in READY or later — same-state or invalid-transition), `500` (internal).
+
+**And** a new controller method exists at `services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerStatusController.java` (the file already owns `PUT /status` and other per-speaker actions per Story 11.B.2 — co-located there to keep all transition-driving endpoints in one controller):
+
+```java
+@PostMapping("/{speakerId}/promote")
+@PreAuthorize("hasRole('ORGANIZER')")
+public ResponseEntity<SpeakerPoolResponse> promoteSpeakerToReady(
+        @PathVariable String eventCode,
+        @PathVariable UUID speakerId,
+        @Valid @RequestBody PromoteSpeakerRequest request) { ... }
+```
+
+**And** a new DTO `services/event-management-service/src/main/java/ch/batbern/events/dto/PromoteSpeakerRequest.java` exists with the three fields above, Bean Validation annotations (`@NotBlank`, `@Email`, `@Size` matching the OpenAPI maxLength), and Jackson `@JsonIgnoreProperties(ignoreUnknown = false)` (or rely on the OpenAPI-generated DTO if the dev opts to generate; matches the project's contract-first pattern per ADR-006).
+
+**And** the controller method body:
+
+1. Builds a `SecurityPrincipal actor` from `SecurityContextHelper.getCurrentUsername()` + `getCurrentUserRoles()` (matches the pattern Story 11.B.2 established in `SpeakerStatusService.updateStatus` per its AC6).
+2. Builds a `TransitionPayload payload = TransitionPayload.builder().email(request.email()).firstName(request.firstName()).lastName(request.lastName()).build();`.
+3. Calls `speakerWorkflowService.transition(speakerId, SpeakerWorkflowState.READY, actor, payload)`.
+4. Maps the returned `TransitionResult` to a `SpeakerPoolResponse` and returns `200 OK`.
+
+**And** the controller does **NOT** call `userApiClient.*` directly, does **NOT** call `speaker.setUsername(...)` directly, does **NOT** write any history row directly — all provisioning, persistence, and audit-trail concerns flow through `transition()` per Story 11.B.2 AC1.
+
+**And** when the call succeeds, the observable downstream state is:
+  - `speaker_pool.status = 'ready'`
+  - `speaker_pool.username` is populated with the canonical username returned from `UserApiClient.provisionUserWithRole(...)` (added by Story 11.C.2 — strict prereq per the Dependencies section above)
+  - `speaker_pool.email = request.email`
+  - A new User row in CUMS exists (if not already present by email) with the SPEAKER role granted (idempotent — re-promote on the same email is a no-op for the User+role layer per 11.C.2's NFR3)
+  - A `speaker_status_history` row with `previous_status = 'contacted'`, `new_status = 'ready'`, `changed_by_username = <organizer's username>`
+  - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published
+  - The integration test (AC9 item 1) verifies via a Mockito spy on `UserApiClient.provisionUserWithRole` that it was called exactly once with `(email, firstName?, lastName?, role="SPEAKER")` per Story 11.C.2's `ProvisionUserRequest` contract
+
+---
+
+### AC2 — Promote endpoint rejects missing email with HTTP 400 (FR3)
+
+**Given** the new endpoint is wired per AC1,
+**When** I `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` with body `{}` or `{ "email": "" }` or `{ "email": "   " }` or `{ "email": "not-an-email" }`,
+**Then** the response status is `400 Bad Request`,
+**And** the response body is the project's standard `ErrorResponse` shape (per `GlobalExceptionHandler`'s `MethodArgumentNotValidException` handler — per project-context.md "ALWAYS add explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`"; that handler already exists from Epic 1 — do not modify),
+**And** the response identifies `email` as the invalid field (Bean Validation surfaces the field name automatically),
+**And** the speaker is **not modified** (no status change, no history row written, no events published, no User created in CUMS, no Cognito call). Verify by reading `speaker_pool.status` and counting `speaker_status_history` rows before/after — must be equal.
+
+**And** the same 400 fires if the request includes unknown fields (`additionalProperties: false` per AC1; e.g., a stale `username` field from a pre-refactor frontend gets rejected rather than silently ignored).
+
+---
+
+### AC3 — Promote endpoint returns HTTP 409 when speaker is already in READY or beyond
+
+**Given** a speaker with `status ∈ {READY, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED}`,
+**When** I `POST .../promote` with a valid email,
+**Then**:
+- If `status == READY` → Story 11.B.2's same-state branch fires inside `transition()` (writes a self-transition history row, no precondition/side-effect/events). The endpoint returns `200 OK` with the unchanged `SpeakerPoolResponse`. **This is intentional** — re-affirming a READY speaker is an audit-meaningful no-op per 11.B.2 AC2. Frontend SHOULD avoid posting this redundantly, but the endpoint does not error on it (treat as idempotent). Document this in the OpenAPI description text.
+- If `status ∈ {INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED}` → `transition()` throws `InvalidStateTransitionException` (no allow-list entry from those states to READY). The exception maps to `400 Bad Request` by the existing handler in `GlobalExceptionHandler.handleInvalidStateTransition` (verify the mapping; if it currently maps to a non-409 status, **add** an explicit mapping or rethrow as a 409-mapped exception to match the PRD's "409 Conflict with a body explaining the speaker has already been promoted").
+
+**Decision for this story (per Open Question #2):** add a controller-level pre-check that loads the speaker and returns `409 Conflict` with a body explaining "speaker is already in {state}; promote is only valid from CONTACTED" when `status ∈ {INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED}`. This avoids relying on the generic `InvalidStateTransitionException` → 400 mapping and gives a clean UX message. The check happens **before** `transition()` is called.
+
+**And** for `status == DECLINED` (the only other allowed state on `speaker_pool` post-11.B.1) → the controller returns the same `409 Conflict` with "speaker is DECLINED; cannot be promoted; create a new pool entry instead". `transition()` would throw `InvalidStateTransitionException` anyway (DECLINED is terminal in the allow-list), so the pre-check is a UX nicety.
+
+**And** for `status == IDENTIFIED` → the controller returns `409 Conflict` with "speaker must be in CONTACTED before promoting; log outreach first". (The PRD's flow assumes the organizer has already moved the speaker IDENTIFIED → CONTACTED via the outreach panel; promoting directly from IDENTIFIED would skip that step. `transition()` would reject `IDENTIFIED → READY` as not-allowed anyway.)
+
+**And** the response body for the 409 includes the current state name in the `details` map: `{ "code": "INVALID_PROMOTION_STATE", "currentState": "<state>" }` so the frontend can render a tailored message.
+
+---
+
+### AC4 — `POST /api/v1/events/{eventCode}/speakers/{speakerId}/invite` for a READY speaker returns HTTP 409 with documented body when slot capacity is reached (FR4, AR22)
+
+**Given** Story 11.B.2 already enforces the slot-capacity gate inside `SpeakerWorkflowService.transition()` at the INVITED precondition (file `SpeakerWorkflowService.java:201-210`; throws `SlotCapacityReachedException`),
+**And** `GlobalExceptionHandler.handleSlotCapacityReachedException` already maps this exception to HTTP 409 Conflict with a `details` map containing `eventId`, `acceptedCount`, `invitedCount`, `maxSlots` (file `GlobalExceptionHandler.java:795-820`),
+**When** I `POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation` (the existing endpoint at `SpeakerInvitationController.java:101-114` — see Open Question #3 for the endpoint-naming note) for a speaker in `READY` and `count(ACCEPTED) + count(INVITED) >= max_slots` for the event,
+**Then** the response status is `409 Conflict`,
+**And** the response body matches the existing `ErrorResponse` shape with `error: "Conflict"`, `status: 409`, `message: "Slot capacity reached for event {eventId}: {accepted} accepted + {invited} invited >= {maxSlots} slots"`, and a `details` map containing `code: "SLOT_CAPACITY_REACHED"`, `eventId`, `acceptedCount`, `invitedCount`, `maxSlots`,
+**And** the speaker is not modified (no status change to INVITED, no history row, no invitation email sent, no domain event published) — verified by `SpeakerWorkflowService.transition()` rolling back inside its `@Transactional` boundary before step 6 (persist) per Story 11.B.2 AC3 ordering.
+
+**And** when capacity is available (`count(ACCEPTED) + count(INVITED) < max_slots`):
+- The transition succeeds (READY → INVITED).
+- The existing `runInvitedHook` (Story 11.B.2) fires: magic-link tokens are generated, invitation email is sent (via existing `SpeakerInvitationEmailService` — do not modify the email template; Phase E rewrites it), `speaker_pool.invited_at` is stamped.
+- The response is `200 OK` with the existing `SendInvitationResponse` shape.
+
+**And** this AC is **observation-only** for the slot-capacity precondition itself — the gate code lives in Story 11.B.2 and is not modified here. This story's contribution is (a) the OpenAPI documentation of the 409 response on `/send-invitation`, and (b) the Bruno + integration tests that verify the 409 surfaces correctly end-to-end (Story 11.B.2 has unit tests for `SpeakerWorkflowService` but does not test the full HTTP path through the invite controller — see AC9 for the new tests).
+
+---
+
+### AC5 — `POST /api/v1/events/{eventCode}/speakers/pool` rejects `email` payload for IDENTIFIED/CONTACTED entries (AR23, FR12)
+
+**Given** the speaker-pool create endpoint at `EventController.java:2510-2527` (today's path; the controller method is `addSpeakerToPool`) and its request DTO `AddSpeakerToPoolRequest.java`,
+**Then** the DTO **continues to have no `email` field** (it currently does not — verified by reading the file; this AC enforces that no email field is ever added to this DTO and that any client-supplied `email` value is **rejected**, not silently ignored).
+
+**And** the OpenAPI schema `#/components/schemas/AddSpeakerToPoolRequest` in `docs/api/events-api.openapi.yml` is updated:
+- Add `additionalProperties: false` so a body containing `{ "speakerName": "...", "email": "x@y.z" }` returns `400 Bad Request` from the OpenAPI request validator.
+- Update the endpoint's description block (lines 988-1003) to add a "**Tightened by ADR-009 (Story 11.D.1):** `email` is not accepted on this endpoint; speakers are only promoted to a real identity via `POST /speakers/{speakerId}/promote` once they reach the READY state per ADR-009 §0.2." bullet under "**Business Rules**".
+
+**And** the endpoint description's 400 example block (lines 1029-1039) is **extended** with a second example showing the `{ ..., "email": "x@y.z" }` rejection path: error message `"Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to provision a speaker with an email"`.
+
+**And** the corresponding Jackson configuration ensures the rejection — either (a) the OpenAPI-generated DTO sets `@JsonIgnoreProperties(ignoreUnknown = false)`, OR (b) the hand-written `AddSpeakerToPoolRequest.java` is annotated with `@JsonIgnoreProperties(ignoreUnknown = false)` explicitly. Choose (b) for this story if the controller currently uses the hand-written DTO (it does per the survey; the controller imports `ch.batbern.events.dto.AddSpeakerToPoolRequest`, not a generated DTO). Verify by adding a Bruno test (`bruno-tests/events-api/35-add-speaker-to-pool-rejects-email.bru` — see AC9) that posts `{ "speakerName": "X", "email": "x@y.z" }` and asserts 400.
+
+**And** the same `additionalProperties: false` + `@JsonIgnoreProperties(ignoreUnknown = false)` treatment is applied to the **PATCH** endpoint `PATCH /events/{eventCode}/speakers/pool/{speakerId}` (`EventController.java:2558`) and its request DTO so that `{ "email": "x@y.z" }` payloads are rejected on PATCH as well. **Rationale**: the plan §4 row for `PATCH .../pool/{speakerId}` says "email may be updated only as part of the promote-to-READY transition" — i.e., not on the generic patch path either.
+
+---
+
+### AC6 — Brainstorming panel UI: no email field on IDENTIFIED/CONTACTED form (UX-DR15)
+
+**Given** the existing `web-frontend/src/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel.tsx` (already has no email input per the survey — fields are `speakerName`, `company`, `expertise`, `assignedOrganizerId`, `notes`),
+**Then** the component **continues to have no email input field**. This AC enforces the invariant — any PR that tries to add an email field to this form is rejected by code review per UX-DR15.
+
+**And** the corresponding test file `SpeakerBrainstormingPanel.test.tsx` (already exists) **gains a new test** `it('should_not_renderEmailInput_when_inIdentifiedOrContactedMode', () => { ... })` that asserts `screen.queryByLabelText(/email/i)` is `null` after the form renders. This makes the invariant lint-checkable.
+
+**And** the `AddSpeakerToPoolRequest` type in `web-frontend/src/types/speakerPool.types.ts` (or its generated equivalent in `src/types/generated/events-api.types.ts`) **does not have** an `email` field. If the generated types are regenerated as part of AC5's OpenAPI changes, this falls out automatically — verify with `grep -n "email" web-frontend/src/types/generated/events-api.types.ts` and confirm the only matches are unrelated schemas (User, registration, etc.).
+
+---
+
+### AC7 — Brainstorming panel UI: "Promote to speaker" modal + button on CONTACTED speakers (UX-DR16)
+
+**Given** the speaker pool list rendered by `SpeakerBrainstormingPanel.tsx` (lines 193-280, rendering each speaker as a `ListItem`),
+**When** I view a speaker whose `status === 'contacted'`,
+**Then** the speaker's list-item has a **"Promote to speaker"** button (MUI `<Button variant="contained" size="small">` with the existing app's accent-button styling — match what is used for analogous primary actions in `SpeakerStatusLanes.tsx`),
+**And** the button uses the i18n key `t('speakerBrainstorm.actions.promoteToSpeaker', 'Promote to speaker')` in the `organizer` namespace.
+
+**And** clicking the button opens a modal (MUI `<Dialog>`) titled `t('speakerBrainstorm.promoteDialog.title', 'Promote to speaker')` with:
+- A description paragraph explaining the action (e.g., "Once promoted, the speaker is moved to the READY lane and provisioned with a user account. They will receive an invitation email when you click Send Invitation."). i18n key `speakerBrainstorm.promoteDialog.description`.
+- A required `email` text field (`<TextField type="email" required>`), label `t('speakerBrainstorm.promoteDialog.emailLabel', 'Email')`.
+- Optional `firstName` and `lastName` text fields (`<TextField>`), labels `speakerBrainstorm.promoteDialog.firstNameLabel` and `speakerBrainstorm.promoteDialog.lastNameLabel`. If the speaker's `speakerName` on the pool entry is parseable as "First Last", pre-fill these fields by splitting on the first space (matches the existing `splitName` pattern used elsewhere; the dev should reuse rather than re-implement — search for it under `web-frontend/src/`).
+- A "Cancel" button (closes the dialog without action).
+- A "Promote" submit button (i18n key `speakerBrainstorm.promoteDialog.submitButton`, label `'Promote'`). Disabled until the email field passes basic validation (uses the project's existing `react-hook-form` + `zod` validation pattern — see `_bmad-output/project-context.md` "Use `useTranslation()` hook for ALL user-facing strings" + the React stack).
+
+**And** on submit, the modal calls a new service method `speakerPoolService.promoteToSpeaker(eventCode, speakerId, { email, firstName?, lastName? })` (see AC8) and:
+- On `200 OK`: closes the modal, the kanban / pool list optimistically updates (the speaker's `status` becomes `'ready'` and the entry visually moves to the READY position — reuse the existing TanStack Query invalidation pattern from `useAddSpeakerToPool.ts`).
+- On `409 Conflict` with `details.code === 'INVALID_PROMOTION_STATE'`: shows a toast/`<Alert>` with the message from the response body (e.g., "Speaker is already INVITED"). Modal stays open.
+- On `400 Bad Request`: surfaces the field validation error inline next to the email field (existing `react-hook-form` error-render pattern).
+- On other errors (`500`, network): shows a generic error message using the existing error-handling pattern in `SpeakerBrainstormingPanel.tsx` (line 183 `'speakerBrainstorm.form.error'`).
+
+**And** the i18n keys are added to **all 10 locales** in `web-frontend/public/locales/{locale}/organizer.json`:
+
+```
+speakerBrainstorm.actions.promoteToSpeaker      → "Promote to speaker"  (en) and translations
+speakerBrainstorm.promoteDialog.title           → "Promote to speaker"
+speakerBrainstorm.promoteDialog.description     → "Once promoted, …"
+speakerBrainstorm.promoteDialog.emailLabel      → "Email"
+speakerBrainstorm.promoteDialog.firstNameLabel  → "First name"
+speakerBrainstorm.promoteDialog.lastNameLabel   → "Last name"
+speakerBrainstorm.promoteDialog.cancelButton    → "Cancel"
+speakerBrainstorm.promoteDialog.submitButton    → "Promote"
+speakerBrainstorm.promoteDialog.errorTitle      → "Could not promote speaker"
+speakerBrainstorm.promoteDialog.errorAlreadyPromoted → "Speaker is already in {{currentState}}; cannot be promoted again."
+```
+
+Per project-context.md ("All 9 locales … + gsw-BE updated; no locale lags behind"), all 10 must be updated in this story. Locales: `de, en, es, fi, fr, gsw-BE, it, ja, nl, rm`. Use the project's translation approach — the dev may use machine translation for the non-DE/EN locales as a baseline (matching the Story 10-9 pattern); a follow-up locale-review pass is acceptable for fr/it/etc.
+
+**And** speakers in `status === 'identified'` get **no** "Promote to speaker" button — they must first be moved to `CONTACTED` via the existing outreach panel. (Per ADR-009 §0.2: "no real person ever existed to invite" from IDENTIFIED; the organizer logs outreach which moves them to CONTACTED first.) Speakers in `status ∈ {READY, INVITED, ACCEPTED, ...}` likewise get no button (they're already past this gate).
+
+---
+
+### AC8 — Frontend service-layer wiring for the promote endpoint
+
+**Given** the existing service module `web-frontend/src/services/speakerPoolService.ts`,
+**When** I read the file,
+**Then** a new method exists:
+
+```typescript
+async promoteToSpeaker(
+  eventCode: string,
+  speakerId: string,
+  request: { email: string; firstName?: string; lastName?: string }
+): Promise<SpeakerPoolResponse>
+```
+
+The method calls `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` using the existing axios client + auth-token-propagation pattern from `speakerPoolService.addSpeakerToPool` (line 30-50 of the file per the survey). The request and response types are imported from `@/types/generated/events-api.types` after `npm run generate:api-types` regenerates them post-AC1.
+
+**And** a new TanStack Query hook `usePromoteSpeakerToReady` is added to `web-frontend/src/hooks/useSpeakerPool.ts` (matching the `useAddSpeakerToPool` pattern at line 63 of the file per the survey):
+
+```typescript
+export const usePromoteSpeakerToReady = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventCode, speakerId, request }) =>
+      speakerPoolService.promoteToSpeaker(eventCode, speakerId, request),
+    onSuccess: (_, { eventCode }) => {
+      queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+      // Also invalidate the status lanes so the SpeakerStatusLanes refresh
+      queryClient.invalidateQueries({ queryKey: ['speakerStatus', eventCode] });
+    },
+  });
+};
+```
+
+**And** the existing `useSpeakerPoolHooks.test.ts` (per the survey) is extended with a happy-path + 409-error-path test for the new hook.
+
+---
+
+### AC9 — Test coverage matches the project's 4-layer pyramid
+
+**Backend — Testcontainers integration tests** (per project-context.md "NEVER use H2"):
+
+1. New `SpeakerPromoteControllerIntegrationTest` (in `services/event-management-service/src/test/java/ch/batbern/events/controller/`) extending `AbstractIntegrationTest`. Cases:
+   - `should_returnReady_when_promoteCalledOnContactedSpeaker` — happy path. Assert `200 OK`, `speaker_pool.status = 'ready'`, `speaker_pool.username` non-null, `speaker_pool.email = request.email`, `speaker_status_history` row exists with `changed_by_username = organizer`, `SpeakerPromotedToReadyEvent` published (use existing `DomainEventPublisher` test capture pattern from `SpeakerWorkflowServiceTest`).
+   - `should_return400_when_emailMissing`.
+   - `should_return400_when_emailMalformed`.
+   - `should_return400_when_unknownFieldPresent` (verifies `additionalProperties: false`).
+   - `should_return409_when_speakerAlreadyInReady` — actually returns 200 OK per AC3 same-state branch; rename to `should_return200_when_speakerAlreadyInReady_idempotent` and assert no state change (same-state history row OK).
+   - `should_return409_when_speakerInInvited` — pre-check fires with `details.code = 'INVALID_PROMOTION_STATE'`.
+   - `should_return409_when_speakerInIdentified` — pre-check fires.
+   - `should_return409_when_speakerInDeclined` — pre-check fires.
+   - `should_return404_when_speakerNotFound`.
+   - `should_return403_when_callerIsNotOrganizer`.
+
+2. New `SpeakerInvitationServiceSlotCapacityIntegrationTest` (or extend the existing `SpeakerInvitationServiceTest` / `SpeakerWorkflowServiceIntegrationTest` if the dev finds an appropriate one — the survey lists both):
+   - `should_return409_when_sendInvitationCalledAndSlotCapacityReached`. Setup: create an event with `maxSlots = 2`, two speakers in `ACCEPTED` and one in `READY`. Call `POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation` for the READY speaker. Assert `409 Conflict` with `details.code = 'SLOT_CAPACITY_REACHED'`, `details.maxSlots = 2`, `details.acceptedCount = 2`, `details.invitedCount = 0`. Assert the speaker's status is still `READY` (rollback verified), no `speaker_status_history` row added, no `SpeakerInvitedEvent` published, no email sent (mock `SpeakerInvitationEmailService` and verify zero interactions).
+   - `should_succeed_when_sendInvitationCalledAndCapacityAvailable`. Setup: same event, one ACCEPTED + one READY (`maxSlots = 2`, no INVITED). Call invite. Assert `200 OK`, status → INVITED, email sent.
+
+3. New `SpeakerPoolControllerEmailRejectionIntegrationTest` (or extend `SpeakerPoolControllerIntegrationTest` if it exists; if not, the dev creates it):
+   - `should_return400_when_addSpeakerToPoolWithEmailField` — posts `{ "speakerName": "X", "email": "x@y.z" }`, expects 400.
+   - `should_return400_when_patchSpeakerPoolWithEmailField` — patches `{ "email": "x@y.z" }`, expects 400.
+
+**Bruno API contract tests** (per CLAUDE.md Layer 2):
+
+Add the following files under `bruno-tests/events-api/`:
+
+- `45-promote-speaker-happy-path.bru` — POST /promote with valid email; expect 200; chain assertions on the returned `SpeakerPoolResponse` (status=ready, username non-null).
+- `46-promote-speaker-missing-email.bru` — POST /promote with empty body; expect 400.
+- `47-promote-speaker-already-in-state.bru` — promote a speaker who's already INVITED; expect 409 with `details.code = 'INVALID_PROMOTION_STATE'`.
+- `48-add-speaker-to-pool-rejects-email.bru` — POST /speakers/pool with extraneous `email` field; expect 400.
+- `54-send-invitation-slot-capacity-409.bru` (or rename 53-speaker-workflow-slot-capacity-409.bru if it already exercises the same path — check the existing file before duplicating) — drives the READY→INVITED transition through `/send-invitation` and asserts the 409 with the SLOT_CAPACITY_REACHED `details` map.
+
+Number these consistently with the existing pattern in `bruno-tests/events-api/` (the survey shows the next available numbers in the 40s-50s range).
+
+**Playwright E2E** (per CLAUDE.md Layer 3, `chromium` project — organizer):
+
+Extend (or add) a test in `web-frontend/e2e/organizer/` (the survey mentions `speaker-brainstorming.spec.ts`):
+
+- `it('should promote a CONTACTED speaker to READY via the brainstorming-panel modal', ...)`. Setup test data via the existing Playwright fixtures (or seed via API in `beforeEach`). Drive: navigate to event page → speakers tab → click "Promote to speaker" on a CONTACTED speaker → fill email in modal → click Promote → assert speaker card visually moves to READY lane (no manual refresh).
+- `it('should surface slot-capacity error when sending invitation past capacity', ...)`. Setup: event with `maxSlots = 1`, one ACCEPTED speaker, one READY speaker. Click "Send invitation" on the READY speaker. Assert toast/error appears containing "Slot capacity reached" (i18n key match). Assert the speaker stays in READY lane.
+
+**Frontend unit tests** (Vitest + RTL):
+
+- Extend `SpeakerBrainstormingPanel.test.tsx`:
+  - `should_renderPromoteButton_when_speakerIsContacted`.
+  - `should_not_renderPromoteButton_when_speakerIsIdentified`.
+  - `should_openPromoteDialog_when_promoteButtonClicked`.
+  - `should_callPromoteEndpoint_when_dialogSubmitted` (mock `speakerPoolService.promoteToSpeaker` via msw or service-mock).
+  - `should_showErrorAlert_when_promote409Returned`.
+
+---
+
+### AC10 — Documentation: OpenAPI + speaker-coordination API doc updated; CLAUDE.md + Epic 11 PRD references reconciled
+
+**Given** the project's doc-drift-prevention policy (CLAUDE.md §"Doc Drift Prevention"; `.github/doc-drift-mappings.yml`),
+**Then** the same commit/PR that lands code includes:
+
+1. `docs/api/events-api.openapi.yml` — new path entry for `/promote` (per AC1), tightened `AddSpeakerToPoolRequest` schema (per AC5), tightened `PatchSpeakerPoolRequest` (or whatever the PATCH DTO is named — verify) schema (per AC5).
+2. `docs/architecture/04-api-speaker-coordination.md` — Story 11.A.1 already added the `/promote` endpoint stub here. Verify the AC1 endpoint shape matches the doc; reconcile if drifted (e.g., add the `firstName`/`lastName` optional fields to the doc's example if not already present).
+3. **No update** to `docs/architecture/03-data-architecture.md`, `06a-workflow-state-machines.md`, or ADR-009 — those describe the state machine + data model, which this story does not change.
+4. **No update** to `CLAUDE.md` — the Epic 11 status line and speaker-workflow summary already reflect ADR-009 (per Story 11.A.1 AC11).
+
+**And** the commit message contains `feat(event-mgmt): add POST /speakers/{id}/promote endpoint + brainstorm panel UI [Story 11.D.1]` or similar conventional-commits form. **NO `[no-doc]` marker** — this story explicitly updates the OpenAPI spec and the API doc; doc-drift policy is satisfied by the doc update being in the same commit.
+
+---
+
+### AC11 — Verification of cross-cutting invariants
+
+**Given** the full backend build + Bruno + Playwright suites run on the refactor branch,
+**Then**:
+
+1. `./gradlew :services:event-management-service:build` succeeds — compile, unit tests, integration tests (Testcontainers), Spotless, Checkstyle.
+2. `./scripts/ci/run-bruno-tests.sh` passes (all existing tests + the 5 new tests from AC9).
+3. `cd web-frontend && npm run type-check` passes (after `npm run generate:api-types` regenerates types from the updated OpenAPI spec).
+4. `cd web-frontend && npm run test -- SpeakerBrainstormingPanel` passes (existing + new tests).
+5. `cd web-frontend && npm run lint` passes (`--max-warnings 50` per project-context.md).
+6. `cd web-frontend && npx playwright test --project=chromium e2e/organizer/speaker-brainstorming.spec.ts` passes locally.
+7. **Grep invariants**:
+   - `grep -rn "promoteSpeaker\|promoteToReady\|POST.*\\/promote" services/event-management-service/src/main/` returns matches inside `SpeakerStatusController` and the OpenAPI-generated DTOs only.
+   - `grep -rn "speaker.setStatus(\|setStatus(SpeakerWorkflowState\." services/event-management-service/src/main/` continues to return exactly one match (inside `SpeakerWorkflowService.transition`) — i.e., the new controller does NOT introduce a second status writer (single-writer invariant from 11.B.2 AC1 preserved).
+   - `grep -rn "email" services/event-management-service/src/main/java/ch/batbern/events/dto/AddSpeakerToPoolRequest.java` returns zero matches (no email field on the DTO).
+   - `grep -rn "getByLabelText.*[Ee]mail\\|name=\"email\"" web-frontend/src/components/SpeakerBrainstormingPanel/` returns zero matches in the main form section (only inside the new promote-dialog code).
+
+---
+
+## Tasks / Subtasks
+
+Tasks are grouped by file area and ordered to compile incrementally. Each task lists the AC it satisfies, the exact files to touch, and the test to run after to lock it in.
+
+### Task 1 — OpenAPI spec updates (AC1, AC5, AC10)
+
+1.1. Open `docs/api/events-api.openapi.yml`. Insert a new path entry `/events/{eventCode}/speakers/{speakerId}/promote` after the existing `/events/{eventCode}/speakers/pool/{speakerId}` block (around line 1104+ per the survey). Use the `operationId: promoteSpeakerToReady`, request body referencing a new `#/components/schemas/PromoteSpeakerRequest`, response 200 referencing the existing `SpeakerPoolResponse`. Document 400, 401, 403, 404, 409, 500 with examples (mirror the format of the existing `/pool` operation block at lines 1015-1057).
+1.2. Add `PromoteSpeakerRequest` to the components/schemas section. Fields: `email` (required, format email, maxLength 320), `firstName` (optional, maxLength 100), `lastName` (optional, maxLength 100). `additionalProperties: false`.
+1.3. Edit the existing `AddSpeakerToPoolRequest` schema: add `additionalProperties: false`. Edit the path's `post` description (lines 988-1003) to add the AR23 tightening bullet.
+1.4. Find and edit the PATCH path entry `/events/{eventCode}/speakers/pool/{speakerId}` and the corresponding `PatchSpeakerPoolRequest` schema: add `additionalProperties: false`. Update description text accordingly.
+1.5. Run `cd web-frontend && npm run generate:api-types` to regenerate `src/types/generated/events-api.types.ts`. Commit the regenerated types.
+
+**Verify**: `grep -n "promoteSpeakerToReady\|PromoteSpeakerRequest" docs/api/events-api.openapi.yml` returns multiple hits; `grep -n "promoteSpeaker\|PromoteSpeaker" web-frontend/src/types/generated/events-api.types.ts` returns multiple hits.
+
+### Task 2 — Backend DTO + Controller (AC1, AC2, AC3)
+
+2.1. Create `services/event-management-service/src/main/java/ch/batbern/events/dto/PromoteSpeakerRequest.java` — record or class with the three fields, Bean Validation annotations (`@Email @NotBlank @Size(max=320) String email`, `@Size(max=100) String firstName`, `@Size(max=100) String lastName`), `@JsonIgnoreProperties(ignoreUnknown = false)` class-level annotation.
+2.2. Open `services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerStatusController.java`. Add the new `promoteSpeakerToReady` method per AC1's signature. Inject `SecurityContextHelper` (already injected per 11.B.2; verify). Add the AC3 pre-check that loads the speaker and returns 409 for `status ∈ {IDENTIFIED, INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED}` with `details.code = 'INVALID_PROMOTION_STATE'` and `details.currentState = status.name()`. Call `speakerWorkflowService.transition(speakerId, READY, actor, payload)`. Map `TransitionResult` to `SpeakerPoolResponse` (look for the existing mapper used by `addSpeakerToPool` and reuse).
+2.3. If the project uses OpenAPI Generator for controller interfaces (per ADR-006), regenerate the `SpeakersApi` interface and have the controller `implements` it (matches the project's contract-first pattern). If the controller does NOT currently implement a generated interface (verify by reading the existing `SpeakerStatusController` class declaration), follow the same pattern the existing methods use — do NOT switch the controller to a generated interface in this story.
+2.4. Verify the existing `GlobalExceptionHandler` handles the new 409 path. Add a new `@ExceptionHandler` if the dev chooses to throw a dedicated `InvalidPromotionStateException`, OR construct the `ResponseEntity<ErrorResponse>` directly in the controller. **Recommendation**: introduce a tiny dedicated exception `InvalidPromotionStateException(currentState)` for clean error handling — matches the project's exception-class-per-domain-error pattern (see `SlotCapacityReachedException`).
+
+**Verify**: `./gradlew :services:event-management-service:compileJava` succeeds.
+
+### Task 3 — Backend AR23: Reject email on POST /pool and PATCH /pool/{id} (AC5)
+
+3.1. Open `AddSpeakerToPoolRequest.java`. Add class-level `@JsonIgnoreProperties(ignoreUnknown = false)` annotation. **Do not add an email field.**
+3.2. Locate the PATCH endpoint's request DTO (`grep` for the controller method at `EventController.java:2558`). Apply the same `@JsonIgnoreProperties(ignoreUnknown = false)` treatment. Confirm the DTO has no email field; if it does (it might, for legacy reasons), the dev's task is to **remove** the email field and verify no production code path was setting `speaker_pool.email` through PATCH (the only legitimate path is the new `/promote` endpoint per FR12).
+
+**Verify**: `grep -rn "private.*email\|setEmail\|getEmail" services/event-management-service/src/main/java/ch/batbern/events/dto/AddSpeakerToPoolRequest.java services/event-management-service/src/main/java/ch/batbern/events/dto/Patch*SpeakerPool*.java` returns zero matches.
+
+### Task 4 — Backend tests (AC9)
+
+4.1. Create `SpeakerPromoteControllerIntegrationTest.java` with the 10 cases from AC9. Use `@WithMockUser(roles = "ORGANIZER")` for happy-path; one case uses `roles = "ATTENDEE"` for 403. Use Spring's `MockMvc` (matches `SpeakerStatusControllerIntegrationTest` per the survey).
+4.2. Either extend `SpeakerInvitationServiceTest` or create `SpeakerInvitationSlotCapacityIntegrationTest` with the two cases from AC9 item 2. Verify with the actual HTTP layer (use `TestRestTemplate` or `MockMvc` — match what existing tests use).
+4.3. Either extend an existing pool-controller integration test or create `SpeakerPoolEmailRejectionIntegrationTest` with the two cases from AC9 item 3.
+4.4. Run `./gradlew :services:event-management-service:test 2>&1 | tee /tmp/em-test.log`, then `grep -E "FAILED|BUILD" /tmp/em-test.log`. Iterate until green.
+
+### Task 5 — Bruno API contract tests (AC9)
+
+5.1. Add `45-promote-speaker-happy-path.bru`, `46-promote-speaker-missing-email.bru`, `47-promote-speaker-already-in-state.bru`, `48-add-speaker-to-pool-rejects-email.bru`, and a slot-capacity test (verify number `53-speaker-workflow-slot-capacity-409.bru` already exists per the survey; if it tests via PUT /status, add `54-send-invitation-slot-capacity-409.bru` for the /send-invitation path specifically — they are different code paths exercising the same precondition, both worth testing).
+5.2. Run `./scripts/ci/run-bruno-tests.sh 2>&1 | tee /tmp/bruno.log`. Iterate until green.
+
+### Task 6 — Frontend service + hook (AC8)
+
+6.1. Add `promoteToSpeaker` method to `web-frontend/src/services/speakerPoolService.ts` using the existing auth/axios pattern.
+6.2. Add `usePromoteSpeakerToReady` hook to `web-frontend/src/hooks/useSpeakerPool.ts`.
+6.3. Extend `useSpeakerPoolHooks.test.ts` with happy + 409 cases for the new hook.
+
+### Task 7 — Frontend brainstorming panel UI (AC6, AC7)
+
+7.1. Open `web-frontend/src/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel.tsx`. Inside each `ListItem` in the pool list (around line 230), add a conditional `"Promote to speaker"` MUI `<Button>` shown only when `speaker.status === 'contacted'`.
+7.2. Add a new modal component `PromoteSpeakerDialog.tsx` co-located in the same folder (or `SpeakerBrainstormingPanel/PromoteSpeakerDialog.tsx`). Use `react-hook-form` + `zod` for validation (matches `_bmad-output/project-context.md` "react-hook-form 7.x + zod 4.x — forms & validation"). Use `useTranslation('organizer')`. Wire to `usePromoteSpeakerToReady`.
+7.3. Wire the modal: clicking "Promote to speaker" sets local state `{ open: true, speaker: <selected> }`; the dialog's `onSubmit` calls `mutate({ eventCode, speakerId: speaker.id, request })`; on success, close the dialog and let TanStack Query invalidate; on 409, render the error alert inside the dialog.
+7.4. Extend `SpeakerBrainstormingPanel.test.tsx` with the AC9 frontend cases.
+7.5. Run `cd web-frontend && npm run test -- SpeakerBrainstormingPanel 2>&1 | tee /tmp/fe-test.log`. Iterate until green.
+
+### Task 8 — i18n (AC7)
+
+8.1. Add the 10 new keys under `speakerBrainstorm.actions.promoteToSpeaker` and `speakerBrainstorm.promoteDialog.*` to all 10 locale files in `web-frontend/public/locales/{locale}/organizer.json`.
+8.2. For non-EN/DE locales, use machine translation as a baseline (matches Story 10-9's Phase 4 pattern). Flag in PR description for a follow-up locale-review pass if needed.
+8.3. Run `cd web-frontend && npm run type-check && npm run lint` — confirm no missing-key warnings or unused-locale-file warnings.
+
+### Task 9 — Playwright E2E (AC9)
+
+9.1. Add the two E2E cases (promote happy path + slot-capacity error) to `web-frontend/e2e/organizer/speaker-brainstorming.spec.ts` (or split into a new `speaker-promote.spec.ts` if the file is getting unwieldy).
+9.2. Run locally: `cd web-frontend && npx playwright test --project=chromium e2e/organizer/speaker-brainstorming.spec.ts 2>&1 | tee /tmp/playwright.log`.
+
+### Task 10 — Full verification + commit (AC10, AC11)
+
+10.1. Run the full grep invariants from AC11 item 7. Capture outputs to `/tmp/grep-invariants.log`. Confirm matches match the expected counts.
+10.2. Run `./gradlew :services:event-management-service:build 2>&1 | tee /tmp/em-build.log` and `cd web-frontend && npm run type-check && npm run lint && npm run test 2>&1 | tee /tmp/fe-full.log`. Confirm both green.
+10.3. Run `./scripts/ci/run-bruno-tests.sh 2>&1 | tee /tmp/bruno-final.log`. Confirm green.
+10.4. Stage and commit per CLAUDE.md commit format: `feat(event-mgmt): add POST /speakers/{id}/promote + reject email on pool create + brainstorm promote modal [Story 11.D.1]`.
+
+---
+
+## Dev Notes
+
+### Why this story exists (and why it is the right scope for Phase D's first story)
+
+Phase B finished the **state machine**: `SpeakerWorkflowService.transition()` is the sole writer; READY hook provisions; INVITED precondition enforces slot-capacity. Phase B made the machine correct, but the organizer **cannot drive it from the UI** for the `CONTACTED → READY` step — there is no endpoint, no button, no modal. Story 11.D.1 closes that gap and is also the first story that puts a public HTTP contract on the slot-capacity gate (the gate has existed since 11.B.2 but only via the internal `transition()` API; the `/send-invitation` controller already calls `transition()`, but the 409 response is not currently documented or tested).
+
+This is intentionally a thin, surgical story: it is mostly **plumbing** (controller + DTO + OpenAPI + service-layer method + modal). It does **not** introduce the state-aware primary-action button on every kanban card (Story 11.D.2), the column-header triage chips (Story 11.D.3), the guided drag-drop + unified drawer (Story 11.D.4), or the on-behalf content form (Story 11.D.4). Those are layered on top.
+
+### Strict sequencing: 11.C.2 must merge before this story
+
+Per Resolved Open Question #1 (2026-05-16, decided by PM): Story 11.C.2 MUST land first. This story's AC1 explicitly asserts that `UserApiClient.provisionUserWithRole(...)` is the call the READY hook makes during the promote transition — matching the strict PRD wording at epic-11 line 841 ("And `UserApiClient.provisionUserWithRole` is called (User created if missing, SPEAKER role granted)").
+
+The architecturally correct interpretation remains: the new `/promote` endpoint MUST NOT call `UserApiClient` directly. It calls `speakerWorkflowService.transition(..., READY, ...)`, and the workflow service's READY hook is the sole owner of the provisioning seam. Story 11.C.2 refactors the READY hook from today's `userApiClient.getOrCreateUser(...) + speakerProvisioningHook.grantSpeakerRole(...)` pair to a single `userApiClient.provisionUserWithRole(...)` call. This story's `/promote` endpoint inherits that hook behaviour without touching the controller.
+
+**Operational implication**: do not begin implementation of this story until 11.C.2 has been merged to `feature/speaker-workflow-refactor`. If both stories are worked in parallel, rebase 11.D.1 on top of 11.C.2 before opening the PR so the AC1 integration test (which mocks `provisionUserWithRole`) compiles against the post-11.C.2 `UserApiClient` interface.
+
+### Endpoint naming: `/send-invitation` vs the plan's `/invite`
+
+The plan §4 and the PRD AC4 reference `POST /api/v1/events/{code}/speakers/{speakerId}/invite` for the slot-capacity-gated invitation. The actual current code has TWO related endpoints:
+- `POST /api/v1/events/{eventCode}/speakers/invite` — creates a speaker pool entry from `{ email }` (`SpeakerInvitationController.java:49`). Used by batch-invite flows; this is NOT the READY→INVITED transition path.
+- `POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation` — drives READY→INVITED via `SpeakerInvitationService.sendInvitation` (`SpeakerInvitationController.java:101`). This is the slot-gated path that AC4 tests.
+
+The plan's `/speakers/{speakerId}/invite` is a renaming of `/speakers/{username}/send-invitation` (per the plan's "now only sends the email and transitions to INVITED" phrasing — exactly what `send-invitation` already does). **This story does NOT rename the endpoint** (out of scope; the rename would touch the speaker-portal frontend, the moderator UI, and any internal callers). Story 11.D.2 or 11.D.4 — both of which redesign the organizer kanban — are the appropriate place to do the rename if the team wants it. See Open Question #3.
+
+### Why slot-capacity AC is "observation-only"
+
+The slot-capacity gate is fully implemented in Story 11.B.2 (file `SpeakerWorkflowService.java:201-210`, exception class `SlotCapacityReachedException.java`, handler `GlobalExceptionHandler.java:795-820`). 11.B.2's unit test suite verifies the precondition fires inside `transition()`. What 11.B.2 did **not** do is verify the 409 surfaces through the full HTTP stack on the `/send-invitation` endpoint with the documented body shape. This story adds that test (AC9 item 2) and documents the 409 in the OpenAPI spec — closing the documentation + integration-test loop that Phase D's UX changes (Story 11.D.2's "disabled-with-tooltip" state, Story 11.D.4's drag-drop rejection) will rely on.
+
+### Brainstorming panel: keep the form lean
+
+The existing form has 5 fields (`speakerName`, `company`, `expertise`, `assignedOrganizerId`, `notes`) and no email field. **Do not add fields** as part of this story. The promote modal is a separate component that captures `{ email, firstName?, lastName? }` only — the speaker's `speakerName`/`company`/`expertise` from the pool entry are already on the entity and do not need to be re-captured.
+
+If the speaker's `speakerName` is parseable as "First Last", the modal SHOULD pre-fill `firstName` and `lastName` (per AC7) to save the organizer a typing step. Reuse `splitName` if it exists in the frontend (search `web-frontend/src/`); otherwise inline a one-liner — do not introduce a new helper module for a 3-line split.
+
+### Status-field naming on the frontend
+
+The frontend's TypeScript types use lowercase status values (`'identified'`, `'contacted'`, `'ready'`, …) — matching the database storage form per project-context.md "Enum Value Flow". The JSON-on-the-wire form is UPPER_CASE (e.g., `"CONTACTED"`). Confirm the existing `SpeakerStatusLanes.tsx` mapping (TypeScript may use either form depending on whether it's reading from `speaker.status` directly or going through a mapper). The dev should match the existing pattern used by `SpeakerStatusLanes.tsx` — do not introduce a new mapping convention.
+
+### Test approach summary
+
+This is a **state-machine driving endpoint** + a **UI modal**. The Test Pyramid:
+1. **Unit + Integration (Java, Testcontainers PostgreSQL)** — the controller's happy/error paths, the AR23 rejection, the slot-capacity 409 surfacing.
+2. **Bruno** — HTTP contract tests for each new path + the slot-capacity 409 on `/send-invitation`.
+3. **Vitest + RTL** — the modal renders, the button is conditional on status, the dialog calls the service, error surfaces render.
+4. **Playwright** — end-to-end: organizer clicks → modal opens → fills email → submits → speaker visually moves to READY lane.
+
+Per CLAUDE.md "Quality Standards": pipe gradle/npm output through `tee /tmp/<name>.log`, then `grep` the log file. Saves time when iterating.
+
+### Domain exceptions
+
+This story introduces (or may introduce) one new exception:
+
+- `InvalidPromotionStateException(SpeakerWorkflowState currentState)` — thrown by the controller pre-check when promote is called on a non-CONTACTED speaker (AC3). Maps to HTTP 409 via a new `@ExceptionHandler` in `GlobalExceptionHandler`. Optional — the dev may inline the response building in the controller instead. Either is acceptable; the dedicated exception class matches the project pattern (see `SlotCapacityReachedException`) and surfaces better in stack traces.
+
+No other new exceptions. The dev does **not** introduce `EmailRequiredException`, `InvalidEmailException`, etc. — Bean Validation handles those via the existing `MethodArgumentNotValidException` handler.
+
+### Existing email-service surface — preserve, don't rewrite
+
+Per Story 11.B.2 Dev Notes: do NOT modify `SpeakerInvitationEmailService`, `SpeakerAcceptanceEmailService`, or the magic-link `MagicLinkService` in this story. The READY hook already does the right thing (calls `getOrCreateUser` + `grantSpeakerRole`). The INVITED hook already sends the invitation email. Both are untouched.
+
+Phase E (Story 11.E.2) rewrites the invitation email template to embed the Cognito login URL + temporary password. Phase F (Story 11.F.1) deletes `MagicLinkService`. This story is in Phase D — strictly before those teardowns.
+
+### What this story is NOT doing (scope guard)
+
+- **No new state-aware primary-action button on every kanban card.** That is Story 11.D.2 (UX-DR1-4).
+- **No column-header triage chips or time-in-state colour coding.** That is Story 11.D.3 (UX-DR5-7).
+- **No guided drag-drop, unified drawer, or on-behalf content form.** That is Story 11.D.4 (UX-DR8-14).
+- **No Cognito user provisioning.** The READY hook today calls `getOrCreateUser` + `grantSpeakerRole` (stub). Phase E (Story 11.E.2) replaces the stub with `AdminCreateUser` + `AdminSetUserPassword` + `AdminAddUserToGroup`. This story is unaffected by that switch.
+- **No endpoint rename** (`/send-invitation` → `/invite`). See "Endpoint naming" above + Open Question #3.
+- **No frontend changes to the speaker portal pages** (`web-frontend/src/pages/speaker/**`). This story only touches the organizer-side brainstorm panel.
+- **No deletion of magic-link infrastructure.** Phase F.
+- **No changes to other Phase B/C work.** This story builds on 11.B.2 (and inherits from 11.C.2 when it lands).
+
+### Project Structure Notes
+
+- Backend story files live in `services/event-management-service/src/main/java/ch/batbern/events/`. The new controller method lands in `controller/SpeakerStatusController.java` (which already houses all per-speaker per-event transition endpoints per Story 11.B.2). The new DTO lands in `dto/PromoteSpeakerRequest.java`.
+- Frontend brainstorm panel lives at `web-frontend/src/components/SpeakerBrainstormingPanel/`. The new dialog component is co-located there.
+- All 10 locale files under `web-frontend/public/locales/{locale}/organizer.json` must be updated in this story (per project-context.md: "All 9 locales … + gsw-BE updated; no locale lags behind").
+
+### References
+
+- [Source: docs/prd/epic-11-speaker-workflow-refactor.md lines 820-892] — Story 11.D.1 AC list (this story's primary spec).
+- [Source: docs/architecture/ADR-009-unified-speaker-workflow.md §0.2 + §0.5] — `CONTACTED → READY` provisioning gate; slot-capacity precondition.
+- [Source: docs/plans/speaker-workflow-refactor.md §4] — API surface changes table; new `/promote` endpoint; tightened `/pool` endpoint.
+- [Source: docs/architecture/04-api-speaker-coordination.md] — speaker-coordination API doc (already references `/promote` per Story 11.A.1 AC9).
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java:114-162] — `transition()` signature + body.
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java:201-210] — slot-capacity precondition (`enforceSlotCapacity`).
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java:250-286] — READY hook (`runReadyHook`).
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java:795-820] — `SlotCapacityReachedException` → HTTP 409 mapping.
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerStatusController.java] — existing per-speaker controller (where the new method lands).
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerInvitationController.java:101-114] — existing `/send-invitation` endpoint (subject of AC4).
+- [Source: services/event-management-service/src/main/java/ch/batbern/events/dto/AddSpeakerToPoolRequest.java] — DTO that must reject unknown fields per AC5.
+- [Source: web-frontend/src/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel.tsx] — UI surface for AC6/AC7.
+- [Source: web-frontend/src/services/speakerPoolService.ts] — service layer where the new method lands (AC8).
+- [Source: web-frontend/src/hooks/useSpeakerPool.ts] — TanStack Query hook layer (AC8).
+- [Source: CLAUDE.md §"Critical Development Standards"] — TDD, Testcontainers PostgreSQL (never H2), OpenAPI-first, presigned uploads.
+- [Source: _bmad-output/project-context.md §"Enum Value Flow"] — Java UPPER_CASE, JSON UPPER_CASE, DB lowercase_snake_case.
+- [Source: _bmad-output/project-context.md §"OpenAPI Contract-First"] — controllers implement generated `*Api` interface; DTOs in `build/generated/` not committed; frontend types in `src/types/generated/` ARE committed.
+- [Source: _bmad-output/implementation-artifacts/11-b-2-speakerworkflowservice-sole-status-writer.md] — single-writer invariant + side-effect hook contract.
+- [Source: _bmad-output/implementation-artifacts/11-c-2-userapiclient-provisioning-contentsubmissionservice-shared.md] — `provisionUserWithRole` contract (for the future swap).
+
+### Testing Standards (for an event-management transition + UI story)
+
+- Backend: extend `AbstractIntegrationTest` (Testcontainers PostgreSQL with `withReuse(true)`); `@Transactional` so each test rolls back. Mock `DomainEventPublisher` to capture published events; mock `SpeakerInvitationEmailService` to verify no email when transition rolls back; do NOT mock `SpeakerWorkflowService` (the integration tests exercise the real service).
+- Frontend unit: Vitest + RTL; use `screen` queries; `userEvent` over `fireEvent`; `waitFor` for async state. Use `msw` 2.x for HTTP mocking.
+- Bruno: tests live in `bruno-tests/events-api/`; numbering follows existing sequence. Use the `{{organizerAuthToken}}` variable per CLAUDE.md.
+- Playwright: `chromium` project (organizer auth). Run via `npx playwright test --project=chromium`. Auth state is at `.playwright-auth-organizer.json`.
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+
+_To be filled in by the dev agent._
+
+### Debug Log References
+
+_To be filled in by the dev agent — e.g., `/tmp/em-test.log`, `/tmp/bruno.log`, `/tmp/playwright.log`, `/tmp/grep-invariants.log`._
+
+### Completion Notes List
+
+_To be filled in by the dev agent — one short paragraph per AC._
+
+### File List
+
+_To be filled in by the dev agent — full enumeration of modified/created/deleted files. Expected scope: ~12-15 files (1 OpenAPI spec, 1 generated types, 1 new DTO, 2 controller updates, 1 new exception, 2-3 backend test files, 5 Bruno tests, 1-2 service/hook files, 2-3 frontend component files incl. new dialog, 10 locale files, 1-2 frontend test files, 1 Playwright test file)._
+
+### Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-05-16 | Story 11.D.1 drafted via `bmad-create-story`. |
+| 2026-05-16 | Resolved all 5 Open Questions with PM (Nissim). Q1 → strict 11.C.2 → 11.D.1 sequencing (AC1 + Dependencies + Dev Notes updated to assert `provisionUserWithRole` is the provisioning call). Q2 → controller pre-check with `InvalidPromotionStateException` for clean 409. Q3 → do NOT rename `/send-invitation` to `/invite` in this story. Q4 → idempotent 200 on same-state READY re-promote. Q5 → machine-translation baseline for non-EN/DE locales (follow-up review acceptable). |
+
+---
+
+## Open Questions (resolved 2026-05-16)
+
+All five questions were resolved with PM (Nissim) before development. The AC, Tasks, and Dev Notes above already reflect the decisions. Listed here for traceability.
+
+1. ✅ **Sequence 11.C.2 → 11.D.1 strictly.** The PRD AC1 wording ("`UserApiClient.provisionUserWithRole` is called") is taken literally. Story 11.C.2 must merge before 11.D.1 begins implementation, so the READY hook in `SpeakerWorkflowService` has been refactored to call `provisionUserWithRole(...)` by the time 11.D.1's integration tests run. The Dependencies section, AC1 (closing bullet list + Mockito spy assertion), and the Dev Note "Strict sequencing: 11.C.2 must merge before this story" all reflect this.
+
+2. ✅ **Controller pre-check with dedicated `InvalidPromotionStateException` for the 409.** When promote is called on a non-CONTACTED speaker, the controller pre-loads the speaker, checks the status, and throws `InvalidPromotionStateException(currentState)` for a tailored 409 with `details.code = 'INVALID_PROMOTION_STATE'` and `details.currentState`. This avoids changing the global `InvalidStateTransitionException` → 400 mapping. AC3 + Task 2.4 capture this.
+
+3. ✅ **Do not rename `/send-invitation` to `/invite` in this story.** The slot-capacity 409 is documented + tested on the existing `POST /speakers/{username}/send-invitation` path. The rename, if the team wants it, lands naturally in Story 11.D.2 (kanban primary-action button) or 11.D.4 (drag-drop). AC4 + the Dev Note "Endpoint naming: `/send-invitation` vs the plan's `/invite`" capture this.
+
+4. ✅ **Same-state promote on a READY speaker returns 200, not 409.** Matches Story 11.B.2's same-state branch semantics — the call writes a self-transition audit row and returns the unchanged speaker. The post-READY cases (INVITED, ACCEPTED, ...) get a 409 from the controller pre-check. AC3 + AC9 item 1 capture this (test case renamed to `should_return200_when_speakerAlreadyInReady_idempotent`).
+
+5. ✅ **Machine translation baseline for the 8 non-EN/DE locales.** Matches the Story 10-9 Phase 4 pattern. A follow-up locale-review pass is acceptable rather than a blocking step. AC7 + Task 8.2 capture this; the PR description should flag the locales that need a native-speaker review.
+
+---
+
+_Story created via `bmad-create-story` skill on 2026-05-16. Authored by PM (Nissim) with comprehensive context-engine analysis. Depends on Story 11.B.2 (single-writer `transition()`, landed on `feature/speaker-workflow-refactor`) AND Story 11.C.2 (`UserApiClient.provisionUserWithRole`, must merge first per Resolved Q#1). Ready for `bmad-dev-story` execution after 11.C.2 merges._

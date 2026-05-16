@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -498,6 +500,132 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
         org.assertj.core.api.Assertions.assertThat(updatedSpeaker.getStatus())
                 .isEqualTo(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+    }
+
+    /**
+     * Story 11.B.3 AC4: 5 removed legacy values rejected by Jackson at deserialization with
+     * structured 400 + code=INVALID_SPEAKER_WORKFLOW_STATE.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"SLOT_ASSIGNED", "CONFIRMED", "OVERFLOW", "WITHDREW", "TENTATIVE"})
+    @DisplayName("Should return 400 INVALID_SPEAKER_WORKFLOW_STATE for legacy enum values")
+    void should_return400InvalidWorkflowState_when_legacyValueSubmitted(String legacyValue) throws Exception {
+        // Capture the pre-call state so we can verify it didn't change.
+        ch.batbern.events.domain.SpeakerPool before =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        ch.batbern.shared.types.SpeakerWorkflowState statusBefore = before.getStatus();
+        java.time.Instant updatedAtBefore = before.getUpdatedAt();
+
+        String rawBody = "{\"newStatus\":\"" + legacyValue + "\"}";
+
+        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(rawBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.code", is("INVALID_SPEAKER_WORKFLOW_STATE")))
+                .andExpect(jsonPath("$.details.rejectedValue", is(legacyValue)))
+                .andExpect(jsonPath("$.details.acceptedValues").isArray())
+                .andExpect(jsonPath("$.message", containsString(legacyValue)));
+
+        // The speaker row must be unchanged — Jackson rejected the body before the
+        // controller method ran.
+        ch.batbern.events.domain.SpeakerPool after =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(after.getStatus()).isEqualTo(statusBefore);
+        org.assertj.core.api.Assertions.assertThat(after.getUpdatedAt()).isEqualTo(updatedAtBefore);
+    }
+
+    /**
+     * Story 11.B.3 AC5: newStatus=READY is a valid enum value but only reachable via
+     * POST /promote (Story 11.D.1). PUT /status must reject it with 400 +
+     * code=READY_REQUIRES_PROMOTE_ENDPOINT.
+     */
+    @Test
+    @DisplayName("Should return 400 READY_REQUIRES_PROMOTE_ENDPOINT when newStatus=READY")
+    void should_return400ReadyRequiresPromote_when_newStatusIsReady() throws Exception {
+        ch.batbern.shared.types.SpeakerWorkflowState statusBefore =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow().getStatus();
+
+        String readyBody = """
+                {
+                    "newStatus": "READY",
+                    "reason": "Should be rejected — no email payload here"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(readyBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details.code", is("READY_REQUIRES_PROMOTE_ENDPOINT")))
+                .andExpect(jsonPath("$.details.rejectedValue", is("READY")))
+                .andExpect(jsonPath("$.details.alternativeEndpoint",
+                        is("POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote")))
+                .andExpect(jsonPath("$.message", containsString("READY")))
+                .andExpect(jsonPath("$.message", containsString("/promote")));
+
+        // The speaker row must be unchanged.
+        ch.batbern.events.domain.SpeakerPool after =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(after.getStatus()).isEqualTo(statusBefore);
+    }
+
+    /**
+     * Story 11.B.3 AC7: derived flags isSlotAssigned + isPublishable are exposed on
+     * SpeakerPoolResponse — verify via the existing GET /events/{code}/speakers/pool
+     * endpoint. Speaker is QUALITY_REVIEWED with session.start_time set →
+     * isSlotAssigned: true, isPublishable: true.
+     */
+    @Test
+    @DisplayName("Should expose isSlotAssigned and isPublishable on pool response")
+    void should_exposeDerivedFlags_when_speakerQualityReviewedWithSessionStartTime() throws Exception {
+        // Given: Speaker quality-reviewed AND assigned session has a start_time.
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+        speakerPoolRepository.save(testSpeaker);
+        testSession.setStartTime(java.time.Instant.now().plusSeconds(86400));
+        sessionRepository.save(testSession);
+
+        // When: GET /api/v1/events/{code}/speakers/pool
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/pool", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(testSpeaker.getId().toString())))
+                .andExpect(jsonPath("$[0].status", is("QUALITY_REVIEWED")))
+                .andExpect(jsonPath("$[0].isSlotAssigned", is(true)))
+                .andExpect(jsonPath("$[0].isPublishable", is(true)));
+    }
+
+    /**
+     * Story 11.B.3 AC7: isPublishable is false when status is QUALITY_REVIEWED but the
+     * assigned session has a NULL start_time (slot not yet scheduled).
+     */
+    @Test
+    @DisplayName("Should expose isPublishable=false when session has null start_time")
+    void should_exposeIsPublishableFalse_when_sessionStartTimeNull() throws Exception {
+        // Given: Speaker quality-reviewed BUT assigned session has start_time = null.
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+        speakerPoolRepository.save(testSpeaker);
+        testSession.setStartTime(null);
+        sessionRepository.save(testSession);
+
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/pool", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(testSpeaker.getId().toString())))
+                .andExpect(jsonPath("$[0].status", is("QUALITY_REVIEWED")))
+                // sessionId is set but start_time is null → the strict (session) overload
+                // is reached via SpeakerPoolService.getSpeakerPoolForEvent, so the result
+                // honours the session.start_time predicate.
+                .andExpect(jsonPath("$[0].isSlotAssigned", is(false)))
+                .andExpect(jsonPath("$[0].isPublishable", is(false)));
     }
 
     /**

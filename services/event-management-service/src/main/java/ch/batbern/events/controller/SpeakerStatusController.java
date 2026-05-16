@@ -9,9 +9,11 @@ import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
 import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.exception.ReadyRequiresPromoteException;
 import ch.batbern.events.service.QualityReviewService;
 import ch.batbern.events.service.SpeakerContentSubmissionService;
 import ch.batbern.events.service.SpeakerStatusService;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,15 @@ public class SpeakerStatusController {
             @PathVariable String eventCode,
             @PathVariable UUID speakerId,
             @Valid @RequestBody UpdateStatusRequest request) {
+
+        // Story 11.B.3 AC5: READY requires an email payload for User provisioning and is
+        // reachable only via POST /promote (Story 11.D.1). Jackson accepts READY as a valid
+        // SpeakerWorkflowState enum value, so the rejection happens here (not at the
+        // deserialization layer where the 5 removed legacy values are rejected — see
+        // GlobalExceptionHandler.handleHttpMessageNotReadableException).
+        if (request.getNewStatus() == SpeakerWorkflowState.READY) {
+            throw new ReadyRequiresPromoteException(eventCode);
+        }
 
         log.info("PUT /api/v1/events/{}/speakers/{}/status - newStatus: {}",
                 eventCode, speakerId, request.getNewStatus());

@@ -2,11 +2,16 @@ package ch.batbern.events.service;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -57,6 +62,12 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
     private Event testEvent;
     private String eventCode;
     private String organizerUsername;
@@ -64,6 +75,8 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         // Clean up any existing test data
+        speakerPoolRepository.deleteAll();
+        sessionRepository.deleteAll();
         eventRepository.deleteAll();
 
         eventCode = "BATbern56";
@@ -277,6 +290,89 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
         // Verify persistence
         Event persistedEvent = eventRepository.findByEventCode(eventCode).orElseThrow();
         assertThat(persistedEvent.getWorkflowState()).isEqualTo(currentState);
+    }
+
+    // ========================================================================
+    // Story 11.B.3 AC9: validateAllSpeakersConfirmed — 3 failure cases + 1 happy path
+    // ========================================================================
+
+    @Test
+    @DisplayName("AC9-1: AGENDA_PUBLISHED fails when no accepted-or-beyond speakers exist")
+    void should_rejectAgendaPublished_when_noAcceptedSpeakersExist() {
+        testEvent.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
+        testEvent = eventRepository.save(testEvent);
+        // Pool has only IDENTIFIED speakers — acceptedOrBeyondSpeakers == 0
+        speakerPoolRepository.save(SpeakerPool.builder()
+                .eventId(testEvent.getId()).speakerName("Alice").status(SpeakerWorkflowState.IDENTIFIED).build());
+
+        assertThatThrownBy(() -> stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_PUBLISHED, organizerUsername))
+                .isInstanceOf(WorkflowValidationException.class)
+                .hasMessageContaining("no accepted speakers");
+    }
+
+    @Test
+    @DisplayName("AC9-2: AGENDA_PUBLISHED fails when ACCEPTED speaker is not yet QUALITY_REVIEWED (gap > 0)")
+    void should_rejectAgendaPublished_when_acceptedSpeakerNotQualityReviewed() {
+        testEvent.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
+        testEvent = eventRepository.save(testEvent);
+        Session session = new Session();
+        session.setEventId(testEvent.getId());
+        session.setEventCode(eventCode);
+        session.setTitle("S1");
+        session.setSessionSlug("s1-" + testEvent.getId());
+        session.setSessionType("presentation");
+        session.setStartTime(Instant.now().plus(30, ChronoUnit.DAYS));
+        session = sessionRepository.save(session);
+        // Speaker is ACCEPTED (counts in acceptedOrBeyondSpeakers) but not QUALITY_REVIEWED (not publishable)
+        speakerPoolRepository.save(SpeakerPool.builder()
+                .eventId(testEvent.getId()).speakerName("Bob").status(SpeakerWorkflowState.ACCEPTED)
+                .sessionId(session.getId()).build());
+
+        assertThatThrownBy(() -> stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_PUBLISHED, organizerUsername))
+                .isInstanceOf(WorkflowValidationException.class);
+    }
+
+    @Test
+    @DisplayName("AC9-3: AGENDA_PUBLISHED fails when QUALITY_REVIEWED speaker has no session start_time")
+    void should_rejectAgendaPublished_when_qualityReviewedSpeakerHasNoSessionStartTime() {
+        testEvent.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
+        testEvent = eventRepository.save(testEvent);
+        // Session exists but has no start_time → speaker is not publishable
+        Session session = new Session();
+        session.setEventId(testEvent.getId());
+        session.setEventCode(eventCode);
+        session.setTitle("S2");
+        session.setSessionSlug("s2-" + testEvent.getId());
+        session.setSessionType("presentation");
+        session.setStartTime(null);
+        session = sessionRepository.save(session);
+        speakerPoolRepository.save(SpeakerPool.builder()
+                .eventId(testEvent.getId()).speakerName("Carol").status(SpeakerWorkflowState.QUALITY_REVIEWED)
+                .sessionId(session.getId()).build());
+
+        assertThatThrownBy(() -> stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_PUBLISHED, organizerUsername))
+                .isInstanceOf(WorkflowValidationException.class);
+    }
+
+    @Test
+    @DisplayName("AC9-4: AGENDA_PUBLISHED succeeds when all accepted speakers are publishable")
+    void should_publishAgenda_when_allAcceptedSpeakersArePublishable() {
+        testEvent.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
+        testEvent = eventRepository.save(testEvent);
+        Session session = new Session();
+        session.setEventId(testEvent.getId());
+        session.setEventCode(eventCode);
+        session.setTitle("S3");
+        session.setSessionSlug("s3-" + testEvent.getId());
+        session.setSessionType("presentation");
+        session.setStartTime(Instant.now().plus(30, ChronoUnit.DAYS));
+        session = sessionRepository.save(session);
+        speakerPoolRepository.save(SpeakerPool.builder()
+                .eventId(testEvent.getId()).speakerName("Dave").status(SpeakerWorkflowState.QUALITY_REVIEWED)
+                .sessionId(session.getId()).build());
+
+        Event result = stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_PUBLISHED, organizerUsername);
+        assertThat(result.getWorkflowState()).isEqualTo(EventWorkflowState.AGENDA_PUBLISHED);
     }
 
     // Helper method to create test events

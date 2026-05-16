@@ -373,14 +373,25 @@ paths:
       summary: Update speaker status
       description: |
         Update the workflow status of a speaker for a specific event.
-        Story 5.4: Speaker Status Management (AC1-2, AC10-12)
+        Story 5.4 (original) + Story 11.B.3 (8-state model tighten).
 
-        Valid state transitions:
+        Per ADR-009 the legal transitions are:
         - IDENTIFIED → CONTACTED, DECLINED
-        - CONTACTED → READY, DECLINED
-        - READY → ACCEPTED, DECLINED
-        - ACCEPTED → SLOT_ASSIGNED, CONFIRMED (cannot go back to DECLINED)
-        - DECLINED is terminal (cannot transition out)
+        - CONTACTED → DECLINED (transition to READY requires POST /promote — has email payload)
+        - INVITED → ACCEPTED, DECLINED
+        - ACCEPTED → CONTENT_SUBMITTED, DECLINED
+        - CONTENT_SUBMITTED → QUALITY_REVIEWED, DECLINED
+        - QUALITY_REVIEWED → DECLINED
+        - DECLINED is terminal — no transitions out.
+
+        Notes:
+        - Setting newStatus = READY via this endpoint returns 400 READY_REQUIRES_PROMOTE_ENDPOINT.
+          Use POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote instead (Story 11.D.1).
+        - Setting newStatus to any of SLOT_ASSIGNED, CONFIRMED, OVERFLOW, WITHDREW, TENTATIVE
+          (legacy 10-state values) returns 400 INVALID_SPEAKER_WORKFLOW_STATE — those states
+          were removed per ADR-009 §0.7.
+        - Same-state re-affirm (current == newStatus) is permitted and writes an audit-trail
+          self-transition row to speaker_status_history (no side-effects fire).
 
       operationId: updateSpeakerStatus
       security:
@@ -414,19 +425,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpeakerStatusResponse'
         '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Speaker not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
-          description: Invalid state transition
+          description: |
+            Bad request. Returned for:
+            - newStatus is one of the 5 removed legacy values (INVALID_SPEAKER_WORKFLOW_STATE).
+            - newStatus = READY (READY_REQUIRES_PROMOTE_ENDPOINT — use POST /promote).
+            - Reason field exceeds 2000 characters (validation error).
           content:
             application/json:
               schema:
@@ -435,6 +438,23 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden - requires ORGANIZER role
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            Invalid state transition or workflow validation failed. Returned for:
+            - Illegal state-machine transition (code INVALID_STATE_TRANSITION),
+              e.g. attempting QUALITY_REVIEWED → ACCEPTED.
+            - Business rule violation (code WORKFLOW_VALIDATION_FAILED),
+              e.g. no accepted speakers when publishing agenda.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /events/{eventCode}/speakers/{speakerId}/status/history:
     get:
@@ -1067,21 +1087,29 @@ components:
         - IDENTIFIED
         - CONTACTED
         - READY
-        - DECLINED
+        - INVITED
         - ACCEPTED
         - CONTENT_SUBMITTED
         - QUALITY_REVIEWED
-        - CONFIRMED
+        - DECLINED
       description: |
-        Speaker coordination workflow state (UPPER_CASE as per coding-standards.md):
-        - IDENTIFIED: Initial state, speaker identified but not yet contacted
-        - CONTACTED: Invitation sent to speaker
-        - READY: Speaker confirmed availability and interest
-        - DECLINED: Speaker declined invitation
-        - ACCEPTED: Speaker accepted invitation and confirmed participation
-        - CONTENT_SUBMITTED: Speaker submitted presentation content (title, abstract) [Story 5.5]
-        - QUALITY_REVIEWED: Speaker's content passed quality review [Story 5.5]
-        - CONFIRMED: Speaker has both quality-reviewed content and assigned slot [Story 5.5]
+        Speaker coordination workflow state (UPPER_CASE per project-context.md §"Enum Value Flow").
+        Per ADR-009 (Unified Speaker Workflow) — 8 states; SLOT_ASSIGNED, CONFIRMED, OVERFLOW, WITHDREW removed.
+        - IDENTIFIED: brainstorm-list entry; no User, no Cognito user.
+        - CONTACTED: organizer reaching out; still brainstorming; no User, no Cognito user.
+        - READY: real speaker identified with email; User provisioning happens at the transition INTO this state.
+          Reached ONLY via POST /events/{code}/speakers/{speakerId}/promote (Story 11.D.1), never via PUT /status.
+        - INVITED: formal invitation sent; speaker can authenticate via Cognito.
+          READY → INVITED blocked when count(ACCEPTED) + count(INVITED) >= max_slots.
+        - ACCEPTED: speaker committed via the portal (or via organizer-on-behalf).
+        - CONTENT_SUBMITTED: title + abstract submitted (by speaker or by organizer).
+        - QUALITY_REVIEWED: moderator approved content. Terminal happy state.
+          Combined with session.start_time IS NOT NULL, makes the speaker publishable.
+        - DECLINED: terminal "not happening"; reachable from every non-terminal state.
+
+        Derived flags (NOT persisted — computed at read time):
+        - isSlotAssigned := session.start_time IS NOT NULL
+        - isPublishable  := status == QUALITY_REVIEWED AND isSlotAssigned
 
     SpeakerSlotPreferences:
       type: object
@@ -1230,6 +1258,17 @@ components:
           type: string
           format: date-time
           description: When the change occurred
+        isSlotAssigned:
+          type: boolean
+          description: |
+            Derived flag (ADR-009 §0.1, Story 11.B.3 AC6): true when the speaker has a sessionId
+            assigned (sessionId != null). Uses sessionId-based fallback — see SpeakerPoolEntry for
+            the strict session.start_time definition.
+        isPublishable:
+          type: boolean
+          description: |
+            Derived flag (ADR-009 §0.1, Story 11.B.3 AC6): true when
+            currentStatus == QUALITY_REVIEWED AND isSlotAssigned.
 
     StatusHistoryItem:
       type: object
@@ -1565,6 +1604,18 @@ components:
           example: Google Switzerland
         status:
           $ref: '#/components/schemas/SpeakerWorkflowState'
+        isSlotAssigned:
+          type: boolean
+          description: |
+            Derived flag (ADR-009 §0.1, Story 11.B.3): true when the speaker has an
+            assigned session whose start_time is non-null. NOT a persisted column —
+            computed at read time.
+        isPublishable:
+          type: boolean
+          description: |
+            Derived flag (ADR-009 §0.1, Story 11.B.3): true when
+            status == QUALITY_REVIEWED AND isSlotAssigned. Gates the AGENDA_PUBLISHED
+            event-workflow transition. NOT a persisted column.
         contentStatus:
           type: string
           enum:

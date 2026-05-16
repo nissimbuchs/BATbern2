@@ -118,7 +118,7 @@ public class SpeakerStatusService {
         TransitionResult result = speakerWorkflowService.transition(
                 speakerId, request.getNewStatus(), actor, payload);
 
-        return mapToResponse(result.history());
+        return mapToResponse(result.history(), result.speakerPool());
     }
 
     /**
@@ -221,7 +221,7 @@ public class SpeakerStatusService {
      * Map entity to response DTO
      * V29: Fetch eventCode from Event entity since history now stores eventId
      */
-    private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history) {
+    private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history, SpeakerPool speakerPool) {
         SpeakerStatusResponse response = new SpeakerStatusResponse();
         response.setSpeakerId(history.getSpeakerPoolId());
 
@@ -235,6 +235,9 @@ public class SpeakerStatusService {
         response.setChangedByUsername(history.getChangedByUsername());
         response.setChangeReason(history.getChangeReason());
         response.setChangedAt(history.getChangedAt());
+        boolean slotAssigned = speakerPool.getSessionId() != null;
+        response.setIsSlotAssigned(slotAssigned);
+        response.setIsPublishable(speakerPool.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED && slotAssigned);
         return response;
     }
 

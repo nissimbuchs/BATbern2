@@ -1,6 +1,8 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,13 +36,17 @@ public class SpeakerPoolResponse {
     private Instant acceptedAt;
     private Instant declinedAt;
     private String declineReason;
-    private Boolean isTentative;
-    private String tentativeReason;
     private String preferredTimeSlot;
     private String travelRequirements;
     private String technicalRequirements;
     private String initialPresentationTitle;
     private String preferenceComments;
+
+    // Story 11.B.3: Derived flags per ADR-009 §0.1 (NOT stored on speaker_pool —
+    // computed at read time). Populated by the fromEntity(SpeakerPool, Session) factory;
+    // the SpeakerPool-only factory uses the weaker sessionId-based fallback.
+    private Boolean isSlotAssigned;
+    private Boolean isPublishable;
 
     // Story 6.5: Automated Deadline Reminders
     private Boolean remindersDisabled;
@@ -59,12 +65,39 @@ public class SpeakerPoolResponse {
     }
 
     /**
-     * Create response DTO from SpeakerPool entity.
+     * Create response DTO from SpeakerPool entity. Delegates to
+     * {@link #fromEntity(SpeakerPool, Session)} with {@code session = null}.
+     *
+     * <p>In the {@code session == null} fallback the derived {@code isSlotAssigned} flag
+     * is computed from {@code speakerPool.sessionId != null} only — a weaker predicate
+     * than the strict {@code session.start_time IS NOT NULL} check. This can over-report
+     * {@code isSlotAssigned} when a session is assigned but its {@code start_time} has
+     * not yet been set. Use the {@code (SpeakerPool, Session)} overload when the session
+     * is loadable (e.g., the caller has already fetched it for a batch lookup).
      *
      * @param speakerPool the speaker pool entity
      * @return the response DTO
      */
     public static SpeakerPoolResponse fromEntity(SpeakerPool speakerPool) {
+        return fromEntity(speakerPool, null);
+    }
+
+    /**
+     * Create response DTO from SpeakerPool entity with the speaker's assigned session for
+     * accurate derived-flag computation (ADR-009 §0.1).
+     *
+     * <p>When {@code session != null}, the derived {@code isSlotAssigned} flag is set to
+     * {@code session.startTime != null}. When {@code session == null} the flag falls back
+     * to {@code speakerPool.sessionId != null} — see the caveat on {@link #fromEntity(SpeakerPool)}.
+     *
+     * <p>{@code isPublishable = status == QUALITY_REVIEWED AND isSlotAssigned}.
+     *
+     * @param speakerPool the speaker pool entity
+     * @param session the speaker's assigned session (nullable); when non-null the strict
+     *                {@code session.startTime IS NOT NULL} predicate is used.
+     * @return the response DTO
+     */
+    public static SpeakerPoolResponse fromEntity(SpeakerPool speakerPool, Session session) {
         SpeakerPoolResponse response = new SpeakerPoolResponse();
         response.id = speakerPool.getId();
         response.eventId = speakerPool.getEventId();
@@ -89,8 +122,6 @@ public class SpeakerPoolResponse {
         response.acceptedAt = speakerPool.getAcceptedAt();
         response.declinedAt = speakerPool.getDeclinedAt();
         response.declineReason = speakerPool.getDeclineReason();
-        response.isTentative = speakerPool.getIsTentative();
-        response.tentativeReason = speakerPool.getTentativeReason();
         response.preferredTimeSlot = speakerPool.getPreferredTimeSlot();
         response.travelRequirements = speakerPool.getTravelRequirements();
         response.technicalRequirements = speakerPool.getTechnicalRequirements();
@@ -104,11 +135,27 @@ public class SpeakerPoolResponse {
         response.contentStatus = speakerPool.getContentStatus();
         response.contentSubmittedAt = speakerPool.getContentSubmittedAt();
 
+        // Story 11.B.3: derived flags per ADR-009 §0.1 (computed at read time, not stored).
+        boolean slotAssigned;
+        if (session != null) {
+            slotAssigned = session.getStartTime() != null;
+        } else {
+            slotAssigned = speakerPool.getSessionId() != null;
+        }
+        response.isSlotAssigned = slotAssigned;
+        response.isPublishable = speakerPool.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED
+                && slotAssigned;
+
         return response;
     }
 
     /**
      * Create response DTO from SpeakerPool entity with content submission data.
+     *
+     * <p>Derived flags ({@code isSlotAssigned}, {@code isPublishable}) are computed from
+     * the SpeakerPool alone (fallback path — see {@link #fromEntity(SpeakerPool)}). When
+     * a Session is available, prefer
+     * {@link #fromEntityWithContent(SpeakerPool, Session, String, String)}.
      *
      * @param speakerPool the speaker pool entity
      * @param submittedTitle the submitted presentation title (from ContentSubmission)
@@ -119,7 +166,26 @@ public class SpeakerPoolResponse {
             SpeakerPool speakerPool,
             String submittedTitle,
             String submittedAbstract) {
-        SpeakerPoolResponse response = fromEntity(speakerPool);
+        return fromEntityWithContent(speakerPool, null, submittedTitle, submittedAbstract);
+    }
+
+    /**
+     * Create response DTO from SpeakerPool entity with the speaker's session AND content
+     * submission data. Use when the caller has both available for accurate derived flags
+     * + content fields in a single read.
+     *
+     * @param speakerPool the speaker pool entity
+     * @param session the speaker's assigned session (nullable)
+     * @param submittedTitle the submitted presentation title (from ContentSubmission)
+     * @param submittedAbstract the submitted presentation abstract (from ContentSubmission)
+     * @return the response DTO
+     */
+    public static SpeakerPoolResponse fromEntityWithContent(
+            SpeakerPool speakerPool,
+            Session session,
+            String submittedTitle,
+            String submittedAbstract) {
+        SpeakerPoolResponse response = fromEntity(speakerPool, session);
         response.submittedTitle = submittedTitle;
         response.submittedAbstract = submittedAbstract;
         return response;
@@ -283,22 +349,6 @@ public class SpeakerPoolResponse {
         this.declineReason = declineReason;
     }
 
-    public Boolean getIsTentative() {
-        return isTentative;
-    }
-
-    public void setIsTentative(Boolean isTentative) {
-        this.isTentative = isTentative;
-    }
-
-    public String getTentativeReason() {
-        return tentativeReason;
-    }
-
-    public void setTentativeReason(String tentativeReason) {
-        this.tentativeReason = tentativeReason;
-    }
-
     public String getPreferredTimeSlot() {
         return preferredTimeSlot;
     }
@@ -397,5 +447,23 @@ public class SpeakerPoolResponse {
 
     public void setMaterialCloudFrontUrl(String materialCloudFrontUrl) {
         this.materialCloudFrontUrl = materialCloudFrontUrl;
+    }
+
+    // Story 11.B.3: Derived flags per ADR-009 §0.1.
+
+    public Boolean getIsSlotAssigned() {
+        return isSlotAssigned;
+    }
+
+    public void setIsSlotAssigned(Boolean isSlotAssigned) {
+        this.isSlotAssigned = isSlotAssigned;
+    }
+
+    public Boolean getIsPublishable() {
+        return isPublishable;
+    }
+
+    public void setIsPublishable(Boolean isPublishable) {
+        this.isPublishable = isPublishable;
     }
 }

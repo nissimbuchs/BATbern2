@@ -112,12 +112,6 @@ public class SpeakerPool {
     @Column(name = "decline_reason", columnDefinition = "TEXT")
     private String declineReason;
 
-    @Column(name = "is_tentative")
-    private Boolean isTentative = false;
-
-    @Column(name = "tentative_reason", columnDefinition = "TEXT")
-    private String tentativeReason;
-
     @Column(name = "preferred_time_slot", length = 100)
     private String preferredTimeSlot;
 

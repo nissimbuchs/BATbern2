@@ -159,29 +159,32 @@ public class SpeakerPoolService {
         return speakers.stream()
                 .map(speaker -> {
                     ContentSubmission content = contentMap.get(speaker.getId());
+                    // Story 11.B.3: Pass the speaker's session to SpeakerPoolResponse factories
+                    // so derived isSlotAssigned/isPublishable flags reflect session.start_time
+                    // (strict ADR-009 §0.1 predicate) rather than the sessionId-only fallback.
+                    Session session = speaker.getSessionId() != null
+                            ? sessionMap.get(speaker.getSessionId())
+                            : null;
                     SpeakerPoolResponse response;
                     if (content != null) {
                         response = SpeakerPoolResponse.fromEntityWithContent(
                                 speaker,
+                                session,
                                 content.getTitle(),
                                 content.getContentAbstract()
                         );
-                    } else if (speaker.getSessionId() != null) {
+                    } else if (session != null && session.getTitle() != null) {
                         // Fallback: use session title/description when no ContentSubmission exists
                         // This handles content submitted via organizer path (SpeakerContentSubmissionService)
                         // which stores content on Session, not in speaker_content_submissions table
-                        Session session = sessionMap.get(speaker.getSessionId());
-                        if (session != null && session.getTitle() != null) {
-                            response = SpeakerPoolResponse.fromEntityWithContent(
-                                    speaker,
-                                    session.getTitle(),
-                                    session.getDescription()
-                            );
-                        } else {
-                            response = SpeakerPoolResponse.fromEntity(speaker);
-                        }
+                        response = SpeakerPoolResponse.fromEntityWithContent(
+                                speaker,
+                                session,
+                                session.getTitle(),
+                                session.getDescription()
+                        );
                     } else {
-                        response = SpeakerPoolResponse.fromEntity(speaker);
+                        response = SpeakerPoolResponse.fromEntity(speaker, session);
                     }
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {

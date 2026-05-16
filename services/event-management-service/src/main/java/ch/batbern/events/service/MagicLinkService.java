@@ -255,16 +255,16 @@ public class MagicLinkService {
         Instant previousResponseDate = null;
 
         if (alreadyResponded) {
+            // Story 11.B.3 (ADR-009 §0.7): TENTATIVE branch removed — `is_tentative` /
+            // `tentative_reason` columns dropped by V93. Magic-link callers now only see
+            // ACCEPTED or DECLINED prior responses. The TENTATIVE response type itself is
+            // unreachable through the new state model.
             if (speakerPool.getAcceptedAt() != null) {
                 previousResponse = "ACCEPTED";
                 previousResponseDate = speakerPool.getAcceptedAt();
             } else if (speakerPool.getDeclinedAt() != null) {
                 previousResponse = "DECLINED";
                 previousResponseDate = speakerPool.getDeclinedAt();
-            } else if (Boolean.TRUE.equals(speakerPool.getIsTentative())) {
-                previousResponse = "TENTATIVE";
-                // No specific timestamp for tentative, use updated timestamp
-                previousResponseDate = speakerPool.getUpdatedAt();
             }
         }
 

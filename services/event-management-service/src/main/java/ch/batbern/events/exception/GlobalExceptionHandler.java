@@ -4,7 +4,9 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.util.CorrelationIdGenerator;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -20,7 +22,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -698,7 +702,14 @@ public class GlobalExceptionHandler {
 
     /**
      * Handle HttpMessageNotReadableException (JSON parsing errors, including invalid UUID format in request body)
-     * Returns HTTP 400 Bad Request
+     * Returns HTTP 400 Bad Request.
+     *
+     * <p>Story 11.B.3 AC4: when the underlying cause is an {@link InvalidFormatException}
+     * whose target type is {@link SpeakerWorkflowState}, return a structured
+     * {@code INVALID_SPEAKER_WORKFLOW_STATE} body listing the 8 accepted enum values.
+     * Jackson rejects the 5 removed legacy values (SLOT_ASSIGNED, CONFIRMED, OVERFLOW,
+     * WITHDREW, TENTATIVE) at request-body binding time — before the controller method
+     * runs — so this handler is the only path that surfaces those rejections.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
@@ -706,10 +717,44 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         log.warn("Invalid request body: {}", ex.getMessage());
 
+        // Story 11.B.3 AC4: detect SpeakerWorkflowState enum rejection at the deserialization layer.
+        Throwable cause = ex.getCause();
+        if (cause instanceof InvalidFormatException ife
+                && ife.getTargetType() != null
+                && ife.getTargetType().equals(SpeakerWorkflowState.class)) {
+            String rejectedValue = ife.getValue() != null ? ife.getValue().toString() : "(null)";
+            List<String> acceptedValues = Arrays.stream(SpeakerWorkflowState.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("code", "INVALID_SPEAKER_WORKFLOW_STATE");
+            details.put("rejectedValue", rejectedValue);
+            details.put("acceptedValues", acceptedValues);
+
+            String message = "Invalid speaker workflow state '" + rejectedValue
+                    + "'. Accepted values: "
+                    + acceptedValues.stream().collect(Collectors.joining(", "))
+                    + ".";
+
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .error("Bad Request")
+                    .message(message)
+                    .correlationId(CorrelationIdGenerator.generate())
+                    .severity("MEDIUM")
+                    .details(details)
+                    .build();
+
+            return ResponseEntity.badRequest().body(error);
+        }
+
         String message = "Invalid request format";
         // Check if it's a UUID parsing error
-        if (ex.getCause() != null && ex.getCause().getMessage() != null) {
-            String causeMessage = ex.getCause().getMessage();
+        if (cause != null && cause.getMessage() != null) {
+            String causeMessage = cause.getMessage();
             if (causeMessage.contains("UUID")) {
                 message = "Invalid UUID format in request";
             }
@@ -723,6 +768,38 @@ public class GlobalExceptionHandler {
                 .message(message)
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle ReadyRequiresPromoteException — caller attempted to PUT /status with
+     * newStatus = READY, but READY requires an email payload (User provisioning) and is
+     * reachable only via POST /promote (Story 11.D.1).
+     * Returns HTTP 400 Bad Request with code READY_REQUIRES_PROMOTE_ENDPOINT.
+     * Story 11.B.3 AC5.
+     */
+    @ExceptionHandler(ReadyRequiresPromoteException.class)
+    public ResponseEntity<ErrorResponse> handleReadyRequiresPromoteException(
+            ReadyRequiresPromoteException ex,
+            HttpServletRequest request) {
+        log.warn("READY requires promote endpoint: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "READY_REQUIRES_PROMOTE_ENDPOINT");
+        details.put("rejectedValue", "READY");
+        details.put("alternativeEndpoint", "POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
                 .build();
 
         return ResponseEntity.badRequest().body(error);

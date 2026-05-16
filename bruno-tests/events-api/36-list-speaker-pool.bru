@@ -36,6 +36,18 @@ tests {
     expect(speaker.status).to.equal('IDENTIFIED');
   });
 
+  test("should expose derived isSlotAssigned + isPublishable flags - Story 11.B.3 AC7", function() {
+    // Per ADR-009 §0.1, these flags are computed at read time (not stored on
+    // speaker_pool). Their presence on the response is the public-API contract.
+    const pool = res.getBody();
+    const speaker = pool.find(s => s.id === bru.getVar("createdSpeakerPoolId"));
+    expect(speaker.isSlotAssigned).to.be.a('boolean');
+    expect(speaker.isPublishable).to.be.a('boolean');
+    // A newly-added IDENTIFIED speaker with no session must be unpublishable.
+    expect(speaker.isSlotAssigned).to.equal(false);
+    expect(speaker.isPublishable).to.equal(false);
+  });
+
   test("should show contact distribution - Story 5.2 AC12", function() {
     const pool = res.getBody();
     const assignedToOrganizer = pool.filter(s => s.assignedOrganizerId === bru.getEnvVar("organizerUsername"));

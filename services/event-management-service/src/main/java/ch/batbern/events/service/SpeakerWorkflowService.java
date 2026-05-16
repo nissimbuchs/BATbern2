@@ -310,9 +310,10 @@ public class SpeakerWorkflowService {
         // NB: External side effects (email, organizer notify) fire synchronously inside the
         // @Transactional boundary; rollback after this point leaks the email. AFTER_COMMIT
         // refactor tracked in deferred-work (code review 11.B.2, P2).
+        //
+        // Story 11.B.3: dropped the residual setIsTentative(false)/setTentativeReason(null)
+        // calls left over from 11.B.2 — those columns no longer exist (V93 dropped them).
         speaker.setAcceptedAt(Instant.now());
-        speaker.setIsTentative(false);
-        speaker.setTentativeReason(null);
 
         try {
             String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);

@@ -56,6 +56,51 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     long countByEventIdAndStatus(UUID eventId, SpeakerWorkflowState status);
 
     /**
+     * Count speaker pool entries for a specific event whose status is in the given set.
+     *
+     * Story 11.B.3: Used by EventWorkflowStateMachine.validateAllSpeakersConfirmed to
+     * compute the "accepted or beyond" cohort (ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED)
+     * for the AGENDA_PUBLISHED gate. Backed by JPQL (not derived-name) to avoid Spring
+     * Data's awkward IN-collection method names.
+     *
+     * @param eventId the event ID
+     * @param statuses the list of speaker workflow statuses to include
+     * @return count of speakers whose status is in the given set
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(sp)
+            FROM SpeakerPool sp
+            WHERE sp.eventId = :eventId
+              AND sp.status IN :statuses
+            """)
+    long countByEventIdAndStatusIn(
+            @org.springframework.data.repository.query.Param("eventId") UUID eventId,
+            @org.springframework.data.repository.query.Param("statuses") List<SpeakerWorkflowState> statuses);
+
+    /**
+     * Count speakers who are "publishable" per ADR-009 §0.1:
+     * {@code speaker_pool.status == 'quality_reviewed'} AND the assigned session has a
+     * non-null {@code start_time}.
+     *
+     * Story 11.B.3: Used by {@code EventWorkflowStateMachine.validateAllSpeakersConfirmed}
+     * to gate the AGENDA_PUBLISHED transition. The derived {@code is_publishable} predicate
+     * lives in the read layer (not stored on speaker_pool) — this query implements the
+     * predicate at the database level so it can be aggregated cheaply.
+     *
+     * @param eventId the event ID
+     * @return count of publishable speakers for the event
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(sp)
+            FROM SpeakerPool sp
+            JOIN Session s ON sp.sessionId = s.id
+            WHERE sp.eventId = :eventId
+              AND sp.status = ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
+              AND s.startTime IS NOT NULL
+            """)
+    long countPublishableByEventId(@org.springframework.data.repository.query.Param("eventId") UUID eventId);
+
+    /**
      * Find speakers assigned to a specific session.
      *
      * Story 5.7 (BAT-11): Speaker auto-confirmation when session timing assigned

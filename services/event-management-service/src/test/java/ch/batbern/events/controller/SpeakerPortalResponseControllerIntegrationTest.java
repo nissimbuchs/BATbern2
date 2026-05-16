@@ -466,30 +466,11 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
                     .andExpect(status().isConflict());
         }
 
-        /**
-         * Test 5.3: Should allow response when currently tentative
-         * AC7: Tentative speakers can still respond
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_return200_when_speakerCurrentlyTentative() throws Exception {
-            // Given - Speaker is tentative
-            testSpeakerPool.setIsTentative(true);
-            testSpeakerPool.setTentativeReason("Was checking calendar");
-            speakerPoolRepository.save(testSpeakerPool);
-
-            // When/Then - Should be able to accept now
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "ACCEPT"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
-        }
+        // Story 11.B.3 (ADR-009 §0.7): removed the should_return200_when_speakerCurrentlyTentative
+        // test — `is_tentative` / `tentative_reason` columns were dropped by V93 along with
+        // the entire TENTATIVE response branch (Story 11.B.2 deleted processTentativeResponse).
+        // The same-state accept re-affirm path is covered separately by SpeakerWorkflowService
+        // tests and SpeakerStatusControllerIntegrationTest happy-path tests.
     }
 
     // ==================== Request Validation Tests (400) ====================
