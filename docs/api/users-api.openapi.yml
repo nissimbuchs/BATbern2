@@ -1979,13 +1979,6 @@ components:
         - email
         - role
       properties:
-        username:
-          type: string
-          description: |
-            Optional. If null, the service generates a username from the email per the
-            existing `getOrCreateUser` policy.
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          example: jane.smith
         email:
           type: string
           format: email
@@ -1995,17 +1988,24 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          description: |
+            Optional. If absent, defaults are derived from the email local-part
+            (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
           example: Jane
         lastName:
           type: string
           minLength: 1
           maxLength: 100
+          description: |
+            Optional. If absent, defaults are derived from the email local-part.
+            See `firstName`.
           example: Smith
         role:
           type: string
           description: |
-            Role to grant. SPEAKER is the only role used by Epic 11; future stories may
-            extend to other roles.
+            Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
+            ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
+            requests a non-SPEAKER role.
           enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
           example: SPEAKER
 
@@ -2020,8 +2020,11 @@ components:
       properties:
         username:
           type: string
-          description: Canonical username (existing or newly generated).
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          description: |
+            Canonical username (existing or newly generated). No regex `pattern` constraint
+            on the response — the server may emit legacy usernames that predate the current
+            `firstname.lastname[.NN]` convention (e.g., hyphenated or apostrophed names).
+            Pattern is enforced on `ProvisionUserRequest.username` only.
           example: jane.smith
         created:
           type: boolean

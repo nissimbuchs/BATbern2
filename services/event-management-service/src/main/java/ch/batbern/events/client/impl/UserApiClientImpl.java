@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
@@ -49,6 +51,7 @@ public class UserApiClientImpl implements UserApiClient {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final CacheManager cacheManager;
 
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
@@ -494,7 +497,12 @@ public class UserApiClientImpl implements UserApiClient {
                     request.getEmail(),
                     result != null ? result.getUsername() : "null",
                     result != null ? result.getCreated() : "null");
-            evictUserCache(result != null ? result.getUsername() : null);
+            // P1 (review patch): use CacheManager directly. Self-invoking `this.evictUserCache(...)`
+            // bypasses Spring's AOP proxy → @CacheEvict never fires. Programmatic eviction is the
+            // only reliable way to evict from within the same bean.
+            if (result != null && result.getUsername() != null) {
+                evictUserCacheEntry(result.getUsername());
+            }
             return result;
 
         } catch (HttpClientErrorException e) {
@@ -602,13 +610,18 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Evict the cached User entry for a username after a write operation
-     * (Story 11.C.2). Wrapped in a helper so the eviction goes through Spring's cache
-     * abstraction even when invoked from within the same bean.
+     * Programmatically evict the cached User entry for a username after a write operation
+     * (Story 11.C.2). Uses {@link CacheManager} directly so eviction works correctly from
+     * within the same bean — the previous helper used `@CacheEvict` on a method that was
+     * self-invoked, which bypasses Spring's AOP proxy and silently did nothing.
      */
-    @CacheEvict(value = "userApiCache", key = "#username")
-    public void evictUserCache(String username) {
-        if (username != null) {
+    private void evictUserCacheEntry(String username) {
+        if (username == null) {
+            return;
+        }
+        Cache cache = cacheManager.getCache("userApiCache");
+        if (cache != null) {
+            cache.evict(username);
             log.trace("Evicted userApiCache entry for username: {}", username);
         }
     }

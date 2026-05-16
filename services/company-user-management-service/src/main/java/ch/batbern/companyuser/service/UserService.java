@@ -21,6 +21,7 @@ import ch.batbern.shared.service.SlugGenerationService;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -626,10 +627,23 @@ public class UserService {
         }
         Role roleToGrant = parseRole(request.getRole().getValue());
 
-        log.info("Provisioning user (Story 11.C.2): email={}, role={}", request.getEmail(), roleToGrant);
+        // P0 (review patch): role-grant whitelist. A non-ADMIN caller (ORGANIZER) must not be able to
+        // grant arbitrary roles via this endpoint — Epic 11 only needs SPEAKER. Anything else is a 403
+        // unless the caller is ADMIN.
+        if (!securityContext.hasRole("ADMIN") && roleToGrant != Role.SPEAKER) {
+            throw new UserValidationException(
+                    "role",
+                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got " + roleToGrant + ")");
+        }
 
-        // 1. Look up existing user by email (case-insensitive on lower(email) — same path as getOrCreateUser).
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        // P1 (review patch): normalize email to lowercase for both lookup AND persist so
+        // "Jane@x.com" and "jane@x.com" resolve to the same User row. Idempotency claim now holds.
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}", normalizedEmail, roleToGrant);
+
+        // 1. Look up existing user by email (case-insensitive). Matches the getOrCreateUser contract.
+        Optional<User> existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
 
         if (existingUser.isPresent()) {
             User user = existingUser.get();
@@ -643,16 +657,55 @@ public class UserService {
                     .temporaryPassword(null);  // Story 11.E.2 wires Cognito
         }
 
+        // P1 (review patch): firstName/lastName are optional in the API spec; SlugGenerationService
+        // rejects blank inputs. Derive sensible defaults from the email local-part so the request
+        // succeeds without forcing the caller to supply names (Story 11.E.2 may not have them yet).
+        String firstName = request.getFirstName();
+        String lastName = request.getLastName();
+        if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
+            String localPart = normalizedEmail.contains("@")
+                    ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                    : normalizedEmail;
+            String[] parts = localPart.split("[._\\-+]", 2);
+            if (firstName == null || firstName.isBlank()) {
+                firstName = parts[0].isBlank() ? "Speaker" : capitalize(parts[0]);
+            }
+            if (lastName == null || lastName.isBlank()) {
+                lastName = parts.length > 1 && !parts[1].isBlank()
+                        ? capitalize(parts[1])
+                        : "Unknown";
+            }
+            log.debug("Provisioning: derived firstName='{}' lastName='{}' from email local-part", firstName, lastName);
+        }
+
         // 2. No user yet — create one, then grant the role.
         // Reuse the GetOrCreateUserRequest path so a single create-policy lives in one place.
         // cognitoSync=false: Cognito provisioning is Story 11.E.2's responsibility.
         GetOrCreateUserRequest createRequest = new GetOrCreateUserRequest()
-                .email(request.getEmail())
-                .firstName(request.getFirstName() != null ? request.getFirstName() : "")
-                .lastName(request.getLastName() != null ? request.getLastName() : "")
+                .email(normalizedEmail)
+                .firstName(firstName)
+                .lastName(lastName)
                 .createIfMissing(true)
                 .cognitoSync(false);
-        User created = createNewUser(createRequest);
+
+        User created;
+        try {
+            created = createNewUser(createRequest);
+        } catch (DataIntegrityViolationException e) {
+            // P1 (review patch): another caller raced us to createNewUser for the same email
+            // and won. The email UNIQUE constraint fired. Treat as idempotent: re-fetch and
+            // grant the role.
+            log.info("Provisioning: lost create race for email={} — re-fetching as idempotent existing-user case",
+                    normalizedEmail);
+            User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "DataIntegrityViolation on createNewUser but email not found on re-fetch: " + normalizedEmail, e));
+            roleService.addRole(user.getUsername(), roleToGrant);
+            return new ProvisionUserResponse()
+                    .username(user.getUsername())
+                    .created(false)
+                    .temporaryPassword(null);
+        }
 
         // The default initial role from createNewUser is ATTENDEE. Grant the requested role if it's not
         // already there. addRole is idempotent per RoleService.addRole(...) duplicate-detection.
@@ -663,6 +716,13 @@ public class UserService {
                 .username(created.getUsername())
                 .created(true)
                 .temporaryPassword(null);  // Story 11.E.2 wires Cognito (AdminCreateUser + AdminSetUserPassword)
+    }
+
+    private static String capitalize(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();
     }
 
     /**
@@ -694,15 +754,27 @@ public class UserService {
                     "At least one of 'bio' or 'profilePictureUrl' must be present");
         }
 
+        // P2 (review patch): treat blank-but-non-null values as "no change". Prevents accidental
+        // data loss when a UI submits an empty textarea (`{"bio":""}` previously silently cleared bio).
+        // To explicitly clear a field, the caller should send `null` (which by the null-check above
+        // is treated as "no change") — clearing is intentionally not supported via this endpoint.
+        boolean bioPresent = request.getBio() != null && !request.getBio().isBlank();
+        boolean picturePresent = request.getProfilePictureUrl() != null && !request.getProfilePictureUrl().isBlank();
+        if (!bioPresent && !picturePresent) {
+            throw new UserValidationException(
+                    "patchUserProfile",
+                    "At least one of 'bio' or 'profilePictureUrl' must be non-blank");
+        }
+
         log.info("Patching user profile (Story 11.C.2): username={}", username);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        if (request.getBio() != null) {
+        if (bioPresent) {
             user.setBio(request.getBio());
         }
-        if (request.getProfilePictureUrl() != null) {
+        if (picturePresent) {
             user.setProfilePictureUrl(request.getProfilePictureUrl());
         }
 
@@ -713,10 +785,10 @@ public class UserService {
 
         // Publish a UserUpdatedEvent so downstream listeners can refresh their view.
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
-        if (request.getBio() != null) {
+        if (bioPresent) {
             updatedFields.put("bio", request.getBio());
         }
-        if (request.getProfilePictureUrl() != null) {
+        if (picturePresent) {
             updatedFields.put("profilePictureUrl", request.getProfilePictureUrl());
         }
         UserUpdatedEvent event = new UserUpdatedEvent(

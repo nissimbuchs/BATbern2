@@ -198,6 +198,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/speaker-portal/content/submit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit speaker content via the speaker portal (magic-link authenticated)
+     * @description Speaker self-service content submission used by the magic-link-authenticated speaker
+     *     portal. Refactored by Story 11.C.2 to share the consolidated
+     *     `ContentSubmissionService.submit(...)` backend write path with the organizer-on-behalf
+     *     endpoint (`POST /events/{eventCode}/speakers/{speakerId}/content`).
+     *
+     *     **Auth**: the magic-link `token` in the request body IS the auth mechanism. The
+     *     controller validates the token via `MagicLinkService` and resolves the speaker pool
+     *     before delegating to the shared service with a SPEAKER `SecurityPrincipal`.
+     *
+     *     **State precondition**: speaker must be in ACCEPTED (first submission) or
+     *     CONTENT_SUBMITTED (resubmission). Returns 422 otherwise.
+     *
+     *     **Downstream effects** (identical to the organizer endpoint, modulo the audit
+     *     principal):
+     *     - `speaker_content_submissions` row inserted with the next version.
+     *     - Session created or updated with the submitted title/abstract.
+     *     - `speaker_pool.status` transitions to CONTENT_SUBMITTED (or same-state self-transition
+     *       on resubmission) via `SpeakerWorkflowService.transition()` — the sole status writer
+     *       per ADR-009.
+     *     - `speaker_status_history` row written with `changed_by_username = speaker.username`.
+     *     - `SpeakerContentSubmittedEvent` published.
+     */
+    post: operations['submitSpeakerPortalContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -467,8 +507,19 @@ export interface components {
       notes?: string;
     };
     /**
-     * @description Request to submit speaker content (Story 5.5 AC6-10).
-     *     Creates a session with the presentation details and links the speaker.
+     * @description Organizer-on-behalf request to submit speaker content (Story 5.5 AC6-10; refactored
+     *     by Story 11.C.2 to drop ad-hoc user-creation fields). Creates/updates a session with
+     *     the presentation details and transitions the speaker to CONTENT_SUBMITTED via the
+     *     consolidated ContentSubmissionService.
+     *
+     *     Story 11.C.2 changes:
+     *     - **Removed** legacy ad-hoc user-identity fields (`username`, `speakerName`, `email`,
+     *       `company`). The speaker's identity is established on `speaker_pool` at CONTACTED →
+     *       READY per ADR-009.
+     *     - **Added** optional `bio`, `profilePictureUrl`, `presentationUploadId` so the
+     *       organizer drawer can submit on-behalf content with CV/portrait/upload reference.
+     *     - `additionalProperties: false` enforces strict request validation — payloads with
+     *       unknown fields (including the removed legacy fields) yield 400.
      */
     SubmitContentRequest: {
       /**
@@ -482,31 +533,25 @@ export interface components {
        */
       presentationAbstract: string;
       /**
-       * @description Speaker username (if existing user selected, ADR-003)
-       * @example john.doe
-       */
-      username?: string;
-      /**
-       * @description Speaker name (if creating new user)
-       * @example John Doe
-       */
-      speakerName?: string;
-      /**
-       * Format: email
-       * @description Speaker email (if creating new user)
-       * @example john.doe@example.com
-       */
-      email?: string;
-      /**
-       * @description Speaker company (optional)
-       * @example Google Switzerland
-       */
-      company?: string;
-      /**
-       * @description Speaker bio (optional)
+       * @description Optional speaker bio. When present, patched onto `User.bio` for the resolved
+       *     speaker username via the User Management Service (Story 11.C.2 — AR14).
        * @example Experienced security architect with 15 years in the industry.
        */
       bio?: string;
+      /**
+       * Format: uri
+       * @description Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+       *     presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+       *     When present, the consolidated service links the uploaded file to the session via
+       *     the existing materials-confirm pathway.
+       * @example upload-abc-123
+       */
+      presentationUploadId?: string;
     };
     /**
      * @description Response for speaker content operations (Story 5.5 AC6-10).
@@ -576,6 +621,73 @@ export interface components {
        * @example zero-trust-presentation.pdf
        */
       materialFileName?: string;
+    };
+    /**
+     * @description Speaker self-service content submission via the magic-link portal. Story 11.C.2
+     *     added optional `bio`, `profilePictureUrl`, `presentationUploadId` so the speaker
+     *     can patch their User profile + attach an uploaded presentation in a single submit.
+     *     Phase E (Story 11.E.3) will remove the `token` field once the portal moves to
+     *     Cognito Bearer auth.
+     */
+    ContentSubmitRequest: {
+      /**
+       * @description Magic-link token (Story 6.3 — Phase E migrates this to Cognito Bearer).
+       * @example ml_abcdef1234567890
+       */
+      token: string;
+      /**
+       * @description Presentation title.
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      title: string;
+      /**
+       * @description Presentation abstract.
+       * @example This talk explores Zero Trust principles...
+       */
+      contentAbstract: string;
+      /**
+       * @description Optional speaker bio. When present, patched onto `User.bio` for the resolved
+       *     speaker username via the User Management Service (Story 11.C.2 — AR14).
+       * @example Experienced security architect with 15 years in the industry.
+       */
+      bio?: string;
+      /**
+       * Format: uri
+       * @description Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+       *     presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+       *     When present, the consolidated service links the uploaded file to the session.
+       * @example upload-abc-123
+       */
+      presentationUploadId?: string;
+    };
+    /** @description Response after a successful speaker-portal content submission. */
+    ContentSubmitResponse: {
+      /**
+       * Format: uuid
+       * @description The content submission record ID.
+       */
+      submissionId: string;
+      /**
+       * Format: int32
+       * @description Submission version (1 for first, increments on resubmission).
+       * @example 1
+       */
+      version: number;
+      /**
+       * @description Submission status — always "SUBMITTED" after a successful submit.
+       * @example SUBMITTED
+       */
+      status: string;
+      /**
+       * @description Session title (for confirmation display).
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      sessionTitle: string;
     };
     /** @description Request for quality review action (Story 5.5 AC13-14) */
     ReviewRequest: {
@@ -1162,6 +1274,48 @@ export interface operations {
       };
       /** @description Speaker not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  submitSpeakerPortalContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ContentSubmitRequest'];
+      };
+    };
+    responses: {
+      /** @description Content submitted successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContentSubmitResponse'];
+        };
+      };
+      /** @description Validation error (missing token, blank fields, unknown property, etc.) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state — speaker not in ACCEPTED or CONTENT_SUBMITTED */
+      422: {
         headers: {
           [name: string]: unknown;
         };

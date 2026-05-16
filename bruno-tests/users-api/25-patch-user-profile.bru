@@ -1,0 +1,46 @@
+meta {
+  name: Patch User Profile (Story 11.C.2 AR14)
+  type: http
+  seq: 25
+}
+
+patch {
+  url: {{baseUrl}}/users/{{testUsername}}/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "bio": "Updated bio from Bruno contract test (Story 11.C.2)."
+  }
+}
+
+assert {
+  res.status: in [200, 400, 401, 403, 404]
+}
+
+tests {
+  test("should patch profile bio (Story 11.C.2 AR14)", function() {
+    const status = res.getStatus();
+    expect([200, 400, 401, 403, 404]).to.include(status);
+  });
+
+  test("should return updated user on 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body).to.have.property('username');
+      expect(body).to.have.property('bio');
+    }
+  });
+}

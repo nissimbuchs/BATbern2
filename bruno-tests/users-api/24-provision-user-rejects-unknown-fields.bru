@@ -1,0 +1,43 @@
+meta {
+  name: Provision User — rejects unknown fields (Story 11.C.2 RD §3)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/users/provision
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "bruno.unknownfield@example.com",
+    "firstName": "Bruno",
+    "lastName": "Unknownfield",
+    "role": "SPEAKER",
+    "department": "Engineering"
+  }
+}
+
+assert {
+  res.status: in [400, 401, 403]
+}
+
+tests {
+  test("should reject payload with unknown fields (additionalProperties: false)", function() {
+    const status = res.getStatus();
+    // 400 — controller validates request.additionalProperties is empty (Resolved Decision §3).
+    expect([400, 401, 403]).to.include(status);
+  });
+}

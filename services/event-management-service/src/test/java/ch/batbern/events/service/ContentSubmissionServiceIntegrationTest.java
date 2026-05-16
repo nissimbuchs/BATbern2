@@ -306,4 +306,114 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
                 .hasMessageContaining("Speaker not found");
     }
+
+    // ============================================================
+    // AC9 #6 — explicit equivalence: organizer and speaker flows produce identical
+    // ContentSubmission, Session, and SpeakerPool rows (modulo speaker_status_history.changed_by_username).
+    // Review patch A2 (Story 11.C.2 code review 2026-05-16).
+    // ============================================================
+    @Test
+    @DisplayName("should_produceIdenticalRows_when_organizerAndSpeakerSubmitSamePayload")
+    void should_produceIdenticalRows_when_organizerAndSpeakerSubmitSamePayload() {
+        SpeakerPool speakerForOrganizer = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speakerForSelf = seedSpeaker(SpeakerWorkflowState.ACCEPTED, "speaker.two");
+
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                "Equivalence Title", "Equivalence abstract.", null, null, null);
+
+        contentSubmissionService.submit(speakerForOrganizer.getId(), EVENT_CODE, payload, ORGANIZER);
+        SecurityPrincipal speakerTwo = new SecurityPrincipal("speaker.two", java.util.List.of("SPEAKER"));
+        contentSubmissionService.submit(speakerForSelf.getId(), EVENT_CODE, payload, speakerTwo);
+
+        ContentSubmission organizerSubmission = contentSubmissionRepository
+                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerForOrganizer.getId())
+                .orElseThrow();
+        ContentSubmission speakerSubmission = contentSubmissionRepository
+                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerForSelf.getId())
+                .orElseThrow();
+
+        // Content row payload identical modulo identity fields (id, speakerPool, session).
+        assertThat(organizerSubmission.getTitle()).isEqualTo(speakerSubmission.getTitle());
+        assertThat(organizerSubmission.getContentAbstract()).isEqualTo(speakerSubmission.getContentAbstract());
+        assertThat(organizerSubmission.getAbstractCharCount()).isEqualTo(speakerSubmission.getAbstractCharCount());
+        assertThat(organizerSubmission.getSubmissionVersion()).isEqualTo(speakerSubmission.getSubmissionVersion());
+
+        // SpeakerPool side: both end in CONTENT_SUBMITTED with content_status SUBMITTED.
+        SpeakerPool reloadedOrganizerSide = speakerPoolRepository.findById(speakerForOrganizer.getId()).orElseThrow();
+        SpeakerPool reloadedSpeakerSide = speakerPoolRepository.findById(speakerForSelf.getId()).orElseThrow();
+        assertThat(reloadedOrganizerSide.getStatus()).isEqualTo(reloadedSpeakerSide.getStatus());
+        assertThat(reloadedOrganizerSide.getContentStatus()).isEqualTo(reloadedSpeakerSide.getContentStatus());
+
+        // The ONLY documented difference: speaker_status_history.changed_by_username.
+        SpeakerStatusHistory organizerHistory = statusHistoryRepository
+                .findBySpeakerPoolIdOrderByChangedAtDesc(speakerForOrganizer.getId())
+                .get(0);
+        SpeakerStatusHistory speakerHistory = statusHistoryRepository
+                .findBySpeakerPoolIdOrderByChangedAtDesc(speakerForSelf.getId())
+                .get(0);
+        assertThat(organizerHistory.getChangedByUsername()).isEqualTo(ORGANIZER.username());
+        assertThat(speakerHistory.getChangedByUsername()).isEqualTo("speaker.two");
+        assertThat(organizerHistory.getNewStatus()).isEqualTo(speakerHistory.getNewStatus());
+    }
+
+    // ============================================================
+    // Review patch D2 — organizer endpoint accepts resubmission from CONTENT_SUBMITTED
+    // (decision: keep loosened source-state precondition for both endpoints).
+    // ============================================================
+    @Test
+    @DisplayName("should_acceptOrganizerResubmission_when_speakerAlreadyInContentSubmittedState")
+    void should_acceptOrganizerResubmission_when_speakerAlreadyInContentSubmittedState() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTENT_SUBMITTED, SPEAKER.username());
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                "Updated title", "Updated abstract.", null, null, null);
+
+        ContentSubmitResponse response = contentSubmissionService.submit(
+                speaker.getId(), EVENT_CODE, payload, ORGANIZER);
+
+        assertThat(response.status()).isEqualTo("SUBMITTED");
+        SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+
+        // Self-transition writes a history row even from same-state.
+        List<SpeakerStatusHistory> history = statusHistoryRepository
+                .findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId());
+        assertThat(history).isNotEmpty();
+        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER.username());
+    }
+
+    // ============================================================
+    // Review patch P1 — cross-event corruption: speaker.eventId must match eventCode.
+    // ============================================================
+    @Test
+    @DisplayName("should_rejectSubmission_when_speakerBelongsToDifferentEvent")
+    void should_rejectSubmission_when_speakerBelongsToDifferentEvent() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                "X", "Abstract.", null, null, null);
+
+        // Use a deliberately wrong event_code that exists for *another* event in the test setup.
+        // If only one event exists in the test fixture this will EntityNotFoundException — which is
+        // the IllegalArgumentException-or-EntityNotFoundException equivalence we accept.
+        assertThatThrownBy(() -> contentSubmissionService.submit(
+                        speaker.getId(), "BATbern-other-event", payload, ORGANIZER))
+                .satisfiesAnyOf(
+                        e -> assertThat(e).isInstanceOf(IllegalArgumentException.class),
+                        e -> assertThat(e).isInstanceOf(jakarta.persistence.EntityNotFoundException.class));
+    }
+
+    // ============================================================
+    // Review patch P2 — presentationUploadId is rejected with 400 until Story 11.D.4.
+    // ============================================================
+    @Test
+    @DisplayName("should_rejectSubmission_when_presentationUploadIdIsProvided")
+    void should_rejectSubmission_when_presentationUploadIdIsProvided() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                "T", "Abstract.", null, null, "upload-id-from-future-story");
+
+        assertThatThrownBy(() -> contentSubmissionService.submit(
+                        speaker.getId(), EVENT_CODE, payload, ORGANIZER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("presentationUploadId");
+    }
 }

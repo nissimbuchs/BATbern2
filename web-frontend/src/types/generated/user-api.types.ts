@@ -583,6 +583,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/provision': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Provision a user with a role (Story 11.C.2 — AR13)
+     * @description Idempotent endpoint for the canonical "create User + grant role" flow used by the
+     *     Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
+     *
+     *     **ADR-009**: Decision 3 — Cognito provisioning skeleton. Cognito wiring (AdminCreateUser,
+     *     AdminSetUserPassword, AdminAddUserToGroup) is **deliberately stubbed** in Story 11.C.2
+     *     and will be wired in Story 11.E.2. The `temporaryPassword` field on the response is
+     *     reserved for that story to populate; it is always `null` in 11.C.2.
+     *
+     *     **Behaviour**:
+     *     - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
+     *       grants the requested role if not already held; returns existing `username` and `created=false`.
+     *     - If User does not exist: creates User row, grants role, returns generated `username` and
+     *       `created=true`. The username is auto-generated from email per the existing
+     *       `getOrCreateUser` policy.
+     *     - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
+     *       the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
+     *       backs the idempotency guarantee at the DB layer.
+     *
+     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
+     *     propagates the ORGANIZER JWT per `microservices-http-clients.md`).
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['provisionUserWithRole'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
+     * @description Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
+     *     consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
+     *     (self) submits content that includes a CV blurb or a portrait.
+     *
+     *     **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
+     *     entity (single source of truth). This endpoint overwrites the global values — there
+     *     is no per-event snapshot.
+     *
+     *     **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
+     *     **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
+     *     and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
+     *
+     *     **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
+     *     fields are left unchanged.
+     */
+    patch: operations['patchUserProfile'];
+    trace?: never;
+  };
   '/users/get-or-create': {
     parameters: {
       query?: never;
@@ -903,6 +977,83 @@ export interface components {
        * @example Software engineer passionate about cloud architecture
        */
       bio?: string;
+    };
+    /**
+     * @description Request to provision a User with a role (Story 11.C.2 — AR13).
+     *     Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+     */
+    ProvisionUserRequest: {
+      /**
+       * Format: email
+       * @description Required. Lookup key for the existing-user path (case-insensitive).
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Optional. If absent, defaults are derived from the email local-part
+       *     (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
+       * @example Jane
+       */
+      firstName?: string;
+      /**
+       * @description Optional. If absent, defaults are derived from the email local-part.
+       *     See `firstName`.
+       * @example Smith
+       */
+      lastName?: string;
+      /**
+       * @description Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
+       *     ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
+       *     requests a non-SPEAKER role.
+       * @example SPEAKER
+       * @enum {string}
+       */
+      role: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
+    };
+    /**
+     * @description Response from the user-provisioning endpoint. The `temporaryPassword` field is
+     *     reserved for Story 11.E.2 (Cognito wiring) — it is always `null` in 11.C.2.
+     */
+    ProvisionUserResponse: {
+      /**
+       * @description Canonical username (existing or newly generated). No regex `pattern` constraint
+       *     on the response — the server may emit legacy usernames that predate the current
+       *     `firstname.lastname[.NN]` convention (e.g., hyphenated or apostrophed names).
+       *     Pattern is enforced on `ProvisionUserRequest.username` only.
+       * @example jane.smith
+       */
+      username: string;
+      /**
+       * @description True if a new User row was created; false if the user already existed.
+       * @example true
+       */
+      created: boolean;
+      /**
+       * @description Reserved for Story 11.E.2 — Cognito AdminCreateUser/AdminSetUserPassword wiring.
+       *     Always `null` in 11.C.2.
+       * @example null
+       */
+      temporaryPassword?: string | null;
+    };
+    /**
+     * @description Patch the narrow profile fields owned by the consolidated ContentSubmissionService
+     *     (Story 11.C.2 — AR14). At least one of `bio` or `profilePictureUrl` must be present.
+     *     Null fields are left unchanged.
+     */
+    PatchUserProfileRequest: {
+      /**
+       * @description Updated user biography. Overwrites the global value per ADR-009 §6.7.
+       * @example Experienced security architect with 15 years in the industry.
+       */
+      bio?: string;
+      /**
+       * @description Updated profile picture URL (typically a CloudFront URL produced by an earlier
+       *     presigned-upload flow). Modelled as a plain string (not `format: uri`) so the
+       *     Bean Validation {@code @Size(max=2048)} constraint generated by the Spring
+       *     OpenAPI generator applies cleanly.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
     };
     /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
@@ -2029,6 +2180,66 @@ export interface operations {
         };
         content?: never;
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  provisionUserWithRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProvisionUserRequest'];
+      };
+    };
+    responses: {
+      /** @description User provisioned (created or already existed) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProvisionUserResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchUserProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Target user's username (Story 1.16.2) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchUserProfileRequest'];
+      };
+    };
+    responses: {
+      /** @description Profile patched successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];

@@ -188,14 +188,18 @@ public class SpeakerPortalContentController {
             SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
                     .orElseThrow(() -> new ValidationException("Speaker not found"));
 
-            // Build a SPEAKER principal. Username is taken from the pool entry (populated at
-            // CONTACTED → READY per Story 11.B.2). For pre-11.B.2 legacy magic-link sessions
-            // where speaker.username may be null, fall back to the speaker_name from the
-            // pool — matches the pattern Story 11.B.2 established in SpeakerResponseService.
-            String actorUsername = speaker.getUsername() != null && !speaker.getUsername().isBlank()
-                    ? speaker.getUsername()
-                    : speaker.getSpeakerName();
-            SecurityPrincipal actor = new SecurityPrincipal(actorUsername, List.of("SPEAKER"));
+            // D1 (review patch): fail closed if the speaker has no canonical username. The
+            // old fallback to speaker.getSpeakerName() (display name) was writing display names
+            // into speaker_status_history.changed_by_username, breaking the column's join
+            // semantics with users.username. Requires the organizer to complete provisioning
+            // before the speaker can submit content via the portal.
+            if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
+                LOG.warn("Speaker {} has no canonical username — rejecting content submission",
+                        speaker.getId());
+                throw new ValidationException(
+                        "Speaker has no canonical username — please contact organizer to complete provisioning");
+            }
+            SecurityPrincipal actor = new SecurityPrincipal(speaker.getUsername(), List.of("SPEAKER"));
 
             ContentSubmissionPayload payload = new ContentSubmissionPayload(
                     request.title(),

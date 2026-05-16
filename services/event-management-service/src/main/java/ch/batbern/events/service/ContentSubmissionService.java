@@ -293,6 +293,20 @@ public class ContentSubmissionService {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Speaker not found in pool: " + speakerPoolId));
 
+        // P1 (review patch): verify the speaker's eventId matches the eventCode in the URL.
+        // Prevents cross-event corruption where a stale/mistyped URL pairs a speaker from
+        // event A with eventCode = event B's code (the new Session row would then have
+        // inconsistent event_id ↔ event_code).
+        ch.batbern.events.domain.Event eventForCode = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Event not found for code: " + eventCode));
+        if (!eventForCode.getId().equals(speaker.getEventId())) {
+            throw new IllegalArgumentException(
+                    "Speaker " + speakerPoolId + " does not belong to event " + eventCode
+                            + " (speaker.eventId=" + speaker.getEventId()
+                            + ", event.id=" + eventForCode.getId() + ")");
+        }
+
         // 3. Pre-check the source state. SpeakerWorkflowService.transition() will also enforce
         //    this — we surface a friendly error message here before the workflow check runs.
         SpeakerWorkflowState currentStatus = speaker.getStatus();
@@ -330,13 +344,14 @@ public class ContentSubmissionService {
         maybePatchUserProfile(speaker, payload);
 
         // 8. Link uploaded presentation material if a presentationUploadId is provided.
-        //    TODO Story 11.D.4: factor out a principal-agnostic helper from
-        //    SpeakerPortalMaterialsService.confirmUpload so the organizer-on-behalf form can
-        //    attach uploaded files without going through the magic-link path. For 11.C.2 the
-        //    field is accepted on the API surface; auto-linking lands with the organizer form.
+        //    P2 (review patch): reject with 400 if non-blank. The auto-linking behaviour was
+        //    silently a no-op (clients saw 201 but their upload was never associated). Until
+        //    Story 11.D.4 wires the materials helper, fail closed so callers know it's not
+        //    supported yet rather than thinking their deck was attached.
         if (payload.presentationUploadId() != null && !payload.presentationUploadId().isBlank()) {
-            log.info("presentationUploadId={} provided but auto-linking deferred to Story 11.D.4",
-                    payload.presentationUploadId());
+            throw new IllegalArgumentException(
+                    "presentationUploadId is not yet supported on this endpoint"
+                            + " — Story 11.D.4 wires the materials helper");
         }
 
         // 9. Keep the legacy content_status / content_submitted_at columns in sync (Phase F
@@ -360,11 +375,8 @@ public class ContentSubmissionService {
 
         // 11. Publish the domain event consumed by OrganizerNotificationService. Payload mirrors
         //     what the legacy magic-link service emitted (Story 5.5 / 6.3 — unchanged shape).
-        //     eventTitle is resolved from the Event row when available; eventCode is the
-        //     canonical identifier and is always present.
-        String eventTitle = eventRepository.findByEventCode(eventCode)
-                .map(ch.batbern.events.domain.Event::getTitle)
-                .orElse(eventCode);
+        //     eventTitle is taken from the already-loaded Event row.
+        String eventTitle = eventForCode.getTitle() != null ? eventForCode.getTitle() : eventCode;
         SpeakerContentSubmittedEvent contentEvent = new SpeakerContentSubmittedEvent(
                 submission.getId(),
                 speaker.getId(),
@@ -407,7 +419,11 @@ public class ContentSubmissionService {
             }
             log.warn("Session {} was deleted for speaker {} — creating a new session",
                     speaker.getSessionId(), speaker.getId());
+            // P2 (review patch): persist the cleared sessionId immediately so the mutation isn't
+            // dependent on JPA flush-on-commit. Defensive: lets this helper be safely extracted
+            // outside the @Transactional caller (Story 11.D.4 will reuse it from the organizer form).
             speaker.setSessionId(null);
+            speakerPoolRepository.save(speaker);
         }
 
         // Generate a slug + handle collisions (parallels both legacy services).
@@ -457,7 +473,10 @@ public class ContentSubmissionService {
         sessionUserRepository.save(sessionUser);
 
         // Bind the new session back to the speaker pool entry.
+        // P2 (review patch): explicit save — see note above; the mutation is no longer
+        // dependent on JPA's auto-flush at commit time.
         speaker.setSessionId(session.getId());
+        speakerPoolRepository.save(speaker);
         log.info("Created session {} for speaker {} on content submission",
                 session.getId(), speaker.getId());
         return session;
@@ -469,13 +488,19 @@ public class ContentSubmissionService {
      * pre-11.B.2 legacy data where the speaker arrived at CONTENT_SUBMITTED without going
      * through a CONTACTED → READY provisioning.
      *
-     * <p>Failure mode: content writes are independent of profile patches. If the User
-     * Management Service is unavailable, we let the {@link ch.batbern.events.exception.UserServiceException}
-     * propagate and roll back the @Transactional content write — content + profile must
-     * stay consistent at the speaker's view. If integration tests later surface a real
-     * rollback-asymmetry issue (Story 11.C.2 — Open Question §5), this call can be moved
-     * to a post-commit listener; that decision is logged in the PR for whichever story
-     * needs it.
+     * <p><b>Dual-write asymmetry (known issue, code review 2026-05-16):</b> this HTTP
+     * PATCH against CUMS commits in the User Management Service immediately. If a later
+     * step in the @Transactional submit() pipeline throws (e.g.
+     * {@link ch.batbern.events.service.workflow.InvalidStateTransitionException} on a
+     * concurrent state change), the local content row is rolled back but the CUMS-side
+     * bio/profilePictureUrl update is NOT. The user observes a 5xx but sees their bio
+     * has been changed. Move this call to a {@code @TransactionalEventListener(AFTER_COMMIT)}
+     * to convert to eventual consistency once Story 11.D.4 / Phase E has a domain event
+     * to fire from. Tracked in deferred-work.md.
+     *
+     * <p>If the User Management Service is unavailable BEFORE its commit, the
+     * {@link ch.batbern.events.exception.UserServiceException} propagates and rolls back
+     * the EMS @Transactional content write — atomic in that direction.
      */
     private void maybePatchUserProfile(SpeakerPool speaker, ContentSubmissionPayload payload) {
         boolean hasBio = payload.bio() != null && !payload.bio().isBlank();

@@ -466,9 +466,9 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
      * Speaker must be in ACCEPTED state before content submission
      */
     @Test
-    @DisplayName("Should return error when speaker not in ACCEPTED state")
+    @DisplayName("Should return 409 Conflict when speaker not in ACCEPTED or CONTENT_SUBMITTED state")
     void should_returnError_when_speakerNotAccepted() throws Exception {
-        // Given: Speaker in IDENTIFIED state (not ACCEPTED)
+        // Given: Speaker in IDENTIFIED state (not ACCEPTED / CONTENT_SUBMITTED)
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
         speakerPoolRepository.save(testSpeaker);
 
@@ -480,8 +480,9 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 """;
 
         // When: POST /api/v1/events/{code}/speakers/{speakerId}/content
-        // Story 11.C.2: consolidated service throws IllegalStateException for bad source state;
-        // the global exception handler maps to a 4xx (could be 400 or 422 depending on mapper).
+        // Story 11.C.2 + review patch: state-machine violation → IllegalStateException → 409 Conflict.
+        // (GlobalExceptionHandler.handleIllegalStateException returns CONFLICT per
+        // QA-Fix VALID-001 — pinned to a deterministic status code so clients can branch on it.)
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/v1/events/{code}/speakers/{speakerId}/content",
                                 TEST_EVENT_CODE, testSpeaker.getId().toString())
@@ -489,7 +490,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(contentRequest))
                 .andDo(print())
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isConflict());
     }
 
     /**

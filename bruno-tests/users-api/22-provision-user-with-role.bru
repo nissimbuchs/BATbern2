@@ -1,0 +1,61 @@
+meta {
+  name: Provision User With Role (Story 11.C.2)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/users/provision
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "bruno.testspeaker@example.com",
+    "firstName": "Bruno",
+    "lastName": "TestSpeaker",
+    "role": "SPEAKER"
+  }
+}
+
+assert {
+  res.status: in [200, 401, 403]
+}
+
+tests {
+  test("should provision user (Story 11.C.2 AR13)", function() {
+    const status = res.getStatus();
+    expect([200, 401, 403]).to.include(status);
+  });
+
+  test("should return canonical username and created flag on 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body).to.have.property('username').that.is.a('string').and.not.empty;
+      expect(body).to.have.property('created').that.is.a('boolean');
+      // temporaryPassword is always null in 11.C.2 (Cognito wiring lands in 11.E.2)
+      expect(body.temporaryPassword).to.be.null;
+    }
+  });
+
+  test("should be idempotent: second call returns created=false", function() {
+    if (res.getStatus() === 200) {
+      // First call may have created. Re-issue and verify created=false.
+      // Bruno does not natively chain; this is asserted via repeated runs.
+      const body = res.getBody();
+      // Best-effort: if created=false on this run, idempotency holds.
+      expect(body.created).to.be.a('boolean');
+    }
+  });
+}

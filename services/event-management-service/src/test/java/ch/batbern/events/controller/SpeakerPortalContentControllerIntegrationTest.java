@@ -623,6 +623,48 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                                 """))
                     .andExpect(status().isBadRequest());
         }
+
+        /**
+         * Review patch D1 — speaker without canonical username (pre-11.B.2 legacy data) is
+         * rejected with 400 rather than silently falling back to the display name (which
+         * would corrupt speaker_status_history.changed_by_username).
+         */
+        @Test
+        void should_return400_when_speakerHasNoCanonicalUsername() throws Exception {
+            testSpeakerPool.setUsername(null);
+            speakerPoolRepository.save(testSpeakerPool);
+
+            mockMvc.perform(post("/api/v1/speaker-portal/content/submit")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "token": "%s",
+                                    "title": "My Title",
+                                    "contentAbstract": "My abstract"
+                                }
+                                """.formatted(validToken)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        /**
+         * Review patch P2 — speaker portal endpoint rejects stale legacy fields (parity
+         * with the organizer endpoint's stale-fields test). Resolved Decision §3.
+         */
+        @Test
+        void should_return400_when_submitRequestContainsStaleLegacyFields() throws Exception {
+            mockMvc.perform(post("/api/v1/speaker-portal/content/submit")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "token": "%s",
+                                    "title": "My Title",
+                                    "contentAbstract": "My abstract",
+                                    "username": "stale.field",
+                                    "company": "Tech Corp"
+                                }
+                                """.formatted(validToken)))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     // Helper method to compute SHA-256 hash (same as MagicLinkService)

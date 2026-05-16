@@ -1,0 +1,38 @@
+meta {
+  name: Submit Content — rejects unknown fields (Story 11.C.2 RD §3)
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/content/submit
+  body: json
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "token": "test-token",
+    "title": "My Title",
+    "contentAbstract": "Abstract",
+    "username": "stale.field",
+    "company": "Stale Company"
+  }
+}
+
+assert {
+  res.status: in [400, 401]
+}
+
+tests {
+  test("should reject content submit with stale fields (additionalProperties: false)", function() {
+    const status = res.getStatus();
+    expect([400, 401]).to.include(status);
+  });
+}

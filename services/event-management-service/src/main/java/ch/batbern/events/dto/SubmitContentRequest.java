@@ -40,7 +40,7 @@ public class SubmitContentRequest {
      * Presentation title (required, becomes session.title).
      */
     @NotBlank(message = "Presentation title is required")
-    @Size(max = 255, message = "Title must not exceed 255 characters")
+    @Size(max = 200, message = "Title must not exceed 200 characters")
     private String presentationTitle;
 
     /**

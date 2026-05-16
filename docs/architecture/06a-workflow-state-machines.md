@@ -283,7 +283,7 @@ State transitions trigger side effects inside `SpeakerWorkflowService.transition
 - **`speaker_pool.username`**: cross-service reference to `users.username` (ADR-003 meaningful ID). Populated by the `CONTACTED → READY` provisioning hook. NULL before that.
 - **`speaker_pool.session_id`**: FK to `sessions(id)` within the same service. Determines `is_slot_assigned` via the session's `start_time`.
 - **`status_history`**: append-only audit table — one row per `transition()` invocation. Columns: `speaker_pool_id`, `from_status`, `to_status`, `actor_username`, `reason`, `payload`, `at`.
-- **`content_submissions`**: per-event content (title, abstract, presentation file, quality-review feedback). The `submitted_by_username` column distinguishes organizer-on-behalf submissions from speaker-self submissions; the rest of the payload is identical.
+- **`content_submissions`**: per-event content (title, abstract, presentation file, quality-review feedback). Note: there is no `submitted_by_username` column on `content_submissions` (Story 11.C.2 Resolved Decision §2). Audit attribution lives on `speaker_status_history.changed_by_username` — written by `SpeakerWorkflowService.transition()` whenever `ContentSubmissionService.submit()` advances the speaker to `CONTENT_SUBMITTED` (organizer or speaker principal). The two flows produce identical `content_submissions` rows; the principal is captured one join away.
 - **`session_users`**: junction between `sessions` and User (`username`). There is no `session_speakers` table (the legacy duplicate is removed per ADR-009).
 
 ### Implementation

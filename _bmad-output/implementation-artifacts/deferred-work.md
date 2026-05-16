@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 11-c-2-userapiclient-provisioning-contentsubmissionservice-shared (2026-05-16)
+
+- **Same-instant `Instant.now()` rows in `speaker_status_history` may share `changed_at`** [`SpeakerWorkflowService.java:380`] — PostgreSQL TIMESTAMP microsecond precision makes collisions rare in real workflows; only flagged by Edge Case Hunter. Address with a tiebreak column (sequence/serial) or `INSERT ... RETURNING` ordering only if test flakiness emerges.
+- **SPEAKER self-patch fails 403 on case-mismatched username in URL** [`UserController.java:723`] — `String.equals` is case-sensitive. Usernames are stored canonical-case from Cognito provisioning, so the mismatch only happens with mistyped URLs. Revisit when Phase E lands Cognito-issued JWTs.
+- **`magicLinkService.markTokenAsUsed` is functionally no-op for SUBMIT tokens** [`SpeakerPortalContentController.java:216`] — `MagicLinkService.validateToken` only checks `is_used` for RESPOND tokens. The new call is misleading but harmless. Will be removed in Phase F magic-link teardown.
+- **`UserApiClientImpl.provisionUserWithRole` does not error on HTTP 200 with null body** [`UserApiClientImpl.java:1378-1391`] — null-body checks exist for logging only; null is then returned to callers. CUMS controller never returns null and OpenAPI-validated client/server pair enforces non-null response. Address only if observed in production.
+- **Async `SpeakerContentSubmittedEvent` listener failure may drop organizer notification** [`ContentSubmissionService.java:2348`] — out-of-scope for this story; standard async event-publisher concern. Confirm retry/DLQ semantics for `SpeakerContentSubmittedEvent` listeners in a separate observability story before MVP.
+
 ## Deferred from: code review of 11-c-1-drop-speakers-table-remove-speaker-coordination-refs (2026-05-16)
 
 - **Watch services lose batch user lookup → N+1 HTTP loop** [`services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java`] — `mapToActiveEventDetail` replaced batch `speakerRepository.findAllByUsernameIn(...)` with per-record `userApiClient.getUserByUsername(...)`. Open Q4 (resolved 2026-05-15) accepted per-record for 5-10 speakers per event. Revisit if smoke shows >500ms latency in local-native.

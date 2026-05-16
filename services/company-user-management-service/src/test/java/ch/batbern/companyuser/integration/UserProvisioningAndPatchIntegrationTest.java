@@ -273,4 +273,183 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                         .content(body))
                 .andExpect(status().isNotFound());
     }
+
+    // ============================================================
+    // Review patches (A5, P1 idempotency, P0 role whitelist, P2 stale fields)
+    // ============================================================
+
+    @Test
+    @WithMockUser(username = "attendee.bob", roles = {"ATTENDEE"})
+    @DisplayName("patchProfile: ATTENDEE caller — 403 (review patch A5)")
+    void should_return403_when_attendeeCallsPatchProfile() throws Exception {
+        userRepository.save(User.builder()
+                .username("speaker.target")
+                .email("target@example.com")
+                .firstName("Tar")
+                .lastName("Get")
+                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .build());
+
+        String body = """
+                {
+                  "bio": "Should be rejected."
+                }
+                """;
+
+        mockMvc.perform(patch("/api/v1/users/speaker.target/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision: idempotent across email case variants (review patch P1)")
+    void should_beIdempotent_when_emailCaseDiffers() throws Exception {
+        String firstBody = """
+                {
+                  "email": "Jane.Mixed@Example.COM",
+                  "firstName": "Jane",
+                  "lastName": "Mixed",
+                  "role": "SPEAKER"
+                }
+                """;
+        String secondBody = """
+                {
+                  "email": "jane.mixed@example.com",
+                  "firstName": "Jane",
+                  "lastName": "Mixed",
+                  "role": "SPEAKER"
+                }
+                """;
+
+        // First call — creates user with normalized email.
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(firstBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(true)));
+
+        // Second call (different case) — must hit the same row.
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(secondBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(false)));
+
+        // Exactly one row should exist, with the canonical lowercase email.
+        long countLower = userRepository.findByEmailIgnoreCase("jane.mixed@example.com").stream().count();
+        org.assertj.core.api.Assertions.assertThat(countLower).isEqualTo(1L);
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision: ORGANIZER may NOT grant non-SPEAKER role — 400 (review patch P0)")
+    void should_return400_when_organizerRequestsNonSpeakerRole() throws Exception {
+        String body = """
+                {
+                  "email": "should.fail@example.com",
+                  "firstName": "Should",
+                  "lastName": "Fail",
+                  "role": "ORGANIZER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "admin.alice", roles = {"ADMIN"})
+    @DisplayName("provision: ADMIN may grant non-SPEAKER role (review patch P0)")
+    void should_allowNonSpeakerRole_when_callerIsAdmin() throws Exception {
+        String body = """
+                {
+                  "email": "new.partner@example.com",
+                  "firstName": "New",
+                  "lastName": "Partner",
+                  "role": "PARTNER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(true)));
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision: omitting firstName/lastName derives defaults from email (review patch P1)")
+    void should_deriveDefaults_when_namesOmitted() throws Exception {
+        String body = """
+                {
+                  "email": "kim.lee@example.com",
+                  "role": "SPEAKER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(true)));
+
+        User created = userRepository.findByEmailIgnoreCase("kim.lee@example.com").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(created.getFirstName()).isEqualTo("Kim");
+        org.assertj.core.api.Assertions.assertThat(created.getLastName()).isEqualTo("Lee");
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision: stale legacy fields rejected — 400 (review patch P2)")
+    void should_return400_when_provisionRequestContainsUnknownFields() throws Exception {
+        // Unknown field "department" is not in ProvisionUserRequest. Per Resolved Decision §3,
+        // additionalProperties:false must yield 400.
+        String body = """
+                {
+                  "email": "with.unknown@example.com",
+                  "firstName": "With",
+                  "lastName": "Unknown",
+                  "role": "SPEAKER",
+                  "department": "Engineering"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "speaker.self", roles = {"SPEAKER"})
+    @DisplayName("patchProfile: blank-but-non-null bio rejected (review patch P2)")
+    void should_return400_when_bioIsBlank() throws Exception {
+        userRepository.save(User.builder()
+                .username("speaker.self")
+                .email("self@example.com")
+                .firstName("Self")
+                .lastName("User")
+                .bio("Original bio")
+                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .build());
+
+        String body = """
+                {
+                  "bio": "   "
+                }
+                """;
+
+        mockMvc.perform(patch("/api/v1/users/speaker.self/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+
+        User after = userRepository.findByUsername("speaker.self").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(after.getBio()).isEqualTo("Original bio");
+    }
 }

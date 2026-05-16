@@ -241,6 +241,62 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle jakarta.persistence.EntityNotFoundException.
+     * P2 (Story 11.C.2 review): ContentSubmissionService.submit throws this when speaker
+     * or event lookups miss; without a dedicated handler it falls through to the generic
+     * 500 handler. Map to 404 to match the javadoc contract on submit().
+     */
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
+            jakarta.persistence.EntityNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Entity not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle UserServiceException — cross-service HTTP failures from CUMS.
+     * P2 (Story 11.C.2 review): when CUMS returns 400 (e.g., bio too long, blank field),
+     * UserApiClientImpl re-throws as UserServiceException(status=400). Without a handler
+     * this fell through to 500; map back to the originating status code so the speaker
+     * sees the same 400 as the organizer endpoint would.
+     */
+    @ExceptionHandler(ch.batbern.events.exception.UserServiceException.class)
+    public ResponseEntity<ErrorResponse> handleUserServiceException(
+            ch.batbern.events.exception.UserServiceException ex,
+            HttpServletRequest request) {
+        Integer rawStatus = ex.getStatusCode();
+        int status = (rawStatus != null && rawStatus >= 400 && rawStatus < 600)
+                ? rawStatus
+                : HttpStatus.BAD_GATEWAY.value();
+        HttpStatus httpStatus = HttpStatus.valueOf(status);
+        log.warn("User Management Service error: status={} message={}", status, ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(status)
+                .error(httpStatus.getReasonPhrase())
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity(status >= 500 ? "HIGH" : "MEDIUM")
+                .build();
+
+        return ResponseEntity.status(httpStatus).body(error);
+    }
+
+    /**
      * Handle TopicNotFoundException (topic not found)
      * Returns HTTP 404 Not Found
      * Story 5.2: Topic Selection Workflow

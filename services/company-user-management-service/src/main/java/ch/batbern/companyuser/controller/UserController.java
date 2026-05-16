@@ -19,6 +19,7 @@ import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
+import ch.batbern.companyuser.exception.UserValidationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
@@ -296,6 +297,15 @@ public class UserController {
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<ProvisionUserResponse> provisionUser(
             @Valid @RequestBody ProvisionUserRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level.
+        // The OpenAPI Generator emits `@JsonAnySetter` on the request DTO which silently
+        // collects unknown fields into a map instead of rejecting them. Read that map and
+        // 400 if non-empty, matching the spec contract (Resolved Decision §3).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on ProvisionUserRequest: " + request.getAdditionalProperties().keySet());
+        }
         log.info("POST /api/v1/users/provision — email: {}, role: {}",
                 request.getEmail(), request.getRole());
 
@@ -329,6 +339,13 @@ public class UserController {
     public ResponseEntity<UserResponse> patchUserProfile(
             @PathVariable String username,
             @Valid @RequestBody PatchUserProfileRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level
+        // (the generated DTO silently absorbs unknown fields via `@JsonAnySetter`).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on PatchUserProfileRequest: " + request.getAdditionalProperties().keySet());
+        }
         log.info("PATCH /api/v1/users/{}/profile", username);
 
         // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
@@ -336,7 +353,10 @@ public class UserController {
         // restricts the endpoint to ORGANIZER/ADMIN/SPEAKER principals.
         if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
             String currentUsername = securityContextHelper.getCurrentUsername();
-            if (currentUsername == null || !currentUsername.equals(username)) {
+            // P3 (review patch): case-insensitive username comparison. The JWT issues canonical-case
+            // usernames; URL path-segments can be CDN-lowercased or mistyped. Both refer to the
+            // same identity.
+            if (currentUsername == null || !currentUsername.equalsIgnoreCase(username)) {
                 log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
                         currentUsername, username);
                 throw new AccessDeniedException(
