@@ -173,8 +173,11 @@ export class StorageStack extends cdk.Stack {
                 `--define:CONTENT_BUCKET_REGION='"${contentBucketRegion}"'`,
                 '--outfile=/asset-output/index.js',
               ].join(' '),
-              'mkdir -p /asset-output/node_modules',
+              'mkdir -p /asset-output/node_modules/@img',
               'cp -r node_modules/sharp /asset-output/node_modules/sharp',
+              // sharp 0.33+ stores the native binary in @img/sharp-linux-x64 and @img/sharp-libvips-linux-x64
+              'cp -r node_modules/@img/sharp-linux-x64 /asset-output/node_modules/@img/sharp-linux-x64',
+              'cp -r node_modules/@img/sharp-libvips-linux-x64 /asset-output/node_modules/@img/sharp-libvips-linux-x64',
             ].join(' && '),
           ],
           local: {
