@@ -341,6 +341,122 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Story 11.D.1 (AC4): {@code POST /send-invitation} returns 409 when the slot-capacity
+     * gate fires (count(ACCEPTED) + count(INVITED) >= maxSlots). Verifies the HTTP-layer
+     * surfaces {@code SLOT_CAPACITY_REACHED} with the documented {@code details} map and
+     * leaves the speaker in READY (no state change, no email sent).
+     */
+    @Test
+    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
+    void should_return409_when_sendInvitationCalledAndSlotCapacityReached() throws Exception {
+        // Saturate the event with ACCEPTED speakers up to the EVENING event-type maxSlots.
+        int saturate = 24; // safe upper bound for any event-type maxSlots
+        for (int i = 0; i < saturate; i++) {
+            SpeakerPool filler = SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .username("filler." + i)
+                    .email("filler" + i + "@example.com")
+                    .speakerName("Filler " + i)
+                    .status(SpeakerWorkflowState.ACCEPTED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+            speakerPoolRepository.save(filler);
+        }
+
+        SpeakerPool candidate = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .username(testUsername)
+                .email(testEmail)
+                .speakerName("Slot Capacity Candidate")
+                .status(SpeakerWorkflowState.READY)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        speakerPoolRepository.save(candidate);
+
+        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
+                        testEventCode, testUsername)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "responseDeadline": "%s"
+                                }
+                                """.formatted(responseDeadline)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
+                .andExpect(jsonPath("$.details.eventId", is(testEvent.getId().toString())))
+                .andExpect(jsonPath("$.details.maxSlots").exists())
+                .andExpect(jsonPath("$.details.acceptedCount").exists())
+                .andExpect(jsonPath("$.details.invitedCount").exists());
+
+        SpeakerPool unchanged = speakerPoolRepository.findById(candidate.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(unchanged.getStatus())
+                .isEqualTo(SpeakerWorkflowState.READY);
+        org.assertj.core.api.Assertions.assertThat(
+                tokenRepository.findBySpeakerPoolId(unchanged.getId())).isEmpty();
+    }
+
+    /**
+     * Story 11.D.1 (AC4): {@code enforceSlotCapacity} counts {@code ACCEPTED + INVITED} —
+     * this case saturates with a 50/50 mix so a regression that drops the {@code INVITED}
+     * arm from the gate would surface here (the ACCEPTED-only test above would still pass).
+     */
+    @Test
+    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
+    void should_return409_when_sendInvitationCalledAndSlotCapacityReachedByMix() throws Exception {
+        int half = 12;
+        for (int i = 0; i < half; i++) {
+            speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .username("accepted." + i)
+                    .email("accepted" + i + "@example.com")
+                    .speakerName("Accepted " + i)
+                    .status(SpeakerWorkflowState.ACCEPTED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build());
+            speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .username("invited." + i)
+                    .email("invited" + i + "@example.com")
+                    .speakerName("Invited " + i)
+                    .status(SpeakerWorkflowState.INVITED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build());
+        }
+
+        SpeakerPool candidate = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .username(testUsername)
+                .email(testEmail)
+                .speakerName("Mix Saturation Candidate")
+                .status(SpeakerWorkflowState.READY)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        speakerPoolRepository.save(candidate);
+
+        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
+                        testEventCode, testUsername)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "responseDeadline": "%s"
+                                }
+                                """.formatted(responseDeadline)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
+                .andExpect(jsonPath("$.details.acceptedCount", is(half)))
+                .andExpect(jsonPath("$.details.invitedCount", is(half)));
+    }
+
     // ==================== AC5: Batch Invitation Tests ====================
 
     /**

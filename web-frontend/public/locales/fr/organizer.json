@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Ignorer pour l'instant",
-      "continue": "Continuer vers le démarchage"
+      "continue": "Continuer vers le démarchage",
+      "promoteToSpeaker": "Promouvoir en intervenant"
+    },
+    "promoteDialog": {
+      "title": "Promouvoir en intervenant",
+      "description": "L'intervenant est déplacé vers la voie READY et un compte utilisateur lui est provisionné. Aucun e-mail d'invitation n'est encore envoyé — vous l'enverrez depuis la voie READY lorsque vous serez prêt.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "cancelButton": "Annuler",
+      "submitButton": "Promouvoir",
+      "submitting": "Promotion en cours…",
+      "errorTitle": "Impossible de promouvoir l'intervenant",
+      "errorEmailRequired": "L'e-mail est requis",
+      "errorEmailInvalid": "L'e-mail doit être valide",
+      "errorAlreadyPromoted": "L'intervenant est déjà en {{currentState}} ; la promotion n'est valide qu'à partir de « Contacté ».",
+      "errorStillIdentified": "L'intervenant doit d'abord être contacté — enregistrez le contact avant de promouvoir.",
+      "errorDeclined": "L'intervenant a refusé — créez une nouvelle entrée plutôt que de promouvoir.",
+      "errorAlreadyReady": "L'intervenant est déjà prêt — envoyez l'invitation depuis la voie READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifié",
+      "CONTACTED": "Contacté",
+      "READY": "Prêt",
+      "INVITED": "Invité",
+      "ACCEPTED": "Accepté",
+      "DECLINED": "Refusé",
+      "CONTENT_SUBMITTED": "Contenu envoyé",
+      "QUALITY_REVIEWED": "Qualité vérifiée"
     }
   },
   "speakerOutreach": {

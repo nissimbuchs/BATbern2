@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-05-16  # Story 11.C.2 moved to done after code review patches applied
+last_updated: 2026-05-16  # Story 11.D.1 done (code review applied 16 patches; READY same-state now 409)
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -185,7 +185,7 @@ development_status:
   11-b-3-migrate-legacy-status-drop-tentative-cols-derived-flags: done         # Flyway: legacy status mapping per §2.2 + drop overflow tables + drop is_tentative cols + derived is_slot_assigned/is_publishable + tighten PUT status API; Phase B; prereq: 11-b-2
   11-c-1-drop-speakers-table-remove-speaker-coordination-refs: done            # Flyway drop speakers; verify user_profiles unchanged; speaker-coordination remains thin shell per §6.2; Phase C; prereq: 11-b-*
   11-c-2-userapiclient-provisioning-contentsubmissionservice-shared: done     # UserApiClient.provisionUserWithRole + patchUserProfile; ContentSubmissionService as shared write path for organizer+speaker; Phase C; prereq: 11-b-2
-  11-d-1-promote-endpoint-brainstorm-tightening-slot-gate: ready-for-dev       # new POST /speakers/{id}/promote; reject email in pool create for IDENTIFIED/CONTACTED; READY→INVITED slot-capacity precondition; brainstorm panel UI (no email field + promote modal); Phase D; STRICT prereq: 11-c-2 must merge first (per Q#1 — provisionUserWithRole is the READY-hook call asserted by AC1)
+  11-d-1-promote-endpoint-brainstorm-tightening-slot-gate: done                 # new POST /speakers/{id}/promote; reject email in pool create for IDENTIFIED/CONTACTED; READY→INVITED slot-capacity precondition; brainstorm panel UI (no email field + promote modal); Phase D; STRICT prereq: 11-c-2 must merge first (per Q#1 — provisionUserWithRole is the READY-hook call asserted by AC1). Code review 2026-05-16: 16 patches applied (P0×2 incl. cross-event guard + READY→409 reject; P1×4; P2×6; P3×4); PATCH /speakers/pool now in OpenAPI; Playwright slot-capacity E2E added.
   11-d-2-kanban-card-primary-action-button-cleanup: ready-for-dev              # state-aware primary-action button per card; time-in-state chip to organizer row; remove "pending" badge (§8.9 story 1; UX-DR1-4); Phase D; no hard backend prereq; strict prereq: 11-d-1 (PromoteSpeakerDialog)
   11-d-3-kanban-column-triage-time-in-state-colour-coding: ready-for-dev       # column-header "needs attention" sub-line + click-to-filter; threshold-driven chip colour from event settings per §8.7 (§8.9 story 2; UX-DR5-7); Phase D; prereq: 11-d-2
   11-d-4-kanban-guided-drag-unified-drawer-onbehalf-content-form: backlog      # green/dim drop-halos; reasoned-rejection toasts; modal-on-drop pre-fill; DECLINED-reason modal; unified drawer history; on-behalf content form (§8.9 story 3 + drawer; UX-DR8-14); Phase D; prereq: 11-d-1, 11-d-2, 11-d-3, 11-c-2

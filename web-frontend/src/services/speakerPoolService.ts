@@ -14,6 +14,7 @@ import type {
   SpeakerPoolEntry,
   AddSpeakerToPoolRequest,
   PatchSpeakerPoolRequest,
+  PromoteSpeakerRequest,
   SpeakerPoolResponse,
   SendInvitationRequest,
   SendInvitationResponse,
@@ -86,6 +87,37 @@ class SpeakerPoolService {
   ): Promise<SpeakerPoolResponse> {
     const response = await apiClient.patch<SpeakerPoolResponse>(
       `${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`,
+      request
+    );
+    return response.data;
+  }
+
+  /**
+   * Promote a CONTACTED speaker to READY (Story 11.D.1).
+   *
+   * Drives the CONTACTED → READY workflow transition and provisions the speaker as a
+   * User with the SPEAKER role server-side. The endpoint returns the updated speaker
+   * pool entry; the caller should invalidate the speaker pool query to pick up the new
+   * status + username + email fields.
+   *
+   * Backend behaviour:
+   * - 200 OK: happy path or idempotent same-state on READY
+   * - 400: missing/malformed email, unknown body field
+   * - 409 with `details.code = INVALID_PROMOTION_STATE`: speaker is in a state other
+   *   than CONTACTED/READY (e.g., IDENTIFIED, INVITED, ACCEPTED, DECLINED)
+   * - 404: event or speaker not found
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param speakerId Speaker pool UUID
+   * @param request   email (required), firstName/lastName (optional)
+   */
+  async promoteToSpeaker(
+    eventCode: string,
+    speakerId: string,
+    request: PromoteSpeakerRequest
+  ): Promise<SpeakerPoolResponse> {
+    const response = await apiClient.post<SpeakerPoolResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/speakers/${speakerId}/promote`,
       request
     );
     return response.data;

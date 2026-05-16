@@ -1,0 +1,40 @@
+meta {
+  name: Setup - Move Promote Test Speaker to CONTACTED (Story 11.D.1)
+  type: http
+  seq: 44
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{promoteTestSpeakerId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTACTED",
+    "reason": "Story 11.D.1 — setup for promote contract tests"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq CONTACTED
+}
+
+tests {
+  test("transitions IDENTIFIED -> CONTACTED to set up promote happy-path", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().currentStatus).to.equal('CONTACTED');
+  });
+}
+
+docs {
+  Setup for Story 11.D.1 promote endpoint tests. By the end of this step, the speaker is
+  in CONTACTED, the only state from which POST /promote is allowed (per ADR-009 §0.2 + AC3
+  of Story 11.D.1).
+}

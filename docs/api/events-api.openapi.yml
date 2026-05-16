@@ -999,6 +999,10 @@ paths:
         - Company, expertise, and notes are optional
         - Organizer assignment is optional (can be assigned later)
         - Initial status is automatically set to 'identified'
+        - **Tightened by ADR-009 (Story 11.D.1):** `email` is not accepted on this endpoint;
+          speakers are only promoted to a real identity via
+          `POST /speakers/{speakerId}/promote` once they reach the READY state per ADR-009 §0.2.
+          Any client-supplied `email` (or other unknown) field returns 400 Bad Request.
 
         **Performance**: <150ms (P95)
 
@@ -1026,17 +1030,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
         '400':
-          description: Validation error (e.g., speaker name missing)
+          description: |
+            Validation error. Two paths to this status:
+            (a) speakerName missing/empty, or
+            (b) unknown field present in the body — notably `email`, which is rejected
+            per Story 11.D.1 (AR23): use `POST /speakers/{speakerId}/promote` to
+            attach an email when promoting a CONTACTED speaker to READY.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "Speaker name is required"
-                timestamp: "2025-12-13T10:00:00Z"
-                path: "/api/v1/events/BATbern56/speakers/pool"
-                status: 400
-                error: "Bad Request"
+              examples:
+                missingSpeakerName:
+                  summary: speakerName missing
+                  value:
+                    message: "Speaker name is required"
+                    timestamp: "2025-12-13T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool"
+                    status: 400
+                    error: "Bad Request"
+                unknownField:
+                  summary: Unknown field 'email' rejected (AR23)
+                  value:
+                    message: "Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to provision a speaker with an email"
+                    timestamp: "2025-12-13T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool"
+                    status: 400
+                    error: "Bad Request"
         '404':
           description: Event not found
           content:
@@ -1102,6 +1122,81 @@ paths:
         - BearerAuth: []
 
   /events/{eventCode}/speakers/pool/{speakerId}:
+    patch:
+      tags:
+        - Event Actions
+      summary: Patch a speaker pool entry (organizer assignment / notes)
+      description: |
+        Partial update of a speaker pool entry. Only fields named in
+        `PatchSpeakerPoolRequest` may be sent; any other field (notably `email`)
+        is rejected with HTTP 400 (`additionalProperties: false` +
+        `@JsonIgnoreProperties(ignoreUnknown = false)`).
+
+        **Story**: 11.D.1 (AR23) — `email` is captured exclusively by
+        `POST /speakers/{speakerId}/promote`. Sending `email` here is a
+        contract error.
+        **Authorization**: Requires ORGANIZER role.
+      operationId: patchSpeakerPoolEntry
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchSpeakerPoolRequest'
+      responses:
+        '200':
+          description: Speaker pool entry updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: |
+            Validation error — typically because the request body contains a
+            field outside `PatchSpeakerPoolRequest` (e.g. `email`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailRejected:
+                  summary: Email field rejected — use POST /promote instead
+                  value:
+                    message: "Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to attach an email"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000"
+                    status: 400
+                    error: "Bad Request"
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
     delete:
       tags:
         - Event Actions
@@ -1148,6 +1243,157 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{speakerId}/promote:
+    post:
+      tags:
+        - Event Actions
+      summary: Promote a CONTACTED speaker to READY (provisions User + SPEAKER role)
+      description: |
+        Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.
+
+        **Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D
+        **ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate
+        **Authorization**: Requires ORGANIZER role
+        **Same-state behaviour**: Re-promoting an already-READY speaker returns
+          `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and
+          `details.currentState = READY`. Promote is only valid from CONTACTED;
+          subsequent identity changes go through a dedicated organizer action
+          (not this endpoint).
+
+        **Side effects on success**:
+          - Workflow state transitions `CONTACTED → READY` via
+            `SpeakerWorkflowService.transition(...)` (the sole status writer).
+          - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if
+            none exists for the email; SPEAKER role is granted (idempotent).
+          - `speaker_pool.username` is populated with the canonical username; `email` is
+            populated with the request body's email.
+          - `speaker_status_history` row is inserted (previous_status=contacted,
+            new_status=ready, changed_by_username=organizer).
+          - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.
+
+        **Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the
+        only path that attaches an email + provisions an identity is this endpoint.
+        `PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with
+        code `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.
+
+      operationId: promoteSpeakerToReady
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteSpeakerRequest'
+      responses:
+        '200':
+          description: |
+            Speaker promoted to READY. Response is the updated speaker pool entry
+            with status=ready, username populated, and email populated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: |
+            Validation error. Triggered by: missing/blank/malformed email, body fields
+            beyond the schema (`additionalProperties: false`), or invalid path parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingEmail:
+                  summary: Email missing
+                  value:
+                    message: "email: must not be blank"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 400
+                    error: "Bad Request"
+                unknownField:
+                  summary: Unknown field rejected
+                  value:
+                    message: "Invalid request format"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 400
+                    error: "Bad Request"
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Speaker is in a state where promotion is invalid (any state other than
+            CONTACTED). Body contains `details.code = "INVALID_PROMOTION_STATE"` and
+            `details.currentState = "<state>"` so callers can render a tailored
+            message. Includes already-READY (re-promote is not idempotent — see
+            Same-state behaviour above).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyInvited:
+                  summary: Speaker already INVITED
+                  value:
+                    message: "speaker is already in INVITED; promote is only valid from CONTACTED"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "INVITED"
+                alreadyReady:
+                  summary: Speaker already READY (re-promote rejected)
+                  value:
+                    message: "speaker is already READY; promote is only valid from CONTACTED"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "READY"
+                stillIdentified:
+                  summary: Speaker still in IDENTIFIED — log outreach first
+                  value:
+                    message: "speaker must be in CONTACTED before promoting; log outreach first"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "IDENTIFIED"
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -8122,7 +8368,11 @@ components:
       type: object
       description: |
         Request to add a potential speaker to the event speaker pool during brainstorming phase.
-        Story 5.2 - AC9-12: Speaker Pool Management
+        Story 5.2 - AC9-12: Speaker Pool Management.
+        Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
+        other unknown field) is rejected with HTTP 400. Use `POST /speakers/{speakerId}/promote`
+        to attach an email when promoting a CONTACTED speaker to READY.
+      additionalProperties: false
       required:
         - speakerName
       properties:
@@ -8149,6 +8399,60 @@ components:
           type: string
           description: Free-text notes about the speaker (optional)
           example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+
+    PatchSpeakerPoolRequest:
+      type: object
+      description: |
+        Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
+        (Story 11.D.1 AR23). All fields are optional — only non-null fields are
+        applied to the entry. `additionalProperties: false` rejects stale fields,
+        notably `email`, which is captured exclusively by `POST /speakers/{speakerId}/promote`.
+      additionalProperties: false
+      properties:
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (nullable to clear).
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (nullable to clear).
+          example: Followed up via LinkedIn 2026-05-12 — interested but needs date confirmation.
+
+    PromoteSpeakerRequest:
+      type: object
+      description: |
+        Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1).
+        Drives the `CONTACTED → READY` workflow transition and provisions a User + SPEAKER
+        role via `UserApiClient.provisionUserWithRole(...)`.
+        `additionalProperties: false`: stale fields from pre-refactor frontends are rejected
+        with HTTP 400 rather than silently ignored.
+      additionalProperties: false
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: |
+            Required. Speaker email — becomes the canonical `speaker_pool.email` and the
+            User lookup key (case-insensitive).
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          maxLength: 100
+          description: |
+            Optional. If absent, the User's existing firstName is preserved (or derived from
+            `speaker_pool.speakerName` on User creation).
+          example: Jane
+        lastName:
+          type: string
+          maxLength: 100
+          description: |
+            Optional. If absent, the User's existing lastName is preserved (or derived from
+            `speaker_pool.speakerName` on User creation).
+          example: Smith
 
     SpeakerPoolResponse:
       type: object

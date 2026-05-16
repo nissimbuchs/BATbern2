@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Salta per ora",
-      "continue": "Continua al contatto"
+      "continue": "Continua al contatto",
+      "promoteToSpeaker": "Promuovi a relatore"
+    },
+    "promoteDialog": {
+      "title": "Promuovi a relatore",
+      "description": "Il relatore viene spostato nella corsia READY e gli viene fornito un account utente. Nessuna e-mail di invito viene ancora inviata — invierai l'invito dalla corsia READY quando sarai pronto.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Nome",
+      "lastNameLabel": "Cognome",
+      "cancelButton": "Annulla",
+      "submitButton": "Promuovi",
+      "submitting": "Promozione in corso…",
+      "errorTitle": "Impossibile promuovere il relatore",
+      "errorEmailRequired": "L'e-mail è obbligatoria",
+      "errorEmailInvalid": "L'e-mail deve essere valida",
+      "errorAlreadyPromoted": "Il relatore è già in {{currentState}}; la promozione è valida solo dallo stato Contattato.",
+      "errorStillIdentified": "Il relatore deve essere prima contattato — registra il contatto prima di promuovere.",
+      "errorDeclined": "Il relatore ha rifiutato — crea una nuova voce invece di promuovere.",
+      "errorAlreadyReady": "Il relatore è già pronto — invia l'invito dalla corsia READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identificato",
+      "CONTACTED": "Contattato",
+      "READY": "Pronto",
+      "INVITED": "Invitato",
+      "ACCEPTED": "Accettato",
+      "DECLINED": "Rifiutato",
+      "CONTENT_SUBMITTED": "Contenuto inviato",
+      "QUALITY_REVIEWED": "Qualità verificata"
     }
   },
   "speakerOutreach": {

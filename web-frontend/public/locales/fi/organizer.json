@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Ohita toistaiseksi",
-      "continue": "Jatka hankintaan"
+      "continue": "Jatka hankintaan",
+      "promoteToSpeaker": "Ylennä puhujaksi"
+    },
+    "promoteDialog": {
+      "title": "Ylennä puhujaksi",
+      "description": "Puhuja siirretään READY-väylälle ja hänelle luodaan käyttäjätili. Kutsusähköpostia ei lähetetä vielä — lähetä kutsu READY-väylältä, kun olet valmis.",
+      "emailLabel": "Sähköposti",
+      "firstNameLabel": "Etunimi",
+      "lastNameLabel": "Sukunimi",
+      "cancelButton": "Peruuta",
+      "submitButton": "Ylennä",
+      "submitting": "Ylennetään…",
+      "errorTitle": "Puhujan ylennys epäonnistui",
+      "errorEmailRequired": "Sähköposti vaaditaan",
+      "errorEmailInvalid": "Sähköpostin on oltava kelvollinen",
+      "errorAlreadyPromoted": "Puhuja on jo tilassa {{currentState}}; ylennys onnistuu vain tilasta Contacted.",
+      "errorStillIdentified": "Puhuja on ensin otettava yhteyttä — kirjaa yhteydenotto ennen ylennystä.",
+      "errorDeclined": "Puhuja on kieltäytynyt — luo uusi merkintä ylennyksen sijaan.",
+      "errorAlreadyReady": "Puhuja on jo valmis — lähetä kutsu READY-väylältä."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Tunnistettu",
+      "CONTACTED": "Yhteydessä",
+      "READY": "Valmis",
+      "INVITED": "Kutsuttu",
+      "ACCEPTED": "Hyväksytty",
+      "DECLINED": "Kieltäytynyt",
+      "CONTENT_SUBMITTED": "Sisältö lähetetty",
+      "QUALITY_REVIEWED": "Laatu tarkistettu"
     }
   },
   "speakerOutreach": {

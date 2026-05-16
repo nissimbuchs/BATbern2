@@ -1,0 +1,63 @@
+meta {
+  name: Send Invitation - Slot Capacity 409 (Story 11.D.1 AC4)
+  type: http
+  seq: 54
+}
+
+post {
+  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateUsername}}/send-invitation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "responseDeadline": "2099-12-31",
+    "locale": "de"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.error: eq Conflict
+  res.body.details.code: eq SLOT_CAPACITY_REACHED
+}
+
+tests {
+  test("returns HTTP 409 when /send-invitation crosses slot capacity (Story 11.D.1 AC4)", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("details map surfaces SLOT_CAPACITY_REACHED + accepted/invited/max counts", function() {
+    const body = res.getBody();
+    expect(body.details).to.be.an('object');
+    expect(body.details.code).to.equal('SLOT_CAPACITY_REACHED');
+    expect(body.details.acceptedCount).to.be.a('number');
+    expect(body.details.invitedCount).to.be.a('number');
+    expect(body.details.maxSlots).to.be.a('number');
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC4: drives the READY → INVITED transition through the
+  /send-invitation endpoint and asserts the 409 surfaces with the documented
+  SLOT_CAPACITY_REACHED body. Companion to 53-speaker-workflow-slot-capacity-409.bru —
+  53 exercises the same precondition via PUT /status (the other path that drives
+  transition() to INVITED), this one exercises the actual organizer-facing flow.
+
+  Setup expectation (same as test 53): by the time this test runs, the event referenced
+  by `slotCapacityEventCode` has `count(ACCEPTED) + count(INVITED) >= max_slots`, and
+  `slotCapacityCandidateUsername` is the username of a speaker pool entry at READY. The
+  seed for the scenario lives in a dedicated setup script (or CI fixture) that the runner
+  invokes before this test.
+
+  Note: the underlying precondition lives in SpeakerWorkflowService.enforceSlotCapacity()
+  (Story 11.B.2). The Java integration test
+  SpeakerInvitationControllerIntegrationTest#should_return409_when_sendInvitationCalledAndSlotCapacityReached
+  also covers this contract with full DB-level setup — that test is the canonical
+  in-tree coverage; this Bruno test layers contract verification on top.
+}

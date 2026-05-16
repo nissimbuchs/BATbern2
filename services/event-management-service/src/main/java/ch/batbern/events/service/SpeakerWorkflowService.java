@@ -4,8 +4,8 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -248,17 +248,21 @@ public class SpeakerWorkflowService {
     }
 
     private void runReadyHook(SpeakerPool speaker, TransitionPayload payload) {
-        // CONTACTED → READY: provisioning seam. Cognito provisioning lands in 11.E.2; for
-        // 11.B.2 we look up / create the User (cognitoSync=false) and stub the SPEAKER role grant.
-        // The payload's email becomes the canonical speaker_pool.email — it's the one used to
-        // provision the User and the one the SpeakerPromotedToReadyEvent will carry downstream.
-        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
-        userRequest.setEmail(payload.email());
-        userRequest.setFirstName(payload.firstName() != null ? payload.firstName() : firstNameFallback(speaker));
-        userRequest.setLastName(payload.lastName() != null ? payload.lastName() : lastNameFallback(speaker));
-        userRequest.setCognitoSync(false);
+        // CONTACTED → READY: provisioning seam. Story 11.D.1 refactored this hook (per
+        // Story 11.C.2 AR13) to call the consolidated UserApiClient.provisionUserWithRole(...) —
+        // a single call that creates the User if missing and grants the SPEAKER role
+        // idempotently. Cognito wiring lands in 11.E.2 (the temporaryPassword on the response
+        // stays null until then). The payload's email becomes the canonical speaker_pool.email
+        // and the SpeakerPromotedToReadyEvent payload.
+        ProvisionUserRequest provisionRequest = new ProvisionUserRequest(
+                payload.email(),
+                ProvisionUserRequest.RoleEnum.SPEAKER);
+        provisionRequest.setFirstName(payload.firstName() != null && !payload.firstName().isBlank()
+                ? payload.firstName() : firstNameFallback(speaker));
+        provisionRequest.setLastName(payload.lastName() != null && !payload.lastName().isBlank()
+                ? payload.lastName() : lastNameFallback(speaker));
 
-        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+        ProvisionUserResponse userResponse = userApiClient.provisionUserWithRole(provisionRequest);
 
         // Identity-rebind guard: if the speaker is already bound to a different username/email,
         // the lookup result may point at a wholly different User account (e.g. organizer corrected
@@ -281,8 +285,6 @@ public class SpeakerWorkflowService {
 
         speaker.setUsername(userResponse.getUsername());
         speaker.setEmail(payload.email());
-
-        speakerProvisioningHook.grantSpeakerRole(userResponse.getUsername(), payload.email());
     }
 
     private void runInvitedHook(SpeakerPool speaker, Event event, TransitionPayload payload) {

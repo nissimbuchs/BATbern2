@@ -1,0 +1,47 @@
+meta {
+  name: Setup - Speaker in CONTACTED for Promote Tests (Story 11.D.1)
+  type: http
+  seq: 43
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "speakerName": "Promote E2E Test Speaker",
+    "company": "Promote Test AG",
+    "expertise": "End-to-end promote endpoint contract",
+    "notes": "Story 11.D.1 — seeded for tests 44-47"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.status: eq IDENTIFIED
+}
+
+tests {
+  test("creates a fresh IDENTIFIED speaker for promote contract tests", function() {
+    expect(res.getStatus()).to.equal(201);
+    const speaker = res.getBody();
+    expect(speaker.id).to.be.a('string');
+    expect(speaker.status).to.equal('IDENTIFIED');
+    bru.setVar("promoteTestSpeakerId", speaker.id);
+  });
+}
+
+docs {
+  Seeds a fresh IDENTIFIED speaker for Story 11.D.1 promote endpoint tests (seq 44-47).
+  Test 44 moves the speaker to CONTACTED, test 45 promotes it (happy path), test 46
+  re-attempts on a missing email, test 47 re-attempts on the now-READY speaker (idempotent
+  same-state) — see ADR-009 §0.2 + Story 11.D.1 AC3.
+}

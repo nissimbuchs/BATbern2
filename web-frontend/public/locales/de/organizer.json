@@ -188,7 +188,35 @@
     },
     "actions": {
       "skipForNow": "Vorerst überspringen",
-      "continue": "Weiter zur Kontaktierung"
+      "continue": "Weiter zur Kontaktierung",
+      "promoteToSpeaker": "Zu Referent befördern"
+    },
+    "promoteDialog": {
+      "title": "Zu Referent befördern",
+      "description": "Der Referent wird in die READY-Spur verschoben und ein Benutzerkonto wird bereitgestellt. Eine Einladungs-E-Mail wird noch nicht versandt — senden Sie die Einladung später aus der READY-Spur.",
+      "emailLabel": "E-Mail",
+      "firstNameLabel": "Vorname",
+      "lastNameLabel": "Nachname",
+      "cancelButton": "Abbrechen",
+      "submitButton": "Befördern",
+      "submitting": "Wird befördert…",
+      "errorTitle": "Referent konnte nicht befördert werden",
+      "errorEmailRequired": "E-Mail ist erforderlich",
+      "errorEmailInvalid": "E-Mail muss gültig sein",
+      "errorAlreadyPromoted": "Referent ist bereits in {{currentState}}; Beförderung ist nur aus „Kontaktiert“ möglich.",
+      "errorStillIdentified": "Referent muss zuerst kontaktiert werden — Outreach erfassen, dann befördern.",
+      "errorDeclined": "Referent hat abgelehnt — bitte einen neuen Pool-Eintrag erstellen statt zu befördern.",
+      "errorAlreadyReady": "Referent ist bereits bereit — Einladung aus der READY-Spur versenden."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifiziert",
+      "CONTACTED": "Kontaktiert",
+      "READY": "Bereit",
+      "INVITED": "Eingeladen",
+      "ACCEPTED": "Angenommen",
+      "DECLINED": "Abgelehnt",
+      "CONTENT_SUBMITTED": "Inhalt eingereicht",
+      "QUALITY_REVIEWED": "Qualität geprüft"
     }
   },
   "speakerOutreach": {

@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "今はスキップ",
-      "continue": "アウトリーチへ進む"
+      "continue": "アウトリーチへ進む",
+      "promoteToSpeaker": "登壇者に昇格"
+    },
+    "promoteDialog": {
+      "title": "登壇者に昇格",
+      "description": "登壇者は READY レーンに移動し、ユーザーアカウントがプロビジョニングされます。招待メールはまだ送信されません — 準備ができたら READY レーンから招待を送信してください。",
+      "emailLabel": "メールアドレス",
+      "firstNameLabel": "名",
+      "lastNameLabel": "姓",
+      "cancelButton": "キャンセル",
+      "submitButton": "昇格",
+      "submitting": "昇格中…",
+      "errorTitle": "登壇者の昇格に失敗しました",
+      "errorEmailRequired": "メールアドレスは必須です",
+      "errorEmailInvalid": "有効なメールアドレスを入力してください",
+      "errorAlreadyPromoted": "登壇者はすでに {{currentState}} 状態です。昇格は「連絡済み」状態からのみ可能です。",
+      "errorStillIdentified": "登壇者をまず連絡済みにする必要があります — 昇格の前にコンタクトを記録してください。",
+      "errorDeclined": "登壇者は辞退しました — 昇格ではなく新規エントリを作成してください。",
+      "errorAlreadyReady": "登壇者はすでに準備完了です — READY レーンから招待を送信してください。"
+    },
+    "workflowState": {
+      "IDENTIFIED": "特定済み",
+      "CONTACTED": "連絡済み",
+      "READY": "準備完了",
+      "INVITED": "招待済み",
+      "ACCEPTED": "承諾済み",
+      "DECLINED": "辞退",
+      "CONTENT_SUBMITTED": "コンテンツ送信済み",
+      "QUALITY_REVIEWED": "品質確認済み"
     }
   },
   "speakerOutreach": {

@@ -6,7 +6,8 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -162,7 +163,7 @@ class SpeakerWorkflowServiceTest {
         lenient().when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
         lenient().when(eventTypeService.getEventType(any())).thenReturn(slotConfig(8));
         lenient().when(speakerPoolRepository.countByEventIdAndStatus(any(), any())).thenReturn(0L);
-        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(stubUser());
+        lenient().when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
         lenient().when(magicLinkService.generateToken(any(), any())).thenReturn("respond-token");
         lenient().when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
 
@@ -246,7 +247,7 @@ class SpeakerWorkflowServiceTest {
 
         verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
         verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
-        verify(userApiClient, never()).getOrCreateUser(any());
+        verify(userApiClient, never()).provisionUserWithRole(any());
     }
 
     @Test
@@ -293,7 +294,7 @@ class SpeakerWorkflowServiceTest {
         when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
-        when(userApiClient.getOrCreateUser(any())).thenReturn(stubUser());
+        when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
 
         TransitionPayload payload = TransitionPayload.builder()
                 .email("speaker@example.com")
@@ -301,15 +302,28 @@ class SpeakerWorkflowServiceTest {
                 .lastName("Speaker")
                 .build();
 
-        InOrder inOrder = inOrder(userApiClient, speakerProvisioningHook,
+        InOrder inOrder = inOrder(userApiClient,
                 speakerPoolRepository, statusHistoryRepository, applicationEventPublisher);
 
         service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
 
-        inOrder.verify(userApiClient).getOrCreateUser(any());
-        inOrder.verify(speakerProvisioningHook).grantSpeakerRole(eq("speaker.user"), eq("speaker@example.com"));
+        // Story 11.D.1: provisionUserWithRole is the single canonical call (replaces
+        // the legacy getOrCreateUser + speakerProvisioningHook.grantSpeakerRole pair).
+        ArgumentCaptor<ProvisionUserRequest> provisionCaptor =
+                ArgumentCaptor.forClass(ProvisionUserRequest.class);
+        inOrder.verify(userApiClient).provisionUserWithRole(provisionCaptor.capture());
         inOrder.verify(speakerPoolRepository).save(any(SpeakerPool.class));
         inOrder.verify(statusHistoryRepository).save(any(SpeakerStatusHistory.class));
+
+        ProvisionUserRequest captured = provisionCaptor.getValue();
+        assertThat(captured.getEmail()).isEqualTo("speaker@example.com");
+        assertThat(captured.getFirstName()).isEqualTo("Test");
+        assertThat(captured.getLastName()).isEqualTo("Speaker");
+        assertThat(captured.getRole()).isEqualTo(ProvisionUserRequest.RoleEnum.SPEAKER);
+
+        // The legacy SpeakerProvisioningHook is no longer called from the READY hook —
+        // provisioning is now a single call to UserApiClient.provisionUserWithRole.
+        verify(speakerProvisioningHook, never()).grantSpeakerRole(any(), any());
 
         ArgumentCaptor<SpeakerPromotedToReadyEvent> promoted =
                 ArgumentCaptor.forClass(SpeakerPromotedToReadyEvent.class);
@@ -446,10 +460,8 @@ class SpeakerWorkflowServiceTest {
         return cfg;
     }
 
-    private GetOrCreateUserResponse stubUser() {
-        GetOrCreateUserResponse resp = new GetOrCreateUserResponse();
-        resp.setUsername("speaker.user");
-        resp.setCreated(true);
+    private ProvisionUserResponse stubUser() {
+        ProvisionUserResponse resp = new ProvisionUserResponse("speaker.user", true);
         return resp;
     }
 

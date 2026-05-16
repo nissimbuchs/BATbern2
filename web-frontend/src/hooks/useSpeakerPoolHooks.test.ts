@@ -20,6 +20,7 @@ vi.mock('@/services/speakerPoolService', () => ({
     addSpeakerToPool: vi.fn(),
     deleteSpeakerFromPool: vi.fn(),
     patchSpeakerPool: vi.fn(),
+    promoteToSpeaker: vi.fn(),
     sendInvitation: vi.fn(),
     sendReminder: vi.fn(),
   },
@@ -39,6 +40,7 @@ import {
   useAddSpeakerToPool,
   useDeleteSpeakerFromPool,
   usePatchSpeakerPool,
+  usePromoteSpeakerToReady,
   useSendInvitation,
   useSendReminder,
 } from './useSpeakerPool';
@@ -48,6 +50,7 @@ const mockGetSpeakerPool = vi.mocked(speakerPoolService.getSpeakerPool);
 const mockAddSpeakerToPool = vi.mocked(speakerPoolService.addSpeakerToPool);
 const mockDeleteSpeakerFromPool = vi.mocked(speakerPoolService.deleteSpeakerFromPool);
 const mockPatchSpeakerPool = vi.mocked(speakerPoolService.patchSpeakerPool);
+const mockPromoteToSpeaker = vi.mocked(speakerPoolService.promoteToSpeaker);
 const mockSendInvitation = vi.mocked(speakerPoolService.sendInvitation);
 const mockSendReminder = vi.mocked(speakerPoolService.sendReminder);
 const mockGetOutreachHistory = vi.mocked(speakerOutreachService.getOutreachHistory);
@@ -295,6 +298,72 @@ describe('usePatchSpeakerPool', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── usePromoteSpeakerToReady (Story 11.D.1) ─────────────────────────────────
+
+describe('usePromoteSpeakerToReady', () => {
+  let qc: QueryClient;
+
+  beforeEach(() => {
+    qc = createQC();
+    vi.clearAllMocks();
+  });
+
+  it('should call promoteToSpeaker service and invalidate caches on success', async () => {
+    mockPromoteToSpeaker.mockResolvedValue({
+      ...MOCK_SPEAKER,
+      status: 'READY',
+      username: 'alice.smith',
+      email: 'alice@example.com',
+    } as never);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+
+    const { result } = renderHook(() => usePromoteSpeakerToReady(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        eventCode: 'BAT142',
+        speakerId: 'sp-1',
+        request: { email: 'alice@example.com', firstName: 'Alice', lastName: 'Smith' },
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockPromoteToSpeaker).toHaveBeenCalledWith('BAT142', 'sp-1', {
+      email: 'alice@example.com',
+      firstName: 'Alice',
+      lastName: 'Smith',
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['speakerPool', 'list', 'BAT142'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['speakerStatusSummary', 'BAT142'] });
+  });
+
+  it('should expose the error when the API returns 409 INVALID_PROMOTION_STATE', async () => {
+    const err = Object.assign(new Error('Conflict'), {
+      response: {
+        status: 409,
+        data: { details: { code: 'INVALID_PROMOTION_STATE', currentState: 'INVITED' } },
+      },
+    });
+    mockPromoteToSpeaker.mockRejectedValue(err);
+
+    const { result } = renderHook(() => usePromoteSpeakerToReady(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current
+        .mutateAsync({
+          eventCode: 'BAT142',
+          speakerId: 'sp-1',
+          request: { email: 'alice@example.com' },
+        })
+        .catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBe(err);
   });
 });
 

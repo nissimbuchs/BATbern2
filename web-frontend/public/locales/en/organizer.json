@@ -188,7 +188,35 @@
     },
     "actions": {
       "skipForNow": "Skip for Now",
-      "continue": "Continue to Outreach"
+      "continue": "Continue to Outreach",
+      "promoteToSpeaker": "Promote to speaker"
+    },
+    "promoteDialog": {
+      "title": "Promote to speaker",
+      "description": "The speaker moves to the READY lane and a user account is provisioned. No invitation email is sent yet — send the invitation from the READY lane when you are ready.",
+      "emailLabel": "Email",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "cancelButton": "Cancel",
+      "submitButton": "Promote",
+      "submitting": "Promoting…",
+      "errorTitle": "Could not promote speaker",
+      "errorEmailRequired": "Email is required",
+      "errorEmailInvalid": "Email must be valid",
+      "errorAlreadyPromoted": "Speaker is already in {{currentState}}; promote is only valid from Contacted.",
+      "errorStillIdentified": "Speaker must be Contacted first — log outreach before promoting.",
+      "errorDeclined": "Speaker has Declined — create a new pool entry instead of promoting.",
+      "errorAlreadyReady": "Speaker is already Ready — send the invitation from the Ready lane."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identified",
+      "CONTACTED": "Contacted",
+      "READY": "Ready",
+      "INVITED": "Invited",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Declined",
+      "CONTENT_SUBMITTED": "Content submitted",
+      "QUALITY_REVIEWED": "Quality reviewed"
     }
   },
   "speakerOutreach": {

@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Nu overslaan",
-      "continue": "Doorgaan naar benadering"
+      "continue": "Doorgaan naar benadering",
+      "promoteToSpeaker": "Promoveren tot spreker"
+    },
+    "promoteDialog": {
+      "title": "Promoveren tot spreker",
+      "description": "De spreker wordt verplaatst naar de READY-baan en krijgt een gebruikersaccount. Er wordt nog geen uitnodigingsmail verzonden — verstuur de uitnodiging vanuit de READY-baan wanneer je er klaar voor bent.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Voornaam",
+      "lastNameLabel": "Achternaam",
+      "cancelButton": "Annuleren",
+      "submitButton": "Promoveren",
+      "submitting": "Bezig met promoveren…",
+      "errorTitle": "Spreker kon niet worden gepromoveerd",
+      "errorEmailRequired": "E-mail is vereist",
+      "errorEmailInvalid": "E-mail moet geldig zijn",
+      "errorAlreadyPromoted": "Spreker is al in {{currentState}}; promotie is alleen geldig vanaf Gecontacteerd.",
+      "errorStillIdentified": "Spreker moet eerst worden gecontacteerd — registreer het contact voor promotie.",
+      "errorDeclined": "Spreker heeft geweigerd — maak een nieuwe entry aan in plaats van te promoveren.",
+      "errorAlreadyReady": "Spreker is al klaar — verstuur de uitnodiging vanuit de READY-baan."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Geïdentificeerd",
+      "CONTACTED": "Gecontacteerd",
+      "READY": "Klaar",
+      "INVITED": "Uitgenodigd",
+      "ACCEPTED": "Geaccepteerd",
+      "DECLINED": "Geweigerd",
+      "CONTENT_SUBMITTED": "Inhoud ingediend",
+      "QUALITY_REVIEWED": "Kwaliteit beoordeeld"
     }
   },
   "speakerOutreach": {

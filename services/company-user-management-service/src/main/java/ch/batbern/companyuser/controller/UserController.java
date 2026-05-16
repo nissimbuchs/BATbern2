@@ -304,7 +304,8 @@ public class UserController {
         if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
             throw new UserValidationException(
                     "request",
-                    "Unknown fields not allowed on ProvisionUserRequest: " + request.getAdditionalProperties().keySet());
+                    "Unknown fields not allowed on ProvisionUserRequest: "
+                            + request.getAdditionalProperties().keySet());
         }
         log.info("POST /api/v1/users/provision — email: {}, role: {}",
                 request.getEmail(), request.getRole());
@@ -344,7 +345,8 @@ public class UserController {
         if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
             throw new UserValidationException(
                     "request",
-                    "Unknown fields not allowed on PatchUserProfileRequest: " + request.getAdditionalProperties().keySet());
+                    "Unknown fields not allowed on PatchUserProfileRequest: "
+                            + request.getAdditionalProperties().keySet());
         }
         log.info("PATCH /api/v1/users/{}/profile", username);
 

@@ -633,7 +633,8 @@ public class UserService {
         if (!securityContext.hasRole("ADMIN") && roleToGrant != Role.SPEAKER) {
             throw new UserValidationException(
                     "role",
-                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got " + roleToGrant + ")");
+                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got "
+                            + roleToGrant + ")");
         }
 
         // P1 (review patch): normalize email to lowercase for both lookup AND persist so
@@ -699,7 +700,8 @@ public class UserService {
                     normalizedEmail);
             User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                     .orElseThrow(() -> new IllegalStateException(
-                            "DataIntegrityViolation on createNewUser but email not found on re-fetch: " + normalizedEmail, e));
+                            "DataIntegrityViolation on createNewUser but email not found on re-fetch: "
+                                    + normalizedEmail, e));
             roleService.addRole(user.getUsername(), roleToGrant);
             return new ProvisionUserResponse()
                     .username(user.getUsername())

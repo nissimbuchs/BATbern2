@@ -2,6 +2,38 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
+  "speakerBrainstorm": {
+    "actions": {
+      "promoteToSpeaker": "Zum Speaker mache"
+    },
+    "promoteDialog": {
+      "title": "Zum Speaker mache",
+      "description": "De Speaker chunnt i die READY-Spaltä und überchunnt e Benutzerkonto. Es Iladigsmail wird no nöd verschickt — du chasch d'Iladig spöter us de READY-Spaltä la rusgo.",
+      "emailLabel": "E-Mail",
+      "firstNameLabel": "Vornamä",
+      "lastNameLabel": "Nochnamä",
+      "cancelButton": "Abbräche",
+      "submitButton": "Promote",
+      "submitting": "Wird promotet…",
+      "errorTitle": "Speaker het nöd chönne promotet wärde",
+      "errorEmailRequired": "E-Mail isch zwingend",
+      "errorEmailInvalid": "E-Mail muess gültig sii",
+      "errorAlreadyPromoted": "Speaker isch scho i {{currentState}}; promote isch nume vo Kontaktiert us mögli.",
+      "errorStillIdentified": "Speaker muess zerscht kontaktiert wärde — Outreach erfasse, dänn promote.",
+      "errorDeclined": "Speaker het abgseit — mach e neue Pool-Iitrag schtatt z'promote.",
+      "errorAlreadyReady": "Speaker isch scho parat — schick d'Iladig us de READY-Spaltä."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifiziert",
+      "CONTACTED": "Kontaktiert",
+      "READY": "Parat",
+      "INVITED": "Iglade",
+      "ACCEPTED": "Aagnoh",
+      "DECLINED": "Abglehnt",
+      "CONTENT_SUBMITTED": "Inhalt iigriicht",
+      "QUALITY_REVIEWED": "Qualität prüeft"
+    }
+  },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
   },

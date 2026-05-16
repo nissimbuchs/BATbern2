@@ -77,7 +77,15 @@ export interface AddSpeakerToPoolRequest {
 export interface PatchSpeakerPoolRequest {
   assignedOrganizerId?: string;
   notes?: string;
-  email?: string;
+}
+
+// Story 11.D.1: POST /speakers/{speakerId}/promote — drives CONTACTED → READY transition
+// and provisions the User + SPEAKER role server-side. Email is required; firstName +
+// lastName are optional.
+export interface PromoteSpeakerRequest {
+  email: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;

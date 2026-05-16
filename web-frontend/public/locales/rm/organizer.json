@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Saltar per ussa",
-      "continue": "Cuntinuar al contact"
+      "continue": "Cuntinuar al contact",
+      "promoteToSpeaker": "Promover a referent"
+    },
+    "promoteDialog": {
+      "title": "Promover a referent",
+      "description": "Il referent vegn spustà en la colonna READY ed in conto da utilisader vegn creà. Anc nagina e-mail d'invit vegn tramessa — trametta l'invit dapertut la colonna READY cura che ti es pront.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Prenum",
+      "lastNameLabel": "Num da famiglia",
+      "cancelButton": "Interrumper",
+      "submitButton": "Promover",
+      "submitting": "Va a promover…",
+      "errorTitle": "Impussibel da promover il referent",
+      "errorEmailRequired": "E-mail è obligatoria",
+      "errorEmailInvalid": "E-mail sto esser valaivel",
+      "errorAlreadyPromoted": "Il referent è gia en {{currentState}}; il promover è mo valid dal stadi Contactà.",
+      "errorStillIdentified": "Il referent sto pli baud vegnir contactà — registra il contact avant da promover.",
+      "errorDeclined": "Il referent ha refusà — crea ina nova endataziun empè dal promover.",
+      "errorAlreadyReady": "Il referent è gia pront — trametta l'invit dapertut la colonna READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifitgà",
+      "CONTACTED": "Contactà",
+      "READY": "Pront",
+      "INVITED": "Envidà",
+      "ACCEPTED": "Acceptà",
+      "DECLINED": "Refusà",
+      "CONTENT_SUBMITTED": "Cuntegn tramess",
+      "QUALITY_REVIEWED": "Qualitad verifitgada"
     }
   },
   "speakerOutreach": {

@@ -182,7 +182,35 @@
     },
     "actions": {
       "skipForNow": "Omitir por ahora",
-      "continue": "Continuar al contacto"
+      "continue": "Continuar al contacto",
+      "promoteToSpeaker": "Promover a ponente"
+    },
+    "promoteDialog": {
+      "title": "Promover a ponente",
+      "description": "El ponente se mueve al carril READY y se le aprovisiona una cuenta de usuario. Aún no se envía ningún correo de invitación — envíalo desde el carril READY cuando estés listo.",
+      "emailLabel": "Correo electrónico",
+      "firstNameLabel": "Nombre",
+      "lastNameLabel": "Apellido",
+      "cancelButton": "Cancelar",
+      "submitButton": "Promover",
+      "submitting": "Promoviendo…",
+      "errorTitle": "No se pudo promover al ponente",
+      "errorEmailRequired": "El correo electrónico es obligatorio",
+      "errorEmailInvalid": "El correo electrónico debe ser válido",
+      "errorAlreadyPromoted": "El ponente ya está en {{currentState}}; la promoción solo es válida desde Contactado.",
+      "errorStillIdentified": "El ponente debe ser contactado primero — registra el contacto antes de promover.",
+      "errorDeclined": "El ponente ha rechazado — crea una nueva entrada en vez de promover.",
+      "errorAlreadyReady": "El ponente ya está listo — envía la invitación desde el carril READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identificado",
+      "CONTACTED": "Contactado",
+      "READY": "Listo",
+      "INVITED": "Invitado",
+      "ACCEPTED": "Aceptado",
+      "DECLINED": "Rechazado",
+      "CONTENT_SUBMITTED": "Contenido enviado",
+      "QUALITY_REVIEWED": "Calidad revisada"
     }
   },
   "speakerOutreach": {

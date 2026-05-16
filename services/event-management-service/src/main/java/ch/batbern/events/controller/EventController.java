@@ -2558,7 +2558,9 @@ public class EventController {
     @PatchMapping("/{eventCode}/speakers/pool/{speakerId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Patch speaker pool entry",
-            description = "Partial update of a speaker pool entry (assigned organizer, notes, email)")
+            description = "Partial update of a speaker pool entry (assigned organizer, notes). "
+                    + "Story 11.D.1 (AR23): email may NOT be updated through this endpoint — "
+                    + "use POST /speakers/{speakerId}/promote. Unknown fields return HTTP 400.")
     public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> patchSpeakerPoolEntry(
             @PathVariable String eventCode,
             @PathVariable String speakerId,

@@ -921,6 +921,37 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle InvalidPromotionStateException (Story 11.D.1):
+     * {@code POST /speakers/{id}/promote} called on a speaker whose current state is not
+     * {@code CONTACTED} or {@code READY}. Returns HTTP 409 Conflict with
+     * {@code details.code = INVALID_PROMOTION_STATE} and {@code details.currentState =
+     * <state>} so the frontend can render a tailored message.
+     */
+    @ExceptionHandler(InvalidPromotionStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPromotionStateException(
+            InvalidPromotionStateException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid promotion state: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "INVALID_PROMOTION_STATE");
+        details.put("currentState", ex.getCurrentState().name());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
      * Returns HTTP 409 Conflict.
      * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).

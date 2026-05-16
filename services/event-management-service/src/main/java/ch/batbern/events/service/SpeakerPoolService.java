@@ -247,9 +247,6 @@ public class SpeakerPoolService {
         if (request.getNotes() != null) {
             speakerPool.setNotes(request.getNotes());
         }
-        if (request.getEmail() != null) {
-            speakerPool.setEmail(request.getEmail());
-        }
 
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
         return SpeakerPoolResponse.fromEntity(updated);

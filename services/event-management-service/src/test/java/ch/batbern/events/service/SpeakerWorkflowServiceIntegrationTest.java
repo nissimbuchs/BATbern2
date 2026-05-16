@@ -7,7 +7,8 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -92,6 +93,11 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // userApiClient is provided via TestUserApiClientConfig (plain Mockito mock — not
+        // @MockBean/@MockitoBean). Spring's per-test reset does NOT apply, so we explicitly
+        // clear interactions between tests to avoid verification counts bleeding across.
+        org.mockito.Mockito.clearInvocations(userApiClient);
+
         testEvent = Event.builder()
                 .eventCode(TEST_EVENT_CODE)
                 .eventNumber(999)
@@ -108,12 +114,8 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         testEvent = eventRepository.save(testEvent);
         testEventId = testEvent.getId();
 
-        when(userApiClient.getOrCreateUser(any())).thenAnswer(inv -> {
-            GetOrCreateUserResponse resp = new GetOrCreateUserResponse();
-            resp.setUsername("speaker.user");
-            resp.setCreated(true);
-            return resp;
-        });
+        when(userApiClient.provisionUserWithRole(any())).thenAnswer(inv ->
+                new ProvisionUserResponse("speaker.user", true));
     }
 
     // ---- AC10 #1: legal forward transitions ----
@@ -282,7 +284,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     // ---- AC10 #6: CONTACTED → READY provisioning seam + event ----
 
     @Test
-    @DisplayName("CONTACTED → READY invokes provisioning seam and publishes SpeakerPromotedToReadyEvent")
+    @DisplayName("CONTACTED → READY invokes provisionUserWithRole(SPEAKER) and publishes SpeakerPromotedToReadyEvent")
     void should_invokeProvisioningSeamAndPublishEvent_when_transitioningContactedToReady() {
         SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.CONTACTED);
         TransitionPayload payload = TransitionPayload.builder()
@@ -293,10 +295,24 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
 
         workflowService.transition(speaker.getId(), SpeakerWorkflowState.READY, ORGANIZER, payload);
 
-        verify(speakerProvisioningHook, times(1)).grantSpeakerRole("speaker.user", "speaker@example.com");
+        // Story 11.D.1: provisionUserWithRole is the canonical single call (replaces the
+        // legacy getOrCreateUser + speakerProvisioningHook.grantSpeakerRole pair).
+        org.mockito.ArgumentCaptor<ProvisionUserRequest> captor =
+                org.mockito.ArgumentCaptor.forClass(ProvisionUserRequest.class);
+        verify(userApiClient, times(1)).provisionUserWithRole(captor.capture());
+        ProvisionUserRequest captured = captor.getValue();
+        assertThat(captured.getEmail()).isEqualTo("speaker@example.com");
+        assertThat(captured.getFirstName()).isEqualTo("Test");
+        assertThat(captured.getLastName()).isEqualTo("Speaker");
+        assertThat(captured.getRole()).isEqualTo(ProvisionUserRequest.RoleEnum.SPEAKER);
+
+        // The legacy SpeakerProvisioningHook is no longer called from the READY hook —
+        // provisioning is now a single call to UserApiClient.provisionUserWithRole.
+        verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
 
         SpeakerPool persisted = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(persisted.getUsername()).isEqualTo("speaker.user");
+        assertThat(persisted.getEmail()).isEqualTo("speaker@example.com");
         assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.READY);
     }
 
