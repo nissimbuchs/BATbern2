@@ -173,11 +173,12 @@ export class StorageStack extends cdk.Stack {
                 `--define:CONTENT_BUCKET_REGION='"${contentBucketRegion}"'`,
                 '--outfile=/asset-output/index.js',
               ].join(' '),
-              'mkdir -p /asset-output/node_modules/@img',
-              'cp -r node_modules/sharp /asset-output/node_modules/sharp',
-              // sharp 0.33+ stores the native binary in @img/sharp-linux-x64 and @img/sharp-libvips-linux-x64
-              'cp -r node_modules/@img/sharp-linux-x64 /asset-output/node_modules/@img/sharp-linux-x64',
-              'cp -r node_modules/@img/sharp-libvips-linux-x64 /asset-output/node_modules/@img/sharp-libvips-linux-x64',
+              // Sharp can't be bundled by esbuild (native .node binary), so it stays external and
+              // is loaded from node_modules at runtime. Sharp's JS wrapper also requires several
+              // transitive deps (detect-libc, color, semver, …) which must be present at runtime.
+              // Prune dev deps then copy the entire production node_modules to /asset-output.
+              'npm prune --omit=dev --cache /tmp/.npm',
+              'cp -r node_modules /asset-output/node_modules',
             ].join(' && '),
           ],
           local: {

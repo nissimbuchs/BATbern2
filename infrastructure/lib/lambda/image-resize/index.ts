@@ -27,8 +27,9 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
   let sharpFn: typeof import('sharp');
   try {
     sharpFn = (await import('sharp')).default as unknown as typeof import('sharp');
-  } catch {
-    return request; // sharp not bundled — fail open, pass through to S3 origin
+  } catch (err) {
+    console.error('image-resize: sharp import failed, falling back to pass-through', err);
+    return request;
   }
 
   const fitRaw = params.get('fit') ?? 'cover';
@@ -56,7 +57,8 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
       body: resized.toString('base64'),
       bodyEncoding: 'base64',
     };
-  } catch {
-    return request; // fail open: pass through to S3 origin
+  } catch (err) {
+    console.error('image-resize: resize failed, falling back to pass-through', { key, err });
+    return request;
   }
 };

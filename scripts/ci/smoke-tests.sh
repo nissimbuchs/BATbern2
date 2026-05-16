@@ -59,62 +59,44 @@ else
     ((failed++))
 fi
 
-# Test 3: Service health checks
+# Test 3: Service health checks (proxied via API Gateway's ServiceHealthController)
+# Each microservice exposes /actuator/health on its Service Connect DNS; the API Gateway
+# proxies these at /services/{name}/health (see api-gateway/.../ServiceHealthController.java).
 echo -e "\n${YELLOW}Test 3:${NC} Service health checks"
 services=("event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "company-user-management")
-service_tests_passed=true
+service_tests_failed=0
 
 for service in "${services[@]}"; do
-    endpoint="$API_URL/api/$service/actuator/health"
+    endpoint="$API_URL/services/$service/health"
     response=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint" || echo "000")
 
     if [ "$response" = "200" ]; then
         echo -e "  ${GREEN}✓${NC} $service is healthy"
     else
-        echo -e "  ${YELLOW}⚠${NC} $service health check returned $response (service may not be deployed yet)"
-        service_tests_passed=false
+        echo -e "  ${RED}✗${NC} $service health check returned $response (expected 200) — $endpoint"
+        service_tests_failed=$((service_tests_failed + 1))
     fi
 done
 
-if $service_tests_passed; then
+if [ $service_tests_failed -eq 0 ]; then
+    echo -e "${GREEN}✓ PASS${NC}: All service health checks passed"
     ((passed++))
 else
-    echo -e "${YELLOW}⚠ WARNING${NC}: Some services not fully deployed yet"
-    ((passed++))  # Don't fail smoke tests if services aren't deployed yet
+    echo -e "${RED}✗ FAIL${NC}: $service_tests_failed service health check(s) failed"
+    ((failed++))
 fi
 
-# Test 4: Database connectivity
-echo -e "\n${YELLOW}Test 4:${NC} Database connectivity"
-response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/events/health/db" || echo "000")
-if [ "$response" = "200" ]; then
-    db_response=$(curl -s "$API_URL/api/events/health/db" || echo "{}")
-    db_status=$(echo "$db_response" | jq -r '.database' 2>/dev/null || echo "UNKNOWN")
-    echo -e "${GREEN}✓ PASS${NC}: Database connectivity check passed (status: $db_status)"
-    ((passed++))
-else
-    echo -e "${YELLOW}⚠ WARNING${NC}: Database health endpoint not available yet (returned $response)"
-    ((passed++))  # Don't fail if endpoint doesn't exist yet
-fi
+# Tests for database and cache connectivity are intentionally omitted here.
+# Spring Boot Actuator already includes DB and Redis health indicators in /actuator/health
+# (validated by Test 2). Re-checking them via separate URLs added noise and false warnings
+# for endpoints that never existed; the aggregated check is authoritative.
 
-# Test 5: Cache connectivity
-echo -e "\n${YELLOW}Test 5:${NC} Cache connectivity"
-response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/events/health/cache" || echo "000")
-if [ "$response" = "200" ]; then
-    cache_response=$(curl -s "$API_URL/api/events/health/cache" || echo "{}")
-    cache_status=$(echo "$cache_response" | jq -r '.cache' 2>/dev/null || echo "UNKNOWN")
-    echo -e "${GREEN}✓ PASS${NC}: Cache connectivity check passed (status: $cache_status)"
-    ((passed++))
-else
-    echo -e "${YELLOW}⚠ WARNING${NC}: Cache health endpoint not available yet (returned $response)"
-    ((passed++))  # Don't fail if endpoint doesn't exist yet
-fi
-
-# Test 6: CDN image serving + Lambda@Edge resize
+# Test 4: CDN image serving + Lambda@Edge resize
 # Validates that CloudFront can serve images AND that the Lambda@Edge resize function
 # initialises correctly. A missing 'sharp' module crashes the Lambda at init and returns
 # 503 for ALL CDN requests — including plain pass-throughs — so this test catches that
 # entire class of bug immediately after each storage-stack deploy.
-echo -e "\n${YELLOW}Test 6:${NC} CDN image serving and Lambda@Edge resize"
+echo -e "\n${YELLOW}Test 4:${NC} CDN image serving and Lambda@Edge resize"
 
 # Find a known image path from the most recent event via the public API
 SAMPLE_IMAGE_PATH=$(curl -s "$API_URL/api/events?status=COMPLETED&size=1" \

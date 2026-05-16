@@ -179,6 +179,10 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         // Other actuator endpoints require auth (metrics, info, prometheus expose internals)
                         .requestMatchers("/actuator/**").authenticated()
+                        // ServiceHealthController: proxy health/info of downstream services via Service Connect.
+                        // Used by post-deploy smoke tests; only exposes UP/DOWN, no internal metrics.
+                        .requestMatchers(HttpMethod.GET, "/services/*/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/services/*/info").permitAll()
                         .requestMatchers("/api/v1/config").permitAll()
 
                         // Story 4.1.3: Public event discovery endpoints (no auth required)
