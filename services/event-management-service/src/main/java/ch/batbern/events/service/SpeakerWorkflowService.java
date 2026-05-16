@@ -259,6 +259,26 @@ public class SpeakerWorkflowService {
         userRequest.setCognitoSync(false);
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+
+        // Identity-rebind guard: if the speaker is already bound to a different username/email,
+        // the lookup result may point at a wholly different User account (e.g. organizer corrected
+        // a typo and the new email already belonged to someone else). Reject the implicit re-bind
+        // rather than silently overwriting the audit trail.
+        String existingUsername = speaker.getUsername();
+        if (existingUsername != null && !existingUsername.isBlank()
+                && !existingUsername.equals(userResponse.getUsername())) {
+            throw new ValidationException(String.format(
+                    "Cannot rebind speaker %s from user '%s' to user '%s' implicitly — "
+                            + "explicit identity change requires a dedicated organizer action.",
+                    speaker.getId(), existingUsername, userResponse.getUsername()));
+        }
+        String existingEmail = speaker.getEmail();
+        if (existingEmail != null && !existingEmail.isBlank()
+                && !existingEmail.equalsIgnoreCase(payload.email())) {
+            log.warn("Speaker {} email change at READY: '{}' → '{}' (resolved to user '{}')",
+                    speaker.getId(), existingEmail, payload.email(), userResponse.getUsername());
+        }
+
         speaker.setUsername(userResponse.getUsername());
         speaker.setEmail(payload.email());
 
@@ -269,6 +289,10 @@ public class SpeakerWorkflowService {
         // READY → INVITED: generate magic-link tokens + send invitation email. The magic-link
         // token system remains until Phase F (11.F.1); Phase E (11.E.2) rewires the email
         // template to a Cognito login URL + temp password.
+        //
+        // NB: Email send currently fires synchronously inside the @Transactional boundary; if the
+        // transition rolls back after this point, the email has already been sent. Moving to
+        // AFTER_COMMIT semantics is tracked in deferred-work (code review 11.B.2, P2).
         String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
         String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
 
@@ -279,8 +303,13 @@ public class SpeakerWorkflowService {
     }
 
     private void runAcceptedHook(SpeakerPool speaker, Event event) {
-        // INVITED → ACCEPTED: stamp acceptedAt, send confirmation email. SpeakerAcceptedEvent
-        // is published below in publishStateSpecificEvents — its listener auto-creates the session.
+        // INVITED → ACCEPTED: stamp acceptedAt, send confirmation email, notify organizer.
+        // SpeakerAcceptedEvent is published below in publishStateSpecificEvents — its listener
+        // auto-creates the session.
+        //
+        // NB: External side effects (email, organizer notify) fire synchronously inside the
+        // @Transactional boundary; rollback after this point leaks the email. AFTER_COMMIT
+        // refactor tracked in deferred-work (code review 11.B.2, P2).
         speaker.setAcceptedAt(Instant.now());
         speaker.setIsTentative(false);
         speaker.setTentativeReason(null);
@@ -291,6 +320,16 @@ public class SpeakerWorkflowService {
                     speaker, event, viewToken, Locale.GERMAN);
         } catch (Exception ex) {
             log.warn("Failed to send acceptance confirmation email for speaker {}: {}",
+                    speaker.getId(), ex.getMessage());
+        }
+
+        // Notify organizer of response — symmetric with runDeclinedHook's notify for post-invitation
+        // declines. Restoring behaviour from pre-11.B.2 SpeakerResponseService.notifyOrganizerOfResponse.
+        try {
+            organizerNotificationService.notifyOrganizerOfResponse(
+                    speaker, event, SpeakerResponseType.ACCEPT);
+        } catch (Exception ex) {
+            log.warn("Failed to notify organizer of ACCEPT for speaker {}: {}",
                     speaker.getId(), ex.getMessage());
         }
     }

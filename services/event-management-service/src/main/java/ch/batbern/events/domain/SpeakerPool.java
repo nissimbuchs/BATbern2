@@ -67,20 +67,17 @@ public class SpeakerPool {
      * Database storage: lowercase_with_underscores (e.g., 'identified', 'contacted')
      * Java representation: UPPER_CASE (e.g., IDENTIFIED, CONTACTED)
      *
-     * Workflow states:
+     * Workflow states (ADR-009, 8-state model):
      * - IDENTIFIED (default) - potential speaker identified
      * - CONTACTED - speaker has been contacted
-     * - READY - speaker is ready to be invited
+     * - READY - speaker provisioned, ready to be invited
+     * - INVITED - invitation email sent
      * - ACCEPTED - speaker accepted invitation
-     * - DECLINED - speaker declined
-     * - CONTENT_SUBMITTED - speaker submitted content
+     * - DECLINED - speaker declined (terminal)
+     * - CONTENT_SUBMITTED - speaker submitted presentation content
      * - QUALITY_REVIEWED - content has been reviewed
-     * - SLOT_ASSIGNED - speaker assigned to time slot
-     * - CONFIRMED - speaker confirmed attendance
-     * - WITHDREW - speaker withdrew from event
-     * - OVERFLOW - speaker added to overflow list
      *
-     * Story 5.3: Updated to use SpeakerWorkflowState enum with converter
+     * Story 5.3 / 11.B.1: SpeakerWorkflowState enum with converter
      */
     @Column(name = "status", nullable = false, length = 50)
     @Convert(converter = SpeakerWorkflowStateConverter.class)

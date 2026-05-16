@@ -5,7 +5,6 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.dto.ContentDraftRequest;
 import ch.batbern.events.dto.ContentDraftResponse;
@@ -19,7 +18,8 @@ import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -57,7 +57,7 @@ public class ContentSubmissionService {
     private final ContentSubmissionRepository contentSubmissionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final SpeakerWorkflowService speakerWorkflowService;
 
     /**
      * Get content information for the speaker portal.
@@ -315,9 +315,6 @@ public class ContentSubmissionService {
         Integer maxVersion = contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId());
         int newVersion = (maxVersion != null) ? maxVersion + 1 : 1;
 
-        // Capture previous status for history tracking
-        SpeakerWorkflowState previousStatus = speaker.getStatus();
-
         // Create submission record
         ContentSubmission submission = ContentSubmission.builder()
                 .speakerPool(speaker)
@@ -331,29 +328,23 @@ public class ContentSubmissionService {
 
         submission = contentSubmissionRepository.save(submission);
 
-        // AC5: Update speaker pool status and content status
+        // AC5: Update content-specific fields, then delegate the workflow transition to
+        // SpeakerWorkflowService.transition() — the sole writer of speaker_pool.status and
+        // speaker_status_history per ADR-009 (Story 11.B.2). The transition() call also publishes
+        // the canonical SpeakerWorkflowStateChangeEvent.
         Instant now = Instant.now();
-        speaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);  // Move to "Inhalt eingereicht" column in Kanban
         speaker.setContentStatus("SUBMITTED");
         speaker.setContentSubmittedAt(now);
         speakerPoolRepository.save(speaker);
 
-        // Record status history for content submission
-        if (previousStatus != SpeakerWorkflowState.CONTENT_SUBMITTED) {
-            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
-            statusHistory.setSpeakerPoolId(speaker.getId());
-            statusHistory.setEventId(session.getEventId());
-            statusHistory.setSessionId(session.getId());
-            statusHistory.setPreviousStatus(previousStatus);
-            statusHistory.setNewStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-            String changedBy = speaker.getUsername() != null
-                    ? speaker.getUsername() : validation.speakerName();
-            statusHistory.setChangedByUsername(changedBy);
-            statusHistory.setChangeReason("Content submitted via speaker portal (version " + newVersion + ")");
-            statusHistory.setChangedAt(now);
-            statusHistoryRepository.save(statusHistory);
-            log.debug("Created status history for speaker {} transition to CONTENT_SUBMITTED", speaker.getId());
-        }
+        String actorUsername = speaker.getUsername() != null && !speaker.getUsername().isBlank()
+                ? speaker.getUsername() : validation.speakerName();
+        SecurityPrincipal speakerActor = new SecurityPrincipal(actorUsername, List.of("SPEAKER"));
+        TransitionPayload payload = TransitionPayload.builder()
+                .reason("Content submitted via speaker portal (version " + newVersion + ")")
+                .build();
+        speakerWorkflowService.transition(
+                speaker.getId(), SpeakerWorkflowState.CONTENT_SUBMITTED, speakerActor, payload);
 
         // AC6: Publish domain event for organizer notification
         SpeakerContentSubmittedEvent event = new SpeakerContentSubmittedEvent(

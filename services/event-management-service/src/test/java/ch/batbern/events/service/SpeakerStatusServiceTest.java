@@ -106,7 +106,7 @@ public class SpeakerStatusServiceTest {
         speaker.setId(speakerId);
         speaker.setEventId(eventId);
 
-        when(speakerPoolRepository.existsById(speakerId)).thenReturn(true);
+        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
         when(securityContextHelper.getCurrentUserRoles()).thenReturn(List.of("ORGANIZER"));
         when(speakerWorkflowService.transition(
                 eq(speakerId),
@@ -146,7 +146,7 @@ public class SpeakerStatusServiceTest {
         request.setNewStatus(SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
-        when(speakerPoolRepository.existsById(speakerId)).thenReturn(false);
+        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateStatus(eventCode, speakerId, organizerUsername, request))
                 .isInstanceOf(NotFoundException.class)
@@ -178,7 +178,7 @@ public class SpeakerStatusServiceTest {
         speaker.setId(speakerId);
         speaker.setEventId(eventId);
 
-        when(speakerPoolRepository.existsById(speakerId)).thenReturn(true);
+        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
         when(securityContextHelper.getCurrentUserRoles()).thenThrow(new SecurityException("No auth"));
         when(speakerWorkflowService.transition(
                 eq(speakerId), eq(SpeakerWorkflowState.CONTACTED),

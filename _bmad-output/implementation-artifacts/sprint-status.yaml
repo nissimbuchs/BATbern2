@@ -146,7 +146,7 @@ development_status:
   10-3-task-deadline-reminder-email: done                   # daily scheduler + TaskReminderEmailService; prereq: 10.2
   10-4-blob-topic-selector: done                            # D3 physics blob full-screen page; spec: blob-topic-selector-spec.md
   10-5-analytics-dashboard: done                            # 4-tab analytics page (Overview/Attendance/Topics/Companies); Recharts; brainstorm: 2026-02-25
-  10-6-migrate-system-templates-to-layout: backlog          # extract content from 22 system templates; prereq: 10.2 (renumbered from 10-5)
+  10-6-migrate-system-templates-to-layout: cancelled        # extract content from 22 system templates; prereq: 10.2 (renumbered from 10-5)
   10-7-newsletter-subscription-and-sending: done            # anonymous subscribe widget, token-based unsubscribe, account toggle, organizer send tab; prereq: 10.2
   10-8a-moderator-presentation-page: done                   # fullscreen projector page; keyboard nav; break flow; 60s poll; no Framer Motion; CUMS V14 migration
   10-8b-moderator-presentation-page-animations: done        # animation layer on 10.8a: FLIP, Ken Burns, section springs, stagger, break/apéro effects; prereq: 10.8a
@@ -180,7 +180,7 @@ development_status:
   epic-11: in-progress
   11-a-1-align-speaker-workflow-documentation-to-adr-009: done                  # rewrite PRD/03-data-arch/06a-state-machines/04-api/06-backend/06b-lifecycle/ADR-004/CLAUDE.md per ADR-009; net-zero code; Phase A; no prereqs
   11-b-1-reduce-speakerworkflowstate-enum-to-8-states: done                    # shared-kernel: remove SLOT_ASSIGNED/CONFIRMED/OVERFLOW/WITHDREW + TENTATIVE; add SpeakerPromotedToReadyEvent; Phase B; no prereqs
-  11-b-2-speakerworkflowservice-sole-status-writer: review                     # delete StatusTransitionValidator; single-writer transition() with side-effect hooks (provisioning/slot-gate/emails); delegate Status+Response services; Phase B; prereq: 11-b-1
+  11-b-2-speakerworkflowservice-sole-status-writer: in-progress                # delete StatusTransitionValidator; single-writer transition() with side-effect hooks (provisioning/slot-gate/emails); delegate Status+Response services; Phase B; prereq: 11-b-1
   11-b-3-migrate-legacy-status-drop-tentative-cols-derived-flags: ready-for-dev  # Flyway: legacy status mapping per §2.2 + drop overflow tables + drop is_tentative cols + derived is_slot_assigned/is_publishable + tighten PUT status API; Phase B; prereq: 11-b-2
   11-c-1-drop-speakers-table-remove-speaker-coordination-refs: ready-for-dev   # Flyway drop speakers; verify user_profiles unchanged; speaker-coordination remains thin shell per §6.2; Phase C; prereq: 11-b-*
   11-c-2-userapiclient-provisioning-contentsubmissionservice-shared: ready-for-dev   # UserApiClient.provisionUserWithRole + patchUserProfile; ContentSubmissionService as shared write path for organizer+speaker; Phase C; prereq: 11-b-2

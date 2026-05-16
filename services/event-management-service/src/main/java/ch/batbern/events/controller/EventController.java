@@ -548,8 +548,11 @@ public class EventController {
         long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
 
-        // Total committed speakers (ACCEPTED + later content-lifecycle states)
-        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount + qualityReviewedCount;
+        // Total committed speakers (ACCEPTED + later content-lifecycle states).
+        // NB: persisted via {@code response.setConfirmedSpeakersCount} for wire-format stability
+        // — the field name "confirmed" predates ADR-009's removal of CONFIRMED and is preserved
+        // here while OpenAPI changes are owned by Story 11.B.3.
+        long totalCommittedSpeakers = acceptedCount + contentSubmittedCount + qualityReviewedCount;
 
         // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
         long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount;
@@ -586,7 +589,7 @@ public class EventController {
                 .count();
 
         // Set metrics on EventResponse
-        response.setConfirmedSpeakersCount((int) totalConfirmedSpeakers);
+        response.setConfirmedSpeakersCount((int) totalCommittedSpeakers);
         response.setSpeakersWithCompleteInfoCount((int) speakersWithCompleteInfo);
         response.setPendingMaterialsCount((int) pendingMaterials);
         response.setMaxSpeakerSlots(maxSpeakerSlots);
@@ -595,7 +598,7 @@ public class EventController {
 
         log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
                         + "pending materials: {}, max slots: {}, sessions with materials: {}/{}",
-                event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
+                event.getEventCode(), totalCommittedSpeakers, speakersWithCompleteInfo,
                 pendingMaterials, maxSpeakerSlots, sessionsWithMaterials, totalSessions);
     }
 

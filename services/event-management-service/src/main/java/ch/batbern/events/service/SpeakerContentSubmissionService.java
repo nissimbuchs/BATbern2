@@ -12,9 +12,10 @@ import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.workflow.SecurityPrincipal;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +48,7 @@ public class SpeakerContentSubmissionService {
     private final ContentSubmissionRepository contentSubmissionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final UserApiClient userApiClient;
-    private final ApplicationEventPublisher eventPublisher;
+    private final SpeakerWorkflowService speakerWorkflowService;
 
     /**
      * Submit speaker content (presentation title and abstract).
@@ -147,22 +148,22 @@ public class SpeakerContentSubmissionService {
                 .build();
         sessionUserRepository.save(sessionUser);
 
-        // 5. Update speaker_pool (AC10)
-        ch.batbern.shared.types.SpeakerWorkflowState previousState = speaker.getStatus();
+        // 5. Update speaker_pool session reference, then delegate the workflow transition to
+        // SpeakerWorkflowService.transition() — the sole writer of speaker_pool.status and
+        // speaker_status_history per ADR-009 (Story 11.B.2). transition() also publishes the
+        // canonical SpeakerWorkflowStateChangeEvent.
         speaker.setSessionId(session.getId());
-        speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
         speakerPoolRepository.save(speaker);
 
-        // 6. Publish SpeakerWorkflowStateChangeEvent (AC10)
-        ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent event =
-                new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
-                        poolUuid,
-                        speaker.getEventId(),
-                        previousState,
-                        ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED,
-                        finalUsername
-                );
-        eventPublisher.publishEvent(event);
+        SecurityPrincipal speakerActor = new SecurityPrincipal(finalUsername, List.of("SPEAKER"));
+        TransitionPayload payload = TransitionPayload.builder()
+                .reason("Content submitted via speaker portal (session " + session.getId() + ")")
+                .build();
+        speakerWorkflowService.transition(
+                poolUuid,
+                ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED,
+                speakerActor,
+                payload);
 
         log.info("Content submitted successfully for speaker pool entry {}, session {} created",
                 poolId, session.getId());

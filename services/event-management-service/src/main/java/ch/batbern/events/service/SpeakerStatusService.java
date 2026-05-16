@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
@@ -89,8 +90,16 @@ public class SpeakerStatusService {
             speakerId, request.getNewStatus(), eventCode, organizerUsername);
 
         // Early existence check
-        if (!speakerPoolRepository.existsById(speakerId)) {
-            throw new NotFoundException("Speaker not found: " + speakerId);
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+
+        // Organizer-facing API: forbid same-state writes on terminal DECLINED to prevent
+        // audit-trail pollution via reason-less "re-affirm" clicks. Programmatic same-state
+        // writes via transition() remain possible (e.g. system replay).
+        if (request.getNewStatus() == SpeakerWorkflowState.DECLINED
+                && speaker.getStatus() == SpeakerWorkflowState.DECLINED) {
+            throw new ValidationException(
+                    "Cannot re-affirm a DECLINED speaker — terminal state has no outgoing transitions.");
         }
 
         TransitionPayload payload = TransitionPayload.builder()
