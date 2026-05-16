@@ -8,7 +8,6 @@ import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { spawnSync } from 'child_process';
 import { EnvironmentConfig } from '../config/environment-config';
 
 export interface StorageStackProps extends cdk.StackProps {
@@ -179,28 +178,18 @@ export class StorageStack extends cdk.Stack {
             ].join(' && '),
           ],
           local: {
-            // Used for local development and CI unit tests (no Docker needed)
+            // Jest unit tests get a lightweight stub (no Docker required).
+            // Real CDK deploys always use the Docker bundler so that npm ci installs the
+            // correct Linux x64 sharp binary — the local esbuild path never copies node_modules/sharp.
             tryBundle(outputDir: string): boolean {
-              try {
-                const esbuildBin = require.resolve('esbuild/bin/esbuild');
-                const result = spawnSync(
-                  esbuildBin,
-                  [
-                    path.join(lambdaSrcDir, 'index.ts'),
-                    '--bundle',
-                    '--platform=node',
-                    '--target=node20',
-                    '--external:sharp',
-                    `--define:CONTENT_BUCKET_NAME="${contentBucketName}"`,
-                    `--define:CONTENT_BUCKET_REGION="${contentBucketRegion}"`,
-                    `--outfile=${path.join(outputDir, 'index.js')}`,
-                  ],
-                  { stdio: 'inherit' },
+              if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') {
+                require('fs').writeFileSync(
+                  require('path').join(outputDir, 'index.js'),
+                  'exports.handler = async () => ({});',
                 );
-                return result.status === 0;
-              } catch {
-                return false;
+                return true;
               }
+              return false; // fall back to Docker for all real deployments
             },
           },
         },

@@ -1,5 +1,4 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import sharp from 'sharp';
 import type { CloudFrontRequestEvent, CloudFrontRequestResult } from 'aws-lambda';
 
 // Injected at CDK build time via esbuild --define (Lambda@Edge has no env vars)
@@ -23,6 +22,15 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
 
   if (!w && !h) return request;
 
+  // Dynamic import keeps the module loadable even if sharp is absent from the Lambda package.
+  // A static top-level import would crash module initialisation and break ALL requests with 503.
+  let sharpFn: typeof import('sharp');
+  try {
+    sharpFn = (await import('sharp')).default as unknown as typeof import('sharp');
+  } catch {
+    return request; // sharp not bundled — fail open, pass through to S3 origin
+  }
+
   const fitRaw = params.get('fit') ?? 'cover';
   const fit: Fit = VALID_FIT.has(fitRaw) ? (fitRaw as Fit) : 'cover';
   const key = request.uri.replace(/^\//, '');
@@ -33,7 +41,7 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
     for await (const chunk of s3Resp.Body as AsyncIterable<Uint8Array>) {
       chunks.push(chunk);
     }
-    const resized = await sharp(Buffer.concat(chunks))
+    const resized = await sharpFn(Buffer.concat(chunks))
       .resize(w, h, { fit, withoutEnlargement: true })
       .webp({ quality: 80 })
       .toBuffer();
