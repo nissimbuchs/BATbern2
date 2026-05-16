@@ -11,7 +11,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;

@@ -26,9 +26,10 @@ public class ReadyRequiresPromoteException extends RuntimeException {
      */
     public ReadyRequiresPromoteException(String eventCode) {
         super(String.format(
-                "Speakers cannot be transitioned to READY via PUT /status — the READY state requires "
-                        + "an email payload for User provisioning. Use POST /api/v1/events/%s/speakers/{speakerId}/promote "
-                        + "(Story 11.D.1) instead.",
+                "Speakers cannot be transitioned to READY via PUT /status"
+                        + " — READY requires an email payload for provisioning."
+                        + " Use POST /api/v1/events/%s/speakers/{speakerId}/promote"
+                        + " (Story 11.D.1) instead.",
                 eventCode));
     }
 }
