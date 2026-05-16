@@ -246,6 +246,12 @@ plus `DECLINED` reachable from any non-terminal state.
 No backward-compatibility migration of in-flight speakers is required — there are no
 in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
 
+> **Implementation status:** the "Drop `speakers` table" row below was implemented in
+> Story 11.C.1 (`V94__drop_speakers_table.sql`). The "Migrate `speaker_pool.status`"
+> + "Drop overflow tables" + "Drop `is_tentative` columns" rows were implemented in
+> Story 11.B.3 (`V93__migrate_legacy_speaker_states.sql`). Magic-link tables and
+> Cognito configuration remain Phase E / F.
+
 | Migration | Purpose |
 |---|---|
 | Drop `speakers` table | No backfill into `user_profiles`. The legacy speaker-only attributes (linkedin, expertise, etc.) are intentionally dropped — they are not used by production code paths the platform depends on. `user_profiles.bio` and `user_profiles.profile_picture_url` already exist and cover short CV and portrait. |
@@ -291,6 +297,13 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
 ## 3. Component Changes by Service
 
 ### 3.1 `event-management-service`
+
+> **Story 11.C.1 note:** Story 10.20's legacy BAT-format export/import
+> (`LegacyExportService`, `LegacyImportService`, `AdminExportImportController`,
+> `dto/export/*`) is retired alongside the `Speaker` entity. The one-shot
+> historical import has already run against production and is not re-executable
+> against a database that lacks `speakers`. No further re-execution path is
+> required.
 
 | Change | Component |
 |---|---|

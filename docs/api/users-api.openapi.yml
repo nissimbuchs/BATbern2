@@ -62,8 +62,52 @@ tags:
     description: GDPR-compliant data export and deletion
   - name: Domain Integration
     description: Domain service integration endpoints
+  - name: Public
+    description: |
+      Anonymous (unauthenticated) endpoints. Strictly narrow public projection —
+      no email, no role list, no other PII. Mirrors the established
+      /api/v1/public/organizers pattern (Story 11.C.1).
 
 paths:
+  /public/users/{username}:
+    get:
+      operationId: getPublicUserByUsername
+      tags:
+        - Public
+      summary: Get public user by username (no authentication)
+      description: |
+        Anonymous lookup of a user's narrow public projection (Story 11.C.1, AC7).
+
+        Replaces the deleted GET /api/v1/speakers/{username} endpoint that the
+        public archive page used to call for speaker portraits. Mirrors the
+        narrow projection of /api/v1/public/organizers (firstName, lastName,
+        profilePictureUrl + username) — no email, no role list, no other PII.
+
+        Used by web-frontend's useUserPortrait hook on the public archive page.
+      security: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Public user identifier (ADR-003)
+          schema:
+            type: string
+            example: john.doe
+      responses:
+        '200':
+          description: Public user projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
   /users/{username}/watch-pairing:
     post:
       operationId: generateWatchPairingCode
@@ -1481,6 +1525,35 @@ paths:
 
 components:
   schemas:
+    # Story 11.C.1: Public user projection (anonymous lookup)
+    PublicUserResponse:
+      type: object
+      description: |
+        Narrow public projection of a user — exactly the fields the public
+        archive page needs for portrait display. No email, no role list,
+        no other PII. Mirrors PublicOrganizerResponse's projection.
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: Public identifier (ADR-003)
+          example: john.doe
+        firstName:
+          type: string
+          nullable: true
+          example: John
+        lastName:
+          type: string
+          nullable: true
+          example: Doe
+        profilePictureUrl:
+          type: string
+          nullable: true
+          format: uri
+          description: CloudFront URL of the user's portrait, when set.
+          example: https://cdn.batbern.ch/users/john.doe/profile.jpg
+
     # W2.2: Watch Authentication Schemas
     WatchPairingRequest:
       type: object

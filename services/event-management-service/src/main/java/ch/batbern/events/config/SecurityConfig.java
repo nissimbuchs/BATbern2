@@ -99,10 +99,6 @@ public class SecurityConfig {
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
-                // SpeakerController: public read endpoints (speaker directory)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speakers").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/speakers/*").permitAll()
-
                 // Story 5.9: Public materials download endpoint for archived events
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
@@ -119,13 +115,6 @@ public class SecurityConfig {
 
                 // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
-
-                // Story 6.2b: Speaker portal profile endpoints (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
-                .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
                 // Story 6.4: Speaker dashboard endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()

@@ -44,9 +44,6 @@ export const SpeakerDrawerHeader: React.FC<SpeakerDrawerHeaderProps> = ({ speake
                             : 'default'
                   }
                 />
-                {speaker.isTentative && (
-                  <Chip label={t('speakers.tentative')} size="small" color="warning" />
-                )}
               </Box>
             </>
           )}

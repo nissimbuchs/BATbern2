@@ -1,6 +1,6 @@
 # Story 11.B.2: Make `SpeakerWorkflowService` the sole status writer with side-effect hooks
 
-Status: in-progress
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 

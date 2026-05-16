@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 11-c-1-drop-speakers-table-remove-speaker-coordination-refs (2026-05-16)
+
+- **Watch services lose batch user lookup → N+1 HTTP loop** [`services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java`] — `mapToActiveEventDetail` replaced batch `speakerRepository.findAllByUsernameIn(...)` with per-record `userApiClient.getUserByUsername(...)`. Open Q4 (resolved 2026-05-15) accepted per-record for 5-10 speakers per event. Revisit if smoke shows >500ms latency in local-native.
+- **`UserApiClient` retains three dead methods** (`updateUser`, `updateUserProfilePicture`, `getSpeakerUsernames`) [`services/event-management-service/src/main/java/ch/batbern/events/service/UserApiClient.java`] — explicitly deferred to Story 11.C.2 which rewrites `UserApiClient` with `patchUserProfile`. No live callers remain in EMS.
+- **`ProfileUpdatePage.tsx` + `speakerPortalService.getProfile/updateProfile` still wired in frontend** [`web-frontend/src/App.tsx:277`, `web-frontend/src/services/speakerPortalService.ts:444-525`] — backend `/speaker-portal/profile*` endpoints deleted (AC4), frontend tear-down scoped to Story 11.F.1. Until then, clicking "Update profile" from `ContentSubmissionPage:358` shows a silent failure UI.
+- **Kanban `OUTREACH_LANES` / `POST_ACCEPTANCE_LANES` reorder is only partial** [`web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx`] — full ADR-009 §0.1 lane ordering (move `INVITED` to end of outreach; add `ACCEPTED` as first post-acceptance lane) owned by Stories 11.D.2 / 11.D.3 per their scope. This story only removed `'CONFIRMED'` from post-acceptance.
+- **19 Bruno test failures across `users-api` / `events-api` / `speaker-portal-api`** [`bruno-tests/events-api/`, `bruno-tests/speaker-portal-api/`] — pre-existing 11.B.* carryover: tests reference removed `TENTATIVE` state, removed `ACCEPTED → IDENTIFIED` transitions, or `send-invitation` endpoints whose validation tightened in 11.B.2/B.3. Phase B owners should sweep the suite.
+- **Sprint-status YAML promotes 11.C.1 to `review` while prerequisite 11.B.3 is still `in-progress`** [`_bmad-output/implementation-artifacts/sprint-status.yaml`] — merge-train ordering risk: V94 depends on V93 landing first. Track to ensure correct sequencing at merge time.
+- **No `UserApiClient` batch path added** [`services/event-management-service/src/main/java/ch/batbern/events/service/UserApiClient.java`] — Open Q4 explicitly accepted per-record. Listed so a future contributor adding a new N-record fan-out screen doesn't repeat the per-record loop without revisiting the decision.
+
 ## Deferred from: code review of 11-b-3-migrate-legacy-status-drop-tentative-cols-derived-flags (2026-05-16)
 
 - **Misleading test semantics in `should_rejectLegacyStatusUpdate_when_constraintsTightened`** [`V93LegacySpeakerStatesMigrationIntegrationTest.java`] — witness row (`slotAssignedSpeakerId`) was already mapped to `accepted` by the migration, so the constraint check is incidental rather than intentional. Test functions correctly but is misleading to future readers. Low priority.

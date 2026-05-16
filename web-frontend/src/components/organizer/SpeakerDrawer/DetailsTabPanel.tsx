@@ -69,18 +69,6 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
         </Box>
       )}
 
-      {/* Tentative Details */}
-      {speaker.isTentative && speaker.tentativeReason && (
-        <Box sx={{ bgcolor: '#fff8e1', p: 1.5, borderRadius: 1, mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ color: '#e65100' }} gutterBottom>
-            {t('speakers.tentativeDetails')}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#212121' }}>
-            {t('speakers.tentativeReason')}: {speaker.tentativeReason}
-          </Typography>
-        </Box>
-      )}
-
       {/* Revision Feedback */}
       {speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes && (
         <Box sx={{ bgcolor: '#ffebee', p: 1.5, borderRadius: 1, mb: 2 }}>
@@ -160,7 +148,6 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({ speaker }) => 
       {/* No details message if nothing to show */}
       {!speaker.acceptedAt &&
         !(speaker.status === 'DECLINED' && speaker.declineReason) &&
-        !(speaker.isTentative && speaker.tentativeReason) &&
         !(speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes) &&
         !speaker.submittedTitle && (
           <Box sx={{ textAlign: 'center', py: 4 }}>

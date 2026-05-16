@@ -19,7 +19,6 @@ export function getDefaultTab(speaker: SpeakerPoolEntry): number {
 
     case 'INVITED':
     case 'ACCEPTED':
-    case 'CONFIRMED':
     case 'READY':
     default:
       return 0; // Overview — action buttons

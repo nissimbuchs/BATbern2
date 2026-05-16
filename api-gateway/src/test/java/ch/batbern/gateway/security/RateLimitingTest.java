@@ -192,7 +192,10 @@ class RateLimitingTest {
         request.setRequestURI("/api/content/search");
         request.setRemoteAddr("192.168.1.100");
 
-        when(rateLimitStorage.getCurrentRequestCount("anonymous", "/api/content/search", "anonymous")).thenReturn(5);
+        // Story 11.C.1 / D3: anonymous bucket key is now "anonymous:{clientIp}" so one
+        // attacker cannot exhaust the shared anonymous quota for every other visitor.
+        String anonBucket = "anonymous:192.168.1.100";
+        when(rateLimitStorage.getCurrentRequestCount(anonBucket, "/api/content/search", "anonymous")).thenReturn(5);
         when(rateLimitStorage.getRateLimit("anonymous", "/api/content/search")).thenReturn(10);
 
         // When
@@ -200,6 +203,6 @@ class RateLimitingTest {
 
         // Then
         assertThat(allowed).isTrue();
-        verify(rateLimitStorage).incrementRequestCount("anonymous", "/api/content/search", "anonymous");
+        verify(rateLimitStorage).incrementRequestCount(anonBucket, "/api/content/search", "anonymous");
     }
 }

@@ -557,3 +557,4 @@ DROP TABLE IF EXISTS speaker_selection_votes;     -- overflow voting
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2026-05-15 | 1.0 | Initial ADR (replaces the three placeholder ADRs 013/014/015 from the refactor plan into a single document). | Winston (Architect Agent) |
+| 2026-05-16 | 1.1 | Story 11.C.1 implementation landed: V94 migration (`services/event-management-service/src/main/resources/db/migration/V94__drop_speakers_table.sql`) drops the `speakers` table; `Speaker` entity + `SpeakerRepository` + `SpeakerService` + `SpeakerController` + `SpeakerPortalProfileController` + `LegacyExportService` / `LegacyImportService` deleted; watch services migrated to `UserApiClient`; public portrait lookup mirrored as `GET /api/v1/public/users/{username}` in CUMS (`PublicUserController`). | Amelia (Dev Agent) |

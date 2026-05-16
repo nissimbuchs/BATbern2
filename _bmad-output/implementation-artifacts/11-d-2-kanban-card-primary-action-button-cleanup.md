@@ -162,14 +162,14 @@ The label format is e.g. `"2 days"`, `"1 week"`, `"3 months"` — without the "a
 
 **And** the chip currently does **not** colour-code by threshold (yellow/red) — that is Story 11.D.3's scope (UX-DR7). For this story the chip uses `color="default"`. This is documented in the file as a `// TODO(11.D.3): apply threshold-driven colour coding per §8.7` comment.
 
-**Timestamp source resolution (AC3):** the current `SpeakerPoolEntry` type has `createdAt`, `updatedAt`, `invitedAt`, `acceptedAt`, `declinedAt`, `contentSubmittedAt`. It does NOT have a single `statusChangedAt` field. The plan §8.1 says "the time-in-state indicator (e.g. '2 days', '1 week')" — i.e., time **in the current state**, not time since the row was created. **Decision (per Open Question #1 — to resolve with PM):** for this story, use the following resolution order:
+**Timestamp source resolution (AC3) — decided 2026-05-16 per Resolved Q#1:** the current `SpeakerPoolEntry` type has `createdAt`, `updatedAt`, `invitedAt`, `acceptedAt`, `declinedAt`, `contentSubmittedAt`. It does NOT have a single `statusChangedAt` field. The plan §8.1 says "the time-in-state indicator (e.g. '2 days', '1 week')" — i.e., time **in the current state**, not time since the row was created. The PM accepted the imperfect-but-shippable resolution; **NO backend `status_changed_at` column is added in this story**. Use this resolution order:
 1. If `speaker.status === 'INVITED'` and `speaker.invitedAt`: use `invitedAt`.
 2. Else if `speaker.status === 'ACCEPTED'` and `speaker.acceptedAt`: use `acceptedAt`.
 3. Else if `speaker.status === 'CONTENT_SUBMITTED'` and `speaker.contentSubmittedAt`: use `contentSubmittedAt`.
 4. Else if `speaker.status === 'DECLINED'` and `speaker.declinedAt`: use `declinedAt`.
 5. Else: fall back to `speaker.updatedAt ?? speaker.createdAt`.
 
-This is **imperfect** (the fall-back means `updatedAt` is overwritten by any field update, not just status changes), but matches the data the frontend already has. The clean fix is a dedicated `statusChangedAt` field, but that requires backend changes and is recorded as **Open Question #1**. If the PM elects to add `statusChangedAt` in this story, it lands as a separate small migration + DTO field (estimated ~20 LOC backend + DTO regen); otherwise the resolution above ships.
+This is **imperfect** (the fall-back means `updatedAt` is overwritten by any field update, not just status changes) and the chip may briefly show "moments ago" if the row is touched by an unrelated field update. The dev adds a one-line code comment at the helper: `// TODO: switch to a dedicated status_changed_at column if organizers report the fallback is misleading.` No further work required.
 
 ---
 
@@ -194,6 +194,16 @@ const slotCapacityReached = maxSlots > 0 && (acceptedCount + invitedCount) >= ma
 
 **And** the capacity values are passed down from `SpeakerStatusLanes` (which has access to the full `speakers` array) to each `SpeakerCard` via new props `slotCapacityReached: boolean` + `slotCapacityTooltipValues: { invited: number; accepted: number; slots: number }` so the per-card computation does NOT re-walk the array per render.
 
+**And** (per Resolved Q#4 — defensive note required) at the slot-capacity computation site in `SpeakerStatusLanes.tsx`, add this comment:
+
+```typescript
+// Slot capacity is derived in-page from the loaded speakers array — this is correct as long
+// as `speakers` is the complete event-scoped pool (it is today). If this query ever paginates,
+// switch to a server-side count endpoint to avoid undercounting INVITED/ACCEPTED off-page.
+```
+
+This makes the invariant explicit so a future contributor adding pagination notices the dependency.
+
 **And** the same i18n tooltip key (`speakerCard.slotCapacityTooltip`) is later reused by Story 11.D.3 for the READY-column "⚠ slot capacity reached" sub-line and by Story 11.D.4 for the drag-drop rejection toast — the key is defined ONCE in `organizer:speakerCard.*` namespace in this story.
 
 **And** the disabled-button branch is exercised by both Vitest (AC9 frontend tests) and Playwright (AC9 `should_disableSendInvitation_when_slotCapacityReached`).
@@ -216,7 +226,7 @@ The PRD lines 949-953 say "the existing 'pending' indicator/badge is removed (pe
 
 **D. The `STATUS_LANES` legacy entries (`SpeakerStatusLanes.tsx:78-93`)**
 - **Background:** The current code lists `CONFIRMED` in `POST_ACCEPTANCE_LANES` and has `INVITED` in the wrong position (between IDENTIFIED and CONTACTED in `OUTREACH_LANES`). Story 11.B.1 removed CONFIRMED from the enum; ADR-009 §0.1 specifies the order `IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → DECLINED`.
-- **Disposition (per Open Question #2 — to resolve with PM):** **Reorder + remove CONFIRMED.** Update the constants to:
+- **Disposition (decided 2026-05-16 per Resolved Q#2 — clean up now):** **Reorder + remove CONFIRMED in this story.** Update the constants to:
   ```typescript
   const OUTREACH_LANES: SpeakerWorkflowState[] = ['IDENTIFIED', 'CONTACTED', 'READY', 'INVITED'];
   const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = ['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED', 'DECLINED'];
@@ -276,18 +286,17 @@ The PRD lines 949-953 say "the existing 'pending' indicator/badge is removed (pe
 
 ---
 
-### AC8 — `⋯` secondary menu — nice-to-have (UX-DR4 — non-blocking)
+### AC8 — `⋯` secondary menu — DEFERRED to Story 11.D.4 (per Resolved Q#3)
 
-**Given** PRD lines 955-959 explicitly mark the `⋯` secondary menu as "nice-to-have for first iteration; story passes if the four actions remain reachable via the existing drawer",
-**Then** **this story does NOT block on the secondary menu**. The four actions (reassign organizer, edit details, override state, decline with reason) are already reachable through:
+**Given** PRD lines 955-959 mark the `⋯` secondary menu as "nice-to-have for first iteration",
+**And** PM decision 2026-05-16: defer the menu to Story 11.D.4 (which redesigns the drawer anyway, so the four secondary actions land alongside a coherent drawer-and-card menu design),
+**Then** **this story does NOT implement the `⋯` menu**. The four actions (reassign organizer, edit details, override state, decline with reason) remain reachable through the existing surfaces:
 - "reassign organizer" — drawer → DetailsTabPanel (existing `AssignedOrganizerField`).
 - "edit details" — drawer → DetailsTabPanel.
 - "override state" — drag-drop to any lane (existing) + drawer's status dropdown (existing).
 - "decline with reason" — drag-drop to DECLINED lane → triggers `StatusChangeDialog` with reason field (existing — `StatusChangeDialog.tsx`).
 
-**And** if the dev has bandwidth, an `IconButton` with `<MoreHorizIcon>` may be added next to the primary-action button at the bottom of the card, opening an MUI `<Menu>` with four `<MenuItem>`s that route to the existing drawer surfaces. This is captured as Open Question #3 — the PM may elect to defer the `⋯` menu to Story 11.D.4 (which redesigns the drawer anyway).
-
-**And** regardless of the dev's choice, the story acceptance criteria pass **with or without** the `⋯` menu — only the four-actions-reachable invariant is mandatory.
+**And** the dev does **not** add a `<MoreHorizIcon>` IconButton, `<Menu>`, or `<MenuItem>` components to the card in this story. Save the bandwidth for the unified drawer-and-card design in 11.D.4.
 
 ---
 
@@ -559,21 +568,22 @@ _To be filled in by the dev agent. Expected scope: ~6-8 source files (SpeakerSta
 | Date | Change |
 |------|--------|
 | 2026-05-16 | Story 11.D.2 drafted via `bmad-create-story`. |
+| 2026-05-16 | Resolved all 4 Open Questions with PM (Nissim). Q1 → accept the imperfect timestamp-source resolution (no `status_changed_at` column in this story; add TODO comment). Q2 → reorder lanes + remove CONFIRMED now (AC5 D locked in). Q3 → defer `⋯` secondary menu to Story 11.D.4 (AC8 narrowed to "do not implement"). Q4 → add defensive comment about pagination dependency at the slot-capacity computation site (AC4 amended). |
 
 ---
 
-## Open Questions
+## Open Questions (resolved 2026-05-16)
 
-These four questions need PM input before development begins. Each is phrased in plain language and identifies the decision the PM needs to make.
+All four questions were resolved with PM (Nissim) before development. The AC, Tasks, and Dev Notes above already reflect the decisions. Listed here for traceability.
 
-1. **Time-in-state timestamp source.** The plan says "time-in-state chip" but the data model today has per-state timestamps (`invitedAt`, `acceptedAt`, `contentSubmittedAt`, `declinedAt`) plus a generic `updatedAt` and `createdAt`. There is no dedicated `statusChangedAt` column, so for states like IDENTIFIED, CONTACTED, READY, or QUALITY_REVIEWED, the chip would fall back to `updatedAt` (which is bumped by any field update, not just status changes). The AC3 resolution above uses the per-state timestamps where they exist and falls back to `updatedAt` otherwise — imperfect but ships from the data we have. The clean fix is to add a `status_changed_at` column to `speaker_pool` (set in `SpeakerWorkflowService.transition()` step 4 — the same place that already updates `status` and writes the history row). That is ~20 LOC backend + a small Flyway migration + DTO regen. Does the PM want this clean fix in 11.D.2, or accept the imperfect resolution and revisit if organizers complain?
+1. ✅ **Accept the imperfect timestamp-source resolution; do NOT add a `status_changed_at` column.** The time-in-state chip uses per-state timestamps (`invitedAt`, `acceptedAt`, `contentSubmittedAt`, `declinedAt`) where they exist and falls back to `updatedAt` / `createdAt` otherwise. The fallback is imperfect — `updatedAt` is bumped by any field update, not just status changes — but matches the data the frontend already has and ships from the existing model. The dev adds a one-line `// TODO: switch to a dedicated status_changed_at column if organizers report the fallback is misleading.` at the helper. The clean fix (backend column + migration + DTO regen) is revisited only if organizer feedback flags it. AC3 reflects this.
 
-2. **Lane reordering + CONFIRMED removal in this story (AC5(D)).** The current lane order is `[IDENTIFIED, INVITED, CONTACTED, READY, ACCEPTED]` and `[CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED, DECLINED]`. ADR-009 prescribes `[IDENTIFIED, CONTACTED, READY, INVITED]` and `[ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED]`. The kanban file is being heavily edited by this story anyway. Two options: (a) clean up the constants now (AC5 D as drafted — 4 lines of changes), or (b) defer to a separate story explicitly about state-set alignment. Recommendation: do it now since the file is open. Does the PM want to confirm or split?
+2. ✅ **Reorder lanes + remove CONFIRMED in this story.** The kanban file is being heavily edited anyway, so the 4-line constants cleanup lands here. New lane order: `[IDENTIFIED, CONTACTED, READY, INVITED]` (outreach) + `[ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED]` (post-acceptance). CONFIRMED removed from both `STATUS_LANES` and `STATUS_COLORS` in `SpeakerStatusLanes.tsx` AND `SpeakerStatusDashboard.tsx`. AC5(D) captures the full disposition.
 
-3. **Defer `⋯` secondary menu to 11.D.4?** The PRD lines 955-959 already call this "nice-to-have for first iteration". Story 11.D.4 redesigns the drawer (which is where reassign-organizer / edit-details / override-state / decline-with-reason already live). Adding a `⋯` menu in 11.D.2 introduces a new menu surface that 11.D.4 may rework. Recommendation: skip the `⋯` menu in 11.D.2 (the four actions are reachable via drag-drop + the drawer) and revisit in 11.D.4 with a unified drawer-and-card menu design. Does the PM want to confirm the deferral, or have the dev attempt the menu now if time permits?
+3. ✅ **Defer `⋯` secondary menu to Story 11.D.4.** Story 11.D.4 redesigns the drawer (which is where reassign-organizer / edit-details / override-state / decline-with-reason already live), so the `⋯` menu lands alongside a unified drawer-and-card design rather than as a stand-alone surface in 11.D.2. The four actions remain reachable in 11.D.2 via drag-drop + the existing drawer. AC8 reflects "do not implement in this story".
 
-4. **Should the READY button's slot-capacity computation use a server-side count or in-page derivation?** Plan §8.3 (column-header counts) says "prefers in-page derivation over a new aggregation endpoint" — and the same principle applies here. AC4 above computes capacity from the already-loaded `speakers` array. This is correct as long as the array is the complete event-scoped speaker pool — which it is (the existing `useQuery({ queryKey: ['speakerPool', eventCode] })` returns all speakers for the event). However, if any other tab paginates the speakers (it doesn't today, but could in future), the count would be wrong. Does the PM want to add a defensive note ("if speakers list ever paginates, switch to server-side count via a new aggregation endpoint") in the codebase comment, or skip the defensive note?
+4. ✅ **Add the defensive note about in-page derivation.** The slot-capacity computation in AC4 walks the already-loaded `speakers` array — correct as long as that array is the complete event-scoped pool (it is today). A code comment at the computation site documents the dependency so a future contributor adding pagination notices it. AC4 captures the verbatim comment text.
 
 ---
 
-_Story created via `bmad-create-story` skill on 2026-05-16. Authored with comprehensive context-engine analysis. Depends on Story 11.D.1 (must merge first) + builds on 11.B.1, 11.B.2 (landed), 11.B.3 (in review). Ready for `bmad-dev-story` execution once 11.D.1 merges to `feature/speaker-workflow-refactor`._
+_Story created via `bmad-create-story` skill on 2026-05-16. Authored with comprehensive context-engine analysis. All 4 Open Questions resolved with PM the same day. Depends on Story 11.D.1 (must merge first) + builds on 11.B.1, 11.B.2 (landed), 11.B.3 (in review). Ready for `bmad-dev-story` execution once 11.D.1 merges to `feature/speaker-workflow-refactor`._

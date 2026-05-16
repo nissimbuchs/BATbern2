@@ -86,7 +86,6 @@ const OUTREACH_LANES: SpeakerWorkflowState[] = [
 const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = [
   'CONTENT_SUBMITTED',
   'QUALITY_REVIEWED',
-  'CONFIRMED',
   'DECLINED',
 ];
 
@@ -704,14 +703,6 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
                 <Typography variant="caption" color="error.main" sx={{ display: 'block' }}>
                   {t('organizer:speakers.declineReason')}: {speaker.declineReason}
-                </Typography>
-              </Box>
-            )}
-
-            {speaker.isTentative && speaker.tentativeReason && (
-              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
-                <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
-                  {t('organizer:speakers.tentativeReason')}: {speaker.tentativeReason}
                 </Typography>
               </Box>
             )}

@@ -1,6 +1,6 @@
 # Story 11.B.3: Migrate legacy `speaker_pool.status` values; drop tentative columns; tighten status API; add derived flags
 
-Status: review
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 

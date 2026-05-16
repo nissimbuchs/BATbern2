@@ -336,7 +336,7 @@ describe('useUserPortrait', () => {
     vi.clearAllMocks();
   });
 
-  it('should fetch portrait URL for username', async () => {
+  it('should fetch portrait URL for username with Skip-Auth header', async () => {
     mockGet.mockResolvedValue({
       data: { profilePictureUrl: 'https://cdn.example.com/portrait.jpg' },
     });
@@ -345,7 +345,11 @@ describe('useUserPortrait', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGet).toHaveBeenCalledWith('/speakers/alice');
+    // Story 11.C.1: public endpoint must NOT attach the Cognito token; otherwise a stale
+    // ID token triggers the apiClient 401 → /login redirect from anonymous archive views.
+    expect(mockGet).toHaveBeenCalledWith('/public/users/alice', {
+      headers: { 'Skip-Auth': 'true' },
+    });
     expect(result.current.data).toBe('https://cdn.example.com/portrait.jpg');
   });
 
@@ -373,11 +377,19 @@ describe('useUserPortrait', () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
-  it('should set isError on fetch failure', async () => {
-    mockGet.mockRejectedValue(new Error('Not found'));
+  it('should not retry on 404 (legitimate persistent miss)', async () => {
+    // Story 11.C.1: 404 means the user isn't a speaker (or doesn't exist); don't retry.
+    // Other errors are retried up to 2 times (Fargate-spot replacement absorption).
+    const axiosError = Object.assign(new Error('Not Found'), {
+      isAxiosError: true,
+      response: { status: 404 },
+    });
+    mockGet.mockRejectedValue(axiosError);
 
     const { result } = renderHook(() => useUserPortrait('ghost'), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    // retry: false for 404 → exactly one network call
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 });

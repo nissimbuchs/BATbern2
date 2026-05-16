@@ -1,0 +1,48 @@
+meta {
+  name: Get Public User Portrait by Username (Story 11.C.1)
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/public/users/{{testUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.username: eq {{testUsername}}
+  res.body.firstName: isDefined
+  res.body.lastName: isDefined
+}
+
+tests {
+  test("anonymous (no Authorization header) returns 200 — permitAll matcher in gateway + CUMS", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response body is the narrow public projection only", function() {
+    const body = res.getBody();
+    expect(body).to.have.property("username");
+    expect(body).to.have.property("firstName");
+    expect(body).to.have.property("lastName");
+    expect(body).to.have.property("profilePictureUrl");
+    // Projection MUST NOT leak the following:
+    expect(body).to.not.have.property("email");
+    expect(body).to.not.have.property("bio");
+    expect(body).to.not.have.property("roles");
+    expect(body).to.not.have.property("companyId");
+  });
+
+  test("response carries a public 24h Cache-Control header", function() {
+    const cacheControl = res.getHeader("cache-control") || res.getHeader("Cache-Control");
+    expect(cacheControl).to.exist;
+    expect(cacheControl).to.match(/public/);
+    expect(cacheControl).to.match(/max-age=86400/);
+  });
+}
