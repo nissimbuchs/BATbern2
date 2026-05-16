@@ -57,18 +57,18 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
-    // Test 5.2: should_routeToSpeakerService_when_speakersEndpointCalled
+    // Test 5.2: standalone /api/v1/speakers/* routes no longer exist.
+    // Speaker-coordination became a thin shell in Story 11.C.1 (ADR-009 §6.2); all
+    // speaker actions are now scoped under the owning event:
+    // /api/v1/events/{code}/speakers/{id}/{action}. The event-scoped form is
+    // covered by `should_routeToEventService_when_speakerStatusUpdateEndpointCalled`
+    // and `should_routeToEventService_when_speakerStatusHistoryEndpointCalled` above.
     @Test
-    @DisplayName("should_routeToSpeakerService_when_speakersEndpointCalled")
-    void should_routeToSpeakerService_when_speakersEndpointCalled() {
-        // Given
-        String requestPath = "/api/v1/speakers/invite";
-
-        // When
-        String targetService = domainRouter.determineTargetService(requestPath);
-
-        // Then
-        assertThat(targetService).isEqualTo("event-management-service");
+    @DisplayName("should_throwRoutingException_when_bareSpeakersPathCalled")
+    void should_throwRoutingException_when_bareSpeakersPathCalled() {
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/speakers/invite"))
+                .isInstanceOf(ch.batbern.gateway.routing.exception.RoutingException.class)
+                .hasMessageContaining("/api/v1/speakers/invite");
     }
 
     // Test 5.3: should_routeToPartnerService_when_partnersEndpointCalled
@@ -303,8 +303,9 @@ class DomainRouterTest {
     @Test
     @DisplayName("should_handleQueryParameters_when_pathWithQueryProvided")
     void should_handleQueryParameters_when_pathWithQueryProvided() {
-        // Given
-        String pathWithQuery = "/api/v1/speakers/search?name=John&role=keynote";
+        // Given — using an event-scoped path that survives the Phase B/C refactor.
+        // Verifies the query-string is stripped before matching.
+        String pathWithQuery = "/api/v1/events/BATbern56/speakers/search?name=John&role=keynote";
 
         // When
         String targetService = domainRouter.determineTargetService(pathWithQuery);
