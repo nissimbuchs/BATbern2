@@ -122,6 +122,7 @@ web-frontend/.nuxt/
 web-frontend/coverage/
 web-frontend/.vite/
 web-frontend/.storybook-out/
+*.tsbuildinfo
 
 # Frontend test artifacts
 web-frontend/test-results/
