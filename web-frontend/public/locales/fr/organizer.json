@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Capacité de créneaux atteinte. {{invited}} invitations en attente + {{accepted}} acceptations pour {{slots}} créneaux. Attendez ou déclinez un orateur accepté pour libérer un créneau.",
     "timeInStateTooltip": "État actuel depuis {{date}}",
     "inviteSent": "Invitation envoyée",
-    "inviteFailed": "Échec de l'envoi de l'invitation"
+    "inviteFailed": "Échec de l'envoi de l'invitation",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsolètes (>14 jours)",
+      "readySlotCapacitySubline": "⚠ Capacité de créneaux atteinte",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} échéance proche",
+        "past": "⏰ {{count}} échéance dépassée",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} en attente de contenu",
+      "contentSubmittedSubline": "👀 {{count}} en attente de modération",
+      "qualityReviewedSubline": "🪑 {{count}} en attente de créneau"
+    }
   }
 }

@@ -41,6 +41,25 @@ vi.mock('react-i18next', () => ({
       if (key === 'organizer:speakerCard.timeInStateTooltip' && params) {
         return `Current state since ${params.date}`;
       }
+      // Story 11.D.3 — lane sub-line interpolations.
+      if (key === 'organizer:speakerCard.lanes.contactedSubline' && params) {
+        return `⚠ ${params.count} stale (>14 days)`;
+      }
+      if (key === 'organizer:speakerCard.lanes.invitedSubline.approaching' && params) {
+        return `⏰ ${params.count} approaching deadline`;
+      }
+      if (key === 'organizer:speakerCard.lanes.invitedSubline.past' && params) {
+        return `⏰ ${params.count} past deadline`;
+      }
+      if (key === 'organizer:speakerCard.lanes.acceptedSubline' && params) {
+        return `📝 ${params.count} awaiting content`;
+      }
+      if (key === 'organizer:speakerCard.lanes.contentSubmittedSubline' && params) {
+        return `👀 ${params.count} awaiting moderator review`;
+      }
+      if (key === 'organizer:speakerCard.lanes.qualityReviewedSubline' && params) {
+        return `🪑 ${params.count} awaiting slot`;
+      }
       const labels: Record<string, string> = {
         'organizer:speakerCard.primaryAction.logOutreach': 'Log outreach',
         'organizer:speakerCard.primaryAction.promoteToSpeaker': 'Promote to speaker',
@@ -51,6 +70,8 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerCard.primaryAction.assignSessionSlot': 'Assign session slot',
         'organizer:speakerCard.primaryAction.viewDetails': 'View details',
         'organizer:speakerCard.publishable': 'Publishable',
+        'organizer:speakerCard.lanes.readySlotCapacitySubline': '⚠ Slot capacity reached',
+        'organizer:speakerCard.lanes.invitedSubline.joiner': ' · ',
         'organizer:speakerStatus.lanes': 'Speaker Status Lanes',
         'organizer:speakerStatus.dragToChange': 'Drag to change',
       };
@@ -119,6 +140,8 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
           speakers={speakers}
           sessions={[]}
           maxSlots={overrides.maxSlots}
+          eventDate={overrides.eventDate}
+          now={overrides.now}
           onLogOutreach={overrides.onLogOutreach}
           onPromoteSpeaker={overrides.onPromoteSpeaker}
           onSpeakerClick={overrides.onSpeakerClick}
@@ -425,5 +448,242 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
     renderLanes([speaker]);
     const lane = screen.getByTestId('status-lane-identified');
     expect(within(lane).getByTestId(`speaker-card-${speaker.id}`)).toBeInTheDocument();
+  });
+});
+
+describe('SpeakerStatusLanes — Story 11.D.3 column triage + chip colour coding', () => {
+  let queryClient: QueryClient;
+  const eventCode = 'BATbern56';
+  // Fixed `now` so day arithmetic is deterministic regardless of system clock.
+  const NOW = new Date('2026-05-16T12:00:00Z');
+
+  const daysAgoIso = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
+  const daysFromNowIso = (days: number) =>
+    new Date(NOW.getTime() + days * 86_400_000).toISOString();
+
+  const makeSpeaker = (
+    status: SpeakerWorkflowState,
+    overrides: Partial<SpeakerPoolEntry> = {}
+  ): SpeakerPoolEntry => ({
+    id: `s-${status.toLowerCase()}-${Math.random().toString(36).slice(2, 7)}`,
+    eventId: 'event-1',
+    speakerName: `${status} Speaker`,
+    status,
+    createdAt: daysAgoIso(2),
+    updatedAt: daysAgoIso(2),
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const renderLanes = (
+    speakers: SpeakerPoolEntry[],
+    overrides: Partial<React.ComponentProps<typeof SpeakerStatusLanes>> = {}
+  ) =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SpeakerStatusLanes
+          eventCode={eventCode}
+          speakers={speakers}
+          sessions={[]}
+          maxSlots={overrides.maxSlots}
+          eventDate={overrides.eventDate}
+          now={overrides.now ?? NOW}
+          onLogOutreach={overrides.onLogOutreach}
+          onPromoteSpeaker={overrides.onPromoteSpeaker}
+          onSpeakerClick={overrides.onSpeakerClick}
+          onAssignSessionSlot={overrides.onAssignSessionSlot}
+        />
+      </QueryClientProvider>
+    );
+
+  // AC5 #21
+  it('should_renderContactedSubline_when_someContactedCardsAreStale', () => {
+    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(15) });
+    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
+    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
+    renderLanes([stale1, stale2, fresh]);
+
+    const subline = screen.getByTestId('status-lane-subline-contacted');
+    expect(subline).toHaveTextContent('⚠ 2 stale (>14 days)');
+  });
+
+  // AC5 #22
+  it('should_notRenderContactedSubline_when_noContactedCardsAreStale', () => {
+    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
+    renderLanes([fresh]);
+
+    expect(screen.queryByTestId('status-lane-subline-contacted')).not.toBeInTheDocument();
+  });
+
+  // AC5 #23
+  it('should_renderReadyCapacityReachedSubline_when_slotCapacityReached', () => {
+    const ready = makeSpeaker('READY', { id: 'r-1' });
+    const accepted1 = makeSpeaker('ACCEPTED', { id: 'a-1' });
+    const accepted2 = makeSpeaker('ACCEPTED', { id: 'a-2' });
+    renderLanes([ready, accepted1, accepted2], { maxSlots: 2 });
+
+    const subline = screen.getByTestId('status-lane-subline-ready');
+    expect(subline).toHaveTextContent('⚠ Slot capacity reached');
+    // Per Resolved Q#5, the READY sub-line is static text — NOT a button.
+    expect(subline.tagName).not.toBe('BUTTON');
+  });
+
+  // AC5 #24
+  it('should_renderInvitedSubline_withApproachingAndPastClauses_joinedByDot', () => {
+    const approaching = makeSpeaker('INVITED', {
+      id: 'inv-app',
+      invitedAt: daysAgoIso(5),
+      responseDeadline: daysFromNowIso(2),
+    });
+    const past = makeSpeaker('INVITED', {
+      id: 'inv-past',
+      invitedAt: daysAgoIso(10),
+      responseDeadline: daysAgoIso(1),
+    });
+    renderLanes([approaching, past]);
+
+    const subline = screen.getByTestId('status-lane-subline-invited');
+    expect(subline).toHaveTextContent('⏰ 1 approaching deadline');
+    expect(subline).toHaveTextContent('⏰ 1 past deadline');
+    // Joiner " · " between the two clauses.
+    expect(subline.textContent).toContain(' · ');
+  });
+
+  // AC5 #25
+  it('should_renderQualityReviewedSubline_when_eventIs20DaysAway_andSomeHaveNoSlot', () => {
+    const noSlot1 = makeSpeaker('QUALITY_REVIEWED', {
+      id: 'qr-1',
+      updatedAt: daysAgoIso(2),
+      isSlotAssigned: false,
+    });
+    const noSlot2 = makeSpeaker('QUALITY_REVIEWED', {
+      id: 'qr-2',
+      updatedAt: daysAgoIso(2),
+      isSlotAssigned: false,
+    });
+    const slotted = makeSpeaker('QUALITY_REVIEWED', {
+      id: 'qr-3',
+      isSlotAssigned: true,
+    });
+    const eventDateIso = daysFromNowIso(20);
+    renderLanes([noSlot1, noSlot2, slotted], { eventDate: eventDateIso });
+
+    const subline = screen.getByTestId('status-lane-subline-quality_reviewed');
+    expect(subline).toHaveTextContent('🪑 2 awaiting slot');
+  });
+
+  // AC5 #26
+  it('should_renderTimeInStateChip_withWarningColor_when_speakerIsContactedFor8Days', () => {
+    const speaker = makeSpeaker('CONTACTED', { id: 'c-warn', updatedAt: daysAgoIso(8) });
+    renderLanes([speaker]);
+
+    const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
+    expect(chip.className).toMatch(/MuiChip-colorWarning/);
+    expect(chip.getAttribute('data-severity')).toBe('warning');
+  });
+
+  // AC5 #27
+  it('should_renderTimeInStateChip_withErrorColor_when_speakerIsContactedFor15Days', () => {
+    const speaker = makeSpeaker('CONTACTED', { id: 'c-err', updatedAt: daysAgoIso(15) });
+    renderLanes([speaker]);
+
+    const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
+    expect(chip.className).toMatch(/MuiChip-colorError/);
+    expect(chip.getAttribute('data-severity')).toBe('error');
+  });
+
+  // AC5 #28
+  it('should_clearAttentionFilter_when_subLineCountDropsToZero', async () => {
+    const user = userEvent.setup();
+    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(20) });
+    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
+    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
+    const { rerender } = renderLanes([stale1, stale2, fresh]);
+
+    // Activate the filter
+    await user.click(screen.getByTestId('status-lane-subline-contacted'));
+    expect(screen.getByTestId('status-lane-subline-contacted')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    // Re-render with all stale speakers now fresh — the filter should auto-clear.
+    const refreshedStale1 = { ...stale1, updatedAt: daysAgoIso(2) };
+    const refreshedStale2 = { ...stale2, updatedAt: daysAgoIso(2) };
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SpeakerStatusLanes
+          eventCode={eventCode}
+          speakers={[refreshedStale1, refreshedStale2, fresh]}
+          sessions={[]}
+          now={NOW}
+        />
+      </QueryClientProvider>
+    );
+
+    // No stale CONTACTED cards left → sub-line is gone (count==0 condition).
+    expect(screen.queryByTestId('status-lane-subline-contacted')).not.toBeInTheDocument();
+  });
+
+  // AC5 #29
+  it('should_filterContactedColumn_when_subLineClicked', async () => {
+    const user = userEvent.setup();
+    const stale1 = makeSpeaker('CONTACTED', { id: 'c-stale-1', updatedAt: daysAgoIso(20) });
+    const stale2 = makeSpeaker('CONTACTED', { id: 'c-stale-2', updatedAt: daysAgoIso(20) });
+    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
+    const identifiedNoise = makeSpeaker('IDENTIFIED', { id: 'i-noise' });
+    renderLanes([stale1, stale2, fresh, identifiedNoise]);
+
+    // Initial state: all 3 CONTACTED cards visible.
+    const contactedLane = screen.getByTestId('status-lane-contacted');
+    expect(within(contactedLane).getByTestId(`speaker-card-${stale1.id}`)).toBeInTheDocument();
+    expect(within(contactedLane).getByTestId(`speaker-card-${stale2.id}`)).toBeInTheDocument();
+    expect(within(contactedLane).getByTestId(`speaker-card-${fresh.id}`)).toBeInTheDocument();
+
+    // Click the sub-line → only the 2 stale cards remain in CONTACTED.
+    await user.click(screen.getByTestId('status-lane-subline-contacted'));
+
+    expect(within(contactedLane).getByTestId(`speaker-card-${stale1.id}`)).toBeInTheDocument();
+    expect(within(contactedLane).getByTestId(`speaker-card-${stale2.id}`)).toBeInTheDocument();
+    expect(within(contactedLane).queryByTestId(`speaker-card-${fresh.id}`)).not.toBeInTheDocument();
+
+    // Other columns are unaffected — IDENTIFIED noise still there.
+    const identifiedLane = screen.getByTestId('status-lane-identified');
+    expect(
+      within(identifiedLane).getByTestId(`speaker-card-${identifiedNoise.id}`)
+    ).toBeInTheDocument();
+  });
+
+  // AC5 #30
+  it('should_clearFilter_when_subLineClickedASecondTime', async () => {
+    const user = userEvent.setup();
+    const stale = makeSpeaker('CONTACTED', { id: 'c-stale', updatedAt: daysAgoIso(20) });
+    const fresh = makeSpeaker('CONTACTED', { id: 'c-fresh', updatedAt: daysAgoIso(2) });
+    renderLanes([stale, fresh]);
+
+    const subline = screen.getByTestId('status-lane-subline-contacted');
+
+    // First click — filter active, only the stale card visible.
+    await user.click(subline);
+    const contactedLane = screen.getByTestId('status-lane-contacted');
+    expect(within(contactedLane).queryByTestId(`speaker-card-${fresh.id}`)).not.toBeInTheDocument();
+
+    // Second click — filter cleared, fresh card visible again.
+    await user.click(screen.getByTestId('status-lane-subline-contacted'));
+    expect(within(contactedLane).getByTestId(`speaker-card-${fresh.id}`)).toBeInTheDocument();
+    expect(screen.getByTestId('status-lane-subline-contacted')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
   });
 });

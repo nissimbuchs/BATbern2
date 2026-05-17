@@ -95,6 +95,18 @@
     "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} offni Yladige + {{accepted}} Zuesage für {{slots}} Slots. Warte oder än zuegseiti Redner absage zum än Slot freizmache.",
     "timeInStateTooltip": "Aktuelle Status sit {{date}}",
     "inviteSent": "Yladig gschickt",
-    "inviteFailed": "Yladig het nid könne gschickt wärde"
+    "inviteFailed": "Yladig het nid könne gschickt wärde",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} überfellig (>14 Tääg)",
+      "readySlotCapacitySubline": "⚠ Slot-Kapazitäät erreichi",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} Frischt lauft bald ab",
+        "past": "⏰ {{count}} Frischt verstriche",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} warte uf Inhalt",
+      "contentSubmittedSubline": "👀 {{count}} warte uf Moderation",
+      "qualityReviewedSubline": "🪑 {{count}} warte uf Slot"
+    }
   }
 }

@@ -523,6 +523,18 @@
     "slotCapacityTooltip": "Slot capacity reached. {{invited}} invitations outstanding + {{accepted}} acceptances for {{slots}} slots. Wait or decline an accepted speaker to free a slot.",
     "timeInStateTooltip": "Current state since {{date}}",
     "inviteSent": "Invitation sent",
-    "inviteFailed": "Failed to send invitation"
+    "inviteFailed": "Failed to send invitation",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} stale (>14 days)",
+      "readySlotCapacitySubline": "⚠ Slot capacity reached",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} approaching deadline",
+        "past": "⏰ {{count}} past deadline",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} awaiting content",
+      "contentSubmittedSubline": "👀 {{count}} awaiting moderator review",
+      "qualityReviewedSubline": "🪑 {{count}} awaiting slot"
+    }
   }
 }

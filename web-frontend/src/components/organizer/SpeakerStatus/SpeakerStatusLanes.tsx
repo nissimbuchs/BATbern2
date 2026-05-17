@@ -1,15 +1,17 @@
 /**
- * Speaker Status Lanes Component (Story 5.4 + Story 11.D.2)
+ * Speaker Status Lanes Component (Story 5.4 + Story 11.D.2 + Story 11.D.3)
  *
  * Kanban-board style interface with drag-and-drop status lanes.
  * Each card surfaces a single state-aware primary-action button along its bottom edge,
- * plus a time-in-state chip on the organizer row. Lane order follows ADR-009 §0.1.
+ * plus a colour-coded time-in-state chip on the organizer row. Lane order follows
+ * ADR-009 §0.1. Column headers carry a "needs attention" sub-line that filters the
+ * column when clicked (Story 11.D.3 — see `./kanbanThresholds.ts` + plan §§8.3, 8.7).
  *
  * The primary-action mapping is delegated to `./getPrimaryAction.ts` (the source of truth
  * is `docs/plans/speaker-workflow-refactor.md` §8.2).
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Grid,
   Card,
@@ -51,6 +53,17 @@ import {
   type PrimaryActionCallbacks,
   type SlotCapacityState,
 } from './getPrimaryAction';
+import {
+  DEFAULT_KANBAN_THRESHOLDS,
+  attentionMaxSeverity,
+  classifyChipSeverity,
+  countAttentionCards,
+  countInvitedSplit,
+  getStatusChangedAt,
+  makeAttentionPredicate,
+  severityToChipColor,
+  type ThresholdSeverity,
+} from './kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
 
@@ -63,6 +76,17 @@ export interface SpeakerStatusLanesProps {
    * When 0 or undefined, the slot-capacity check is treated as "no max enforced".
    */
   maxSlots?: number;
+  /**
+   * Event date (ISO string, YYYY-MM-DD or full ISO). Used by the QUALITY_REVIEWED
+   * chip-colour rule (Story 11.D.3 §8.7). When omitted, QUALITY_REVIEWED chips stay
+   * in the default colour.
+   */
+  eventDate?: string;
+  /**
+   * Story 11.D.3 — injected `now` for deterministic testing. Production callers leave
+   * it undefined and the component computes `new Date()` per render.
+   */
+  now?: Date;
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
   onIdentifiedToContacted?: (speaker: SpeakerPoolEntry) => void;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
@@ -72,6 +96,12 @@ export interface SpeakerStatusLanesProps {
   onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
   /** Navigates to slot-assignment page. Story 11.D.2 — QUALITY_REVIEWED (unassigned). */
   onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
+}
+
+interface AttentionSubline {
+  label: string;
+  severity: 'warning' | 'error';
+  clickable: boolean;
 }
 
 // Status color mapping. Story 11.D.2 (AC5 D) — CONFIRMED removed per ADR-009 §0.1.
@@ -100,27 +130,147 @@ const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = [
 const STATUS_LANES: SpeakerWorkflowState[] = [...OUTREACH_LANES, ...POST_ACCEPTANCE_LANES];
 
 /**
- * Resolves the "time in current state" timestamp per AC3. Uses per-state timestamps
- * where they exist, falling back to `updatedAt` / `createdAt`. The fallback is
- * imperfect (any field update bumps `updatedAt`) — see story 11.D.2 AC3 for rationale.
+ * Story 11.D.3 — Build the "needs attention" sub-line metadata for a single column.
+ * Returns null when the column has no sub-line to render (IDENTIFIED / DECLINED / a
+ * gated column whose count is 0 / READY without slot-capacity reached).
+ *
+ * The label uses i18n keys under `organizer:speakerCard.lanes.*`. Translations are
+ * provided in all 10 supported locales; emoji glyphs live in the locale values per
+ * AC6 (not hardcoded here).
+ *
+ * Severity rules (AC2 table):
+ * - CONTACTED → warning (count = error-severity / "stale > 14 days")
+ * - READY → warning (global slot-capacity gate, non-clickable)
+ * - INVITED → error if any past-deadline, else warning
+ * - ACCEPTED → warning
+ * - CONTENT_SUBMITTED / QUALITY_REVIEWED → error if any matching card is error-severity, else warning
  */
-// TODO: switch to a dedicated status_changed_at column if organizers report the fallback is misleading.
-function getStatusChangedAt(speaker: SpeakerPoolEntry): string | undefined {
-  switch (speaker.status) {
-    case 'INVITED':
-      if (speaker.invitedAt) return speaker.invitedAt;
-      break;
-    case 'ACCEPTED':
-      if (speaker.acceptedAt) return speaker.acceptedAt;
-      break;
-    case 'CONTENT_SUBMITTED':
-      if (speaker.contentSubmittedAt) return speaker.contentSubmittedAt;
-      break;
-    case 'DECLINED':
-      if (speaker.declinedAt) return speaker.declinedAt;
-      break;
+function computeAttentionSubline(
+  state: SpeakerWorkflowState,
+  ctx: {
+    speakers: SpeakerPoolEntry[];
+    slotCapacity: SlotCapacityState;
+    parsedEventDate: Date | null;
+    now: Date;
+    t: (key: string, options?: Record<string, unknown>) => string;
   }
-  return speaker.updatedAt ?? speaker.createdAt;
+): AttentionSubline | null {
+  const { speakers, slotCapacity, parsedEventDate, now, t } = ctx;
+
+  switch (state) {
+    case 'IDENTIFIED':
+    case 'DECLINED':
+      return null;
+
+    case 'READY':
+      if (!slotCapacity.reached) return null;
+      return {
+        label: t('organizer:speakerCard.lanes.readySlotCapacitySubline'),
+        severity: 'warning',
+        clickable: false,
+      };
+
+    case 'CONTACTED': {
+      const count = countAttentionCards(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      if (count === 0) return null;
+      return {
+        label: t('organizer:speakerCard.lanes.contactedSubline', { count }),
+        severity: 'warning',
+        clickable: true,
+      };
+    }
+
+    case 'INVITED': {
+      const { approaching, past } = countInvitedSplit(speakers, now, DEFAULT_KANBAN_THRESHOLDS);
+      if (approaching === 0 && past === 0) return null;
+      const parts: string[] = [];
+      if (approaching > 0) {
+        parts.push(
+          t('organizer:speakerCard.lanes.invitedSubline.approaching', { count: approaching })
+        );
+      }
+      if (past > 0) {
+        parts.push(t('organizer:speakerCard.lanes.invitedSubline.past', { count: past }));
+      }
+      const joiner = t('organizer:speakerCard.lanes.invitedSubline.joiner');
+      return {
+        label: parts.join(joiner),
+        severity: past > 0 ? 'error' : 'warning',
+        clickable: true,
+      };
+    }
+
+    case 'ACCEPTED': {
+      const count = countAttentionCards(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      if (count === 0) return null;
+      return {
+        label: t('organizer:speakerCard.lanes.acceptedSubline', { count }),
+        severity: 'warning',
+        clickable: true,
+      };
+    }
+
+    case 'CONTENT_SUBMITTED': {
+      const count = countAttentionCards(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      if (count === 0) return null;
+      const maxSeverity = attentionMaxSeverity(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      return {
+        label: t('organizer:speakerCard.lanes.contentSubmittedSubline', { count }),
+        severity: maxSeverity === 'error' ? 'error' : 'warning',
+        clickable: true,
+      };
+    }
+
+    case 'QUALITY_REVIEWED': {
+      const count = countAttentionCards(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      if (count === 0) return null;
+      const maxSeverity = attentionMaxSeverity(
+        speakers,
+        state,
+        parsedEventDate,
+        now,
+        DEFAULT_KANBAN_THRESHOLDS
+      );
+      return {
+        label: t('organizer:speakerCard.lanes.qualityReviewedSubline', { count }),
+        severity: maxSeverity === 'error' ? 'error' : 'warning',
+        clickable: true,
+      };
+    }
+
+    default:
+      return null;
+  }
 }
 
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
@@ -128,6 +278,8 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   speakers,
   sessions,
   maxSlots,
+  eventDate,
+  now: nowProp,
   onStatusChange,
   onIdentifiedToContacted,
   onSpeakerClick,
@@ -146,6 +298,21 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   }>({ open: false });
 
   const [activeSpeaker, setActiveSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Story 11.D.3 — sub-line click-to-filter (per-column local UI state).
+  const [attentionFilter, setAttentionFilter] = useState<SpeakerWorkflowState | null>(null);
+
+  // Story 11.D.3 — `now` is stable within a render so all chip-colour + sub-line
+  // computations agree, but a fresh render picks up a new timestamp (TanStack Query
+  // refetch-on-focus drives this naturally — no setInterval needed per Resolved Q#4).
+  // Tests inject a fixed `now` via prop.
+  const now = nowProp ?? new Date();
+
+  const parsedEventDate = useMemo<Date | null>(() => {
+    if (!eventDate) return null;
+    const d = new Date(eventDate);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [eventDate]);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -176,6 +343,53 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       slots: max,
     };
   }, [speakers, maxSlots]);
+
+  // Story 11.D.3 — Per-state "needs attention" sub-line data. Computed at the parent
+  // so a single source of truth drives both the visible count + the click-to-filter
+  // predicate (AC2 + AC3). Computed inline (no useMemo) because `now` is intentionally
+  // fresh per render — memoising would invalidate every render anyway.
+  const attentionSublines = STATUS_LANES.reduce(
+    (acc, state) => {
+      acc[state] = computeAttentionSubline(state, {
+        speakers,
+        slotCapacity,
+        parsedEventDate,
+        now,
+        t,
+      });
+      return acc;
+    },
+    {} as Record<SpeakerWorkflowState, AttentionSubline | null>
+  );
+
+  // Story 11.D.3 — Auto-clear filter when the event changes (a new pool, a new context).
+  useEffect(() => {
+    setAttentionFilter(null);
+  }, [eventCode]);
+
+  // Story 11.D.3 — Auto-clear filter when its underlying count drops to 0 (organiser
+  // worked through the backlog; no rows left to focus on).
+  useEffect(() => {
+    if (!attentionFilter) return;
+    const count = countAttentionCards(
+      speakers,
+      attentionFilter,
+      parsedEventDate,
+      now,
+      DEFAULT_KANBAN_THRESHOLDS
+    );
+    if (count === 0) {
+      setAttentionFilter(null);
+    }
+    // `now` is intentionally excluded — re-running on every render would clear the
+    // filter immediately after the user clicks it. Speaker / event / filter changes
+    // are the legitimate triggers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attentionFilter, speakers, parsedEventDate]);
+
+  const handleSublineClick = (state: SpeakerWorkflowState) => {
+    setAttentionFilter((prev) => (prev === state ? null : state));
+  };
 
   // Mutation for updating speaker status
   const updateStatusMutation = useMutation({
@@ -265,10 +479,22 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     }
   };
 
-  // Group speakers by status
+  // Group speakers by status. Story 11.D.3 — when the user clicks a column's "needs
+  // attention" sub-line, that lane filters to the attention predicate's matches.
   const speakersByStatus = STATUS_LANES.reduce(
     (acc, status) => {
-      acc[status] = speakers.filter((s) => s.status === status);
+      const inState = speakers.filter((s) => s.status === status);
+      if (attentionFilter === status) {
+        const predicate = makeAttentionPredicate(
+          status,
+          parsedEventDate,
+          now,
+          DEFAULT_KANBAN_THRESHOLDS
+        );
+        acc[status] = inState.filter(predicate);
+      } else {
+        acc[status] = inState;
+      }
       return acc;
     },
     {} as Record<SpeakerWorkflowState, SpeakerPoolEntry[]>
@@ -302,6 +528,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   color={STATUS_COLORS[status]}
                   organizers={organizers}
                   slotCapacity={slotCapacity}
+                  attentionSubline={attentionSublines[status]}
+                  filterActive={attentionFilter === status}
+                  onSublineClick={() => handleSublineClick(status)}
+                  eventDate={parsedEventDate}
+                  now={now}
                   onSpeakerClick={handleSpeakerClick}
                   onLogOutreach={onLogOutreach}
                   onPromoteSpeaker={onPromoteSpeaker}
@@ -323,6 +554,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   color={STATUS_COLORS[status]}
                   organizers={organizers}
                   slotCapacity={slotCapacity}
+                  attentionSubline={attentionSublines[status]}
+                  filterActive={attentionFilter === status}
+                  onSublineClick={() => handleSublineClick(status)}
+                  eventDate={parsedEventDate}
+                  now={now}
                   onSpeakerClick={handleSpeakerClick}
                   onLogOutreach={onLogOutreach}
                   onPromoteSpeaker={onPromoteSpeaker}
@@ -341,6 +577,8 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
               eventCode={eventCode}
               organizers={organizers}
               slotCapacity={slotCapacity}
+              eventDate={parsedEventDate}
+              now={now}
               isDragging
             />
           ) : null}
@@ -371,6 +609,16 @@ interface StatusLaneProps {
   color: string;
   organizers: { id: string; name: string }[];
   slotCapacity: SlotCapacityState;
+  /** Story 11.D.3 — "needs attention" sub-line for this column, or null when none. */
+  attentionSubline: AttentionSubline | null;
+  /** Story 11.D.3 — whether this column's filter is active (drives sub-line styling). */
+  filterActive: boolean;
+  /** Story 11.D.3 — handler for clickable sub-lines. No-op for READY (static text). */
+  onSublineClick: () => void;
+  /** Story 11.D.3 — event date (parsed). Drives QUALITY_REVIEWED chip-colour rule. */
+  eventDate: Date | null;
+  /** Story 11.D.3 — `now` propagated for deterministic chip-colour computation. */
+  now: Date;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
   onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
   onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
@@ -385,6 +633,11 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   color,
   organizers,
   slotCapacity,
+  attentionSubline,
+  filterActive,
+  onSublineClick,
+  eventDate,
+  now,
   onSpeakerClick,
   onLogOutreach,
   onPromoteSpeaker,
@@ -394,6 +647,11 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   const { setNodeRef } = useDroppable({
     id: status,
   });
+
+  // Story 11.D.3 — READY's "Slot capacity reached" sub-line is a global event-level
+  // gate (not a per-card subset), so it renders as static, non-clickable text per
+  // Resolved Q#5. All other sub-lines are clickable buttons (AC2 + AC3).
+  const sublineColor = attentionSubline?.severity === 'error' ? 'error.main' : 'warning.main';
 
   return (
     <Paper
@@ -409,19 +667,57 @@ const StatusLane: React.FC<StatusLaneProps> = ({
         borderTop: `4px solid ${color}`,
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography
-          variant="h6"
-          sx={{ color }}
-          data-testid={`status-lane-heading-${status.toLowerCase()}`}
-        >
-          {t(`organizer:speakerStatus.${status}`)}
-        </Typography>
-        <Chip
-          label={speakers.length}
-          size="small"
-          sx={{ backgroundColor: color, color: 'white' }}
-        />
+      {/* Story 11.D.3 — Three-line header: title+count row, then optional sub-line.
+          A min-height keeps lane headers aligned across columns with vs. without sub-lines. */}
+      <Box sx={{ mb: 2, minHeight: 56 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography
+            variant="h6"
+            sx={{ color }}
+            data-testid={`status-lane-heading-${status.toLowerCase()}`}
+          >
+            {t(`organizer:speakerStatus.${status}`)}
+          </Typography>
+          <Chip
+            label={speakers.length}
+            size="small"
+            sx={{ backgroundColor: color, color: 'white' }}
+          />
+        </Box>
+        {attentionSubline &&
+          (attentionSubline.clickable ? (
+            <Box
+              component="button"
+              type="button"
+              data-testid={`status-lane-subline-${status.toLowerCase()}`}
+              onClick={onSublineClick}
+              aria-pressed={filterActive}
+              sx={{
+                mt: 0.5,
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'block',
+                color: sublineColor,
+                fontSize: '0.75rem',
+                fontWeight: filterActive ? 700 : 500,
+                textDecoration: filterActive ? 'underline' : 'none',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              {attentionSubline.label}
+            </Box>
+          ) : (
+            <Typography
+              variant="caption"
+              data-testid={`status-lane-subline-${status.toLowerCase()}`}
+              sx={{ mt: 0.5, display: 'block', color: sublineColor, fontWeight: 500 }}
+            >
+              {attentionSubline.label}
+            </Typography>
+          ))}
       </Box>
 
       <Box sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0 }}>
@@ -434,6 +730,8 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               eventCode={eventCode}
               organizers={organizers}
               slotCapacity={slotCapacity}
+              eventDate={eventDate}
+              now={now}
               onSpeakerClick={onSpeakerClick}
               onLogOutreach={onLogOutreach}
               onPromoteSpeaker={onPromoteSpeaker}
@@ -453,6 +751,10 @@ interface SpeakerCardProps {
   eventCode: string;
   organizers?: { id: string; name: string }[];
   slotCapacity: SlotCapacityState;
+  /** Story 11.D.3 — drives the QUALITY_REVIEWED chip-colour rule (§8.7). */
+  eventDate?: Date | null;
+  /** Story 11.D.3 — `now` for deterministic chip-colour math. */
+  now?: Date;
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
   onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
@@ -466,6 +768,8 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   eventCode,
   organizers = [],
   slotCapacity,
+  eventDate = null,
+  now,
   isDragging = false,
   onSpeakerClick,
   onLogOutreach,
@@ -521,7 +825,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   // Find the session if speaker has sessionId (Story 5.6)
   const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
 
-  // Time-in-state chip — AC3
+  // Time-in-state chip — AC3 (Story 11.D.2) + threshold-driven colour (Story 11.D.3, AC4).
   const statusChangedAt = getStatusChangedAt(speaker);
   const locale = i18n.language === 'de' ? de : enUS;
   // Guard against unparseable timestamps from the API — Invalid Date would otherwise
@@ -535,6 +839,20 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   const statusChangedAbsolute = isValidStatusChangedDate
     ? statusChangedDate.toLocaleString(i18n.language)
     : '';
+
+  // Story 11.D.3 (AC4) — colour the chip per §8.7 thresholds. `now` is supplied by the
+  // parent (stable within a render); falls back to a fresh Date for safety when the
+  // card renders outside a SpeakerStatusLanes context (e.g. unit-test isolation).
+  const chipSeverity: ThresholdSeverity = isValidStatusChangedDate
+    ? classifyChipSeverity({
+        speaker,
+        statusChangedAt: statusChangedDate,
+        eventDate,
+        now: now ?? new Date(),
+        thresholds: DEFAULT_KANBAN_THRESHOLDS,
+      })
+    : 'normal';
+  const chipColor = severityToChipColor(chipSeverity);
 
   // Primary action mapping — AC1
   const callbacks: PrimaryActionCallbacks = {
@@ -685,7 +1003,6 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                   data-testid={`assigned-organizer-chip-${speaker.id}`}
                 />
               )}
-              {/* TODO(11.D.3): apply threshold-driven colour coding per §8.7 */}
               {timeInState && (
                 <Tooltip
                   title={t('organizer:speakerCard.timeInStateTooltip', {
@@ -696,13 +1013,14 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                     size="small"
                     variant="outlined"
                     label={timeInState}
-                    color="default"
+                    color={chipColor}
                     sx={{
                       ml: 'auto',
                       height: 20,
                       '& .MuiChip-label': { fontSize: '0.65rem', px: 0.5 },
                     }}
                     data-testid={`time-in-state-chip-${speaker.id}`}
+                    data-severity={chipSeverity}
                   />
                 </Tooltip>
               )}

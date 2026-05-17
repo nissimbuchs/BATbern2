@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Capacità degli slot raggiunta. {{invited}} inviti in sospeso + {{accepted}} accettazioni per {{slots}} slot. Attendi o rifiuta un relatore accettato per liberare uno slot.",
     "timeInStateTooltip": "Stato attuale dal {{date}}",
     "inviteSent": "Invito inviato",
-    "inviteFailed": "Invio dell'invito non riuscito"
+    "inviteFailed": "Invio dell'invito non riuscito",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsoleti (>14 giorni)",
+      "readySlotCapacitySubline": "⚠ Capacità slot raggiunta",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} scadenza vicina",
+        "past": "⏰ {{count}} scadenza superata",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} in attesa di contenuto",
+      "contentSubmittedSubline": "👀 {{count}} in attesa di revisione",
+      "qualityReviewedSubline": "🪑 {{count}} in attesa di slot"
+    }
   }
 }

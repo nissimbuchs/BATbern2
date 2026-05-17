@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Capacitad da plazzas cuntanschida. {{invited}} envits pendents + {{accepted}} acceptaziuns per {{slots}} plazzas. Spetga ubain refusa in relatur acceptà per liberar ina plazza.",
     "timeInStateTooltip": "Status actual dapi {{date}}",
     "inviteSent": "Envit tramess",
-    "inviteFailed": "L'envit n'ha betg pudì vegnir tramess"
+    "inviteFailed": "L'envit n'ha betg pudì vegnir tramess",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsolets (>14 dis)",
+      "readySlotCapacitySubline": "⚠ Capacitad da plazzas cuntanschida",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} termin sa proxima",
+        "past": "⏰ {{count}} termin trapassà",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} spetan cuntegn",
+      "contentSubmittedSubline": "👀 {{count}} spetan revisiun dal moderatur",
+      "qualityReviewedSubline": "🪑 {{count}} spetan ina plazza"
+    }
   }
 }

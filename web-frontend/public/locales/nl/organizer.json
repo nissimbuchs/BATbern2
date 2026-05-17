@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Slotcapaciteit bereikt. {{invited}} openstaande uitnodigingen + {{accepted}} bevestigingen voor {{slots}} slots. Wacht of wijs een geaccepteerde spreker af om een slot vrij te maken.",
     "timeInStateTooltip": "Huidige status sinds {{date}}",
     "inviteSent": "Uitnodiging verzonden",
-    "inviteFailed": "Verzenden van uitnodiging mislukt"
+    "inviteFailed": "Verzenden van uitnodiging mislukt",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} verouderd (>14 dagen)",
+      "readySlotCapacitySubline": "⚠ Slotcapaciteit bereikt",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} deadline nadert",
+        "past": "⏰ {{count}} deadline verstreken",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} wacht op inhoud",
+      "contentSubmittedSubline": "👀 {{count}} wacht op moderatie",
+      "qualityReviewedSubline": "🪑 {{count}} wacht op slot"
+    }
   }
 }

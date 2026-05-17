@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "枠の上限に達しました。{{slots}}枠に対して未回答の招待{{invited}}件 + 承諾{{accepted}}件。承諾済みのスピーカーを辞退するか、待機してください。",
     "timeInStateTooltip": "{{date}}から現在の状態",
     "inviteSent": "招待を送信しました",
-    "inviteFailed": "招待の送信に失敗しました"
+    "inviteFailed": "招待の送信に失敗しました",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}}件が停滞中（>14日）",
+      "readySlotCapacitySubline": "⚠ スロット定員に達しました",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}}件が締切間近",
+        "past": "⏰ {{count}}件が締切超過",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}}件がコンテンツ待ち",
+      "contentSubmittedSubline": "👀 {{count}}件がモデレーターレビュー待ち",
+      "qualityReviewedSubline": "🪑 {{count}}件がスロット待ち"
+    }
   }
 }

@@ -364,6 +364,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             speakers={speakers}
             sessions={sessions}
             maxSlots={summary?.maxSlotsAllowed}
+            eventDate={event?.date}
             onStatusChange={() => {}}
             onIdentifiedToContacted={handleIdentifiedToContacted}
             onSpeakerClick={handleSpeakerClick}

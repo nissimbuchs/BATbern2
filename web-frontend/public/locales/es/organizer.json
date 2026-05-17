@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Capacidad de franjas alcanzada. {{invited}} invitaciones pendientes + {{accepted}} aceptaciones para {{slots}} franjas. Espere o rechace a un orador aceptado para liberar una franja.",
     "timeInStateTooltip": "Estado actual desde {{date}}",
     "inviteSent": "Invitación enviada",
-    "inviteFailed": "Error al enviar la invitación"
+    "inviteFailed": "Error al enviar la invitación",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsoletos (>14 días)",
+      "readySlotCapacitySubline": "⚠ Capacidad de franjas alcanzada",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} fecha límite próxima",
+        "past": "⏰ {{count}} fecha límite vencida",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} esperando contenido",
+      "contentSubmittedSubline": "👀 {{count}} esperando revisión del moderador",
+      "qualityReviewedSubline": "🪑 {{count}} esperando franja"
+    }
   }
 }

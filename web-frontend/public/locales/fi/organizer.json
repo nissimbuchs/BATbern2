@@ -522,6 +522,18 @@
     "slotCapacityTooltip": "Paikkojen kapasiteetti saavutettu. {{invited}} odottavaa kutsua + {{accepted}} hyväksyntää {{slots}} paikalle. Odota tai hylkää hyväksytty puhuja vapauttaaksesi paikan.",
     "timeInStateTooltip": "Nykyinen tila alkaen {{date}}",
     "inviteSent": "Kutsu lähetetty",
-    "inviteFailed": "Kutsun lähettäminen epäonnistui"
+    "inviteFailed": "Kutsun lähettäminen epäonnistui",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} vanhentunutta (>14 päivää)",
+      "readySlotCapacitySubline": "⚠ Paikkakapasiteetti täynnä",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} määräaika lähestyy",
+        "past": "⏰ {{count}} määräaika ohitettu",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} odottaa sisältöä",
+      "contentSubmittedSubline": "👀 {{count}} odottaa moderaattorin tarkistusta",
+      "qualityReviewedSubline": "🪑 {{count}} odottaa paikkaa"
+    }
   }
 }
