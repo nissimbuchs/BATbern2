@@ -35,15 +35,15 @@ export interface SpeakerStatusDashboardProps {
   eventCode: string;
 }
 
-// Status color mapping (Story 5.5 - Extended to 8 lanes)
+// Status color mapping. Story 11.D.2 (AC5 D) — CONFIRMED removed per ADR-009 §0.1.
 const STATUS_COLORS: Record<string, string> = {
   IDENTIFIED: '#9e9e9e', // Gray
   CONTACTED: '#ffc107', // Amber/Yellow
   READY: '#ff9800', // Orange
+  INVITED: '#2196f3', // Blue
   ACCEPTED: '#4caf50', // Green
-  CONTENT_SUBMITTED: '#fbc02d', // Yellow (NEW - Story 5.5)
-  QUALITY_REVIEWED: '#7cb342', // Light Green (NEW - Story 5.5)
-  CONFIRMED: '#2e7d32', // Dark Green (NEW - Story 5.5)
+  CONTENT_SUBMITTED: '#fbc02d', // Yellow
+  QUALITY_REVIEWED: '#7cb342', // Light Green
   DECLINED: '#f44336', // Red
 };
 
@@ -182,6 +182,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
         eventCode={eventCode}
         speakers={speakers}
         sessions={event?.sessions || []}
+        maxSlots={summary.maxSlotsAllowed}
       />
 
       {/* Status History Timeline - AC15 - TODO: Implement in speaker detail view with speakerId */}

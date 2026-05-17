@@ -336,7 +336,6 @@
     "invalidEmail": "Veuillez entrer une adresse e-mail valide",
     "saveEmail": "Enregistrer l'e-mail",
     "emailSaved": "E-mail enregistré",
-    "tentative": "Provisoire",
     "responseDetails": "Détails de la réponse",
     "acceptedAt": "Accepté le",
     "preferredTimeSlot": "Créneau horaire préféré",
@@ -347,8 +346,6 @@
     "declineDetails": "Détails du refus",
     "declinedAt": "Refusé le",
     "declineReason": "Raison",
-    "tentativeDetails": "Détails provisoires",
-    "tentativeReason": "Raison",
     "sendReminder": "Envoyer un rappel",
     "sendingReminder": "Envoi en cours...",
     "reminderSent": "Rappel envoyé à {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Enregistrer la prise de contact",
+      "promoteToSpeaker": "Promouvoir en tant qu'orateur",
+      "sendInvitation": "Envoyer l'invitation",
+      "viewResponseStatus": "Voir le statut de réponse",
+      "enterContent": "Saisir le contenu",
+      "reviewContent": "Examiner le contenu",
+      "assignSessionSlot": "Attribuer un créneau de session",
+      "viewDetails": "Voir les détails"
+    },
+    "publishable": "Publiable",
+    "publishableTooltip": "L'orateur est approuvé et dispose d'un créneau de session",
+    "slotCapacityTooltip": "Capacité de créneaux atteinte. {{invited}} invitations en attente + {{accepted}} acceptations pour {{slots}} créneaux. Attendez ou déclinez un orateur accepté pour libérer un créneau.",
+    "timeInStateTooltip": "État actuel depuis {{date}}"
   }
 }

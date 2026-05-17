@@ -1,17 +1,15 @@
 /**
- * Speaker Status Lanes Component (Story 5.4)
+ * Speaker Status Lanes Component (Story 5.4 + Story 11.D.2)
  *
- * Kanban-board style interface with drag-and-drop status lanes
- * Features:
- * - Drag speakers between status lanes (OPEN, CONTACTED, READY, ACCEPTED, DECLINED)
- * - @dnd-kit for drag-and-drop functionality
- * - Status change confirmation dialog
- * - Color-coded status indicators
- * - i18n support (German/English)
- * - Real-time updates via React Query
+ * Kanban-board style interface with drag-and-drop status lanes.
+ * Each card surfaces a single state-aware primary-action button along its bottom edge,
+ * plus a time-in-state chip on the organizer row. Lane order follows ADR-009 §0.1.
+ *
+ * The primary-action mapping is delegated to `./getPrimaryAction.ts` (the source of truth
+ * is `docs/plans/speaker-workflow-refactor.md` §8.2).
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Grid,
   Card,
@@ -21,14 +19,15 @@ import {
   Chip,
   Paper,
   Stack,
-  IconButton,
   Tooltip,
-  CircularProgress,
+  Button,
   Snackbar,
   Alert,
 } from '@mui/material';
-import { Send as SendIcon, Email as EmailIcon } from '@mui/icons-material';
+import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { de, enUS } from 'date-fns/locale';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
   DndContext,
@@ -47,6 +46,11 @@ import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { StatusChangeDialog } from './StatusChangeDialog';
+import {
+  getPrimaryAction,
+  type PrimaryActionCallbacks,
+  type SlotCapacityState,
+} from './getPrimaryAction';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
 
@@ -54,36 +58,40 @@ export interface SpeakerStatusLanesProps {
   eventCode: string;
   speakers: SpeakerPoolEntry[];
   sessions: SessionUI[];
+  /**
+   * Slot-capacity gate (READY → INVITED). Source: `speakerStatusSummary.maxSlotsAllowed`.
+   * When 0 or undefined, the slot-capacity check is treated as "no max enforced".
+   */
+  maxSlots?: number;
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
-  onIdentifiedToContacted?: (speaker: SpeakerPoolEntry) => void; // Callback for IDENTIFIED → CONTACTED transition
-  onSpeakerClick?: (speaker: SpeakerPoolEntry) => void; // Callback for speaker card clicks (for statuses without specific drawers)
+  onIdentifiedToContacted?: (speaker: SpeakerPoolEntry) => void;
+  onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
+  /** Opens MarkContactedModal at parent. Story 11.D.2 — IDENTIFIED card button. */
+  onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
+  /** Opens PromoteSpeakerDialog at parent. Story 11.D.2 — CONTACTED card button. */
+  onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  /** Navigates to slot-assignment page. Story 11.D.2 — QUALITY_REVIEWED (unassigned). */
+  onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
-// Status color mapping (Story 5.5 - Extended to 8 lanes, Story 6.1b added INVITED)
+// Status color mapping. Story 11.D.2 (AC5 D) — CONFIRMED removed per ADR-009 §0.1.
 const STATUS_COLORS: Record<string, string> = {
   IDENTIFIED: '#9e9e9e', // Grey
-  INVITED: '#2196f3', // Blue (NEW - Story 6.1b: automated invitation sent)
   CONTACTED: '#ffc107', // Amber
   READY: '#ff9800', // Orange
+  INVITED: '#2196f3', // Blue
   ACCEPTED: '#4caf50', // Green
-  CONTENT_SUBMITTED: '#fbc02d', // Yellow (NEW - Story 5.5)
-  QUALITY_REVIEWED: '#7cb342', // Light Green (NEW - Story 5.5)
-  CONFIRMED: '#2e7d32', // Dark Green (NEW - Story 5.5)
+  CONTENT_SUBMITTED: '#fbc02d', // Yellow
+  QUALITY_REVIEWED: '#7cb342', // Light Green
   DECLINED: '#f44336', // Red
 };
 
-// Status lanes split into two groups for responsive layout.
-// Group 1: outreach/decision pipeline (wraps as its own row on smaller screens)
-// Group 2: post-acceptance pipeline (starts on a new row on smaller screens)
-const OUTREACH_LANES: SpeakerWorkflowState[] = [
-  'IDENTIFIED',
-  'INVITED',
-  'CONTACTED',
-  'READY',
-  'ACCEPTED',
-];
+// Lane order — ADR-009 §0.1: IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED →
+// CONTENT_SUBMITTED → QUALITY_REVIEWED → DECLINED. Story 11.D.2 reordered to match.
+const OUTREACH_LANES: SpeakerWorkflowState[] = ['IDENTIFIED', 'CONTACTED', 'READY', 'INVITED'];
 
 const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = [
+  'ACCEPTED',
   'CONTENT_SUBMITTED',
   'QUALITY_REVIEWED',
   'DECLINED',
@@ -91,13 +99,41 @@ const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = [
 
 const STATUS_LANES: SpeakerWorkflowState[] = [...OUTREACH_LANES, ...POST_ACCEPTANCE_LANES];
 
+/**
+ * Resolves the "time in current state" timestamp per AC3. Uses per-state timestamps
+ * where they exist, falling back to `updatedAt` / `createdAt`. The fallback is
+ * imperfect (any field update bumps `updatedAt`) — see story 11.D.2 AC3 for rationale.
+ */
+// TODO: switch to a dedicated status_changed_at column if organizers report the fallback is misleading.
+function getStatusChangedAt(speaker: SpeakerPoolEntry): string | undefined {
+  switch (speaker.status) {
+    case 'INVITED':
+      if (speaker.invitedAt) return speaker.invitedAt;
+      break;
+    case 'ACCEPTED':
+      if (speaker.acceptedAt) return speaker.acceptedAt;
+      break;
+    case 'CONTENT_SUBMITTED':
+      if (speaker.contentSubmittedAt) return speaker.contentSubmittedAt;
+      break;
+    case 'DECLINED':
+      if (speaker.declinedAt) return speaker.declinedAt;
+      break;
+  }
+  return speaker.updatedAt ?? speaker.createdAt;
+}
+
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventCode,
   speakers,
   sessions,
+  maxSlots,
   onStatusChange,
   onIdentifiedToContacted,
   onSpeakerClick,
+  onLogOutreach,
+  onPromoteSpeaker,
+  onAssignSessionSlot,
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
@@ -115,10 +151,28 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement required to activate drag
+        distance: 8,
       },
     })
   );
+
+  // Slot-capacity gate (AC4). The READY → INVITED transition is blocked server-side
+  // by `SpeakerWorkflowService.transition()` (Story 11.B.2). The same value is also
+  // surfaced as a disabled-button tooltip here for fast feedback.
+  // Slot capacity is derived in-page from the loaded speakers array — this is correct as long
+  // as `speakers` is the complete event-scoped pool (it is today). If this query ever paginates,
+  // switch to a server-side count endpoint to avoid undercounting INVITED/ACCEPTED off-page.
+  const slotCapacity: SlotCapacityState = useMemo(() => {
+    const acceptedCount = speakers.filter((s) => s.status === 'ACCEPTED').length;
+    const invitedCount = speakers.filter((s) => s.status === 'INVITED').length;
+    const max = maxSlots ?? 0;
+    return {
+      reached: max > 0 && acceptedCount + invitedCount >= max,
+      invited: invitedCount,
+      accepted: acceptedCount,
+      slots: max,
+    };
+  }, [speakers, maxSlots]);
 
   // Mutation for updating speaker status
   const updateStatusMutation = useMutation({
@@ -132,10 +186,8 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       reason?: string;
     }) => speakerStatusService.updateStatus(eventCode, speakerId, newStatus, reason),
     onSuccess: (_, variables) => {
-      // Invalidate queries to refetch data (using correct query keys)
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
       queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
-      // Invalidate event cache to update sessions (Story 5.6)
       queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
 
       if (onStatusChange) {
@@ -163,9 +215,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     const speaker = speakers.find((s) => s.id === speakerId);
 
     if (speaker && speaker.status !== newStatus) {
-      // Special handling for IDENTIFIED → CONTACTED - trigger callback (Story 5.6)
       if (speaker.status === 'IDENTIFIED' && newStatus === 'CONTACTED') {
-        // First update the status
         updateStatusMutation.mutate(
           {
             speakerId: speaker.id,
@@ -173,19 +223,15 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
           },
           {
             onSuccess: () => {
-              // Then trigger the callback to open drawer
               if (onIdentifiedToContacted) {
                 onIdentifiedToContacted({ ...speaker, status: newStatus });
               }
             },
           }
         );
-      }
-      // Special handling for CONTENT_SUBMITTED / QUALITY_REVIEWED - open speaker detail drawer
-      else if (newStatus === 'CONTENT_SUBMITTED' || newStatus === 'QUALITY_REVIEWED') {
+      } else if (newStatus === 'CONTENT_SUBMITTED' || newStatus === 'QUALITY_REVIEWED') {
         if (onSpeakerClick) onSpeakerClick(speaker);
       } else {
-        // Open confirmation dialog for other status changes
         setDialogState({
           open: true,
           speaker,
@@ -210,8 +256,6 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     setDialogState({ open: false });
   };
 
-  // Handle speaker card click (Story 5.5 + 5.6)
-  // Always open the outreach details drawer (which shows contact history) for all statuses
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
     if (onSpeakerClick) {
       onSpeakerClick(speaker);
@@ -243,7 +287,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         onDragEnd={handleDragEnd}
       >
         <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-          {/* Group 1: Outreach pipeline (IDENTIFIED → ACCEPTED) */}
+          {/* Outreach pipeline (IDENTIFIED → INVITED) */}
           <Grid container spacing={2}>
             {OUTREACH_LANES.map((status) => (
               <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
@@ -254,13 +298,17 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   eventCode={eventCode}
                   color={STATUS_COLORS[status]}
                   organizers={organizers}
+                  slotCapacity={slotCapacity}
                   onSpeakerClick={handleSpeakerClick}
+                  onLogOutreach={onLogOutreach}
+                  onPromoteSpeaker={onPromoteSpeaker}
+                  onAssignSessionSlot={onAssignSessionSlot}
                 />
               </Grid>
             ))}
           </Grid>
 
-          {/* Group 2: Post-acceptance pipeline (CONTENT_SUBMITTED → DECLINED) */}
+          {/* Post-acceptance pipeline (ACCEPTED → DECLINED) */}
           <Grid container spacing={2}>
             {POST_ACCEPTANCE_LANES.map((status) => (
               <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
@@ -271,7 +319,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                   eventCode={eventCode}
                   color={STATUS_COLORS[status]}
                   organizers={organizers}
+                  slotCapacity={slotCapacity}
                   onSpeakerClick={handleSpeakerClick}
+                  onLogOutreach={onLogOutreach}
+                  onPromoteSpeaker={onPromoteSpeaker}
+                  onAssignSessionSlot={onAssignSessionSlot}
                 />
               </Grid>
             ))}
@@ -285,6 +337,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
               sessions={sessions}
               eventCode={eventCode}
               organizers={organizers}
+              slotCapacity={slotCapacity}
               isDragging
             />
           ) : null}
@@ -314,7 +367,11 @@ interface StatusLaneProps {
   eventCode: string;
   color: string;
   organizers: { id: string; name: string }[];
+  slotCapacity: SlotCapacityState;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
+  onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
+  onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
 const StatusLane: React.FC<StatusLaneProps> = ({
@@ -324,7 +381,11 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   eventCode,
   color,
   organizers,
+  slotCapacity,
   onSpeakerClick,
+  onLogOutreach,
+  onPromoteSpeaker,
+  onAssignSessionSlot,
 }) => {
   const { t } = useTranslation(['organizer']);
   const { setNodeRef } = useDroppable({
@@ -369,7 +430,11 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               sessions={sessions}
               eventCode={eventCode}
               organizers={organizers}
+              slotCapacity={slotCapacity}
               onSpeakerClick={onSpeakerClick}
+              onLogOutreach={onLogOutreach}
+              onPromoteSpeaker={onPromoteSpeaker}
+              onAssignSessionSlot={onAssignSessionSlot}
             />
           ))}
         </Box>
@@ -384,8 +449,12 @@ interface SpeakerCardProps {
   sessions: SessionUI[];
   eventCode: string;
   organizers?: { id: string; name: string }[];
+  slotCapacity: SlotCapacityState;
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
+  onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
+  onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
 const SpeakerCard: React.FC<SpeakerCardProps> = ({
@@ -393,15 +462,19 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   sessions,
   eventCode,
   organizers = [],
+  slotCapacity,
   isDragging = false,
   onSpeakerClick,
+  onLogOutreach,
+  onPromoteSpeaker,
+  onAssignSessionSlot,
 }) => {
-  const { t } = useTranslation(['organizer']);
+  const { t, i18n } = useTranslation(['organizer']);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
   });
 
-  // Invitation mutation (Story 6.1c)
+  // Send-invitation flow (READY → INVITED) — used by the primary-action button.
   const sendInvitationMutation = useSendInvitation(eventCode);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -414,21 +487,16 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     : undefined;
 
   const handleClick = (e: React.MouseEvent) => {
-    // Only trigger click if not dragging
     if (!transform && onSpeakerClick) {
       e.stopPropagation();
       onSpeakerClick(speaker);
     }
   };
 
-  // Handle invite click (Story 6.1c - AC3)
-  const handleInviteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-
+  const handleSendInvitation = async (speakerForInvite: SpeakerPoolEntry) => {
     try {
       await sendInvitationMutation.mutateAsync({
-        username: speaker.id,
+        username: speakerForInvite.id,
       });
       setSnackbarMessage(t('organizer:speakers.inviteSent'));
       setSnackbarSeverity('success');
@@ -440,12 +508,32 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     }
   };
 
-  // Show invite button only for IDENTIFIED speakers
-  const canInvite = speaker.status === 'IDENTIFIED';
-  const hasEmail = !!speaker.email;
-
   // Find the session if speaker has sessionId (Story 5.6)
   const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
+
+  // Time-in-state chip — AC3
+  const statusChangedAt = getStatusChangedAt(speaker);
+  const locale = i18n.language === 'de' ? de : enUS;
+  const timeInState = statusChangedAt
+    ? formatDistanceToNow(new Date(statusChangedAt), { locale, addSuffix: false })
+    : null;
+  const statusChangedAbsolute = statusChangedAt
+    ? new Date(statusChangedAt).toLocaleString(i18n.language)
+    : '';
+
+  // Primary action mapping — AC1
+  const callbacks: PrimaryActionCallbacks = {
+    onLogOutreach: onLogOutreach ?? (() => undefined),
+    onPromoteSpeaker: onPromoteSpeaker ?? (() => undefined),
+    onSendInvitation: handleSendInvitation,
+    onSpeakerClick: onSpeakerClick ?? (() => undefined),
+    onAssignSessionSlot: onAssignSessionSlot ?? (() => undefined),
+  };
+  const primaryAction = getPrimaryAction(speaker, callbacks, slotCapacity, t);
+
+  const assignedOrg = speaker.assignedOrganizerId
+    ? organizers.find((o) => o.id === speaker.assignedOrganizerId)
+    : null;
 
   return (
     <>
@@ -466,7 +554,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
         }}
       >
         {session && session.speakers && session.speakers.length > 0 ? (
-          // Display session details when speaker has sessionId
+          // Session view (speaker has assigned session)
           <Box>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
               {session.title}
@@ -486,7 +574,6 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               ))}
             </Stack>
 
-            {/* Story 6.3: Submitted Content Display (also shown when session assigned) */}
             {(speaker.submittedTitle || speaker.contentStatus) && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
@@ -531,7 +618,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
             )}
           </Box>
         ) : (
-          // Display speaker pool info when no session
+          // Pool view (no assigned session)
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
@@ -545,39 +632,6 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                   </Typography>
                 )}
               </Box>
-              {/* Invite Quick Action (Story 6.1c - AC3) */}
-              {canInvite && (
-                <Tooltip
-                  title={
-                    hasEmail
-                      ? t('organizer:speakers.invite')
-                      : t('organizer:speakers.noEmailTooltip')
-                  }
-                >
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={handleInviteClick}
-                      disabled={!hasEmail || sendInvitationMutation.isPending}
-                      aria-label={t('organizer:speakers.invite')}
-                      data-testid={`invite-button-${speaker.id}`}
-                      sx={{ ml: 'auto' }}
-                    >
-                      {sendInvitationMutation.isPending ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        <SendIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              )}
-              {/* Email sent badge for CONTACTED speakers (AC3.6) - CONTACTED means invitation sent */}
-              {speaker.status === 'CONTACTED' && (
-                <Tooltip title={t('organizer:speakers.inviteSent')}>
-                  <EmailIcon fontSize="small" color="info" data-testid="invite-sent-badge" />
-                </Tooltip>
-              )}
             </Box>
             {speaker.expertise && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
@@ -585,34 +639,61 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               </Typography>
             )}
 
-            {/* Assigned organizer indicator */}
-            {speaker.assignedOrganizerId &&
-              (() => {
-                const org = organizers.find((o) => o.id === speaker.assignedOrganizerId);
-                return org ? (
+            {/* Organizer + time-in-state row (AC3) */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mt: 0.5,
+              }}
+              data-testid={`organizer-row-${speaker.id}`}
+            >
+              {assignedOrg && (
+                <Chip
+                  size="small"
+                  label={assignedOrg.name}
+                  avatar={
+                    <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}>
+                      {assignedOrg.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)}
+                    </Avatar>
+                  }
+                  variant="outlined"
+                  sx={{
+                    height: 20,
+                    '& .MuiChip-label': { fontSize: '0.65rem', px: 0.5 },
+                  }}
+                  data-testid={`assigned-organizer-chip-${speaker.id}`}
+                />
+              )}
+              {/* TODO(11.D.3): apply threshold-driven colour coding per §8.7 */}
+              {timeInState && (
+                <Tooltip
+                  title={t('organizer:speakerCard.timeInStateTooltip', {
+                    date: statusChangedAbsolute,
+                  })}
+                >
                   <Chip
                     size="small"
-                    label={org.name}
-                    avatar={
-                      <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}>
-                        {org.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .slice(0, 2)}
-                      </Avatar>
-                    }
                     variant="outlined"
+                    label={timeInState}
+                    color="default"
                     sx={{
-                      mt: 0.5,
+                      ml: 'auto',
                       height: 20,
                       '& .MuiChip-label': { fontSize: '0.65rem', px: 0.5 },
                     }}
+                    data-testid={`time-in-state-chip-${speaker.id}`}
                   />
-                ) : null;
-              })()}
+                </Tooltip>
+              )}
+            </Box>
 
-            {/* Speaker Response Details (Story 6.2a) - Show for any speaker who accepted */}
+            {/* Speaker Response Details (Story 6.2a) */}
             {speaker.acceptedAt &&
               (speaker.preferredTimeSlot ||
                 speaker.travelRequirements ||
@@ -655,7 +736,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                 </Box>
               )}
 
-            {/* Story 6.3: Submitted Content Display */}
+            {/* Submitted Content Display (Story 6.3) */}
             {(speaker.submittedTitle || speaker.contentStatus) && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
@@ -705,6 +786,66 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                   {t('organizer:speakers.declineReason')}: {speaker.declineReason}
                 </Typography>
               </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Primary-action button or info chip (AC1, AC6) — full-width along card bottom */}
+        {primaryAction.kind !== 'none' && !isDragging && (
+          <Box
+            sx={{
+              mt: 1.5,
+              pt: 1.5,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            {primaryAction.kind === 'chip' ? (
+              <Tooltip title={primaryAction.tooltip ?? ''}>
+                <Chip
+                  label={primaryAction.label}
+                  icon={<CheckCircleOutlineIcon fontSize="small" />}
+                  color="success"
+                  variant="outlined"
+                  size="small"
+                  sx={{ width: '100%' }}
+                  data-testid={`primary-action-chip-${speaker.id}`}
+                />
+              </Tooltip>
+            ) : primaryAction.tooltip ? (
+              <Tooltip title={primaryAction.tooltip}>
+                <span data-testid={`primary-action-tooltip-${speaker.id}`}>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    size="small"
+                    disabled={primaryAction.disabled || !!transform}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!transform) primaryAction.onClick();
+                    }}
+                    data-testid={`primary-action-button-${speaker.id}`}
+                    data-action={primaryAction.testIdSuffix}
+                  >
+                    {primaryAction.label}
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button
+                variant="contained"
+                fullWidth
+                size="small"
+                disabled={primaryAction.disabled || !!transform}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!transform) primaryAction.onClick();
+                }}
+                data-testid={`primary-action-button-${speaker.id}`}
+                data-action={primaryAction.testIdSuffix}
+              >
+                {primaryAction.label}
+              </Button>
             )}
           </Box>
         )}

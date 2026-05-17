@@ -336,7 +336,6 @@
     "invalidEmail": "有効なメールアドレスを入力してください",
     "saveEmail": "メールアドレスを保存",
     "emailSaved": "メールアドレスを保存しました",
-    "tentative": "仮確定",
     "responseDetails": "返信の詳細",
     "acceptedAt": "承諾日",
     "preferredTimeSlot": "希望の時間帯",
@@ -347,8 +346,6 @@
     "declineDetails": "辞退の詳細",
     "declinedAt": "辞退日",
     "declineReason": "理由",
-    "tentativeDetails": "仮確定の詳細",
-    "tentativeReason": "理由",
     "sendReminder": "リマインダーを送信",
     "sendingReminder": "送信中...",
     "reminderSent": "{{email}}にリマインダーを送信しました",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "コンタクトを記録",
+      "promoteToSpeaker": "スピーカーに昇格",
+      "sendInvitation": "招待状を送信",
+      "viewResponseStatus": "回答状況を表示",
+      "enterContent": "コンテンツを入力",
+      "reviewContent": "コンテンツをレビュー",
+      "assignSessionSlot": "セッション枠を割り当て",
+      "viewDetails": "詳細を表示"
+    },
+    "publishable": "公開可能",
+    "publishableTooltip": "スピーカーは承認済みでセッション枠があります",
+    "slotCapacityTooltip": "枠の上限に達しました。{{slots}}枠に対して未回答の招待{{invited}}件 + 承諾{{accepted}}件。承諾済みのスピーカーを辞退するか、待機してください。",
+    "timeInStateTooltip": "{{date}}から現在の状態"
   }
 }

@@ -46,6 +46,8 @@ import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/Speaker
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { SpeakerDetailDrawer } from '@/components/organizer/SpeakerDrawer';
+import MarkContactedModal from '@/components/organizer/SpeakerOutreach/MarkContactedModal';
+import { PromoteSpeakerDialog } from '@/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
@@ -72,6 +74,15 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [autoAssignLoading, setAutoAssignLoading] = useState(false);
   const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
+  // Story 11.D.2 — hoist modal state so kanban primary-action buttons can drive it.
+  const [outreachModalState, setOutreachModalState] = useState<{
+    open: boolean;
+    speaker: SpeakerPoolEntry | null;
+  }>({ open: false, speaker: null });
+  const [promoteModalState, setPromoteModalState] = useState<{
+    open: boolean;
+    speaker: SpeakerPoolEntry | null;
+  }>({ open: false, speaker: null });
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -136,6 +147,23 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const handleIdentifiedToContacted = (speaker: SpeakerPoolEntry) => {
     setSelectedSpeaker(speaker);
     setDetailsDrawerOpen(true);
+  };
+
+  // Story 11.D.2 — IDENTIFIED card primary-action button.
+  const handleLogOutreach = (speaker: SpeakerPoolEntry) => {
+    setOutreachModalState({ open: true, speaker });
+  };
+
+  // Story 11.D.2 — CONTACTED card primary-action button.
+  const handlePromoteSpeaker = (speaker: SpeakerPoolEntry) => {
+    setPromoteModalState({ open: true, speaker });
+  };
+
+  // Story 11.D.2 — QUALITY_REVIEWED-no-slot card primary-action button.
+  // Currently navigates to the event-scoped slot-assignment page; speaker context is
+  // taken from the URL/event downstream.
+  const handleAssignSessionSlotForSpeaker = () => {
+    navigate(`/organizer/events/${eventCode}/slot-assignment`);
   };
 
   // Session handlers
@@ -334,9 +362,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             eventCode={eventCode}
             speakers={speakers}
             sessions={sessions}
+            maxSlots={summary?.maxSlotsAllowed}
             onStatusChange={() => {}}
             onIdentifiedToContacted={handleIdentifiedToContacted}
             onSpeakerClick={handleSpeakerClick}
+            onLogOutreach={handleLogOutreach}
+            onPromoteSpeaker={handlePromoteSpeaker}
+            onAssignSessionSlot={handleAssignSessionSlotForSpeaker}
           />
         )}
 
@@ -392,6 +424,32 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         speaker={selectedSpeaker}
         eventCode={eventCode}
       />
+
+      {/* Story 11.D.2 — Hoisted modal: MarkContactedModal driven by IDENTIFIED card button */}
+      {outreachModalState.speaker && (
+        <MarkContactedModal
+          open={outreachModalState.open}
+          onClose={() => setOutreachModalState({ open: false, speaker: null })}
+          onSuccess={() => {
+            setOutreachModalState({ open: false, speaker: null });
+            queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+            queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
+          }}
+          eventCode={eventCode}
+          speakerId={outreachModalState.speaker.id}
+          speakerName={outreachModalState.speaker.speakerName}
+        />
+      )}
+
+      {/* Story 11.D.2 — Hoisted modal: PromoteSpeakerDialog driven by CONTACTED card button */}
+      {promoteModalState.speaker && (
+        <PromoteSpeakerDialog
+          open={promoteModalState.open}
+          onClose={() => setPromoteModalState({ open: false, speaker: null })}
+          speaker={promoteModalState.speaker}
+          eventCode={eventCode}
+        />
+      )}
     </Stack>
   );
 };

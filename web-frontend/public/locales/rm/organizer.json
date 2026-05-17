@@ -336,7 +336,6 @@
     "invalidEmail": "Endatescha ina adressa e-mail valida",
     "saveEmail": "Salvar e-mail",
     "emailSaved": "E-mail salvada",
-    "tentative": "Provisoric",
     "responseDetails": "Detagls da resposta",
     "acceptedAt": "Acceptà ils",
     "preferredTimeSlot": "Urari preferì",
@@ -347,8 +346,6 @@
     "declineDetails": "Detagls dal refus",
     "declinedAt": "Refusà ils",
     "declineReason": "Motiv",
-    "tentativeDetails": "Detagls provisorics",
-    "tentativeReason": "Motiv",
     "sendReminder": "Trametter ramintur",
     "sendingReminder": "Trasmissiun...",
     "reminderSent": "Ramintur tramess a {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Registrar contact",
+      "promoteToSpeaker": "Promover sco relatur",
+      "sendInvitation": "Trametter envit",
+      "viewResponseStatus": "Mussar status da resposta",
+      "enterContent": "Endatar cuntegn",
+      "reviewContent": "Controllar cuntegn",
+      "assignSessionSlot": "Attribuir plazza da sessiun",
+      "viewDetails": "Mussar detagls"
+    },
+    "publishable": "Publitgabel",
+    "publishableTooltip": "Il relatur è approvà ed ha ina plazza da sessiun",
+    "slotCapacityTooltip": "Capacitad da plazzas cuntanschida. {{invited}} envits pendents + {{accepted}} acceptaziuns per {{slots}} plazzas. Spetga ubain refusa in relatur acceptà per liberar ina plazza.",
+    "timeInStateTooltip": "Status actual dapi {{date}}"
   }
 }

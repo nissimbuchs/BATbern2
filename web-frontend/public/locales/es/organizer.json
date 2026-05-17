@@ -336,7 +336,6 @@
     "invalidEmail": "Por favor, introduce una dirección de correo electrónico válida",
     "saveEmail": "Guardar correo electrónico",
     "emailSaved": "Correo electrónico guardado",
-    "tentative": "Provisional",
     "responseDetails": "Detalles de la respuesta",
     "acceptedAt": "Aceptado el",
     "preferredTimeSlot": "Franja horaria preferida",
@@ -347,8 +346,6 @@
     "declineDetails": "Detalles del rechazo",
     "declinedAt": "Rechazado el",
     "declineReason": "Motivo",
-    "tentativeDetails": "Detalles provisionales",
-    "tentativeReason": "Motivo",
     "sendReminder": "Enviar recordatorio",
     "sendingReminder": "Enviando...",
     "reminderSent": "Recordatorio enviado a {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Registrar contacto",
+      "promoteToSpeaker": "Promover a orador",
+      "sendInvitation": "Enviar invitación",
+      "viewResponseStatus": "Ver estado de respuesta",
+      "enterContent": "Introducir contenido",
+      "reviewContent": "Revisar contenido",
+      "assignSessionSlot": "Asignar franja de sesión",
+      "viewDetails": "Ver detalles"
+    },
+    "publishable": "Publicable",
+    "publishableTooltip": "El orador está aprobado y tiene una franja de sesión",
+    "slotCapacityTooltip": "Capacidad de franjas alcanzada. {{invited}} invitaciones pendientes + {{accepted}} aceptaciones para {{slots}} franjas. Espere o rechace a un orador aceptado para liberar una franja.",
+    "timeInStateTooltip": "Estado actual desde {{date}}"
   }
 }

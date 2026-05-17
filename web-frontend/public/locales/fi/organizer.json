@@ -336,7 +336,6 @@
     "invalidEmail": "Anna kelvollinen sähköpostiosoite",
     "saveEmail": "Tallenna sähköposti",
     "emailSaved": "Sähköposti tallennettu",
-    "tentative": "Alustava",
     "responseDetails": "Vastauksen tiedot",
     "acceptedAt": "Hyväksytty",
     "preferredTimeSlot": "Toivottu aikaväli",
@@ -347,8 +346,6 @@
     "declineDetails": "Kieltäytymisen tiedot",
     "declinedAt": "Kieltäytynyt",
     "declineReason": "Syy",
-    "tentativeDetails": "Alustavat tiedot",
-    "tentativeReason": "Syy",
     "sendReminder": "Lähetä muistutus",
     "sendingReminder": "Lähetetään...",
     "reminderSent": "Muistutus lähetetty osoitteeseen {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Kirjaa yhteydenotto",
+      "promoteToSpeaker": "Ylennä puhujaksi",
+      "sendInvitation": "Lähetä kutsu",
+      "viewResponseStatus": "Näytä vastauksen tila",
+      "enterContent": "Syötä sisältö",
+      "reviewContent": "Tarkista sisältö",
+      "assignSessionSlot": "Määritä istunnon paikka",
+      "viewDetails": "Näytä tiedot"
+    },
+    "publishable": "Julkaisukelpoinen",
+    "publishableTooltip": "Puhuja on hyväksytty ja hänellä on istuntopaikka",
+    "slotCapacityTooltip": "Paikkojen kapasiteetti saavutettu. {{invited}} odottavaa kutsua + {{accepted}} hyväksyntää {{slots}} paikalle. Odota tai hylkää hyväksytty puhuja vapauttaaksesi paikan.",
+    "timeInStateTooltip": "Nykyinen tila alkaen {{date}}"
   }
 }

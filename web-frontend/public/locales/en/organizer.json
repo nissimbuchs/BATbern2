@@ -342,7 +342,6 @@
     "invalidEmail": "Please enter a valid email address",
     "saveEmail": "Save Email",
     "emailSaved": "Email saved",
-    "tentative": "Tentative",
     "responseDetails": "Response Details",
     "acceptedAt": "Accepted",
     "preferredTimeSlot": "Preferred Time Slot",
@@ -353,8 +352,6 @@
     "declineDetails": "Decline Details",
     "declinedAt": "Declined",
     "declineReason": "Reason",
-    "tentativeDetails": "Tentative Details",
-    "tentativeReason": "Reason",
     "sendReminder": "Send Reminder",
     "sendingReminder": "Sending...",
     "reminderSent": "Reminder sent to {{email}}",
@@ -509,5 +506,21 @@
     "shortenedAbstract": "Shortened abstract",
     "words": "words",
     "copyShortened": "Copy shortened abstract"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Log outreach",
+      "promoteToSpeaker": "Promote to speaker",
+      "sendInvitation": "Send invitation",
+      "viewResponseStatus": "View response status",
+      "enterContent": "Enter content",
+      "reviewContent": "Review content",
+      "assignSessionSlot": "Assign session slot",
+      "viewDetails": "View details"
+    },
+    "publishable": "Publishable",
+    "publishableTooltip": "Speaker is approved and has a session slot",
+    "slotCapacityTooltip": "Slot capacity reached. {{invited}} invitations outstanding + {{accepted}} acceptances for {{slots}} slots. Wait or decline an accepted speaker to free a slot.",
+    "timeInStateTooltip": "Current state since {{date}}"
   }
 }

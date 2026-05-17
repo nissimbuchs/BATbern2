@@ -336,7 +336,6 @@
     "invalidEmail": "Voer een geldig e-mailadres in",
     "saveEmail": "E-mail opslaan",
     "emailSaved": "E-mail opgeslagen",
-    "tentative": "Voorlopig",
     "responseDetails": "Reactiedetails",
     "acceptedAt": "Geaccepteerd op",
     "preferredTimeSlot": "Gewenst tijdslot",
@@ -347,8 +346,6 @@
     "declineDetails": "Details afwijzing",
     "declinedAt": "Geweigerd op",
     "declineReason": "Reden",
-    "tentativeDetails": "Voorlopige details",
-    "tentativeReason": "Reden",
     "sendReminder": "Herinnering sturen",
     "sendingReminder": "Verzenden...",
     "reminderSent": "Herinnering verzonden naar {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Contact registreren",
+      "promoteToSpeaker": "Promoten tot spreker",
+      "sendInvitation": "Uitnodiging verzenden",
+      "viewResponseStatus": "Reactiestatus bekijken",
+      "enterContent": "Inhoud invoeren",
+      "reviewContent": "Inhoud beoordelen",
+      "assignSessionSlot": "Sessieblok toewijzen",
+      "viewDetails": "Details bekijken"
+    },
+    "publishable": "Publiceerbaar",
+    "publishableTooltip": "Spreker is goedgekeurd en heeft een sessieblok",
+    "slotCapacityTooltip": "Sloteafhankelijkheid bereikt. {{invited}} openstaande uitnodigingen + {{accepted}} bevestigingen voor {{slots}} sloten. Wacht of wijs een geaccepteerde spreker af om een slot vrij te maken.",
+    "timeInStateTooltip": "Huidige status sinds {{date}}"
   }
 }

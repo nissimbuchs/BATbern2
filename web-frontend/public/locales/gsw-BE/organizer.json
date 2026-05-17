@@ -78,5 +78,21 @@
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
     "noDetails": "Kei Details verfüegbar"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Kontakt notiere",
+      "promoteToSpeaker": "Zum Redner befördere",
+      "sendInvitation": "Yladig schicke",
+      "viewResponseStatus": "Antwortstatus aaluege",
+      "enterContent": "Inhalt yytraage",
+      "reviewContent": "Inhalt prüefe",
+      "assignSessionSlot": "Session-Slot zueteile",
+      "viewDetails": "Detail aazeige"
+    },
+    "publishable": "Publizierbar",
+    "publishableTooltip": "Dr Redner isch akzeptiert und het än Session-Slot",
+    "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} offni Yladige + {{accepted}} Zuesage für {{slots}} Slots. Warte oder än zuegseiti Redner absage zum än Slot freizmache.",
+    "timeInStateTooltip": "Aktuelle Status sit {{date}}"
   }
 }

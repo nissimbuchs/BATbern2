@@ -1,6 +1,6 @@
 # Story 11.D.2: Kanban card primary-action button + cleanup
 
-Status: ready-for-dev
+Status: review
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -549,19 +549,43 @@ This story does NOT introduce new modals. It **lifts existing modals up** to `Ev
 
 ### Agent Model Used
 
-_To be filled in by the dev agent._
+claude-opus-4-7[1m]
 
 ### Debug Log References
 
-_To be filled in by the dev agent — e.g., `/tmp/fe-typecheck.log`, `/tmp/fe-lint.log`, `/tmp/fe-test.log`, `/tmp/playwright.log`, `/tmp/em-test.log`, `/tmp/bruno.log`, `/tmp/grep-invariants.log`._
+- `/tmp/fe-typecheck.log` — `tsc --noEmit` clean
+- `/tmp/fe-lint.log` — ESLint clean (0 errors, 0 warnings after the unused `_speaker` param fix on `handleAssignSessionSlotForSpeaker`)
+- `/tmp/fe-test-lanes.log` — 22 SpeakerStatusLanes tests pass
+- `/tmp/fe-test-speakerstatus.log` — 60 SpeakerStatus tests pass (StatusHistory, StatusChangeDialog, SpeakerStatusDashboard, SpeakerStatusLanes)
+- `/tmp/fe-test-eventpage.log` — EventSpeakersTab + EventPage tests pass (no regressions from modal hoist)
+- `/tmp/fe-test-modals.log` — SpeakerBrainstormingPanel tests pass (PromoteSpeakerDialog reuse from kanban hasn't disturbed brainstorm panel flow)
+- `/tmp/grep-invariants.log` — all AC11 grep invariants hold (CONFIRMED only in comments; isTentative/tentativeReason absent; legacy invite-button/email-sent-badge only present in regression-guard `.not.toBeInTheDocument()` assertions; `speakerCard.*` namespace in all 10 locale files)
 
 ### Completion Notes List
 
-_To be filled in by the dev agent — one short paragraph per AC._
+- **AC1 (primary-action button)**: `getPrimaryAction(speaker, callbacks, slotCapacity, t)` extracted to `web-frontend/src/components/organizer/SpeakerStatus/getPrimaryAction.ts` as a pure helper returning `{ kind: 'button' | 'chip' | 'none', label, onClick?, disabled?, tooltip?, testIdSuffix }`. The full §8.2 state→button mapping is encoded there; `SpeakerStatusLanes.tsx` renders the button (or info chip for QUALITY_REVIEWED + isSlotAssigned) along the card bottom inside a `<Box>` separator (`mt: 1.5`, `pt: 1.5`, `borderTop: 1px solid divider`). Button click handler calls `e.stopPropagation()` so drawer-open does NOT fire, and is suppressed while `transform` (drag) is non-null. The `data-action` attribute carries the action's testIdSuffix for E2E selectors.
+- **AC2 (modal hoist)**: `EventSpeakersTab.tsx` now hosts `outreachModalState` + `promoteModalState` and renders `MarkContactedModal` + `PromoteSpeakerDialog` near `SpeakerDetailDrawer`. `SpeakerStatusLanes` exposes new optional callbacks `onLogOutreach`, `onPromoteSpeaker`, `onAssignSessionSlot`; the parent wires them. The existing `onIdentifiedToContacted` (drag-triggered) and `handleSpeakerClick` (row-click) paths are untouched.
+- **AC3 (time-in-state chip)**: per-state timestamp resolution helper `getStatusChangedAt(speaker)` lives in `SpeakerStatusLanes.tsx` (small enough to keep colocated). Uses `formatDistanceToNow` + `date-fns/locale` (`de`, `enUS`) wiring identical to `TeamActivityFeed.tsx`. Chip renders on the organizer row with `ml: 'auto'` — when no organizer is assigned the chip is alone and still right-aligned. `// TODO(11.D.3): apply threshold-driven colour coding per §8.7` comment added.
+- **AC4 (slot-capacity gate)**: `slotCapacity` derived via `useMemo` at the top of `SpeakerStatusLanes` from `speakers.filter(status === 'ACCEPTED').length + speakers.filter(status === 'INVITED').length` against the `maxSlots` prop. Passed down to each card. READY button's `disabled` flag + tooltip text computed via `getPrimaryAction`. Tooltip wraps the disabled button in a `<span>` (MUI's documented workaround). Defensive pagination comment added at the computation site per Resolved Q#4. `maxSlots` is sourced from `speakerStatusSummary.maxSlotsAllowed` — both consumers (`EventSpeakersTab` and `SpeakerStatusDashboard`) already hold the summary, so no new API call is introduced.
+- **AC5 (legacy indicator removal)**: removed (A) the IDENTIFIED `<IconButton>` "Send invite" block + `handleInviteClick` + `canInvite`/`hasEmail`; (B) the CONTACTED `<EmailIcon>` "invitation sent" badge; (C) the `speaker.isTentative` block (already absent on this branch — verified via grep); (D) reordered `STATUS_LANES` per ADR-009 §0.1 to `[IDENTIFIED, CONTACTED, READY, INVITED]` + `[ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED]` and removed `CONFIRMED` from both `STATUS_COLORS` maps. `useSendInvitation` import retained — it now powers the READY button.
+- **AC6 (layout)**: card layout intact at xs/sm/md viewports; button is full-width with `mt: 1.5`, MUI default min-height (~32px at `size="small"`). The existing `flexGrow / overflow: 'auto'` inside `StatusLane` (line ~363) is unchanged.
+- **AC7 (i18n)**: 10 keys × 10 locales added under `organizer:speakerCard.*` via `/tmp/patch-locales.py` (idempotent). EN + DE authored canonically; 8 other locales use machine-translated baselines flagged for native-speaker follow-up in the PR description. Removed `speakers.tentative`, `speakers.tentativeDetails`, `speakers.tentativeReason` from all 10 locales.
+- **AC8 (⋯ menu deferred)**: not implemented in this story per Resolved Q#3.
+- **AC9 (tests)**: 22 Vitest cases in `SpeakerStatusLanes.test.tsx` covering all 18 listed cases (state→button mapping, slot-capacity disabled, time-in-state chip, regression guards for invite-button + email-sent-badge + CONFIRMED lane, lane order per ADR-009 §0.1) plus 4 extras (stop-propagation, no-organizer fallback, maxSlots=0 no-enforcement, within() lane-scoping). 5 Playwright cases in new `e2e/organizer/speaker-card-primary-action.spec.ts` (focused new file rather than extending the 564-line legacy spec). The QUALITY_REVIEWED-with-slot Playwright case asserts the negative branch (no-slot → button) since driving `isSlotAssigned: true` end-to-end requires the slot-assignment flow which is out of scope; the positive branch is covered exhaustively by Vitest (AC9 #9).
+- **AC10 (commit hygiene)**: commit message format `feat(web-frontend): add state-aware primary-action button on speaker kanban cards [Story 11.D.2]`. No doc updates needed (state machine + frontend-architecture docs already align with ADR-009 via Story 11.A.1).
+- **AC11 (cross-cutting invariants)**: all 6 invariants verified via `/tmp/grep-invariants.log`. Local Playwright + backend regression + Bruno smoke runs were NOT performed in this dev session because they require a running staging stack — the dev agent verified type-check, lint, Vitest, and grep invariants (the verifiable subset) and the spec is ready for the code-review workflow which will re-run the full suite against a live environment.
 
 ### File List
 
-_To be filled in by the dev agent. Expected scope: ~6-8 source files (SpeakerStatusLanes.tsx, SpeakerStatusDashboard.tsx, EventSpeakersTab.tsx, 1-2 test files, 10 locale files) + the optional `⋯` menu component if delivered._
+- `web-frontend/src/components/organizer/SpeakerStatus/getPrimaryAction.ts` (new — pure helper, source of truth for state→button mapping)
+- `web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx` (rewrite — primary-action button + chip, time-in-state chip, slot-capacity gate, legacy indicator removal, lane reorder + CONFIRMED color removal)
+- `web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusDashboard.tsx` (CONFIRMED removed from STATUS_COLORS; maxSlots passed to Lanes)
+- `web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx` (modal hoist for MarkContactedModal + PromoteSpeakerDialog; maxSlots + new callbacks passed to Lanes; handleAssignSessionSlotForSpeaker)
+- `web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx` (rewrite — 22 new tests; legacy 6.1c tests subsumed by regression guards)
+- `web-frontend/e2e/organizer/speaker-card-primary-action.spec.ts` (new — 5 Playwright cases)
+- `web-frontend/public/locales/{de,en,es,fi,fr,gsw-BE,it,ja,nl,rm}/organizer.json` (10 files — added `speakerCard.*` namespace, removed legacy `speakers.tentative*`)
+- `_bmad-output/implementation-artifacts/11-d-2-kanban-card-primary-action-button-cleanup.md` (status → review)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (story → review on completion)
 
 ### Change Log
 
@@ -569,6 +593,7 @@ _To be filled in by the dev agent. Expected scope: ~6-8 source files (SpeakerSta
 |------|--------|
 | 2026-05-16 | Story 11.D.2 drafted via `bmad-create-story`. |
 | 2026-05-16 | Resolved all 4 Open Questions with PM (Nissim). Q1 → accept the imperfect timestamp-source resolution (no `status_changed_at` column in this story; add TODO comment). Q2 → reorder lanes + remove CONFIRMED now (AC5 D locked in). Q3 → defer `⋯` secondary menu to Story 11.D.4 (AC8 narrowed to "do not implement"). Q4 → add defensive comment about pagination dependency at the slot-capacity computation site (AC4 amended). |
+| 2026-05-17 | Implementation via `bmad-dev-story`. New `getPrimaryAction.ts` helper; `SpeakerStatusLanes.tsx` rewritten with state-aware button + time-in-state chip + slot-capacity gate + legacy-indicator removal + ADR-009 lane reorder; `EventSpeakersTab.tsx` hoisted MarkContactedModal + PromoteSpeakerDialog; `SpeakerStatusDashboard.tsx` removed CONFIRMED + passes maxSlots; 22 Vitest cases + 5 Playwright cases; 10 locales patched with `speakerCard.*` namespace + legacy `speakers.tentative*` removal. Verifications: type-check ✓, lint ✓, all SpeakerStatus tests pass (60/60), all EventPage tests pass (34/34), all AC11 grep invariants pass. |
 
 ---
 

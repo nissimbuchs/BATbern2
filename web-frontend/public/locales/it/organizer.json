@@ -336,7 +336,6 @@
     "invalidEmail": "Inserisci un indirizzo e-mail valido",
     "saveEmail": "Salva e-mail",
     "emailSaved": "E-mail salvata",
-    "tentative": "Provvisorio",
     "responseDetails": "Dettagli risposta",
     "acceptedAt": "Accettato il",
     "preferredTimeSlot": "Fascia oraria preferita",
@@ -347,8 +346,6 @@
     "declineDetails": "Dettagli rifiuto",
     "declinedAt": "Rifiutato il",
     "declineReason": "Motivo",
-    "tentativeDetails": "Dettagli provvisori",
-    "tentativeReason": "Motivo",
     "sendReminder": "Invia promemoria",
     "sendingReminder": "Invio in corso...",
     "reminderSent": "Promemoria inviato a {{email}}",
@@ -508,5 +505,21 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Registra contatto",
+      "promoteToSpeaker": "Promuovi a relatore",
+      "sendInvitation": "Invia invito",
+      "viewResponseStatus": "Visualizza stato risposta",
+      "enterContent": "Inserisci contenuto",
+      "reviewContent": "Rivedi contenuto",
+      "assignSessionSlot": "Assegna slot sessione",
+      "viewDetails": "Visualizza dettagli"
+    },
+    "publishable": "Pubblicabile",
+    "publishableTooltip": "Il relatore è approvato e ha uno slot di sessione",
+    "slotCapacityTooltip": "Capacità degli slot raggiunta. {{invited}} inviti in sospeso + {{accepted}} accettazioni per {{slots}} slot. Attendi o rifiuta un relatore accettato per liberare uno slot.",
+    "timeInStateTooltip": "Stato attuale dal {{date}}"
   }
 }
