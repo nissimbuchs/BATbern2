@@ -90,7 +90,9 @@ NFR1: Clean cutover — no backward-compatibility shims for in-flight magic-link
       sessions. Per Confirmed Decision §6.4, there are no in-flight speakers.
 
 NFR2: No new Cognito Lambda triggers required. Speaker provisioning uses
-      `AdminCreateUser` + `AdminAddUserToGroup` + `AdminSetUserPassword` exclusively.
+      `AdminCreateUser` + `AdminSetUserPassword` exclusively. SPEAKER role is granted via
+      a row insert into PostgreSQL `user_roles` (per ADR-001 database-centric roles), NOT
+      via `AdminAddUserToGroup` (no Cognito groups exist).
 
 NFR3: Idempotency — speaker provisioning (`CONTACTED → READY`) is retry-safe. Re-running
       the transition for an already-provisioned speaker is a no-op, not an error.
@@ -99,11 +101,13 @@ NFR4: Audit-trail integrity — every state transition (including legacy migrati
       produces a `speaker_status_history` row with `changed_by_username`, previous state,
       new state, and (for DECLINED) reason text. No silent mutations.
 
-NFR5: Least-privilege IAM — the speaker-provisioning service principal is granted
-      ONLY `cognito-idp:AdminCreateUser`, `AdminAddUserToGroup`, `AdminSetUserPassword`,
-      `AdminInitiateAuth`, `AdminGetUser`. The temp-password encryption-key secret
-      from `feature/epic-6` is intentionally NOT carried forward (passwords are
-      embedded once in email, never stored).
+NFR5: Least-privilege IAM — the speaker-provisioning service principal (company-user-
+      management-service task role) is granted ONLY `cognito-idp:AdminCreateUser`,
+      `AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser`. `AdminAddUserToGroup`
+      is intentionally NOT granted — per ADR-001 roles live in PostgreSQL `user_roles`,
+      no Cognito groups exist, granting it would be a useless least-privilege violation.
+      The temp-password encryption-key secret from `feature/epic-6` is also intentionally
+      NOT carried forward (passwords are embedded once in email, never stored).
 
 NFR6: Test parity — every refactored state transition has a Testcontainers-backed
       integration test demonstrating the transition + side effects. Magic-link
@@ -189,8 +193,10 @@ API surface (§4)
 Infrastructure (CDK)
 - AR29: App Client gains ALLOW_ADMIN_USER_PASSWORD_AUTH flow (cherry-picked from
         feature/epic-6 d5cf0fcc).
-- AR30: IAM perms AdminCreateUser, AdminAddUserToGroup, AdminSetUserPassword,
-        AdminInitiateAuth, AdminGetUser added to speaker-provisioning principal.
+- AR30: IAM perms AdminCreateUser, AdminSetUserPassword, AdminInitiateAuth, AdminGetUser
+        added to the company-user-management-service task role (the speaker-provisioning
+        principal). AdminAddUserToGroup is NOT granted — roles live in PostgreSQL
+        `user_roles` per ADR-001, no Cognito groups exist.
 - AR31: Remove magic-link JWT key infrastructure (Secrets Manager entries, env-var
         wiring for speaker JWT).
 
@@ -1133,9 +1139,12 @@ refactor branch; depends on the `feature/epic-6` cherry-pick succeeding (`d5cf0f
 **Given** the `feature/epic-6` branch exists with commit `d5cf0fcc`,
 **When** the cherry-pick is performed onto `feature/speaker-workflow-refactor`,
 **Then** the App Client `ALLOW_ADMIN_USER_PASSWORD_AUTH` flow is enabled in CDK,
-**And** the IAM perms `cognito-idp:AdminCreateUser`, `AdminAddUserToGroup`,
-`AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser` are granted to the
-event-management-service task-role principal,
+**And** the IAM perms `cognito-idp:AdminCreateUser`, `AdminSetUserPassword`,
+`AdminInitiateAuth`, `AdminGetUser` are granted to the company-user-management-service
+task-role principal (NOT event-management — the Cognito SDK call lives in CUMS per
+ADR-009 §Decision 3 and Story 11.C.2's `UserApiClient.provisionUserWithRole`),
+**And** `AdminAddUserToGroup` is intentionally NOT granted (per ADR-001 roles live in
+PostgreSQL `user_roles`; no Cognito groups exist),
 **And** the related CDK unit tests from `d5cf0fcc` land on the branch and pass,
 **And** the `COGNITO_PASSWORD_ENCRYPTION_KEY` secret is **not** cherry-picked (per
 §9.2 reasoning — the temp password is generated, emailed once, never stored),
@@ -1187,8 +1196,9 @@ for a non-existent user,
 Pool policy from Story 11.E.1),
 **And** calls `cognito-idp:AdminCreateUser` with status `FORCE_CHANGE_PASSWORD` and
 the temp password,
-**And** calls `cognito-idp:AdminAddUserToGroup` (or equivalent role-grant) to assign
-the SPEAKER role group,
+**And** inserts a row into PostgreSQL `user_roles` granting the SPEAKER role (per
+ADR-001 database-centric role storage — NOT `cognito-idp:AdminAddUserToGroup`; no
+Cognito groups exist),
 **And** persists the User row,
 **And** returns `{ username, temporaryPassword }` to the caller (the temp password is
 returned **once** — never written to any local database or log; embedded in the

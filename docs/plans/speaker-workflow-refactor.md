@@ -356,9 +356,11 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
   `AdminCreateUser` and `FORCE_CHANGE_PASSWORD` covers the entire speaker onboarding UX.
 - Confirm the Cognito User Pool's password policy is acceptable for the temporary
   password the backend will generate (length, character classes). Adjust if needed.
-- Add backend IAM permissions for the speaker provisioning service to call
-  `cognito-idp:AdminCreateUser`, `cognito-idp:AdminAddUserToGroup`, and related admin
-  operations.
+- Add backend IAM permissions for the speaker provisioning service (company-user-
+  management-service task role) to call `cognito-idp:AdminCreateUser`,
+  `AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser`. `AdminAddUserToGroup` is
+  intentionally NOT granted — roles live in PostgreSQL `user_roles` per ADR-001; no
+  Cognito groups exist (Story 11.E.1 Resolved Q#1).
 - Remove magic-link JWT key infrastructure (Secrets Manager entries, env-var wiring for
   the speaker JWT).
 - Update IAM policies / permission boundaries that referenced the magic-link auth

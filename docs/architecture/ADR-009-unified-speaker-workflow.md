@@ -260,7 +260,11 @@ cookie) is **deleted** and replaced by standard Cognito registration:
    - Backend generates a strong random temporary password (passes Cognito password
      policy).
    - User is created with status `FORCE_CHANGE_PASSWORD`.
-   - SPEAKER role is granted via `cognito-idp:AdminAddUserToGroup`.
+   - SPEAKER role is granted via a row insert into PostgreSQL `user_roles` (per ADR-001
+     database-centric role storage). No Cognito group operations are performed — no
+     Cognito groups exist on this user pool (see `cognito-stack.ts` "REMOVED: Cognito
+     Groups (ADR-001)" note). `cognito-idp:AdminAddUserToGroup` is intentionally NOT
+     granted to the provisioning service.
 
 2. **The invitation email** (sent on `READY → INVITED`) contains:
    - A link to the speaker portal login page.
@@ -500,8 +504,9 @@ public class SpeakerProvisioningService {
             UserCreationFlag.SUPPRESS_DEFAULT_INVITATION    // we send our own email
         );
 
-        // 3. Grant SPEAKER role
-        cognitoClient.adminAddUserToGroup(email, "SPEAKER");
+        // 3. Grant SPEAKER role — PostgreSQL user_roles insert (ADR-001),
+        //    NOT cognito-idp:AdminAddUserToGroup (no Cognito groups exist).
+        userRoleRepository.save(new UserRoleEntity(user.getUsername(), Role.SPEAKER));
 
         // 4. Stash the temp password for the invitation email
         return tempPassword;
@@ -559,3 +564,4 @@ DROP TABLE IF EXISTS speaker_selection_votes;     -- overflow voting
 | 2026-05-15 | 1.0 | Initial ADR (replaces the three placeholder ADRs 013/014/015 from the refactor plan into a single document). | Winston (Architect Agent) |
 | 2026-05-16 | 1.1 | Story 11.C.1 implementation landed: V94 migration (`services/event-management-service/src/main/resources/db/migration/V94__drop_speakers_table.sql`) drops the `speakers` table; `Speaker` entity + `SpeakerRepository` + `SpeakerService` + `SpeakerController` + `SpeakerPortalProfileController` + `LegacyExportService` / `LegacyImportService` deleted; watch services migrated to `UserApiClient`; public portrait lookup mirrored as `GET /api/v1/public/users/{username}` in CUMS (`PublicUserController`). | Amelia (Dev Agent) |
 | 2026-05-16 | 1.2 | Story 11.C.2 implementation landed: (a) `UserApiClient` extended with `provisionUserWithRole` (AR13, calls new `POST /api/v1/users/provision`) and `patchUserProfile` (AR14, calls new `PATCH /api/v1/users/{username}/profile`); legacy `updateUser` / `updateUserProfilePicture` / `UserUpdateDto` deleted (Resolved Decision §1). (b) `SpeakerContentSubmissionService` deleted; consolidated `ContentSubmissionService.submit(speakerPoolId, eventCode, payload, principal)` becomes the shared backend write path for both `POST /api/v1/events/{code}/speakers/{speakerId}/content` (organizer) and `POST /api/v1/speaker-portal/content/submit` (speaker portal). (c) OpenAPI specs `docs/api/users-api.openapi.yml` + `docs/api/speakers-api.openapi.yml` updated; new request schemas use `additionalProperties: false` per Resolved Decision §3. (d) Profile patch is idempotent + scoped: ORGANIZER/ADMIN patch any user, SPEAKER may patch only their own profile (403 otherwise). | Amelia (Dev Agent) |
+| 2026-05-17 | 1.3 | Story 11.E.1 PM-resolved Q#1: dropped `cognito-idp:AdminAddUserToGroup` from Decision 3 + Implementation Guidelines skeleton. SPEAKER role grant uses PostgreSQL `user_roles` row insert per ADR-001 database-centric role storage (no Cognito groups exist on the user pool). Also updated PRD AR30 / NFR2 / NFR5 / Story 11.E.1 AC / Story 11.E.2 AC to match. CDK IAM policy in `company-management-stack.ts` lists only the four actually-called admin actions (AdminCreateUser, AdminSetUserPassword, AdminInitiateAuth, AdminGetUser). | Nissim (PM) |
