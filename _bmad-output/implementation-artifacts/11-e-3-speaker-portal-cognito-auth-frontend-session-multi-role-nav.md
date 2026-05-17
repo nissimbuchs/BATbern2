@@ -2,9 +2,15 @@
 
 Status: ready-for-dev
 
+<!-- All 6 Open Questions PM-resolved 2026-05-17. AC + Tasks + Dev Notes below reflect the
+     resolutions: Q#1 eventCode-in-path (was the recommendation); Q#2 DELETE legacy onboarding
+     e2e tests outright; Q#3 REMOVE /api/v1/auth/speaker-magic-login permitAll NOW (not Phase F);
+     Q#4 drop the speaker-portal nav entry; Q#5 SHIP ALL 10 locales for new UI i18n keys
+     (Nissim narrowed the CLAUDE.md "DE+EN only" rule — it now applies ONLY to backend email
+     templates, not frontend UI i18n; CLAUDE.md §Localization rewritten in this same commit);
+     Q#6 drop SpeakerResponseType.TENTATIVE from the frontend type. Resolution narrative
+     preserved at the bottom in "Open Questions (resolved 2026-05-17)". -->
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
-<!-- Story file ends with an "Open Questions" section. Resolve those with the PM before
-     starting dev-story; AC + Tasks below assume the literal PRD wording (PRD lines 1253-1316). -->
 
 ## Story
 
@@ -57,7 +63,7 @@ Status: ready-for-dev
 
   **Backend (EMS) — `SecurityConfig.java`:**
   - Lines 113-128 carry SIX `permitAll()` lines for speaker-portal endpoints (validate-token, respond, dashboard, content GET, content/draft, content/submit, materials/presigned-url, materials/confirm). **All eight matchers removed** in this story; the existing default `.anyRequest().authenticated()` (line 163) now governs them; `@PreAuthorize("hasRole('SPEAKER')")` on each controller method gates role.
-  - Line 131 (`/api/v1/auth/speaker-magic-login` permitAll): **stays** per Q#3 below (Phase F removes it alongside the controller deletion).
+  - Line 131 (`/api/v1/auth/speaker-magic-login` permitAll): **REMOVED** per Resolved Q#3 (PM 2026-05-17). After the frontend stops invoking it (AC8), there is no functional reason to expose this endpoint as `permitAll()`; the standard auth chain now governs (`.anyRequest().authenticated()` → 401 for anonymous POSTs). The controller file (`SpeakerMagicLoginController.java`) stays for Phase F deletion; the endpoint just becomes unreachable to anonymous callers. If Phase F is delayed and someone unexpectedly tries to use the magic-login endpoint, they receive a clean 401 instead of a runtime controller failure.
 
   **Frontend (web-frontend) — present today:**
   - `web-frontend/src/components/auth/ProtectedRoute/ProtectedRoute.tsx` line 55 checks `allowedRoles.includes(user.role)` — singular role. **Updated** in this story to multi-role: `user.roles.some((r) => allowedRoles.includes(r))` (the cherry-pick line from 73d94688). NB: the helper-route exports (`OrganizerRoute`, `SpeakerRoute`, `PartnerRoute`, `AttendeeRoute` — lines 91-103) already pass arrays; the single-role check is the only line that changes.
@@ -109,7 +115,7 @@ The AC are pinned to PRD lines 1253-1316. Each AC names the exact file under cha
   - `confirmUpload(SpeakerMaterialConfirmRequest request)` → `confirmUpload(String username, String eventCode, SpeakerMaterialConfirmRequest request)`.
   - The `token` field on `SpeakerMaterialUploadRequest` and `SpeakerMaterialConfirmRequest` DTOs is **removed**; OpenAPI spec edited in same commit.
 
-**And** verification: `grep -rn "permitAll" services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java | grep "speaker-portal"` returns **zero** matches. The seven `permitAll()` entries at SecurityConfig lines 113-128 are removed.
+**And** verification: `grep -rn "permitAll" services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java | grep -E "speaker-portal|speaker-magic-login"` returns **zero** matches. The seven `permitAll()` entries for `/api/v1/speaker-portal/**` at SecurityConfig lines 113-128 are removed, AND the `permitAll()` for `/api/v1/auth/speaker-magic-login` at line 131 is also removed per Resolved Q#3 (PM 2026-05-17): the endpoint is dead from the frontend after AC8, so leaving it `permitAll()` is a needless attack surface; removing it now means the dead endpoint returns `401` (governed by `.anyRequest().authenticated()` default) instead of letting random POSTs reach controller code. The `SpeakerMagicLoginController.java` file itself stays for Phase F to delete cleanly.
 
 **And** verification: `grep -rn "@RequestParam.*token\|request.token()" services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerPortal*.java` returns zero matches (the magic-link `token` field is fully gone from the speaker-portal controller signatures and bodies).
 
@@ -216,7 +222,7 @@ SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
 - `web-frontend/src/components/auth/ProtectedRoute/ProtectedRoute.tsx` — **one-line change**: `if (!allowedRoles.includes(user.role))` → `if (!user.roles.some((r) => allowedRoles.includes(r)))`. Adds the test file `ProtectedRoute.test.tsx` (+117 LOC).
 - `web-frontend/src/contexts/AuthContext.test.tsx` — new (+186 LOC).
 - `web-frontend/src/App.tsx` — +13 LOC from the cherry-pick (suggested-actions navigation table per Story 9.5). The dev verifies these lines do NOT re-introduce the `/speaker-portal/login` route or the `SpeakerLoginPage` import.
-- `web-frontend/public/locales/de/common.json` + `en/common.json` — +9 LOC each: adds `navigation.section.organizer`, `navigation.section.speaker`, `navigation.section.partner`, `navigation.section.attendee`, plus `navigation.speakerPortal` (kept for parity even if Q#4 resolves to NOT adding the nav entry — the key falling unused is fine).
+- **All 10 locales** of `common.json` get the new keys per Resolved Q#5 (PM 2026-05-17 — narrowed `CLAUDE.md` §Localization rule: "DE+EN only" applies to backend email templates only; new frontend UI i18n keys MUST land in all 10 locales). Files: `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/common.json`. New keys: `navigation.section.organizer`, `navigation.section.speaker`, `navigation.section.partner`, `navigation.section.attendee` (4 keys × 10 locales = 40 entries). `navigation.speakerPortal` is **NOT added** per Resolved Q#4 (the nav entry it would label is dropped from `navigationConfig.ts`; the key would land unused — skip it). The cherry-pick's DE+EN values land as-is in DE+EN; the other 8 locales are hand-translated (or copy-translated from a similar nav section in the existing locale files — translators have shipped `navigation.*` keys before per Story 10.9 i18n cleanup; reuse those translation patterns).
 
 **And** the following files / changes from `73d94688` are **explicitly skipped** (per PRD lines 1289-1295 + ADR-009 §Decision 3 + refactor plan §9.2):
 
@@ -362,7 +368,7 @@ is also **deleted**.
 4. `speaker-portal-cross-portal-nav.spec.ts` — speaker+organizer logs in, sees both nav sections, switches between speaker dashboard and organizer kanban without re-authenticating.
 5. `speaker-magic-login-404.spec.ts` — speaker navigates to `/speaker-portal/magic-login`, sees the SPA's 404 (route does not exist post-AC8).
 
-**And** the existing root-level speaker tests `e2e/speaker-onboarding-flow.spec.ts` and `e2e/speaker-portal-response.spec.ts` are **moved** to `e2e/speaker/` AND **rewritten** to use the Cognito session (no `?token=` URL param). If a rewrite would balloon the story (e.g. `speaker-onboarding-flow.spec.ts` exercises the magic-link-acceptance flow end-to-end), the dev marks it `.skip(...)` with a comment pointing to a follow-up issue (per Q#2 below).
+**And** the existing root-level speaker tests `web-frontend/e2e/speaker-onboarding-flow.spec.ts` and `web-frontend/e2e/speaker-portal-response.spec.ts` are **DELETED** outright per Resolved Q#2 (PM 2026-05-17). Both tests exercise the magic-link flow end-to-end — the literal thing Phase E removes. There is no migration / port to Cognito: the new tests in this story's `e2e/speaker/` directory (listed above) cover the equivalent Cognito-side flows (dashboard, respond, content submit, cross-portal nav, magic-login-404). Removing the old specs avoids dead test coverage + a misleading test name surviving the cutover. Git history preserves the prior tests for reference.
 
 **And** the global-setup flow at `web-frontend/e2e/global-setup.ts` correctly writes `.playwright-auth-speaker.json` from `SPEAKER_AUTH_TOKEN` (the `setup-test-users` make target is the bootstrap — the dev verifies the staging Cognito user used for tests has been provisioned per Story 11.E.2 — see manual-verification step in AC11).
 
@@ -431,6 +437,7 @@ These cover AC5's authorisation matrix at the contract layer.
 - **`docs/architecture/06-backend-architecture.md`** — `Authentication` section: remove magic-link references for speaker-portal endpoints; explicitly state `@PreAuthorize("hasRole('SPEAKER')")` is the access rule. (If the doc still references the dual-auth interim, replace with the Phase E end-state.)
 - **`docs/architecture/06b-user-lifecycle-sync.md`** — if it still says "speaker portal uses magic-link / RESPOND token," update to "speaker portal uses Cognito Bearer; SPEAKER role is granted at `CONTACTED → READY` per Story 11.E.2."
 - **`CLAUDE.md`** §"Testing Strategy" — confirm the Playwright `speaker` project's note matches: `e2e/speaker/` is now populated; `SPEAKER_AUTH_TOKEN` activation pattern unchanged.
+- **`CLAUDE.md`** §"Localization" (per Resolved Q#5, PM 2026-05-17) — narrowed from "DE+EN only for everything" to **"Email Templates: DE + EN Only; UI i18n: All 10 Locales"**. New section header explicitly distinguishes the two scopes: backend email templates remain DE+EN-only (per Story 11.E.2's framing); new frontend UI i18n keys MUST land in all 10 locales (`de`, `en`, `fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`). The asymmetry is justified in the narrowed section: emails carry rich prose for an overwhelmingly DE/EN audience; frontend nav/button/label keys are short atomic strings serving a genuinely multilingual public website. This CLAUDE.md edit already landed at story-creation time; the dev verifies it is still present at commit time and re-applies if a merge has reverted it.
 
 **And** verification: `grep -rn "magic.link\|speaker.jwt\|speakerMagicLogin" docs/architecture/ docs/prd/epic-11*.md` returns only references inside ADR-009's "Decision 3" section (intentional, descriptive prose about what's being replaced) and the revision-history rows. No "current behaviour" claims about magic links should remain for the speaker portal.
 
@@ -575,8 +582,9 @@ public ResponseEntity<SpeakerDashboardDto> getDashboard(Authentication authentic
 
 9.1. Open `services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java`.
 9.2. Delete the seven `permitAll()` matcher lines for speaker-portal endpoints (lines 113-128 area — exact line numbers vary; the dev uses `grep` to locate `speaker-portal` in the file). The default `.anyRequest().authenticated()` at line 163 now governs them; the per-method `@PreAuthorize` adds the role check.
-9.3. **Keep** the `/api/v1/auth/speaker-magic-login` permitAll line per Q#3 (Phase F removes it alongside the controller).
-9.4. **Verify**: `grep -n "speaker-portal" services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java` returns zero `permitAll` lines (only the file's other usage areas — e.g. comments or test fixtures — may persist).
+9.3. **Also delete** the `/api/v1/auth/speaker-magic-login` `permitAll` line (~line 131) per Resolved Q#3 (PM 2026-05-17). The endpoint is dead after AC8; leaving it `permitAll()` is needless attack surface. The controller class stays (Phase F deletes the file); after this change, any POST to `/api/v1/auth/speaker-magic-login` from an unauthenticated caller gets 401 from the default auth chain.
+9.4. **Verify**: `grep -nE "speaker-portal|speaker-magic-login" services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java` returns zero `permitAll` lines (only the file's other usage areas — e.g. comments or test fixtures — may persist).
+9.5. **Cross-check**: the existing Story 6.1a comments / Story 9.1 comments next to those lines are removed alongside the matchers (avoid stale doc-comments referencing deleted permits).
 
 ### Task 10 — `SpeakerPortalAuthIntegrationTest` (AC5)
 
@@ -621,18 +629,31 @@ public ResponseEntity<SpeakerDashboardDto> getDashboard(Authentication authentic
 12.6. Delete the `SpeakerMagicLoginPage` lazy import (App.tsx lines 126-128).
 12.7. **Verify**: `cd web-frontend && npm test -- speaker-portal 2>&1 | tee /tmp/fe-speaker-test.log` — all green (tests rewritten in same task per AC7 item 6).
 
-### Task 13 — i18n — DE + EN nav keys (AC6)
+### Task 13 — i18n — 4 new nav keys × 10 locales (AC6, Resolved Q#5)
 
-13.1. Verify `web-frontend/public/locales/de/common.json` and `en/common.json` carry the cherry-pick's new keys: `navigation.section.organizer/speaker/partner/attendee` + `navigation.speakerPortal`.
-13.2. If the cherry-pick provided EN values like "Speaker Portal" / "Organizer Section", confirm DE values are translated (not English copies). The dev hand-translates if the cherry-pick's DE happens to be English copies.
-13.3. **Optional 8-locale fan-out**: per `CLAUDE.md` §"Localization — Official vs Optional Languages" + Q#5, the 8 optional locales (`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`) are NOT required. i18next's `fallbackLng: 'en'` covers the gap. Dev skips unless Q#5 resolves otherwise.
+13.1. Verify `web-frontend/public/locales/de/common.json` and `en/common.json` carry the cherry-pick's new keys: `navigation.section.organizer / speaker / partner / attendee`. Confirm DE values are real German translations (not English copies); hand-translate if the cherry-pick's DE happens to be EN copies. Suggested values: organizer → "Organisator", speaker → "Referent", partner → "Partner", attendee → "Teilnehmer".
+13.2. **DELETE** the cherry-pick's `navigation.speakerPortal` key entirely per Resolved Q#4 (PM 2026-05-17) — the nav entry was dropped from `navigationConfig.ts` in Task 1.5, so the i18n key would land unused. If the cherry-pick lands the key in DE+EN before this task, remove it.
+13.3. **Fan out to all 8 optional locales** per Resolved Q#5 (PM 2026-05-17 — narrowed `CLAUDE.md` §Localization rule: the "DE+EN only" rule applies ONLY to backend email templates; new frontend UI i18n keys require all 10 locales). Add `navigation.section.organizer / speaker / partner / attendee` to:
+- `web-frontend/public/locales/fr/common.json` — French (organisateur, intervenant, partenaire, participant)
+- `web-frontend/public/locales/it/common.json` — Italian (organizzatore, relatore, partner, partecipante)
+- `web-frontend/public/locales/rm/common.json` — Romansh (organisatur, relatur, partenari, participant — verify with existing translations in this locale; use closest equivalents from existing keys if uncertain)
+- `web-frontend/public/locales/es/common.json` — Spanish (organizador, ponente, socio, participante)
+- `web-frontend/public/locales/fi/common.json` — Finnish (järjestäjä, puhuja, kumppani, osallistuja)
+- `web-frontend/public/locales/nl/common.json` — Dutch (organisator, spreker, partner, deelnemer)
+- `web-frontend/public/locales/ja/common.json` — Japanese (主催者, 講演者, パートナー, 参加者)
+- `web-frontend/public/locales/gsw-BE/common.json` — Bernese Swiss-German (Organisator, Referänt, Partner, Tailnähmer — match existing gsw-BE conventions; the locale is informal, so a hint of Bärndüütsch flavour is appropriate)
 
-### Task 14 — Playwright `e2e/speaker/` test suite (AC10)
+13.4. **CLAUDE.md update bundled in this commit** per Resolved Q#5: §"Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales" (the new section header that replaces the older "DE+EN only for everything" framing). The CLAUDE.md edit lands in the same commit per CLAUDE.md doc-drift policy. **NOTE:** the CLAUDE.md edit was already landed on disk at story-creation time (the dev verifies it is present); if absent, the dev re-applies it before committing.
+
+13.5. **Verify**: `for loc in de en fr it rm es fi nl ja gsw-BE; do echo -n "$loc: "; grep -c "section\\." web-frontend/public/locales/$loc/common.json; done` — each row prints exactly `4`. (Or equivalent JSON-aware check — `jq '.navigation.section | length'`.)
+
+### Task 14 — Playwright `e2e/speaker/` test suite (AC10, Resolved Q#2)
 
 14.1. Create directory `web-frontend/e2e/speaker/`.
 14.2. Add the five spec files listed in AC10.
-14.3. Move + rewrite `web-frontend/e2e/speaker-onboarding-flow.spec.ts` and `e2e/speaker-portal-response.spec.ts` to `e2e/speaker/`. If a rewrite blows up the story (the onboarding test exercises the magic-link flow end-to-end), mark `.skip(...)` and file a follow-up issue per Q#2.
-14.4. **Verify**: `cd web-frontend && SPEAKER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-speaker.json) npx playwright test --project=speaker 2>&1 | tee /tmp/pw-speaker.log` — all green (or `.skip`-ped with clear comments).
+14.3. **DELETE** `web-frontend/e2e/speaker-onboarding-flow.spec.ts` and `web-frontend/e2e/speaker-portal-response.spec.ts` per Resolved Q#2 (PM 2026-05-17). Both exercise the magic-link flow end-to-end — the literal thing Phase E removes. There is no port to Cognito; the new specs in 14.2 cover the equivalent Cognito-side flows. Git history preserves the prior tests if anyone ever wants to consult them.
+14.4. **Verify**: `cd web-frontend && SPEAKER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-speaker.json) npx playwright test --project=speaker 2>&1 | tee /tmp/pw-speaker.log` — all green.
+14.5. **Verify**: `ls web-frontend/e2e/speaker-*` returns "No such file or directory" (the legacy root-level specs are gone); `ls web-frontend/e2e/speaker/` returns exactly five files (the new specs).
 
 ### Task 15 — Bruno API contract tests (AC10)
 
@@ -693,7 +714,7 @@ ADR-009 §Decision 3 + refactor plan §9.4 + sprint-status.yaml line 195 all agr
 - Phase F's clean delete is a single mechanical pass on dead code, not a refactor.
 - The transitional state (magic-link controllers exist but are unreachable from the UI) is well-understood and short-lived (target: 1-2 weeks).
 
-The `permitAll()` on `/api/v1/auth/speaker-magic-login` (SecurityConfig line 131) stays for the same reason — Phase F removes it alongside the controller deletion (Q#3 below).
+**Exception per Resolved Q#3** (PM 2026-05-17): the `permitAll()` on `/api/v1/auth/speaker-magic-login` (SecurityConfig line 131) IS removed in this story, NOT deferred to Phase F. The endpoint is dead from the frontend after AC8 (no caller invokes it); leaving it `permitAll()` is needless attack surface during the Phase E observation window. The controller class (`SpeakerMagicLoginController.java`) stays for Phase F to delete cleanly; after this story lands, anonymous POSTs to that endpoint just receive 401 from the default auth chain. Phase F's mechanical-cleanup pass is now slightly smaller (delete the controller + the file; the `permitAll` line is already gone).
 
 ### Why eventCode in the path (not as a body field or query param)
 
@@ -759,7 +780,7 @@ That is a meaningfully sized story even after the cherry-pick does the navigatio
 - **No `SpeakerMagicLoginController` changes** — the file is dead from the frontend's perspective but compilable. Phase F deletes.
 - **No `magic_link_tokens` table drop** — Phase F.
 - **No `speaker_jwt` cookie removal** — Phase F.
-- **No `/api/v1/auth/speaker-magic-login` SecurityConfig change** — Phase F.
+- **The `/api/v1/auth/speaker-magic-login` SecurityConfig `permitAll` IS removed** in this story per Resolved Q#3. (Earlier draft framing said "Phase F" — superseded by Q#3.)
 - **No new Cognito Lambda triggers.** Per NFR2 + ADR-009 §Decision 3.
 - **No password-policy changes** (NFR9 work belongs to Story 11.E.1).
 - **No new email templates.** Story 11.E.2 owns email rewrites.
@@ -812,14 +833,14 @@ That is a meaningfully sized story even after the cherry-pick does the navigatio
 - `src/services/speakerAuthService.ts` (UNCHANGED — Phase F deletes; no callers after this story)
 - `src/App.tsx` (MODIFIED — wrap speaker-portal routes in <SpeakerRoute>; delete /speaker-portal/magic-login route + import; +13 LOC from cherry-pick)
 - `src/types/generated/event-management.types.ts` (REGENERATED — from OpenAPI)
-- `public/locales/de/common.json` + `public/locales/en/common.json` (MODIFIED — +navigation.section.* + navigation.speakerPortal, from cherry-pick)
+- `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/common.json` (MODIFIED — +navigation.section.{organizer,speaker,partner,attendee} = 4 keys × 10 locales = 40 entries, per Resolved Q#5. NO `navigation.speakerPortal` key per Resolved Q#4.)
 - `e2e/speaker/speaker-portal-dashboard.spec.ts` (NEW)
 - `e2e/speaker/speaker-portal-respond.spec.ts` (NEW)
 - `e2e/speaker/speaker-portal-content-submit.spec.ts` (NEW)
 - `e2e/speaker/speaker-portal-cross-portal-nav.spec.ts` (NEW)
 - `e2e/speaker/speaker-magic-login-404.spec.ts` (NEW)
-- `e2e/speaker-onboarding-flow.spec.ts` (MOVED to e2e/speaker/ OR `.skip`-ped pending follow-up)
-- `e2e/speaker-portal-response.spec.ts` (MOVED to e2e/speaker/ OR `.skip`-ped pending follow-up)
+- `e2e/speaker-onboarding-flow.spec.ts` (DELETED per Resolved Q#2)
+- `e2e/speaker-portal-response.spec.ts` (DELETED per Resolved Q#2)
 
 **Specs + docs:**
 - `docs/api/event-management.openapi.yml` (MODIFIED — speaker-portal endpoints reshape; security: cognitoJwt added)
@@ -828,7 +849,7 @@ That is a meaningfully sized story even after the cherry-pick does the navigatio
 - `docs/architecture/06-backend-architecture.md` (MODIFIED — single-auth model)
 - `docs/architecture/06b-user-lifecycle-sync.md` (MODIFIED — speaker portal auth references)
 - `docs/prd/epic-11-speaker-workflow-refactor.md` (MODIFIED — Story 11.E.3 AC alignment with resolutions if Open Questions resolved)
-- `CLAUDE.md` (UNCHANGED expected; verify Testing Strategy section consistency)
+- `CLAUDE.md` (MODIFIED per Resolved Q#5 — §"Localization" narrowed to "Email Templates: DE + EN Only; UI i18n: All 10 Locales"; CLAUDE.md edit already on disk at story-creation time; dev re-verifies at commit time)
 
 **Bruno:**
 - `bruno-tests/speaker-portal/dashboard-200-speaker.bru` (NEW)
@@ -912,104 +933,22 @@ _To be filled by the dev agent during implementation._
 
 ---
 
-## Open Questions
+## Open Questions (resolved 2026-05-17)
 
-These six questions need PM resolution before development starts. Each is written in plain language so the PM (Nissim) can answer without re-reading the architecture docs. Responses become the binding contract for AC + Tasks; the story is re-authored in place with the resolutions baked in (same pattern as Stories 11.E.1 and 11.E.2).
+All six questions were resolved with PM (Nissim) before development. The AC, Tasks, and Dev Notes above already reflect the decisions. Listed here for traceability and to anchor future code-review against the resolved contract.
 
-### Q#1 — What's the new shape of the speaker-portal API endpoints once `?token=` is gone?
+1. ✅ **Q#1 — eventCode in the URL path (Variant a).** `POST /speaker-portal/events/{eventCode}/respond`, `GET /speaker-portal/events/{eventCode}/content`, etc. Matches Story 11.C.2's organizer endpoint shape and ADR-003's "meaningful identifiers in URLs" rule. The frontend uses `useParams<{ eventCode }>()` already used elsewhere. AC1 + AC4 + AC7 + AC12 + Tasks 5-7 + Task 16 reflect this shape. OpenAPI spec edits in same commit per ADR-006 contract-first.
 
-Today the magic-link token in the URL or body uniquely identifies which speaker_pool row to operate on (e.g. "Alice's invitation to BATbern56"). When we replace the token with a Cognito session, the backend knows WHO is calling (Alice) but not WHICH of her invitations she's acting on. A speaker can have invitations to multiple events open at once — Alice could be `INVITED` for BATbern56 and `ACCEPTED` for BATbern57 simultaneously.
+2. ✅ **Q#2 — DELETE the legacy onboarding tests (Variant c).** `web-frontend/e2e/speaker-onboarding-flow.spec.ts` and `e2e/speaker-portal-response.spec.ts` are deleted outright. Both exercise the magic-link flow end-to-end — the literal behaviour Phase E removes. No port to Cognito; the new 5 specs under `e2e/speaker/` (AC10 + Task 14) cover the equivalent Cognito-side flows. Git history preserves the prior tests. AC10 + Task 14 reflect this deletion.
 
-We need to put the event identifier somewhere in each request. Three viable shapes:
+3. ✅ **Q#3 — Remove `/api/v1/auth/speaker-magic-login` `permitAll` NOW (Variant b).** Tighter security posture. After AC8 no frontend caller invokes this endpoint; leaving it `permitAll()` is needless attack surface during the Phase E observation window. Anonymous POSTs receive 401 from the default auth chain (`.anyRequest().authenticated()`); the controller class stays for Phase F to delete cleanly; the `permitAll` line is just gone. AC1 + Task 9 reflect this — Phase F's pass is now slightly smaller.
 
-(a) **Event code in the URL path** — `POST /speaker-portal/events/BATbern56/respond`. Clean, matches the existing organizer endpoint pattern (`POST /events/{eventCode}/speakers/{speakerId}/content`), follows ADR-003's "meaningful identifiers in URLs" rule. The frontend uses `useParams<{ eventCode }>()` already used elsewhere. This is the shape AC + Tasks assume.
+4. ✅ **Q#4 — Drop the `navigation.speakerPortal` nav-menu entry entirely (Variant a).** The cherry-pick's `/speaker-portal/login` route doesn't exist under ADR-009; the `navigation.speakerPortal` i18n key is also dropped (NOT just unused — actively removed) per Resolved Q#5's "all i18n keys land in all 10 locales" rule (an unused key would have to land in 10 locales to satisfy the parity check, which is worse than just removing it). Existing `/speaker/*` nav entries continue to work. Task 1.5 drops the nav entry; Task 13.2 drops the i18n key.
 
-(b) **Event code in the request body** — `POST /speaker-portal/respond` with body `{ eventCode, response, ... }`. Less idiomatic (POST resources usually identify by path, not body), but preserves the existing URL paths so the frontend route definitions don't change.
+5. ✅ **Q#5 — Ship ALL 10 locales for new UI i18n keys (Variant b) AND narrow the CLAUDE.md "DE+EN only" rule.** Nissim clarified the older `CLAUDE.md` §Localization rule was intended for **backend email templates only**, NOT frontend UI i18n. The 4 new nav-section keys land in all 10 locales (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`). `CLAUDE.md` §Localization was narrowed in the same commit as this story's resolution and now reads "Email Templates: DE + EN Only; UI i18n: All 10 Locales" with explicit justification for the asymmetry (emails carry rich prose for an overwhelmingly DE/EN audience; UI keys are short atomic strings serving a genuinely multilingual public website). Task 13 covers the 10-locale fan-out + the CLAUDE.md verification. The user-memory note `feedback_official_languages_de_en_only.md` was updated in parallel to reflect the narrowed rule.
 
-(c) **Event code as query parameter** — `POST /speaker-portal/respond?eventCode=BATbern56`. Awkward for a POST and would invite the same "scrub-the-URL" code path we're removing.
-
-**Recommendation: (a).** It is the most idiomatic and matches Story 11.C.2's organizer endpoint shape. The OpenAPI spec changes are slightly larger (path-parameter docs) but the implementation is cleaner.
-
-**Question to the PM:** Do you confirm (a) — event code in the URL path — as the new shape? Or do you prefer (b) — keep the URL stable and put eventCode in the body — to minimize the API-shape diff?
-
-### Q#2 — What do we do with the existing `e2e/speaker-onboarding-flow.spec.ts` and `e2e/speaker-portal-response.spec.ts`?
-
-These two Playwright tests live at the root of `e2e/` (not under `e2e/speaker/`) and exercise the magic-link flow end-to-end: organizer sends invitation → speaker clicks magic link in inbox → speaker accepts → status transitions. They use the old token-based API.
-
-Three options:
-
-(a) **Move them to `e2e/speaker/` AND rewrite for Cognito.** This is the cleanest but adds meaningful work to this story — the onboarding flow now requires a Cognito-side bootstrap (Story 11.E.2's `AdminCreateUser` + temp-password issuance must run as a precursor), which is harder to script in a Playwright test than the magic-link flow it replaces.
-
-(b) **Mark them `.skip(...)` with a comment pointing to a follow-up issue, and create the new tests under `e2e/speaker/` per AC10.** Faster; gets the new auth path covered; defers the end-to-end onboarding rewrite to a separate story that can take its time getting the Cognito staging fixture right.
-
-(c) **Delete them.** They cover behaviour that is being removed — magic-link onboarding is the literal thing Phase E is killing. The new tests in AC10 cover the Cognito-side equivalents (dashboard / respond / submit / cross-portal-nav / magic-login-404).
-
-**Recommendation: (b).** Skipping is the safest middle ground: the old tests stay in git history for reference; the new Cognito-side tests give us coverage now; the eventual rewrite (or delete) happens in a follow-up story scoped specifically to the e2e suite rework.
-
-**Question to the PM:** Confirm (b) — `.skip(...)` with a follow-up issue, AND add the 5 new `e2e/speaker/` tests from AC10? Or do you want (c) — delete the old tests outright now, since their behavior is intentionally removed by Phase E?
-
-### Q#3 — Does the `permitAll()` on `/api/v1/auth/speaker-magic-login` stay, or do we remove it now?
-
-The SecurityConfig line `requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()` exists because the magic-login endpoint is the bridge from "anonymous user with a JWT in the URL" to "session-cookie-bearing user." It must be permitAll to function.
-
-After this story (11.E.3) lands, no frontend code path invokes `/speaker-portal/magic-login` (we delete the route in `App.tsx`). The endpoint is still publicly mountable, but it is dead from the user's perspective.
-
-Two options:
-
-(a) **Keep the `permitAll()` line for Phase F.** Phase F (Story 11.F.1) deletes the controller, the route, the `magic_link_tokens` table, AND the `permitAll` line in one mechanical pass. Inconsistent with the story's "no magic-link in the speaker-portal/** namespace" claim (this line is at `auth/**`, not `speaker-portal/**`, but it's still magic-link infrastructure).
-
-(b) **Remove the `permitAll()` line now.** If a curious actor POSTs to `/api/v1/auth/speaker-magic-login` after this deploy, they get 401 (since `.anyRequest().authenticated()` governs) instead of a controller-level failure. Slightly tighter security posture; small risk that Phase E rollback during the observation window leaves the endpoint reachable but stuck behind auth (which is fine — it's just dead code).
-
-**Recommendation: (a).** Keeping it for Phase F is the safer choice: this story's surface area is already large; Phase F is mechanical and well-scoped; the dead-but-permitAll endpoint is not a security risk (the controller checks JWT signature internally — a malformed POST just fails). The story's "no permitAll on speaker-portal/**" claim is satisfied since the `/auth/**` line is conceptually distinct.
-
-**Question to the PM:** Confirm (a) — leave `permitAll` on `/api/v1/auth/speaker-magic-login` for Phase F to clean up? Or do you want (b) — remove it now in this story, since the endpoint is dead from the frontend?
-
-### Q#4 — Do we add a "Speaker Portal" entry to the navigation menu for speakers?
-
-The cherry-pick from 73d94688 adds a nav-item entry pointing to `/speaker-portal/login`. That route doesn't exist under ADR-009 (no separate speaker login). We have three options:
-
-(a) **Drop the nav-item entry entirely.** Speakers navigate via the existing `/speaker/dashboard`, `/speaker/content`, `/speaker/profile` entries (the speaker-role nav items already in `navigationConfig.ts`). They don't see a separate "Speaker Portal" link; they just see "Dashboard," "My Content," "Profile" — which work fine after this story lands. The `navigation.speakerPortal` i18n key falls unused (i18next is happy with unused keys).
-
-(b) **Add a "Speaker Portal" nav entry pointing to `/speaker-portal/dashboard`.** Some users may expect to see "Speaker Portal" as a distinct label (the cherry-pick author thought so). Keeps the cherry-picked icon (`RecordVoiceOver`) earning its keep.
-
-(c) **Repurpose the existing speaker nav entries** to point to the new `/speaker-portal/*` routes (drop the `/speaker/*` routes entirely). This is the most thorough — `/speaker/dashboard` becomes `/speaker-portal/dashboard` everywhere, single naming convention. But it's a bigger change with risk of breaking deep links from other parts of the app.
-
-**Recommendation: (a).** The existing `/speaker/*` nav entries continue to work (Routes under `/speaker/*` in `App.tsx` are organizer-only views per the current routing — actually verifying: the `SpeakerRoute` at lines 508-512 takes ['organizer', 'speaker'] roles; the speaker-portal pages at `/speaker-portal/*` are SPEAKER-only). Adding an extra "Speaker Portal" entry would duplicate the existing speaker-area nav. Cleanest is to drop the cherry-pick's `/speaker-portal/login` entry; the i18n key lands for parity but is unused.
-
-**Question to the PM:** Confirm (a) — drop the nav-item entry, i18n key lands unused? Or (b) — add a "Speaker Portal" entry pointing at `/speaker-portal/dashboard`? Or (c) — unify naming and migrate `/speaker/*` → `/speaker-portal/*`?
-
-### Q#5 — Should this story ship the 8 optional locales for the new nav keys?
-
-The cherry-pick adds 5 new i18n keys to `navigation.*` (`section.organizer`, `section.speaker`, `section.partner`, `section.attendee`, `speakerPortal`). Per `CLAUDE.md` §"Localization — Official vs Optional Languages" (added 2026-05-17 in Story 11.E.2), only `de` + `en` are official; the 8 other locales (`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`) are optional.
-
-i18next's `fallbackLng: 'en'` will pick up the EN value if a non-DE/EN locale doesn't carry the key. So the immediate user experience is: French-language UI shows English section labels for the new nav until the FR translation lands.
-
-Two options:
-
-(a) **DE + EN only, fall back to EN for the other 8.** Consistent with the new CLAUDE.md rule. Speakers who use French interpret "Speaker" / "Organizer" / "Partner" / "Attendee" as English labels in the nav sections. Most speakers reading the nav are bilingual professionals; this is unlikely to be a usability problem.
-
-(b) **DE + EN + all 8 optional locales.** ~40 i18n keys to translate (5 keys × 8 locales). Quick if you can hand-translate; quicker if you grab the existing 9-locale parity entries from another section as templates.
-
-**Recommendation: (a).** The new CLAUDE.md rule explicitly tolerates this gap. Future stories or a community contribution can backfill the optional locales. Skipping them here keeps the story scope tight.
-
-**Question to the PM:** Confirm (a) — DE + EN only, fall back to EN for the 8 optional locales? Or (b) — ship all 10 locales now since you've already got translators handy for Story 11.E.2's email templates?
-
-### Q#6 — Does the frontend type cleanup of `SpeakerResponseType.TENTATIVE` belong in this story?
-
-The shared-kernel + backend enum `SpeakerResponseType` had `TENTATIVE` removed in Story 11.B.1 (state-machine reduction). But the frontend type `web-frontend/src/services/speakerPortalService.ts` still carries `export type SpeakerResponseType = 'ACCEPT' | 'DECLINE' | 'TENTATIVE'`. The discrepancy slipped past Phase B's sweep — the frontend never imports the shared-kernel enum, so the type just stayed defined locally.
-
-Since this story already touches `speakerPortalService.ts` heavily (AC7 task 11), it would be a small marginal-cost cleanup to also drop `'TENTATIVE'` from the type. The frontend UI never offers TENTATIVE as a response choice in the current code (the `InvitationResponsePage` only shows Accept and Decline buttons), so removing the type definition has zero behavioural impact — it just stops a wrong shape from being expressible in the type system.
-
-Two options:
-
-(a) **Yes, drop TENTATIVE from the frontend type in this story.** Since we're already in the file. Tasks Task 11 step 2 covers it.
-
-(b) **No, leave it.** Phase F or a tidy-up story handles. But Phase F is about magic-link teardown, not TENTATIVE; nothing else in Phase F touches `speakerPortalService.ts`. Leaving it deeper drift.
-
-**Recommendation: (a).** We're already there; the change is one line; not doing it leaves a known-incorrect type definition in a file we're heavily editing.
-
-**Question to the PM:** Confirm (a) — bundle the TENTATIVE type cleanup into this story? Or (b) — leave for a separate cleanup story?
+6. ✅ **Q#6 — Drop `SpeakerResponseType.TENTATIVE` from the frontend type in this story (Variant a).** Story 11.B.1 removed `TENTATIVE` from the shared-kernel enum + backend Java; the frontend type at `web-frontend/src/services/speakerPortalService.ts` slipped past the sweep (the frontend never imports the shared-kernel enum, so the type just stayed defined locally as `'ACCEPT' | 'DECLINE' | 'TENTATIVE'`). Since this story heavily edits `speakerPortalService.ts` (AC7 + Task 11), the cleanup costs one extra LOC and removes a known-incorrect type definition. Task 11.2 + AC7 reflect this.
 
 ---
 
-_Story created via `bmad-create-story` skill on 2026-05-17. Six PM Open Questions pending resolution. After PM resolves the questions, the story will be revised in place to bake the resolutions into the AC + Tasks + Dev Notes (same pattern as Stories 11.E.1 and 11.E.2). Story 11.E.3 closes Phase E's frontend half; Story 11.F.1 (Phase F — magic-link teardown) follows after Phase E observation window per sprint-status.yaml line 195. Ready for PM review of the Open Questions, then `bmad-dev-story` execution._
+_Story created via `bmad-create-story` skill on 2026-05-17. All 6 Open Questions PM-resolved the same day. Story re-authored in place to reflect: (Q#1) eventCode in URL path — matches Story 11.C.2 organizer shape; (Q#2) DELETE legacy onboarding e2e tests outright; (Q#3) REMOVE `/api/v1/auth/speaker-magic-login` permitAll in this story (not Phase F); (Q#4) drop the speaker-portal nav entry AND its i18n key (not just unused — fully removed); (Q#5) SHIP all 10 locales for new UI i18n keys + narrow CLAUDE.md §Localization rule to apply only to backend email templates; (Q#6) drop `SpeakerResponseType.TENTATIVE` from frontend type. Phase E frontend half. Ready for `bmad-dev-story` execution._
