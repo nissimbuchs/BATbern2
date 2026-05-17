@@ -533,7 +533,10 @@
       },
       "acceptedSubline": "📝 {{count}} wacht op inhoud",
       "contentSubmittedSubline": "👀 {{count}} wacht op moderatie",
-      "qualityReviewedSubline": "🪑 {{count}} wacht op slot"
+      "qualityReviewedSubline": "🪑 {{count}} wacht op slot",
+      "sublineFilterAriaLabel": "Kolom {{state}} filteren: {{description}}",
+      "filterClearedAnnouncement": "Kolomfilter opgeheven",
+      "filterAppliedAnnouncement": "Kolom {{state}} gefilterd, {{count}} kaarten zichtbaar"
     }
   }
 }

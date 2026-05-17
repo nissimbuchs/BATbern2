@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_KANBAN_THRESHOLDS,
+  attentionMaxSeverity,
   classifyChipSeverity,
   countAttentionCards,
   makeAttentionPredicate,
@@ -214,7 +215,8 @@ describe('kanbanThresholds — aggregators (AC5 #19-20)', () => {
     expect(classify(warningCard)).toBe('warning');
   });
 
-  // #20
+  // #20 — predicate/count parity, with explicit non-zero assertion so the test cannot
+  // pass vacuously if both helpers happen to return 0 on a buggy implementation.
   it('should_buildPredicateThatMatchesCountAttentionCards', () => {
     const speakers: SpeakerPoolEntry[] = [
       makeSpeaker('CONTACTED', { id: 'c-1', updatedAt: daysAgo(2) }), // normal
@@ -228,12 +230,19 @@ describe('kanbanThresholds — aggregators (AC5 #19-20)', () => {
       makeSpeaker('IDENTIFIED', { id: 'i-1', createdAt: daysAgo(100) }),
     ];
 
+    const totals: Record<string, number> = {};
     for (const state of ['CONTACTED', 'ACCEPTED', 'QUALITY_REVIEWED'] as const) {
       const predicate = makeAttentionPredicate(state, null, NOW, DEFAULT_KANBAN_THRESHOLDS);
       const filtered = speakers.filter(predicate);
       const count = countAttentionCards(speakers, state, null, NOW, DEFAULT_KANBAN_THRESHOLDS);
       expect(filtered.length).toBe(count);
+      totals[state] = count;
     }
+    // CONTACTED has one stale card; ACCEPTED has 2 non-normal cards. At least one
+    // bucket MUST be non-zero — otherwise the parity check is vacuous.
+    expect(totals.CONTACTED).toBe(1);
+    expect(totals.ACCEPTED).toBe(2);
+    expect(totals.QUALITY_REVIEWED).toBe(0);
   });
 
   it('should_splitInvitedDeadlinesIntoApproachingAndPast', () => {
@@ -301,5 +310,160 @@ describe('kanbanThresholds — defensive guards', () => {
     expect(severityToChipColor('normal')).toBe('default');
     expect(severityToChipColor('warning')).toBe('warning');
     expect(severityToChipColor('error')).toBe('error');
+  });
+
+  // Patch: `now = Invalid Date` shouldn't crash or silently classify everything as
+  // normal-with-no-warning — the function returns 'normal' explicitly so callers see
+  // a stable, audit-friendly value rather than relying on NaN propagation.
+  it('should_returnNormal_when_nowIsInvalidDate', () => {
+    const speaker = makeSpeaker('CONTACTED', { updatedAt: daysAgo(20) });
+    const severity = classifyChipSeverity({
+      speaker,
+      statusChangedAt: new Date(speaker.updatedAt!),
+      eventDate: null,
+      now: new Date('invalid-now'),
+      thresholds: DEFAULT_KANBAN_THRESHOLDS,
+    });
+    expect(severity).toBe('normal');
+  });
+});
+
+describe('kanbanThresholds — adjacent boundary values (regression guards)', () => {
+  // Boundary asymmetry guards: tests already cover exact threshold values (30/60 for
+  // IDENTIFIED, 14 for CONTACTED, 7 for READY). These guard the value JUST below the
+  // threshold to make sure a future flip from `>=` to `>` is caught immediately.
+  it('should_returnNormal_when_speakerIsIdentified_andDaysInStateIs29', () => {
+    const speaker = makeSpeaker('IDENTIFIED', { createdAt: daysAgo(29) });
+    expect(classify(speaker)).toBe('normal');
+  });
+
+  it('should_returnWarning_when_speakerIsIdentified_andDaysInStateIs59', () => {
+    const speaker = makeSpeaker('IDENTIFIED', { createdAt: daysAgo(59) });
+    expect(classify(speaker)).toBe('warning');
+  });
+
+  it('should_returnNormal_when_speakerIsContacted_andDaysInStateIs6', () => {
+    const speaker = makeSpeaker('CONTACTED', { updatedAt: daysAgo(6) });
+    expect(classify(speaker)).toBe('normal');
+  });
+
+  it('should_returnWarning_when_speakerIsContacted_andDaysInStateIs13', () => {
+    const speaker = makeSpeaker('CONTACTED', { updatedAt: daysAgo(13) });
+    expect(classify(speaker)).toBe('warning');
+  });
+
+  it('should_returnNormal_when_speakerIsReady_andDaysInStateIs2', () => {
+    const speaker = makeSpeaker('READY', { updatedAt: daysAgo(2) });
+    expect(classify(speaker)).toBe('normal');
+  });
+
+  it('should_returnWarning_when_speakerIsReady_andDaysInStateIs6', () => {
+    const speaker = makeSpeaker('READY', { updatedAt: daysAgo(6) });
+    expect(classify(speaker)).toBe('warning');
+  });
+});
+
+describe('kanbanThresholds — attentionMaxSeverity', () => {
+  it('should_returnNormal_when_speakersArrayIsEmpty', () => {
+    expect(
+      attentionMaxSeverity([], 'CONTENT_SUBMITTED', null, NOW, DEFAULT_KANBAN_THRESHOLDS)
+    ).toBe('normal');
+  });
+
+  it('should_returnNormal_when_noSpeakerInGivenStateMatchesPredicate', () => {
+    const speakers = [
+      makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-1', contentSubmittedAt: daysAgo(1) }),
+    ];
+    expect(
+      attentionMaxSeverity(speakers, 'CONTENT_SUBMITTED', null, NOW, DEFAULT_KANBAN_THRESHOLDS)
+    ).toBe('normal');
+  });
+
+  it('should_returnWarning_when_allMatchingCardsAreWarning', () => {
+    const speakers = [
+      makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-w-1', contentSubmittedAt: daysAgo(4) }),
+      makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-w-2', contentSubmittedAt: daysAgo(5) }),
+    ];
+    expect(
+      attentionMaxSeverity(speakers, 'CONTENT_SUBMITTED', null, NOW, DEFAULT_KANBAN_THRESHOLDS)
+    ).toBe('warning');
+  });
+
+  it('should_returnError_when_anyMatchingCardIsError_regardlessOfOrder', () => {
+    const speakers = [
+      makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-w', contentSubmittedAt: daysAgo(4) }),
+      makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-e', contentSubmittedAt: daysAgo(10) }),
+    ];
+    expect(
+      attentionMaxSeverity(speakers, 'CONTENT_SUBMITTED', null, NOW, DEFAULT_KANBAN_THRESHOLDS)
+    ).toBe('error');
+  });
+
+  it('should_escalateToError_for_QUALITY_REVIEWED_whenAnyNoSlotCardIsError', () => {
+    const eventDate = new Date(NOW.getTime() + 10 * 86_400_000); // 10 days away → error if no slot
+    const speakers = [
+      makeSpeaker('QUALITY_REVIEWED', {
+        id: 'qr-error',
+        updatedAt: daysAgo(2),
+        isSlotAssigned: false,
+      }),
+      makeSpeaker('QUALITY_REVIEWED', {
+        id: 'qr-assigned',
+        updatedAt: daysAgo(2),
+        isSlotAssigned: true,
+      }),
+    ];
+    expect(
+      attentionMaxSeverity(speakers, 'QUALITY_REVIEWED', eventDate, NOW, DEFAULT_KANBAN_THRESHOLDS)
+    ).toBe('error');
+  });
+});
+
+describe('kanbanThresholds — QUALITY_REVIEWED mixed-slot attention set', () => {
+  // Guards against an inversion in `makeAttentionPredicate`'s QUALITY_REVIEWED rule
+  // (`severity !== 'normal' && !speaker.isSlotAssigned`). With both kinds in one
+  // input array, the slot-assigned cards MUST be excluded from the count regardless
+  // of how urgent the event date is.
+  it('should_excludeSlotAssignedFrom_QUALITY_REVIEWED_attentionSet_evenWhenEventIsImminent', () => {
+    const eventDate = new Date(NOW.getTime() + 5 * 86_400_000); // 5 days away — error window
+    const speakers: SpeakerPoolEntry[] = [
+      makeSpeaker('QUALITY_REVIEWED', {
+        id: 'qr-assigned-imminent',
+        updatedAt: daysAgo(2),
+        isSlotAssigned: true,
+      }),
+      makeSpeaker('QUALITY_REVIEWED', {
+        id: 'qr-noslot-imminent',
+        updatedAt: daysAgo(2),
+        isSlotAssigned: false,
+      }),
+      makeSpeaker('QUALITY_REVIEWED', {
+        id: 'qr-noslot-fresh',
+        updatedAt: daysAgo(2),
+        isSlotAssigned: false,
+      }),
+    ];
+
+    const count = countAttentionCards(
+      speakers,
+      'QUALITY_REVIEWED',
+      eventDate,
+      NOW,
+      DEFAULT_KANBAN_THRESHOLDS
+    );
+    // Two no-slot cards both classify to 'error' (within 14 days of event), one
+    // slot-assigned card excluded. Count = 2.
+    expect(count).toBe(2);
+
+    const predicate = makeAttentionPredicate(
+      'QUALITY_REVIEWED',
+      eventDate,
+      NOW,
+      DEFAULT_KANBAN_THRESHOLDS
+    );
+    expect(speakers.filter(predicate).map((s) => s.id)).toEqual([
+      'qr-noslot-imminent',
+      'qr-noslot-fresh',
+    ]);
   });
 });

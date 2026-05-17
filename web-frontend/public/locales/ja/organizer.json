@@ -533,7 +533,10 @@
       },
       "acceptedSubline": "📝 {{count}}件がコンテンツ待ち",
       "contentSubmittedSubline": "👀 {{count}}件がモデレーターレビュー待ち",
-      "qualityReviewedSubline": "🪑 {{count}}件がスロット待ち"
+      "qualityReviewedSubline": "🪑 {{count}}件がスロット待ち",
+      "sublineFilterAriaLabel": "{{state}}列をフィルター: {{description}}",
+      "filterClearedAnnouncement": "列のフィルターを解除しました",
+      "filterAppliedAnnouncement": "{{state}}列をフィルター、{{count}}件のカードを表示中"
     }
   }
 }

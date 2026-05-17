@@ -534,7 +534,10 @@
       },
       "acceptedSubline": "📝 {{count}} awaiting content",
       "contentSubmittedSubline": "👀 {{count}} awaiting moderator review",
-      "qualityReviewedSubline": "🪑 {{count}} awaiting slot"
+      "qualityReviewedSubline": "🪑 {{count}} awaiting slot",
+      "sublineFilterAriaLabel": "Filter {{state}} column: {{description}}",
+      "filterClearedAnnouncement": "Column filter cleared",
+      "filterAppliedAnnouncement": "{{state}} column filtered, showing {{count}} cards"
     }
   }
 }

@@ -533,7 +533,10 @@
       },
       "acceptedSubline": "📝 {{count}} spetan cuntegn",
       "contentSubmittedSubline": "👀 {{count}} spetan revisiun dal moderatur",
-      "qualityReviewedSubline": "🪑 {{count}} spetan ina plazza"
+      "qualityReviewedSubline": "🪑 {{count}} spetan ina plazza",
+      "sublineFilterAriaLabel": "Filtrar la colonna {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Filter da colonna stizzà",
+      "filterAppliedAnnouncement": "Colonna {{state}} filtrada, {{count}} cartas visiblas"
     }
   }
 }

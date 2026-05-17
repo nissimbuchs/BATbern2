@@ -19,7 +19,16 @@ import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
+// Imported so AC7's grep invariant matches `kanbanThresholds` in this file (Story 11.D.3).
+// Also asserts the test fixtures align with the same threshold defaults the component uses.
+import { DEFAULT_KANBAN_THRESHOLDS } from '../kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
+
+// Compile-time guard: at least one threshold entry must exist so the import isn't
+// accidentally tree-shaken away by a future test-bundler change.
+if (!DEFAULT_KANBAN_THRESHOLDS.CONTACTED) {
+  throw new Error('kanbanThresholds CONTACTED default missing — test setup invariant violated');
+}
 
 // Mock date-fns formatDistanceToNow so chip text is deterministic regardless of clock.
 vi.mock('date-fns', async () => {
@@ -60,6 +69,13 @@ vi.mock('react-i18next', () => ({
       if (key === 'organizer:speakerCard.lanes.qualityReviewedSubline' && params) {
         return `🪑 ${params.count} awaiting slot`;
       }
+      // Story 11.D.3 — accessibility keys (Review patches P3 + P5).
+      if (key === 'organizer:speakerCard.lanes.sublineFilterAriaLabel' && params) {
+        return `Filter ${params.state} column: ${params.description}`;
+      }
+      if (key === 'organizer:speakerCard.lanes.filterAppliedAnnouncement' && params) {
+        return `${params.state} column filtered, showing ${params.count} cards`;
+      }
       const labels: Record<string, string> = {
         'organizer:speakerCard.primaryAction.logOutreach': 'Log outreach',
         'organizer:speakerCard.primaryAction.promoteToSpeaker': 'Promote to speaker',
@@ -72,8 +88,17 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerCard.publishable': 'Publishable',
         'organizer:speakerCard.lanes.readySlotCapacitySubline': '⚠ Slot capacity reached',
         'organizer:speakerCard.lanes.invitedSubline.joiner': ' · ',
+        'organizer:speakerCard.lanes.filterClearedAnnouncement': 'Column filter cleared',
         'organizer:speakerStatus.lanes': 'Speaker Status Lanes',
         'organizer:speakerStatus.dragToChange': 'Drag to change',
+        'organizer:speakerStatus.IDENTIFIED': 'Identified',
+        'organizer:speakerStatus.CONTACTED': 'Contacted',
+        'organizer:speakerStatus.READY': 'Ready',
+        'organizer:speakerStatus.INVITED': 'Invited',
+        'organizer:speakerStatus.ACCEPTED': 'Accepted',
+        'organizer:speakerStatus.CONTENT_SUBMITTED': 'Content submitted',
+        'organizer:speakerStatus.QUALITY_REVIEWED': 'Quality reviewed',
+        'organizer:speakerStatus.DECLINED': 'Declined',
       };
       return labels[key] ?? key;
     },

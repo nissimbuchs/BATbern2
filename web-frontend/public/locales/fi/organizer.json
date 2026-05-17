@@ -533,7 +533,10 @@
       },
       "acceptedSubline": "📝 {{count}} odottaa sisältöä",
       "contentSubmittedSubline": "👀 {{count}} odottaa moderaattorin tarkistusta",
-      "qualityReviewedSubline": "🪑 {{count}} odottaa paikkaa"
+      "qualityReviewedSubline": "🪑 {{count}} odottaa paikkaa",
+      "sublineFilterAriaLabel": "Suodata sarake {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Sarakesuodatin poistettu",
+      "filterAppliedAnnouncement": "Sarake {{state}} suodatettu, näkyvissä {{count}} korttia"
     }
   }
 }

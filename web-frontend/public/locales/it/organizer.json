@@ -525,15 +525,30 @@
     "inviteFailed": "Invio dell'invito non riuscito",
     "lanes": {
       "contactedSubline": "⚠ {{count}} obsoleti (>14 giorni)",
+      "contactedSubline_one": "⚠ {{count}} obsoleto (>14 giorni)",
+      "contactedSubline_other": "⚠ {{count}} obsoleti (>14 giorni)",
       "readySlotCapacitySubline": "⚠ Capacità slot raggiunta",
       "invitedSubline": {
         "approaching": "⏰ {{count}} scadenza vicina",
+        "approaching_one": "⏰ {{count}} scadenza vicina",
+        "approaching_other": "⏰ {{count}} scadenze vicine",
         "past": "⏰ {{count}} scadenza superata",
+        "past_one": "⏰ {{count}} scadenza superata",
+        "past_other": "⏰ {{count}} scadenze superate",
         "joiner": " · "
       },
       "acceptedSubline": "📝 {{count}} in attesa di contenuto",
+      "acceptedSubline_one": "📝 {{count}} in attesa di contenuto",
+      "acceptedSubline_other": "📝 {{count}} in attesa di contenuto",
       "contentSubmittedSubline": "👀 {{count}} in attesa di revisione",
-      "qualityReviewedSubline": "🪑 {{count}} in attesa di slot"
+      "contentSubmittedSubline_one": "👀 {{count}} in attesa di revisione",
+      "contentSubmittedSubline_other": "👀 {{count}} in attesa di revisione",
+      "qualityReviewedSubline": "🪑 {{count}} in attesa di slot",
+      "qualityReviewedSubline_one": "🪑 {{count}} in attesa di slot",
+      "qualityReviewedSubline_other": "🪑 {{count}} in attesa di slot",
+      "sublineFilterAriaLabel": "Filtra colonna {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Filtro colonna rimosso",
+      "filterAppliedAnnouncement": "Colonna {{state}} filtrata, {{count}} carte visibili"
     }
   }
 }

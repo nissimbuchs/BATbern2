@@ -525,15 +525,30 @@
     "inviteFailed": "Error al enviar la invitación",
     "lanes": {
       "contactedSubline": "⚠ {{count}} obsoletos (>14 días)",
+      "contactedSubline_one": "⚠ {{count}} obsoleto (>14 días)",
+      "contactedSubline_other": "⚠ {{count}} obsoletos (>14 días)",
       "readySlotCapacitySubline": "⚠ Capacidad de franjas alcanzada",
       "invitedSubline": {
         "approaching": "⏰ {{count}} fecha límite próxima",
+        "approaching_one": "⏰ {{count}} fecha límite próxima",
+        "approaching_other": "⏰ {{count}} fechas límite próximas",
         "past": "⏰ {{count}} fecha límite vencida",
+        "past_one": "⏰ {{count}} fecha límite vencida",
+        "past_other": "⏰ {{count}} fechas límite vencidas",
         "joiner": " · "
       },
       "acceptedSubline": "📝 {{count}} esperando contenido",
+      "acceptedSubline_one": "📝 {{count}} esperando contenido",
+      "acceptedSubline_other": "📝 {{count}} esperando contenido",
       "contentSubmittedSubline": "👀 {{count}} esperando revisión del moderador",
-      "qualityReviewedSubline": "🪑 {{count}} esperando franja"
+      "contentSubmittedSubline_one": "👀 {{count}} esperando revisión del moderador",
+      "contentSubmittedSubline_other": "👀 {{count}} esperando revisión del moderador",
+      "qualityReviewedSubline": "🪑 {{count}} esperando franja",
+      "qualityReviewedSubline_one": "🪑 {{count}} esperando franja",
+      "qualityReviewedSubline_other": "🪑 {{count}} esperando franjas",
+      "sublineFilterAriaLabel": "Filtrar columna {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Filtro de columna eliminado",
+      "filterAppliedAnnouncement": "Columna {{state}} filtrada, mostrando {{count}} tarjetas"
     }
   }
 }

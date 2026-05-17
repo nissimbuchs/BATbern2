@@ -525,15 +525,30 @@
     "inviteFailed": "Échec de l'envoi de l'invitation",
     "lanes": {
       "contactedSubline": "⚠ {{count}} obsolètes (>14 jours)",
+      "contactedSubline_one": "⚠ {{count}} obsolète (>14 jours)",
+      "contactedSubline_other": "⚠ {{count}} obsolètes (>14 jours)",
       "readySlotCapacitySubline": "⚠ Capacité de créneaux atteinte",
       "invitedSubline": {
         "approaching": "⏰ {{count}} échéance proche",
+        "approaching_one": "⏰ {{count}} échéance proche",
+        "approaching_other": "⏰ {{count}} échéances proches",
         "past": "⏰ {{count}} échéance dépassée",
+        "past_one": "⏰ {{count}} échéance dépassée",
+        "past_other": "⏰ {{count}} échéances dépassées",
         "joiner": " · "
       },
       "acceptedSubline": "📝 {{count}} en attente de contenu",
+      "acceptedSubline_one": "📝 {{count}} en attente de contenu",
+      "acceptedSubline_other": "📝 {{count}} en attente de contenu",
       "contentSubmittedSubline": "👀 {{count}} en attente de modération",
-      "qualityReviewedSubline": "🪑 {{count}} en attente de créneau"
+      "contentSubmittedSubline_one": "👀 {{count}} en attente de modération",
+      "contentSubmittedSubline_other": "👀 {{count}} en attente de modération",
+      "qualityReviewedSubline": "🪑 {{count}} en attente de créneau",
+      "qualityReviewedSubline_one": "🪑 {{count}} en attente de créneau",
+      "qualityReviewedSubline_other": "🪑 {{count}} en attente de créneaux",
+      "sublineFilterAriaLabel": "Filtrer la colonne {{state}} : {{description}}",
+      "filterClearedAnnouncement": "Filtre de colonne effacé",
+      "filterAppliedAnnouncement": "Colonne {{state}} filtrée, {{count}} cartes visibles"
     }
   }
 }

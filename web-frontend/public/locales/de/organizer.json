@@ -526,15 +526,30 @@
     "inviteFailed": "Einladung konnte nicht gesendet werden",
     "lanes": {
       "contactedSubline": "⚠ {{count}} überfällig (>14 Tage)",
+      "contactedSubline_one": "⚠ {{count}} überfällig (>14 Tage)",
+      "contactedSubline_other": "⚠ {{count}} überfällig (>14 Tage)",
       "readySlotCapacitySubline": "⚠ Slot-Kapazität erreicht",
       "invitedSubline": {
         "approaching": "⏰ {{count}} Frist läuft bald ab",
+        "approaching_one": "⏰ {{count}} Frist läuft bald ab",
+        "approaching_other": "⏰ {{count}} Fristen laufen bald ab",
         "past": "⏰ {{count}} Frist verstrichen",
+        "past_one": "⏰ {{count}} Frist verstrichen",
+        "past_other": "⏰ {{count}} Fristen verstrichen",
         "joiner": " · "
       },
       "acceptedSubline": "📝 {{count}} warten auf Inhalt",
+      "acceptedSubline_one": "📝 {{count}} wartet auf Inhalt",
+      "acceptedSubline_other": "📝 {{count}} warten auf Inhalt",
       "contentSubmittedSubline": "👀 {{count}} warten auf Moderation",
-      "qualityReviewedSubline": "🪑 {{count}} warten auf Slot"
+      "contentSubmittedSubline_one": "👀 {{count}} wartet auf Moderation",
+      "contentSubmittedSubline_other": "👀 {{count}} warten auf Moderation",
+      "qualityReviewedSubline": "🪑 {{count}} warten auf Slot",
+      "qualityReviewedSubline_one": "🪑 {{count}} wartet auf Slot",
+      "qualityReviewedSubline_other": "🪑 {{count}} warten auf Slot",
+      "sublineFilterAriaLabel": "Spalte {{state}} filtern: {{description}}",
+      "filterClearedAnnouncement": "Spaltenfilter aufgehoben",
+      "filterAppliedAnnouncement": "Spalte {{state}} gefiltert, {{count}} Karten sichtbar"
     }
   }
 }

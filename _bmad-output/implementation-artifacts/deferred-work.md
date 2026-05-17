@@ -1,5 +1,17 @@
 # Deferred Work
 
+## Deferred from: code review of 11-d-3-kanban-column-triage-time-in-state-colour-coding (2026-05-17)
+
+- **`getStatusChangedAt` `updatedAt` fallback inflates time-in-state on note/organizer edits** [`web-frontend/src/components/organizer/SpeakerStatus/kanbanThresholds.ts:79-93`] — pre-existing Resolved Q#2 from 11.D.2; backend `status_changed_at` column is the proper fix, out of scope here.
+- **`slotCapacity.reached` derived from in-memory `speakers` array — breaks silently if the kanban query ever paginates** [`SpeakerStatusLanes.tsx:333-345`] — code comment already flags this; switch to a server-side count endpoint if pagination lands.
+- **INVITED with `responseDeadline === undefined` silently normal — no UI signal that the workflow has stalled** [`kanbanThresholds.ts:111-113`] — surfacing missing-deadline is a distinct UX concern; address with a dedicated "INVITED without deadline" warning if organisers report this in practice.
+- **INVITED `joiner` i18n key has no defensive code fallback** [`SpeakerStatusLanes.tsx:201`] — structural punctuation pushed to locales; missing-key would render the literal i18next key path. Defensive `?? ' · '` would protect against future locale-contributor mistakes.
+- **`MS_PER_DAY = 86_400_000` ignores DST/leap-second days — `diffDays` off-by-one on transition days** [`kanbanThresholds.ts:51`] — replace with `date-fns` `differenceInCalendarDays` when next touched.
+- **INVITED 1-hour boundary at deadline moment — same root cause as date-only ISO parsing as UTC midnight** [`kanbanThresholds.ts:111-115`] — bundle with the date-only TZ parsing fix.
+- **`Math.floor` asymmetry in `diffDays(later, earlier)` vs `-diffDays(earlier, later)` at sub-day deltas** [`kanbanThresholds.ts:51`] — semantically debatable; document in JSDoc when the date-only parsing rework lands.
+- **gsw-BE plural grammar — single-form `überfellig` for both 1 and many** [`gsw-BE/organizer.json`] — same family as the wider i18next plural-variant question; tackle alongside the native-speaker review pass on machine-translated baselines.
+- **QUALITY_REVIEWED chip flicker while event detail is loading** [`SpeakerStatusLanes.tsx:843-852`] — minimal fix shipped: JSDoc on `eventDate` prop documents the expected "default → warning/error" flip after the event query resolves. A skeleton-chip during loading would be cleaner but requires a design call on the placeholder appearance; revisit when QA reports it.
+
 ## Deferred from: code review of 11-d-2-kanban-card-primary-action-button-cleanup (2026-05-17)
 
 - **`i18n.language === 'de'` covers only 2 of 10 supported locales for `date-fns` time-distance formatting** [`web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx:516`] — Story-D2 spec AC3 is faithful to the existing `TeamActivityFeed.tsx` pattern (same de/enUS-only handling). Non-de users see English distance strings inside otherwise-translated kanban. Project-wide concern; tackle alongside the wider i18n locale-completeness sweep.

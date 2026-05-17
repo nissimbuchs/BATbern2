@@ -94,12 +94,22 @@ function parseDateOrNull(value: string | undefined | null): Date | null {
 
 /**
  * §8.7 classification. Returns 'normal' on invalid input (Invalid Date) to avoid
- * surfacing a misleading colour.
+ * surfacing a misleading colour. Both `statusChangedAt` and `now` are NaN-guarded.
+ *
+ * Boundary semantics for deadline-bound states (INVITED, QUALITY_REVIEWED):
+ *   `daysUntil < 0` is the trigger for `'error'`. Because `diffDays` uses
+ *   `Math.floor`, this means "today is the deadline" (`daysUntil = 0` when the
+ *   deadline is later today, `daysUntil = -1` once midnight UTC has passed)
+ *   classifies as `warning`/`approaching`, NOT `error`. Resolved 2026-05-17:
+ *   moment-of-deadline counts as approaching, error fires after midnight UTC.
+ *   Note: date-only ISO strings (e.g. `'2026-05-17'`) parse as UTC midnight, so
+ *   the boundary shifts up to ~1 timezone offset in non-UTC regions — accepted
+ *   trade-off until `diffDays` switches to `differenceInCalendarDays` (deferred).
  */
 export function classifyChipSeverity(input: ClassifyChipInput): ThresholdSeverity {
   const { speaker, statusChangedAt, eventDate, now, thresholds } = input;
 
-  if (Number.isNaN(statusChangedAt.getTime())) {
+  if (Number.isNaN(statusChangedAt.getTime()) || Number.isNaN(now.getTime())) {
     return 'normal';
   }
 
@@ -217,6 +227,11 @@ export function countAttentionCards(
 /**
  * Convenience: count INVITED cards split into "approaching deadline" (warning) and
  * "past deadline" (error). Used by the INVITED two-clause sub-line (AC2 INVITED row).
+ *
+ * `eventDate` is intentionally omitted from the signature — INVITED's chip-severity
+ * rule consults `speaker.responseDeadline`, never `eventDate`. If a future spec
+ * change makes INVITED classification event-date-aware, this signature must grow
+ * an `eventDate: Date | null` parameter to stay in sync with `countAttentionCards`.
  */
 export function countInvitedSplit(
   speakers: SpeakerPoolEntry[],
