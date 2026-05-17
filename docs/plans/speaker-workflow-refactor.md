@@ -537,6 +537,8 @@ Clicking the sub-line filters the column to the subset that triggered it.
 
 ### 8.4 Drag-drop, guided
 
+_Implemented in Story 11.D.4 (`web-frontend/src/components/organizer/SpeakerStatus/speakerTransitions.ts` + the dispatcher rewrite of `handleDragEnd` in `SpeakerStatusLanes.tsx`)._
+
 Drag-drop is preserved for power users. To make it self-correcting:
 
 - **Drag start**: valid destination columns get a green halo; invalid columns are
@@ -552,6 +554,8 @@ Drag-drop is preserved for power users. To make it self-correcting:
 
 ### 8.5 Detail drawer
 
+_Implemented in Story 11.D.4 (drawer redesign: `SpeakerDetailDrawer.tsx` + new `PrimaryActionSurface.tsx` + new `UnifiedHistoryPanel.tsx`; `OverviewTabPanel.tsx` deleted; 3-tab → 2-tab collapse). Materials and Notes sub-tabs deferred per Resolved Q#6._
+
 Clicking a card opens the drawer. The drawer:
 
 - Leads with the **same primary-action button** at the top, big and prominent.
@@ -566,6 +570,8 @@ on identical modals — one mental model for the organizer. (As noted at the top
 the speaker portal's pages are not part of this convergence; they are a separate UI.)
 
 ### 8.6 Slot-capacity gating — replaces overflow management
+
+_Drag-drop slot-gate consistency implemented in Story 11.D.4 (the same `organizer:speakerCard.slotCapacityTooltip` i18n key surfaces the disabled-button tooltip, the column-header sub-line, and the invalid-drop toast — three surfaces converge)._
 
 The `OVERFLOW` state is gone (§0.7). Capacity is controlled at the invitation step,
 which is the only place where invitations originate. The rule:

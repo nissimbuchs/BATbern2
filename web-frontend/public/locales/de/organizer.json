@@ -284,18 +284,65 @@
     "submitting": "Wird eingereicht...",
     "editSpeakerProfile": "Sprecher-Profil bearbeiten",
     "createNewSpeaker": "Neuen Sprecher erstellen",
+    "bioLabel": "Kurzbiografie (optional)",
+    "portraitLabel": "Sprecherportrait (optional)",
+    "portraitUploadInProgress": "Portrait wird hochgeladen…",
+    "portraitUploadError": "Portrait-Upload fehlgeschlagen. Bitte erneut versuchen.",
+    "presentationUploadLabel": "Präsentations-Upload (optional)",
     "form": {
       "username": "Sprecher suchen",
       "presentationTitle": "Präsentationstitel",
       "presentationAbstract": "Präsentationszusammenfassung",
-      "charactersRemaining": "Zeichen verbleibend"
+      "charactersRemaining": "Zeichen verbleibend",
+      "bioHelperText": "Leer lassen, um die bestehende Biografie beizubehalten. {{remaining}} / {{max}} Zeichen verbleibend."
     },
     "errors": {
-      "usernameRequired": "Sprecher ist erforderlich",
+      "usernameRequired": "Bitte wählen Sie einen Sprecher aus",
       "titleRequired": "Präsentationstitel ist erforderlich",
       "abstractRequired": "Präsentationszusammenfassung ist erforderlich",
       "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
+      "bioTooLong": "Biografie darf maximal {{max}} Zeichen lang sein",
       "submitFailed": "Inhalt konnte nicht eingereicht werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} ist kein gültiger Übergang. Siehe ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} nicht erlaubt — {{explanation}}",
+      "mustPromoteFirst": "Erst zu READY befördern, um den Sprecher bereitzustellen.",
+      "mustInviteFirst": "Erst Einladung senden; Sprecher muss zusagen, bevor Inhalte erfasst werden.",
+      "mustAcceptFirst": "Sprecher muss zuerst zusagen.",
+      "mustSubmitContentFirst": "Erst Inhalt einreichen; Prüfer benötigt Material zur Freigabe.",
+      "cannotMoveBackwards": "Freigegebene Inhalte können nicht zurückgesetzt werden. Sprecher absagen, wenn er nicht mehr teilnehmen kann."
+    },
+    "declineDialog": {
+      "title": "{{speakerName}} absagen?",
+      "reasonHint": "Ein Grund ist erforderlich für abgesagte Sprecher. Der Grund erscheint in der Statushistorie und in jeder Absage-Benachrichtigung."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Mit Grund absagen",
+      "reassignOrganizer": "Organisator neu zuweisen",
+      "editDetails": "Details bearbeiten",
+      "overrideState": "Status überschreiben"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "Verlauf"
+    },
+    "subTabs": {
+      "content": "Inhalt"
+    },
+    "history": {
+      "noEntries": "Noch kein Verlauf.",
+      "loadError": "Verlauf konnte nicht geladen werden.",
+      "statusEntry": "{{from}} → {{to}} von {{actor}}",
+      "outreachEntry": "Kontaktaufnahme von {{actor}}"
+    },
+    "responseDeadline": "Antwortfrist: {{date}}",
+    "errors": {
+      "statusUpdateFailed": "Sprecher-Status konnte nicht aktualisiert werden."
     }
   },
   "qualityReview": {
@@ -357,9 +404,7 @@
     "reminderSent": "Erinnerung gesendet an {{email}}",
     "reminderFailed": "Erinnerung konnte nicht gesendet werden",
     "tabs": {
-      "overview": "Übersicht",
-      "details": "Details",
-      "activity": "Aktivität"
+      "details": "Details"
     },
     "drawer": {
       "back": "Zurück"
@@ -521,6 +566,7 @@
     "publishable": "Publizierbar",
     "publishableTooltip": "Speaker ist genehmigt und hat einen Session-Slot",
     "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} ausstehende Einladungen + {{accepted}} Zusagen für {{slots}} Slots. Warten oder einen zugesagten Speaker absagen, um einen Slot freizugeben.",
+    "statusUpdateFailed": "Sprecher-Status konnte nicht aktualisiert werden. Bitte aktualisieren und erneut versuchen.",
     "timeInStateTooltip": "Aktueller Status seit {{date}}",
     "inviteSent": "Einladung gesendet",
     "inviteFailed": "Einladung konnte nicht gesendet werden",

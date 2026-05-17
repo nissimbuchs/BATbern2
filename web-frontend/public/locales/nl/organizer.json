@@ -289,8 +289,14 @@
       "titleRequired": "Presentatietitel is verplicht",
       "abstractRequired": "Presentatiesamenvatting is verplicht",
       "abstractTooLong": "De samenvatting mag maximaal {{max}} tekens bevatten",
-      "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw."
-    }
+      "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw.",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "Kwaliteitsbeoordeling",
@@ -351,9 +357,7 @@
     "reminderSent": "Herinnering verzonden naar {{email}}",
     "reminderFailed": "Verzenden van herinnering mislukt",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -537,6 +541,42 @@
       "sublineFilterAriaLabel": "Kolom {{state}} filteren: {{description}}",
       "filterClearedAnnouncement": "Kolomfilter opgeheven",
       "filterAppliedAnnouncement": "Kolom {{state}} gefilterd, {{count}} kaarten zichtbaar"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
     }
   }
 }

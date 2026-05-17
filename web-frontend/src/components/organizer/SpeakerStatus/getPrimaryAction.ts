@@ -18,6 +18,10 @@ export interface PrimaryActionCallbacks {
   onLogOutreach: (speaker: SpeakerPoolEntry) => void;
   onPromoteSpeaker: (speaker: SpeakerPoolEntry) => void;
   onSendInvitation: (speaker: SpeakerPoolEntry) => void;
+  /** Opens drawer for the ACCEPTED card. Story 11.D.4 — drawer's Content sub-tab. */
+  onEnterContent: (speaker: SpeakerPoolEntry) => void;
+  /** Opens drawer for the CONTENT_SUBMITTED card. Story 11.D.4 — drawer's Quality Review sub-view. */
+  onReviewContent: (speaker: SpeakerPoolEntry) => void;
   onSpeakerClick: (speaker: SpeakerPoolEntry) => void;
   onAssignSessionSlot: (speaker: SpeakerPoolEntry) => void;
 }
@@ -27,6 +31,29 @@ export interface SlotCapacityState {
   invited: number;
   accepted: number;
   slots: number;
+}
+
+/**
+ * Computes slot-capacity from the speaker pool + the event's max slots.
+ * Post-acceptance states (CONTENT_SUBMITTED, QUALITY_REVIEWED) still occupy a slot
+ * per ADR-009. Pure function — kanban + drawer call this to share the same gate
+ * (Story 11.D.4 review patch — drawer must honor the same gate as the kanban).
+ */
+export function computeSlotCapacity(
+  speakers: ReadonlyArray<SpeakerPoolEntry>,
+  maxSlots: number | undefined
+): SlotCapacityState {
+  const acceptedCount = speakers.filter((s) =>
+    ['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'].includes(s.status)
+  ).length;
+  const invitedCount = speakers.filter((s) => s.status === 'INVITED').length;
+  const max = maxSlots ?? 0;
+  return {
+    reached: max > 0 && acceptedCount + invitedCount >= max,
+    invited: invitedCount,
+    accepted: acceptedCount,
+    slots: max,
+  };
 }
 
 export type PrimaryAction =
@@ -106,20 +133,21 @@ export function getPrimaryAction(
       };
 
     case 'ACCEPTED':
-      // Stubbed — opens drawer's ContentSubmissionSubView. Full on-behalf modal lands in 11.D.4.
+      // Story 11.D.4 — opens drawer pre-positioned at the on-behalf content form.
       return {
         kind: 'button',
         label: t('organizer:speakerCard.primaryAction.enterContent'),
-        onClick: () => callbacks.onSpeakerClick(speaker),
+        onClick: () => callbacks.onEnterContent(speaker),
         disabled: false,
         testIdSuffix: 'enter-content',
       };
 
     case 'CONTENT_SUBMITTED':
+      // Story 11.D.4 — opens drawer pre-positioned at the Quality Review sub-view.
       return {
         kind: 'button',
         label: t('organizer:speakerCard.primaryAction.reviewContent'),
-        onClick: () => callbacks.onSpeakerClick(speaker),
+        onClick: () => callbacks.onReviewContent(speaker),
         disabled: false,
         testIdSuffix: 'review-content',
       };

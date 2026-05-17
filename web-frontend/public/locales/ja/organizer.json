@@ -289,8 +289,14 @@
       "titleRequired": "プレゼンテーションタイトルは必須です",
       "abstractRequired": "プレゼンテーション概要は必須です",
       "abstractTooLong": "概要は{{max}}文字以内にしてください",
-      "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。"
-    }
+      "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "品質レビュー",
@@ -351,9 +357,7 @@
     "reminderSent": "{{email}}にリマインダーを送信しました",
     "reminderFailed": "リマインダーの送信に失敗しました",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -537,6 +541,42 @@
       "sublineFilterAriaLabel": "{{state}}列をフィルター: {{description}}",
       "filterClearedAnnouncement": "列のフィルターを解除しました",
       "filterAppliedAnnouncement": "{{state}}列をフィルター、{{count}}件のカードを表示中"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
     }
   }
 }

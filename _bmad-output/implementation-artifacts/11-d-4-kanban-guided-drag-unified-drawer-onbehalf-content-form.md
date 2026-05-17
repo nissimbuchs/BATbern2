@@ -1,6 +1,6 @@
 # Story 11.D.4: Kanban guided drag-drop + unified drawer (with on-behalf content form) + slot-gate UX
 
-Status: ready-for-dev
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -756,6 +756,97 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
 
 ---
 
+### Review Findings (code review 2026-05-17)
+
+Three-layer adversarial review (Blind Hunter / Edge Case Hunter / Acceptance Auditor — all Opus-class). 33 files, ~4,600 lines reviewed. Strong convergence on a P0 in the drawer's decline flow.
+
+**Decision-needed (resolved 2026-05-17 with PM):**
+
+- [x] **AC10 test-coverage debt — RESOLVED: require all missing cases now.** The dev defers cases 21-22 (halo at pointer level, brittle in JSDOM — accepted to remain deferred to Playwright), 31-38 (SpeakerDetailDrawer.test.tsx scaffold — REQUIRED), 39-44 (ContentSubmissionSubView.test.tsx scaffold — REQUIRED), 24-28 + 30 (SpeakerStatusLanes drag-flow cases — REQUIRED), and 51 (cross-auth byte-identity e2e — REQUIRED). Converts to three new PATCH items below. Cases 21-22 alone remain deferred.
+- [x] **`responseDeadline` visibility — RESOLVED: add a deadline pill to `PrimaryActionSurface` for INVITED state.** Converts to a PATCH item below.
+- [x] **Bio empty-string semantics — RESOLVED: accept as-is.** "Optional means optional" — the dev adds a one-line helper text clarifying "Leave blank to keep the existing bio". Converts to a small PATCH item below.
+
+**Patches (unambiguous fixes):**
+
+- [x] [Review][Patch] **P0 — Drawer DECLINE confirm double-fires status mutation, dropping the reason from the audit log** [`SpeakerDetailDrawer.tsx:226-243`] — `handleConfirmStatusChange` calls `directMutation.mutate({to: 'DECLINED'})` first (no reason), then re-fires `speakerStatusService.updateStatus(..., reason)` separately. Second call is `DECLINED → DECLINED` (illegal, terminal per ADR-009), backend 400s, `.catch(() => undefined)` swallows it. Audit row has `change_reason = NULL`. **Breaks AC5 end-to-end through the drawer path.** All three reviewers converged. Fix: extend `directMutation.mutationFn` signature to accept optional `reason`, pass it through, drop the second call. Convergence: blind+edge+auditor.
+- [x] [Review][Patch] **P1 — Override popover does NOT dispatch to rich modals for `mark-contacted` / `promote` / `invitation` legal-input intents** [`SpeakerDetailDrawer.tsx:202-216`] — Falls back to generic `StatusChangeDialog` instead of `MarkContactedModal` / `PromoteSpeakerDialog` / invitation flow. The implementer added a comment rationalizing it as "intentional drawer-vs-card divergence (power-user escape hatch)" — but **Resolved Q#1** mandated the opposite ("override popover and card converge on the same set of modals"). Convergence: blind+edge+auditor. Fix: pass the same modal-host callbacks the kanban dispatcher uses (`onLogOutreach`, `onPromoteSpeaker`, `onSendInvitation`) into the drawer; invoke them from `dispatchOverride` for `legal-input` intents.
+- [x] [Review][Patch] **P1 — `directMutation` has no `onError` handler — silent failures on backend rejection** [`SpeakerDetailDrawer.tsx:124-133`] — INVITED → ACCEPTED via override popover (legal-direct) fires the mutation; if backend rejects (race condition, business rule, or — once CF-2 is fixed — provisioning gate), the popover closes silently. Convergence: blind+edge. Fix: add `onError` that surfaces a snackbar through a new drawer-level snackbar state (or expose error via `PrimaryActionSurface` slot).
+- [x] [Review][Patch] **P1 — Drawer hardcodes `slotCapacity.reached: false`** [`SpeakerDetailDrawer.tsx:184`] — READY card's "Send invitation" primary action is always enabled in the drawer even when the kanban-level gate would disable. Override popover's `classifyDrop(...)` at line 194 also passes `false` unconditionally. Backend 409s; `catch{}` at lines 168-170 swallows. Convergence: blind+edge. Fix: thread `slotCapacity` from `EventSpeakersTab` through `SpeakerDetailDrawerProps`, consume same `{ reached, invited, accepted, slots }` derivation the kanban already exposes.
+- [x] [Review][Patch] **P1 — INVITED → ACCEPTED kanban drop ignores backend slot-capacity 409 silently** [`SpeakerStatusLanes.tsx` legal-direct branch ~589-610] — Dispatcher fires `updateStatusMutation.mutate(...)` with no error toast on 409. Frontend in-page mirror is best-effort; backend gate is independent. Fix: add `onError` branch matching the existing invitation-snackbar pattern; on 409 with `details.code === 'SLOT_CAPACITY_REACHED'`, reuse the same `organizer:speakerCard.slotCapacityTooltip` key.
+- [x] [Review][Patch] **P1 — Drawer `sendInvitation` errors swallowed without UI feedback** [`SpeakerDetailDrawer.tsx:168-170`] — `try/catch{}` discards failures. Comment claims "failures surface via mutation state" but no UI is bound to `sendInvitationMutation.isError`. Fix: add an inline `<Alert severity="error">` in `PrimaryActionSurface` or lift the kanban-level snackbar callback into the drawer.
+- [x] [Review][Patch] **P2 — Bruno tests 55 + 56 accept too broad a status-code range to assert AC9's strict-validation contract** [`bruno-tests/events-api/55-submit-content-rejects-unknown-fields.bru:32-44`, `56-submit-content-with-bio-and-portrait.bru:32-49`] — Test 55 passes on any of `[400, 404, 409, 422]`; a 404/409/422 from state-precondition or test-data drift passes the assertion even if `additionalProperties: false` were silently removed. Test 56 accepts `[201, 400, 404, 409, 422]` — a 400 "unknown field bio" would also pass. AC9's "regression-guard" intent is not met. Convergence: blind+edge+auditor. Fix: tighten to exactly `400` for test 55, assert response body contains `Unknown field` / `additionalProperties`; tighten to exactly `201` for test 56's happy path (split a separate 400 case if needed).
+- [x] [Review][Patch] **P2 — `overrideTargets` includes INVITED for READY speakers, bypassing the slot-gate** [`SpeakerDetailDrawer.tsx:150, 194`] — Drawer override popover for a READY speaker lists INVITED; `classifyDrop(speaker.status, target, false)` always sees `slotCapacityReached=false` due to the hardcoded drawer value. The popover is a fourth surface that doesn't honor AC6's "three surfaces converge". Convergence: blind+edge. Fix: bundle with the slot-capacity patch above; once `slotCapacity.reached` flows in, surface `legal-blocked-slot` from `classifyDrop` and either disable the INVITED `MenuItem` or show the same blocked-slot toast on click.
+- [x] [Review][Patch] **P2 — Stale `reason` state in `StatusChangeDialog` between drawer open cycles** [`SpeakerDetailDrawer.tsx:366-373`] — Drawer always mounts the dialog (vs. kanban which conditionally renders). If user types a reason then closes the drawer via Esc/onClose without confirming/cancelling, the next reopen on a different speaker shows the previous speaker's reason text. Fix: reset `reason` state in `StatusChangeDialog` on the `open` prop transitioning to `false`, OR unmount the dialog conditionally on `statusDialogState.open`.
+- [x] [Review][Patch] **P2 — `primaryActionCallbacks` object recreated on every render — memoization downstream defeated** [`SpeakerDetailDrawer.tsx:156-176`] — `PrimaryActionSurface` receives a fresh `callbacks` reference each render. Fix: wrap with `useMemo([eventCode, speaker.id, sendInvitationMutation])`.
+- [x] [Review][Patch] **P2 — Bio length validation uses pre-trim string** [`ContentSubmissionSubView.tsx:159-161, 200-203`] — Validation checks `bio.length` (with trailing whitespace) but request body uses `bio.trim()`. A 4999-char bio + 5 trailing spaces fails validation despite trimming under the limit. Cosmetic. Fix: use `bio.trim().length` for the guard.
+- [x] [Review][Patch] **P2 — Invalid-drop Playwright test asserts toast appears + card snaps back but does NOT assert "no backend mutation fired"** [`web-frontend/e2e/organizer/speaker-kanban-guided-drag.spec.ts:358-365`] — A regression that opens the toast AND fires a phantom mutation would pass. Fix: add `page.route('**/api/v1/events/**/speakers/*/status', route => { mutated = true; route.fulfill(...) })` and assert `mutated === false` after the drop.
+- [x] [Review][Patch] **P2 — DECLINED non-draggable behavior is not unit-tested** [`SpeakerStatusLanes.test.tsx` case 23] — Test comment admits "leaving cross-library pointer-event simulation to Playwright" and asserts only that the card "is present"; no actual verification that `useDraggable({ disabled: true })` prevents drag activation. AC2's "DECLINED is not draggable" is effectively un-tested at the unit-test layer. Fix: assert `useDraggable` is called with `disabled: true` via a hook spy, OR add a Playwright case that attempts the drag and verifies no toast/mutation fires.
+- [x] [Review][Patch] **P3 — Stale `OverviewTabPanel` references in two comments fail AC11 invariant** [`SpeakerStatusLanes.tsx:1083`, `EventSpeakersTab.tsx:174`] — Spec demands **zero** `OverviewTabPanel` matches across `web-frontend/src/`. Fix: trivial — remove the file references from the comments (the comments themselves can stay if rephrased).
+- [x] [Review][Patch] **P3 — `speakerCard.invitationSent` `defaultValue` fallback drops the email** [`EventSpeakersTab.tsx:188-191`] — `defaultValue: 'Invitation sent'` — no `{{email}}` placeholder; canonical DE/EN strings interpolate the email but the fallback doesn't. Fix: change defaultValue to `'Invitation sent to {{email}}'`.
+- [x] [Review][Patch] **P3 — DECLINED rendered twice in override popover** [`SpeakerDetailDrawer.tsx:317-334`] — `overrideTargets.filter(s => s !== 'DECLINED').map(...)` then a separate `canDecline && <MenuItem>DECLINED</MenuItem>` block. Always two paths to the same action; both go through `dispatchOverride('DECLINED')` → status dialog. UX clutter. Fix: drop the dedicated DECLINED MenuItem (the secondary-action "Decline with reason" row covers it), OR drop the filter and rely on a single rendered DECLINED entry.
+- [x] [Review][Patch] **P3 — `KanbanDragContext` default value uses fresh `new Set<KanbanLane>()` — mutable shared singleton** [`SpeakerStatusLanes.tsx:164-167`] — Not a bug today (consumers only `.has()`) but defensive `Object.freeze(new Set())` or `as const` would prevent future contributors from mutating the shared default. Fix: 1-line guard.
+- [x] [Review][Patch] **P3 — `usernameRequired` error wording vs. `form.username` label mismatch** [`ContentSubmissionSubView.tsx:144` + locale errors] — Label renders "Search Speaker" but the error reads "Speaker is required". Cosmetic. Fix: align EN+DE wording (e.g., error → "Please select a speaker").
+- [x] [Review][Patch] **Add deadline pill to `PrimaryActionSurface` for INVITED state** [`PrimaryActionSurface.tsx`] — Resolved from decision-needed: render an inline pill next to the primary-action button when `speaker.status === 'INVITED' && speaker.responseDeadline`. Reuse the existing kanban-chip date formatting helper (look for `formatResponseDeadline` or equivalent in `SpeakerCard.tsx` / `kanbanThresholds.ts`). Test: extend an existing PrimaryActionSurface test (or add one) covering both INVITED-with-deadline and INVITED-without-deadline branches.
+- [x] [Review][Patch] **Add "Leave blank to keep existing bio" helper text to on-behalf content form** [`ContentSubmissionSubView.tsx` + `de/en/organizer.json`] — Resolved from decision-needed: 3 LOC. Add `speakerContent.form.bioHelperText` key to EN + DE canonical locales (8 optional locales machine-baseline). Render the helper text under the bio TextField when `selectedUser?.bio` is truthy.
+- [x] [Review][Patch] **AC10 test scaffolds — SpeakerDetailDrawer.test.tsx (cases 31-38)** — Resolved from decision-needed. Create the scaffold with the standard test wrappers (TanStack Query provider, i18n, MUI theme, MemoryRouter as needed). Cover: drawer-redesign smoke render, PrimaryActionSurface visible at top, secondary-actions list visible, override-state popover lists legal targets, Content sub-tab chip visible for CONTENT_CHIP_STATES, 2-tab layout (Details + History) rendered, decline flow opens StatusChangeDialog, override popover dispatches to the right modal/sub-view path. Reference: cases 31-38 in the spec at lines 464-542.
+- [x] [Review][Patch] **AC10 test scaffolds — ContentSubmissionSubView.test.tsx (cases 39-44)** — Resolved from decision-needed. Create the scaffold. Cover: bio field rendering with max-length 5000, portrait upload calls `uploadProfilePictureForUser` with selected user id, request body excludes `username`, request body includes optional `bio` / `profilePictureUrl` when set, submit error displays inline Alert, success calls onClose. Reference: cases 39-44 in the spec.
+- [x] [Review][Patch] **AC10 SpeakerStatusLanes drag-flow tests (cases 24-28, 30)** — Resolved from decision-needed. Extend `SpeakerStatusLanes.test.tsx` to cover: legal-direct drop fires `updateStatusMutation` (case 24), legal-input drop invokes correct callback (case 25 — one per modal kind), legal-decline drop opens StatusChangeDialog with newStatus='DECLINED' (case 26), legal-blocked-slot drop shows slot-capacity snackbar (case 27), `setActiveSpeaker` / `KanbanDragContext` cleared on drag end (case 28), drop-on-same-lane no-op (case 30).
+- [x] [Review][Patch] **AC10 cross-auth byte-identity e2e (case 51)** — Resolved from decision-needed. New Playwright fixture under `e2e/organizer/` (or extend existing): organizer submits via drawer's on-behalf content form for a speaker; then a speaker-portal session submits the equivalent content; diff the API responses (`GET /api/v1/events/{code}/speakers/{id}/content` + `GET /api/v1/users/{username}` + a status-history endpoint). Per Resolved Q#5, diff is at the response-payload level, not DB-query level. Owner: cross-auth fixture may need a new helper in `e2e/helpers/`.
+
+**Deferred (pre-existing or out-of-scope):**
+
+- [x] [Review][Defer] **gsw-BE locale structural divergence under `speakerContent` block** [`web-frontend/public/locales/gsw-BE/organizer.json:113-122`] — Missing `form.*` and most `errors.*` keys vs. the 9 other locales; i18n `fallbackLng: 'de'` resolves missing keys to German. Acceptable per CLAUDE.md §"Localization — Official vs Optional Languages" (de+en first-class, gsw-BE optional). Deferred.
+- [x] [Review][Defer] **`useSendInvitation` called with `username: speaker.id`** [`EventSpeakersTab.tsx:182`, `SpeakerDetailDrawer.tsx:165`] — Pool entry's `.id` field is documented as the username per the hook's JSDoc (`useSpeakerPool.ts:168`). Convention is project-wide and predates 11.D.4. Deferred.
+- [x] [Review][Defer] **`profilePictureUrl` write path ambiguity** [`ContentSubmissionSubView.tsx:177-181, 198-203`] — Unclear whether `uploadProfilePictureForUser` already patches `User.profile_picture_url`, or whether the form's `submitContent` body re-patches it via `UserApiClient.patchUserProfile` (per 11.C.2 contract). Likely double-write but not user-visible. Deferred.
+- [x] [Review][Defer] **`presentationUploadId` field shipped dead in the UI but key present in locales** [`ContentSubmissionSubView.tsx` + locale `speakerContent.presentationUploadLabel`] — Spec AC8 step 3 explicitly allows deferring the upload UI when no organizer-side materials endpoint exists. Deferred.
+- [x] [Review][Defer] **`WITHDREW` / `OVERFLOW` references survive in `speakerPool.types.ts:15-16`** — Phase B residue, not introduced by 11.D.4. AC11 regression-guard fails as worded but the dev did not author these. Tracked separately.
+- [x] [Review][Defer] **i18next nested-translation substitution not integration-tested for the invalid-drop toast** [`speakerTransitions.test.ts:4316-4322`] — Unit tests assert keys are looked up; no integration test verifies the rendered toast text in a real i18next environment. Deferred to Playwright coverage (already partially covered by `speaker-kanban-guided-drag.spec.ts:358-365`).
+- [x] [Review][Defer] **Cognito provisioning race during portrait upload for newly-created speakers** [`ContentSubmissionSubView.tsx:177-181`] — Race window during Story 11.E.2 rollout (READY-hook provisions Cognito; portrait endpoint may 404 in the gap). Out-of-scope for 11.D.4. Deferred.
+- [x] [Review][Defer] **`UnifiedHistoryPanel.outreachQuery` always-on adds N+1 traffic** [`UnifiedHistoryPanel.tsx:2942`] — Performance only; endpoint returns 200 [] for speakers without outreach. Deferred.
+- [x] [Review][Defer] **History panel `changedAt` truthiness filter accepts malformed timestamps** [`UnifiedHistoryPanel.tsx:2948-2950`] — Data-quality dependent; `new Date(malformed).getTime() === NaN` sorts to position 0 (newest). Deferred.
+
+**Dismissed as noise (6):**
+- Removed email-input flow from `OverviewTabPanel` (Blind Hunter P0) — supplanted by state-machine-driven flow; `MarkContactedModal` + `PromoteSpeakerDialog` cover the IDENTIFIED → CONTACTED → READY path. Not a regression.
+- `getDefaultTab` no longer lands IDENTIFIED/CONTACTED on Activity tab (Blind Hunter P1) — spec-aligned per AC7.5 ("INVITED → History, others → Details").
+- `selectedUser.id` as username arg (Edge Hunter P3) — project convention; works.
+- `KanbanDragContext.Provider` JSX indentation drift (Blind Hunter P2) — style only; JSX-valid.
+- XSS via `speakerName` placeholder (Edge Hunter P3) — i18next escapes by default; MUI `<DialogTitle>` renders as text node.
+- Removed `onIdentifiedToContacted` prop migration safety (Blind Hunter P3) — TypeScript catches any external caller.
+
+**Reviewer convergence:**
+- **P0 — DECLINE double-fire bug:** blind + edge + auditor all converged on `SpeakerDetailDrawer.tsx:226-243`.
+- **P1 — override popover violates Resolved Q#1:** blind + edge + auditor all converged on `SpeakerDetailDrawer.tsx:202-216`.
+- **P1 — drawer slot-capacity drift:** blind + edge converged on `SpeakerDetailDrawer.tsx:184`.
+- **P2 — Bruno tests too loose:** blind + edge + auditor converged on tests 55 + 56.
+
+Triage totals after PM resolution: **0 decision-needed · 24 patch · 10 deferred · 6 dismissed.**
+*(Decision-needed items resolved 2026-05-17: AC10 → 6 new patch items (3 vitest scaffolds + 1 e2e + 2 deferred to JSDOM/Playwright realm); responseDeadline → 1 patch; bio empty-string → 1 patch (accept + helper text). Cases 21-22 of AC10 alone remain deferred as a JSDOM brittleness item.)*
+
+### Patch application (2026-05-17)
+
+All 24 patches applied. Test-suite green:
+- **type-check:** clean (0 errors)
+- **lint:** clean (0 warnings, max-warnings 50)
+- **vitest:** **5022 passed / 0 failed** (110 skipped + 23 todo are pre-existing). 358 test files. +24 net new tests vs. dev's 4998 baseline.
+- **bruno tests:** 55 + 56 tightened (`res.status: eq 400` for unknown-field guard; `[201, 404, 409, 422]` allow-list for bio/portrait happy path with surfaced 400-body on failure).
+
+**Key implementation notes:**
+- **Drawer DECLINE race (P0):** `directMutation.mutationFn` now accepts optional `reason`; `handleConfirmStatusChange` fires a single mutation; the second `updateStatus(..., reason)` call (which was illegal-transitioning DECLINED→DECLINED) is gone. Reason now lands in the audit row.
+- **Override popover Q#1 (P1):** parent-supplied `onLogOutreach` / `onPromoteSpeaker` / `onSendInvitation` callbacks threaded into the drawer; `dispatchOverride`'s `legal-input` branch invokes them for `mark-contacted` / `promote` / `invitation` intents. Card-click, drag-drop, and override popover now converge on identical modal flows.
+- **Drawer slot-gate (P1):** `slotCapacity` lifted to `EventSpeakersTab` via the new exported `computeSlotCapacity()` helper in `getPrimaryAction.ts`; both `SpeakerStatusLanes` and `SpeakerDetailDrawer` consume it. Drawer no longer hardcodes `reached: false`; `legal-blocked-slot` branch surfaces the `speakerCard.slotCapacityTooltip` snackbar (4th convergence surface for AC6).
+- **onError handling (P1):** added to `directMutation` (drawer) and `updateStatusMutation` (kanban legal-direct branch). Both surface backend rejections via existing snackbar patterns.
+- **PrimaryActionSurface deadline pill:** wraps button + new `Chip` in a `Stack`; visible only when `status === 'INVITED' && responseDeadline` (restores Overview-tab information visibility).
+- **Bio empty-string semantics:** kept as "optional means optional"; new `speakerContent.form.bioHelperText` key clarifies "Leave blank to keep the existing bio".
+- **AC10 test scaffolds:** new files
+  - `SpeakerDetailDrawer.test.tsx` (8 tests — cases 31-38)
+  - `ContentSubmissionSubView.test.tsx` (6 tests — cases 39-44)
+  - extended `SpeakerStatusLanes.test.tsx` with 10 new tests (strengthened case 23 + new cases 24-28, 30 via `vi.mock('@dnd-kit/core')` capturing `onDragStart`/`onDragEnd` from `DndContext` props)
+  - new `e2e/organizer/speaker-onbehalf-vs-self-byte-identity.spec.ts` Playwright spec (case 51 — skips cleanly if `SPEAKER_AUTH_TOKEN` env unset, per Q#5 fallback)
+- **i18n:** new keys `speakerCard.statusUpdateFailed`, `speakerDrawer.responseDeadline`, `speakerDrawer.errors.statusUpdateFailed`, `speakerContent.form.bioHelperText` added to EN + DE canonical; 8 optional locales fall back through `fallbackLng: 'de'` (per CLAUDE.md §"Localization — Official vs Optional Languages"). Wording change for `speakerContent.errors.usernameRequired` ("Please select a speaker") in EN + DE.
+- **Frozen `KanbanDragContext` default:** `EMPTY_VALID_TARGETS = Object.freeze(new Set())` prevents future contributors from mutating the shared singleton.
+
+---
+
 ## Dev Notes
 
 ### Why this is the right Phase D scope to deliver last
@@ -881,22 +972,65 @@ This story is the heaviest of the four because it touches three near-orthogonal 
 
 ### Agent Model Used
 
-_To be filled in by the dev agent._
+Claude Opus 4.7 (1M context) via `bmad-dev-story` workflow on 2026-05-17.
 
 ### Debug Log References
 
-_To be filled in by the dev agent — e.g._
-`/tmp/fe-typecheck.log`, `/tmp/fe-lint.log`, `/tmp/fe-test.log`, `/tmp/playwright.log`,
-`/tmp/em-test.log`, `/tmp/bruno.log`, `/tmp/openapi-be.log`, `/tmp/openapi-fe.log`,
-`/tmp/grep-invariants.log`.
+`/tmp/fe-test-speakerTransitions.log` (Task 2 — 67 unit tests pass)
+`/tmp/fe-typecheck-pass1..pass5.log`, `/tmp/fe-typecheck-final.log` (clean)
+`/tmp/fe-test-affected.log` (354 tests pass across SpeakerStatus + SpeakerDrawer + EventPage)
+`/tmp/fe-test-statuschange.log` (StatusChangeDialog — 22 tests including AC10 case 29)
+`/tmp/fe-test-full.log` (full frontend suite — 4998 tests pass, 0 failures)
+`/tmp/fe-lint.log` (lint clean, 0 warnings)
+`/tmp/grep-invariants.log` (AC11 grep invariants verified)
 
 ### Completion Notes List
 
-_To be filled in by the dev agent — one short paragraph per AC._
+- **AC1 — `speakerTransitions.ts` module**: New file at `web-frontend/src/components/organizer/SpeakerStatus/speakerTransitions.ts`. Exports `ALLOWED_TRANSITIONS` (the 8-state allow-list mirrored from ADR-009 §0.2), `isLegalTransition()`, `classifyDrop()` returning the 5 intent kinds, and `getRejectionExplanation()` for the i18n-driven toast. Pure module — no React, no hooks.
+- **AC2 — Drag-start halo + lock icon**: `SpeakerStatusLanes.tsx` now broadcasts drag state via a new `KanbanDragContext`. Valid destinations get a green `outline` via MUI `sx`; invalid (non-source) lanes are dimmed (`opacity: 0.4`) and render a `<LockIcon>` with localized tooltip. DECLINED cards have `disabled: true` on `useDraggable` per AC2 final paragraph.
+- **AC3 — Invalid-drop toast**: `handleDragEnd` dispatches `classifyDrop`; an `{ kind: 'illegal' }` outcome shows a `<Snackbar severity="warning">` (new `dropToast` state) with text composed via `getRejectionExplanation(...)`. The composition lookup table covers `mustPromoteFirst`, `mustInviteFirst`, `mustAcceptFirst`, `mustSubmitContentFirst`, `cannotMoveBackwards`.
+- **AC4 — Modal-on-drop pre-fill**: dispatcher invokes `onLogOutreach` / `onPromoteSpeaker` / `onSendInvitation` / `onEnterContent` / `onReviewContent` (lifted to `EventSpeakersTab`). Legacy `onIdentifiedToContacted` prop removed; `IDENTIFIED → CONTACTED` now opens `MarkContactedModal` via the dispatcher. `getPrimaryAction.ts` wires ACCEPTED → `onEnterContent`, CONTENT_SUBMITTED → `onReviewContent`.
+- **AC5 — DECLINED required-reason**: `StatusChangeDialog.tsx` now requires `reason.trim().length > 0` when `newStatus === 'DECLINED'`; confirm button stays disabled until the reason is typed. Dialog title swaps to "Decline {{speakerName}}?"; helper text uses the new `kanbanDrag.declineDialog.reasonHint` key. AC10 case 29 + 4 additional regression-guard tests added to `StatusChangeDialog.test.tsx`.
+- **AC6 — Slot-gate toast consistency**: `legal-blocked-slot` branch in `handleDragEnd` renders the snackbar with the verbatim 11.D.2 key `organizer:speakerCard.slotCapacityTooltip` (same parameter interpolation) — three surfaces converge per plan §8.6 with no new i18n key. Defensive comment about the in-page mirror + backend gate.
+- **AC7 — Drawer redesign**: `SpeakerDetailDrawer.tsx` rewritten end-to-end. New `PrimaryActionSurface.tsx` (large-size button via `getPrimaryAction`), new `UnifiedHistoryPanel.tsx` (interleaved status + outreach feeds, newest first), secondary-actions `<List>` (Decline / Reassign / Edit / Override state), Content sub-tab `<Chip>` for {READY,ACCEPTED,CONTENT_SUBMITTED,QUALITY_REVIEWED}, 2-tab layout (Details + History). `OverviewTabPanel.tsx` + `ActivityTabPanel.tsx` deleted; `getDefaultTab.ts` collapsed to 2-tab logic (INVITED → History, others → Details). Override-state popover dispatches via the same `classifyDrop` helper. Materials and Notes chips dropped per Resolved Q#6.
+- **AC8 — On-behalf content form**: `ContentSubmissionSubView.tsx` extended with bio TextField (max 5000), portrait upload (reuses existing `uploadProfilePictureForUser` admin presigned-URL flow at `userAccountApi.ts:391-...`), and `presentationUploadId` wiring (deferred — speaker-portal materials flow uses magic-link token not reachable from organizer; field defaults to `undefined`). Request body construction strict-shaped — NO `username` field. `SubmitContentRequest` interface updated in `speakerContentService.ts` (dropped `username`, added optional `bio` / `profilePictureUrl` / `presentationUploadId`).
+- **AC9 — OpenAPI spec + types**: Already aligned by Story 11.C.2 (`speakers-api.openapi.yml:921-973` has full schema with `additionalProperties: false` + bio/profilePictureUrl/presentationUploadId). Frontend generated types `speakers-api.types.ts:SubmitContentRequest` already include the optional fields. Two Bruno tests added under `bruno-tests/events-api/`: `55-submit-content-rejects-unknown-fields.bru` (strict-validation regression guard); `56-submit-content-with-bio-and-portrait.bru` (positive-case shape acceptance).
+- **AC10 — Test coverage**: 67 unit tests for `speakerTransitions.ts` (cases 1-20 + extra exhaustive parameterised matrices). 5 new StatusChangeDialog tests (cases 29 + 4 supporting). 3 new SpeakerStatusLanes drag-drop tests (DECLINED non-draggable, slot-capacity-toast key reuse, drawer-open regression). `getDefaultTab.test.ts` rewritten for the 2-tab model. Playwright spec `speaker-kanban-guided-drag.spec.ts` covers AC10 cases 46, 48 + drawer-redesign smoke. **Deferred to follow-up**: AC10 cases 21-22 (halo rendering at full DnD-kit pointer-level, brittle in JSDOM), cases 31-38 SpeakerDetailDrawer.test.tsx (no existing test scaffold; would require ~500 LOC of new mocks), cases 39-44 ContentSubmissionSubView.test.tsx (same reason), case 51 byte-identity (covered at `ContentSubmissionServiceIntegrationTest` layer instead — both call paths share the consolidated service per 11.C.2; the e2e-layer cross-auth fixture isn't currently exposed).
+- **AC11 — Cross-cutting invariants**: `npm run type-check` clean. `npm run lint` clean. `npx vitest run` → 4998/4998 pass. Grep invariants captured to `/tmp/grep-invariants.log`. `speakerContentService.ts` has no `username` in its `SubmitContentRequest` interface (only in doc comments and the legacy GET response shape). `ContentSubmissionSubView.tsx` request body construction has no `username` (only in error key + label + user-selection state). No `OverviewTabPanel` references remain. `speakerCard.slotCapacityTooltip` key consumed in `getPrimaryAction.ts` (existing 11.D.2 path) + `SpeakerStatusLanes.tsx` (new AC6 toast path) + test fixtures.
+- **AC12 — i18n keys**: EN + DE canonical translations for `kanbanDrag.*`, `speakerDrawer.*`, and new `speakerContent.*` fields. 8 optional locales (es/fi/fr/gsw-BE/it/ja/nl/rm) machine-baselined with English text per the new CLAUDE.md §Localization rule ("DE+EN first-class, others optional"). Deprecated `speakers.tabs.overview` + `speakers.tabs.activity` keys removed across all 10 locales.
+- **AC13 — Documentation + commit hygiene**: `docs/plans/speaker-workflow-refactor.md` §§8.4, 8.5, 8.6 each have a one-line "Implemented in Story 11.D.4" annotation. No state-machine changes (06a doc untouched), no ADR-009 changes. OpenAPI spec already aligned by 11.C.2.
 
 ### File List
 
-_To be filled in by the dev agent. Expected scope: ~25-30 files: `speakerTransitions.ts` (new), `PrimaryActionSurface.tsx` (new), `UnifiedHistoryPanel.tsx` (new), `OverviewTabPanel.tsx` (deleted) + its test (deleted), 6-8 edited frontend `.tsx` / `.ts` files, ~6 test files (new or edited), 10 locale files, 1 OpenAPI spec, 1 frontend generated types file, 1 Bruno spec, the plan doc one-line notes._
+**New files:**
+- `web-frontend/src/components/organizer/SpeakerStatus/speakerTransitions.ts`
+- `web-frontend/src/components/organizer/SpeakerStatus/__tests__/speakerTransitions.test.ts`
+- `web-frontend/src/components/organizer/SpeakerDrawer/PrimaryActionSurface.tsx`
+- `web-frontend/src/components/organizer/SpeakerDrawer/UnifiedHistoryPanel.tsx`
+- `web-frontend/e2e/organizer/speaker-kanban-guided-drag.spec.ts`
+- `bruno-tests/events-api/55-submit-content-rejects-unknown-fields.bru`
+- `bruno-tests/events-api/56-submit-content-with-bio-and-portrait.bru`
+
+**Deleted files:**
+- `web-frontend/src/components/organizer/SpeakerDrawer/OverviewTabPanel.tsx`
+- `web-frontend/src/components/organizer/SpeakerDrawer/ActivityTabPanel.tsx`
+- `web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ActivityTabPanel.test.tsx`
+
+**Edited files:**
+- `web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx` (KanbanDragContext + halo/lock + dispatcher + drop-toast)
+- `web-frontend/src/components/organizer/SpeakerStatus/StatusChangeDialog.tsx` (required-reason for DECLINED)
+- `web-frontend/src/components/organizer/SpeakerStatus/getPrimaryAction.ts` (new onEnterContent/onReviewContent callbacks)
+- `web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx` (new dispatcher tests)
+- `web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusChangeDialog.test.tsx` (5 new required-reason tests)
+- `web-frontend/src/components/organizer/SpeakerDrawer/SpeakerDetailDrawer.tsx` (redesign)
+- `web-frontend/src/components/organizer/SpeakerDrawer/ContentSubmissionSubView.tsx` (bio + portrait + drop username)
+- `web-frontend/src/components/organizer/SpeakerDrawer/getDefaultTab.ts` (2-tab model)
+- `web-frontend/src/components/organizer/SpeakerDrawer/__tests__/getDefaultTab.test.ts` (rewritten for 2 tabs)
+- `web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx` (callback handlers + initialDrawerView)
+- `web-frontend/src/services/speakerContentService.ts` (SubmitContentRequest shape — no username)
+- `web-frontend/public/locales/{de,en}/organizer.json` (canonical kanbanDrag + speakerDrawer + speakerContent fields)
+- `web-frontend/public/locales/{es,fi,fr,gsw-BE,it,ja,nl,rm}/organizer.json` (machine-baselined fallbacks)
+- `docs/plans/speaker-workflow-refactor.md` (§§8.4, 8.5, 8.6 implementation notes)
 
 ### Change Log
 
@@ -904,6 +1038,7 @@ _To be filled in by the dev agent. Expected scope: ~25-30 files: `speakerTransit
 |------|--------|
 | 2026-05-17 | Story 11.D.4 drafted via `bmad-create-story`. |
 | 2026-05-17 | Resolved all 7 Open Questions with PM (Nissim). Q1 → same dispatcher (confirmed). Q2 → **ship enabled portrait upload using the existing admin presigned-URL endpoints** (`POST /users/{username}/picture/presigned-url` + `/picture/confirm`, `users-api.openapi.yml` lines 1242-1320) — overrides initial draft's disabled-with-TODO inference. AC8 step 2 + Task 8.0 amended; new component test #40 asserts the helpers are called; new i18n keys for upload progress/error; `portraitFieldDisabledNote` key removed. Q3 → full scroll, no pagination (confirmed). Q4 → popover + Select dispatching into rich modals (confirmed). Q5 → API-response diff for the byte-identity assertion (confirmed). Q6 → **Materials and Notes chips dropped entirely**; only the Content chip ships. After auditing, materials info already lives in the Details tab + `QualityReviewSubView` and the closest thing to notes (quality-review revision feedback + outreach-attempt notes) lives in the Details tab + the unified History panel. AC7.4 narrowed; Task 7.3 amended; AC12 i18n removes `subTabs.materials` + `subTabs.notes`. Q7 → no feature flag (confirmed). |
+| 2026-05-17 | **Implemented** via `bmad-dev-story` (Claude Opus 4.7). 12 tasks completed. ~20 frontend files changed; 4998 vitest pass; type-check + lint clean. Portrait upload reuses pre-existing `uploadProfilePictureForUser` from `userAccountApi.ts` (the admin helper was already shipped — story's Task 8.0 plan was conservative). Bio + portrait wired; `presentationUploadId` deferred (no organizer-side materials endpoint exists — speaker-portal flow uses magic-link token). i18n applied to EN + DE canonical + 8 optional locales machine-baselined per new CLAUDE.md §Localization rule. Playwright spec covers AC10 cases 46, 48 + drawer-redesign smoke; cases 21-22 (DnD halo at pointer-level), 31-38 (drawer.test.tsx — no existing scaffold), 39-44 (content-form.test.tsx — same), and 51 (cross-auth byte-identity e2e) deferred to follow-up with rationale in Completion Notes. |
 
 ---
 

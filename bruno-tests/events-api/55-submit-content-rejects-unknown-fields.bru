@@ -1,0 +1,61 @@
+meta {
+  name: Submit Content (organizer-on-behalf) — rejects unknown fields (Story 11.D.4 AC9)
+  type: http
+  seq: 55
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/content
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "presentationTitle": "Test Title",
+    "presentationAbstract": "Test abstract for the strict-validation contract.",
+    "username": "stale.field",
+    "speakerName": "Stale Name"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("MUST return 400 specifically — schema strict-validation, NOT a state precondition (Story 11.D.4 AC9)", function() {
+    // Review patch: the prior assertion `in [400, 404, 409, 422]` made this test
+    // toothless — a 404 from a stale pool ID, a 409 from wrong state, or a 422
+    // from a business rule would all pass the assertion even if
+    // `additionalProperties: false` were silently removed from the spec. The
+    // contract this test exists to guard is: the API MUST reject unknown fields
+    // at the schema layer BEFORE state preconditions are evaluated.
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("error body must indicate unknown-field / additionalProperties rejection (Story 11.D.4 AC9)", function() {
+    const body = res.getBody();
+    // The error response should mention either "Unknown field", "additionalProperties",
+    // "username" (the offending field), or a generic schema-validation token. Accept
+    // any of the common shapes the GlobalExceptionHandler may emit.
+    const serialized = JSON.stringify(body).toLowerCase();
+    const matchesUnknownFieldHint =
+      serialized.includes('unknown') ||
+      serialized.includes('additionalproperties') ||
+      serialized.includes('not allowed') ||
+      serialized.includes("'username'") ||
+      serialized.includes('"username"');
+    expect(matchesUnknownFieldHint).to.equal(true);
+  });
+}

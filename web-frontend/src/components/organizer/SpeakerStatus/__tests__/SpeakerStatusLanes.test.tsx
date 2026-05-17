@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
@@ -46,6 +46,28 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       if (key === 'organizer:speakerCard.slotCapacityTooltip' && params) {
         return `Slot capacity reached. ${params.invited} invitations outstanding + ${params.accepted} acceptances for ${params.slots} slots. Wait or decline an accepted speaker to free a slot.`;
+      }
+      // Story 11.D.4 — drag-drop rejection composition.
+      if (key === 'organizer:kanbanDrag.rejection.template' && params) {
+        return `${params.from} → ${params.to} not allowed — ${params.explanation}`;
+      }
+      if (key === 'organizer:kanbanDrag.rejection.mustPromoteFirst') {
+        return 'Promote to READY first to provision the speaker.';
+      }
+      if (key === 'organizer:kanbanDrag.rejection.mustInviteFirst') {
+        return 'Send invitation first; speaker must accept before content is captured.';
+      }
+      if (key === 'organizer:kanbanDrag.rejection.mustAcceptFirst') {
+        return 'Speaker must accept first.';
+      }
+      if (key === 'organizer:kanbanDrag.rejection.mustSubmitContentFirst') {
+        return 'Submit content first; reviewer needs material to approve.';
+      }
+      if (key === 'organizer:kanbanDrag.rejection.cannotMoveBackwards') {
+        return 'Approved content cannot move backwards. Decline if the speaker is dropping out.';
+      }
+      if (key === 'organizer:kanbanDrag.invalidDestinationTooltip' && params) {
+        return `${params.from} → ${params.to} is not a legal transition.`;
       }
       if (key === 'organizer:speakerCard.timeInStateTooltip' && params) {
         return `Current state since ${params.date}`;
@@ -113,6 +135,58 @@ vi.mock('@/services/speakerStatusService', () => ({
   },
 }));
 
+// Story 11.D.4 — mock `@dnd-kit/core` so we can:
+//   (a) spy on `useDraggable({ id, disabled })` calls to assert DECLINED cards are
+//       constructed with `disabled: true` (AC2 — case 23 hook-spy strengthening).
+//   (b) capture the `onDragStart` / `onDragEnd` props passed to `DndContext` so test
+//       cases 24-26, 28, 30 can synthesise dispatcher events without paying for the
+//       full DnD-kit pointer-event simulation (brittle in JSDOM per AC10 cases 21-22).
+// The mock still renders all children so the rest of the component tree mounts normally.
+//
+// `dndKitTestHandle` is a module-level singleton the tests reach into. `beforeEach`
+// clears it so cross-test pollution can't leak the previous render's callbacks.
+const dndKitTestHandle: {
+  onDragStart?: (event: { active: { id: string } }) => void;
+  onDragEnd?: (event: { active: { id: string }; over: { id: string } | null }) => void;
+  useDraggableCalls: Array<{ id: string; disabled?: boolean }>;
+} = { useDraggableCalls: [] };
+
+vi.mock('@dnd-kit/core', () => {
+  return {
+    DndContext: ({
+      children,
+      onDragStart,
+      onDragEnd,
+    }: {
+      children: React.ReactNode;
+      onDragStart?: (event: { active: { id: string } }) => void;
+      onDragEnd?: (event: { active: { id: string }; over: { id: string } | null }) => void;
+    }) => {
+      dndKitTestHandle.onDragStart = onDragStart;
+      dndKitTestHandle.onDragEnd = onDragEnd;
+      return <>{children}</>;
+    },
+    DragOverlay: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    closestCenter: vi.fn(),
+    useSensor: vi.fn(),
+    useSensors: vi.fn(() => []),
+    PointerSensor: vi.fn(),
+    useDraggable: ({ id, disabled }: { id: string; disabled?: boolean }) => {
+      dndKitTestHandle.useDraggableCalls.push({ id, disabled });
+      return {
+        attributes: {},
+        listeners: {},
+        setNodeRef: () => undefined,
+        transform: null,
+      };
+    },
+    useDroppable: () => ({
+      setNodeRef: () => undefined,
+      isOver: false,
+    }),
+  };
+});
+
 vi.mock('@/services/speakerPoolService', () => ({
   speakerPoolService: {
     sendInvitation: vi.fn(),
@@ -148,6 +222,9 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
     vi.clearAllMocks();
+    dndKitTestHandle.onDragStart = undefined;
+    dndKitTestHandle.onDragEnd = undefined;
+    dndKitTestHandle.useDraggableCalls = [];
   });
 
   afterEach(() => {
@@ -169,6 +246,9 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
           now={overrides.now}
           onLogOutreach={overrides.onLogOutreach}
           onPromoteSpeaker={overrides.onPromoteSpeaker}
+          onSendInvitation={overrides.onSendInvitation}
+          onEnterContent={overrides.onEnterContent}
+          onReviewContent={overrides.onReviewContent}
           onSpeakerClick={overrides.onSpeakerClick}
           onAssignSessionSlot={overrides.onAssignSessionSlot}
         />
@@ -473,6 +553,295 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
     renderLanes([speaker]);
     const lane = screen.getByTestId('status-lane-identified');
     expect(within(lane).getByTestId(`speaker-card-${speaker.id}`)).toBeInTheDocument();
+  });
+
+  // Story 11.D.4 — drag-drop dispatcher coverage (AC10 cases 21-30).
+  describe('Story 11.D.4 — guided drag-drop dispatcher', () => {
+    // Case 23 — DECLINED card is not draggable.
+    // Per AC2 + Review-patch P2, this assertion is anchored on the hook-spy contract
+    // (`useDraggable({ disabled: true })`) rather than the brittle computed-cursor
+    // approach an earlier revision used. A future contributor who removes the
+    // `disabled` flag on the DECLINED branch will see this test fail.
+    it('should_disableDraggable_when_speakerIsDeclined', () => {
+      const declined = makeSpeaker('DECLINED');
+      const identified = makeSpeaker('IDENTIFIED', { id: 's-id-1' });
+      renderLanes([declined, identified]);
+      const lane = screen.getByTestId('status-lane-declined');
+      expect(within(lane).getByTestId(`speaker-card-${declined.id}`)).toBeInTheDocument();
+
+      // Hook-spy contract: useDraggable was called once per card. The DECLINED
+      // card must carry `disabled: true`; the IDENTIFIED card must NOT.
+      const declinedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === declined.id);
+      const identifiedCall = dndKitTestHandle.useDraggableCalls.find((c) => c.id === identified.id);
+      expect(declinedCall).toBeDefined();
+      expect(declinedCall?.disabled).toBe(true);
+      expect(identifiedCall).toBeDefined();
+      expect(identifiedCall?.disabled).toBe(false);
+    });
+
+    // Synthesise a drop event by invoking the captured `handleDragEnd` from the
+    // SpeakerStatusLanes' DndContext. The unit-test layer bypasses pointer-event
+    // simulation per AC10 cases 21-22 (deferred to Playwright). The captured handler
+    // is the same callback wired into the production DndContext.
+    //
+    // Wrapped in `act()` so the React state updates inside `handleDragEnd` (mutation
+    // fire, dialog state change, drop-toast state change) flush before the test
+    // assertions run.
+    const triggerDrop = (fromId: string, toLane: string) => {
+      if (!dndKitTestHandle.onDragEnd) {
+        throw new Error('DndContext onDragEnd was not captured — was renderLanes() called first?');
+      }
+      act(() => {
+        dndKitTestHandle.onDragEnd!({
+          active: { id: fromId },
+          over: { id: toLane },
+        });
+      });
+    };
+
+    const triggerDragStart = (speakerId: string) => {
+      if (!dndKitTestHandle.onDragStart) {
+        throw new Error('DndContext onDragStart was not captured');
+      }
+      act(() => {
+        dndKitTestHandle.onDragStart!({ active: { id: speakerId } });
+      });
+    };
+
+    // Case 24 — legal-direct drop (INVITED → ACCEPTED is the only legal-direct today).
+    // Fires `updateStatusMutation` with the right (speakerId, newStatus). The mutation
+    // calls into `speakerStatusService.updateStatus`; we wait for that mock to fire,
+    // which proves the mutation was dispatched (TanStack Query schedules the mutationFn
+    // microtask-asynchronously).
+    it('should_fireUpdateStatusMutation_forLegalDirectDrop', async () => {
+      const { speakerStatusService } = await import('@/services/speakerStatusService');
+      const updateStatus = vi.mocked(speakerStatusService.updateStatus);
+      updateStatus.mockResolvedValue({} as never);
+
+      const invited = makeSpeaker('INVITED');
+      renderLanes([invited]);
+
+      triggerDrop(invited.id, 'ACCEPTED');
+
+      await waitFor(() => {
+        expect(updateStatus).toHaveBeenCalledTimes(1);
+      });
+      // (Direct-drop path uses no reason; only (eventCode, speakerId, newStatus).)
+      expect(updateStatus).toHaveBeenCalledWith(eventCode, invited.id, 'ACCEPTED', undefined);
+    });
+
+    // Case 25 — legal-input drops invoke the corresponding modal callback. One case
+    // per modal-kind, matching `classifyDrop`'s five legal-input branches.
+    describe('case 25 — legal-input drops invoke the corresponding modal callback', () => {
+      it('should_invokeOnLogOutreach_when_IDENTIFIEDtoCONTACTEDdrop', () => {
+        const onLogOutreach = vi.fn();
+        const identified = makeSpeaker('IDENTIFIED');
+        renderLanes([identified], { onLogOutreach });
+
+        triggerDrop(identified.id, 'CONTACTED');
+
+        expect(onLogOutreach).toHaveBeenCalledTimes(1);
+        expect(onLogOutreach).toHaveBeenCalledWith(expect.objectContaining({ id: identified.id }));
+      });
+
+      it('should_invokeOnPromoteSpeaker_when_CONTACTEDtoREADYdrop', () => {
+        const onPromoteSpeaker = vi.fn();
+        const contacted = makeSpeaker('CONTACTED');
+        renderLanes([contacted], { onPromoteSpeaker });
+
+        triggerDrop(contacted.id, 'READY');
+
+        expect(onPromoteSpeaker).toHaveBeenCalledTimes(1);
+        expect(onPromoteSpeaker).toHaveBeenCalledWith(
+          expect.objectContaining({ id: contacted.id })
+        );
+      });
+
+      it('should_invokeOnSendInvitation_when_READYtoINVITEDdrop_andCapacityNotReached', () => {
+        const onSendInvitation = vi.fn();
+        const ready = makeSpeaker('READY');
+        // No slot-capacity pressure → goes through the legal-input branch.
+        renderLanes([ready], { onSendInvitation, maxSlots: 8 });
+
+        triggerDrop(ready.id, 'INVITED');
+
+        expect(onSendInvitation).toHaveBeenCalledTimes(1);
+        expect(onSendInvitation).toHaveBeenCalledWith(expect.objectContaining({ id: ready.id }));
+      });
+
+      it('should_invokeOnEnterContent_when_ACCEPTEDtoCONTENT_SUBMITTEDdrop', () => {
+        const onEnterContent = vi.fn();
+        const accepted = makeSpeaker('ACCEPTED');
+        renderLanes([accepted], { onEnterContent });
+
+        triggerDrop(accepted.id, 'CONTENT_SUBMITTED');
+
+        expect(onEnterContent).toHaveBeenCalledTimes(1);
+        expect(onEnterContent).toHaveBeenCalledWith(expect.objectContaining({ id: accepted.id }));
+      });
+
+      it('should_invokeOnReviewContent_when_CONTENT_SUBMITTEDtoQUALITY_REVIEWEDdrop', () => {
+        const onReviewContent = vi.fn();
+        const contentSubmitted = makeSpeaker('CONTENT_SUBMITTED');
+        renderLanes([contentSubmitted], { onReviewContent });
+
+        triggerDrop(contentSubmitted.id, 'QUALITY_REVIEWED');
+
+        expect(onReviewContent).toHaveBeenCalledTimes(1);
+        expect(onReviewContent).toHaveBeenCalledWith(
+          expect.objectContaining({ id: contentSubmitted.id })
+        );
+      });
+    });
+
+    // Case 26 — legal-decline drop opens the StatusChangeDialog with the new status
+    // wired through. The dialog itself enforces the required-reason guard (case 29
+    // lives in StatusChangeDialog.test.tsx).
+    it('should_openStatusChangeDialog_withNewStatusDECLINED_when_legalDeclineDrop', async () => {
+      const accepted = makeSpeaker('ACCEPTED');
+      renderLanes([accepted]);
+
+      // Dialog is absent before the drop.
+      expect(screen.queryByTestId('status-change-dialog')).not.toBeInTheDocument();
+
+      triggerDrop(accepted.id, 'DECLINED');
+
+      // After dispatch, the dialog mounts (MUI portal → document.body) and exposes
+      // its testid. Use findByTestId to await the portal mount.
+      const dialog = await screen.findByTestId('status-change-dialog');
+      expect(dialog).toBeInTheDocument();
+      // The reason field is the dialog's input — its presence confirms the required-
+      // reason variant of the dialog is mounted for a DECLINED target.
+      expect(screen.getByTestId('status-change-reason')).toBeInTheDocument();
+    });
+
+    // Case 27 — slot-capacity gating produces a toast on READY → INVITED drop.
+    // (The drop simulation is brittle in JSDOM; assert the i18n key + slot-capacity math
+    // landed correctly via the disabled-button tooltip, which the dispatcher reuses.)
+    it('should_reuseSlotCapacityTooltipKey_forBlockedReadyToInvitedDrop', async () => {
+      const user = userEvent.setup();
+      const ready = makeSpeaker('READY');
+      const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
+      const invited = makeSpeaker('INVITED', { id: 'inv-1' });
+      renderLanes([ready, accepted, invited], { maxSlots: 2 });
+
+      // The disabled-button tooltip is the same surface the AC6 toast reuses.
+      const tooltipWrapper = screen.getByTestId(`primary-action-tooltip-${ready.id}`);
+      await user.hover(tooltipWrapper);
+      const tooltip = await screen.findByRole('tooltip');
+      expect(tooltip).toHaveTextContent(/Slot capacity reached/);
+    });
+
+    // Case 27 (drop-path) — the dispatcher's `legal-blocked-slot` branch also surfaces
+    // the slot-capacity message via the `kanban-drop-toast` Snackbar. Drop a READY
+    // card on INVITED while capacity is reached; the toast must mount with the
+    // parameter-interpolated `slotCapacityTooltip` text.
+    it('should_showSlotCapacityToast_when_droppingReadyOnInvited_andCapacityReached', async () => {
+      const ready = makeSpeaker('READY');
+      const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
+      const invited = makeSpeaker('INVITED', { id: 'inv-1' });
+      renderLanes([ready, accepted, invited], { maxSlots: 2 });
+
+      triggerDrop(ready.id, 'INVITED');
+
+      // Snackbar mounts to the DOM only when `open: true`; the open state flips inside
+      // the captured handler under act(). Use findBy to await the mount.
+      const toast = await screen.findByTestId('kanban-drop-toast');
+      expect(toast).toHaveTextContent(/Slot capacity reached/);
+    });
+
+    // Case 28 — drag-end resets kanban drag context + active speaker.
+    // Strategy: render a draggable card, fire `onDragStart` (no-op for this state
+    // assertion — the source-lane card still lives in its source lane DOM), then
+    // fire `onDragEnd` with a no-op drop (over === null) and assert that:
+    //   (a) no `data-active-speaker` attribute lingers anywhere (DragOverlay child
+    //       cleared because activeSpeaker → null), and
+    //   (b) the source lane still contains the card.
+    // Because dnd-kit is mocked, internal state changes happen synchronously inside
+    // React act() during the captured-handler invocation, so we don't need to await.
+    it('should_resetKanbanDragContext_andActiveSpeaker_onDragEnd', () => {
+      const ready = makeSpeaker('READY');
+      renderLanes([ready]);
+
+      // Fire drag-start to populate `activeSpeaker` + `dragContext`. During the drag,
+      // the source lane carries `data-drop-state="source"` (line 895 in SpeakerStatusLanes).
+      triggerDragStart(ready.id);
+      expect(screen.getByTestId('status-lane-ready').getAttribute('data-drop-state')).toBe(
+        'source'
+      );
+
+      // Fire drag-end with no `over` target → resetDragState() runs, function early-exits.
+      // Wrap in act() so the state updates that reset both `activeSpeaker` and
+      // `dragContext` are flushed before we assert.
+      act(() => {
+        dndKitTestHandle.onDragEnd!({
+          active: { id: ready.id },
+          over: null,
+        });
+      });
+
+      // (a) Source lane's drop-state attribute has reset to 'idle' (drag context
+      //     cleared → activeSourceStatus === null → lane no longer marked as source).
+      expect(screen.getByTestId('status-lane-ready').getAttribute('data-drop-state')).toBe('idle');
+
+      // (b) Card is still in its source lane (no spurious mutation fired).
+      const sourceLane = screen.getByTestId('status-lane-ready');
+      expect(within(sourceLane).getByTestId(`speaker-card-${ready.id}`)).toBeInTheDocument();
+
+      // (c) No drop-toast — neither illegal nor slot-capacity branches fired.
+      expect(screen.queryByTestId('kanban-drop-toast')).not.toBeInTheDocument();
+    });
+
+    // Case 30 — dropping on the same lane is a no-op.
+    // The dispatcher's early-exit guard `active.id === over.id || speaker.status === newStatus`
+    // must short-circuit BEFORE any modal callback or mutation. Drop a CONTACTED
+    // speaker on the CONTACTED lane → no `onPromoteSpeaker`, no toast, no mutation.
+    it('should_noop_when_droppingOnSameLane', async () => {
+      const { speakerStatusService } = await import('@/services/speakerStatusService');
+      const updateStatus = vi.mocked(speakerStatusService.updateStatus);
+
+      const onLogOutreach = vi.fn();
+      const onPromoteSpeaker = vi.fn();
+      const onSendInvitation = vi.fn();
+      const onEnterContent = vi.fn();
+      const onReviewContent = vi.fn();
+      const contacted = makeSpeaker('CONTACTED');
+      renderLanes([contacted], {
+        onLogOutreach,
+        onPromoteSpeaker,
+        onSendInvitation,
+        onEnterContent,
+        onReviewContent,
+      });
+
+      triggerDrop(contacted.id, 'CONTACTED');
+
+      // No modal callback fired.
+      expect(onLogOutreach).not.toHaveBeenCalled();
+      expect(onPromoteSpeaker).not.toHaveBeenCalled();
+      expect(onSendInvitation).not.toHaveBeenCalled();
+      expect(onEnterContent).not.toHaveBeenCalled();
+      expect(onReviewContent).not.toHaveBeenCalled();
+      // No mutation fired.
+      expect(updateStatus).not.toHaveBeenCalled();
+      // No toast — neither the illegal-drop nor slot-capacity branches ran.
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    // Sanity guard — the SpeakerCard's onClick handler still opens the drawer when the
+    // primary action is not a button click. (Regression guard against the Story 11.D.4
+    // dispatch path accidentally swallowing card click handlers.)
+    it('should_callOnSpeakerClick_when_speakerCardBodyClicked_forDeclinedSpeaker', async () => {
+      const user = userEvent.setup();
+      const onSpeakerClick = vi.fn();
+      const speaker = makeSpeaker('DECLINED');
+      renderLanes([speaker], { onSpeakerClick });
+      const card = screen.getByTestId(`speaker-card-${speaker.id}`);
+      await user.click(card);
+      // DECLINED has a View Details primary-action button which calls onSpeakerClick;
+      // clicking the card body itself ALSO calls onSpeakerClick. Both paths funnel here.
+      expect(onSpeakerClick).toHaveBeenCalled();
+    });
   });
 });
 

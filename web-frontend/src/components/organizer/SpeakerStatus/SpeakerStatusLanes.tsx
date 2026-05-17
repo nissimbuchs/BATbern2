@@ -11,7 +11,15 @@
  * is `docs/plans/speaker-workflow-refactor.md` §8.2).
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Grid,
   Card,
@@ -26,7 +34,10 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
+import {
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  Lock as LockIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -49,10 +60,12 @@ import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import {
+  computeSlotCapacity,
   getPrimaryAction,
   type PrimaryActionCallbacks,
   type SlotCapacityState,
 } from './getPrimaryAction';
+import { classifyDrop, getRejectionExplanation, isLegalTransition } from './speakerTransitions';
 import {
   DEFAULT_KANBAN_THRESHOLDS,
   attentionMaxSeverity,
@@ -92,12 +105,17 @@ export interface SpeakerStatusLanesProps {
    */
   now?: Date;
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
-  onIdentifiedToContacted?: (speaker: SpeakerPoolEntry) => void;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
   /** Opens MarkContactedModal at parent. Story 11.D.2 — IDENTIFIED card button. */
   onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
   /** Opens PromoteSpeakerDialog at parent. Story 11.D.2 — CONTACTED card button. */
   onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  /** Lifted send-invitation handler. Story 11.D.4 — READY card button + READY→INVITED drop. */
+  onSendInvitation?: (speaker: SpeakerPoolEntry) => void;
+  /** Opens drawer pre-positioned at the on-behalf content form. Story 11.D.4 — ACCEPTED card button + ACCEPTED→CONTENT_SUBMITTED drop. */
+  onEnterContent?: (speaker: SpeakerPoolEntry) => void;
+  /** Opens drawer pre-positioned at the Quality Review sub-view. Story 11.D.4 — CONTENT_SUBMITTED card button + CONTENT_SUBMITTED→QUALITY_REVIEWED drop. */
+  onReviewContent?: (speaker: SpeakerPoolEntry) => void;
   /** Navigates to slot-assignment page. Story 11.D.2 — QUALITY_REVIEWED (unassigned). */
   onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -138,6 +156,29 @@ const POST_ACCEPTANCE_LANES: PostAcceptanceLane[] = [
 ];
 
 const STATUS_LANES: KanbanLane[] = [...OUTREACH_LANES, ...POST_ACCEPTANCE_LANES];
+
+/**
+ * Story 11.D.4 — drag-state context broadcast to every lane during a drag (AC2).
+ *
+ * - `activeSourceStatus`: the source lane the active card came from (null when no drag is in progress).
+ * - `validTargets`: the legal destinations for the current drag, derived once at `handleDragStart`.
+ *
+ * Lanes consume both: `validTargets.has(status)` enables the green halo; absence + a
+ * non-source lane enables the dim + lock icon.
+ */
+interface KanbanDragContextValue {
+  activeSourceStatus: KanbanLane | null;
+  validTargets: ReadonlySet<KanbanLane>;
+}
+// Review patch — freeze the default value's `validTargets` so a future contributor
+// can't accidentally `.add()` into the shared singleton at module scope.
+const EMPTY_VALID_TARGETS: ReadonlySet<KanbanLane> = Object.freeze(
+  new Set<KanbanLane>()
+) as ReadonlySet<KanbanLane>;
+const KanbanDragContext = createContext<KanbanDragContextValue>({
+  activeSourceStatus: null,
+  validTargets: EMPTY_VALID_TARGETS,
+});
 
 /**
  * Story 11.D.3 — Build the "needs attention" sub-line metadata for a single column.
@@ -291,10 +332,12 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventDate,
   now: nowProp,
   onStatusChange,
-  onIdentifiedToContacted,
   onSpeakerClick,
   onLogOutreach,
   onPromoteSpeaker,
+  onSendInvitation,
+  onEnterContent,
+  onReviewContent,
   onAssignSessionSlot,
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
@@ -308,6 +351,19 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   }>({ open: false });
 
   const [activeSpeaker, setActiveSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Story 11.D.4 — drag-state context value. Recomputed only on drag start/end.
+  const [dragContext, setDragContext] = useState<KanbanDragContextValue>({
+    activeSourceStatus: null,
+    validTargets: new Set<KanbanLane>(),
+  });
+
+  // Story 11.D.4 — drop-toast snackbar (illegal drops + slot-capacity rejection).
+  // Reuses the existing Snackbar surface from invitation feedback (lines below).
+  const [dropToast, setDropToast] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
 
   // Story 11.D.3 — sub-line click-to-filter (per-column local UI state). Narrowed to
   // `KanbanLane` so legacy `SpeakerWorkflowState` members can't slip through.
@@ -361,19 +417,10 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   // as `speakers` is the complete event-scoped pool (it is today). If this query ever paginates,
   // switch to a server-side count endpoint to avoid undercounting off-page.
   // Post-acceptance states (CONTENT_SUBMITTED, QUALITY_REVIEWED) still occupy slots per ADR-009.
-  const slotCapacity: SlotCapacityState = useMemo(() => {
-    const acceptedCount = speakers.filter((s) =>
-      ['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'].includes(s.status)
-    ).length;
-    const invitedCount = speakers.filter((s) => s.status === 'INVITED').length;
-    const max = maxSlots ?? 0;
-    return {
-      reached: max > 0 && acceptedCount + invitedCount >= max,
-      invited: invitedCount,
-      accepted: acceptedCount,
-      slots: max,
-    };
-  }, [speakers, maxSlots]);
+  const slotCapacity: SlotCapacityState = useMemo(
+    () => computeSlotCapacity(speakers, maxSlots),
+    [speakers, maxSlots]
+  );
 
   // Story 11.D.3 — Per-state "needs attention" sub-line data. Computed at the parent
   // so a single source of truth drives both the visible count + the click-to-filter
@@ -472,17 +519,46 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         onStatusChange(variables.speakerId, variables.newStatus);
       }
     },
+    // Review patch — surface backend rejections (e.g. SLOT_CAPACITY_REACHED 409 on
+    // INVITED → ACCEPTED legal-direct drops). Previously the legal-direct branch fired
+    // the mutation with no error handler; a 409 closed silently and the kanban
+    // didn't refresh. Reuses the same `dropToast` Snackbar AC3/AC6 use.
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : t('organizer:speakerCard.statusUpdateFailed', {
+              defaultValue: 'Could not update speaker status.',
+            });
+      setDropToast({ open: true, message });
+    },
   });
 
   const handleDragStart = (event: DragStartEvent) => {
     const speakerId = event.active.id as string;
     const speaker = speakers.find((s) => s.id === speakerId);
     setActiveSpeaker(speaker || null);
+
+    // Story 11.D.4 — broadcast legal destinations to every lane.
+    if (speaker) {
+      const sourceStatus = speaker.status as KanbanLane;
+      const validTargets = new Set<KanbanLane>(
+        STATUS_LANES.filter((target) => isLegalTransition(speaker.status, target))
+      );
+      setDragContext({ activeSourceStatus: sourceStatus, validTargets });
+    }
   };
+
+  // Story 11.D.4 — Reset drag context on every drop / cancel path (the four return
+  // points in `handleDragEnd` plus the explicit cancel).
+  const resetDragState = useCallback(() => {
+    setActiveSpeaker(null);
+    setDragContext({ activeSourceStatus: null, validTargets: new Set<KanbanLane>() });
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveSpeaker(null);
+    resetDragState();
 
     if (!over || active.id === over.id) {
       return;
@@ -492,30 +568,70 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     const newStatus = over.id as SpeakerWorkflowState;
     const speaker = speakers.find((s) => s.id === speakerId);
 
-    if (speaker && speaker.status !== newStatus) {
-      if (speaker.status === 'IDENTIFIED' && newStatus === 'CONTACTED') {
-        updateStatusMutation.mutate(
-          {
-            speakerId: speaker.id,
-            newStatus,
-          },
-          {
-            onSuccess: () => {
-              if (onIdentifiedToContacted) {
-                onIdentifiedToContacted({ ...speaker, status: newStatus });
-              }
-            },
-          }
-        );
-      } else if (newStatus === 'CONTENT_SUBMITTED' || newStatus === 'QUALITY_REVIEWED') {
-        if (onSpeakerClick) onSpeakerClick(speaker);
-      } else {
-        setDialogState({
+    if (!speaker || speaker.status === newStatus) {
+      return;
+    }
+
+    // Story 11.D.4 — single dispatcher driven by `classifyDrop` (AC4).
+    const intent = classifyDrop(speaker.status, newStatus, slotCapacity.reached);
+    switch (intent.kind) {
+      case 'illegal':
+        // AC3 — invalid-drop toast with state-machine explanation.
+        setDropToast({
           open: true,
-          speaker,
-          newStatus,
+          message: getRejectionExplanation(speaker.status, newStatus, t),
         });
+        return;
+
+      case 'legal-blocked-slot':
+        // AC6 — slot-gate consistency. Reuses the 11.D.2 i18n key verbatim.
+        // Slot-capacity is mirrored from the in-page derivation at SpeakerStatusLanes;
+        // the authoritative gate is SpeakerWorkflowService.transition(INVITED) on the
+        // backend (Story 11.B.2). A future contributor adding pagination must also
+        // surface backend 409s here.
+        setDropToast({
+          open: true,
+          message: t('organizer:speakerCard.slotCapacityTooltip', {
+            invited: slotCapacity.invited,
+            accepted: slotCapacity.accepted,
+            slots: slotCapacity.slots,
+          }),
+        });
+        return;
+
+      case 'legal-decline':
+        // AC5 — open StatusChangeDialog; required-reason guard applies inside dialog.
+        setDialogState({ open: true, speaker, newStatus });
+        return;
+
+      case 'legal-input': {
+        // AC4 — open the same rich modal the primary-action button opens.
+        const cb = ((): ((s: SpeakerPoolEntry) => void) | undefined => {
+          switch (intent.modal) {
+            case 'mark-contacted':
+              return onLogOutreach;
+            case 'promote':
+              return onPromoteSpeaker;
+            case 'invitation':
+              return onSendInvitation;
+            case 'content-form':
+              return onEnterContent;
+            case 'quality-review':
+              return onReviewContent;
+            default:
+              return undefined;
+          }
+        })();
+        if (cb) {
+          cb(speaker);
+        }
+        return;
       }
+
+      case 'legal-direct':
+        // Today only INVITED → ACCEPTED. Fire the mutation; no reason needed.
+        updateStatusMutation.mutate({ speakerId: speaker.id, newStatus });
+        return;
     }
   };
 
@@ -575,96 +691,122 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={resetDragState}
       >
-        <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-          {/* Outreach pipeline (IDENTIFIED → INVITED) */}
-          <Grid container spacing={2}>
-            {OUTREACH_LANES.map((status) => (
-              <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
-                <StatusLane
-                  status={status}
-                  speakers={speakersByStatus[status] || []}
-                  sessions={sessions}
-                  eventCode={eventCode}
-                  color={STATUS_COLORS[status]}
-                  organizers={organizers}
-                  slotCapacity={slotCapacity}
-                  attentionSubline={attentionSublines[status] ?? null}
-                  filterActive={attentionFilter === status}
-                  onSublineClick={handleSublineClick}
-                  eventDate={parsedEventDate}
-                  now={now}
-                  onSpeakerClick={handleSpeakerClick}
-                  onLogOutreach={onLogOutreach}
-                  onPromoteSpeaker={onPromoteSpeaker}
-                  onAssignSessionSlot={onAssignSessionSlot}
-                />
-              </Grid>
-            ))}
-          </Grid>
+        <KanbanDragContext.Provider value={dragContext}>
+          <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+            {/* Outreach pipeline (IDENTIFIED → INVITED) */}
+            <Grid container spacing={2}>
+              {OUTREACH_LANES.map((status) => (
+                <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
+                  <StatusLane
+                    status={status}
+                    speakers={speakersByStatus[status] || []}
+                    sessions={sessions}
+                    eventCode={eventCode}
+                    color={STATUS_COLORS[status]}
+                    organizers={organizers}
+                    slotCapacity={slotCapacity}
+                    attentionSubline={attentionSublines[status] ?? null}
+                    filterActive={attentionFilter === status}
+                    onSublineClick={handleSublineClick}
+                    eventDate={parsedEventDate}
+                    now={now}
+                    onSpeakerClick={handleSpeakerClick}
+                    onLogOutreach={onLogOutreach}
+                    onPromoteSpeaker={onPromoteSpeaker}
+                    onSendInvitation={onSendInvitation}
+                    onEnterContent={onEnterContent}
+                    onReviewContent={onReviewContent}
+                    onAssignSessionSlot={onAssignSessionSlot}
+                  />
+                </Grid>
+              ))}
+            </Grid>
 
-          {/* Post-acceptance pipeline (ACCEPTED → DECLINED) */}
-          <Grid container spacing={2}>
-            {POST_ACCEPTANCE_LANES.map((status) => (
-              <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
-                <StatusLane
-                  status={status}
-                  speakers={speakersByStatus[status] || []}
-                  sessions={sessions}
-                  eventCode={eventCode}
-                  color={STATUS_COLORS[status]}
-                  organizers={organizers}
-                  slotCapacity={slotCapacity}
-                  attentionSubline={attentionSublines[status] ?? null}
-                  filterActive={attentionFilter === status}
-                  onSublineClick={handleSublineClick}
-                  eventDate={parsedEventDate}
-                  now={now}
-                  onSpeakerClick={handleSpeakerClick}
-                  onLogOutreach={onLogOutreach}
-                  onPromoteSpeaker={onPromoteSpeaker}
-                  onAssignSessionSlot={onAssignSessionSlot}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </Stack>
+            {/* Post-acceptance pipeline (ACCEPTED → DECLINED) */}
+            <Grid container spacing={2}>
+              {POST_ACCEPTANCE_LANES.map((status) => (
+                <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
+                  <StatusLane
+                    status={status}
+                    speakers={speakersByStatus[status] || []}
+                    sessions={sessions}
+                    eventCode={eventCode}
+                    color={STATUS_COLORS[status]}
+                    organizers={organizers}
+                    slotCapacity={slotCapacity}
+                    attentionSubline={attentionSublines[status] ?? null}
+                    filterActive={attentionFilter === status}
+                    onSublineClick={handleSublineClick}
+                    eventDate={parsedEventDate}
+                    now={now}
+                    onSpeakerClick={handleSpeakerClick}
+                    onLogOutreach={onLogOutreach}
+                    onPromoteSpeaker={onPromoteSpeaker}
+                    onSendInvitation={onSendInvitation}
+                    onEnterContent={onEnterContent}
+                    onReviewContent={onReviewContent}
+                    onAssignSessionSlot={onAssignSessionSlot}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </Stack>
 
-        {/* Story 11.D.3 — visually-hidden aria-live region for filter-toggle SR feedback */}
-        <Box
-          aria-live="polite"
-          aria-atomic="true"
-          data-testid="speaker-lanes-filter-announcement"
-          sx={{
-            position: 'absolute',
-            width: 1,
-            height: 1,
-            padding: 0,
-            margin: -1,
-            overflow: 'hidden',
-            clip: 'rect(0, 0, 0, 0)',
-            whiteSpace: 'nowrap',
-            border: 0,
-          }}
-        >
-          {filterAnnouncement}
-        </Box>
+          {/* Story 11.D.3 — visually-hidden aria-live region for filter-toggle SR feedback */}
+          <Box
+            aria-live="polite"
+            aria-atomic="true"
+            data-testid="speaker-lanes-filter-announcement"
+            sx={{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              border: 0,
+            }}
+          >
+            {filterAnnouncement}
+          </Box>
 
-        <DragOverlay>
-          {activeSpeaker ? (
-            <SpeakerCard
-              speaker={activeSpeaker}
-              sessions={sessions}
-              eventCode={eventCode}
-              organizers={organizers}
-              slotCapacity={slotCapacity}
-              eventDate={parsedEventDate}
-              now={now}
-              isDragging
-            />
-          ) : null}
-        </DragOverlay>
+          <DragOverlay>
+            {activeSpeaker ? (
+              <SpeakerCard
+                speaker={activeSpeaker}
+                sessions={sessions}
+                eventCode={eventCode}
+                organizers={organizers}
+                slotCapacity={slotCapacity}
+                eventDate={parsedEventDate}
+                now={now}
+                isDragging
+              />
+            ) : null}
+          </DragOverlay>
+        </KanbanDragContext.Provider>
       </DndContext>
+
+      {/* Story 11.D.4 — invalid-drop / slot-capacity toast surface (AC3, AC6). */}
+      <Snackbar
+        open={dropToast.open}
+        autoHideDuration={6000}
+        onClose={() => setDropToast({ open: false, message: '' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        data-testid="kanban-drop-toast"
+      >
+        <Alert
+          onClose={() => setDropToast({ open: false, message: '' })}
+          severity="warning"
+          sx={{ width: '100%' }}
+        >
+          {dropToast.message}
+        </Alert>
+      </Snackbar>
 
       {/* Status Change Confirmation Dialog */}
       {dialogState.speaker && dialogState.newStatus && (
@@ -705,6 +847,12 @@ interface StatusLaneProps {
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
   onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
   onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — primary-action for READY card + drop-target callback. */
+  onSendInvitation?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — primary-action for ACCEPTED card + drop-target callback. */
+  onEnterContent?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — primary-action for CONTENT_SUBMITTED card + drop-target callback. */
+  onReviewContent?: (speaker: SpeakerPoolEntry) => void;
   onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
@@ -724,12 +872,23 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   onSpeakerClick,
   onLogOutreach,
   onPromoteSpeaker,
+  onSendInvitation,
+  onEnterContent,
+  onReviewContent,
   onAssignSessionSlot,
 }) => {
   const { t } = useTranslation(['organizer']);
   const { setNodeRef } = useDroppable({
     id: status,
   });
+
+  // Story 11.D.4 (AC2) — drag-state context drives halo / dim / lock styles.
+  const { activeSourceStatus, validTargets } = useContext(KanbanDragContext);
+  const isDragActive = activeSourceStatus !== null;
+  const isSourceLane = activeSourceStatus === status;
+  const isValidTarget = validTargets.has(status);
+  const showInvalidLock = isDragActive && !isValidTarget && !isSourceLane;
+  const showValidHalo = isDragActive && isValidTarget;
 
   // Story 11.D.3 — READY's "Slot capacity reached" sub-line is a global event-level
   // gate (not a per-card subset), so it renders as static, non-clickable text per
@@ -740,6 +899,9 @@ const StatusLane: React.FC<StatusLaneProps> = ({
     <Paper
       ref={setNodeRef}
       data-testid={`status-lane-${status.toLowerCase()}`}
+      data-drop-state={
+        showValidHalo ? 'valid' : showInvalidLock ? 'invalid' : isSourceLane ? 'source' : 'idle'
+      }
       sx={{
         p: 2,
         height: '100%',
@@ -748,6 +910,18 @@ const StatusLane: React.FC<StatusLaneProps> = ({
         flexDirection: 'column',
         backgroundColor: 'background.default',
         borderTop: `4px solid ${color}`,
+        // Story 11.D.4 AC2 — green halo on legal destinations during drag.
+        ...(showValidHalo && {
+          outline: '2px solid',
+          outlineColor: 'success.main',
+          outlineOffset: '-2px',
+          transition: 'outline-color 120ms ease',
+        }),
+        // Story 11.D.4 AC2 — dim + not-allowed cursor on invalid destinations.
+        ...(showInvalidLock && {
+          opacity: 0.4,
+          cursor: 'not-allowed',
+        }),
       }}
     >
       {/* Story 11.D.3 — Three-line header: title+count row, then optional sub-line.
@@ -761,11 +935,30 @@ const StatusLane: React.FC<StatusLaneProps> = ({
           >
             {t(`organizer:speakerStatus.${status}`)}
           </Typography>
-          <Chip
-            label={speakers.length}
-            size="small"
-            sx={{ backgroundColor: color, color: 'white' }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {/* Story 11.D.4 AC2 — lock icon on invalid destinations during drag. */}
+            {showInvalidLock && (
+              <Tooltip
+                title={t('organizer:kanbanDrag.invalidDestinationTooltip', {
+                  from: activeSourceStatus
+                    ? t(`organizer:speakerStatus.${activeSourceStatus}`)
+                    : '',
+                  to: t(`organizer:speakerStatus.${status}`),
+                })}
+              >
+                <LockIcon
+                  fontSize="small"
+                  color="action"
+                  data-testid={`status-lane-lock-${status.toLowerCase()}`}
+                />
+              </Tooltip>
+            )}
+            <Chip
+              label={speakers.length}
+              size="small"
+              sx={{ backgroundColor: color, color: 'white' }}
+            />
+          </Box>
         </Box>
         {attentionSubline &&
           (attentionSubline.clickable ? (
@@ -825,6 +1018,9 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               onSpeakerClick={onSpeakerClick}
               onLogOutreach={onLogOutreach}
               onPromoteSpeaker={onPromoteSpeaker}
+              onSendInvitation={onSendInvitation}
+              onEnterContent={onEnterContent}
+              onReviewContent={onReviewContent}
               onAssignSessionSlot={onAssignSessionSlot}
             />
           ))}
@@ -849,6 +1045,12 @@ interface SpeakerCardProps {
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
   onLogOutreach?: (speaker: SpeakerPoolEntry) => void;
   onPromoteSpeaker?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — READY card primary-action (lifted to parent for drag-end reuse). */
+  onSendInvitation?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — ACCEPTED card primary-action; opens drawer at Content sub-tab. */
+  onEnterContent?: (speaker: SpeakerPoolEntry) => void;
+  /** Story 11.D.4 — CONTENT_SUBMITTED card primary-action; opens drawer at Quality Review. */
+  onReviewContent?: (speaker: SpeakerPoolEntry) => void;
   onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
@@ -864,11 +1066,16 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   onSpeakerClick,
   onLogOutreach,
   onPromoteSpeaker,
+  onSendInvitation,
+  onEnterContent,
+  onReviewContent,
   onAssignSessionSlot,
 }) => {
   const { t, i18n } = useTranslation(['organizer']);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
+    // Story 11.D.4 AC2 — DECLINED is terminal; card is not draggable.
+    disabled: speaker.status === 'DECLINED',
   });
 
   // Send-invitation flow (READY → INVITED) — used by the primary-action button.
@@ -891,7 +1098,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   };
 
   const handleSendInvitation = async (speakerForInvite: SpeakerPoolEntry) => {
-    // Default response deadline = today + 30 days (matches OverviewTabPanel pattern).
+    // Default response deadline = today + 30 days (project convention).
     // SendInvitationRequest.responseDeadline is @NotNull @Future on the backend.
     const defaultDeadline = new Date();
     defaultDeadline.setDate(defaultDeadline.getDate() + 30);
@@ -950,11 +1157,16 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     : 'unknown';
   const chipColor = severityToChipColor(chipSeverity);
 
-  // Primary action mapping — AC1
+  // Primary action mapping — AC1.
+  // Story 11.D.4 — prefer the lifted `onSendInvitation` / `onEnterContent` / `onReviewContent`
+  // props (drag-end and card-click converge on the same handlers). Fall back to local
+  // `handleSendInvitation` / `onSpeakerClick` for back-compat with the legacy callers.
   const callbacks: PrimaryActionCallbacks = {
     onLogOutreach: onLogOutreach ?? (() => undefined),
     onPromoteSpeaker: onPromoteSpeaker ?? (() => undefined),
-    onSendInvitation: handleSendInvitation,
+    onSendInvitation: onSendInvitation ?? handleSendInvitation,
+    onEnterContent: onEnterContent ?? onSpeakerClick ?? (() => undefined),
+    onReviewContent: onReviewContent ?? onSpeakerClick ?? (() => undefined),
     onSpeakerClick: onSpeakerClick ?? (() => undefined),
     onAssignSessionSlot: onAssignSessionSlot ?? (() => undefined),
   };

@@ -1,14 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * On-behalf content submission form (Story 11.D.4 — AC8).
+ *
+ * Hosts inside the drawer's `drawerView === 'content-submission'` sub-view. The form
+ * collects:
+ *   - Speaker (user-autocomplete, required) — picked to resolve `speaker_pool.username`.
+ *   - Presentation title + abstract (required).
+ *   - Optional CV / short bio (max 5000 chars) — patched onto `User.bio` server-side.
+ *   - Optional speaker portrait (admin presigned-URL flow, `uploadProfilePictureForUser`).
+ *     Reuses the existing 3-phase upload helper in `userAccountApi.ts:391-...`.
+ *   - Optional presentation upload — DEFERRED: the speaker-portal materials upload uses
+ *     a magic-link `?token=` path that isn't accessible from the organizer surface; per
+ *     AC8 step 3 fallback this field is omitted until a dedicated organizer materials
+ *     endpoint is added. The `SubmitContentRequest.presentationUploadId` field is wired
+ *     and ready to accept the upload ID when that endpoint lands.
+ *
+ * The request body NO LONGER includes `username` — the 11.C.2 backend reads the
+ * resolved username from `speaker_pool` (set at provisioning time by Story 11.D.1's
+ * `PromoteSpeakerDialog`). Sending `username` to the strict backend returns 400.
+ */
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Box,
-  Typography,
-  IconButton,
-  Divider,
-  TextField,
-  Button,
-  Paper,
   Alert,
+  Avatar,
+  Box,
+  Button,
   CircularProgress,
+  Divider,
+  IconButton,
+  LinearProgress,
+  Paper,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +38,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
+import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import UserCreateEditModal from '@/components/organizer/UserManagement/UserCreateEditModal';
@@ -31,6 +54,8 @@ interface ContentSubmissionSubViewProps {
 }
 
 const MAX_ABSTRACT_LENGTH = 1000;
+const MAX_BIO_LENGTH = 5000;
+const MAX_PORTRAIT_BYTES = 5 * 1024 * 1024; // 5 MB per users-api.openapi.yml admin endpoint contract
 
 export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> = ({
   speaker,
@@ -38,18 +63,23 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   onBack,
   onClose,
 }) => {
-  const { t } = useTranslation('organizer');
+  const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
 
   const [selectedUser, setSelectedUser] = useState<UserSearchResponse | null>(null);
   const [presentationTitle, setPresentationTitle] = useState('');
   const [presentationAbstract, setPresentationAbstract] = useState('');
+  const [bio, setBio] = useState('');
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
+  const [portraitUploadProgress, setPortraitUploadProgress] = useState<number | null>(null);
+  const [portraitUploadError, setPortraitUploadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserSearchResponse | null>(null);
 
   const lastPrefilledSpeakerIdRef = useRef<string | null>(null);
+  const portraitFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const submitContentMutation = useMutation({
     mutationFn: (request: SubmitContentRequest) =>
@@ -72,9 +102,12 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
             const firstName = speaker.speakerName.split(' ')[0];
             users = await searchUsers(firstName, 20);
           }
-          const speakers = users.filter((u) => u.roles?.includes('SPEAKER'));
-          if (speakers.length > 0) {
-            setSelectedUser(speakers[0]);
+          const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
+          if (candidates.length > 0) {
+            setSelectedUser(candidates[0]);
+            if (candidates[0].profilePictureUrl) {
+              setProfilePictureUrl(candidates[0].profilePictureUrl);
+            }
           }
           if (speaker.initialPresentationTitle) {
             setPresentationTitle(speaker.initialPresentationTitle);
@@ -92,6 +125,10 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     setSelectedUser(null);
     setPresentationTitle('');
     setPresentationAbstract('');
+    setBio('');
+    setProfilePictureUrl(undefined);
+    setPortraitUploadError(null);
+    setPortraitUploadProgress(null);
     setErrors({});
     lastPrefilledSpeakerIdRef.current = null;
   };
@@ -99,20 +136,49 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!selectedUser) {
-      newErrors.username = t('speakerContent.errors.usernameRequired');
+      newErrors.username = t('organizer:speakerContent.errors.usernameRequired');
     }
     if (!presentationTitle.trim()) {
-      newErrors.presentationTitle = t('speakerContent.errors.titleRequired');
+      newErrors.presentationTitle = t('organizer:speakerContent.errors.titleRequired');
     }
     if (!presentationAbstract.trim()) {
-      newErrors.presentationAbstract = t('speakerContent.errors.abstractRequired');
+      newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractRequired');
     } else if (presentationAbstract.length > MAX_ABSTRACT_LENGTH) {
-      newErrors.presentationAbstract = t('speakerContent.errors.abstractTooLong', {
+      newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractTooLong', {
         max: MAX_ABSTRACT_LENGTH,
       });
     }
+    // Review patch — validate against the trimmed value (we ship the trimmed string
+    // to the backend, so a 4995-char bio + 10 trailing spaces should pass, not fail).
+    if (bio.trim().length > MAX_BIO_LENGTH) {
+      newErrors.bio = t('organizer:speakerContent.errors.bioTooLong', { max: MAX_BIO_LENGTH });
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePortraitChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // Allow re-selecting the same file after an error.
+    if (!file || !selectedUser) return;
+    if (file.size > MAX_PORTRAIT_BYTES) {
+      setPortraitUploadError(t('organizer:speakerContent.portraitUploadError'));
+      return;
+    }
+    setPortraitUploadError(null);
+    setPortraitUploadProgress(0);
+    try {
+      const url = await uploadProfilePictureForUser(selectedUser.id, file, (pct) =>
+        setPortraitUploadProgress(pct)
+      );
+      setProfilePictureUrl(url);
+    } catch (err) {
+      setPortraitUploadError(
+        err instanceof Error ? err.message : t('organizer:speakerContent.portraitUploadError')
+      );
+    } finally {
+      setPortraitUploadProgress(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -127,11 +193,19 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
       }
     }
 
-    submitContentMutation.mutate({
-      username: selectedUser.id,
+    // Story 11.D.4 AC8 — request body shape matches the 11.C.2 backend DTO.
+    // CRITICAL: NO `username` field (the strict backend rejects unknown properties).
+    const requestBody: SubmitContentRequest = {
       presentationTitle: presentationTitle.trim(),
       presentationAbstract: presentationAbstract.trim(),
-    });
+    };
+    if (bio.trim()) requestBody.bio = bio.trim();
+    if (profilePictureUrl) requestBody.profilePictureUrl = profilePictureUrl;
+    // presentationUploadId is wired and ready for a future organizer-side materials
+    // upload endpoint (per AC8 step 3 fallback — speaker-portal materials flow uses a
+    // magic-link `?token=` that isn't reachable from the organizer drawer today).
+
+    submitContentMutation.mutate(requestBody);
   };
 
   const handleEditSpeaker = () => {
@@ -161,51 +235,56 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
         profilePictureUrl: createdOrUpdatedUser.profilePictureUrl,
         companyId: createdOrUpdatedUser.companyId,
       });
+      if (createdOrUpdatedUser.profilePictureUrl) {
+        setProfilePictureUrl(createdOrUpdatedUser.profilePictureUrl);
+      }
     }
     handleUserModalClose();
   };
 
-  const remainingChars = MAX_ABSTRACT_LENGTH - presentationAbstract.length;
-  const isAbstractTooLong = remainingChars < 0;
+  const remainingAbstractChars = MAX_ABSTRACT_LENGTH - presentationAbstract.length;
+  const isAbstractTooLong = remainingAbstractChars < 0;
+  const remainingBioChars = MAX_BIO_LENGTH - bio.length;
+  const isBioTooLong = remainingBioChars < 0;
+  const isUploading = portraitUploadProgress !== null;
 
   return (
     <>
       {/* Back Button */}
       <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton onClick={onBack} size="small" aria-label={t('speakers.drawer.back')}>
+        <IconButton onClick={onBack} size="small" aria-label={t('organizer:speakers.drawer.back')}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6">{t('speakerContent.submitContent')}</Typography>
+        <Typography variant="h6">{t('organizer:speakerContent.submitContent')}</Typography>
       </Box>
 
       <Divider />
 
-      {/* Form Content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
-          {t('speakerContent.presentationDetails')}
+          {t('organizer:speakerContent.presentationDetails')}
         </Typography>
 
         {submitContentMutation.isError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {submitContentMutation.error instanceof Error
               ? submitContentMutation.error.message
-              : t('speakerContent.errors.submitFailed')}
+              : t('organizer:speakerContent.errors.submitFailed')}
           </Alert>
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-          {/* Speaker Information Section */}
+          {/* Speaker selection */}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              {t('speakerContent.speakerInformation')}
+              {t('organizer:speakerContent.speakerInformation')}
             </Typography>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <UserAutocomplete
                 value={selectedUser}
                 onChange={setSelectedUser}
                 error={errors.username}
-                label={t('speakerContent.form.username')}
+                label={t('organizer:speakerContent.form.username')}
                 role="SPEAKER"
                 disabled={submitContentMutation.isPending}
                 data-testid="speaker-search-field"
@@ -218,7 +297,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
                       firstName={selectedUser.firstName}
                       lastName={selectedUser.lastName}
                       company={selectedUser.companyId}
-                      profilePictureUrl={selectedUser.profilePictureUrl}
+                      profilePictureUrl={profilePictureUrl ?? selectedUser.profilePictureUrl}
                       size={40}
                       showCompany={true}
                     />
@@ -239,7 +318,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
                       disabled={submitContentMutation.isPending}
                       fullWidth
                     >
-                      {t('speakerContent.editSpeakerProfile')}
+                      {t('organizer:speakerContent.editSpeakerProfile')}
                     </Button>
                   </Box>
                 </Box>
@@ -253,14 +332,78 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
                   disabled={submitContentMutation.isPending}
                   fullWidth
                 >
-                  {t('speakerContent.createNewSpeaker')}
+                  {t('organizer:speakerContent.createNewSpeaker')}
                 </Button>
               </Box>
             </Paper>
           </Box>
 
+          {/* Bio (optional) — Story 11.D.4 AC8. Review patch — leaving the field blank
+              does NOT clear an existing User.bio (intentional, per PM "optional means
+              optional"); the helper text below makes that contract explicit. */}
           <TextField
-            label={t('speakerContent.form.presentationTitle')}
+            label={t('organizer:speakerContent.bioLabel')}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            error={!!errors.bio || isBioTooLong}
+            helperText={
+              errors.bio ||
+              t('organizer:speakerContent.form.bioHelperText', {
+                remaining: remainingBioChars,
+                max: MAX_BIO_LENGTH,
+                defaultValue:
+                  'Leave blank to keep the existing bio. {{remaining}} / {{max}} characters remaining.',
+              })
+            }
+            multiline
+            rows={4}
+            fullWidth
+            disabled={submitContentMutation.isPending}
+            inputProps={{ 'data-testid': 'speaker-bio-field', maxLength: MAX_BIO_LENGTH + 100 }}
+          />
+
+          {/* Portrait (optional) — Story 11.D.4 AC8 step 2 */}
+          <Box>
+            <Typography variant="body2" gutterBottom>
+              {t('organizer:speakerContent.portraitLabel')}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar src={profilePictureUrl} sx={{ width: 56, height: 56 }} />
+              <Button
+                variant="outlined"
+                onClick={() => portraitFileInputRef.current?.click()}
+                disabled={!selectedUser || isUploading || submitContentMutation.isPending}
+                data-testid="speaker-portrait-upload-button"
+              >
+                {isUploading
+                  ? t('organizer:speakerContent.portraitUploadInProgress')
+                  : t('organizer:speakerContent.portraitLabel')}
+              </Button>
+              <input
+                ref={portraitFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                onChange={handlePortraitChange}
+                style={{ display: 'none' }}
+                data-testid="speaker-portrait-file-input"
+              />
+            </Box>
+            {isUploading && (
+              <LinearProgress
+                variant="determinate"
+                value={portraitUploadProgress ?? 0}
+                sx={{ mt: 1 }}
+              />
+            )}
+            {portraitUploadError && (
+              <Alert severity="error" sx={{ mt: 1 }}>
+                {portraitUploadError}
+              </Alert>
+            )}
+          </Box>
+
+          <TextField
+            label={t('organizer:speakerContent.form.presentationTitle')}
             value={presentationTitle}
             onChange={(e) => setPresentationTitle(e.target.value)}
             error={!!errors.presentationTitle}
@@ -272,13 +415,13 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
           />
 
           <TextField
-            label={t('speakerContent.form.presentationAbstract')}
+            label={t('organizer:speakerContent.form.presentationAbstract')}
             value={presentationAbstract}
             onChange={(e) => setPresentationAbstract(e.target.value)}
             error={!!errors.presentationAbstract || isAbstractTooLong}
             helperText={
               errors.presentationAbstract ||
-              `${remainingChars} / ${MAX_ABSTRACT_LENGTH} ${t('speakerContent.form.charactersRemaining')}`
+              `${remainingAbstractChars} / ${MAX_ABSTRACT_LENGTH} ${t('organizer:speakerContent.form.charactersRemaining')}`
             }
             required
             multiline
@@ -301,19 +444,25 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
           borderColor: 'divider',
         }}
       >
-        <Button variant="outlined" onClick={onBack} disabled={submitContentMutation.isPending}>
+        <Button
+          variant="outlined"
+          onClick={onBack}
+          disabled={submitContentMutation.isPending || isUploading}
+        >
           {t('common:actions.cancel')}
         </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitContentMutation.isPending || isAbstractTooLong}
+          disabled={
+            submitContentMutation.isPending || isAbstractTooLong || isBioTooLong || isUploading
+          }
           startIcon={submitContentMutation.isPending ? <CircularProgress size={20} /> : null}
           data-testid="submit-speaker-content-button"
         >
           {submitContentMutation.isPending
-            ? t('speakerContent.submitting')
-            : t('speakerContent.submitContent')}
+            ? t('organizer:speakerContent.submitting')
+            : t('organizer:speakerContent.submitContent')}
         </Button>
       </Box>
 

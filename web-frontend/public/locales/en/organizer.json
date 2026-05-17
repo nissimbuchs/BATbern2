@@ -284,18 +284,65 @@
     "submitting": "Submitting...",
     "editSpeakerProfile": "Edit Speaker Profile",
     "createNewSpeaker": "Create New Speaker",
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)",
     "form": {
       "username": "Search Speaker",
       "presentationTitle": "Presentation Title",
       "presentationAbstract": "Presentation Abstract",
-      "charactersRemaining": "characters remaining"
+      "charactersRemaining": "characters remaining",
+      "bioHelperText": "Leave blank to keep the existing bio. {{remaining}} / {{max}} characters remaining."
     },
     "errors": {
-      "usernameRequired": "Speaker is required",
+      "usernameRequired": "Please select a speaker",
       "titleRequired": "Presentation title is required",
       "abstractRequired": "Presentation abstract is required",
       "abstractTooLong": "Abstract must be {{max}} characters or less",
+      "bioTooLong": "Bio must be {{max}} characters or less",
       "submitFailed": "Failed to submit content. Please try again."
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    },
+    "responseDeadline": "Response due {{date}}",
+    "errors": {
+      "statusUpdateFailed": "Could not update speaker status."
     }
   },
   "qualityReview": {
@@ -357,9 +404,7 @@
     "reminderSent": "Reminder sent to {{email}}",
     "reminderFailed": "Failed to send reminder",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -521,6 +566,7 @@
     "publishable": "Publishable",
     "publishableTooltip": "Speaker is approved and has a session slot",
     "slotCapacityTooltip": "Slot capacity reached. {{invited}} invitations outstanding + {{accepted}} acceptances for {{slots}} slots. Wait or decline an accepted speaker to free a slot.",
+    "statusUpdateFailed": "Could not update speaker status. Please refresh and try again.",
     "timeInStateTooltip": "Current state since {{date}}",
     "inviteSent": "Invitation sent",
     "inviteFailed": "Failed to send invitation",

@@ -701,6 +701,30 @@ This prevents the weekly doc-drift-auditor from flagging the commit and keeps do
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
 - whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one
+
+## Localization — Official vs Optional Languages
+
+**Official communication languages:** German (`de`) and English (`en`) only. All
+speaker emails, organizer-facing UI, stakeholder-facing communications, and any
+new feature copy MUST be authored in `de` + `en` with first-class wording quality.
+
+**Optional/fun locales:** `fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE` —
+these are nice-to-have for the public frontend (homepage, archive browsing,
+registration) but are NOT required to reach feature parity with `de` + `en`.
+
+**Implications for stories and PRs:**
+- A story with i18n scope ships when `de` + `en` are complete. The other 8 locales
+  are best-effort and may be deferred to a follow-up story or community
+  contribution.
+- New frontend i18n keys: populate `de` + `en` immediately; the other 8 locales
+  may fall back to the English value until a translator passes by (i18next's
+  default fallback chain handles this without code changes).
+- New backend email templates: ship `de` + `en` rewrites; do NOT block on
+  authoring the other 8 locales. If a non-DE/EN locale is requested at render
+  time and no template exists, fall back to English.
+- This rule supersedes the older "10-locale parity" pattern from Stories 10.7
+  and 10.9 — those were valuable hygiene work, not a contract.
+
 ## Personal Data & Security Guidelines
 
 **CRITICAL**: Never commit files containing real personal data (PII) to version control.

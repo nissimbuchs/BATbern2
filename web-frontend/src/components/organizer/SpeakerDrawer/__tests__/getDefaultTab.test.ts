@@ -1,11 +1,10 @@
 /**
- * getDefaultTab unit tests (Story 10.30, AC2)
+ * getDefaultTab unit tests — Story 11.D.4 (AC7.5).
  *
- * Coverage:
- * - All statuses that map to Activity tab (2): IDENTIFIED, CONTACTED
- * - All statuses that map to Details tab (1): DECLINED, CONTENT_SUBMITTED, QUALITY_REVIEWED
- * - All statuses that map to Overview tab (0): INVITED, ACCEPTED, CONFIRMED, READY
- * - Unknown/future statuses fall back to Overview tab (0)
+ * The drawer collapsed from 3 tabs (Overview/Details/Activity) to 2 tabs
+ * (Details/History). `getDefaultTab` now returns:
+ *   - 1 (History) for INVITED — surfaces the response-status timeline.
+ *   - 0 (Details) for every other state, including legacy unknown values.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -22,49 +21,27 @@ function makeSpeaker(status: SpeakerPoolEntry['status']): SpeakerPoolEntry {
   };
 }
 
-describe('getDefaultTab', () => {
-  describe('Activity tab (index 2)', () => {
-    it('should return 2 for IDENTIFIED', () => {
-      expect(getDefaultTab(makeSpeaker('IDENTIFIED'))).toBe(2);
-    });
-
-    it('should return 2 for CONTACTED', () => {
-      expect(getDefaultTab(makeSpeaker('CONTACTED'))).toBe(2);
+describe('getDefaultTab — Story 11.D.4 (2-tab drawer)', () => {
+  describe('History tab (index 1)', () => {
+    it('should return 1 for INVITED', () => {
+      expect(getDefaultTab(makeSpeaker('INVITED'))).toBe(1);
     });
   });
 
-  describe('Details tab (index 1)', () => {
-    it('should return 1 for DECLINED', () => {
-      expect(getDefaultTab(makeSpeaker('DECLINED'))).toBe(1);
+  describe('Details tab (index 0)', () => {
+    it.each([
+      'IDENTIFIED',
+      'CONTACTED',
+      'READY',
+      'ACCEPTED',
+      'CONTENT_SUBMITTED',
+      'QUALITY_REVIEWED',
+      'DECLINED',
+    ] as const)('should return 0 for %s', (status) => {
+      expect(getDefaultTab(makeSpeaker(status))).toBe(0);
     });
 
-    it('should return 1 for CONTENT_SUBMITTED', () => {
-      expect(getDefaultTab(makeSpeaker('CONTENT_SUBMITTED'))).toBe(1);
-    });
-
-    it('should return 1 for QUALITY_REVIEWED', () => {
-      expect(getDefaultTab(makeSpeaker('QUALITY_REVIEWED'))).toBe(1);
-    });
-  });
-
-  describe('Overview tab (index 0)', () => {
-    it('should return 0 for INVITED', () => {
-      expect(getDefaultTab(makeSpeaker('INVITED'))).toBe(0);
-    });
-
-    it('should return 0 for ACCEPTED', () => {
-      expect(getDefaultTab(makeSpeaker('ACCEPTED'))).toBe(0);
-    });
-
-    it('should return 0 for CONFIRMED', () => {
-      expect(getDefaultTab(makeSpeaker('CONFIRMED'))).toBe(0);
-    });
-
-    it('should return 0 for READY', () => {
-      expect(getDefaultTab(makeSpeaker('READY'))).toBe(0);
-    });
-
-    it('should return 0 for unknown/future statuses via default case', () => {
+    it('should return 0 for unknown/future statuses', () => {
       expect(getDefaultTab(makeSpeaker('FUTURE_STATUS' as SpeakerPoolEntry['status']))).toBe(0);
     });
   });
