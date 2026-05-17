@@ -1,6 +1,6 @@
 # Story 11.E.1: CDK + IAM prereq — App Client auth flow and Cognito admin permissions
 
-Status: ready-for-dev
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -360,7 +360,7 @@ test('should_notGrantAdminAddUserToGroup_when_companyManagementStackDeployed', (
 
 Tasks ordered to compile + test incrementally. Each task names the AC it satisfies and the test/command to run after to lock it in.
 
-### Task 1 — Cherry-pick `d5cf0fcc` and immediately revert the unwanted hunks (AC1, AC2, AC3, AC6)
+### Task 1 — Cherry-pick `d5cf0fcc` and immediately revert the unwanted hunks (AC1, AC2, AC3, AC6) [x]
 
 1.1. Verify `refs/remotes/origin/feature/epic-6` is reachable: `git log feature/epic-6 --oneline -1` should show `d5cf0fcc`. If not, `git fetch origin feature/epic-6` first.
 1.2. `git cherry-pick --no-commit d5cf0fcc` — stages the full diff without auto-committing. (Using `--no-commit` makes the surgical revert in 1.3 easier and keeps a single clean commit.)
@@ -372,7 +372,7 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
 1.6. Update inline comments per AC1's "AR29 / 11.E.1" anchor and AC6's "Story 11.E.1 / AR29" header (the cherry-pick comments say "Story 7.1"; update to current owner). Also add the AC2 inline comment block (Resolved Q#1 rationale for omitting `AdminAddUserToGroup`).
 1.7. **Verify**: `cd infrastructure && npx tsc --noEmit 2>&1 | tee /tmp/cdk-tsc.log` — TypeScript compilation clean.
 
-### Task 2 — Add the `company-management-stack` IAM test (AC7)
+### Task 2 — Add the `company-management-stack` IAM test (AC7) [x]
 
 2.1. Check whether `infrastructure/test/unit/company-management-stack.test.ts` exists.
    - **If yes**: extend the existing `describe` block with the new test case named per `project-context.md` test-naming convention.
@@ -391,7 +391,7 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
 2.3. **Verify**: `cd infrastructure && npm test -- company-management 2>&1 | tee /tmp/cdk-test-company.log` — green for the new test.
 2.4. **Run the full suite**: `cd infrastructure && npm test 2>&1 | tee /tmp/cdk-test-full.log`. Confirm zero failures across all stack tests (AC8).
 
-### Task 3 — Bump `tempPasswordValidity` 7→14 days + update test assertion (AC4)
+### Task 3 — Bump `tempPasswordValidity` 7→14 days + update test assertion (AC4) [x]
 
 3.1. Open `infrastructure/lib/stacks/cognito-stack.ts` line 204. Change `tempPasswordValidity: cdk.Duration.days(7)` to `cdk.Duration.days(14)`. Add the inline comment from AC4.
 3.2. Open `infrastructure/test/unit/cognito-stack.test.ts` line 39. Change `TemporaryPasswordValidityDays: 7` to `TemporaryPasswordValidityDays: 14`. Add the trailing comment from AC4.
@@ -399,7 +399,7 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
 3.4. Document in the PR description under "Verification → NFR9 password-policy review": one sentence on the 7→14 bump rationale (invitation→first-login window now spans two weekends), one sentence confirming the rest of the policy admits a strong random temp password.
 3.5. **Verify**: `cd infrastructure && npm test -- cognito-stack 2>&1 | tee /tmp/cdk-test-cognito.log` — the updated `should_createUserPool_when_cognitoStackDeployed` test and new `should_enableAdminUserPasswordAuth_when_appClientCreated` test both pass.
 
-### Task 4 — Doc alignment (Resolved Q#1, Q#2) — same commit per CLAUDE.md doc-drift policy
+### Task 4 — Doc alignment (Resolved Q#1, Q#2) — same commit per CLAUDE.md doc-drift policy [x]
 
 4.1. **ADR-009** (`docs/architecture/ADR-009-unified-speaker-workflow.md`):
    - Line 263 ("SPEAKER role is granted via `cognito-idp:AdminAddUserToGroup`."): replace with "SPEAKER role is granted via a row insert into PostgreSQL `user_roles` (per ADR-001 database-centric role storage). No Cognito group operations are performed."
@@ -415,7 +415,7 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
 4.3. **sprint-status.yaml**: update the line-192 comment for `11-e-1-cdk-iam-prereq-cognito-admin-flow` to drop `AdminAddUserToGroup` from the perm list it embeds.
 4.4. **Verify**: `grep -n AdminAddUserToGroup docs/` should return zero matches (apart from this story file's "Open Questions (resolved)" section, which references the resolution).
 
-### Task 5 — Commit + PR description (AC9, AC10)
+### Task 5 — Commit + PR description (AC9, AC10) [deferred to user — see Completion Notes]
 
 5.1. `git add -p` the staged changes (cognito-stack.ts, company-management-stack.ts, cognito-stack.test.ts, company-management-stack.test.ts, ADR-009, PRD, sprint-status.yaml). Verify nothing else is staged.
 5.2. Commit using the AC3 message template (or close — keep the "Story 11.E.1", source SHA, omitted list, doc-alignment section, and least-privilege scope statement).
@@ -427,9 +427,33 @@ Tasks ordered to compile + test incrementally. Each task names the AC it satisfi
    - The AC10 "branch-deletion not in scope" follow-up note.
 5.4. After merge + auto-deploy to staging, run the AC5 AWS-CLI verification command and paste the output into the PR description as a post-merge edit (or into the merge-commit description if the PR is already closed).
 
-### Task 6 — Mark `sprint-status.yaml` `review` once the PR is open
+### Task 6 — Mark `sprint-status.yaml` `review` once the PR is open [x]
 
 6.1. Update `_bmad-output/implementation-artifacts/sprint-status.yaml`: set `11-e-1-cdk-iam-prereq-cognito-admin-flow` from `ready-for-dev` (set by this story) → `in-progress` (when dev starts) → `review` (when PR opens). Bump `last_updated`.
+
+---
+
+### Review Findings (`/bmad-code-review` 2026-05-17)
+
+Three parallel adversarial review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) executed against the uncommitted diff. **Acceptance Auditor: 8/8 implementable ACs satisfied** (AC9/AC10 are user-side commit/PR follow-ups). 22 findings dismissed as noise / sanctioned-by-spec / out-of-scope. The remaining items below.
+
+- [x] [Review][Decision] **`cognito-idp:AdminInitiateAuth` grant — confirmed in scope** — Resolved 2026-05-17 by PM (Nissim): **keep all four actions**, trust ADR-009 §Decision 3. The impersonation surface (CUMS can `AdminInitiateAuth(ADMIN_USER_PASSWORD_AUTH, anyUser, knownTempPw)`) is acknowledged at the architecture-decision level. If Story 11.E.2's `provisionUserWithRole` ends up not actually calling `AdminInitiateAuth`, the action can be dropped in 11.E.2's own PR — keeping it now keeps the cherry-pick faithful to the source commit and avoids a churning follow-up. Side-note clarification during resolution: the IAM grant attaches to the **ECS task role** (an AWS IAM principal), NOT to Cognito user-pool users — task-role credentials are picked up from the ECS task metadata endpoint and used transparently by the AWS SDK in CUMS code. Frontend Cognito JWTs are NOT AWS credentials and cannot call `cognito-idp:Admin*`. [Blind Hunter #9 — dismissed]
+
+- [x] [Review][Patch] **Positive IAM test now asserts `Resource` is scoped to the User Pool ARN** [`infrastructure/test/unit/company-management-stack.test.ts:88-114`] — Applied 2026-05-17. Added `Resource: Match.objectLike({ 'Fn::Join': Match.arrayWith([Match.arrayWith([Match.stringLikeRegexp(':cognito-idp:.*:userpool/eu-central-1_test$')])]) })` to the positive test. Catches regressions to `'*'`, to broader ARN patterns (`userpool/*`), or to multi-element `resources` arrays — all collapse the Resource shape away from the single-element Fn::Join that CDK emits today. 2/2 patched tests + 289/289 full infra suite pass. [Edge Case Hunter #4]
+
+- [x] [Review][Patch] **Negative regression scan now walks inline role policies too** [`infrastructure/test/unit/company-management-stack.test.ts:117-150`] — Applied 2026-05-17. Refactored to scan BOTH standalone `AWS::IAM::Policy` resources AND inline `AWS::IAM::Role.Properties.Policies[*]` statements. A future `Role.attachInlinePolicy(...)` grant of `AdminAddUserToGroup` now fires the guard. Scope-to-CUMS is implicit: within `CompanyManagementStack`'s template the only IAM roles are the CUMS service's task role + execution role, so scanning all roles in the stack is effectively scoped to CUMS without an explicit logical-ID filter. Block-scope helper `collectFromStatements()` extracted to avoid duplication. 2/2 patched tests + 289/289 full infra suite pass. [Blind Hunter #3 + #18 + Edge Case Hunter #1]
+
+- [x] [Review][Defer] **`fromUserPoolId(...) as unknown as cognito.UserPool` cast in test stub** [`infrastructure/test/unit/company-management-stack.test.ts:47-51`] — deferred, pre-existing. Spec dev-agent record line 558 explicitly acknowledges: "widening the prop to `IUserPool` is outside this story's scope." If `props.userPool` is ever read for anything beyond `.userPoolArn` (e.g., `.addClient`), the test stub will throw at synth time and reveal the prop-type mismatch. [Blind Hunter #4 + Edge Case Hunter #7]
+
+- [x] [Review][Defer] **No IAM `Condition` keys narrowing `AdminSetUserPassword` to specific usernames** [`infrastructure/lib/stacks/company-management-stack.ts:163-176`] — deferred, defense-in-depth hardening. Resource-ARN scoping is already in place; condition-key tightening (e.g., `aws:RequestTag/Role: SPEAKER` or `cognito-idp:username` patterns) would harden against a compromised CUMS service resetting any user's password. Out of scope for the cherry-pick. [Blind Hunter #10]
+
+- [x] [Review][Defer] **`should_configureOAuthFlows_when_appClientCreated` may not pin all four `ExplicitAuthFlows`** [`infrastructure/test/unit/cognito-stack.test.ts:~70-88`] — deferred, pre-existing test gap. The new AC6 test uses `Match.arrayWith(['ALLOW_ADMIN_USER_PASSWORD_AUTH'])`, which per the AC is correct (presence-only). But the broader gap is whether SRP / USER_PASSWORD_AUTH / CUSTOM_AUTH are actually pinned anywhere. Tightening to a closed set would go beyond AC6's literal wording — better addressed in a separate test-hardening sweep. [Blind Hunter #19 + Edge Case Hunter #5]
+
+- [x] [Review][Defer] **ECS task-role IAM policy picked up at next STS credential refresh (≤6h), not immediately** — deferred, operational note for 11.E.2 rollout. IAM-policy-only changes do NOT trigger ECS task replacement. Story 11.E.2's first deploy must force a service redeploy (or wait ≤6h) to guarantee task-credential refresh, or `AdminCreateUser` calls fail with AccessDenied. Capture in 11.E.2's "Verification" section. [Edge Case Hunter #8]
+
+- [x] [Review][Defer] **14-day temp password window security-tradeoff comment** [`infrastructure/lib/stacks/cognito-stack.ts:204`] — deferred. The inline comment captures UX rationale ("two weekends") but not the security tradeoff (longer email-resident credential validity). The 11.E.2 invitation-email rewrite story is the better seam to document the threat model (email transport, inbox-retention assumptions, recovery-via-forgot-password fallback). [Blind Hunter #6]
+
+- [x] [Review][Defer] **Tests not parametrized across `isProduction: true|false`** [`infrastructure/test/unit/company-management-stack.test.ts`] — deferred, coverage enhancement. The new test only exercises `stagingConfig` (which is `isProduction: true`). A future config-conditional grant in `CompanyManagementStack` would not be caught. [Edge Case Hunter #6]
 
 ---
 
@@ -534,15 +558,70 @@ claude-opus-4-7[1m]
 
 ### Debug Log References
 
-_To be filled by the dev agent during implementation._
+- `/tmp/cdk-tsc-2.log` — TypeScript compile clean (exit 0) after all edits.
+- `/tmp/cdk-test-company.log` — `company-management-stack.test.ts` initial run: 2/2 tests pass.
+- `/tmp/cdk-test-cognito.log` — `cognito-stack.test.ts` after edits: 7/7 tests pass (was 6; new `should_enableAdminUserPasswordAuth_when_appClientCreated`).
+- `/tmp/cdk-test-full.log` — full infrastructure suite: `Test Suites: 2 skipped, 19 passed, 19 of 21 total. Tests: 22 skipped, 289 passed, 311 total.` Zero failures.
+- `/tmp/cherry-diffs.log` — `git show d5cf0fcc` reference inspected; Path B (manual re-creation per AC1/AC2/AC4/AC6 specs) used. Diff is small (~15 LOC net additions), so no `cherry-pick --no-commit` was run; AC content was authored directly per story specs.
+- `/tmp/git-status-root.log` — final file changeset (6 modified/created).
 
 ### Completion Notes List
 
-_To be filled by the dev agent during implementation._
+**AC1 ✅** — `infrastructure/lib/stacks/cognito-stack.ts:241` adds `adminUserPassword: true` with the AR29 / cherry-pick d5cf0fcc anchor comment. CDK now synthesises `ALLOW_ADMIN_USER_PASSWORD_AUTH` in `ExplicitAuthFlows` (asserted by AC6 test).
+
+**AC2 ✅** — `infrastructure/lib/stacks/company-management-stack.ts:161-176` adds the four-action `iam.PolicyStatement` on `taskDefinition.taskRole`, scoped to `props.userPool.userPoolArn`. Inline comment cites AR30 / cherry-pick d5cf0fcc / Resolved Q#1. No `AdminAddUserToGroup`. No event-management-stack changes.
+
+**AC3 ✅** — `COGNITO_PASSWORD_ENCRYPTION_KEY` deliberately NOT cherry-picked. `infrastructure/test/unit/secrets-stack.test.ts:24` unchanged (still asserts `resourceCountIs('AWS::SecretsManager::Secret', 2)` — JWT + WATCH_JWT). The "1" reference in the story branch-state note (line 42) was outdated at story-creation; the **intent** (do not bump the count) is preserved. `domain-service-construct.ts` already supports `additionalSecrets` (verified pre-existing). No `secrets-stack.ts`, no `bin/batbern-infrastructure.ts`, no construct-prop hunks introduced.
+
+**AC4 ✅** — `cognito-stack.ts:204` now `cdk.Duration.days(14)` with the Resolved Q#4 anchor comment. `cognito-stack.test.ts:39` updated to assert `TemporaryPasswordValidityDays: 14`. Rest of the policy (length, character classes) admits Story 11.E.2's strong random temp password generator without modification — generator-vs-policy invariant from NFR9 preserved.
+
+**AC5 ✅** — Bruno smoke test deliberately deferred to Story 11.E.2. `bruno-tests/auth/` not created in this story. Post-merge AWS CLI verification (`describe-user-pool-client ... ExplicitAuthFlows`) is the operator-side check; to be performed by the human running the merge.
+
+**AC6 ✅** — `cognito-stack.test.ts:117-124` adds `should_enableAdminUserPasswordAuth_when_appClientCreated` with the Story 11.E.1 / AR29 comment header. `Match.arrayWith(['ALLOW_ADMIN_USER_PASSWORD_AUTH'])`.
+
+**AC7 ✅** — New file `infrastructure/test/unit/company-management-stack.test.ts` with two tests: positive `should_grantCognitoAdminPerms_when_companyManagementStackDeployed` (set-equality regression guard — preferred shape b per AC7), negative `should_notGrantAdminAddUserToGroup_when_companyManagementStackDeployed` (Resolved Q#1 regression guard). Uses `IMAGE_TAG=test-image-tag` + `fromUserPoolId(...) as unknown as cognito.UserPool` cast — the cast is necessary because the stack types `userPool` as the concrete `cognito.UserPool` class but only accesses `.userPoolArn` at runtime; widening the prop to `IUserPool` is outside this story's scope.
+
+**AC8 ✅** — Full `npm test` in `infrastructure/`: 289 passed, 22 skipped, **zero failures**. New tests visible in suite (`--listTests` confirms `company-management-stack.test.ts`).
+
+**AC9 deferred to user** — Commit message + PR description authoring is a manual user step. All the substantive content (cherry-pick anchor SHA `d5cf0fccac3cf9befafa3f6edddac51b1949080d`, omitted list, four-action least-privilege scope, doc-alignment scope) is captured in this story file and the inline code comments for re-use in the commit/PR text.
+
+**AC10 deferred to user** — `git push origin --delete feature/epic-6` deliberately NOT performed; remains for the team / Phase F operator per PRD line 1166-1168. Should be captured in PR follow-up section by the user.
+
+**Task 4 doc alignment** — Verified that ADR-009, PRD epic-11, and sprint-status comment were already aligned at story creation (per story closing note line 562-563). Two further drifted references found and corrected in the same scope:
+- `docs/prd/epic-9-speaker-authentication.md:51` — Phase A residue (positive grant of AdminAddUserToGroup) rewritten as the negative-assertion four-action list with the Resolved Q#1 anchor.
+- `docs/api/users-api.openapi.yml:1390-1395` — provision-user-with-role description's "Cognito wiring will include AdminAddUserToGroup" rewritten to "SPEAKER role is granted via PostgreSQL `user_roles` per ADR-001 — NOT via AdminAddUserToGroup".
+
+Other `AdminAddUserToGroup` mentions in `docs/` are either negative assertions (already correct), revision-history entries, or belong to deferred Story 10.24 / archived stories / point-in-time reports — all out of this story's scope.
+
+**Sprint-status** — Story key `11-e-1-cdk-iam-prereq-cognito-admin-flow` transitioned `ready-for-dev` → `in-progress` (during impl) → `review` (final). `last_updated` line 37 updated with the AC1+AC2+AC4+AC6+AC7 changelog.
 
 ### File List
 
-_To be filled by the dev agent during implementation._
+Source code (3 files):
+- `infrastructure/lib/stacks/cognito-stack.ts` — adminUserPassword:true on App Client (AC1); tempPasswordValidity 7→14 days (AC4).
+- `infrastructure/lib/stacks/company-management-stack.ts` — four-action Cognito admin IAM policy on CUMS task role (AC2).
+- `infrastructure/test/unit/cognito-stack.test.ts` — new test `should_enableAdminUserPasswordAuth_when_appClientCreated` (AC6); TemporaryPasswordValidityDays assertion bumped 7→14 (AC4).
+
+Test code (new file, 1 file):
+- `infrastructure/test/unit/company-management-stack.test.ts` — new file with positive + negative AdminAddUserToGroup IAM regression-guard tests (AC7).
+
+Doc alignment (2 files):
+- `docs/prd/epic-9-speaker-authentication.md` — line 51 rewritten to drop the positive AdminAddUserToGroup mention and list the four actually-called admin actions with negative-assertion explanation.
+- `docs/api/users-api.openapi.yml` — provision-user-with-role description (lines 1390-1395) rewritten to attribute role-grant to PostgreSQL `user_roles` per ADR-001 (NOT AdminAddUserToGroup).
+
+Sprint tracking (1 file):
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — last_updated line 37 changelog entry + line 192 `ready-for-dev` → `review`.
+
+Story file (this file):
+- `_bmad-output/implementation-artifacts/11-e-1-cdk-iam-prereq-cognito-admin-flow.md` — Status `ready-for-dev` → `review`; Tasks 1-4, 6 marked [x]; Task 5 deferred to user (commit/PR); Dev Agent Record, Change Log, File List populated.
+
+### Change Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-05-17 | Nissim (PM) | Story drafted by `bmad-create-story`; 4 Open Questions resolved with PM same-day. |
+| 2026-05-17 | Claude Opus 4.7 (1M) via `bmad-dev-story` | Implementation: CDK + IAM + tests + doc alignment. All 8 implementable ACs satisfied (AC9/AC10 are user-side commit/PR steps). 289/289 CDK tests pass. Status `ready-for-dev` → `review`. |
+| 2026-05-17 | Claude Opus 4.7 (1M) via `bmad-code-review` | Adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Auditor). Auditor: 8/8 ACs satisfied. 1 decision dismissed (AdminInitiateAuth grant — PM confirmed: trust ADR-009). 2 patches applied to `company-management-stack.test.ts`: (1) positive test now asserts `Resource: Match.objectLike({'Fn::Join': ...userpool/eu-central-1_test$})` to catch wildcard-scope regressions; (2) negative regression scan extended to walk `AWS::IAM::Role.Properties.Policies[*]` inline policies in addition to standalone `AWS::IAM::Policy` resources, with shared `collectFromStatements()` helper. 6 items deferred to `deferred-work.md`. 289/289 CDK tests + type-check clean. Status `review` → `done`. |
 
 ---
 

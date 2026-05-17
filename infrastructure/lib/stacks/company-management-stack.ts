@@ -158,6 +158,22 @@ export class CompanyManagementStack extends cdk.Stack {
       }));
     }
 
+    // Story 11.E.1 / AR30 / cherry-pick d5cf0fcc: Grant Cognito admin perms for speaker provisioning (Story 11.E.2).
+    // Scope: this service's task role only. Resource: the BATbern User Pool ARN (no wildcard).
+    // AdminAddUserToGroup is intentionally NOT granted (Resolved Q#1, PM 2026-05-17): roles live in
+    // PostgreSQL user_roles per ADR-001; no Cognito groups exist; granting the permission would be a useless
+    // least-privilege violation. ADR-009 §Decision 3, PRD AR30, and PRD NFR5 are updated in the same commit.
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminInitiateAuth',
+        'cognito-idp:AdminGetUser',
+      ],
+      resources: [props.userPool.userPoolArn],
+    }));
+
     // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
     // to avoid cyclic dependencies. Database tables are created by Flyway migrations
     // when this service starts, and triggers work when users sign up at runtime.

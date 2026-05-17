@@ -48,7 +48,7 @@ The work originally planned as Stories 9.1–9.5 is consolidated into four work 
 
 What this block delivers (must land before Block 1):
 - CDK changes to the Cognito User Pool App Client to enable the auth flow required for `AdminCreateUser` + `FORCE_CHANGE_PASSWORD` first-login.
-- IAM policy on the `company-user-management-service` task role granting the Cognito admin permissions needed for `AdminCreateUser`, `AdminAddUserToGroup`, and `AdminSetUserPassword`.
+- IAM policy on the `company-user-management-service` task role granting the four Cognito admin permissions actually called by the provisioning hook: `AdminCreateUser`, `AdminSetUserPassword`, `AdminInitiateAuth`, `AdminGetUser`. `AdminAddUserToGroup` is intentionally NOT granted — roles live in PostgreSQL `user_roles` per ADR-001; no Cognito groups exist on the user pool (Story 11.E.1 Resolved Q#1, PM 2026-05-17).
 - User Pool policy alignment (password complexity, MFA stance) consistent with the rest of the BATbern Cognito setup.
 
 This is pure infrastructure — no application code changes. Blocks 1, 2, 3 depend on it.

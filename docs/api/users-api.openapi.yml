@@ -1388,9 +1388,11 @@ paths:
         Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
 
         **ADR-009**: Decision 3 — Cognito provisioning skeleton. Cognito wiring (AdminCreateUser,
-        AdminSetUserPassword, AdminAddUserToGroup) is **deliberately stubbed** in Story 11.C.2
-        and will be wired in Story 11.E.2. The `temporaryPassword` field on the response is
-        reserved for that story to populate; it is always `null` in 11.C.2.
+        AdminSetUserPassword) is **deliberately stubbed** in Story 11.C.2 and will be wired in
+        Story 11.E.2. SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per
+        ADR-001 — NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1
+        Resolved Q#1). The `temporaryPassword` field on the response is reserved for Story
+        11.E.2 to populate; it is always `null` in 11.C.2.
 
         **Behaviour**:
         - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
