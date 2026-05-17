@@ -520,6 +520,8 @@
     "publishable": "Pubblicabile",
     "publishableTooltip": "Il relatore è approvato e ha uno slot di sessione",
     "slotCapacityTooltip": "Capacità degli slot raggiunta. {{invited}} inviti in sospeso + {{accepted}} accettazioni per {{slots}} slot. Attendi o rifiuta un relatore accettato per liberare uno slot.",
-    "timeInStateTooltip": "Stato attuale dal {{date}}"
+    "timeInStateTooltip": "Stato attuale dal {{date}}",
+    "inviteSent": "Invito inviato",
+    "inviteFailed": "Invio dell'invito non riuscito"
   }
 }

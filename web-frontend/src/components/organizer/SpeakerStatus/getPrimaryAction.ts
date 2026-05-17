@@ -124,8 +124,13 @@ export function getPrimaryAction(
         testIdSuffix: 'review-content',
       };
 
-    case 'QUALITY_REVIEWED':
-      if (speaker.isSlotAssigned) {
+    case 'QUALITY_REVIEWED': {
+      // `isSlotAssigned` is a derived flag computed at read time (Story 11.B.3) —
+      // strict-true check avoids treating `undefined` (e.g. stale snapshot before the
+      // derivation ran) as "no slot". Fall back to `sessionId != null` as a defensive
+      // secondary signal that matches the existing session-lookup pattern.
+      const hasAssignedSlot = speaker.isSlotAssigned === true || speaker.sessionId != null;
+      if (hasAssignedSlot) {
         return {
           kind: 'chip',
           label: t('organizer:speakerCard.publishable'),
@@ -140,6 +145,7 @@ export function getPrimaryAction(
         disabled: false,
         testIdSuffix: 'assign-session-slot',
       };
+    }
 
     case 'DECLINED':
       return {

@@ -520,6 +520,8 @@
     "publishable": "公開可能",
     "publishableTooltip": "スピーカーは承認済みでセッション枠があります",
     "slotCapacityTooltip": "枠の上限に達しました。{{slots}}枠に対して未回答の招待{{invited}}件 + 承諾{{accepted}}件。承諾済みのスピーカーを辞退するか、待機してください。",
-    "timeInStateTooltip": "{{date}}から現在の状態"
+    "timeInStateTooltip": "{{date}}から現在の状態",
+    "inviteSent": "招待を送信しました",
+    "inviteFailed": "招待の送信に失敗しました"
   }
 }

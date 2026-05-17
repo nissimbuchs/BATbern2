@@ -520,6 +520,8 @@
     "publishable": "Publiable",
     "publishableTooltip": "L'orateur est approuvé et dispose d'un créneau de session",
     "slotCapacityTooltip": "Capacité de créneaux atteinte. {{invited}} invitations en attente + {{accepted}} acceptations pour {{slots}} créneaux. Attendez ou déclinez un orateur accepté pour libérer un créneau.",
-    "timeInStateTooltip": "État actuel depuis {{date}}"
+    "timeInStateTooltip": "État actuel depuis {{date}}",
+    "inviteSent": "Invitation envoyée",
+    "inviteFailed": "Échec de l'envoi de l'invitation"
   }
 }

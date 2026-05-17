@@ -93,6 +93,8 @@
     "publishable": "Publizierbar",
     "publishableTooltip": "Dr Redner isch akzeptiert und het än Session-Slot",
     "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} offni Yladige + {{accepted}} Zuesage für {{slots}} Slots. Warte oder än zuegseiti Redner absage zum än Slot freizmache.",
-    "timeInStateTooltip": "Aktuelle Status sit {{date}}"
+    "timeInStateTooltip": "Aktuelle Status sit {{date}}",
+    "inviteSent": "Yladig gschickt",
+    "inviteFailed": "Yladig het nid könne gschickt wärde"
   }
 }

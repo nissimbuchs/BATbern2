@@ -39,7 +39,7 @@ import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
-import { useSpeakerPool } from '@/hooks/useSpeakerPool';
+import { speakerPoolKeys, useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
 import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
@@ -160,10 +160,11 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   };
 
   // Story 11.D.2 — QUALITY_REVIEWED-no-slot card primary-action button.
-  // Currently navigates to the event-scoped slot-assignment page; speaker context is
-  // taken from the URL/event downstream.
-  const handleAssignSessionSlotForSpeaker = () => {
-    navigate(`/organizer/events/${eventCode}/slot-assignment`);
+  // Speaker context is forwarded via `?speakerId=` so the slot-assignment page can
+  // optionally focus/highlight the originating speaker. The page is non-breaking if the
+  // query param is unread.
+  const handleAssignSessionSlotForSpeaker = (speaker: SpeakerPoolEntry) => {
+    navigate(`/organizer/events/${eventCode}/slot-assignment?speakerId=${speaker.id}`);
   };
 
   // Session handlers
@@ -194,7 +195,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const handleSessionDelete = async (sessionSlug: string) => {
     await sessionApiClient.deleteSession(eventCode, sessionSlug);
     queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
-    queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+    queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
   };
 
   const handleViewMaterials = (sessionId: string) => {
@@ -432,7 +433,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
           onClose={() => setOutreachModalState({ open: false, speaker: null })}
           onSuccess={() => {
             setOutreachModalState({ open: false, speaker: null });
-            queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+            queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
             queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
           }}
           eventCode={eventCode}

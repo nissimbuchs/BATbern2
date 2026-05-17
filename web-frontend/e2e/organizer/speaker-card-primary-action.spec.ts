@@ -15,14 +15,11 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
 import { BASE_URL, API_URL } from '../../playwright.config';
 
-interface SpeakerPoolResponseLite {
-  id: string;
-  speakerName: string;
-  status: string;
-}
-
 /**
  * Helper: spin up a fresh event so each test has an isolated pool.
+ *
+ * Derives `eventNumber` from a time-bucketed counter so parallel CI workers do not
+ * collide on a fixed constant.
  */
 async function createTestEvent(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
@@ -30,8 +27,9 @@ async function createTestEvent(page: Page): Promise<string> {
   await page.click('[data-testid="new-event-button"]');
   await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
+  const eventNumber = String(900 + (Date.now() % 100));
   await page.fill('input[name="title"]', `E2E 11D2 Primary Action ${Date.now()}`);
-  await page.fill('input[name="eventNumber"]', '998');
+  await page.fill('input[name="eventNumber"]', eventNumber);
   await page.fill('input[name="venueName"]', 'Test Venue');
   await page.fill('input[name="venueAddress"]', 'Test Address, Bern');
   await page.fill('input[name="venueCapacity"]', '100');
@@ -42,7 +40,13 @@ async function createTestEvent(page: Page): Promise<string> {
   await page.click('button[type="submit"]');
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
   const eventCode = await page.locator('[data-testid="event-code"]').first().textContent();
-  return eventCode || 'BATbern998';
+  if (!eventCode) {
+    throw new Error(
+      'createTestEvent: failed to read eventCode from [data-testid="event-code"] — ' +
+        'event was not created or DOM did not render the code chip.'
+    );
+  }
+  return eventCode;
 }
 
 async function seedSpeaker(
@@ -195,7 +199,3 @@ test.describe('Speaker kanban — primary-action button (Story 11.D.2)', () => {
     await expect(page.locator(`[data-testid="primary-action-chip-${speakerId}"]`)).toHaveCount(0);
   });
 });
-
-// Silence the unused-type warning — the import shape is documented for future tests
-// that may type the GET /pool response.
-export type { SpeakerPoolResponseLite };

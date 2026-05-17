@@ -519,7 +519,9 @@
     },
     "publishable": "Publiceerbaar",
     "publishableTooltip": "Spreker is goedgekeurd en heeft een sessieblok",
-    "slotCapacityTooltip": "Sloteafhankelijkheid bereikt. {{invited}} openstaande uitnodigingen + {{accepted}} bevestigingen voor {{slots}} sloten. Wacht of wijs een geaccepteerde spreker af om een slot vrij te maken.",
-    "timeInStateTooltip": "Huidige status sinds {{date}}"
+    "slotCapacityTooltip": "Slotcapaciteit bereikt. {{invited}} openstaande uitnodigingen + {{accepted}} bevestigingen voor {{slots}} slots. Wacht of wijs een geaccepteerde spreker af om een slot vrij te maken.",
+    "timeInStateTooltip": "Huidige status sinds {{date}}",
+    "inviteSent": "Uitnodiging verzonden",
+    "inviteFailed": "Verzenden van uitnodiging mislukt"
   }
 }

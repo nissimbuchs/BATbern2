@@ -521,6 +521,8 @@
     "publishable": "Publizierbar",
     "publishableTooltip": "Speaker ist genehmigt und hat einen Session-Slot",
     "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} ausstehende Einladungen + {{accepted}} Zusagen für {{slots}} Slots. Warten oder einen zugesagten Speaker absagen, um einen Slot freizugeben.",
-    "timeInStateTooltip": "Aktueller Status seit {{date}}"
+    "timeInStateTooltip": "Aktueller Status seit {{date}}",
+    "inviteSent": "Einladung gesendet",
+    "inviteFailed": "Einladung konnte nicht gesendet werden"
   }
 }

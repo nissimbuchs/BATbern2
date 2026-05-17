@@ -520,6 +520,8 @@
     "publishable": "Julkaisukelpoinen",
     "publishableTooltip": "Puhuja on hyväksytty ja hänellä on istuntopaikka",
     "slotCapacityTooltip": "Paikkojen kapasiteetti saavutettu. {{invited}} odottavaa kutsua + {{accepted}} hyväksyntää {{slots}} paikalle. Odota tai hylkää hyväksytty puhuja vapauttaaksesi paikan.",
-    "timeInStateTooltip": "Nykyinen tila alkaen {{date}}"
+    "timeInStateTooltip": "Nykyinen tila alkaen {{date}}",
+    "inviteSent": "Kutsu lähetetty",
+    "inviteFailed": "Kutsun lähettäminen epäonnistui"
   }
 }

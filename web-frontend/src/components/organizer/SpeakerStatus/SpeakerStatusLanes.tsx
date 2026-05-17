@@ -161,9 +161,12 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   // surfaced as a disabled-button tooltip here for fast feedback.
   // Slot capacity is derived in-page from the loaded speakers array — this is correct as long
   // as `speakers` is the complete event-scoped pool (it is today). If this query ever paginates,
-  // switch to a server-side count endpoint to avoid undercounting INVITED/ACCEPTED off-page.
+  // switch to a server-side count endpoint to avoid undercounting off-page.
+  // Post-acceptance states (CONTENT_SUBMITTED, QUALITY_REVIEWED) still occupy slots per ADR-009.
   const slotCapacity: SlotCapacityState = useMemo(() => {
-    const acceptedCount = speakers.filter((s) => s.status === 'ACCEPTED').length;
+    const acceptedCount = speakers.filter((s) =>
+      ['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'].includes(s.status)
+    ).length;
     const invitedCount = speakers.filter((s) => s.status === 'INVITED').length;
     const max = maxSlots ?? 0;
     return {
@@ -494,15 +497,22 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   };
 
   const handleSendInvitation = async (speakerForInvite: SpeakerPoolEntry) => {
+    // Default response deadline = today + 30 days (matches OverviewTabPanel pattern).
+    // SendInvitationRequest.responseDeadline is @NotNull @Future on the backend.
+    const defaultDeadline = new Date();
+    defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+    const responseDeadline = defaultDeadline.toISOString().split('T')[0];
+
     try {
       await sendInvitationMutation.mutateAsync({
         username: speakerForInvite.id,
+        options: { responseDeadline },
       });
-      setSnackbarMessage(t('organizer:speakers.inviteSent'));
+      setSnackbarMessage(t('organizer:speakerCard.inviteSent'));
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
     } catch {
-      setSnackbarMessage(t('organizer:speakers.inviteFailed'));
+      setSnackbarMessage(t('organizer:speakerCard.inviteFailed'));
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
@@ -514,11 +524,16 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   // Time-in-state chip — AC3
   const statusChangedAt = getStatusChangedAt(speaker);
   const locale = i18n.language === 'de' ? de : enUS;
-  const timeInState = statusChangedAt
-    ? formatDistanceToNow(new Date(statusChangedAt), { locale, addSuffix: false })
+  // Guard against unparseable timestamps from the API — Invalid Date would otherwise
+  // crash formatDistanceToNow with RangeError and unmount the kanban.
+  const statusChangedDate = statusChangedAt ? new Date(statusChangedAt) : null;
+  const isValidStatusChangedDate =
+    statusChangedDate !== null && !Number.isNaN(statusChangedDate.getTime());
+  const timeInState = isValidStatusChangedDate
+    ? formatDistanceToNow(statusChangedDate, { locale, addSuffix: false })
     : null;
-  const statusChangedAbsolute = statusChangedAt
-    ? new Date(statusChangedAt).toLocaleString(i18n.language)
+  const statusChangedAbsolute = isValidStatusChangedDate
+    ? statusChangedDate.toLocaleString(i18n.language)
     : '';
 
   // Primary action mapping — AC1
@@ -818,8 +833,12 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                   <Button
                     variant="contained"
                     fullWidth
-                    size="small"
-                    disabled={primaryAction.disabled || !!transform}
+                    disabled={
+                      primaryAction.disabled ||
+                      !!transform ||
+                      (primaryAction.testIdSuffix === 'sendInvitation' &&
+                        sendInvitationMutation.isPending)
+                    }
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!transform) primaryAction.onClick();
@@ -835,8 +854,12 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               <Button
                 variant="contained"
                 fullWidth
-                size="small"
-                disabled={primaryAction.disabled || !!transform}
+                disabled={
+                  primaryAction.disabled ||
+                  !!transform ||
+                  (primaryAction.testIdSuffix === 'sendInvitation' &&
+                    sendInvitationMutation.isPending)
+                }
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!transform) primaryAction.onClick();

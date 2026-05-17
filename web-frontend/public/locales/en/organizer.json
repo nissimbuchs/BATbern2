@@ -521,6 +521,8 @@
     "publishable": "Publishable",
     "publishableTooltip": "Speaker is approved and has a session slot",
     "slotCapacityTooltip": "Slot capacity reached. {{invited}} invitations outstanding + {{accepted}} acceptances for {{slots}} slots. Wait or decline an accepted speaker to free a slot.",
-    "timeInStateTooltip": "Current state since {{date}}"
+    "timeInStateTooltip": "Current state since {{date}}",
+    "inviteSent": "Invitation sent",
+    "inviteFailed": "Failed to send invitation"
   }
 }

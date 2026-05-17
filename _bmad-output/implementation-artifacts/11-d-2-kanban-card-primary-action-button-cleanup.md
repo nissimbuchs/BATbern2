@@ -1,6 +1,6 @@
 # Story 11.D.2: Kanban card primary-action button + cleanup
 
-Status: review
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -175,14 +175,18 @@ This is **imperfect** (the fall-back means `updatedAt` is overwritten by any fie
 
 ### AC4 — READY card's "Send invitation" button disabled with i18n tooltip when slot capacity reached (UX-DR1 + plan §8.6)
 
-**Given** plan §8.6 ("**Send invitation' is disabled when `count(ACCEPTED) + count(INVITED) >= max_slots` for the event**") and PRD line 922-925 (the verbatim tooltip text),
+**AC4 amended 2026-05-17 per code-review Decision #1:** the in-page slot-capacity formula counts every speaker in a post-acceptance state (not just `ACCEPTED`). Speakers who have progressed to `CONTENT_SUBMITTED` or `QUALITY_REVIEWED` still occupy a slot per ADR-009 §0.1, so the gate must also block when they fill `maxSlots`.
+
+**Given** plan §8.6 ("**Send invitation' is disabled when `count(post-acceptance) + count(INVITED) >= max_slots` for the event**") and PRD line 922-925 (the verbatim tooltip text),
 **When** the kanban renders a READY card,
 **Then** the "Send invitation" button computes capacity locally from the already-loaded `speakers` array (no new API call):
 
 ```typescript
 const event = useEvent(eventCode).data;                            // already used elsewhere in this tab
 const maxSlots = event?.slotConfiguration?.maxSlots ?? 0;
-const acceptedCount = speakers.filter(s => s.status === 'ACCEPTED').length;
+const acceptedCount = speakers.filter(s =>
+  ['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'].includes(s.status),
+).length;
 const invitedCount = speakers.filter(s => s.status === 'INVITED').length;
 const slotCapacityReached = maxSlots > 0 && (acceptedCount + invitedCount) >= maxSlots;
 ```
@@ -594,6 +598,76 @@ claude-opus-4-7[1m]
 | 2026-05-16 | Story 11.D.2 drafted via `bmad-create-story`. |
 | 2026-05-16 | Resolved all 4 Open Questions with PM (Nissim). Q1 → accept the imperfect timestamp-source resolution (no `status_changed_at` column in this story; add TODO comment). Q2 → reorder lanes + remove CONFIRMED now (AC5 D locked in). Q3 → defer `⋯` secondary menu to Story 11.D.4 (AC8 narrowed to "do not implement"). Q4 → add defensive comment about pagination dependency at the slot-capacity computation site (AC4 amended). |
 | 2026-05-17 | Implementation via `bmad-dev-story`. New `getPrimaryAction.ts` helper; `SpeakerStatusLanes.tsx` rewritten with state-aware button + time-in-state chip + slot-capacity gate + legacy-indicator removal + ADR-009 lane reorder; `EventSpeakersTab.tsx` hoisted MarkContactedModal + PromoteSpeakerDialog; `SpeakerStatusDashboard.tsx` removed CONFIRMED + passes maxSlots; 22 Vitest cases + 5 Playwright cases; 10 locales patched with `speakerCard.*` namespace + legacy `speakers.tentative*` removal. Verifications: type-check ✓, lint ✓, all SpeakerStatus tests pass (60/60), all EventPage tests pass (34/34), all AC11 grep invariants pass. |
+
+---
+
+## Review Findings (2026-05-17)
+
+Code review run via `bmad-code-review` against commit `ea2a749c`. Three adversarial reviewers: Blind Hunter (diff-only), Edge Case Hunter (diff + project), Acceptance Auditor (diff + spec).
+
+### Decision needed (resolved 2026-05-17)
+
+- [x] [Review][Decision][Resolved→Patch] **Slot-capacity formula amended to include post-acceptance states** — Decided 2026-05-17: amend AC4 formula + implementation to count `['ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'] + INVITED` against `maxSlots`. Implementation patch listed below.
+- [x] [Review][Decision][Resolved→Patch] **Snackbar keys migrate to `speakerCard.*` namespace** — Decided 2026-05-17: move `speakers.inviteSent` / `speakers.inviteFailed` into `organizer:speakerCard.*` block in all 10 locales. Implementation patch listed below.
+
+### Patches
+
+- [x] [Review][Patch] **P0 — `handleSendInvitation` omits required `responseDeadline` payload** — `mutateAsync({ username: speakerForInvite.id })` passes no `options`; backend `SendInvitationRequest.responseDeadline` is `@NotNull @Future` (`SendInvitationRequest.java:18-21`). Every READY "Send invitation" click returns HTTP 400 — the story's headline new flow is broken. Reference fix: replicate `OverviewTabPanel.tsx:73-86` (compute `now + 30 days` ISO date). [`SpeakerStatusLanes.tsx:498-500`]
+- [x] [Review][Patch] **P1 — Outreach modal `onSuccess` uses wrong query key** — `queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] })` does not prefix-match `speakerPoolKeys.list(eventCode)` = `['speakerPool', 'list', eventCode]`. After "Log outreach" succeeds the kanban does not refetch and the card stays in IDENTIFIED. Use `speakerPoolKeys.list(eventCode)` instead (the existing line 197 pre-existing bug has the same shape — fix both while in the file). [`EventSpeakersTab.tsx:435`]
+- [x] [Review][Patch] **P1 — `formatDistanceToNow` will throw `RangeError: Invalid time value` on unparseable timestamp** — `getStatusChangedAt` falls back to `speaker.updatedAt ?? speaker.createdAt` and passes the result directly to `new Date(...)`. Any malformed API timestamp renders the entire kanban unrecoverable. Guard with `Number.isNaN(d.getTime())` and return `null` (chip is already conditional on `timeInState !== null`). [`SpeakerStatusLanes.tsx:515-518`]
+- [x] [Review][Patch] **P1 — Send-invitation button no longer guarded by `sendInvitationMutation.isPending`** — Pre-existing IDENTIFIED IconButton had `|| sendInvitationMutation.isPending` disabling. New code drops this guard. Rapid double-click on a READY card fires two parallel POSTs before invalidation propagates. Add `sendInvitationMutation.isPending` into the READY button's `disabled` computation (via `getPrimaryAction` extras or per-render). [`SpeakerStatusLanes.tsx:822, 839`]
+- [x] [Review][Patch] **P1 — `handleAssignSessionSlotForSpeaker` ignores its speaker arg** — Wired as `onAssignSessionSlot: (speaker) => void`, but the handler signature is `() => { navigate(...) }` and the navigation target carries no speaker context. AC2-style callback shape is broken. Either pass speaker via `navigate(url, { state: { speakerId } })` or via query-param, or document the spec deviation. [`EventSpeakersTab.tsx:783-793`]
+- [x] [Review][Patch] **P1 — All three primary-action `<Button>` instances use `size="small"`, violating AC6 "Min height: 36px (MUI default `<Button>` size)"** — MUI `size="small"` is ~30-32px. Spec AC6 says default (medium) size. Remove `size="small"` from all three branches. [`SpeakerStatusLanes.tsx:810, 821, 838`]
+- [x] [Review][Patch] **P1 — `nl` locale `slotCapacityTooltip` typo "Sloteafhankelijkheid"** — Concatenation artifact (machine translation hallucination). Real Dutch is "Slotcapaciteit". The string ships to nl-locale organizers as the only feedback on a blocked invitation flow. Replace and flag for native-speaker QA. [`web-frontend/public/locales/nl/organizer.json:522`]
+- [x] [Review][Patch] **P1 — AC9 #4 test does not assert tooltip text / parameter interpolation** — Spec required asserting "the tooltip text … contains the parameterised value". Test only asserts the wrapping span exists. Strengthen to assert `getByText(/3 invitations.*2 acceptances.*5 slots/)` or read `title` attribute. [`__tests__/SpeakerStatusLanes.test.tsx` AC9-#4 case]
+- [x] [Review][Patch] **P1 — AC9 #9 Publishable chip test missing success-color + no-click-handler assertions** — Spec required asserting "has the success colour, has no click handler that opens a modal". Add `expect(chip).toHaveClass(/MuiChip-colorSuccess/)` and verify no callback fires on click. [`__tests__/SpeakerStatusLanes.test.tsx` AC9-#9 case]
+- [x] [Review][Patch] **P2 — `getPrimaryAction` QUALITY_REVIEWED treats `isSlotAssigned === undefined` as `=== false`** — A stale snapshot pre-Story-11.B.3 backend (or any read where the derived flag wasn't computed) shows "Assign session slot" button on a speaker who already has one. Guard with `speaker.isSlotAssigned === true` explicitly + fall back to `speaker.sessionId != null` (the long-standing existing check). [`getPrimaryAction.ts:2200-2208`]
+- [x] [Review][Patch] **P2 — Dead `SpeakerPoolResponseLite` type in Playwright spec** — Declared and re-exported "to silence the unused-type warning". If unused, delete; do not ship dead exports with apologetic comments. [`e2e/organizer/speaker-card-primary-action.spec.ts:148-152, 329-331`]
+- [x] [Review][Patch] **P2 — Hard-coded `eventNumber: '998'` collides across parallel test workers** — Test uses `Date.now()` for the title but reuses the same fixed event number; parallel CI workers interfere. Derive eventNumber from a time-bucketed value (`String(Date.now() % 10000)`) or per-worker offset. [`e2e/organizer/speaker-card-primary-action.spec.ts:166`]
+- [x] [Review][Patch] **P2 — `getCurrentEventCode()` silently falls back to `'BATbern998'`** — On textContent read failure, downstream API calls 404 on a phantom event, masquerading as a different failure. Throw instead of returning a fake code. [`e2e/organizer/speaker-card-primary-action.spec.ts:175`]
+- [x] [Review][Patch] **P2 — AC9 #14 does not mock `formatDistanceToNow`** — Spec said "formatted label matches a *mocked* `formatDistanceToNow` result"; test uses real distance, so assertion drifts as system clock advances. Mock the import or use `vi.useFakeTimers()` with a fixed now. [`__tests__/SpeakerStatusLanes.test.tsx` AC9-#14 case]
+- [x] [Review][Patch] **P2 — No test for AC3 priority-ordering of timestamp fields** — AC3 lists a 5-step priority chain (`invitedAt → acceptedAt → contentSubmittedAt → declinedAt → updatedAt/createdAt`). No test verifies that for an INVITED speaker with BOTH `invitedAt` and `updatedAt`, the chip uses `invitedAt`. Add at least one case per priority transition. [`__tests__/SpeakerStatusLanes.test.tsx`]
+- [x] [Review][Patch] **P2 — `maxSlots=0/undefined` test covers only `0`** — Title claims both branches but `maxSlots: undefined` (the actual default when prop omitted) is never exercised. Add a second case. [`__tests__/SpeakerStatusLanes.test.tsx` maxSlots-no-enforcement case]
+- [x] [Review][Patch] **From Decision #1 — Amend slot-capacity formula** — Update `slotCapacity` `useMemo` to count post-acceptance speakers as occupying slots: `const occupiedCount = speakers.filter(s => ['INVITED', 'ACCEPTED', 'CONTENT_SUBMITTED', 'QUALITY_REVIEWED'].includes(s.status)).length;`. Also amend AC4 text in this story file. Add a test asserting that a READY speaker is gated when ACCEPTED + CONTENT_SUBMITTED + QUALITY_REVIEWED already fill `maxSlots`. [`SpeakerStatusLanes.tsx:165-175`]
+- [x] [Review][Patch] **From Decision #2 — Migrate snackbar i18n keys to `speakerCard.*`** — Add `inviteSent` + `inviteFailed` to the `organizer:speakerCard.*` block in all 10 locale files (en + de canonical, 8 machine-translated baselines flagged for native-speaker QA). Update `handleSendInvitation` snackbar calls in `SpeakerStatusLanes.tsx:501,505` to use the new keys. Leave the legacy `organizer:speakers.inviteSent/inviteFailed` keys present for the drawer surface `OverviewTabPanel.tsx` (which still uses them). [`SpeakerStatusLanes.tsx:501,505` + 10 locale files]
+
+### Deferred (pre-existing or out-of-scope)
+
+- [x] [Review][Defer] **`i18n.language === 'de'` covers only 2 of 10 supported locales** [`SpeakerStatusLanes.tsx:516`] — faithful to AC3 (which cites `TeamActivityFeed.tsx` pattern with identical de/enUS handling); project-wide concern, not a story-D2 deviation.
+- [x] [Review][Defer] **`i18n.language === 'de'` does not match `de-CH`/`de-DE`/`gsw-BE`** [`SpeakerStatusLanes.tsx:516`] — same root cause as above; tracked with the wider i18n cleanup follow-up.
+- [x] [Review][Defer] **`gsw-BE` locale never had `speakers.tentative*` keys to remove** — pre-existing locale gap; AC5(C)'s "removed from all 10 locales" sweep is vacuously satisfied for gsw-BE.
+- [x] [Review][Defer] **Stale modal state when speaker mutated mid-modal** [`EventSpeakersTab.tsx:763-770`] — modal works on snapshot; mid-modal background refetch can desync. Requires larger redesign of modal-state ownership.
+- [x] [Review][Defer] **Snackbar state is per-card** [`SpeakerStatusLanes.tsx` SpeakerCard local state] — clicking multiple Send-invitation buttons quickly can fire conflicting toasts. Pre-existing pattern; should be hoisted in a separate refactor.
+- [x] [Review][Defer] **`SpeakerStatusDashboard` mounts `SpeakerStatusLanes` without the new callbacks** [`SpeakerStatusDashboard.tsx:181`] — the `??` no-op defaults silently swallow clicks. Component is not on any production route today (only referenced from tests), so latent only.
+- [x] [Review][Defer] **`STATUS_LANES` does not catch-all legacy union members `SLOT_ASSIGNED`, `WITHDREW`, `OVERFLOW`** [`speakerPool.types.ts` union] — speakers in those legacy states disappear from the kanban. Brownfield-event concern; clean up in the wider type-union refactor planned post-11.D.
+- [x] [Review][Defer] **`slotCapacity` `useMemo` recomputes on every `speakers` array reference change** [`SpeakerStatusLanes.tsx:165`] — React Query returns fresh arrays every refetch, defeating downstream `SpeakerCard` memoization. Performance nit; not a correctness bug.
+- [x] [Review][Defer] **Empty 4px organizer-row when both `assignedOrg` and `timeInState` are falsy** [`SpeakerStatusLanes.tsx` organizer-row Box] — cosmetic edge under extremely unlikely "no timestamps anywhere" data.
+- [x] [Review][Defer] **Snackbar "Invitation sent" toast can be lost on subsequent refetch re-render** [`SpeakerStatusLanes.tsx:501-503`] — React Query invalidation re-renders the card with new status; per-card snackbar state may not survive. Pre-existing pattern.
+
+### Dismissed (false positives / spec-aligned / cosmetic — 20+)
+
+The following were raised by reviewers but rejected during triage:
+
+- **AC11 grep invariant #5 `speakerCard.primaryAction` returns 0** — spec invariant is poorly worded; the JSON has nested `"speakerCard": { "primaryAction": ... }` keys present in all 10 locales. Intent of the invariant (namespace exists everywhere) is satisfied.
+- **`getStatusChangedAt` imperfection for IDENTIFIED/CONTACTED/READY/QUALITY_REVIEWED** — explicitly acknowledged by Resolved Q#1 + TODO comment per spec AC3.
+- **Slot-capacity miscount on future pagination** — already documented via the defensive comment per Resolved Q#4 / AC4.
+- **`getPrimaryAction` hardcodes `organizer:` namespace** — standard i18next contract; the consumer initializes with that namespace.
+- **`STATUS_LANES` "dead code"** — false positive; used at `SpeakerStatusLanes.tsx:266`.
+- **`toLocaleString` throws on unknown BCP-47 tag** — extremely unlikely; the language-detector pipeline normalises before reaching this code.
+- **`makeSpeaker` test factory hardcoded 2026 timestamps** — chip text not asserted, so passes regardless of system clock.
+- **Test `expect.objectContaining({ id })` doesn't pin full shape** — sufficient for the callback-firing assertion's purpose.
+- **`SpeakerStatusDashboard` STATUS_COLORS gains `INVITED` entry not in spec** — beneficial scope-creep; harmless.
+- **Test count 22 vs spec's 18** — the 4 extras are positive coverage (stop-propagation, no-organizer fallback, maxSlots-0, lane scoping).
+- **Story status flipped to `review` in same commit** — project convention; not a workflow violation.
+- **Sprint-status.yaml whitespace re-alignment** — already committed; noise but irrelevant.
+- **`ja` locale `slotCapacityTooltip` parameter order vs EN** — named params work irrespective of order.
+- **TODO comment placement / stopPropagation pattern / `_speaker` rename / `data-action` testid for `none`** — P3 style nits with no functional impact.
+- **`SpeakerPoolEntry` strict-equality `as string` casts in test mocks** — works as-is; no concrete failure mode.
+- **`gsw-BE slotCapacityTooltip` grammar quality** — story acknowledges all non-DE/EN locales need native-speaker QA; not a story-merge blocker.
+- **AC4 defensive pagination comment placement** — Acceptance Auditor noted "OK in substance".
+- **Doc-drift PR description flagging** — operational, not a code defect.
+- **Modal close animation lost when `speaker: null` unmounts modal** — cosmetic; works correctly in practice.
+- **`data-testid` collision risk on QUALITY_REVIEWED chip vs button** — current diff renders one XOR the other; not a real collision.
 
 ---
 

@@ -21,6 +21,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 
+// Mock date-fns formatDistanceToNow so chip text is deterministic regardless of clock.
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual<typeof import('date-fns')>('date-fns');
+  return {
+    ...actual,
+    formatDistanceToNow: vi.fn(() => '2 days'),
+  };
+});
+
 // i18n mock — passthrough on namespace-stripped keys, with parameter interpolation for
 // the slot-capacity tooltip so we can assert the formatted message.
 vi.mock('react-i18next', () => ({
@@ -149,7 +158,8 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
   });
 
   // AC9 #4
-  it('should_disableSendInvitation_when_slotCapacityReached', () => {
+  it('should_disableSendInvitation_when_slotCapacityReached', async () => {
+    const user = userEvent.setup();
     const ready = makeSpeaker('READY');
     const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
     const invited = makeSpeaker('INVITED', { id: 'inv-1' });
@@ -160,6 +170,24 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
 
     const tooltipWrapper = screen.getByTestId(`primary-action-tooltip-${ready.id}`);
     expect(tooltipWrapper).toBeInTheDocument();
+    // Hover the wrapping span so MUI renders the tooltip popper, then assert the
+    // parameter-interpolated message reached the DOM.
+    await user.hover(tooltipWrapper);
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent(/1 invitations? outstanding/);
+    expect(tooltip).toHaveTextContent(/1 acceptances? for 2 slots/);
+  });
+
+  // Decision #1 (2026-05-17) — Post-acceptance speakers occupy slots per ADR-009.
+  it('should_disableSendInvitation_when_postAcceptanceStatesFillSlots', () => {
+    const ready = makeSpeaker('READY');
+    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
+    const contentSubmitted = makeSpeaker('CONTENT_SUBMITTED', { id: 'cs-1' });
+    const qualityReviewed = makeSpeaker('QUALITY_REVIEWED', { id: 'qr-1' });
+    renderLanes([ready, accepted, contentSubmitted, qualityReviewed], { maxSlots: 3 });
+
+    const btn = screen.getByTestId(`primary-action-button-${ready.id}`);
+    expect(btn).toBeDisabled();
   });
 
   // AC9 #5
@@ -199,14 +227,22 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
   });
 
   // AC9 #9
-  it('should_renderPublishableChip_when_speakerIsQualityReviewed_andSlotAssigned', () => {
+  it('should_renderPublishableChip_when_speakerIsQualityReviewed_andSlotAssigned', async () => {
+    const user = userEvent.setup();
+    const onSpeakerClick = vi.fn();
+    const onAssignSessionSlot = vi.fn();
     const speaker = makeSpeaker('QUALITY_REVIEWED', { isSlotAssigned: true });
-    renderLanes([speaker]);
+    renderLanes([speaker], { onSpeakerClick, onAssignSessionSlot });
     // No button — only the info chip.
     expect(screen.queryByTestId(`primary-action-button-${speaker.id}`)).not.toBeInTheDocument();
     const chip = screen.getByTestId(`primary-action-chip-${speaker.id}`);
     expect(chip).toBeInTheDocument();
     expect(chip).toHaveTextContent('Publishable');
+    // AC1 success-color contract.
+    expect(chip.className).toMatch(/MuiChip-colorSuccess/);
+    // The chip is informational — clicking it must not fire the assign-slot action.
+    await user.click(chip);
+    expect(onAssignSessionSlot).not.toHaveBeenCalled();
   });
 
   // AC9 #10
@@ -263,9 +299,39 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
     renderLanes([speaker]);
     const chip = screen.getByTestId(`time-in-state-chip-${speaker.id}`);
     expect(chip).toBeInTheDocument();
+    // The mocked formatDistanceToNow returns "2 days" — the chip text must surface it.
+    expect(chip).toHaveTextContent('2 days');
     // Chip is inside the organizer row container.
     const row = screen.getByTestId(`organizer-row-${speaker.id}`);
     expect(row).toContainElement(chip);
+  });
+
+  // AC3 priority-ordering — for INVITED speakers, `invitedAt` wins over `updatedAt`.
+  it('should_useInvitedAt_overUpdatedAt_forInvitedSpeakerTimeInState', async () => {
+    const { formatDistanceToNow } = await import('date-fns');
+    const speaker = makeSpeaker('INVITED', {
+      invitedAt: '2026-05-10T00:00:00Z',
+      updatedAt: '2026-05-15T00:00:00Z',
+    });
+    renderLanes([speaker]);
+    // The helper must have been called with the invitedAt value, not updatedAt.
+    expect(formatDistanceToNow).toHaveBeenCalled();
+    const lastCall = (formatDistanceToNow as ReturnType<typeof vi.fn>).mock.calls.at(-1);
+    expect(lastCall?.[0]).toBeInstanceOf(Date);
+    expect((lastCall?.[0] as Date).toISOString()).toBe('2026-05-10T00:00:00.000Z');
+  });
+
+  // AC3 priority-ordering — for DECLINED speakers, `declinedAt` wins.
+  it('should_useDeclinedAt_overUpdatedAt_forDeclinedSpeakerTimeInState', async () => {
+    const { formatDistanceToNow } = await import('date-fns');
+    (formatDistanceToNow as ReturnType<typeof vi.fn>).mockClear();
+    const speaker = makeSpeaker('DECLINED', {
+      declinedAt: '2026-04-20T00:00:00Z',
+      updatedAt: '2026-05-15T00:00:00Z',
+    });
+    renderLanes([speaker]);
+    const lastCall = (formatDistanceToNow as ReturnType<typeof vi.fn>).mock.calls.at(-1);
+    expect((lastCall?.[0] as Date).toISOString()).toBe('2026-04-20T00:00:00.000Z');
   });
 
   // AC9 #15 — regression guard: legacy IDENTIFIED IconButton must not render
@@ -338,6 +404,16 @@ describe('SpeakerStatusLanes — Story 11.D.2 primary-action button', () => {
     const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
     const invited = makeSpeaker('INVITED', { id: 'inv-1' });
     renderLanes([ready, accepted, invited], { maxSlots: 0 });
+
+    expect(screen.getByTestId(`primary-action-button-${ready.id}`)).not.toBeDisabled();
+  });
+
+  it('should_keepSendInvitationEnabled_when_maxSlotsIsUndefined', () => {
+    const ready = makeSpeaker('READY');
+    const accepted = makeSpeaker('ACCEPTED', { id: 'acc-1' });
+    const invited = makeSpeaker('INVITED', { id: 'inv-1' });
+    // Omit maxSlots entirely — the prop default path.
+    renderLanes([ready, accepted, invited]);
 
     expect(screen.getByTestId(`primary-action-button-${ready.id}`)).not.toBeDisabled();
   });

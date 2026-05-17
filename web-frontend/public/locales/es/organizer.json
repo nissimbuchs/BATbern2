@@ -520,6 +520,8 @@
     "publishable": "Publicable",
     "publishableTooltip": "El orador está aprobado y tiene una franja de sesión",
     "slotCapacityTooltip": "Capacidad de franjas alcanzada. {{invited}} invitaciones pendientes + {{accepted}} aceptaciones para {{slots}} franjas. Espere o rechace a un orador aceptado para liberar una franja.",
-    "timeInStateTooltip": "Estado actual desde {{date}}"
+    "timeInStateTooltip": "Estado actual desde {{date}}",
+    "inviteSent": "Invitación enviada",
+    "inviteFailed": "Error al enviar la invitación"
   }
 }
