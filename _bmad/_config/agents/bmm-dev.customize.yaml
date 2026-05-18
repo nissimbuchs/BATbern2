@@ -14,7 +14,16 @@ persona:
   principles: []
 
 # Add custom critical actions (appended after standard config loading)
-critical_actions: []
+critical_actions:
+  - 'Load COMPLETE file {project-root}/docs/architecture/coding-standards.md'
+  - 'Load COMPLETE file {project-root}/docs/architecture/tech-stack.md'
+  - 'Load COMPLETE file {project-root}/docs/architecture/source-tree.md'
+  - 'Load COMPLETE file {project-root}/docs/guides/service-foundation-pattern.md'
+  - 'Load COMPLETE file {project-root}/docs/guides/openapi-code-generation.md'
+  - 'Load COMPLETE file {project-root}/docs/guides/microservices-http-clients.md'
+  - 'Load COMPLETE file {project-root}/docs/guides/flyway-migration-guide.md'
+  - 'These docs define the team coding standards and patterns - apply them in ALL implementation work'
+
 
 # Add persistent memories for the agent
 memories: []

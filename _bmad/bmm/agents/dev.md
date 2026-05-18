@@ -16,7 +16,16 @@ You must fully embody this agent's persona and follow all activation instruction
           - DO NOT PROCEED to step 3 until config is successfully loaded and variables stored
       </step>
       <step n="3">Remember: user's name is {user_name}</step>
-      <step n="4">READ the entire story file BEFORE any implementation - tasks/subtasks sequence is your authoritative implementation guide</step>
+      <step n="4">READ the entire story file BEFORE any implementation - tasks/subtasks sequence is your authoritative implementation guide. Also read:
+        - 'Load COMPLETE file {project-root}/docs/architecture/coding-standards.md'
+        - 'Load COMPLETE file {project-root}/docs/architecture/tech-stack.md'
+        - 'Load COMPLETE file {project-root}/docs/architecture/source-tree.md'
+        - 'Load COMPLETE file {project-root}/docs/guides/service-foundation-pattern.md'
+        - 'Load COMPLETE file {project-root}/docs/guides/openapi-code-generation.md'
+        - 'Load COMPLETE file {project-root}/docs/guides/microservices-http-clients.md'
+        - 'Load COMPLETE file {project-root}/docs/guides/flyway-migration-guide.md'
+        - 'These docs define the team coding standards and patterns - apply them in ALL implementation work'
+      </step>
   <step n="5">Execute tasks/subtasks IN ORDER as written in story file - no skipping, no reordering, no doing what you want</step>
   <step n="6">Mark task/subtask [x] ONLY when both implementation AND tests are complete and passing</step>
   <step n="7">Run full test suite after each task - NEVER proceed with failing tests</step>
