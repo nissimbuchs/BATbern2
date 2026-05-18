@@ -121,6 +121,25 @@
 # Cookie Without Secure Flag: same — Cognito SDK sets these
 10011	WARN	.*
 
+# ─── ABUSE-DEFENSE EXPECTED RESPONSES (Tier 1 of registration-abuse plan) ────
+#
+# After registration-abuse-defense-plan Tier 1, the following anonymous POSTs
+# refuse traffic by design:
+#
+#   POST /api/v1/events/*/registrations            ≤ 5 req / 5 min per IP
+#   POST /api/v1/newsletter/subscribe              ≤ 5 req / 5 min per IP
+#   POST /api/v1/registrations/deregister/by-email ≤ 3 req / 5 min per IP
+#
+# Beyond those limits the gateway returns 429 (rate-limit). Independently, any
+# request body whose recipient sits on an RFC 2606 / 6761 reserved domain
+# (example.com, *.test, *.invalid, …) is short-circuited at the shared-kernel
+# EmailService boundary — those produce 4xx or async swallow but never reach
+# AWS SES. This is intentional and protects SES quota / bounce reputation from
+# the ZAP scanner itself.
+#
+# Alert 100000 (A Client Error response code was returned) is already IGNOREd
+# above so the resulting 4xx/429 responses do not flag.
+
 # ─── FAIL (block CI) — high-confidence critical findings ─────────────────────
 # Nothing explicitly set to FAIL here — let ZAP's default severity thresholds apply.
 # Tighten this after the first clean run on staging.
