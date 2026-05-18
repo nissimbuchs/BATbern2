@@ -62,6 +62,17 @@ public class UserApiClientImpl implements UserApiClient {
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
     public UserResponse getUserByUsername(String username) {
+        // Early guard: an empty/null username yields the URL "/api/v1/users/" which
+        // returns a 500 from User Management (route mismatch). This caused the
+        // 2026-05-18 attendee-registration outage when pre-token-generation Lambda
+        // fell back to an empty `custom:username` claim and the JWT carried that
+        // through to event-management. Fail fast with a clear UserNotFoundException
+        // so callers and metrics see the real reason.
+        if (username == null || username.isEmpty()) {
+            log.warn("Refusing getUserByUsername call with empty username "
+                    + "(likely missing custom:username JWT claim from pre-token-generation)");
+            throw new UserNotFoundException("");
+        }
         log.debug("Fetching user profile for username: {}", username);
 
         String url = userServiceBaseUrl + "/api/v1/users/" + username;

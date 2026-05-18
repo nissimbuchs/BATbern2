@@ -102,6 +102,34 @@ function parseUserPreferences(preferencesJson?: string): UserPreferences {
 }
 
 /**
+ * Resolve a unique username by appending .2 / .3 / … when the base collides.
+ *
+ * Mirrors the Java {@code SlugGenerationService.ensureUniqueUsername} and the
+ * JIT interceptor's existsByUsername loop, so the three code paths stay in
+ * sync on collision behaviour.
+ */
+async function resolveUniqueUsername(
+  client: { query: (text: string, params?: unknown[]) => Promise<{ rows: { username: string }[] }> },
+  base: string
+): Promise<string> {
+  const baseCheck = await client.query(
+    'SELECT username FROM user_profiles WHERE username = $1 LIMIT 1',
+    [base]
+  );
+  if (baseCheck.rows.length === 0) return base;
+  let suffix = 2;
+  for (;;) {
+    const candidate = `${base}.${suffix}`;
+    const row = await client.query(
+      'SELECT username FROM user_profiles WHERE username = $1 LIMIT 1',
+      [candidate]
+    );
+    if (row.rows.length === 0) return candidate;
+    suffix++;
+  }
+}
+
+/**
  * Generate unique username from first and last name
  * Format: firstname.lastname or firstname.lastname.N for duplicates
  * Story 1.16.2: Username is public meaningful identifier
@@ -252,7 +280,16 @@ async function createUser(
         throw new Error(errorMsg);
       }
     } else {
-      // STEP 2b: No existing user - INSERT new record
+      // STEP 2b: No existing user - INSERT new record.
+      //
+      // Resolve username collisions BEFORE the INSERT so the constraint never
+      // fires here. Without this, a bare INSERT would fail when the generated
+      // firstname.lastname matches an existing historical user (e.g. someone
+      // with the same name from a previous job). The Lambda would then throw,
+      // and the JIT interceptor would later create a duplicate account on the
+      // user's first authenticated request — without names, because JIT reads
+      // a different attribute path (2026-05-18 incident).
+      const finalUsername = await resolveUniqueUsername(client, username);
       const insertResult = await client.query(
         `INSERT INTO user_profiles (
           cognito_user_id,
@@ -271,7 +308,7 @@ async function createUser(
         [
           cognitoId,
           email,
-          username,
+          finalUsername,
           firstName,
           lastName,
           language,
@@ -280,7 +317,7 @@ async function createUser(
       );
 
       userId = insertResult.rows[0].id;
-      console.log('New user created in database', { userId, cognitoId, email, username });
+      console.log('New user created in database', { userId, cognitoId, email, username: finalUsername });
 
       // Publish metric for new user creation
       await publishMetric('NewUserCreated', 1, 'Count');
