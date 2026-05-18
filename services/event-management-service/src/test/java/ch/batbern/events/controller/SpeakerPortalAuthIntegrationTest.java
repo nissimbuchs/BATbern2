@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ch.batbern.events.client.UserApiClient;
@@ -144,33 +145,23 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .response(SpeakerResponseType.ACCEPT)
                 .build();
 
-        // Production: AWS API Gateway returns 401 before the request reaches Spring.
-        // In MockMvc: Spring's stateless OAuth2 resource server with no JWT returns 403
-        // through the default access-denied handler. Either way, the endpoint is NOT
-        // permitAll() — the auth chain rejects anonymous callers.
+        // Code review 2026-05-18 (P8): pin to the actual MockMvc behaviour (403 via Spring's
+        // default access-denied handler when no JWT is present). Production-side AWS API
+        // Gateway returns 401 before the request reaches Spring at all, which is a separate
+        // concern handled at the gateway layer; this assertion guards the EMS contract.
+        // Pinning to one value catches regressions if the auth chain changes.
         mockMvc.perform(post("/api/v1/speaker-portal/events/" + EVENT_CODE + "/respond")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    if (status != 401 && status != 403) {
-                        throw new AssertionError(
-                                "Expected 401 or 403 from unauthenticated call but got " + status);
-                    }
-                });
+                .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("should_rejectUnauthenticated_when_noAuthHeader_onDashboard")
     void shouldRejectUnauthenticated_whenNoAuthHeader_onDashboard() throws Exception {
+        // Code review 2026-05-18 (P8): same pinning as above.
         mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    if (status != 401 && status != 403) {
-                        throw new AssertionError(
-                                "Expected 401 or 403 from unauthenticated call but got " + status);
-                    }
-                });
+                .andExpect(status().isForbidden());
     }
 
     // ---------- 403 paths (wrong role) ----------
@@ -211,13 +202,14 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})
     @DisplayName("should_succeed_when_speakerToken_onOwnDashboard")
     void shouldSucceed_whenSpeakerToken_onOwnDashboard() throws Exception {
-        var result = mockMvc.perform(get("/api/v1/speaker-portal/dashboard")).andReturn();
-        int status = result.getResponse().getStatus();
-        String body = result.getResponse().getContentAsString();
-        if (status != 200) {
-            throw new AssertionError(
-                    "Dashboard call did not return 200. Status=" + status + " body=" + body);
-        }
+        // Code review 2026-05-18 (P18): assert the response body shape, not just the status.
+        // A 200 with malformed JSON would silently pass the old check; the dashboard contract
+        // is that upcomingEvents includes the seeded eventCode in this fixture.
+        mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakerName").isString())
+                .andExpect(jsonPath("$.upcomingEvents").isArray())
+                .andExpect(jsonPath("$.upcomingEvents[0].eventCode").value(EVENT_CODE));
     }
 
     // ---------- 403 path (speaker, foreign event — AC3 pool-ownership invariant) ----------

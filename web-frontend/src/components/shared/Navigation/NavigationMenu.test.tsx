@@ -239,17 +239,17 @@ describe('NavigationMenu Component', () => {
       expect(screen.getByTestId('nav-section-header-partner')).toBeInTheDocument();
     });
 
-    test('should_showSharedItemsInEverySection_when_multipleRolesHaveSameItem', () => {
-      // Story 11.E.3 deliberately drops the deduplication that the older single-list model
-      // applied to shared items like "Public Site": when a user has e.g. organizer + partner,
-      // each role's section is rendered independently, so a shared item appears once per
-      // section. The duplicate is informative — it tells the user the item belongs to both
-      // roles' navigation — and removing it would obscure the section grouping.
+    test('should_deduplicateSharedItems_when_multipleRolesHaveSameItem', () => {
+      // Code review 2026-05-18 (D4): shared items like "Public Site" exist in multiple
+      // roles' nav configs. Without dedup a dual-role user would see "Public Site" twice
+      // (once per section), which (a) clutters the menu and (b) creates duplicate accessible
+      // names for screen readers (WCAG 2.4.4). getGroupedNavigationForRoles dedups across
+      // the user's groups; the item ends up in whichever role-section appears first in the
+      // iteration order.
       renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} />);
 
       const publicLinks = screen.queryAllByRole('link', { name: /public site/i });
-      // organizer section contributes one, partner section contributes one
-      expect(publicLinks.length).toBeGreaterThanOrEqual(2);
+      expect(publicLinks).toHaveLength(1);
     });
   });
 

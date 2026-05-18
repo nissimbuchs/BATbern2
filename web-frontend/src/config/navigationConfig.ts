@@ -234,15 +234,29 @@ export function getNavigationForRoles(roles: UserRole[]): NavigationItem[] {
  * Returns an array of role groups, each with a label key (`navigation.section.{role}`) and items.
  * Used by NavigationMenu when the signed-in user has more than one role — renders a section
  * header + divider between each role group.
+ *
+ * Code review 2026-05-18 (D4): dedup items that appear in more than one of the user's roles
+ * (e.g. "Public Site" exists for organizer + speaker + partner + attendee — without dedup a
+ * dual-role user would see it twice in their nav). The dedup is *across* the user's groups —
+ * the item belongs to the first matching role-section in the iteration order. Within a
+ * single role section, items are not re-keyed.
  */
 export function getGroupedNavigationForRoles(
   roles: UserRole[]
 ): { role: UserRole; labelKey: string; items: NavigationItem[] }[] {
-  return roles.map((role) => ({
-    role,
-    labelKey: `navigation.section.${role}`,
-    items: getNavigationForRole(role),
-  }));
+  const seen = new Set<string>();
+  return roles.map((role) => {
+    const items = getNavigationForRole(role).filter((item) => {
+      if (seen.has(item.path)) return false;
+      seen.add(item.path);
+      return true;
+    });
+    return {
+      role,
+      labelKey: `navigation.section.${role}`,
+      items,
+    };
+  });
 }
 
 /**

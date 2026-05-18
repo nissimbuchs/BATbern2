@@ -29,6 +29,5 @@ public record DashboardUpcomingEventDto(
         String organizerName,
         String organizerEmail,
         String respondUrl,
-        String profileUrl,
         String contentUrl
 ) {}

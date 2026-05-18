@@ -109,8 +109,9 @@ class SpeakerResponseServiceTest {
         assertThat(actorCaptor.getValue().roles()).containsExactly("SPEAKER");
 
         assertThat(result.isSuccess()).isTrue();
-        // Story 11.E.3: profile URL is now a token-less SPA route keyed by eventCode.
-        assertThat(result.getProfileUrl()).isEqualTo("/speaker-portal/profile/BATbern99");
+        // Code review 2026-05-18 (D1): profileUrl was dropped from SpeakerResponseResult.
+        // Profile editing now uses CUMS /users/me endpoints — the speaker portal no longer
+        // returns a per-event profile URL.
     }
 
     @Test

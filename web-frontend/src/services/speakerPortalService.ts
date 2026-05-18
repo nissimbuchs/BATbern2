@@ -58,7 +58,6 @@ export interface SpeakerResponseResult {
   nextSteps: string[];
   contentDeadline?: string;
   dashboardUrl?: string;
-  profileUrl?: string;
   message?: string;
 }
 
@@ -96,7 +95,6 @@ export interface DashboardUpcomingEvent {
   organizerName: string | null;
   organizerEmail: string | null;
   respondUrl: string | null;
-  profileUrl: string;
   contentUrl: string | null;
 }
 
@@ -115,68 +113,6 @@ export interface SpeakerDashboard {
   profileCompleteness: number;
   upcomingEvents: DashboardUpcomingEvent[];
   pastEvents: DashboardPastEvent[];
-}
-
-// ============================================================================
-// Story 6.2b / 11.E.3: Profile Management Types
-// ============================================================================
-
-export interface SpeakerProfile {
-  username: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  bio: string | null;
-  profilePictureUrl: string | null;
-  expertiseAreas: string[];
-  speakingTopics: string[];
-  linkedInUrl: string | null;
-  languages: string[];
-  profileCompleteness: number;
-  missingFields: string[];
-  hasSessionAssigned?: boolean;
-  sessionTitle?: string | null;
-  eventCode?: string | null;
-}
-
-/**
- * Profile update body — Story 11.E.3 drops the magic-link token.
- */
-export interface ProfileUpdateRequest {
-  firstName?: string;
-  lastName?: string;
-  bio?: string;
-  expertiseAreas?: string[];
-  speakingTopics?: string[];
-  linkedInUrl?: string;
-  languages?: string[];
-}
-
-// ============================================================================
-// Photo Upload Types — Story 11.E.3 drops magic-link token
-// ============================================================================
-
-export interface PhotoUploadRequest {
-  fileName: string;
-  fileSize: number;
-  contentType: string;
-}
-
-export interface PresignedPhotoUploadResponse {
-  uploadUrl: string;
-  uploadId: string;
-  s3Key: string;
-  expiresIn: number;
-  maxSizeBytes: number;
-}
-
-export interface PhotoConfirmRequest {
-  uploadId: string;
-  s3Key: string;
-}
-
-export interface PhotoConfirmResponse {
-  profilePictureUrl: string;
 }
 
 // ============================================================================
@@ -313,106 +249,13 @@ class SpeakerPortalService {
     }
   }
 
-  // ==========================================================================
-  // Profile Management — Story 6.2b / 11.E.3
-  // ==========================================================================
-
-  async getProfile(eventCode: string): Promise<SpeakerProfile> {
-    try {
-      const response = await apiClient.get<SpeakerProfile>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/profile`
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async updateProfile(eventCode: string, request: ProfileUpdateRequest): Promise<SpeakerProfile> {
-    try {
-      const response = await apiClient.patch<SpeakerProfile>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/profile`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  // ==========================================================================
-  // Photo Upload — Story 6.2b AC7 / 11.E.3
-  // ==========================================================================
-
-  async getPhotoPresignedUrl(
-    eventCode: string,
-    request: PhotoUploadRequest
-  ): Promise<PresignedPhotoUploadResponse> {
-    try {
-      const response = await apiClient.post<PresignedPhotoUploadResponse>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/profile/photo/presigned-url`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async confirmPhotoUpload(
-    eventCode: string,
-    request: PhotoConfirmRequest
-  ): Promise<PhotoConfirmResponse> {
-    try {
-      const response = await apiClient.post<PhotoConfirmResponse>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/profile/photo/confirm`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async uploadProfilePhoto(
-    eventCode: string,
-    file: File,
-    onProgress?: (progress: number) => void
-  ): Promise<string> {
-    const presignedResponse = await this.getPhotoPresignedUrl(eventCode, {
-      fileName: file.name,
-      fileSize: file.size,
-      contentType: file.type,
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable && onProgress) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          onProgress(percentComplete);
-        }
-      });
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          resolve();
-        } else {
-          reject(new Error(`S3 upload failed with status ${xhr.status}`));
-        }
-      });
-      xhr.addEventListener('error', () => reject(new Error('S3 upload failed')));
-      xhr.open('PUT', presignedResponse.uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.send(file);
-    });
-
-    const confirmResponse = await this.confirmPhotoUpload(eventCode, {
-      uploadId: presignedResponse.uploadId,
-      s3Key: presignedResponse.s3Key,
-    });
-
-    return confirmResponse.profilePictureUrl;
-  }
+  // Code review 2026-05-18 (D1): the per-event profile endpoints (getProfile / updateProfile /
+  // getPhotoPresignedUrl / confirmPhotoUpload / uploadProfilePhoto) were removed. Story 11.C.1
+  // deleted the backend SpeakerPortalProfileController + SpeakerProfileService, which left
+  // these client methods pointing at non-existent routes. The new direction (PM decision
+  // 2026-05-18): profile editing uses the CUMS user endpoints in @/services/api/userAccountApi
+  // (`GET/PUT /api/v1/users/me`, `POST /api/v1/users/me/picture/presigned-url`, etc.) since
+  // every speaker is a User. The speaker-portal namespace no longer carries a /profile resource.
 
   // ==========================================================================
   // Content Submission — Story 6.3 / 11.E.3

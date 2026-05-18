@@ -193,7 +193,12 @@ public class SpeakerPortalMaterialsService {
                 .fileSize(request.fileSize())
                 .mimeType(request.mimeType())
                 .materialType(request.materialType() != null ? request.materialType() : "PRESENTATION")
-                .uploadedBy(speaker.getUsername() != null ? speaker.getUsername() : speaker.getSpeakerName())
+                // Code review 2026-05-18 (P2): drop the display-name fallback. The auth helper
+                // SpeakerPortalAuthorizationService.resolveSpeakerPool now rejects pool rows with
+                // null/blank username at the controller boundary (→ 409), so we can rely on
+                // speaker.getUsername() being non-null here. Falling back to speakerName would
+                // poison joins from session_materials.uploaded_by to users.username.
+                .uploadedBy(speaker.getUsername())
                 .contentExtracted(false)
                 .extractionStatus("PENDING")
                 .build();

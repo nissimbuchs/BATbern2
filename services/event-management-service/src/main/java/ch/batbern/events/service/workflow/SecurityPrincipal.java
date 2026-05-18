@@ -7,8 +7,10 @@ import org.springframework.security.core.GrantedAuthority;
 /**
  * Authenticated actor passed to {@link ch.batbern.events.service.SpeakerWorkflowService#transition}.
  *
- * <p>Roles use plain strings (e.g. {@code "ORGANIZER"}, {@code "SPEAKER"}) — the {@code "ROLE_"}
- * prefix is already stripped by {@link ch.batbern.events.security.SecurityContextHelper}.
+ * <p>Roles use plain strings (e.g. {@code "ORGANIZER"}, {@code "SPEAKER"}). When constructed via
+ * {@link #fromAuthentication(Authentication)} the {@code "ROLE_"} prefix is stripped defensively
+ * (production-path Cognito JWTs carry bare roles; test-path {@code @WithMockUser} adds the
+ * prefix). When constructed directly via the record constructor, callers must pass bare roles.
  *
  * <p>Construction patterns per ADR-009 Story 11.B.2 + 11.E.3:
  * <ul>
@@ -48,11 +50,20 @@ public record SecurityPrincipal(String username, List<String> roles) {
      * Story 11.E.3: build a {@code SecurityPrincipal} from a Spring {@code Authentication}.
      * Reads the username from {@link Authentication#getName()} (the Cognito {@code preferred_username}
      * claim, populated by {@code JwtAuthenticationConverter}) and maps every granted authority
-     * through {@link GrantedAuthority#getAuthority()}.
+     * through {@link GrantedAuthority#getAuthority()}, stripping the Spring {@code "ROLE_"}
+     * prefix when present.
      *
-     * <p>Authority strings come from {@link ch.batbern.events.security.SecurityContextHelper}'s
-     * resolver, which strips the Spring {@code "ROLE_"} prefix already, so callers see plain role
-     * names matching {@link #hasRole(String)}'s expectation.
+     * <p>Code review 2026-05-18 (P10): the prior Javadoc claimed
+     * {@link ch.batbern.events.security.SecurityContextHelper}'s resolver strips the prefix —
+     * not true. Production-path Cognito JWTs carry bare roles (e.g. {@code "SPEAKER"}) directly;
+     * test-path {@code @WithMockUser} adds {@code "ROLE_"}. This factory always strips so
+     * {@link #hasRole(String)} works the same way from both paths without callers having to know
+     * which mint produced the {@link Authentication}.
+     *
+     * <p>Code review 2026-05-18 (P4): explicit null/blank guard on {@code getName()} yields a
+     * clearer 400 message via the {@code GlobalExceptionHandler} {@code IllegalArgumentException}
+     * handler than the record constructor's generic check (which fires deeper in the call stack
+     * and obscures the auth-misconfig root cause in logs).
      */
     public static SecurityPrincipal fromAuthentication(Authentication authentication) {
         if (authentication == null) {
@@ -60,6 +71,11 @@ public record SecurityPrincipal(String username, List<String> roles) {
                     "SecurityPrincipal.fromAuthentication requires a non-null Authentication");
         }
         String username = authentication.getName();
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Authentication has no usable principal name (preferred_username / sub claim"
+                            + " missing) — JWT converter may be misconfigured");
+        }
         List<String> authorities =
                 authentication.getAuthorities() == null
                         ? List.of()

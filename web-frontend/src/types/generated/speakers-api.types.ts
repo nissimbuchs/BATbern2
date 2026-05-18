@@ -198,7 +198,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/speaker-portal/content/submit': {
+  '/speaker-portal/events/{eventCode}/content/submit': {
     parameters: {
       query?: never;
       header?: never;
@@ -208,15 +208,17 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Submit speaker content via the speaker portal (magic-link authenticated)
-     * @description Speaker self-service content submission used by the magic-link-authenticated speaker
+     * Submit speaker content via the speaker portal (Cognito-authenticated)
+     * @description Speaker self-service content submission used by the Cognito-authenticated speaker
      *     portal. Refactored by Story 11.C.2 to share the consolidated
      *     `ContentSubmissionService.submit(...)` backend write path with the organizer-on-behalf
      *     endpoint (`POST /events/{eventCode}/speakers/{speakerId}/content`).
      *
-     *     **Auth**: the magic-link `token` in the request body IS the auth mechanism. The
-     *     controller validates the token via `MagicLinkService` and resolves the speaker pool
-     *     before delegating to the shared service with a SPEAKER `SecurityPrincipal`.
+     *     **Auth**: Cognito Bearer JWT with the SPEAKER scope. The controller carries
+     *     `@PreAuthorize("hasRole('SPEAKER')")` and resolves the speaker pool by
+     *     `(authPrincipal.username, eventCode)` via `SpeakerPortalAuthorizationService` before
+     *     delegating to the shared service. A SPEAKER token whose username has no pool row for
+     *     the requested `eventCode` receives 403; an unauthenticated request receives 401.
      *
      *     **State precondition**: speaker must be in ACCEPTED (first submission) or
      *     CONTENT_SUBMITTED (resubmission). Returns 422 otherwise.
@@ -623,18 +625,13 @@ export interface components {
       materialFileName?: string;
     };
     /**
-     * @description Speaker self-service content submission via the magic-link portal. Story 11.C.2
-     *     added optional `bio`, `profilePictureUrl`, `presentationUploadId` so the speaker
-     *     can patch their User profile + attach an uploaded presentation in a single submit.
-     *     Phase E (Story 11.E.3) will remove the `token` field once the portal moves to
-     *     Cognito Bearer auth.
+     * @description Speaker self-service content submission via the Cognito-authenticated speaker portal.
+     *     Story 11.C.2 added optional `bio`, `profilePictureUrl`, `presentationUploadId` so the
+     *     speaker can patch their User profile + attach an uploaded presentation in a single
+     *     submit. Story 11.E.3 removed the magic-link `token` field — auth is now the Cognito
+     *     Bearer JWT in the `Authorization` header.
      */
     ContentSubmitRequest: {
-      /**
-       * @description Magic-link token (Story 6.3 — Phase E migrates this to Cognito Bearer).
-       * @example ml_abcdef1234567890
-       */
-      token: string;
       /**
        * @description Presentation title.
        * @example Zero Trust Security in Enterprise Environments
@@ -1287,7 +1284,15 @@ export interface operations {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /**
+         * @description Meaningful event identifier (ADR-003) — e.g. `BATbern56`. Per code review
+         *     2026-05-18 (P20) the auth service caps length to avoid passing oversized
+         *     strings into the JPA JOIN.
+         * @example BATbern56
+         */
+        eventCode: string;
+      };
       cookie?: never;
     };
     requestBody: {
@@ -1305,8 +1310,41 @@ export interface operations {
           'application/json': components['schemas']['ContentSubmitResponse'];
         };
       };
-      /** @description Validation error (missing token, blank fields, unknown property, etc.) */
+      /** @description Validation error (blank fields, unknown property, etc.) */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unauthenticated — no Cognito Bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description Forbidden — caller lacks SPEAKER role, OR has SPEAKER role but no pool row for
+       *     the requested eventCode (SpeakerPortalAuthorizationService).
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description Conflict — event is in EVENT_COMPLETED state, or the resolved speaker_pool row
+       *     lacks a canonical username (provisioning invariant violation, code review D2/P1).
+       */
+      409: {
         headers: {
           [name: string]: unknown;
         };

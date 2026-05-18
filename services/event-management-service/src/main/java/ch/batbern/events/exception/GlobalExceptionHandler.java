@@ -641,8 +641,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleSpeakerPortalAccessDenied(
             SpeakerPortalAccessDeniedException ex,
             HttpServletRequest request) {
-        log.warn("Speaker portal access denied: path={} reason={}",
-                request.getRequestURI(), ex.getMessage());
+        // Code review 2026-05-18 (P21): generate correlation ID once so log + response share it,
+        // letting support tie the WARN line above to the 403 the user reported.
+        String correlationId = CorrelationIdGenerator.generate();
+        log.warn("Speaker portal access denied: path={} correlationId={} reason={}",
+                request.getRequestURI(), correlationId, ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -650,7 +653,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Forbidden")
                 .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
+                .correlationId(correlationId)
                 .severity("MEDIUM")
                 .build();
 

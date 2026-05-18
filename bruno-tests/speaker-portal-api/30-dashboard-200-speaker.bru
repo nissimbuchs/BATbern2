@@ -27,8 +27,12 @@ tests {
   });
 
   test("should return dashboard shape (Story 11.E.3)", function() {
+    // Code review 2026-05-18 (P17): require speakerName to be non-empty. The empty-pool
+    // fallback now resolves to the User's display name from CUMS rather than echoing the
+    // raw username, so a blank value indicates a real bug (a future test-speaker without
+    // a display name would surface here).
     const body = res.getBody();
-    expect(body.speakerName).to.be.a('string');
+    expect(body.speakerName).to.be.a('string').that.is.not.empty;
     expect(body.upcomingEvents).to.be.an('array');
     expect(body.pastEvents).to.be.an('array');
   });

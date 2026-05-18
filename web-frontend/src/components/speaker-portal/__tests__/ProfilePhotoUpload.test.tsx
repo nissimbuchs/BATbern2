@@ -17,22 +17,25 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProfilePhotoUpload from '../ProfilePhotoUpload';
 
-// Mock the speakerPortalService
-vi.mock('@/services/speakerPortalService', () => ({
-  speakerPortalService: {
-    uploadProfilePhoto: vi.fn(),
-  },
+// Code review 2026-05-18 (D1): mock the CUMS user-picture upload helper. The old
+// speakerPortalService.uploadProfilePhoto pointed at the deleted speaker-portal /profile
+// endpoints; the component now calls userAccountApi.uploadProfilePicture, which returns
+// { uploadId, cloudFrontUrl } from /api/v1/users/me/picture/*.
+vi.mock('@/services/api/userAccountApi', () => ({
+  uploadProfilePicture: vi.fn(),
 }));
 
-import { speakerPortalService } from '@/services/speakerPortalService';
+import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
-const mockUploadProfilePhoto = vi.mocked(speakerPortalService.uploadProfilePhoto);
+const mockUploadProfilePhoto = vi.mocked(uploadProfilePicture);
+
+const mockSuccess = (cloudFrontUrl: string) =>
+  mockUploadProfilePhoto.mockResolvedValue(cloudFrontUrl);
 
 describe('ProfilePhotoUpload Component', () => {
-  // Story 11.E.3: prop renamed from `token` to `eventCode` (Cognito Bearer auth replaces
-  // magic-link tokens). The mock service call assertions below were updated in lockstep.
+  // Code review 2026-05-18 (D1): the eventCode prop was removed — profile photo lives on
+  // User (CUMS), not per-event.
   const defaultProps = {
-    eventCode: 'BATbern99',
     currentPhotoUrl: null as string | null,
     onPhotoUploaded: vi.fn(),
     onError: vi.fn(),
@@ -90,7 +93,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('File Type Validation (AC7.3)', () => {
     it('should_acceptJPEGFiles_when_jpegProvided', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -101,17 +104,13 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalledWith(
-          'BATbern99',
-          file,
-          expect.any(Function)
-        );
+        expect(mockUploadProfilePhoto).toHaveBeenCalledWith(file, expect.any(Function));
       });
     });
 
     it('should_acceptPNGFiles_when_pngProvided', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.png');
+      mockSuccess('https://cdn.batbern.ch/new-photo.png');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -128,7 +127,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_acceptWebPFiles_when_webpProvided', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.webp');
+      mockSuccess('https://cdn.batbern.ch/new-photo.webp');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -193,7 +192,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('File Size Validation (AC7.4)', () => {
     it('should_acceptFile_when_under5MB', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -333,7 +332,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_callOnPhotoUploaded_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
       const newPhotoUrl = 'https://cdn.batbern.ch/speakers/new-photo.jpg';
-      mockUploadProfilePhoto.mockResolvedValue(newPhotoUrl);
+      mockSuccess(newPhotoUrl);
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -351,7 +350,7 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_displayNewPhoto_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
       const newPhotoUrl = 'https://cdn.batbern.ch/speakers/new-photo.jpg';
-      mockUploadProfilePhoto.mockResolvedValue(newPhotoUrl);
+      mockSuccess(newPhotoUrl);
 
       const { rerender } = render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -374,7 +373,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_hideProgressBar_when_uploadSucceeds', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockResolvedValue('https://cdn.batbern.ch/new-photo.jpg');
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 

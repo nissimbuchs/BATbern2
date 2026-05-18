@@ -128,9 +128,16 @@ public class SpeakerResponseService {
      */
     private void processAcceptResponse(
             SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
-        if (speaker.getUsername() == null) {
-            log.warn("Speaker {} has no username at ACCEPT — provisioning invariant from "
-                    + "CONTACTED → READY may have been bypassed", speaker.getId());
+        // Code review 2026-05-18 (P9): tighten the provisioning-invariant guard. The canonical
+        // path through SpeakerPortalAuthorizationService.resolveSpeakerPool already rejects
+        // null/blank usernames with 409, so this is belt-and-suspenders for any future direct
+        // service caller. Promoting log.warn → IllegalStateException ensures the workflow
+        // transition never persists with a stale display-name fallback.
+        if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
+            throw new IllegalStateException(
+                    "Speaker pool row id=" + speaker.getId()
+                            + " has no canonical username — provisioning invariant from"
+                            + " CONTACTED → READY was bypassed; cannot record ACCEPT");
         }
 
         TransitionPayload payload = TransitionPayload.builder()
@@ -214,19 +221,17 @@ public class SpeakerResponseService {
 
     private SpeakerResponseResult buildResult(SpeakerPool speaker, Event event, SpeakerResponseType responseType) {
         List<String> nextSteps = new ArrayList<>();
-        String profileUrl = null;
 
         if (responseType == SpeakerResponseType.ACCEPT) {
+            // Code review 2026-05-18 (D1): drop the dedicated profile URL. Story 11.C.1 already
+            // consolidated profile editing into the CUMS /users/me endpoints; the speaker portal
+            // no longer carries a per-event profile page. The "complete your profile" wording is
+            // kept as guidance — the user reaches it via the standard nav (or via a generic
+            // /profile route that calls CUMS), not via a custom event-scoped URL.
             nextSteps.add("Complete your speaker profile");
             if (speaker.getContentDeadline() != null) {
                 nextSteps.add("Submit your presentation title and abstract by " + speaker.getContentDeadline());
             }
-
-            // Story 11.E.3: profile URL is now a token-less SPA route; the Cognito session
-            // injected by apiClient covers authentication. The eventCode is the meaningful
-            // route segment (ADR-003).
-            profileUrl = "/speaker-portal/profile/" + event.getEventCode();
-            log.info("Generated profile URL for speaker {}: {}", speaker.getSpeakerName(), profileUrl);
         }
 
         return SpeakerResponseResult.builder()
@@ -235,7 +240,6 @@ public class SpeakerResponseService {
                 .eventName(event.getTitle())
                 .nextSteps(nextSteps)
                 .contentDeadline(speaker.getContentDeadline())
-                .profileUrl(profileUrl)
                 .build();
     }
 }

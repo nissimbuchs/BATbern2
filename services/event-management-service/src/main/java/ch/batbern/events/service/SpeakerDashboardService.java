@@ -120,8 +120,27 @@ public class SpeakerDashboardService {
 
         if (allEntries.isEmpty()) {
             LOG.info("No speaker pool entries found for username: {}", username);
+            // Code review 2026-05-18 (P23): fall back to the User's display name from CUMS
+            // rather than echoing the raw username (e.g. "alice.muller" → "Alice Müller").
+            // A speaker with the SPEAKER role but no current pool rows still deserves a
+            // proper greeting on the empty-state dashboard.
+            String fallbackName = username;
+            try {
+                UserResponse userProfile = userApiClient.getUserByUsername(username);
+                if (userProfile != null
+                        && userProfile.getFirstName() != null
+                        && userProfile.getLastName() != null) {
+                    fallbackName = (userProfile.getFirstName() + " " + userProfile.getLastName())
+                            .trim();
+                }
+            } catch (Exception e) {
+                LOG.debug(
+                        "Could not resolve display name for empty-pool dashboard: {} ({})",
+                        username,
+                        e.getMessage());
+            }
             return SpeakerDashboardDto.builder()
-                    .speakerName(username)
+                    .speakerName(fallbackName)
                     .profileCompleteness(0)
                     .upcomingEvents(List.of())
                     .pastEvents(List.of())
@@ -304,7 +323,6 @@ public class SpeakerDashboardService {
                 .organizerName(organizerName)
                 .organizerEmail(organizerEmail)
                 .respondUrl(respondUrl)
-                .profileUrl("/speaker-portal/profile")
                 .contentUrl(contentUrl)
                 .build();
     }

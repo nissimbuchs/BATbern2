@@ -92,8 +92,12 @@ export const OrganizerRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   <ProtectedRoute allowedRoles={['organizer']}>{children}</ProtectedRoute>
 );
 
+// Code review 2026-05-18 (D3): tightened to SPEAKER only. The backend's
+// @PreAuthorize("hasRole('SPEAKER')") on /api/v1/speaker-portal/** strict-rejects organizer-
+// only tokens; admitting ORGANIZER at the frontend just mounts the page then errors with
+// 403. Mirrors the backend contract; users with both ORGANIZER + SPEAKER roles still pass.
 export const SpeakerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['organizer', 'speaker']}>{children}</ProtectedRoute>
+  <ProtectedRoute allowedRoles={['speaker']}>{children}</ProtectedRoute>
 );
 
 export const PartnerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (

@@ -140,54 +140,51 @@ class SpeakerAcceptanceEmailServiceTest {
         }
 
         @Test
-        @DisplayName("Test 2.11: should include profile URL in confirmation email")
-        void should_includeProfileUrl_in_confirmationEmail() {
-            // Given
+        @DisplayName("Test 2.11: should NOT include legacy profile URL — code review 2026-05-18 D1")
+        void should_notIncludeLegacyProfileUrl_in_confirmationEmail() {
+            // Code review 2026-05-18 (D1): the per-event ?token= profile URL was removed.
+            // Profile editing now uses CUMS /users/me endpoints; the speaker reaches the
+            // profile via the standard nav, not a dedicated link in the acceptance email.
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
-            // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("/speaker-portal/profile?token=" + viewToken);
+            assertThat(emailBody).doesNotContain("/speaker-portal/profile?token=");
         }
 
         @Test
-        @DisplayName("Test 2.12: should include content URL in confirmation email")
+        @DisplayName("Test 2.12: should include content URL keyed by eventCode (no magic-link token) — code review 2026-05-18 D1")
         void should_includeContentUrl_in_confirmationEmail() {
-            // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
-            // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("/speaker-portal/content?token=" + viewToken);
+            // Cognito-authenticated SPA route — eventCode lives in the path, no ?token= suffix.
+            assertThat(emailBody).contains("/speaker-portal/content/" + event.getEventCode());
+            assertThat(emailBody).doesNotContain("/speaker-portal/content?token=");
         }
 
         @Test
-        @DisplayName("should include dashboard link in confirmation email")
+        @DisplayName("should include dashboard link (no magic-link token) — code review 2026-05-18 D1")
         void should_includeDashboardLink_in_confirmationEmail() {
-            // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
-            // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("/speaker-portal/dashboard?token=" + viewToken);
+            assertThat(emailBody).contains("/speaker-portal/dashboard");
+            assertThat(emailBody).doesNotContain("/speaker-portal/dashboard?token=");
         }
 
         @Test

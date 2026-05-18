@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
@@ -64,35 +65,75 @@ const InvitationResponsePage = () => {
   // Story 11.E.3: the dashboard endpoint aggregates per-event invitation context, so we
   // pull from there instead of the old `validateToken` endpoint. The "invitation" view
   // for this page derives from the matching upcoming-event entry.
+  // Code review 2026-05-18 (P14): scope the queryKey to the authenticated user to avoid
+  // multi-tab cache leaks across logout-then-login as a different speaker.
+  const { user } = useAuth();
   const {
     data: dashboard,
     error: validationError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-dashboard'],
+    queryKey: ['speaker-dashboard', user?.username],
     queryFn: () => speakerPortalService.getDashboard(),
+    enabled: !!user,
     retry: false,
   });
 
+  // Code review 2026-05-18 (P7): also search pastEvents and surface a typed "not-found"
+  // marker so the state effect below can route to the error branch instead of leaving the
+  // page stuck on the loader.
   const invitation = (() => {
     if (!dashboard || !eventCode) return undefined;
     const upcoming = dashboard.upcomingEvents.find((e) => e.eventCode === eventCode);
-    if (!upcoming) return undefined;
-    const alreadyResponded =
-      upcoming.workflowState === 'ACCEPTED' || upcoming.workflowState === 'DECLINED';
+    if (upcoming) {
+      const alreadyResponded =
+        upcoming.workflowState === 'ACCEPTED' || upcoming.workflowState === 'DECLINED';
+      return {
+        valid: true,
+        speakerName: dashboard.speakerName,
+        eventCode: upcoming.eventCode,
+        eventTitle: upcoming.eventTitle,
+        eventDate: upcoming.eventDate,
+        sessionTitle: upcoming.sessionTitle,
+        invitationMessage: undefined as string | undefined,
+        responseDeadline: upcoming.responseDeadline,
+        alreadyResponded,
+        previousResponse: alreadyResponded ? upcoming.workflowState : undefined,
+        previousResponseDate: undefined as string | undefined,
+        error: undefined as string | undefined,
+      };
+    }
+    const past = dashboard.pastEvents.find((e) => e.eventCode === eventCode);
+    if (past) {
+      return {
+        valid: false,
+        speakerName: dashboard.speakerName,
+        eventCode: past.eventCode,
+        eventTitle: past.eventTitle,
+        eventDate: past.eventDate,
+        sessionTitle: past.sessionTitle,
+        invitationMessage: undefined as string | undefined,
+        responseDeadline: undefined as string | undefined,
+        alreadyResponded: false,
+        previousResponse: undefined as string | undefined,
+        previousResponseDate: undefined as string | undefined,
+        error: 'event_is_past' as string | undefined,
+      };
+    }
+    // Dashboard loaded but eventCode is foreign — surface an explicit error.
     return {
-      valid: true,
+      valid: false,
       speakerName: dashboard.speakerName,
-      eventCode: upcoming.eventCode,
-      eventTitle: upcoming.eventTitle,
-      eventDate: upcoming.eventDate,
-      sessionTitle: upcoming.sessionTitle,
+      eventCode,
+      eventTitle: '',
+      eventDate: '',
+      sessionTitle: null,
       invitationMessage: undefined as string | undefined,
-      responseDeadline: upcoming.responseDeadline,
-      alreadyResponded,
-      previousResponse: alreadyResponded ? upcoming.workflowState : undefined,
+      responseDeadline: undefined as string | undefined,
+      alreadyResponded: false,
+      previousResponse: undefined as string | undefined,
       previousResponseDate: undefined as string | undefined,
-      error: undefined as string | undefined,
+      error: 'invitation_not_found' as string | undefined,
     };
   })();
 
@@ -320,8 +361,8 @@ const InvitationResponsePage = () => {
                     t('speakerPortal.invitationResponse.accepted')}
                   {invitation.previousResponse === 'DECLINED' &&
                     t('speakerPortal.invitationResponse.declined')}
-                  {invitation.previousResponse === 'TENTATIVE' &&
-                    t('speakerPortal.invitationResponse.tentative')}
+                  {/* Code review 2026-05-18 (P6): TENTATIVE branch removed —
+                      SpeakerResponseType narrowed to ACCEPT|DECLINE per Resolved Q#6. */}
                 </span>
               </p>
               {invitation.previousResponse === 'ACCEPTED' && (
@@ -550,15 +591,17 @@ const InvitationResponsePage = () => {
             </Card>
 
             <div className="flex justify-center gap-4">
-              {responseResult.profileUrl && (
-                <Button asChild>
-                  <a href={responseResult.profileUrl}>
-                    {t('speakerPortal.invitationResponse.completeProfile')}
-                  </a>
-                </Button>
-              )}
+              {/* Code review 2026-05-18 (D1): replaced the per-event profileUrl button with
+                  a link to the consolidated user-level profile (CUMS-backed). Story 11.C.1
+                  removed the dedicated /speaker-portal/events/{eventCode}/profile endpoint;
+                  speaker bio/photo edits now flow through /api/v1/users/me. */}
+              <Button asChild>
+                <Link to="/speaker-portal/profile">
+                  {t('speakerPortal.invitationResponse.completeProfile')}
+                </Link>
+              </Button>
               <Button asChild variant="outline">
-                <Link to="/">
+                <Link to="/speaker-portal/dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   {t('speakerPortal.invitationResponse.backToHome')}
                 </Link>

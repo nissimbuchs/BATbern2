@@ -13,6 +13,7 @@
 
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import {
@@ -302,13 +303,18 @@ const SpeakerDashboardPage = () => {
   // Story 11.E.3: the dashboard is now Cognito-authenticated (no `?token=` query param).
   // The username arrives in the JWT; aggregating across the speaker's pool rows happens
   // server-side.
+  // Code review 2026-05-18 (P14): scope the queryKey to the authenticated user so a
+  // logout-then-login-as-different-speaker (same browser, multi-tab) doesn't read stale
+  // PII from the React Query cache.
+  const { user } = useAuth();
   const {
     data: dashboard,
     error: fetchError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-dashboard'],
+    queryKey: ['speaker-dashboard', user?.username],
     queryFn: () => speakerPortalService.getDashboard(),
+    enabled: !!user,
     retry: false,
   });
 

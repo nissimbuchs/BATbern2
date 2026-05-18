@@ -7,6 +7,12 @@ meta {
 # Pre-req: a SPEAKER pool row in INVITED state exists for `{{speakerAuthToken}}`'s username
 # on `{{speakerPortalEventCode}}` (provisioned by Story 11.E.2 + seed). The test asserts
 # the contract shape, not the side effects (status transitions are unit-tested).
+#
+# Code review 2026-05-18 (P16): the assertion was tightened from `in [200, 409]` to status-
+# specific branches with explicit body checks. The previous loose form conflated the happy
+# path (200) with the idempotency path (409) AND silently masked auth failures (403/401),
+# making seed-or-auth regressions look like "already responded". Each branch now asserts a
+# body field that proves the right code path ran.
 
 post {
   url: {{baseUrl}}/speaker-portal/events/{{speakerPortalEventCode}}/respond
@@ -30,8 +36,20 @@ assert {
 
 tests {
   test("should accept response via Cognito Bearer (Story 11.E.3 AC1+AC2)", function() {
-    // 200 = first response; 409 = speaker already responded (replayable assertion).
     const status = res.getStatus();
-    expect([200, 409]).to.include(status);
+    const body = res.getBody();
+    if (status === 200) {
+      // Happy path — first ACCEPT for this seed.
+      expect(body.success).to.equal(true);
+      expect(body.speakerName).to.be.a('string').that.is.not.empty;
+      expect(body.nextSteps).to.be.an('array');
+    } else if (status === 409) {
+      // Idempotent replay — speaker already responded.
+      expect(body.errorMessage || body.message || body.error).to.exist;
+    } else {
+      throw new Error(
+        `Expected 200 or 409 from /respond but got ${status}. Body: ${JSON.stringify(body)}`
+      );
+    }
   });
 }

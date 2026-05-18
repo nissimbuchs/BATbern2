@@ -295,13 +295,29 @@ function App() {
                         </SpeakerRoute>
                       }
                     />
+                    {/* Code review 2026-05-18 (D1): profile is now user-level (CUMS), not
+                        per-event. The /:eventCode path-parameter form is preserved as a
+                        backward-compat redirect for bookmarks; ProfileUpdatePage itself no
+                        longer reads eventCode. */}
                     <Route
-                      path="/speaker-portal/profile/:eventCode"
+                      path="/speaker-portal/profile"
                       element={
                         <SpeakerRoute>
                           <ProfileUpdatePage />
                         </SpeakerRoute>
                       }
+                    />
+                    <Route
+                      path="/speaker-portal/profile/:eventCode"
+                      element={<Navigate to="/speaker-portal/profile" replace />}
+                    />
+                    {/* Code review 2026-05-18 (P15): backward-compat redirect for old email
+                        deep-links (`/speaker-portal/respond?token=...`) that no longer match
+                        the new `/speaker-portal/respond/:eventCode` route. Sends the user to
+                        the dashboard, where they can pick their pending invitation. */}
+                    <Route
+                      path="/speaker-portal/respond"
+                      element={<Navigate to="/speaker-portal/dashboard" replace />}
                     />
                     {/* Story 11.E.3: /speaker-portal/magic-login route REMOVED (Phase F deletes
                         the page file). The Cognito session covers speaker portal authentication. */}

@@ -123,16 +123,11 @@ public class SpeakerPortalContentController {
         LOG.info("Content submission request: username={} eventCode={} ip={}",
                 actor.username(), eventCode, getClientIp(httpRequest));
 
-        // D1 (review patch from Story 11.C.2): fail closed if the speaker has no canonical
-        // username. The Cognito-authenticated path means `actor.username()` always exists,
-        // but `speaker.getUsername()` is the cross-service join key persisted to status
-        // history — a divergence indicates legacy data.
-        if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
-            LOG.warn("Speaker {} has no canonical username — rejecting content submission",
-                    speaker.getId());
-            throw new ValidationException(
-                    "Speaker has no canonical username — please contact organizer to complete provisioning");
-        }
+        // Code review 2026-05-18 (P1): the redundant per-endpoint username precheck has been
+        // lifted into SpeakerPortalAuthorizationService.resolveSpeakerPool, which now throws
+        // IllegalStateException (→ 409) on a pool row with null/blank username. Every speaker-
+        // portal endpoint shares the same enforcement point instead of only this one carrying
+        // the guard (D1-from-Story-11.C.2).
 
         try {
             ContentSubmissionPayload payload = new ContentSubmissionPayload(

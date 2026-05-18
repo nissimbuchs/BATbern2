@@ -131,10 +131,16 @@ public class SpeakerAcceptanceEmailService {
         // Story 10.2: DB-first template loading
         String template = loadHtmlContent("speaker-acceptance", localeStr, templateName);
 
-        // Build portal URLs with VIEW token
-        String profileUrl = baseUrl + "/speaker-portal/profile?token=" + viewToken;
-        String contentUrl = baseUrl + "/speaker-portal/content?token=" + viewToken;
-        String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + viewToken;
+        // Code review 2026-05-18 (D1): drop magic-link `?token=` URLs from acceptance email.
+        // Speaker now authenticates via Cognito; the SPA routes use eventCode in the path and
+        // pick up the Bearer from the session. The dedicated per-event profile route was
+        // removed (Story 11.C.1 consolidated profile editing into CUMS /users/me endpoints);
+        // the profileUrl link block is removed from the templates in the same commit.
+        // viewToken is retained on the method signature for now (Phase F drops it); it is
+        // intentionally NOT consumed by the URL builders below.
+        String profileUrl = "";
+        String contentUrl = baseUrl + "/speaker-portal/content/" + event.getEventCode();
+        String dashboardLink = baseUrl + "/speaker-portal/dashboard";
 
         // Get session details if assigned
         String sessionTitle = "";
