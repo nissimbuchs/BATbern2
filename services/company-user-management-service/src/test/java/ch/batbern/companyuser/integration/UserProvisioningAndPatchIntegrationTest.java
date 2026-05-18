@@ -4,10 +4,13 @@ import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -19,7 +22,8 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,6 +50,16 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
     @Autowired
     private ObjectMapper objectMapper;
+    // The Mockito-mocked CognitoIntegrationService bean from TestAwsConfig. Story 11.E.2
+    // verifies AdminCreateUser silent is invoked on the new-user branch only.
+    @Autowired
+    private CognitoIntegrationService cognitoIntegrationService;
+
+    @BeforeEach
+    void resetCognitoMock() {
+        // Reset between tests so verification counts are deterministic.
+        Mockito.reset(cognitoIntegrationService);
+    }
 
     // ============================================================
     // AC1 / AC9 #7 — provisionUserWithRole
@@ -70,7 +84,9 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username", notNullValue()))
                 .andExpect(jsonPath("$.created", is(true)))
-                .andExpect(jsonPath("$.temporaryPassword", nullValue()));
+                // Story 11.E.2: temporaryPassword field removed from ProvisionUserResponse
+                // (credential issuance moved to the sibling /issue-invitation-credentials endpoint).
+                .andExpect(jsonPath("$.temporaryPassword").doesNotExist());
 
         User created = userRepository.findByEmail("newspeaker@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
@@ -451,5 +467,120 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
 
         User after = userRepository.findByUsername("speaker.self").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(after.getBio()).isEqualTo("Original bio");
+    }
+
+    // ============================================================
+    // Story 11.E.2 AC11 #1, #2, #4 — Cognito wiring on provisionUserWithRole
+    // (AC11 #3 — @Transactional rollback — lives in UserProvisioningCognitoRollbackIntegrationTest
+    //  because it requires committed-or-rolledback semantics, not the test-managed transaction.)
+    // ============================================================
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision (11.E.2 AC11 #1): new-user branch calls adminCreateUserSilently")
+    void should_callAdminCreateUserSilently_when_provisioningNewSpeaker() throws Exception {
+        String body = """
+                {
+                  "email": "cognito.new@example.com",
+                  "firstName": "Cognito",
+                  "lastName": "New",
+                  "role": "SPEAKER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(true)))
+                .andExpect(jsonPath("$.temporaryPassword").doesNotExist());
+
+        // Story 11.E.2 review patch (P11 / B21): pin the third arg (appUsername) to the
+        // actually-persisted username so a regression that passes the wrong identifier
+        // (e.g. email instead of username) is caught.
+        String createdUsername = userRepository.findByEmail("cognito.new@example.com")
+                .orElseThrow()
+                .getUsername();
+        // Exactly one AdminCreateUser silent call with the expected args.
+        // Story 11.E.2 review patch (P10 / B18): assert pw.length() >= 8 (Cognito policy
+        // minimum) rather than exact == 16. If PasswordGenerator's default ever changes
+        // we keep the security invariant; the unit test pins the exact default length.
+        Mockito.verify(cognitoIntegrationService, Mockito.times(1))
+                .adminCreateUserSilently(
+                        org.mockito.ArgumentMatchers.eq("cognito.new@example.com"),
+                        argThat(pw -> pw != null && pw.length() >= 8),
+                        org.mockito.ArgumentMatchers.eq(createdUsername));
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision (11.E.2 AC11 #2): existing-user branch does NOT call Cognito")
+    void should_notCallCognito_when_provisioningExistingUser() throws Exception {
+        // Seed an existing user without SPEAKER role.
+        userRepository.save(User.builder()
+                .username("existing.alice")
+                .email("existing.alice@example.com")
+                .firstName("Existing")
+                .lastName("Alice")
+                .roles(new java.util.HashSet<>(Set.of(Role.ATTENDEE)))
+                .build());
+
+        String body = """
+                {
+                  "email": "existing.alice@example.com",
+                  "firstName": "Existing",
+                  "lastName": "Alice",
+                  "role": "SPEAKER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(false)));
+
+        // Role granted...
+        User reloaded = userRepository.findByEmail("existing.alice@example.com").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER);
+
+        // ... but Cognito was NOT called (user shell already exists from a prior provisioning).
+        Mockito.verify(cognitoIntegrationService, Mockito.never())
+                .adminCreateUserSilently(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
+    @DisplayName("provision (11.E.2 AC11 #4): User + role persist when adminCreateUserSilently returns normally")
+    void should_persistUserAndRole_when_adminCreateUserSilentlyReturnsNormally() throws Exception {
+        // Story 11.E.2 review patch (P7 / B9): renamed + rescoped from
+        // should_handleUsernameExists_when_cognitoRaceCondition. The previous name implied
+        // this test exercised the swallow logic inside CognitoIntegrationServiceImpl —
+        // it did not (the @Primary Mockito mock REPLACES the impl, so the swallow code
+        // never ran). The actual swallow path is unit-tested in
+        // CognitoIntegrationServiceImplTest. This integration test now correctly asserts:
+        // "given the Cognito call returns normally (success OR successfully-swallowed at
+        // the impl layer), the User + role rows persist."
+        Mockito.doNothing().when(cognitoIntegrationService)
+                .adminCreateUserSilently(anyString(), anyString(), anyString());
+
+        String body = """
+                {
+                  "email": "race.bob@example.com",
+                  "firstName": "Race",
+                  "lastName": "Bob",
+                  "role": "SPEAKER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/provision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created", is(true)));
+
+        // User + role persist after a normal Cognito call return.
+        User created = userRepository.findByEmail("race.bob@example.com").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
     }
 }

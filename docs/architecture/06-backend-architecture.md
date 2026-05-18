@@ -166,17 +166,22 @@ public class SecurityContextHelper {
 
 Speakers are full Cognito users with the SPEAKER role. Provisioning is wired into the speaker workflow state machine — not into a separate auth flow.
 
-**Provisioning lifecycle:**
+**Provisioning lifecycle (Story 11.E.2 two-endpoint design — Resolved Q#1 Variant B):**
 
-1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(username, email, firstName, lastName, SPEAKER)`. The company-user-management-service performs, in order:
-   1. `cognito-idp:AdminCreateUser` with `MessageAction=SUPPRESS` and a strong random temporary password. The user is created in Cognito with status `FORCE_CHANGE_PASSWORD`.
+1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(email, firstName, lastName, SPEAKER)`. The company-user-management-service performs, in order:
+   1. `cognito-idp:AdminCreateUser` with `MessageAction=SUPPRESS` and a **throwaway** temporary password. The user is created in Cognito with status `FORCE_CHANGE_PASSWORD`.
    2. SPEAKER role grant in `role_assignments` (database — NOT Cognito groups, per CLAUDE.md "Authentication & Roles").
    3. `INSERT INTO user_profiles` (idempotent on existing user).
-   4. Returns `{ username, temporaryPassword }` to the caller. The temporary password is **never persisted on the BATbern side**.
+   4. Returns `{ username, created }` to the caller. The throwaway temporary password is **never returned** (the `temporaryPassword` field was removed from `ProvisionUserResponse` in Story 11.E.2) and is discarded from CUMS memory.
 
-   Re-calling `provisionUserWithRole` for an already-provisioned user is idempotent and returns `{ username, temporaryPassword: null }` — the caller can detect "no fresh credential to send" by checking for the `null` temporary password.
+   Re-calling `provisionUserWithRole` for an already-provisioned user is idempotent and skips the Cognito call entirely (the Cognito user already exists).
 
-2. **`READY → INVITED` transition**: the invitation email service sends a templated email containing the speaker portal login URL + the temporary password from step 1. The email subject, body, and call-to-action button copy are localised across all 10 supported locales (incl. gsw-BE).
+2. **`READY → INVITED` transition**: EMS's `runInvitedHook` calls the new sibling endpoint **`POST /api/v1/users/{username}/issue-invitation-credentials`**. CUMS branches on the Cognito user's current status (via `AdminGetUser`):
+   - `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED` → generate a fresh temp password, call `AdminSetUserPassword(Permanent=false)`, return `{ action: "FRESH_TEMP_PASSWORD", temporaryPassword: "..." }`.
+   - `CONFIRMED` → no Cognito mutation; return `{ action: "USE_EXISTING_PASSWORD", temporaryPassword: null }`.
+   - `ARCHIVED` / `COMPROMISED` → return HTTP 422 (`UnprocessableInvitationStateException`).
+
+   The invitation-email service then sends a templated HTML email containing the speaker portal login URL + the speaker's email as the Cognito username + either the temporary password block or the "use existing password / Forgot password" block (selected by the `action` discriminator). Templates ship in `de` + `en` only per `CLAUDE.md` §"Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales"; other locales fall back to `en`. HTML-only (no `.txt` parity) per Story 11.E.2 Resolved Q#3.
 
 3. **First login**: speaker enters email + temporary password on the standard Cognito hosted/SDK login page. Cognito challenges them with `NEW_PASSWORD_REQUIRED`; the speaker sets a new password. From then on they are a regular Cognito user — `custom:role` JWT claim includes `SPEAKER` (populated by the PreTokenGeneration Lambda from `role_assignments`).
 

@@ -3,6 +3,7 @@ package ch.batbern.events.client;
 import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
@@ -185,4 +186,23 @@ public interface UserApiClient {
      * @throws UserServiceException  if API communication fails (5xx, timeout, network error)
      */
     UserResponse patchUserProfile(String username, PatchUserProfileRequest request);
+
+    /**
+     * Issue (or skip) Cognito temp credentials at READY → INVITED.
+     *
+     * <p>Story 11.E.2 (AR15, FR9). Called by
+     * {@code SpeakerWorkflowService.runInvitedHook} on the READY → INVITED transition.
+     * CUMS branches on the Cognito user's current status: FORCE_CHANGE_PASSWORD /
+     * RESET_REQUIRED / UNCONFIRMED → fresh temp password; CONFIRMED → null +
+     * USE_EXISTING_PASSWORD action; ARCHIVED / COMPROMISED → HTTP 422.
+     *
+     * <p>Idempotent: repeated calls are safe (each FRESH_TEMP_PASSWORD call overwrites
+     * the previous temp password via {@code AdminSetUserPassword}).
+     *
+     * @param username target user's username (must exist in CUMS)
+     * @return action discriminator + fresh temp password (or null when use-existing)
+     * @throws UserNotFoundException if {@code username} is not in CUMS (404)
+     * @throws UserServiceException  on 422 / 502 / 5xx / network failure
+     */
+    InvitationCredentialsResponse issueInvitationCredentials(String username);
 }

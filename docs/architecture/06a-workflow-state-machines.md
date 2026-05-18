@@ -256,7 +256,7 @@ Use `is_publishable` as the gate for the `AGENDA_PUBLISHED` event-workflow trans
 
 ### Critical transition rules
 
-- **`CONTACTED → READY` is the provisioning gate** (ADR-009 §0.2). It REQUIRES `email` to be present in the transition payload, and the side-effect hook performs: User lookup-or-create + Cognito `AdminCreateUser` with `FORCE_CHANGE_PASSWORD` + SPEAKER role grant in `role_assignments` + persisting `username` on `speaker_pool`. Re-running for an already-provisioned user is idempotent.
+- **`CONTACTED → READY` is the provisioning gate** (ADR-009 §0.2). It REQUIRES `email` to be present in the transition payload, and the side-effect hook performs: User lookup-or-create + Cognito `AdminCreateUser` (silent, `MessageAction=SUPPRESS`, with a throwaway temp password) → `FORCE_CHANGE_PASSWORD` + SPEAKER role grant in `role_assignments` + persisting `username` on `speaker_pool`. Re-running for an already-provisioned user is idempotent and skips the Cognito call. Story 11.E.2 (Resolved Q#1 Variant B): the throwaway temp password is **never returned** to the caller — the speaker's real temp password is issued at READY → INVITED via the sibling `/users/{username}/issue-invitation-credentials` endpoint (see READY → INVITED row below).
 - **`READY → INVITED` has the slot-capacity precondition** (ADR-009 §0.2). Blocked when `(count(ACCEPTED) + count(INVITED)) >= max_slots`. If a slot opens up (e.g., an invited speaker declines), the next speaker in `READY` may be invited.
 - **No emails before `READY → INVITED`.** The "send formal invitation" UI is disabled until the speaker is in `READY`.
 - **`IDENTIFIED → DECLINED` and `CONTACTED → DECLINED` are valid** — a lead can fail to pan out before any User has been provisioned. No Cognito teardown is needed because no Cognito user was ever created.
@@ -270,8 +270,8 @@ State transitions trigger side effects inside `SpeakerWorkflowService.transition
 | Transition | Side effects |
 |---|---|
 | `IDENTIFIED → CONTACTED` | Append `OutreachHistory` row (organizer logs the outreach) |
-| `CONTACTED → READY` | User lookup-or-create (`UserApiClient.provisionUserWithRole(..., SPEAKER)`); Cognito `AdminCreateUser` with `MessageAction=SUPPRESS` + `FORCE_CHANGE_PASSWORD`; SPEAKER role grant in `role_assignments`; persist `username` on `speaker_pool`. Returns `{ username, temporaryPassword }` to the caller for use in the invitation email |
-| `READY → INVITED` | **Precondition**: slot-capacity gate. **Action**: send invitation email (login URL + temporary password from the READY-step provisioning) |
+| `CONTACTED → READY` | User lookup-or-create (`UserApiClient.provisionUserWithRole(..., SPEAKER)`); Cognito `AdminCreateUser` with `MessageAction=SUPPRESS` + `FORCE_CHANGE_PASSWORD` (throwaway temp password — never returned, never logged); SPEAKER role grant in `role_assignments`; persist `username` on `speaker_pool`. Returns `{ username, created }` (per Story 11.E.2 Q#1 Variant B — `temporaryPassword` removed from `ProvisionUserResponse`). |
+| `READY → INVITED` | **Precondition**: slot-capacity gate. **Action**: call CUMS `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — uses `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` to issue a fresh temp password OR signal `USE_EXISTING_PASSWORD` for already-confirmed users); send HTML invitation email (login URL + speaker email + temp-password block OR use-existing-password block based on action discriminator). Templates ship `de` + `en` only per CLAUDE.md §Localization. |
 | `INVITED → ACCEPTED` | Send confirmation email to speaker; notify organizer |
 | `ACCEPTED → CONTENT_SUBMITTED` | Notify moderators of pending review |
 | `CONTENT_SUBMITTED → QUALITY_REVIEWED` | Mark `content_submissions.approved = true`; notify speaker |

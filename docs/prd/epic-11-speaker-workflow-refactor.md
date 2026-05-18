@@ -124,8 +124,11 @@ NFR9: Cognito User Pool password policy must accept the backend-generated tempor
       password (length, character classes). Policy adjusted if necessary, not the
       generator.
 
-NFR10: All 9 locales (de, en, fr, it, rm, es, fi, nl, ja) + gsw-BE updated for new
-       state labels and UI copy. No locale lags behind.
+NFR10: **Frontend UI i18n keys**: all 10 locales (de, en, fr, it, rm, es, fi, nl, ja, gsw-BE)
+       updated for new state labels and UI copy — no locale lags behind. **Backend email
+       templates**: de + en only per `CLAUDE.md` §"Localization — Email Templates: DE + EN
+       Only; UI i18n: All 10 Locales" (narrowed 2026-05-17 per Story 11.E.3 PM Q#5). The
+       8 optional locales for email templates fall back to en at render time.
 ```
 
 ### Additional Requirements (Architecture)
@@ -1173,7 +1176,7 @@ a freshly-created admin-flow user (covered by an existing or newly-added test).
 
 ---
 
-#### Story 11.E.2: Cognito provisioning at READY + invitation-email rewrite + 10-locale i18n
+#### Story 11.E.2: Cognito provisioning at READY + invitation-email rewrite (de + en only, HTML-only)
 
 **As a** speaker who has just been promoted from "lead" to "real invitee",
 **I want** to receive a clear invitation email with my login link and a temporary
@@ -1181,60 +1184,78 @@ password I can change on first login,
 **So that** I can access the portal with a standard Cognito experience, no magic links.
 
 **Phase:** E  ·  **Requirements covered:** FR3 (Cognito part), FR9, AR15 (CUMS
-provisioning logic), UX-DR21 (email rewrite), UX-DR22 (i18n),
-NFR3 (idempotency), NFR9 (password policy), NFR10 (locale parity)  ·  **Dependencies:**
+provisioning logic), UX-DR21 (email rewrite), UX-DR22 (i18n — scope narrowed),
+NFR3 (idempotency), NFR9 (password policy), NFR10 (locale parity — narrowed to de+en
+for emails per CLAUDE.md §Localization)  ·  **Dependencies:**
 Story 11.E.1 (IAM + App Client flow), Story 11.B.2 (provisioning hook seam in
 workflow service), Story 11.C.2 (`UserApiClient.provisionUserWithRole` contract).
 
-**Acceptance Criteria:**
+**Story 11.E.2 PM-resolved 2026-05-17:** Q#1 Variant B (two-endpoint Cognito design;
+`temporaryPassword` field removed from `ProvisionUserResponse`); Q#2 de + en only
+per CLAUDE.md §Localization (narrowed); Q#3 HTML-only — `.txt` templates deleted;
+Q#4 AdminGetUser status-driven branching at INVITED time. See
+`_bmad-output/implementation-artifacts/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md`
+for the binding AC text.
+
+**Acceptance Criteria (per resolved Q#1 Variant B):**
 
 **Given** the company-user-management-service receives a
-`UserApiClient.provisionUserWithRole(username, email, firstName, lastName, role)` call
+`UserApiClient.provisionUserWithRole(email, firstName, lastName, role)` call
 for a non-existent user,
 **When** the call runs,
-**Then** the service generates a strong random temporary password (meeting the User
+**Then** the service generates a throwaway random temporary password (meeting the User
 Pool policy from Story 11.E.1),
-**And** calls `cognito-idp:AdminCreateUser` with status `FORCE_CHANGE_PASSWORD` and
-the temp password,
+**And** calls `cognito-idp:AdminCreateUser` with status `FORCE_CHANGE_PASSWORD`,
+`MessageAction=SUPPRESS`, and the throwaway temp password,
 **And** inserts a row into PostgreSQL `user_roles` granting the SPEAKER role (per
 ADR-001 database-centric role storage — NOT `cognito-idp:AdminAddUserToGroup`; no
 Cognito groups exist),
 **And** persists the User row,
-**And** returns `{ username, temporaryPassword }` to the caller (the temp password is
-returned **once** — never written to any local database or log; embedded in the
-invitation email and immediately discarded from memory).
+**And** returns `{ username, created }` to the caller — the throwaway temp password
+is **immediately discarded** from CUMS memory and is **NOT** returned in the response
+(the `temporaryPassword` field was removed from `ProvisionUserResponse` per Q#1
+Variant B). Atomic: if AdminCreateUser fails, the surrounding `@Transactional` rolls
+back the User + role rows.
 
 **Given** the same call is made for an already-provisioned user,
 **When** the call runs,
-**Then** the operation is a no-op (NFR3),
-**And** returns `{ username, temporaryPassword: null }` (no new temp password — the
-Cognito user already exists),
-**And** the caller knows to NOT re-send an invitation email containing a credential.
+**Then** the operation is a no-op (NFR3) — Cognito is **not** called on the existing-user
+path (the Cognito user already exists from the original provisioning).
 
 **Given** the event-management-service runs the `CONTACTED → READY` transition via
 `SpeakerWorkflowService`,
 **When** the provisioning side-effect hook executes,
-**Then** it calls `UserApiClient.provisionUserWithRole` and captures
-`{ username, temporaryPassword }`,
+**Then** it calls `UserApiClient.provisionUserWithRole`,
 **And** persists `username` on `speaker_pool`,
 **And** dispatches a `SpeakerPromotedToReadyEvent`.
 
 **Given** the `READY → INVITED` transition runs in the workflow service,
 **When** the invitation-email side-effect executes,
-**Then** the email body contains a portal login link, the speaker's email address as
-the username, and the temporary password from provisioning,
-**And** a short note explains "you will be asked to set your own password on first
-login,"
-**And** no `?token=` or `?jwt=` query parameter appears in the link,
-**And** if the speaker was already provisioned (re-invite of an existing Cognito user),
-the email omits the temporary-password line and includes a "use your existing password
-or reset via the login page" note.
+**Then** EMS first calls the **new** CUMS endpoint
+`POST /api/v1/users/{username}/issue-invitation-credentials`,
+**And** CUMS branches on `AdminGetUser` status:
+FORCE_CHANGE_PASSWORD / RESET_REQUIRED / UNCONFIRMED → generate fresh temp password
+via `AdminSetUserPassword(Permanent=false)` and return `{ temporaryPassword, action:
+"FRESH_TEMP_PASSWORD" }`; CONFIRMED → return `{ temporaryPassword: null, action:
+"USE_EXISTING_PASSWORD" }`; ARCHIVED / COMPROMISED → return HTTP 422 (operator
+intervention required),
+**And** EMS captures the response and passes it to the email service,
+**And** the email body contains the portal login URL + the speaker's email as the
+Cognito username,
+**And** the body renders the "Temporary password: X — change on first login" block
+when action is FRESH_TEMP_PASSWORD,
+**And** the body renders the "use your existing password / reset via Forgot password"
+block when action is USE_EXISTING_PASSWORD,
+**And** no `?token=` or `?jwt=` query parameter appears in the link.
 
 **Given** the email template is rendered,
-**Then** all 10 locales (de, en, fr, it, rm, es, fi, nl, ja, gsw-BE) have the
-rewritten invitation template,
-**And** the confirmation, reminder, and escalation templates in all 10 locales are
-simplified to drop tentative-response language (per UX-DR21).
+**Then** the `de` + `en` invitation, acceptance, and reminder templates are present
+and use the Cognito-flow payload,
+**And** the `.txt` template parity is dropped (HTML-only per Q#3),
+**And** the 8 optional locales (`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`)
+are **not** part of this story per `CLAUDE.md` §"Localization — Email Templates: DE
++ EN Only; UI i18n: All 10 Locales" — render requests for those locales fall back
+to `en`.
 
 **Given** Testcontainers integration tests run,
 **Then** the provisioning hook end-to-end (Cognito `AdminCreateUser` mocked at the AWS

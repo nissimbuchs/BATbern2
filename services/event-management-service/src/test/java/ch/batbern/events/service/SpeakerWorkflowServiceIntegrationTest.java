@@ -7,6 +7,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
@@ -116,6 +117,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
 
         when(userApiClient.provisionUserWithRole(any())).thenAnswer(inv ->
                 new ProvisionUserResponse("speaker.user", true));
+
+        // Story 11.E.2: default the new issueInvitationCredentials stub to return a fresh
+        // temp password. Tests that care about the action discriminator override below.
+        when(userApiClient.issueInvitationCredentials(any())).thenAnswer(inv ->
+                new InvitationCredentialsResponse(
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword("Test1234!@#abcde9"));
     }
 
     // ---- AC10 #1: legal forward transitions ----
@@ -352,6 +360,39 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         verify(invitationEmailService).sendInvitationEmail(any(), any(), any(), any(), any());
     }
 
+    // ---- Story 11.E.2 AC11 #9: runInvitedHook calls issueInvitationCredentials ----
+
+    @Test
+    @DisplayName("Story 11.E.2 AC11 #9: runInvitedHook calls issueInvitationCredentials with the speaker's username")
+    void should_callIssueInvitationCredentials_when_runningInvitedHook() {
+        SpeakerPool candidate = createSpeaker(SpeakerWorkflowState.READY);
+        TransitionPayload payload = TransitionPayload.builder().build();
+
+        // Override the default stub with a fresh-temp-password response for assertions.
+        InvitationCredentialsResponse stubbedResponse = new InvitationCredentialsResponse(
+                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                .temporaryPassword("Test1234!@#abcde");
+        when(userApiClient.issueInvitationCredentials(candidate.getUsername()))
+                .thenReturn(stubbedResponse);
+
+        workflowService.transition(candidate.getId(), SpeakerWorkflowState.INVITED, ORGANIZER, payload);
+
+        // Exactly one call to issueInvitationCredentials with the speaker's username.
+        verify(userApiClient, times(1)).issueInvitationCredentials(candidate.getUsername());
+
+        // The email service was invoked once with the captured InvitationCredentialsResponse.
+        org.mockito.ArgumentCaptor<InvitationCredentialsResponse> credentialsCaptor =
+                org.mockito.ArgumentCaptor.forClass(InvitationCredentialsResponse.class);
+        verify(invitationEmailService).sendInvitationEmail(
+                any(), any(), any(String.class), credentialsCaptor.capture(), any());
+        assertThat(credentialsCaptor.getValue()).isSameAs(stubbedResponse);
+
+        // Speaker transitioned and invitedAt stamped.
+        SpeakerPool persisted = speakerPoolRepository.findById(candidate.getId()).orElseThrow();
+        assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.INVITED);
+        assertThat(persisted.getInvitedAt()).isNotNull();
+    }
+
     // ---- AC10 #8 + #9: DECLINED preconditions + session cleanup ----
 
     @Test
@@ -408,8 +449,23 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         speaker.setCompany("Tech Corp");
         speaker.setExpertise("Architecture");
         speaker.setEmail("existing." + UUID.randomUUID().toString().substring(0, 8) + "@example.com");
+        // Story 11.E.2 review patch (P2 / E5): SpeakerWorkflowService.requireUsername now
+        // fails-fast when a READY speaker reaches INVITED without a username. Pre-seed a
+        // username for READY+ states (mirroring the real runReadyHook output) so the
+        // INVITED-precondition guard passes. Earlier states (IDENTIFIED/CONTACTED) leave
+        // it null so the runReadyHook identity-rebind guard doesn't fire on transition.
+        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
+            speaker.setUsername("speaker." + UUID.randomUUID().toString().substring(0, 8));
+        }
         speaker.setStatus(status);
         return speakerPoolRepository.save(speaker);
+    }
+
+    private static boolean statusIsAtOrAfter(SpeakerWorkflowState a, SpeakerWorkflowState b) {
+        // SpeakerWorkflowState ordinal order tracks the forward workflow order; DECLINED is
+        // terminal but we treat it as "post-READY" for username-seeding purposes (a real
+        // DECLINED speaker that lived through CONTACTED → READY has a username).
+        return a.ordinal() >= b.ordinal();
     }
 
     private SpeakerPool createSpeakerWithSession(SpeakerWorkflowState status) {
@@ -431,6 +487,12 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         speaker.setCompany("Tech Corp");
         speaker.setExpertise("Architecture");
         speaker.setEmail("session.speaker@example.com");
+        // Story 11.E.2 review patch (P2 / E5): seed username for READY+ states so the
+        // INVITED precondition (requireUsername) passes; leave null for IDENTIFIED/CONTACTED
+        // so the runReadyHook identity-rebind guard doesn't fire on transition.
+        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
+            speaker.setUsername("session.speaker." + UUID.randomUUID().toString().substring(0, 8));
+        }
         speaker.setStatus(status);
         speaker.setSessionId(session.getId());
         return speakerPoolRepository.save(speaker);

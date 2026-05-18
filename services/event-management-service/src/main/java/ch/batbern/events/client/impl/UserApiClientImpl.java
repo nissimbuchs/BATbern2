@@ -4,6 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
@@ -604,6 +605,93 @@ public class UserApiClientImpl implements UserApiClient {
             log.error("Unexpected error patching user profile {}: {}", username, e.getMessage(), e);
             throw new UserServiceException(
                     "Unexpected error patching user profile: " + username,
+                    e
+            );
+        }
+    }
+
+    /**
+     * Issue (or skip) Cognito temp credentials at READY → INVITED.
+     * Story 11.E.2 (AR15, FR9). See {@link UserApiClient#issueInvitationCredentials(String)}.
+     *
+     * <p>Not cached: this is a write operation on the Cognito side. The temp password in
+     * the response is never persisted client-side — the caller embeds it in the invitation
+     * email and discards from memory.
+     */
+    @Override
+    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
+        log.debug("Issuing invitation credentials (Story 11.E.2) for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/issue-invitation-credentials";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            headers.set("Content-Type", "application/json");
+            HttpEntity<Void> httpRequest = new HttpEntity<>(headers);
+
+            ResponseEntity<InvitationCredentialsResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpRequest,
+                    InvitationCredentialsResponse.class
+            );
+
+            InvitationCredentialsResponse result = response.getBody();
+            // Story 11.E.2 review patch (P9 / B12): enforce the FRESH_TEMP_PASSWORD invariant
+            // that the OpenAPI schema cannot express (nullable + required: [action] only).
+            // If CUMS ever regresses and returns action=FRESH_TEMP_PASSWORD with a null
+            // temporaryPassword, the invitation email would render with an empty password
+            // block and the speaker would be locked out silently. Fail fast at the boundary.
+            if (result == null) {
+                throw new UserServiceException(
+                        "issueInvitationCredentials returned an empty body for: " + username);
+            }
+            if (result.getAction() == InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD
+                    && (result.getTemporaryPassword() == null || result.getTemporaryPassword().isBlank())) {
+                throw new UserServiceException(
+                        "CUMS returned action=FRESH_TEMP_PASSWORD with no temporaryPassword for: "
+                                + username);
+            }
+            log.info("Issued invitation credentials for username={} (action={})",
+                    username,
+                    result.getAction());
+            return result;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found for invitation credentials: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error issuing invitation credentials for {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error issuing invitation credentials for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error issuing invitation credentials for {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error issuing invitation credentials: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error issuing invitation credentials for {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error issuing invitation credentials for {}: {}",
+                    username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error issuing invitation credentials: " + username,
                     e
             );
         }

@@ -597,10 +597,18 @@ export interface paths {
      * @description Idempotent endpoint for the canonical "create User + grant role" flow used by the
      *     Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
      *
-     *     **ADR-009**: Decision 3 — Cognito provisioning skeleton. Cognito wiring (AdminCreateUser,
-     *     AdminSetUserPassword, AdminAddUserToGroup) is **deliberately stubbed** in Story 11.C.2
-     *     and will be wired in Story 11.E.2. The `temporaryPassword` field on the response is
-     *     reserved for that story to populate; it is always `null` in 11.C.2.
+     *     **ADR-009**: Decision 3 — Cognito provisioning. Cognito wiring is split across two
+     *     endpoints per Story 11.E.2's Resolved Q#1 Variant B:
+     *
+     *     - **READY (this endpoint)**: `AdminCreateUser` (silent shell, `MessageAction=SUPPRESS`)
+     *       creates the Cognito user in `FORCE_CHANGE_PASSWORD` state. The temporary password
+     *       passed to Cognito is internal-only and is **NOT** returned in the response.
+     *     - **INVITED (sibling endpoint `/users/{username}/issue-invitation-credentials`)**:
+     *       `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` issues the
+     *       fresh temporary password embedded in the invitation email.
+     *
+     *     SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per ADR-001 —
+     *     NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1 Resolved Q#1).
      *
      *     **Behaviour**:
      *     - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
@@ -618,6 +626,44 @@ export interface paths {
      *     **Performance**: <200ms (P95)
      */
     post: operations['provisionUserWithRole'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/issue-invitation-credentials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Issue (or skip) Cognito temp credentials at invitation time (Story 11.E.2 — AR15/FR9)
+     * @description Service-to-service endpoint called by `SpeakerWorkflowService.runInvitedHook` at
+     *     READY → INVITED. Delegates to Cognito's `AdminGetUser` + conditional
+     *     `AdminSetUserPassword(Permanent=false)` to mint a fresh temporary password (when
+     *     the user is `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED`) or to
+     *     confirm that the existing password remains valid (when the user is `CONFIRMED`).
+     *
+     *     **Per Resolved Q#1 Variant B + Q#4** of Story 11.E.2: credential issuance is
+     *     deliberately decoupled from `/users/provision` (which only runs the silent
+     *     `AdminCreateUser` shell). The two-endpoint design avoids storing the temp password
+     *     anywhere between READY and INVITED.
+     *
+     *     **Idempotent**: repeated calls are safe. `FRESH_TEMP_PASSWORD` branch overwrites the
+     *     previous temp password (only the most recently issued one is valid). `USE_EXISTING_PASSWORD`
+     *     branch is a pure read.
+     *
+     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from
+     *     event-management-service propagates the ORGANIZER JWT).
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['issueInvitationCredentials'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1011,8 +1057,10 @@ export interface components {
       role: 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
     };
     /**
-     * @description Response from the user-provisioning endpoint. The `temporaryPassword` field is
-     *     reserved for Story 11.E.2 (Cognito wiring) — it is always `null` in 11.C.2.
+     * @description Response from the user-provisioning endpoint. Story 11.E.2 (Resolved Q#1 Variant B)
+     *     removed the `temporaryPassword` field — credential issuance is owned by the sibling
+     *     `/users/{username}/issue-invitation-credentials` endpoint, which is called at
+     *     READY → INVITED rather than at CONTACTED → READY.
      */
     ProvisionUserResponse: {
       /**
@@ -1028,12 +1076,29 @@ export interface components {
        * @example true
        */
       created: boolean;
+    };
+    /**
+     * @description Response from `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
+     *     Determines whether the invitation email renders the "temporary password" block or the
+     *     "use your existing password" block.
+     */
+    InvitationCredentialsResponse: {
       /**
-       * @description Reserved for Story 11.E.2 — Cognito AdminCreateUser/AdminSetUserPassword wiring.
-       *     Always `null` in 11.C.2.
-       * @example null
+       * @description Fresh temporary password for the speaker's first login. Non-null when
+       *     `action = "FRESH_TEMP_PASSWORD"`; null when `action = "USE_EXISTING_PASSWORD"`.
+       *     Never persisted at rest in CUMS or EMS; the caller embeds it once in the
+       *     invitation email and discards it from memory.
+       * @example Tk7!aB2@nx9pQ4#z
        */
       temporaryPassword?: string | null;
+      /**
+       * @description Discriminator for the calling email service. Determines whether the
+       *     invitation-email template renders the temp-password block or the
+       *     "use your existing password" block.
+       * @example FRESH_TEMP_PASSWORD
+       * @enum {string}
+       */
+      action: 'FRESH_TEMP_PASSWORD' | 'USE_EXISTING_PASSWORD';
     };
     /**
      * @description Patch the narrow profile fields owned by the consolidated ContentSubmissionService
@@ -2212,6 +2277,71 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
+      /**
+       * @description Cognito upstream error. Story 11.E.2 wired `AdminCreateUser` (silent) at READY,
+       *     so a transient Cognito 5xx, throttle, or network failure during the call is
+       *     mapped to `CognitoOperationException` → 502 here. Caller should retry; the
+       *     provisioning is idempotent.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  issueInvitationCredentials: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Target user's username (Story 1.16.2) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Credentials issued or confirmed existing */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationCredentialsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Cognito user is in a state that requires operator intervention (ARCHIVED,
+       *     COMPROMISED, UNKNOWN). EMS should NOT silently retry.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description Upstream Cognito Admin SDK call failed. EMS should treat this as a transient
+       *     upstream error (retry after a brief backoff) and abort the INVITED transition.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   patchUserProfile: {

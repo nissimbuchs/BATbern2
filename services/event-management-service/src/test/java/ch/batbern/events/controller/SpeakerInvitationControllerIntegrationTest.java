@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -253,8 +254,15 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     // ==================== AC3: Send Invitation Tests ====================
 
     /**
-     * Test 3.1: Should send invitation and update status to INVITED
-     * AC3: Sends personalized email with magic links
+     * Test 3.1: Should send invitation and update status to INVITED.
+     *
+     * <p>Story 11.E.2 (AC7): magic-link token generation is removed from
+     * {@code runInvitedHook} — invitations now embed a Cognito login URL + temporary
+     * password (issued via the CUMS {@code /issue-invitation-credentials} sibling
+     * endpoint). Magic-link tokens are NO LONGER created at INVITED time. The original
+     * 6.1b assertion {@code tokenRepository.findBySpeakerPoolId(...).isNotEmpty()} no
+     * longer holds; the assertion is removed in line with the Phase E migration. Phase
+     * F (Story 11.F.1) will delete the {@code magic_link_tokens} table entirely.
      */
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
@@ -271,6 +279,15 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .updatedAt(Instant.now())
                 .build();
         speakerPoolRepository.save(speaker);
+
+        // Story 11.E.2 review patch (P8 / B10): stub the new sibling endpoint that the
+        // INVITED hook now calls. Without this stub the mock would return null and the
+        // email-rendering path would silently no-op the temp-password block.
+        InvitationCredentialsResponse credentialsResponse = new InvitationCredentialsResponse(
+                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                .temporaryPassword("TestTemp123!abcde");
+        when(userApiClient.issueInvitationCredentials(testUsername))
+                .thenReturn(credentialsResponse);
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
@@ -289,10 +306,11 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.invitedAt").exists())
                 .andExpect(jsonPath("$.responseDeadline", is(responseDeadline.toString())));
 
-        // Verify token was created
-        org.assertj.core.api.Assertions.assertThat(
-                tokenRepository.findBySpeakerPoolId(speaker.getId())
-        ).isNotEmpty();
+        // Story 11.E.2 review patch (P8 / B10 / E12): the pre-11.E.2 magic-link token
+        // assertion is gone, but the test must still verify the new Cognito-flow wiring
+        // happened — verify the CUMS sibling endpoint was called exactly once with the
+        // expected username so a future no-op'd runInvitedHook fails this test.
+        verify(userApiClient).issueInvitationCredentials(testUsername);
     }
 
     /**

@@ -4,20 +4,24 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
+import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
+import ch.batbern.shared.utils.LoggingUtils;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +57,8 @@ public class UserService {
     private final UserResponseMapper responseMapper;
     private final CompanyService companyService;
     private final RoleService roleService;
+    // Story 11.E.2: throwaway temp passwords at READY, fresh temp passwords at INVITED.
+    private final PasswordGenerator passwordGenerator;
 
     /**
      * Get current authenticated user
@@ -609,12 +615,21 @@ public class UserService {
      *       persistence layer.</li>
      * </ul>
      *
-     * <p>Cognito wiring is deliberately stubbed: the {@code temporaryPassword} field on
-     * the response is always {@code null} in Story 11.C.2 and is reserved for Story 11.E.2
-     * to populate once {@code AdminCreateUser}/{@code AdminSetUserPassword} are wired.
+     * <p>Story 11.E.2 (Resolved Q#1 Variant B): on the new-user branch, calls Cognito
+     * {@code AdminCreateUser} silently ({@code MessageAction=SUPPRESS}) with a throwaway
+     * temporary password. The Cognito user lands in {@code FORCE_CHANGE_PASSWORD} state.
+     * The throwaway password is immediately discarded — the speaker's real temporary
+     * password is issued at READY → INVITED via the sibling
+     * {@link #issueInvitationCredentials} endpoint. The {@code temporaryPassword} field was
+     * removed from {@link ProvisionUserResponse} in 11.E.2.
+     *
+     * <p>If Cognito {@code AdminCreateUser} fails (any error other than
+     * {@code UsernameExistsException}), the surrounding {@code @Transactional} aborts and
+     * the User + role-assignment rows are rolled back. EMS receives HTTP 502 and the
+     * workflow transition aborts at CONTACTED → READY (no partial state).
      *
      * @param request username (optional), email (required), firstName, lastName, role (required)
-     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     * @return canonical username + {@code created} flag
      * @throws UserValidationException if email or role is missing/invalid
      */
     @Counted(value = "users.provisioning", description = "Count of user provisioning calls (Story 11.C.2)")
@@ -652,10 +667,11 @@ public class UserService {
             roleService.addRole(user.getUsername(), roleToGrant);
             log.info("Provisioning: existing user {} has role {} (created=false)",
                     user.getUsername(), roleToGrant);
+            // Story 11.E.2: existing-user branch does NOT call AdminCreateUser — the Cognito
+            // user already exists from a prior provisioning (or from organic signup).
             return new ProvisionUserResponse()
                     .username(user.getUsername())
-                    .created(false)
-                    .temporaryPassword(null);  // Story 11.E.2 wires Cognito
+                    .created(false);
         }
 
         // P1 (review patch): firstName/lastName are optional in the API spec; SlugGenerationService
@@ -703,10 +719,11 @@ public class UserService {
                             "DataIntegrityViolation on createNewUser but email not found on re-fetch: "
                                     + normalizedEmail, e));
             roleService.addRole(user.getUsername(), roleToGrant);
+            // Story 11.E.2: race-loser branch does NOT call AdminCreateUser — the parallel
+            // caller that won the create race has already (or will) handle the Cognito shell.
             return new ProvisionUserResponse()
                     .username(user.getUsername())
-                    .created(false)
-                    .temporaryPassword(null);
+                    .created(false);
         }
 
         // The default initial role from createNewUser is ATTENDEE. Grant the requested role if it's not
@@ -714,10 +731,116 @@ public class UserService {
         roleService.addRole(created.getUsername(), roleToGrant);
 
         log.info("Provisioning: created user {} with role {} (created=true)", created.getUsername(), roleToGrant);
+
+        // Story 11.E.2 (AC1): create the Cognito user shell with a throwaway password and
+        // FORCE_CHANGE_PASSWORD status. The throwaway is immediately discarded — the real
+        // temporary password is issued at READY → INVITED via issueInvitationCredentials.
+        // Any failure here aborts the surrounding @Transactional, rolling back createNewUser
+        // + addRole (per AC5 item 1).
+        String throwawayTempPassword = passwordGenerator.generate();
+        cognitoService.adminCreateUserSilently(
+                normalizedEmail, throwawayTempPassword, created.getUsername());
+        // Discard the throwaway from this scope by reassigning. The local variable goes
+        // out of scope on method return; the value is never logged or persisted.
+        throwawayTempPassword = null;
+        log.info("Cognito user provisioned for {} (status=FORCE_CHANGE_PASSWORD)",
+                LoggingUtils.maskEmail(normalizedEmail));
+
         return new ProvisionUserResponse()
                 .username(created.getUsername())
-                .created(true)
-                .temporaryPassword(null);  // Story 11.E.2 wires Cognito (AdminCreateUser + AdminSetUserPassword)
+                .created(true);
+    }
+
+    /**
+     * Issue (or skip) Cognito temp credentials at READY → INVITED.
+     *
+     * <p>Story 11.E.2 (AC2 — Resolved Q#1 Variant B + Q#4). Called by EMS's
+     * {@code SpeakerWorkflowService.runInvitedHook} via the sibling
+     * {@code POST /api/v1/users/{username}/issue-invitation-credentials} endpoint.
+     *
+     * <p>Branches on the Cognito user's current status:
+     * <ul>
+     *   <li>{@code FORCE_CHANGE_PASSWORD} / {@code RESET_REQUIRED} → generate fresh
+     *       temp password, call {@code AdminSetUserPassword(Permanent=false)}, return
+     *       {@code FRESH_TEMP_PASSWORD}.</li>
+     *   <li>{@code CONFIRMED} → no Cognito mutation; return
+     *       {@code USE_EXISTING_PASSWORD} with {@code temporaryPassword=null}.</li>
+     *   <li>{@code UNCONFIRMED} → defensive: treat as FORCE_CHANGE_PASSWORD (organic
+     *       sign-ups do not occur in BATbern's invite-only flow, but the branch is safe).</li>
+     *   <li>{@code ARCHIVED} / {@code COMPROMISED} / {@code UNKNOWN} → throw
+     *       {@link UnprocessableInvitationStateException} (mapped to HTTP 422).</li>
+     * </ul>
+     *
+     * <p>Annotated {@code @Transactional(readOnly = true)} — the DB layer only performs a
+     * single read ({@code userRepository.findByUsername}); the Cognito calls
+     * ({@code AdminGetUser}, {@code AdminSetUserPassword}) mutate external state but do not
+     * touch the PostgreSQL transaction. {@code readOnly = true} accurately describes the
+     * DB-transactional semantics (no rollback needed because no DB write occurs).
+     *
+     * <p>Review patch B2 (P15) noted this could mislead readers into expecting "no
+     * side-effects"; the Javadoc here calls out the external mutation explicitly.
+     * {@code NOT_SUPPORTED} would be more semantically pure but suspends the test
+     * transaction so seeded fixtures aren't visible — keep {@code readOnly = true} and
+     * document the external-mutation invariant in code comments.
+     *
+     * @param username target user's username (must exist in PostgreSQL)
+     * @return action discriminator + fresh temp password (or null)
+     * @throws UserNotFoundException                   if {@code username} is not in CUMS
+     * @throws UnprocessableInvitationStateException   if Cognito reports a status that needs operator intervention
+     */
+    @Transactional(readOnly = true)
+    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
+        log.info("issueInvitationCredentials (Story 11.E.2): username={}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        UserStatusType status = cognitoService.getUserStatus(user.getEmail());
+        log.info("Cognito status for {}: {}", LoggingUtils.maskEmail(user.getEmail()), status);
+
+        return switch (status) {
+            case FORCE_CHANGE_PASSWORD, RESET_REQUIRED -> {
+                String fresh = passwordGenerator.generate();
+                cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
+                yield new InvitationCredentialsResponse(
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword(fresh);
+            }
+            case CONFIRMED -> new InvitationCredentialsResponse(
+                    InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
+            case UNCONFIRMED -> {
+                log.warn("UNCONFIRMED Cognito user for {} — defensively treating as FORCE_CHANGE_PASSWORD",
+                        LoggingUtils.maskEmail(user.getEmail()));
+                String fresh = passwordGenerator.generate();
+                cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
+                yield new InvitationCredentialsResponse(
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword(fresh);
+            }
+            case ARCHIVED, COMPROMISED, UNKNOWN_TO_SDK_VERSION -> {
+                String msg = String.format(
+                        "Cognito user %s is in state %s — requires operator intervention "
+                                + "before invitation credentials can be issued.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                throw new UnprocessableInvitationStateException(msg);
+            }
+            default -> {
+                // Story 11.E.2 review patch (P16 / B4): if AWS Cognito SDK adds a new
+                // UserStatusType value that this switch does not enumerate (e.g.
+                // EXTERNAL_PROVIDER, a future MFA_PENDING, …), log a WARN so the unknown
+                // status is traceable in CloudWatch before the 422 fires. The unenumerated
+                // state may be a legitimate flow that simply isn't handled yet — surface it
+                // for triage rather than silently rejecting future Cognito states.
+                log.warn("Unenumerated Cognito UserStatusType for {}: {} — review the switch"
+                        + " in UserService.issueInvitationCredentials. Falling back to 422.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                String msg = String.format(
+                        "Cognito user %s is in state %s — requires operator intervention "
+                                + "before invitation credentials can be issued.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                throw new UnprocessableInvitationStateException(msg);
+            }
+        };
     }
 
     private static String capitalize(String s) {

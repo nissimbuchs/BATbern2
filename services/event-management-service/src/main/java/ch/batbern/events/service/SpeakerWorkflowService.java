@@ -4,6 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
@@ -27,6 +28,7 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,6 +99,25 @@ public class SpeakerWorkflowService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final DomainEventPublisher domainEventPublisher;
 
+    // Story 11.E.2: speaker-portal login URL embedded in the Cognito-flow invitation email.
+    // The fallback default is the production URL — keep for backward compatibility but warn
+    // at startup if the property is unset (review patch D4) so misconfigured staging deploys
+    // surface in CloudWatch before the first invitation email leaves SES.
+    @Value("${app.base-url:https://batbern.ch}")
+    private String baseUrl;
+
+    @Value("${app.base-url:#{null}}")
+    private String baseUrlRawForStartupCheck;
+
+    @jakarta.annotation.PostConstruct
+    void warnIfBaseUrlUnset() {
+        if (baseUrlRawForStartupCheck == null || baseUrlRawForStartupCheck.isBlank()) {
+            log.warn("app.base-url is NOT explicitly configured — falling back to default '{}'. "
+                    + "Set app.base-url in the active Spring profile to avoid emitting prod URLs "
+                    + "from non-prod environments.", baseUrl);
+        }
+    }
+
     /**
      * Sole entry point for mutating {@code speaker_pool.status}. See class-level docs for
      * the body ordering, allow-list, and side-effect contract.
@@ -140,7 +161,7 @@ public class SpeakerWorkflowService {
 
         // 4. Preconditions (target-specific)
         Event event = loadEvent(speaker.getEventId());
-        enforcePrecondition(target, current, event, safePayload);
+        enforcePrecondition(target, current, event, safePayload, speaker);
 
         // 5. Side-effect hook (target-specific) — may mutate the in-memory speaker
         runSideEffectHook(speaker, event, current, target, actor, safePayload);
@@ -182,11 +203,15 @@ public class SpeakerWorkflowService {
             SpeakerWorkflowState target,
             SpeakerWorkflowState current,
             Event event,
-            TransitionPayload payload
+            TransitionPayload payload,
+            SpeakerPool speaker
     ) {
         switch (target) {
             case READY -> requireEmail(payload);
-            case INVITED -> enforceSlotCapacity(event);
+            case INVITED -> {
+                enforceSlotCapacity(event);
+                requireUsername(speaker);
+            }
             case DECLINED -> requireDeclineReasonIfPostInvitation(current, payload);
             default -> { /* no precondition */ }
         }
@@ -195,6 +220,22 @@ public class SpeakerWorkflowService {
     private void requireEmail(TransitionPayload payload) {
         if (payload.email() == null || payload.email().isBlank()) {
             throw new ValidationException("email is required to promote speaker to READY");
+        }
+    }
+
+    /**
+     * Story 11.E.2 review patch (E5): the INVITED hook calls
+     * {@code userApiClient.issueInvitationCredentials(speaker.getUsername())}; a null
+     * username produces the URL {@code /users/null/issue-invitation-credentials} → CUMS 404.
+     * Fail-fast with a clear ValidationException so the operator sees the real cause.
+     * A speaker should always have a username by the time it reaches READY (set in the
+     * READY hook); this guards against legacy migration / same-state edge cases.
+     */
+    private void requireUsername(SpeakerPool speaker) {
+        if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
+            throw new ValidationException(
+                    "Speaker username is missing — provisioning at READY did not complete. "
+                            + "Re-run the CONTACTED → READY transition before promoting to INVITED.");
         }
     }
 
@@ -288,18 +329,22 @@ public class SpeakerWorkflowService {
     }
 
     private void runInvitedHook(SpeakerPool speaker, Event event, TransitionPayload payload) {
-        // READY → INVITED: generate magic-link tokens + send invitation email. The magic-link
-        // token system remains until Phase F (11.F.1); Phase E (11.E.2) rewires the email
-        // template to a Cognito login URL + temp password.
+        // READY → INVITED: Story 11.E.2 (AC7) rewires this hook from magic-link tokens to
+        // Cognito-flow credentials. CUMS's issueInvitationCredentials endpoint mints a fresh
+        // temporary password (or signals USE_EXISTING_PASSWORD for already-confirmed users).
+        // The email service renders the right template branch based on the action discriminator.
         //
         // NB: Email send currently fires synchronously inside the @Transactional boundary; if the
         // transition rolls back after this point, the email has already been sent. Moving to
         // AFTER_COMMIT semantics is tracked in deferred-work (code review 11.B.2, P2).
-        String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
-        String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
+        InvitationCredentialsResponse credentials =
+                userApiClient.issueInvitationCredentials(speaker.getUsername());
 
         Locale locale = resolveLocale(payload);
-        invitationEmailService.sendInvitationEmail(speaker, event, respondToken, dashboardToken, locale);
+        String loginUrl = baseUrl + "/login";
+        invitationEmailService.sendInvitationEmail(speaker, event, loginUrl, credentials, locale);
+        // Story 11.E.2: the temp password (if non-null) leaves scope here — neither this
+        // service nor the speaker entity retains a reference to it.
 
         speaker.setInvitedAt(Instant.now());
     }

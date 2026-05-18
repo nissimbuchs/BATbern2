@@ -483,39 +483,67 @@ public class SpeakerWorkflowService {
 }
 ```
 
-### Cognito provisioning skeleton
+### Cognito provisioning topology (two-endpoint design per Story 11.E.2 Q#1 Variant B)
+
+Cognito provisioning is split across **two** CUMS endpoints. The temporary password is
+generated at the moment it is needed and consumed before the call returns — it is never
+stored anywhere between READY and INVITED.
 
 ```java
+// Endpoint 1: POST /api/v1/users/provision
+// Called at CONTACTED → READY by SpeakerWorkflowService.runReadyHook.
 @Service
-public class SpeakerProvisioningService {
+public class UserService {
 
     @Transactional
-    public String provisionForSpeaker(SpeakerPool sp, String email, String firstName, String lastName) {
-        // 1. Lookup or create User
-        var user = userApiClient.getOrCreateUser(email, firstName, lastName);
-        sp.setUsername(user.getUsername());
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest req) {
+        // 1. Lookup or create User (existing logic; idempotent).
+        // ... existing-user branch returns { username, created=false } and does NOT call Cognito.
 
-        // 2. Create Cognito user with FORCE_CHANGE_PASSWORD
-        String tempPassword = passwordGenerator.generate();   // strong, policy-compliant
-        cognitoClient.adminCreateUser(
+        // 2. New-user branch only: create Cognito shell.
+        String throwaway = passwordGenerator.generate();   // strong, policy-compliant
+        cognitoIntegrationService.adminCreateUserSilently(
             email,
-            tempPassword,
-            user.getUsername(),
-            UserCreationFlag.SUPPRESS_DEFAULT_INVITATION    // we send our own email
+            throwaway,
+            user.getUsername()     // MessageAction=SUPPRESS — we send our own email
         );
+        // 3. Discard the throwaway: speaker never sees it. The real temp password is
+        //    issued at INVITED time via AdminSetUserPassword (Endpoint 2).
 
-        // 3. Grant SPEAKER role — PostgreSQL user_roles insert (ADR-001),
+        // 4. Grant SPEAKER role — PostgreSQL user_roles insert (ADR-001),
         //    NOT cognito-idp:AdminAddUserToGroup (no Cognito groups exist).
-        userRoleRepository.save(new UserRoleEntity(user.getUsername(), Role.SPEAKER));
+        roleService.addRole(user.getUsername(), Role.SPEAKER);
 
-        // 4. Stash the temp password for the invitation email
-        return tempPassword;
+        // 5. temporaryPassword field was REMOVED from ProvisionUserResponse in Story 11.E.2.
+        return new ProvisionUserResponse().username(user.getUsername()).created(true);
+    }
+
+    // Endpoint 2: POST /api/v1/users/{username}/issue-invitation-credentials
+    // Called at READY → INVITED by SpeakerWorkflowService.runInvitedHook.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)   // no DB write; mutates Cognito only
+    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
+        var user = userRepository.findByUsername(username).orElseThrow(...);
+        var status = cognitoIntegrationService.getUserStatus(user.getEmail());  // AdminGetUser
+        return switch (status) {
+            case FORCE_CHANGE_PASSWORD, RESET_REQUIRED -> {
+                String fresh = passwordGenerator.generate();
+                cognitoIntegrationService.adminSetTemporaryPassword(user.getEmail(), fresh);  // Permanent=false
+                yield new InvitationCredentialsResponse(ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword(fresh);
+            }
+            case CONFIRMED -> new InvitationCredentialsResponse(ActionEnum.USE_EXISTING_PASSWORD);
+            case UNCONFIRMED -> /* defensive: treat as FRESH */ ...;
+            case ARCHIVED, COMPROMISED -> throw new UnprocessableInvitationStateException(...);  // 422
+        };
     }
 }
 ```
 
-The temporary password is returned to the caller (the `CONTACTED → READY` side-effect
-hook), which passes it to the invitation-email service. It is never stored.
+EMS captures the response in `SpeakerWorkflowService.runInvitedHook` and forwards it
+to `SpeakerInvitationEmailService.sendInvitationEmail(speaker, event, loginUrl,
+credentials, locale)`. The email template renders the FRESH or USE_EXISTING block
+based on `credentials.action()`. The temp password value leaves the workflow service's
+scope as soon as the email-send returns; it is never written to any database or log.
 
 ### Migration to the new state set
 
@@ -565,3 +593,4 @@ DROP TABLE IF EXISTS speaker_selection_votes;     -- overflow voting
 | 2026-05-16 | 1.1 | Story 11.C.1 implementation landed: V94 migration (`services/event-management-service/src/main/resources/db/migration/V94__drop_speakers_table.sql`) drops the `speakers` table; `Speaker` entity + `SpeakerRepository` + `SpeakerService` + `SpeakerController` + `SpeakerPortalProfileController` + `LegacyExportService` / `LegacyImportService` deleted; watch services migrated to `UserApiClient`; public portrait lookup mirrored as `GET /api/v1/public/users/{username}` in CUMS (`PublicUserController`). | Amelia (Dev Agent) |
 | 2026-05-16 | 1.2 | Story 11.C.2 implementation landed: (a) `UserApiClient` extended with `provisionUserWithRole` (AR13, calls new `POST /api/v1/users/provision`) and `patchUserProfile` (AR14, calls new `PATCH /api/v1/users/{username}/profile`); legacy `updateUser` / `updateUserProfilePicture` / `UserUpdateDto` deleted (Resolved Decision §1). (b) `SpeakerContentSubmissionService` deleted; consolidated `ContentSubmissionService.submit(speakerPoolId, eventCode, payload, principal)` becomes the shared backend write path for both `POST /api/v1/events/{code}/speakers/{speakerId}/content` (organizer) and `POST /api/v1/speaker-portal/content/submit` (speaker portal). (c) OpenAPI specs `docs/api/users-api.openapi.yml` + `docs/api/speakers-api.openapi.yml` updated; new request schemas use `additionalProperties: false` per Resolved Decision §3. (d) Profile patch is idempotent + scoped: ORGANIZER/ADMIN patch any user, SPEAKER may patch only their own profile (403 otherwise). | Amelia (Dev Agent) |
 | 2026-05-17 | 1.3 | Story 11.E.1 PM-resolved Q#1: dropped `cognito-idp:AdminAddUserToGroup` from Decision 3 + Implementation Guidelines skeleton. SPEAKER role grant uses PostgreSQL `user_roles` row insert per ADR-001 database-centric role storage (no Cognito groups exist on the user pool). Also updated PRD AR30 / NFR2 / NFR5 / Story 11.E.1 AC / Story 11.E.2 AC to match. CDK IAM policy in `company-management-stack.ts` lists only the four actually-called admin actions (AdminCreateUser, AdminSetUserPassword, AdminInitiateAuth, AdminGetUser). | Nissim (PM) |
+| 2026-05-17 | 1.4 | Story 11.E.2 PM-resolved Q#1-Q#4 + implementation: (Q#1) two-endpoint Cognito design — `AdminCreateUser` silently at READY via `/users/provision`; `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` at INVITED via the new `/users/{username}/issue-invitation-credentials` endpoint. `ProvisionUserResponse.temporaryPassword` field **removed** from OpenAPI (no longer used by any consumer). (Q#2) Email-template locale scope narrowed to `de` + `en` per CLAUDE.md §Localization. (Q#3) `.txt` template parity dropped — HTML-only emails. (Q#4) UNCONFIRMED defensively treated as FRESH; ARCHIVED/COMPROMISED → HTTP 422 (`UnprocessableInvitationStateException`). Implementation Guidelines § rewritten to show the two-endpoint shape. | Nissim (PM) |

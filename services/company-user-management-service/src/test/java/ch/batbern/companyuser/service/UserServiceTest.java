@@ -71,6 +71,9 @@ class UserServiceTest {
     @Mock
     private RoleService roleService;
 
+    @Mock
+    private PasswordGenerator passwordGenerator;
+
     private UserService userService;
 
     @BeforeEach
@@ -84,7 +87,8 @@ class UserServiceTest {
             slugService,
             responseMapper,
             companyService,
-            roleService
+            roleService,
+            passwordGenerator
         );
     }
 

@@ -4,6 +4,7 @@ import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,17 +34,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for SpeakerInvitationEmailService.
- * Story 6.1b: Speaker Invitation System (AC3, AC4)
+ * Unit tests for {@link SpeakerInvitationEmailService}.
  *
- * Tests:
- * - Dashboard link included in email body
- * - Accept/decline magic links included
- * - Event details populated correctly
- * - Session info included when assigned
- * - i18n support (German/English)
- * - Deadline display
- * - Error handling (email failure doesn't throw)
+ * <p>Story 11.E.2 (AC8 item 5): Cognito-flow email rendering replaces the
+ * Story 6.1b magic-link signature. The four required cases are:
+ * <ol>
+ *   <li>{@code should_renderTemporaryPasswordBlock_when_actionIsFreshTempPassword} (English template)</li>
+ *   <li>{@code should_renderUseExistingPasswordBlock_when_actionIsUseExistingPassword} (English template)</li>
+ *   <li>{@code should_renderInGermanLocale_when_localeIsDeutsch} (German template)</li>
+ *   <li>{@code should_includeLoginUrl_when_emailRendered}</li>
+ * </ol>
+ * Additional edge-case tests cover error-handling resilience and missing-data fallbacks
+ * (carried over from the prior 6.1b suite).
  */
 @ExtendWith(MockitoExtension.class)
 class SpeakerInvitationEmailServiceTest {
@@ -55,9 +57,6 @@ class SpeakerInvitationEmailServiceTest {
     private SessionRepository sessionRepository;
 
     @Mock
-    private MagicLinkService magicLinkService;
-
-    @Mock
     private EmailTemplateService emailTemplateService;
 
     private SpeakerInvitationEmailService invitationEmailService;
@@ -65,18 +64,17 @@ class SpeakerInvitationEmailServiceTest {
     private SpeakerPool speaker;
     private Event event;
     private Session session;
-    private String respondToken;
-    private String dashboardToken;
+    private InvitationCredentialsResponse freshCredentials;
+    private InvitationCredentialsResponse useExistingCredentials;
+    private String loginUrl;
 
     @BeforeEach
     void setUp() {
         invitationEmailService = new SpeakerInvitationEmailService(
-                emailService, sessionRepository, magicLinkService, emailTemplateService);
-        // By default, DB lookup returns empty → classpath fallback is used
+                emailService, sessionRepository, emailTemplateService);
+        // DB lookup defaults to empty so classpath templates load.
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
                 .thenReturn(Optional.empty());
-        ReflectionTestUtils.setField(invitationEmailService, "baseUrl", "https://batbern.ch");
-        when(magicLinkService.generateJwtToken(any())).thenReturn("test.jwt.token");
         ReflectionTestUtils.setField(invitationEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(invitationEmailService, "organizerEmail", "events@batbern.ch");
 
@@ -107,413 +105,209 @@ class SpeakerInvitationEmailServiceTest {
         speaker.setResponseDeadline(LocalDate.of(2026, 2, 28));
         speaker.setContentDeadline(LocalDate.of(2026, 3, 10));
 
-        respondToken = "test-respond-token-abc";
-        dashboardToken = "test-dashboard-token-xyz";
+        loginUrl = "https://batbern.ch/login";
 
-        // Mock email service to perform actual variable replacement
+        freshCredentials = new InvitationCredentialsResponse(
+                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                .temporaryPassword("Tk7!aB2@nx9pQ4#z");
+        useExistingCredentials = new InvitationCredentialsResponse(
+                InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
+
+        // Real Mustache-style variable replacement (mirrors EmailService.replaceVariables).
         when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation -> {
             String template = invocation.getArgument(0);
             java.util.Map<String, String> vars = invocation.getArgument(1);
             String result = template;
+            // Positive Mustache conditionals.
             for (var entry : vars.entrySet()) {
-                result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
+                String openTag = "{{#" + entry.getKey() + "}}";
+                String closeTag = "{{/" + entry.getKey() + "}}";
+                boolean empty = entry.getValue() == null || entry.getValue().isBlank();
+                while (result.contains(openTag) && result.contains(closeTag)) {
+                    int open = result.indexOf(openTag);
+                    int close = result.indexOf(closeTag, open);
+                    if (close < 0) break;
+                    String before = result.substring(0, open);
+                    String content = result.substring(open + openTag.length(), close);
+                    String after = result.substring(close + closeTag.length());
+                    result = empty ? before + after : before + content + after;
+                }
+            }
+            // Simple variable substitution.
+            for (var entry : vars.entrySet()) {
+                result = result.replace("{{" + entry.getKey() + "}}",
+                        entry.getValue() != null ? entry.getValue() : "");
             }
             return result;
         });
     }
 
+    // ============================================================
+    // AC8 item 5 — the four required cases
+    // ============================================================
+
+    @Test
+    @DisplayName("AC8 #1: renders temp-password block when action=FRESH_TEMP_PASSWORD (English)")
+    void should_renderTemporaryPasswordBlock_when_actionIsFreshTempPassword() {
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        String body = bodyCaptor.getValue();
+        // Temp password value appears.
+        assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
+        // FRESH branch wording present, USE_EXISTING wording absent.
+        assertThat(body).contains("Temporary password");
+        assertThat(body).doesNotContain("existing password");
+    }
+
+    @Test
+    @DisplayName("AC8 #2: renders use-existing-password block when action=USE_EXISTING_PASSWORD (English)")
+    void should_renderUseExistingPasswordBlock_when_actionIsUseExistingPassword() {
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, useExistingCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        String body = bodyCaptor.getValue();
+        // No temp password appears.
+        assertThat(body).doesNotContain("Tk7!aB2@nx9pQ4#z");
+        // USE_EXISTING wording present, FRESH-only wording absent.
+        assertThat(body).contains("existing password");
+        assertThat(body).doesNotContain("Temporary password");
+    }
+
+    @Test
+    @DisplayName("AC8 #3: renders in German locale (Einladung als Referent + de body)")
+    void should_renderInGermanLocale_when_localeIsDeutsch() {
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
+
+        verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), bodyCaptor.capture());
+        assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
+        // German body must contain the German "temporary password" wording.
+        String body = bodyCaptor.getValue();
+        assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
+        assertThat(body).contains("Temporäres Passwort");
+    }
+
+    @Test
+    @DisplayName("AC8 #4: includes the configured login URL")
+    void should_includeLoginUrl_when_emailRendered() {
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        assertThat(bodyCaptor.getValue()).contains(loginUrl);
+        // Speaker email is the Cognito username.
+        assertThat(bodyCaptor.getValue()).contains("john.doe@example.com");
+    }
+
     @Nested
-    @DisplayName("AC3: Invitation Email Content")
-    class InvitationEmailContentTests {
+    @DisplayName("Cross-cutting concerns")
+    class CrossCutting {
 
         @Test
-        @DisplayName("should send invitation email to speaker's email address")
+        @DisplayName("addresses the recipient to the speaker's email")
         void should_sendEmail_when_invitationTriggered() {
-            // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
 
-            // When
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
+                    speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(
                     eq("john.doe@example.com"),
                     contains("Speaker Invitation"),
-                    anyString()
-            );
+                    anyString());
         }
 
         @Test
-        @DisplayName("should include dashboard link in invitation email")
-        void should_includeDashboardLink_when_emailSent() {
-            // Given
+        @DisplayName("populates event details + speaker name in the body")
+        void should_includeEventDetailsAndSpeakerName() {
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
+                    speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains(
-                    "https://batbern.ch/speaker-portal/dashboard?token=" + dashboardToken);
+            String body = bodyCaptor.getValue();
+            assertThat(body).contains("BATbern 2026");
+            assertThat(body).contains("15.03.2026");
+            assertThat(body).contains("Kursaal Bern");
+            assertThat(body).contains("John Doe");
+            assertThat(body).contains("Cloud Architecture Patterns");
         }
 
         @Test
-        @DisplayName("should include accept link with respond token")
-        void should_includeAcceptLink_when_emailSent() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains(
-                    "/speaker-portal/respond?token=" + respondToken + "&action=accept");
-        }
-
-        @Test
-        @DisplayName("should include decline link with respond token")
-        void should_includeDeclineLink_when_emailSent() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains(
-                    "/speaker-portal/respond?token=" + respondToken + "&action=decline");
-        }
-
-        @Test
-        @DisplayName("should use separate tokens for dashboard and respond links")
-        void should_useSeparateTokens_when_differentActionsRequired() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            // Dashboard uses the VIEW token
-            assertThat(emailBody).contains("dashboard?token=" + dashboardToken);
-            // Accept/decline use the RESPOND token
-            assertThat(emailBody).contains("respond?token=" + respondToken);
-            // Tokens are different
-            assertThat(respondToken).isNotEqualTo(dashboardToken);
-        }
-
-        @Test
-        @DisplayName("should include event details in email")
-        void should_includeEventDetails_when_emailSent() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("BATbern 2026");
-            assertThat(emailBody).contains("15.03.2026");
-            assertThat(emailBody).contains("Kursaal Bern");
-            assertThat(emailBody).contains("Kornhausstrasse 3, 3013 Bern");
-        }
-
-        @Test
-        @DisplayName("should include session title when assigned")
-        void should_includeSessionTitle_when_speakerHasSession() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("Cloud Architecture Patterns");
-        }
-
-        @Test
-        @DisplayName("should include response deadline when set")
-        void should_includeResponseDeadline_when_set() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("28.02.2026");
-        }
-
-        @Test
-        @DisplayName("should include content deadline when set")
-        void should_includeContentDeadline_when_set() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("10.03.2026");
-        }
-
-        @Test
-        @DisplayName("should include JWT magic link in invitation email")
-        void should_includeJwtMagicLink_when_emailSent() {
-            // Given - Story 9.1: JWT magic link for speaker portal
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains(
-                    "https://batbern.ch/speaker-portal/magic-login?jwt=test.jwt.token");
-        }
-
-        @Test
-        @DisplayName("should include speaker name in email body")
-        void should_includeSpeakerName_when_emailSent() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("John Doe");
-        }
-    }
-
-    @Nested
-    @DisplayName("AC4: i18n Support")
-    class InternationalizationTests {
-
-        @Test
-        @DisplayName("should use English subject when English locale")
-        void should_useEnglishSubject_when_englishLocale() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
-            assertThat(subjectCaptor.getValue()).contains("Speaker Invitation");
-        }
-
-        @Test
-        @DisplayName("should use German subject when German locale")
-        void should_useGermanSubject_when_germanLocale() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
-            assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
-        }
-
-        @Test
-        @DisplayName("should include dashboard link in German template")
-        void should_includeDashboardLink_when_germanLocale() {
-            // Given
-            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
-
-            // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains(
-                    "https://batbern.ch/speaker-portal/dashboard?token=" + dashboardToken);
-        }
-
-        @Test
-        @DisplayName("should default to German when locale is null")
+        @DisplayName("defaults to German when locale is null")
         void should_defaultToGerman_when_localeIsNull() {
-            // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
             ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, null);
+                    speaker, event, loginUrl, freshCredentials, null);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
             assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         }
-    }
-
-    @Nested
-    @DisplayName("Edge Cases and Error Handling")
-    class EdgeCaseTests {
 
         @Test
-        @DisplayName("should not throw when email sending fails")
+        @DisplayName("does not throw when email sending fails")
         void should_notThrow_when_emailSendingFails() {
-            // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             doThrow(new RuntimeException("Email server unavailable"))
                     .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
 
-            // When/Then - should not throw
+            // No exception escapes.
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
+                    speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
         }
 
         @Test
-        @DisplayName("should handle speaker without session assignment")
-        void should_handleMissingSession_when_noSessionAssigned() {
-            // Given - speaker has no session
-            speaker.setSessionId(null);
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then - email should still be sent without session info
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("John Doe");
-            assertThat(emailBody).contains("BATbern 2026");
-            assertThat(emailBody).doesNotContain("Cloud Architecture Patterns");
-        }
-
-        @Test
-        @DisplayName("should use TBA when venue is not set")
+        @DisplayName("uses TBA when venue is not set")
         void should_useTba_when_venueNotSet() {
-            // Given
             event.setVenueName(null);
             event.setVenueAddress(null);
             speaker.setSessionId(null);
+
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
+                    speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("TBA");
+            assertThat(bodyCaptor.getValue()).contains("TBA");
         }
 
         @Test
-        @DisplayName("should use DB template htmlBody when available (Story 10.2)")
+        @DisplayName("uses DB template htmlBody when available (Story 10.2)")
         void should_useDbTemplate_whenAvailable() {
-            // Given
             EmailTemplate dbTemplate = new EmailTemplate();
-            dbTemplate.setHtmlBody("<p>DB template for {{speakerName}}</p>");
+            dbTemplate.setHtmlBody("<p>DB template for {{speakerName}}; password: {{temporaryPassword}}</p>");
             dbTemplate.setLayoutKey(null);
             when(emailTemplateService.findByKeyAndLocale("speaker-invitation", "de"))
                     .thenReturn(Optional.of(dbTemplate));
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
-            // When
             invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
+                    speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-            // Then
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            assertThat(bodyCaptor.getValue()).contains("John Doe"); // {{speakerName}} replaced
-        }
-
-        @Test
-        @DisplayName("should merge layout when DB template has layoutKey set (Story 10.2)")
-        void should_mergeLayout_whenLayoutKeySet() {
-            // Given
-            EmailTemplate dbTemplate = new EmailTemplate();
-            dbTemplate.setHtmlBody("<p>Content for {{speakerName}}</p>");
-            dbTemplate.setLayoutKey("batbern-default");
-            when(emailTemplateService.findByKeyAndLocale("speaker-invitation", "de"))
-                    .thenReturn(Optional.of(dbTemplate));
-            when(emailTemplateService.mergeWithLayout(anyString(), eq("batbern-default"), eq("de")))
-                    .thenReturn("<html><p>Content for {{speakerName}}</p></html>");
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
-
-            // Then
-            verify(emailTemplateService).mergeWithLayout(anyString(), eq("batbern-default"), eq("de"));
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-        }
-
-        @Test
-        @DisplayName("should handle speaker without deadlines")
-        void should_handleMissingDeadlines_when_notSet() {
-            // Given
-            speaker.setResponseDeadline(null);
-            speaker.setContentDeadline(null);
-            speaker.setSessionId(null);
-            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-
-            // When
-            invitationEmailService.sendInvitationEmail(
-                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
-
-            // Then - email should still be sent
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
-            String emailBody = bodyCaptor.getValue();
-            assertThat(emailBody).contains("John Doe");
-            // Dashboard link should always be present regardless of deadlines
-            assertThat(emailBody).contains("dashboard?token=" + dashboardToken);
+            assertThat(bodyCaptor.getValue()).contains("John Doe");
+            assertThat(bodyCaptor.getValue()).contains("Tk7!aB2@nx9pQ4#z");
         }
     }
 }

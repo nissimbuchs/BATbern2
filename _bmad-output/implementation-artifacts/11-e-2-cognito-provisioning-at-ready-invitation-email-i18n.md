@@ -1,6 +1,6 @@
 # Story 11.E.2: Cognito provisioning at READY + invitation-email rewrite (de + en only, HTML-only)
 
-Status: ready-for-dev
+Status: done
 
 <!-- All 4 Open Questions PM-resolved 2026-05-17. AC + Tasks + Dev Notes below reflect the
 resolutions. Resolution narrative preserved at the bottom in "Open Questions (resolved)". -->
@@ -345,7 +345,7 @@ public class PasswordGenerator {
    | `{{dashboardLink}}`          | `{{loginUrl}}` — single canonical entry point                               |
    | _none_                       | `{{usernameForLogin}}` — speaker's email (the Cognito username)             |
    | _none_                       | `{{#temporaryPassword}} … {{/temporaryPassword}}` — conditional block; renders only when `credentials.action() == FRESH_TEMP_PASSWORD` |
-   | _none_                       | `{{^temporaryPassword}} … {{/temporaryPassword}}` — inverted conditional; renders the "use your existing password" branch when `credentials.action() == USE_EXISTING_PASSWORD` |
+   | _none_                       | `{{#useExistingPassword}} … {{/useExistingPassword}}` — paired positive conditional; renders the "use your existing password" branch when `credentials.action() == USE_EXISTING_PASSWORD`. (Note: the pre-implementation draft of AC8 specified the inverted Mustache form `{{^temporaryPassword}} … {{/temporaryPassword}}`; we ship the paired positive form instead because the shared-kernel `EmailService.replaceVariables` only supports positive conditionals. Behaviour is identical — exactly one block renders per call — and the deviation was PM-ratified in code review on 2026-05-18.) |
 
 4. The `magicLinkService.generateJwtToken(...)` call (around line 89) is **deleted**. The `MagicLinkService` field on `SpeakerInvitationEmailService` is **removed** from the constructor (one-line cleanup). The `MagicLinkService` class itself stays on the codebase for non-invitation callers (Phase F territory).
 
@@ -537,6 +537,23 @@ grep -l "magic\|acceptLink\|declineLink\|jwtMagicLink\|dashboardLink" \
 
 Tasks ordered so the build stays green at each step.
 
+> **Completion status (set by `bmad-dev-story` on 2026-05-17 via Claude Opus 4.7 1M):**
+>
+> - **Task 1** (PasswordGenerator + tests, AC4): ✅ DONE — 6/6 unit tests pass.
+> - **Task 2** (CognitoIntegrationService 3 new methods + CognitoOperationException → 502, AC2/AC3): ✅ DONE — 11/11 unit tests pass; `UnprocessableInvitationStateException` also added → 422.
+> - **Task 3** (UserService.provisionUserWithRole wires AdminCreateUser silent + drops 3 `.temporaryPassword(null)` lines, AC1/AC5): ✅ DONE — class-level `@Transactional` covers AC5 rollback; 4 new integration test cases (#1, #2, #4 in `UserProvisioningAndPatchIntegrationTest`; #3 in new `UserProvisioningCognitoRollbackIntegrationTest`).
+> - **Task 4** (UserService.issueInvitationCredentials + new POST endpoint, AC2): ✅ DONE — annotated `@Transactional(readOnly = true)` per AC5 item 2 spirit; 4/4 integration tests pass in new `UserServiceIssueCredentialsIntegrationTest`.
+> - **Task 5** (UserApiClient.issueInvitationCredentials + EMS hook rewire, AC6/AC7): ✅ DONE — magic-link `generateToken` calls dropped from `runInvitedHook`; AC11 #9 integration test pass.
+> - **Task 6** (SpeakerInvitationEmailService HTML-only + new signature + Mustache conditionals, AC8): ✅ DONE — `MagicLinkService` field removed; `{{#temporaryPassword}}` / `{{#useExistingPassword}}` positive-conditional pair used (semantically equivalent to AC8's `{{^temporaryPassword}}` since `EmailService.replaceVariables` only supports positive Mustache conditionals — documented inline); 10/10 unit tests pass incl. AC8 #1-#4.
+> - **Task 7** (Rewrite `de` + `en` invitation HTML + delete `.txt`, AC9): ✅ DONE — `.txt` files `git rm`'d; grep verifies zero magic-link references.
+> - **Task 8** (Simplify acceptance + reminder templates, AC9): ✅ DONE (no-op verification) — grep returns zero `tentative`/`Tentativ` matches across all 14 `de` + `en` files (Story 11.B.1 already dropped this copy when TENTATIVE was removed from shared-kernel).
+> - **Task 9** (OpenAPI spec + regenerate types, AC12): ✅ DONE — `ProvisionUserResponse.temporaryPassword` removed; new `/users/{username}/issue-invitation-credentials` path + `InvitationCredentialsResponse` schema added; frontend + both backend generators ran successfully.
+> - **Task 10** (Bruno tests, AC13): ✅ DONE for artifacts — `22-provision-user-with-role.bru` updated to assert field absence; new `25-issue-invitation-credentials.bru` covers 200 + 422. The `./scripts/ci/run-bruno-tests.sh` run requires a live backend and runs in CI.
+> - **Task 11** (Manual staging smoke test, AC10): 📋 **USER-SIDE FOLLOW-UP** — runs after staging deploy (requires 11.E.1 deployed first).
+> - **Task 12** (Doc-drift sweep): ✅ DONE — PRD + ADR-009 (with v1.4 revision-history row) + 06-backend-architecture + 06a-workflow-state-machines all updated; CLAUDE.md §Localization verified present at line 705.
+> - **Task 13** (Commit + PR): 📋 **USER-SIDE FOLLOW-UP** — dev agent does not commit per project policy.
+> - **Task 14** (Sprint status update): ✅ DONE — `sprint-status.yaml` 11.E.2 row updated `ready-for-dev` → `in-progress` → `review`; story file Status header updated `ready-for-dev` → `in-progress` → `review`.
+
 ### Task 1 — `PasswordGenerator` (AC4)
 
 1.1. Create `PasswordGenerator.java` + `PasswordGeneratorTest.java` per AC4.
@@ -661,6 +678,52 @@ Body summarises: AdminCreateUser at READY + new issueInvitationCredentials endpo
 ### Task 14 — Sprint status
 
 14.1. Update `_bmad-output/implementation-artifacts/sprint-status.yaml`: set `11-e-2-cognito-provisioning-at-ready-invitation-email-i18n` from `ready-for-dev` → `in-progress` (when the dev starts coding) → `review` (when the PR opens). Bump `last_updated`.
+
+### Review Findings
+
+Code review run 2026-05-18 via `bmad-code-review` (Claude Opus 4.7 1M) — 3 parallel reviewers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) against the uncommitted `git diff HEAD` (28 files, +1543/−793). Acceptance Auditor: **ready-after-minor-fixes** verdict (all 13 ACs satisfied or out-of-scope; AC8 ships a documented Mustache-conditional substitution needing PM ratification).
+
+#### Decision-needed (5)
+
+- [x] [Review][Decision] **AC8 Mustache substitution: `{{#useExistingPassword}}` vs spec'd `{{^temporaryPassword}}`** — Dev substitutes a positive Mustache flag because `EmailService.replaceVariables` only supports positive conditionals. Behaviour identical, but deviates from the literal AC. PM should either (a) accept the deviation and amend AC8, or (b) extend `EmailService.replaceVariables` to support `{{^var}}` and revert to spec wording. [`SpeakerInvitationEmailService.java:2055`, `speaker-invitation-{de,en}.html:54`]
+- [x] [Review][Decision] **DB-seeded email templates may override new HTML** — `EmailTemplateSeedService` early-exits when an `email_templates` row already exists for `(templateKey, locale)`. If staging/prod previously seeded `speaker-invitation/de` and `/en` from Story 6.1b or 10.2, the new classpath HTML is never picked up — `SpeakerInvitationEmailService.loadHtmlContent` returns the legacy DB row containing magic-link variables. Need to verify current DB seed state and likely add a V94+ migration (or admin override) to refresh the rows. [`EmailTemplateSeedService.java:71-80`, `SpeakerInvitationEmailService.java:213-231`]
+- [x] [Review][Decision] **`POST /users/{username}/issue-invitation-credentials` authorization scope** — Endpoint is `@PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")` with no audit trail, no rate limit, no service-account narrowing. Any ORGANIZER can mint a fresh Cognito temp password for *any* user. Decide: add audit-log row + rate limit, narrow to a service-account principal, or accept the current trust model and document the threat. [`UserController.java:316-345`]
+- [x] [Review][Decision] **`app.base-url` default `"https://batbern.ch"` silently masks misconfigured staging** — `@Value("${app.base-url:https://batbern.ch}")` means a missing env var in staging emits emails with the prod login URL. Decide: fail-fast on missing config (preferred for non-prod), keep the default, or use a deliberately-broken default (`http://localhost/MISSING_app.base-url`) so the misconfiguration surfaces in the first email. [`SpeakerWorkflowService.java:2152-2153`]
+- [x] [Review][Decision] **Removed "Or go directly to dashboard" fallback link in invitation email** — Returning speaker on the CONFIRMED branch (re-invitation) used to get a dashboard shortcut; now sees only the generic login URL → extra login prompt. Decide: restore the dashboard link for the `{{#useExistingPassword}}` branch, or accept the UX regression. [`speaker-invitation-{de,en}.html`]
+
+#### Patch (17)
+
+- [x] [Review][Patch] **HTML-escape `{{temporaryPassword}}` and `{{usernameForLogin}}` before substitution** — `PasswordGenerator.SYMBOLS` includes `&`, so generated passwords can contain `&`/`<`/`>` characters. `EmailService.replaceVariables` does literal `replace(...)` with no escaping. Some email clients auto-correct `&` to `&amp;` on copy, causing the speaker's pasted password to mismatch Cognito → support ticket / lockout. Escape both values in `SpeakerInvitationEmailService` before populating the variables map. [`SpeakerInvitationEmailService.java:2069`, `speaker-invitation-{de,en}.html`]
+- [x] [Review][Patch] **Add `speaker.username != null` precondition for INVITED transition** — `enforcePrecondition` for INVITED only checks slot capacity. A legacy / same-state speaker pool entry can reach INVITED with `username=null`, producing a CUMS URL `…/users/null/issue-invitation-credentials` → inscrutable 404. Fail-fast in `SpeakerWorkflowService.enforcePrecondition` with a specific error. [`SpeakerWorkflowService.java:296-306`]
+- [x] [Review][Patch] **Bruno test 22-provision-user-with-role missing 502 in allowed status array** — Provisioning endpoint can return 502 when AdminCreateUser throws `CognitoOperationException` (transient Cognito 5xx). Current asserts `[200, 401, 403]` only. Add `502`. [`bruno-tests/users-api/22-provision-user-with-role.bru:33,39`]
+- [x] [Review][Patch] **OpenAPI `/users/provision` missing 502 response** — Implementation throws `CognitoOperationException` → 502; spec lists `200/400/401/403/500` only. Add `502` response with the `ErrorResponse` schema. [`docs/api/users-api.openapi.yml:1439-1490`]
+- [x] [Review][Patch] **`loadEmailTemplate` empty-string fallback silently sends empty email** — On both DB-miss AND classpath-miss, `loadHtmlContent` logs error and returns `""`. The subsequent `replaceVariables("", vars)` returns `""`, and `sendHtmlEmail(..., "")` sends an empty body. Cognito password is already rotated → speaker locked out with no recovery path. Either throw on missing template or guard before `sendHtmlEmail`. [`SpeakerInvitationEmailService.java:213-231`]
+- [x] [Review][Patch] **`CognitoIntegrationServiceImpl.adminCreateUserSilently` catch-all flattens `InvalidParameterException` to 502** — Bad-email input is reported to caller as "Identity provider unavailable; please retry shortly" → operator retries forever. Split exception handling: `InvalidParameterException`/`InvalidPasswordException` → 400; `LimitExceededException` → 503/429; other `CognitoIdentityProviderException` → 502 as today. [`CognitoIntegrationServiceImpl.java:88-91`]
+- [x] [Review][Patch] **`should_handleUsernameExists_when_cognitoRaceCondition` does not actually exercise swallow logic** — Test stubs the `@Primary` Mockito mock to `doNothing()`, which is the success path, not the swallow. Either (a) inject the real impl with a mocked `CognitoIdentityProviderClient` that throws `UsernameExistsException`, or (b) delete the test and rely on `CognitoIntegrationServiceImplTest`'s unit-level coverage. [`UserProvisioningAndPatchIntegrationTest.java:1349-1377`]
+- [x] [Review][Patch] **`SpeakerInvitationControllerIntegrationTest.should_sendInvitation_when_validRequest` lost behavioural assertion** — The magic-link assertion was removed (correct) but no `verify(userApiClient).issueInvitationCredentials(...)` / `verify(invitationEmailService).sendInvitationEmail(...)` replacement was added. Test now passes even if `runInvitedHook` no-ops Cognito wiring. Add the two verify calls. [`SpeakerInvitationControllerIntegrationTest.java:266-303`]
+- [x] [Review][Patch] **`InvitationCredentialsResponse` lacks the "non-null when action=FRESH_TEMP_PASSWORD" invariant in the contract** — A buggy CUMS could return `action=FRESH_TEMP_PASSWORD, temporaryPassword=null`; OpenAPI accepts; EMS sends an empty-password email. Tighten with an OpenAPI `oneOf` discriminator OR add a runtime check in `UserApiClientImpl.issueInvitationCredentials` before returning. [`docs/api/users-api.openapi.yml:329-352`]
+- [x] [Review][Patch] **Hardcoded "14 days / 14 Tage" in invitation email body** — `tempPasswordValidity` is configured in CDK (currently 14d). Decoupling email from config means a future change to the pool config would silently make the email lie. Inject as `{{tempPasswordValidityDays}}` template variable from `SpeakerInvitationEmailService` (read from app config or hardcoded constant matching CDK). [`speaker-invitation-{de,en}.html`]
+- [x] [Review][Patch] **`@Transactional(readOnly = true)` Javadoc strengthened (Cognito mutation invariant called out)** — Tried `NOT_SUPPORTED` first but it suspends the test transaction so seeded fixtures aren't visible (4 `UserServiceIssueCredentialsIntegrationTest` cases broke). Reverted to `readOnly = true` and expanded the Javadoc to explicitly call out the external-mutation contract so the next reader doesn't mistake it for a no-side-effects method. [`UserService.java:787-801`]
+- [x] [Review][Patch] **`getUserStatus` switch: add explicit WARN log on unknown future SDK enum values** — `default` branch currently throws 422 silently. If AWS adds a new `UserStatusType` value (e.g. `MFA_PENDING`), legitimate users will get 422. Add a `log.warn("Unknown Cognito UserStatusType: {} — falling back to 422", status)` before the throw so it's traceable in CloudWatch. [`UserService.java:797-830`]
+- [x] [Review][Patch] **Test assertion `pw.length() == 16` is brittle** — Replace with `pw.length() >= 8` (the AC4 minimum) or assert against the `PasswordGenerator` default-length constant. [`UserProvisioningAndPatchIntegrationTest.java:1305-1307`]
+- [x] [Review][Patch] **Test verify uses `anyString()` for the third arg (appUsername)** — Should pin to `eq(createdUser.getUsername())` to assert the Cognito `preferred_username` matches the Postgres-assigned username. [`UserProvisioningAndPatchIntegrationTest.java:1302-1307`]
+- [x] [Review][Patch] **`"yes"` magic string for `{{#useExistingPassword}}` Mustache flag** — Extract to a constant in `SpeakerInvitationEmailService` (e.g. `MUSTACHE_TRUTHY = "yes"`) with a comment linking to the `EmailService.replaceVariables` contract. [`SpeakerInvitationEmailService.java:2055`]
+- [x] [Review][Patch] **Delete unused `buildUserAttributes` method in `CognitoIntegrationServiceImpl`** — `@SuppressWarnings("unused")` with comment "will activate if NO-OP flag flips" — no such flag exists; the legacy NO-OP path is dormant. Either delete or document the actual reactivation trigger. [`CognitoIntegrationServiceImpl.java:996-997`]
+- [x] [Review][Patch] **ADR-009 §Implementation Guidelines: code-snippet indentation between Endpoint 1 and Endpoint 2** — Closing brace of Endpoint 1's method runs straight into Endpoint 2's annotation; reads as a nested method. Reformat for clarity. [`docs/architecture/ADR-009-unified-speaker-workflow.md` §Implementation Guidelines, ~line 468-491]
+
+#### Deferred (11) — appended to `deferred-work.md`
+
+- [x] [Review][Defer] `runInvitedHook` synchronous Cognito mutation inside `@Transactional` — deferred, design-discussion-needed (AFTER_COMMIT listener pattern already flagged in code comments)
+- [x] [Review][Defer] AdminCreateUser succeeds → JPA commit fails → username/preferred_username drift — deferred, requires significant rework or accepted-via-retry semantics
+- [x] [Review][Defer] AdminSetUserPassword succeeds → `@Async` email throws → speaker locked out — deferred, related to runInvitedHook AFTER_COMMIT design discussion
+- [x] [Review][Defer] EXTERNAL_PROVIDER Cognito status maps to 422 — deferred, federated IdP not on near-term roadmap
+- [x] [Review][Defer] Cognito username vs `preferred_username` drift when email changes — deferred, pre-existing Cognito-design pitfall, broader story
+- [x] [Review][Defer] `UsernameExistsException` swallow doesn't distinguish race from stale-state — deferred, complex remediation
+- [x] [Review][Defer] Throwaway temp password "discard" theatrical + SDK exception PII risk — deferred, requires AWS SDK exception-message audit
+- [x] [Review][Defer] `deriveHostBase(loginUrl)` fragile when `app.base-url` is a sub-path deployment — deferred, edge case for non-current deploy patterns
+- [x] [Review][Defer] Plain-text temp password in service-to-service JSON; `RestTemplate` DEBUG logging risk — deferred, operational/logging-config concern
+- [x] [Review][Defer] AC10 manual staging smoke + AC13 Bruno CI run punted to post-merge — deferred by design; PR description must carry CloudWatch evidence
+- [x] [Review][Defer] Email-format validation gap in `provisionUserWithRole` (no `@` check, derived-name fallback) — deferred, pre-existing input-validation gap
 
 ---
 
@@ -791,19 +854,109 @@ Total: 14 modifications + 2 deletions.
 
 ### Agent Model Used
 
-claude-opus-4-7[1m]
+claude-opus-4-7[1m] (Claude Opus 4.7 1M context) via `bmad-dev-story` skill, 2026-05-17.
 
 ### Debug Log References
 
-_To be filled by the dev agent during implementation._
+- `/tmp/pwgen-test.log` — PasswordGeneratorTest run (6/6 PASSED).
+- `/tmp/cognito-test.log` — CognitoIntegrationServiceImplTest run (11/11 PASSED).
+- `/tmp/cums-prov-int-test.log` — UserProvisioningAndPatchIntegrationTest + UserProvisioningCognitoRollbackIntegrationTest (20/20 PASSED including 4 new Story 11.E.2 cases).
+- `/tmp/cums-creds-int-test2.log` — UserServiceIssueCredentialsIntegrationTest (4/4 PASSED — AC11 #5-#8).
+- `/tmp/ems-email-test.log` — SpeakerInvitationEmailServiceTest (10/10 PASSED including 4 AC8 cases).
+- `/tmp/ems-wf-ac9.log` — SpeakerWorkflowServiceIntegrationTest.should_callIssueInvitationCredentials_when_runningInvitedHook PASSED (AC11 #9).
+- `/tmp/ems-full-test2.log` — Full EMS test suite GREEN after fixing magic-link removal regression in `SpeakerInvitationControllerIntegrationTest.should_sendInvitation_when_validRequest`.
+- `/tmp/cums-full-test2.log` — Full CUMS suite has one pre-existing flaky test (`UserReconciliationServiceTest.should_reconcileSuccessfully_when_allInSync` — `durationMs > 0` timing race; passes on isolated re-run; untouched by Story 11.E.2 changes per `git diff HEAD`).
 
 ### Completion Notes List
 
-_To be filled by the dev agent during implementation._
+**Implementation complete via `bmad-dev-story` (Claude Opus 4.7 1M) on 2026-05-17. All 14 tasks executed; Task 11 (manual staging smoke) and Task 13 (commit + PR) are user-side follow-ups.**
+
+- ✅ **AC1** — `UserService.provisionUserWithRole` new-user branch calls `cognitoIntegrationService.adminCreateUserSilently(email, throwaway, username)` and discards the throwaway temp password. `temporaryPassword` field removed from `ProvisionUserResponse` (3 `.temporaryPassword(null)` calls at lines 658/709/720 deleted). Class-level `@Transactional` covers the rollback contract (AC5 item 1).
+- ✅ **AC2** — `UserService.issueInvitationCredentials(username)` added, annotated `@Transactional(readOnly = true)` (AC5 item 2 spirit: "no PostgreSQL write to roll back"; class-level `@Transactional` would otherwise force write tx). Branches on `UserStatusType`: `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED` → `adminSetTemporaryPassword` + `FRESH_TEMP_PASSWORD`; `CONFIRMED` → `USE_EXISTING_PASSWORD` + null; `ARCHIVED` / `COMPROMISED` / `UNKNOWN_TO_SDK_VERSION` → `UnprocessableInvitationStateException` (422). New endpoint `POST /api/v1/users/{username}/issue-invitation-credentials` in `UserController` (`@PreAuthorize hasAnyRole('ORGANIZER', 'ADMIN')`).
+- ✅ **AC3** — Three new methods on `CognitoIntegrationService` interface (`adminCreateUserSilently`, `getUserStatus`, `adminSetTemporaryPassword`). Implemented in `CognitoIntegrationServiceImpl` with the AWS SDK call patterns from ADR-009 §Implementation Guidelines. `@SuppressWarnings({"FieldCanBeLocal", "unused"})` removed from the class; both `cognitoClient` and `userPoolId` now in active use. `UsernameExistsException` swallowed at the impl layer per the idempotency contract.
+- ✅ **AC4** — `PasswordGenerator.java` created (16-char default, all four character classes, Fisher-Yates shuffle, sub-8 rejected). `PasswordGeneratorTest.java` with 6 cases covering: 16-char default, four-class presence over 100 generations, 1000-generation uniqueness, custom-length support, sub-8 rejection, no ambiguous symbols.
+- ✅ **AC5** — Failure-handling contract: `provisionUserWithRole` inherits class-level `@Transactional` (rollback on `CognitoOperationException`); `issueInvitationCredentials` uses `@Transactional(readOnly = true)`. New `CognitoOperationException` mapped to HTTP 502 by `GlobalExceptionHandler`. New `UnprocessableInvitationStateException extends IllegalStateException` mapped to HTTP 422 (specific subclass to avoid the existing generic `IllegalStateException` → 400 path).
+- ✅ **AC6** — `runReadyHook` unchanged in temp-password handling (it never read `temporaryPassword` from the response). Identity-rebind guard intact.
+- ✅ **AC7** — `runInvitedHook` rewired: two `magicLinkService.generateToken(...)` calls deleted; calls `userApiClient.issueInvitationCredentials(speaker.getUsername())` + `invitationEmailService.sendInvitationEmail(speaker, event, loginUrl, credentials, locale)` with the new signature. `MagicLinkService` field stays in `SpeakerWorkflowService` for `runAcceptedHook` (Phase F territory). New `@Value("${app.base-url}")` field in workflow service to compute `loginUrl`.
+- ✅ **AC8** — `SpeakerInvitationEmailService` signature rewritten to `(speaker, event, loginUrl, credentials, locale)`. `MagicLinkService` constructor field **removed** entirely. `.txt` template loading was actually never present (the prior service only loaded `.html`) — confirmed via grep. Template-variable rewrite: `{{loginUrl}}`, `{{usernameForLogin}}`, `{{#temporaryPassword}}` (FRESH block), `{{#useExistingPassword}}` (USE_EXISTING block — semantically equivalent to AC8's `{{^temporaryPassword}}` since `EmailService.replaceVariables` only supports positive Mustache conditionals; documented inline). New `SpeakerInvitationEmailServiceTest` covers AC8 #1-#4 + 6 cross-cutting cases (10 unit tests total, all passing).
+- ✅ **AC9** — `speaker-invitation-en.html` + `speaker-invitation-de.html` rewritten with Cognito-flow content (login URL + username + conditional temp-password / use-existing blocks). `speaker-invitation-{de,en}.txt` `git rm`'d. Grep verification: `grep -l "magic\|acceptLink\|declineLink\|jwtMagicLink\|dashboardLink" speaker-invitation-*.html` returns **zero matches**. Acceptance + reminder templates: grep for tentative-response copy returns **zero matches** across all de/en files (Story 11.B.1 already dropped that copy as part of TENTATIVE removal). Total file ops: 2 modifications + 2 deletions (vs. the 14 modifications + 2 deletions planned in the spec; the lower count reflects that 12 of the 14 planned modifications were already clean from prior stories).
+- 📋 **AC10** — Manual staging smoke test is a **user-side follow-up** (Task 11). Per the dev agent's scope: 11.E.1 must be deployed to staging before this can run; staging deploy happens post-merge.
+- ✅ **AC11** — Integration tests added (9 cases total):
+  - **CUMS** (4 new cases in `UserProvisioningAndPatchIntegrationTest`): #1 new-user branch calls `adminCreateUserSilently` with 16-char throwaway; #2 existing-user branch does NOT call Cognito; #4 swallow path (mock returns normally) → User + role persist.
+  - **CUMS** (new class `UserProvisioningCognitoRollbackIntegrationTest`, NOT `@Transactional`): #3 rollback when AdminCreateUser fails → no User row persists.
+  - **CUMS** (new class `UserServiceIssueCredentialsIntegrationTest`): #5 FORCE_CHANGE_PASSWORD → FRESH_TEMP_PASSWORD; #6 CONFIRMED → USE_EXISTING_PASSWORD; #7 UNCONFIRMED defensively → FRESH; #8 ARCHIVED → `UnprocessableInvitationStateException` (422).
+  - **EMS** (1 new case in `SpeakerWorkflowServiceIntegrationTest`): #9 `runInvitedHook` calls `userApiClient.issueInvitationCredentials(username)` and forwards the response to the email service.
+- ✅ **AC12** — OpenAPI spec edits in `docs/api/users-api.openapi.yml`: `temporaryPassword` field removed from `ProvisionUserResponse`; `/users/provision` path description updated for the two-endpoint design; new `/users/{username}/issue-invitation-credentials` path added with full response schema (200 + 401 + 403 + 404 + 422 + 502); new `InvitationCredentialsResponse` schema added. Frontend types regenerated via `npm run generate:api-types:users`; backend DTOs regenerated via `./gradlew :services:company-user-management-service:openApiGenerateUsers :services:event-management-service:openApiGenerateUsersClient` (verified `InvitationCredentialsResponse.java` is present in both `build/generated-users/...` and `build/generated-users-client/...`).
+- ✅ **AC13** — Bruno tests: `22-provision-user-with-role.bru` updated to assert `temporaryPassword` field **does not exist** (was previously `=== null`); new `25-issue-invitation-credentials.bru` covering 200 + 422 branches. `bruno-tests/auth/` deliberately NOT created (per Story 11.E.1 deferral). The `./scripts/ci/run-bruno-tests.sh` run requires a live backend and is part of the CI / staging pipeline.
+
+**Phase D residue addressed during implementation:**
+- `SpeakerInvitationControllerIntegrationTest.should_sendInvitation_when_validRequest` had a `tokenRepository.findBySpeakerPoolId(speaker.getId()).isNotEmpty()` assertion that broke when magic-link token generation was removed from `runInvitedHook` (AC7). Updated the assertion + documentation to reflect the Phase E migration; Phase F will delete the `magic_link_tokens` table entirely.
+
+**Doc-drift sweep (Task 12) — all in same dev pass:**
+- `docs/prd/epic-11-speaker-workflow-refactor.md`: NFR10 wording narrowed for emails (de+en) vs frontend (10 locales); Story 11.E.2 § rewritten for the two-endpoint Q#1 Variant B design; Q#1-Q#4 resolutions noted in the section preamble.
+- `docs/architecture/ADR-009-unified-speaker-workflow.md`: §Implementation Guidelines `SpeakerProvisioningService` skeleton rewritten to show the two-endpoint pattern (CUMS `provisionUserWithRole` silent at READY + new `issueInvitationCredentials` at INVITED). Revision-history row v1.4 added.
+- `docs/architecture/06-backend-architecture.md`: §"Speaker authentication (ADR-009)" rewritten to describe the two-endpoint topology + the de+en email-template scope.
+- `docs/architecture/06a-workflow-state-machines.md`: §"Critical transition rules" + §"Side-effect hooks" updated for the CONTACTED → READY (silent shell) + READY → INVITED (issue-credentials sibling endpoint) flow.
+- `CLAUDE.md` §"Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales" already present (added 2026-05-17 per Story 11.E.3 PM Q#5 — verified at line 705).
+
+**Verified pre-existing flaky behaviour, NOT caused by this story:**
+- `UserReconciliationServiceTest.should_reconcileSuccessfully_when_allInSync` fails ~1/3 of full-suite runs due to a `durationMs > 0` timing race when the reconciliation is a no-op (0ms on fast hardware). Passes on isolated re-run. `git diff HEAD` confirms zero modifications to the test file. Tracked as a separate cleanup; out of Story 11.E.2 scope.
 
 ### File List
 
-_To be filled by the dev agent during implementation._
+**Backend — CUMS (company-user-management-service):**
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/PasswordGenerator.java` (NEW)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/CognitoIntegrationService.java` (MODIFIED — three new interface methods + Javadoc)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/CognitoIntegrationServiceImpl.java` (MODIFIED — three new method impls; legacy NO-OP methods unchanged; `@SuppressWarnings("unused")` removed; `buildUserAttributes` kept as `@SuppressWarnings("unused")` for the legacy NO-OP path)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserService.java` (MODIFIED — `provisionUserWithRole` adds AdminCreateUser silent call on new-user branch + removes 3 `.temporaryPassword(null)` lines; new `issueInvitationCredentials` method; new `PasswordGenerator` field)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/controller/UserController.java` (MODIFIED — new `POST /api/v1/users/{username}/issue-invitation-credentials` endpoint; new `InvitationCredentialsResponse` import)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/exception/CognitoOperationException.java` (NEW)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/exception/UnprocessableInvitationStateException.java` (NEW)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/exception/GlobalExceptionHandler.java` (MODIFIED — added `@ExceptionHandler(CognitoOperationException.class)` → 502 + `@ExceptionHandler(UnprocessableInvitationStateException.class)` → 422)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/service/PasswordGeneratorTest.java` (NEW)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/service/CognitoIntegrationServiceImplTest.java` (MODIFIED — added 8 unit tests for the three new methods; preserved 5 legacy NO-OP tests)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/service/UserServiceTest.java` (MODIFIED — `@Mock private PasswordGenerator passwordGenerator;` + constructor call site updated)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserProvisioningAndPatchIntegrationTest.java` (MODIFIED — drop `nullValue` import + `temporaryPassword` JSONPath check; add 3 Story 11.E.2 AC11 cases [#1, #2, #4]; reset Cognito mock in `@BeforeEach`)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserProvisioningCognitoRollbackIntegrationTest.java` (NEW — non-`@Transactional` class for AC11 #3 rollback verification)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserServiceIssueCredentialsIntegrationTest.java` (NEW — AC11 #5-#8, 4 status-branch cases)
+
+**Backend — EMS (event-management-service):**
+- `services/event-management-service/src/main/java/ch/batbern/events/client/UserApiClient.java` (MODIFIED — new `InvitationCredentialsResponse issueInvitationCredentials(String username)` method)
+- `services/event-management-service/src/main/java/ch/batbern/events/client/impl/UserApiClientImpl.java` (MODIFIED — new method impl with full error-handling pattern matching `provisionUserWithRole`)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java` (MODIFIED — `runInvitedHook` rewired: drops 2 `magicLinkService.generateToken` calls; adds `issueInvitationCredentials` HTTP call + new email service signature; new `@Value("${app.base-url}")` field)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java` (MODIFIED — new signature `(speaker, event, loginUrl, credentials, locale)`; `MagicLinkService` field removed; template variables rewritten to Cognito-flow set; `deriveHostBase` helper added for ancillary URLs)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationEmailServiceTest.java` (MODIFIED — full rewrite for AC8 #1-#4 + 6 cross-cutting cases; removed `MagicLinkService` mock)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerWorkflowServiceIntegrationTest.java` (MODIFIED — `import InvitationCredentialsResponse`; default stub for `userApiClient.issueInvitationCredentials` in `@BeforeEach`; new AC11 #9 test)
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerInvitationControllerIntegrationTest.java` (MODIFIED — `should_sendInvitation_when_validRequest`: dropped the stale `tokenRepository.findBySpeakerPoolId(...).isNotEmpty()` assertion now that magic-link token generation is removed; documented the Phase E migration inline)
+
+**Email templates:**
+- `services/event-management-service/src/main/resources/email-templates/speaker-invitation-en.html` (MODIFIED — Cognito-flow rewrite)
+- `services/event-management-service/src/main/resources/email-templates/speaker-invitation-de.html` (MODIFIED — Cognito-flow rewrite, German translation)
+- `services/event-management-service/src/main/resources/email-templates/speaker-invitation-en.txt` (DELETED — HTML-only per Q#3)
+- `services/event-management-service/src/main/resources/email-templates/speaker-invitation-de.txt` (DELETED — HTML-only per Q#3)
+
+**Specs:**
+- `docs/api/users-api.openapi.yml` (MODIFIED — `temporaryPassword` removed from `ProvisionUserResponse`; new `/users/{username}/issue-invitation-credentials` path; new `InvitationCredentialsResponse` schema; `/users/provision` description rewritten for the two-endpoint design)
+- `web-frontend/src/types/generated/user-api.types.ts` (REGENERATED via `npm run generate:api-types:users`)
+
+**Bruno tests:**
+- `bruno-tests/users-api/22-provision-user-with-role.bru` (MODIFIED — drop `temporaryPassword: null` assertion; assert field does not exist)
+- `bruno-tests/users-api/25-issue-invitation-credentials.bru` (NEW)
+
+**Docs (doc-drift sweep — Task 12):**
+- `docs/prd/epic-11-speaker-workflow-refactor.md` (MODIFIED — NFR10 wording narrowed for emails; Story 11.E.2 § rewritten for Q#1 Variant B)
+- `docs/architecture/ADR-009-unified-speaker-workflow.md` (MODIFIED — Implementation Guidelines skeleton rewritten; revision-history v1.4 row added)
+- `docs/architecture/06-backend-architecture.md` (MODIFIED — Speaker authentication § rewritten for two-endpoint design)
+- `docs/architecture/06a-workflow-state-machines.md` (MODIFIED — critical transition rules + side-effect hooks table updated)
+
+**Sprint tracking:**
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (MODIFIED — 11.E.2 status `ready-for-dev` → `in-progress` → `review`)
+- `_bmad-output/implementation-artifacts/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md` (MODIFIED — Status → `review`; Dev Agent Record populated; File List populated; Change Log entry added)
+
+### Change Log
+
+- 2026-05-18 — Code review complete via `bmad-code-review` (Claude Opus 4.7 1M). 3 parallel reviewers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) against `git diff HEAD` (28 files / +1543 / −793). Acceptance Auditor verdict: ready-after-minor-fixes — all 13 ACs satisfied or out-of-scope. **21 patches applied:** new Flyway V95 to refresh staging/prod email_templates rows for the Cognito-flow content (`EmailTemplateSeedService` early-exits when rows exist; without V95 the new classpath HTML would never render in any pre-seeded env); AC8 Mustache wording amended to ratify `{{#useExistingPassword}}` form; `POST /users/{username}/issue-invitation-credentials` narrowed to `hasRole('ORGANIZER')` only + actor/target/action audit log; `app.base-url` `@PostConstruct` WARN when the env var is unset (default kept); HTML-escape pass on `temporaryPassword`/`usernameForLogin`/`speakerName`/`eventTitle`/`venueName`/`venueAddress`/`sessionTitle`/`sessionDescription`; `requireUsername` precondition on INVITED transition; `loadHtmlContent` throws on classpath miss (instead of silently sending empty email); split `InvalidParameterException`/`InvalidPasswordException` to HTTP 400 (was 502); 502 added to OpenAPI `/users/provision` + Bruno test 22 allowed-statuses; `InvitationCredentialsResponse` FRESH_TEMP_PASSWORD invariant runtime-validated in `UserApiClientImpl`; test patches (rename `should_handleUsernameExists_when_cognitoRaceCondition` → `should_persistUserAndRole_when_adminCreateUserSilentlyReturnsNormally`; pin `appUsername` and loosen `length >= 8`; `SpeakerInvitationControllerIntegrationTest` adds `verify(userApiClient).issueInvitationCredentials(...)`); `{{tempPasswordValidityDays}}` variable extracted from hardcoded "14"; `MUSTACHE_TRUTHY` constant; getUserStatus `default` branch logs WARN before throwing; deleted unused `buildUserAttributes`; ADR-009 code-snippet indentation fixed. **11 items deferred to `deferred-work.md`** (runInvitedHook AFTER_COMMIT design discussion + 10 others incl. JPA commit-fail Cognito orphan, @Async email failure speaker lockout, EXTERNAL_PROVIDER status mapping, Cognito username/preferred_username drift on email change, UsernameExistsException race-vs-stale, throwaway password SDK exception PII audit, deriveHostBase sub-path fragility, RestTemplate DEBUG body logging, AC10/AC13 post-merge process risk, email-format validation gap). **9 dismissed.** Full EMS + targeted CUMS test suites GREEN; full Java compile clean. Status → `done`.
+- 2026-05-17 — Story 11.E.2 implementation complete via `bmad-dev-story` (Claude Opus 4.7 1M). Two-endpoint Cognito-provisioning design landed: `AdminCreateUser` silent at READY via existing `/users/provision`; new `/users/{username}/issue-invitation-credentials` endpoint at INVITED with `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)`. `temporaryPassword` field removed from `ProvisionUserResponse`. Email templates ship `de` + `en` only (HTML-only, `.txt` deleted). New `PasswordGenerator`, `CognitoOperationException` (502), `UnprocessableInvitationStateException` (422). 19 new + modified tests pass (CUMS unit + 8 integration; EMS unit + 1 integration). Doc-drift sweep updated PRD + ADR-009 + backend-architecture + state-machines docs in the same pass. Status → `review`. AC10 manual staging smoke + AC13 Bruno CI run are post-merge user-side follow-ups.
 
 ---
 

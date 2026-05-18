@@ -11,6 +11,7 @@ import ch.batbern.companyuser.dto.SyncStatusDTO;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
 import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
@@ -312,6 +313,42 @@ public class UserController {
 
         ProvisionUserResponse response = userService.provisionUserWithRole(request);
 
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
+     * POST /api/v1/users/{username}/issue-invitation-credentials
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.runInvitedHook} at READY → INVITED. Delegates to Cognito
+     * {@code AdminGetUser} + conditional {@code AdminSetUserPassword(Permanent=false)} via
+     * {@link UserService#issueInvitationCredentials} to issue a fresh temp password (or
+     * confirm the existing password remains valid for previously-confirmed users).
+     *
+     * <p>Idempotent: repeated calls are safe. Returns {@link InvitationCredentialsResponse}
+     * with an action discriminator (FRESH_TEMP_PASSWORD or USE_EXISTING_PASSWORD).
+     *
+     * @param username target user's username
+     * @return action discriminator + fresh temp password (or null when use-existing)
+     */
+    @PostMapping("/{username}/issue-invitation-credentials")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.issueInvitationCredentials",
+            description = "Time to issue invitation credentials (Story 11.E.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<InvitationCredentialsResponse> issueInvitationCredentials(
+            @PathVariable String username) {
+        // Story 11.E.2 review patch (D3): narrow from hasAnyRole('ORGANIZER','ADMIN') to
+        // hasRole('ORGANIZER') and log the actor → target → action triple for post-incident
+        // review. The endpoint rotates Cognito passwords; minting credentials for arbitrary
+        // users by ADMIN was unnecessary in the current trust model.
+        String actor = securityContextHelper.getCurrentUsername();
+        log.info("POST /api/v1/users/{}/issue-invitation-credentials (actor={})",
+                username, actor != null ? actor : "<unknown>");
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(username);
+        log.info("Issued invitation credentials: actor={} target={} action={}",
+                actor != null ? actor : "<unknown>", username, response.getAction());
         return ResponseEntity.ok(response);
     }
 
