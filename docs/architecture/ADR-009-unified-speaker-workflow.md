@@ -6,6 +6,141 @@
 **Related ADRs**: ADR-003 (Meaningful Identifiers), ADR-004 (Factor User Fields from Domain Entities), ADR-007 (Unified User Profile)
 **Related Plan**: `docs/plans/speaker-workflow-refactor.md`
 
+## §0 Target Model
+
+This section is the canonical reference for downstream documents — architecture docs,
+OpenAPI specs, PRD, story files — that need to cite target-model facts (state list,
+transition allow-list, dropped tables, derived flags, etc.) without re-deriving them.
+Subsection numbering matches the convention established in Epic 11 stories (Stories
+11.A.1 → 11.E.4) and the refactor plan (`docs/plans/speaker-workflow-refactor.md` §0).
+
+Added by Story 11.E.4 (AC5) to resolve 38 dangling `ADR-009 §0.x` citations across
+`docs/architecture/`, `docs/api/`, `docs/prd/`, and `docs/prd-enhanced.md` that pointed
+at this section before it existed.
+
+### §0.1 — The 8 states
+
+The speaker workflow has exactly **8 states**, in this declaration order:
+
+| State                 | Semantics                                                                                     |
+|-----------------------|-----------------------------------------------------------------------------------------------|
+| `IDENTIFIED`          | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. No User exists. `speaker_pool.username` is `NULL`. No Cognito user. |
+| `CONTACTED`           | **Still brainstorming.** Organizer is reaching out — to the candidate, to partners, to network contacts — to figure out who will actually speak. No User yet. |
+| `READY`               | **Provisioning gate.** The real speaker has been identified. User provisioning (lookup-or-create) + Cognito user provisioning + SPEAKER role grant + `speaker_pool.username` persistence happens at the transition INTO this state. Reached only via `POST /api/v1/events/{code}/speakers/{speakerId}/promote`. |
+| `INVITED`             | Formal invitation sent (email contains login link + temporary password). Speaker can authenticate via Cognito. |
+| `ACCEPTED`            | Speaker committed via the portal.                                                              |
+| `CONTENT_SUBMITTED`   | Title + abstract submitted to `content_submissions`. Either organizer-on-behalf or speaker-self submission — both flows traverse `ContentSubmissionService` (see §0.4). |
+| `QUALITY_REVIEWED`    | Moderator approved content. **Terminal happy state.** `is_publishable := QUALITY_REVIEWED ∧ slot_assigned` (see §0.5). |
+| `DECLINED`            | The single terminal "not happening" state. Reachable from ANY non-terminal state (see §0.2). Replaces the removed `WITHDREW` state. |
+
+_Implemented by Story 11.B.1 (shared-kernel enum reduction)._
+
+### §0.2 — Legal transitions
+
+The workflow state machine accepts only these transitions. All others throw a domain
+exception (`InvalidStateTransitionException`).
+
+```
+IDENTIFIED        → CONTACTED, DECLINED
+CONTACTED         → READY (via promote endpoint), DECLINED
+READY             → INVITED (subject to slot-capacity gate), DECLINED
+INVITED           → ACCEPTED, DECLINED
+ACCEPTED          → CONTENT_SUBMITTED, DECLINED
+CONTENT_SUBMITTED → QUALITY_REVIEWED, ACCEPTED (rework), DECLINED
+QUALITY_REVIEWED  → DECLINED  (otherwise terminal)
+DECLINED          → (terminal — no outbound transitions)
+```
+
+Notes:
+- `READY → INVITED` is blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`
+  for the event (slot-capacity gate; replaces the removed `OVERFLOW` state).
+- `CONTACTED → READY` is the User-and-Cognito provisioning seam. `email`, `firstName`,
+  and `lastName` are all required on the `POST /promote` request (PromoteSpeakerRequest;
+  tightened from optional to required by Story 11.E.4 AC4).
+- `DECLINED` is reachable from every non-terminal state. The history row records the
+  previous state and a reason; for transitions from `INVITED+`, the organizer is notified.
+- The single writer of `speaker_pool.status` is `SpeakerWorkflowService.transition(...)`.
+  All other services delegate to it (`SpeakerStatusService`, `SpeakerResponseService`,
+  `ContentSubmissionService`, `QualityReviewService`).
+
+_Implemented by Story 11.B.2 (single-writer + side-effect hooks)._
+
+### §0.3 — Dropped columns and tables
+
+The refactor deletes the following persistence artefacts (all in the
+event-management-service schema unless noted):
+
+| Artefact                                  | Why                                                                                    |
+|-------------------------------------------|----------------------------------------------------------------------------------------|
+| `speakers` table (speaker-coordination)   | Per ADR-004 the SPEAKER role on `users` replaces the dedicated entity. Speaker-coordination-service retained as thin shell for future capabilities. |
+| `speakers.availability`, `expertise_areas`, `speaking_topics`, `languages_spoken`, `certifications`, `linkedin_url`, `twitter_handle`, `speaking_history`, `communication_preferences` | Speaker-only legacy columns intentionally NOT backfilled — `user_profiles.bio` covers the short CV use case. |
+| `speaker_pool.is_tentative`               | TENTATIVE response removed from API contract (see §0.6).                                |
+| `speaker_pool.tentative_reason`           | Same as above.                                                                          |
+| `speaker_selection_votes` table           | Overflow voting tables — `OVERFLOW` state removed (see §0.7), slot-capacity gate replaces. |
+| `magic_link_tokens` table                  | Magic-link auth replaced by Cognito FORCE_CHANGE_PASSWORD flow. (Owned by Story 11.F.1 — not yet dropped at time of writing.) |
+
+_Implemented by Stories 11.B.3 (Flyway V93), 11.C.1 (Flyway V94), 11.F.1 (pending)._
+
+### §0.4 — Shared write path
+
+`ContentSubmissionService` is the **single backend writer** for content submission. Both
+the organizer-on-behalf endpoint (`POST /events/{code}/speakers/{speakerId}/content`,
+ORGANIZER auth) and the speaker-self endpoint (`POST /speaker-portal/events/{eventCode}/content/submit`,
+SPEAKER auth) delegate into it. The service:
+
+1. Persists `title`, `abstract` to `content_submissions`.
+2. Calls `UserApiClient.patchUserProfile(...)` if `payload.bio` or
+   `payload.profilePictureUrl` are present — `User.bio` and `User.profile_picture_url`
+   are overwritten globally (no per-event snapshot).
+3. Invokes `SpeakerWorkflowService.transition(speakerPoolId, CONTENT_SUBMITTED, principal)`.
+
+The audit trail (`speaker_status_history`) records the authenticated principal in
+`changed_by_username` — byte-identical effects across the two entry points except for
+that one column.
+
+_Implemented by Story 11.C.2._
+
+### §0.5 — Derived flags
+
+These flags are computed at read time, not persisted:
+
+```
+is_slot_assigned := session.start_time IS NOT NULL
+is_publishable   := status = 'quality_reviewed' AND is_slot_assigned
+```
+
+`EventWorkflowStateMachine.validateAllSpeakersConfirmed` evaluates `is_publishable` over
+all accepted speakers as the precondition for the `AGENDA_PUBLISHED` event-workflow
+transition. The removed `CONFIRMED` state is replaced by `QUALITY_REVIEWED + is_slot_assigned`.
+
+_Implemented by Story 11.B.3._
+
+### §0.6 — Removed response types
+
+`SpeakerResponseType` enum has exactly **2 values**: `ACCEPT`, `DECLINE`. `TENTATIVE` is
+absent. A speaker who is unsure simply doesn't respond yet (reminder/escalation handles
+delays); a speaker who has already accepted but later changes their mind transitions
+through `DECLINED` (with a reason recorded in `speaker_status_history`).
+
+_Implemented by Story 11.B.1._
+
+### §0.7 — Removed enum values
+
+`SpeakerWorkflowState` enum dropped 4 values. Existing data was migrated by Flyway V93
+per this mapping:
+
+| Removed value      | Maps to                                  | History reason recorded                       |
+|--------------------|------------------------------------------|-----------------------------------------------|
+| `SLOT_ASSIGNED`    | `ACCEPTED` (rely on derived `is_slot_assigned`) | Migrated by V93                          |
+| `CONFIRMED`        | `QUALITY_REVIEWED` (rely on derived `is_publishable`) | Migrated by V93                       |
+| `WITHDREW`         | `DECLINED`                               | `"Withdrew after acceptance (legacy)"`        |
+| `OVERFLOW`         | `READY` (organizer may re-invite if a slot opens) | Migrated by V93                       |
+
+The API rejects the four legacy values on inbound `PUT /api/v1/events/{code}/speakers/{speakerId}/status`
+calls with HTTP 422 (tightened in Story 11.B.3).
+
+_Implemented by Stories 11.B.1 (enum reduction) + 11.B.3 (data migration + API tighten)._
+
 ## Context
 
 The BATbern platform supports two parallel speaker coordination flows that have evolved
@@ -595,3 +730,4 @@ DROP TABLE IF EXISTS speaker_selection_votes;     -- overflow voting
 | 2026-05-17 | 1.3 | Story 11.E.1 PM-resolved Q#1: dropped `cognito-idp:AdminAddUserToGroup` from Decision 3 + Implementation Guidelines skeleton. SPEAKER role grant uses PostgreSQL `user_roles` row insert per ADR-001 database-centric role storage (no Cognito groups exist on the user pool). Also updated PRD AR30 / NFR2 / NFR5 / Story 11.E.1 AC / Story 11.E.2 AC to match. CDK IAM policy in `company-management-stack.ts` lists only the four actually-called admin actions (AdminCreateUser, AdminSetUserPassword, AdminInitiateAuth, AdminGetUser). | Nissim (PM) |
 | 2026-05-17 | 1.4 | Story 11.E.2 PM-resolved Q#1-Q#4 + implementation: (Q#1) two-endpoint Cognito design — `AdminCreateUser` silently at READY via `/users/provision`; `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` at INVITED via the new `/users/{username}/issue-invitation-credentials` endpoint. `ProvisionUserResponse.temporaryPassword` field **removed** from OpenAPI (no longer used by any consumer). (Q#2) Email-template locale scope narrowed to `de` + `en` per CLAUDE.md §Localization. (Q#3) `.txt` template parity dropped — HTML-only emails. (Q#4) UNCONFIRMED defensively treated as FRESH; ARCHIVED/COMPROMISED → HTTP 422 (`UnprocessableInvitationStateException`). Implementation Guidelines § rewritten to show the two-endpoint shape. | Nissim (PM) |
 | 2026-05-18 | 1.5 | Story 11.E.3 lands the frontend half of Phase E: speaker-portal Cognito Bearer auth + `@PreAuthorize("hasRole('SPEAKER')")` on every `/api/v1/speaker-portal/**` controller method; new `SpeakerPortalAuthorizationService.resolveSpeakerPool(username, eventCode)` gates per-event access (403 for foreign events); `SecurityPrincipal.fromAuthentication(Authentication)` factory; `eventCode` is now a path parameter on the response/content/materials/profile endpoints; magic-link `token` field removed from `SpeakerResponseRequest`/`ContentDraftRequest`/`ContentSubmitRequest`/`SpeakerMaterialUploadRequest`/`SpeakerMaterialConfirmRequest`. Frontend: `speakerPortalService.ts` rewrites every method to take `eventCode` first and drop the `Skip-Auth` header (apiClient attaches the JWT); `SpeakerResponseType` tightens to `'ACCEPT' \| 'DECLINE'` (TENTATIVE was a Phase B residue); `App.tsx` wraps speaker-portal routes in `<SpeakerRoute>` and **removes** the `/speaker-portal/magic-login` route; the magic-link `permitAll()` on `/api/v1/auth/speaker-magic-login` is also dropped (per Resolved Q#3). Cherry-pick `73d94688` + `396a9045` from `feature/speaker-account-creation` lands the multi-role grouped nav (section headers + dividers in `NavigationMenu` when `userRoles.length > 1`) — `SpeakerLoginPage`, the `/speaker-portal/login` nav-item, and the cherry-pick's story doc are deliberately skipped. `MagicLinkService` + `SpeakerMagicLoginController` + `SpeakerPortalTokenController` + `magic_link_tokens` table stay compilable for Phase F (Story 11.F.1) to delete cleanly. CLAUDE.md §Localization narrowed via Resolved Q#5: "Email Templates: DE + EN Only; UI i18n: All 10 Locales" (asymmetry justified — emails are rich prose for a DE/EN-dominant audience; UI keys are short atomic strings for a multilingual public website). | Amelia (Dev Agent) |
+| 2026-05-18 | 1.6 | Story 11.E.4 trailing cleanup: added §0 Target Model section (§0.1–§0.7) to resolve 38 dangling citations across `docs/architecture/`, `docs/api/`, and `docs/prd/`. The §0 convention disambiguates target-model facts from decision rationale; section numbers match the convention established by Stories 11.A.1 → 11.E.3 and `docs/plans/speaker-workflow-refactor.md` §0. Story 11.E.4 also tightened `PromoteSpeakerRequest` to require `firstName` + `lastName` (PM decision 2026-05-18, Option A) and deleted the `firstNameFallback` / `lastNameFallback` literals (`"Speaker"` / `"Unknown"`) from `SpeakerWorkflowService`; bundled six other small cleanups deferred between Phase A–E stories. | Amelia (Dev Agent) |

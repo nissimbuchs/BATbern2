@@ -117,15 +117,6 @@ public interface UserApiClient {
     List<String> getPartnerUsernames();
 
     /**
-     * Get all speaker usernames.
-     * Used for legacy export — speaker metadata enrichment.
-     *
-     * @return List of speaker usernames
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
-     */
-    List<String> getSpeakerUsernames();
-
-    /**
      * Get all companies (basic info) from the company-user-management-service.
      * Used for the companies[] list in the legacy BAT export envelope.
      * Story 10.20: AC1
@@ -136,8 +127,6 @@ public interface UserApiClient {
     List<CompanyBasicDto> getAllCompanies();
 
     // Story 11.C.2 (AR13/AR14): canonical speaker-provisioning + profile-patch operations.
-    // Replaces the legacy updateUser/updateUserProfilePicture methods from Story 6.2b
-    // (deleted by Story 11.C.2 — Resolved Decision §1).
 
     /**
      * Provision a User with a role (idempotent).

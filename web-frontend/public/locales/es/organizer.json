@@ -197,6 +197,8 @@
       "errorTitle": "No se pudo promover al ponente",
       "errorEmailRequired": "El correo electrónico es obligatorio",
       "errorEmailInvalid": "El correo electrónico debe ser válido",
+      "errorFirstNameRequired": "El nombre es obligatorio",
+      "errorLastNameRequired": "El apellido es obligatorio",
       "errorAlreadyPromoted": "El ponente ya está en {{currentState}}; la promoción solo es válida desde Contactado.",
       "errorStillIdentified": "El ponente debe ser contactado primero — registra el contacto antes de promover.",
       "errorDeclined": "El ponente ha rechazado — crea una nueva entrada en vez de promover.",

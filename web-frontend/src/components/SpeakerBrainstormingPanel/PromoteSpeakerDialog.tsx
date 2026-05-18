@@ -37,8 +37,8 @@ export interface PromoteSpeakerDialogProps {
 
 interface PromoteFormValues {
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
 }
 
 // Splits "First Last" into { firstName, lastName }. Falls back gracefully when the
@@ -81,8 +81,25 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
           .min(1, t('speakerBrainstorm.promoteDialog.errorEmailRequired', 'Email is required'))
           .email(t('speakerBrainstorm.promoteDialog.errorEmailInvalid', 'Email must be valid'))
           .max(320),
-        firstName: z.string().max(100).optional().or(z.literal('')),
-        lastName: z.string().max(100).optional().or(z.literal('')),
+        // Story 11.E.4 AC4: firstName + lastName tightened from optional to required —
+        // the backend's @NotBlank validation rejects blank values with 400; surface this
+        // at the form layer so the submit button is disabled until both are populated.
+        firstName: z
+          .string()
+          .trim()
+          .min(
+            1,
+            t('speakerBrainstorm.promoteDialog.errorFirstNameRequired', 'First name is required')
+          )
+          .max(100),
+        lastName: z
+          .string()
+          .trim()
+          .min(
+            1,
+            t('speakerBrainstorm.promoteDialog.errorLastNameRequired', 'Last name is required')
+          )
+          .max(100),
       }),
     [t]
   );
@@ -98,7 +115,11 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
     formState: { errors, isValid },
   } = useForm<PromoteFormValues>({
     resolver: zodResolver(schema),
-    mode: 'onChange',
+    // Story 11.E.4 AC4: 'onTouched' surfaces required-field errors on first blur
+    // (then on every change). Previously 'onChange' kept errors hidden until the
+    // user typed something, which gave no feedback when they tabbed past an empty
+    // required field.
+    mode: 'onTouched',
     defaultValues: defaults,
   });
 
@@ -112,8 +133,10 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
         speakerId: speaker.id,
         request: {
           email: values.email.trim(),
-          firstName: values.firstName?.trim() || undefined,
-          lastName: values.lastName?.trim() || undefined,
+          // Story 11.E.4 AC4: firstName + lastName are required by schema (non-blank);
+          // the .trim() is defensive but schema already trims to detect whitespace-only.
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
         },
       },
       {
@@ -203,6 +226,7 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
               render={({ field }) => (
                 <TextField
                   {...field}
+                  required
                   fullWidth
                   size="small"
                   label={t('speakerBrainstorm.promoteDialog.firstNameLabel', 'First name')}
@@ -218,6 +242,7 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
               render={({ field }) => (
                 <TextField
                   {...field}
+                  required
                   fullWidth
                   size="small"
                   label={t('speakerBrainstorm.promoteDialog.lastNameLabel', 'Last name')}

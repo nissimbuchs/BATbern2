@@ -197,6 +197,8 @@
       "errorTitle": "登壇者の昇格に失敗しました",
       "errorEmailRequired": "メールアドレスは必須です",
       "errorEmailInvalid": "有効なメールアドレスを入力してください",
+      "errorFirstNameRequired": "名は必須です",
+      "errorLastNameRequired": "姓は必須です",
       "errorAlreadyPromoted": "登壇者はすでに {{currentState}} 状態です。昇格は「連絡済み」状態からのみ可能です。",
       "errorStillIdentified": "登壇者をまず連絡済みにする必要があります — 昇格の前にコンタクトを記録してください。",
       "errorDeclined": "登壇者は辞退しました — 昇格ではなく新規エントリを作成してください。",

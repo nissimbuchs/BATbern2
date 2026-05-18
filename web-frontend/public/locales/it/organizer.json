@@ -197,6 +197,8 @@
       "errorTitle": "Impossibile promuovere il relatore",
       "errorEmailRequired": "L'e-mail è obbligatoria",
       "errorEmailInvalid": "L'e-mail deve essere valida",
+      "errorFirstNameRequired": "Il nome è obbligatorio",
+      "errorLastNameRequired": "Il cognome è obbligatorio",
       "errorAlreadyPromoted": "Il relatore è già in {{currentState}}; la promozione è valida solo dallo stato Contattato.",
       "errorStillIdentified": "Il relatore deve essere prima contattato — registra il contatto prima di promuovere.",
       "errorDeclined": "Il relatore ha rifiutato — crea una nuova voce invece di promuovere.",

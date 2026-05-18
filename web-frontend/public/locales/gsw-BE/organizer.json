@@ -18,6 +18,8 @@
       "errorTitle": "Speaker het nöd chönne promotet wärde",
       "errorEmailRequired": "E-Mail isch zwingend",
       "errorEmailInvalid": "E-Mail muess gültig sii",
+      "errorFirstNameRequired": "Vorname isch nötig",
+      "errorLastNameRequired": "Nachname isch nötig",
       "errorAlreadyPromoted": "Speaker isch scho i {{currentState}}; promote isch nume vo Kontaktiert us mögli.",
       "errorStillIdentified": "Speaker muess zerscht kontaktiert wärde — Outreach erfasse, dänn promote.",
       "errorDeclined": "Speaker het abgseit — mach e neue Pool-Iitrag schtatt z'promote.",

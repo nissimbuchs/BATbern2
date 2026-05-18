@@ -203,6 +203,8 @@
       "errorTitle": "Could not promote speaker",
       "errorEmailRequired": "Email is required",
       "errorEmailInvalid": "Email must be valid",
+      "errorFirstNameRequired": "First name is required",
+      "errorLastNameRequired": "Last name is required",
       "errorAlreadyPromoted": "Speaker is already in {{currentState}}; promote is only valid from Contacted.",
       "errorStillIdentified": "Speaker must be Contacted first — log outreach before promoting.",
       "errorDeclined": "Speaker has Declined — create a new pool entry instead of promoting.",

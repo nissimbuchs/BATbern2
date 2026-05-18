@@ -6,14 +6,11 @@
 
 import type { components } from '@/types/generated/speakers-api.types';
 
-// Use OpenAPI generated workflow state type, extended with INVITED state from Story 6.1b
-// The generated types from speakers-api.types.ts may not include all states
-export type SpeakerWorkflowState =
-  | components['schemas']['SpeakerWorkflowState']
-  | 'INVITED'
-  | 'SLOT_ASSIGNED'
-  | 'WITHDREW'
-  | 'OVERFLOW';
+// Use OpenAPI-generated workflow state type — the 8 ADR-009 §0.1 states.
+// Legacy widenings ('SLOT_ASSIGNED' | 'WITHDREW' | 'OVERFLOW') dropped per Story 11.E.4 AC1
+// (Phase B residue from Story 11.B.1 that 11.D.2 / 11.D.4 reviews flagged for cleanup).
+// 'INVITED' is already part of the generated union; the local widening was redundant.
+export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 // ============================================================================
 // Speaker Pool Types
@@ -80,12 +77,14 @@ export interface PatchSpeakerPoolRequest {
 }
 
 // Story 11.D.1: POST /speakers/{speakerId}/promote — drives CONTACTED → READY transition
-// and provisions the User + SPEAKER role server-side. Email is required; firstName +
-// lastName are optional.
+// and provisions the User + SPEAKER role server-side.
+// Story 11.E.4 AC4: firstName + lastName tightened from optional to REQUIRED (PM decision
+// 2026-05-18). They populate the Cognito user's given_name / family_name attributes; the
+// fallback path with literal placeholders ("Speaker" / "Unknown") on the backend is removed.
 export interface PromoteSpeakerRequest {
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
 }
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;

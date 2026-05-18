@@ -336,6 +336,38 @@ class SpeakerWorkflowServiceTest {
     }
 
     @Test
+    @DisplayName("Story 11.E.4: identity-rebind guard rejects when provisionUserWithRole returns a different username")
+    void should_throwValidationException_when_provisionReturnsDifferentUsername() {
+        // Deferred from Story 11.D.1 review (item 4 in deferred-work.md):
+        // the rebind-guard reject path was not exercised because the existing stubUser()
+        // always returned the same username. This test stubs a divergent return and
+        // asserts ValidationException is thrown with the documented message naming both
+        // usernames.
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        speaker.setUsername("previously.bound.user"); // already bound to a different identity
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(userApiClient.provisionUserWithRole(any()))
+                .thenReturn(new ProvisionUserResponse("different.user", false));
+
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("speaker@example.com")
+                .firstName("Test")
+                .lastName("Speaker")
+                .build();
+
+        assertThatThrownBy(() ->
+                service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("previously.bound.user")
+                .hasMessageContaining("different.user");
+
+        verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
+        verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
+        verify(applicationEventPublisher, never()).publishEvent(any(SpeakerPromotedToReadyEvent.class));
+    }
+
+    @Test
     @DisplayName("INVITED -> ACCEPTED publishes SpeakerAcceptedEvent with acceptedBy = actor.username")
     void should_publishSpeakerAcceptedEvent_when_transitioningInvitedToAccepted() {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);

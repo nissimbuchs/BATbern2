@@ -197,6 +197,8 @@
       "errorTitle": "Impussibel da promover il referent",
       "errorEmailRequired": "E-mail è obligatoria",
       "errorEmailInvalid": "E-mail sto esser valaivel",
+      "errorFirstNameRequired": "Il prenum è obligatoric",
+      "errorLastNameRequired": "Il num da famiglia è obligatoric",
       "errorAlreadyPromoted": "Il referent è gia en {{currentState}}; il promover è mo valid dal stadi Contactà.",
       "errorStillIdentified": "Il referent sto pli baud vegnir contactà — registra il contact avant da promover.",
       "errorDeclined": "Il referent ha refusà — crea ina nova endataziun empè dal promover.",

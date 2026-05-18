@@ -298,10 +298,12 @@ public class SpeakerWorkflowService {
         ProvisionUserRequest provisionRequest = new ProvisionUserRequest(
                 payload.email(),
                 ProvisionUserRequest.RoleEnum.SPEAKER);
-        provisionRequest.setFirstName(payload.firstName() != null && !payload.firstName().isBlank()
-                ? payload.firstName() : firstNameFallback(speaker));
-        provisionRequest.setLastName(payload.lastName() != null && !payload.lastName().isBlank()
-                ? payload.lastName() : lastNameFallback(speaker));
+        // Story 11.E.4 AC4: firstName and lastName are guaranteed non-blank by the
+        // PromoteSpeakerRequest @NotBlank validation at the controller boundary; the previous
+        // *Fallback methods (with literal "Speaker" / "Unknown" placeholders) are deleted.
+        // Other entry paths into runReadyHook are expected to enforce the same invariant.
+        provisionRequest.setFirstName(payload.firstName());
+        provisionRequest.setLastName(payload.lastName());
 
         ProvisionUserResponse userResponse = userApiClient.provisionUserWithRole(provisionRequest);
 
@@ -504,21 +506,4 @@ public class SpeakerWorkflowService {
         return Locale.GERMAN;
     }
 
-    private String firstNameFallback(SpeakerPool speaker) {
-        String name = speaker.getSpeakerName();
-        if (name == null || name.isBlank()) {
-            return "Speaker";
-        }
-        String[] parts = name.trim().split("\\s+", 2);
-        return parts[0];
-    }
-
-    private String lastNameFallback(SpeakerPool speaker) {
-        String name = speaker.getSpeakerName();
-        if (name == null || name.isBlank()) {
-            return "Unknown";
-        }
-        String[] parts = name.trim().split("\\s+", 2);
-        return parts.length > 1 ? parts[1] : "";
-    }
 }

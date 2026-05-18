@@ -2,7 +2,7 @@
  * EventSpeakersTab Component (Story 5.6)
  *
  * Unified speaker management tab with three views:
- * - Kanban: Drag-drop status lanes (from SpeakerStatusDashboard)
+ * - Kanban: Drag-drop status lanes (SpeakerStatusLanes)
  * - Table: List with outreach tracking (from SpeakerOutreachDashboard)
  * - Sessions: Slot-based assignment (from SpeakersSessionsTable)
  *

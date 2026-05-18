@@ -175,7 +175,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "not-an-email" }
+                                { "email": "not-an-email", "firstName": "Jane", "lastName": "Smith" }
                                 """))
                 .andExpect(status().isBadRequest());
 
@@ -192,7 +192,60 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "%s", "username": "stale.from.frontend" }
+                                { "email": "%s", "firstName": "Jane", "lastName": "Smith", "username": "stale.from.frontend" }
+                                """.formatted(SPEAKER_EMAIL)))
+                .andExpect(status().isBadRequest());
+
+        assertNoSideEffects(speaker);
+    }
+
+    // -------- AC2 / Story 11.E.4 AC4: required-field validation on firstName + lastName --------
+
+    @Test
+    @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
+    @DisplayName("11.E.4 AC4: missing firstName returns 400")
+    void should_return400_when_firstNameMissing() throws Exception {
+        SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.CONTACTED);
+
+        mockMvc.perform(post("/api/v1/events/{code}/speakers/{id}/promote",
+                        EVENT_CODE, speaker.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "lastName": "Smith" }
+                                """.formatted(SPEAKER_EMAIL)))
+                .andExpect(status().isBadRequest());
+
+        assertNoSideEffects(speaker);
+    }
+
+    @Test
+    @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
+    @DisplayName("11.E.4 AC4: missing lastName returns 400")
+    void should_return400_when_lastNameMissing() throws Exception {
+        SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.CONTACTED);
+
+        mockMvc.perform(post("/api/v1/events/{code}/speakers/{id}/promote",
+                        EVENT_CODE, speaker.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "firstName": "Jane" }
+                                """.formatted(SPEAKER_EMAIL)))
+                .andExpect(status().isBadRequest());
+
+        assertNoSideEffects(speaker);
+    }
+
+    @Test
+    @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
+    @DisplayName("11.E.4 AC4: blank firstName / lastName returns 400 (whitespace-only)")
+    void should_return400_when_firstNameAndLastNameBlank() throws Exception {
+        SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.CONTACTED);
+
+        mockMvc.perform(post("/api/v1/events/{code}/speakers/{id}/promote",
+                        EVENT_CODE, speaker.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "firstName": "   ", "lastName": "" }
                                 """.formatted(SPEAKER_EMAIL)))
                 .andExpect(status().isBadRequest());
 
@@ -219,7 +272,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "%s" }
+                                { "email": "%s", "firstName": "Jane", "lastName": "Smith" }
                                 """.formatted(SPEAKER_EMAIL)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code", is("INVALID_PROMOTION_STATE")))
@@ -269,7 +322,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, missing)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "%s" }
+                                { "email": "%s", "firstName": "Jane", "lastName": "Smith" }
                                 """.formatted(SPEAKER_EMAIL)))
                 .andExpect(status().isNotFound());
 
@@ -287,7 +340,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "%s" }
+                                { "email": "%s", "firstName": "Jane", "lastName": "Smith" }
                                 """.formatted(SPEAKER_EMAIL)))
                 .andExpect(status().isForbidden());
 
@@ -315,7 +368,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "%s" }
+                                { "email": "%s", "firstName": "Jane", "lastName": "Smith" }
                                 """.formatted(SPEAKER_EMAIL)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code", is("INVALID_PROMOTION_STATE")))

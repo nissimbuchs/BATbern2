@@ -197,6 +197,8 @@
       "errorTitle": "Spreker kon niet worden gepromoveerd",
       "errorEmailRequired": "E-mail is vereist",
       "errorEmailInvalid": "E-mail moet geldig zijn",
+      "errorFirstNameRequired": "Voornaam is vereist",
+      "errorLastNameRequired": "Achternaam is vereist",
       "errorAlreadyPromoted": "Spreker is al in {{currentState}}; promotie is alleen geldig vanaf Gecontacteerd.",
       "errorStillIdentified": "Spreker moet eerst worden gecontacteerd — registreer het contact voor promotie.",
       "errorDeclined": "Spreker heeft geweigerd — maak een nieuwe entry aan in plaats van te promoveren.",

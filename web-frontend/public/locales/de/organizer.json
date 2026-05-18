@@ -203,6 +203,8 @@
       "errorTitle": "Referent konnte nicht befördert werden",
       "errorEmailRequired": "E-Mail ist erforderlich",
       "errorEmailInvalid": "E-Mail muss gültig sein",
+      "errorFirstNameRequired": "Vorname ist erforderlich",
+      "errorLastNameRequired": "Nachname ist erforderlich",
       "errorAlreadyPromoted": "Referent ist bereits in {{currentState}}; Beförderung ist nur aus „Kontaktiert“ möglich.",
       "errorStillIdentified": "Referent muss zuerst kontaktiert werden — Outreach erfassen, dann befördern.",
       "errorDeclined": "Referent hat abgelehnt — bitte einen neuen Pool-Eintrag erstellen statt zu befördern.",

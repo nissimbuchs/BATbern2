@@ -197,6 +197,8 @@
       "errorTitle": "Impossible de promouvoir l'intervenant",
       "errorEmailRequired": "L'e-mail est requis",
       "errorEmailInvalid": "L'e-mail doit être valide",
+      "errorFirstNameRequired": "Le prénom est requis",
+      "errorLastNameRequired": "Le nom est requis",
       "errorAlreadyPromoted": "L'intervenant est déjà en {{currentState}} ; la promotion n'est valide qu'à partir de « Contacté ».",
       "errorStillIdentified": "L'intervenant doit d'abord être contacté — enregistrez le contact avant de promouvoir.",
       "errorDeclined": "L'intervenant a refusé — créez une nouvelle entrée plutôt que de promouvoir.",

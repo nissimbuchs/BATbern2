@@ -197,6 +197,8 @@
       "errorTitle": "Puhujan ylennys epäonnistui",
       "errorEmailRequired": "Sähköposti vaaditaan",
       "errorEmailInvalid": "Sähköpostin on oltava kelvollinen",
+      "errorFirstNameRequired": "Etunimi vaaditaan",
+      "errorLastNameRequired": "Sukunimi vaaditaan",
       "errorAlreadyPromoted": "Puhuja on jo tilassa {{currentState}}; ylennys onnistuu vain tilasta Contacted.",
       "errorStillIdentified": "Puhuja on ensin otettava yhteyttä — kirjaa yhteydenotto ennen ylennystä.",
       "errorDeclined": "Puhuja on kieltäytynyt — luo uusi merkintä ylennyksen sijaan.",
