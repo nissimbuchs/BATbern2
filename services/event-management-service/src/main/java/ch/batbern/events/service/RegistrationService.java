@@ -584,6 +584,25 @@ public class RegistrationService {
                     username);
         }
 
+        // The authenticated path used to trust whatever was on user_profile,
+        // even an empty first_name / last_name (2026-05-18 incident: 20
+        // BATbern59 registrations with blank attendee names from JIT-created
+        // user.X / firstname.lastname.2 accounts). Reject early with a clear
+        // 409 so the frontend can prompt the user to complete their profile
+        // and retry. Only enforced when we DO have a profile — anonymous-
+        // user fallback (userProfile == null) still goes through the
+        // public-form path elsewhere.
+        if (userProfile != null) {
+            boolean missingFirst = userProfile.getFirstName() == null
+                    || userProfile.getFirstName().isBlank();
+            boolean missingLast = userProfile.getLastName() == null
+                    || userProfile.getLastName().isBlank();
+            if (missingFirst || missingLast) {
+                throw new ch.batbern.events.exception.IncompleteProfileException(
+                        username, missingFirst, missingLast);
+            }
+        }
+
         Optional<Registration> existing = registrationRepository
                 .findByEventIdAndAttendeeUsername(event.getId(), username);
         if (existing.isPresent()) {

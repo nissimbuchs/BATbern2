@@ -118,6 +118,40 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle IncompleteProfileException — authenticated user tried to register
+     * for an event but their profile is missing first or last name.
+     *
+     * Returns HTTP 409 Conflict with {@code code = "profile_incomplete"} and
+     * details about which fields are missing. Frontend reads this to show an
+     * inline profile-completion form and retry the registration.
+     */
+    @ExceptionHandler(IncompleteProfileException.class)
+    public ResponseEntity<ErrorResponse> handleIncompleteProfileException(
+            IncompleteProfileException ex,
+            HttpServletRequest request) {
+        log.info("Refused authenticated registration — profile incomplete: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "profile_incomplete");
+        details.put("username", ex.getUsername());
+        details.put("missingFirstName", ex.isMissingFirstName());
+        details.put("missingLastName", ex.isMissingLastName());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message("Profile incomplete — please add your first and last name before registering")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle PropertyReferenceException (invalid field name in sort)
      * Returns HTTP 400 Bad Request
      */
