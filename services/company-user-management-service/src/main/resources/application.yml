@@ -20,7 +20,6 @@ spring:
       max-lifetime: 1800000
 
   jpa:
-    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: false
