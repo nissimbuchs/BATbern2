@@ -119,9 +119,18 @@ else
     ((failed++))
 fi
 
-# 6b: Resize request — Lambda@Edge must load sharp and return image/webp
-resize_response=$(curl -s -D - -o /dev/null \
-    --max-time 15 "$CDN_URL/$SAMPLE_IMAGE_PATH?w=100&h=100&fit=cover" || echo "")
+# 6b: Resize request — Lambda@Edge must load sharp and return image/webp.
+#
+# Randomise w/h per run so each deploy hits a fresh CloudFront cache key. The
+# Lambda's graceful fallback (returns original jpeg if sharp fails) emits the
+# upstream cache-control headers (max-age=31536000, immutable), so a single
+# regression would otherwise poison one fixed cache entry forever — the test
+# would keep seeing the stale jpeg long after the Lambda recovered. A random
+# cache-buster guarantees this test always reflects the *current* Lambda state.
+rand_w=$((150 + RANDOM % 350))
+rand_h=$((150 + RANDOM % 350))
+resize_url="$CDN_URL/$SAMPLE_IMAGE_PATH?w=$rand_w&h=$rand_h&fit=cover"
+resize_response=$(curl -s -D - -o /dev/null --max-time 15 "$resize_url" || echo "")
 resize_status=$(echo "$resize_response" | grep "^HTTP" | awk '{print $2}' | tr -d '\r')
 resize_ct=$(echo "$resize_response" | grep -i "^content-type:" | tr -d '\r' | head -1)
 
@@ -131,7 +140,7 @@ if [ "$resize_status" = "200" ] && echo "$resize_ct" | grep -qi "image/webp"; th
 else
     echo -e "  ${RED}✗ FAIL${NC}: Resize request returned HTTP $resize_status, Content-Type: $resize_ct"
     echo -e "      Expected HTTP 200 + content-type: image/webp"
-    echo -e "      URL: $CDN_URL/$SAMPLE_IMAGE_PATH?w=100&h=100&fit=cover"
+    echo -e "      URL: $resize_url"
     echo -e "      This usually means the Lambda@Edge function is missing 'sharp' in its package."
     ((failed++))
 fi
