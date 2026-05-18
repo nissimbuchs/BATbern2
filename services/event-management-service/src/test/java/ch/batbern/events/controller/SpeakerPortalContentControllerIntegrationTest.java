@@ -57,6 +57,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The magic link token IS the authentication mechanism.
  */
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3 (ADR-009 §Decision 3): magic-link flow replaced by Cognito Bearer + "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"). Token field gone from "
+                + "ContentDraftRequest / ContentSubmitRequest / SpeakerMaterial* DTOs; endpoints "
+                + "moved to /api/v1/speaker-portal/events/{eventCode}/content/*. The equivalent "
+                + "Cognito-side coverage lives in SpeakerPortalAuthIntegrationTest (Task 10), "
+                + "ContentSubmissionServiceTest, and SpeakerPortalMaterialsServiceTest. "
+                + "Phase F (Story 11.F.1) deletes this file.")
 class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

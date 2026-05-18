@@ -29,8 +29,8 @@ const ALLOWED_TYPES = [
 const ALLOWED_EXTENSIONS = ['pptx', 'ppt', 'pdf', 'key'];
 
 interface PresentationUploadProps {
-  /** Magic link token for authentication */
-  token: string;
+  /** Story 11.E.3: event code (replaces magic-link token; Cognito session is automatic) */
+  eventCode: string;
   /** Current material URL (null if none) */
   currentMaterialUrl: string | null;
   /** Current material file name (null if none) */
@@ -46,7 +46,7 @@ interface PresentationUploadProps {
  * Uses presigned URL pattern for direct S3 upload.
  */
 const PresentationUpload = ({
-  token,
+  eventCode,
   currentMaterialUrl,
   currentMaterialName,
   onMaterialUploaded,
@@ -129,7 +129,7 @@ const PresentationUpload = ({
 
       try {
         // Upload using service (3-phase presigned URL flow)
-        const response = await speakerPortalService.uploadMaterial(token, file, (progress) =>
+        const response = await speakerPortalService.uploadMaterial(eventCode, file, (progress) =>
           setUploadProgress(progress)
         );
 
@@ -150,7 +150,7 @@ const PresentationUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [token, validateFile, onMaterialUploaded, onError]
+    [eventCode, validateFile, onMaterialUploaded, onError]
   );
 
   /**

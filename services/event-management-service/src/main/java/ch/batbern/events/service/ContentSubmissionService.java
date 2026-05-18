@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
@@ -11,7 +12,6 @@ import ch.batbern.events.dto.ContentDraftResponse;
 import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.SpeakerContentResponse;
-import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.ContentSubmissionRepository;
@@ -65,7 +65,6 @@ public class ContentSubmissionService {
     private static final int MAX_TITLE_LENGTH = 200;
     private static final int MAX_ABSTRACT_LENGTH = 1000;
 
-    private final MagicLinkService magicLinkService;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
@@ -77,25 +76,27 @@ public class ContentSubmissionService {
     private final EventRepository eventRepository;
 
     // ============================================================
-    // Magic-link portal helpers (kept until Phase E / Story 11.E.3)
+    // Speaker portal helpers — Story 11.E.3 (Cognito Bearer auth)
     // ============================================================
 
     /**
      * Get content information for the speaker portal.
-     * Story 6.3 AC1: Session assignment check
-     * Story 6.3 AC4: Draft restoration
-     * Story 6.3 AC8: Revision feedback display
+     * Story 6.3 AC1: Session assignment check.
+     * Story 6.3 AC4: Draft restoration.
+     * Story 6.3 AC8: Revision feedback display.
      *
-     * @param token Magic link token
+     * <p>Story 11.E.3: caller has resolved the speaker_pool row via
+     * {@link SpeakerPortalAuthorizationService} (Cognito-authenticated path); the
+     * event-context fields (eventCode, eventTitle, speakerName) come from the entity.
+     *
+     * @param speaker speaker_pool row (pre-resolved by the controller)
      * @return Speaker content info including session status and draft
-     * @throws IllegalArgumentException if token is invalid or expired
      */
     @Transactional(readOnly = true)
-    public SpeakerContentInfo getContentInfo(String token) {
-        TokenValidationResult validation = validateToken(token);
-
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
+    public SpeakerContentInfo getContentInfo(SpeakerPool speaker) {
+        Event event = eventRepository.findById(speaker.getEventId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Event not found for speaker pool " + speaker.getId()));
 
         boolean hasSession = speaker.getSessionId() != null;
         String sessionTitle = null;
@@ -117,9 +118,9 @@ public class ContentSubmissionService {
 
         if (!canSubmit) {
             return SpeakerContentInfo.noSession(
-                    validation.speakerName(),
-                    validation.eventCode(),
-                    validation.eventTitle()
+                    speaker.getSpeakerName(),
+                    event.getEventCode(),
+                    event.getTitle()
             );
         }
 
@@ -153,9 +154,9 @@ public class ContentSubmissionService {
         }
 
         return SpeakerContentInfo.builder()
-                .speakerName(validation.speakerName())
-                .eventCode(validation.eventCode())
-                .eventTitle(validation.eventTitle())
+                .speakerName(speaker.getSpeakerName())
+                .eventCode(event.getEventCode())
+                .eventTitle(event.getTitle())
                 .hasSessionAssigned(hasSession)
                 .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
                 .canSubmitContent(canSubmit)
@@ -177,19 +178,16 @@ public class ContentSubmissionService {
 
     /**
      * Save content draft.
-     * Story 6.3 AC4: Draft auto-save
+     * Story 6.3 AC4: Draft auto-save.
      *
-     * @param request Draft request with title and abstract
-     * @return Draft response with saved timestamp
-     * @throws IllegalArgumentException if token is invalid
+     * <p>Story 11.E.3: caller has resolved the speaker_pool row via
+     * {@link SpeakerPortalAuthorizationService} (Cognito-authenticated path).
+     *
+     * @param speaker  speaker_pool row (pre-resolved by the controller)
+     * @param request  draft body (title + abstract)
      */
     @Transactional
-    public ContentDraftResponse saveDraft(ContentDraftRequest request) {
-        TokenValidationResult validation = validateToken(request.token());
-
-        SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
-
+    public ContentDraftResponse saveDraft(SpeakerPool speaker, ContentDraftRequest request) {
         Optional<ContentSubmission> existingDraft = contentSubmissionRepository
                 .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
 
@@ -627,22 +625,6 @@ public class ContentSubmissionService {
     // ============================================================
     // Helpers
     // ============================================================
-
-    private TokenValidationResult validateToken(String token) {
-        TokenValidationResult result = magicLinkService.validateToken(token);
-
-        if (!result.valid()) {
-            String message = switch (result.error()) {
-                case "NOT_FOUND" -> "Invalid token";
-                case "EXPIRED" -> "Token has expired";
-                case "ALREADY_USED" -> "Token has already been used";
-                default -> "Token validation failed";
-            };
-            throw new IllegalArgumentException(message);
-        }
-
-        return result;
-    }
 
     private String truncate(String value, int maxLength) {
         if (value == null) {

@@ -29,8 +29,10 @@ import { speakerPortalService } from '@/services/speakerPortalService';
 const mockUploadProfilePhoto = vi.mocked(speakerPortalService.uploadProfilePhoto);
 
 describe('ProfilePhotoUpload Component', () => {
+  // Story 11.E.3: prop renamed from `token` to `eventCode` (Cognito Bearer auth replaces
+  // magic-link tokens). The mock service call assertions below were updated in lockstep.
   const defaultProps = {
-    token: 'test-token-123',
+    eventCode: 'BATbern99',
     currentPhotoUrl: null as string | null,
     onPhotoUploaded: vi.fn(),
     onError: vi.fn(),
@@ -100,7 +102,7 @@ describe('ProfilePhotoUpload Component', () => {
 
       await waitFor(() => {
         expect(mockUploadProfilePhoto).toHaveBeenCalledWith(
-          'test-token-123',
+          'BATbern99',
           file,
           expect.any(Function)
         );

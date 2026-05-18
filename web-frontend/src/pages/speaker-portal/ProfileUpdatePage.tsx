@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -38,8 +38,8 @@ type PageState = 'loading' | 'form' | 'error';
 
 const ProfileUpdatePage = () => {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  // Story 11.E.3: eventCode is now a route param.
+  const { eventCode } = useParams<{ eventCode: string }>();
   const queryClient = useQueryClient();
 
   const [pageState, setPageState] = useState<PageState>('loading');
@@ -66,17 +66,18 @@ const ProfileUpdatePage = () => {
     error: fetchError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-profile', token],
-    queryFn: () => speakerPortalService.getProfile(token!),
-    enabled: !!token,
+    queryKey: ['speaker-profile', eventCode],
+    queryFn: () => speakerPortalService.getProfile(eventCode!),
+    enabled: !!eventCode,
     retry: false,
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: (request: ProfileUpdateRequest) => speakerPortalService.updateProfile(request),
+    mutationFn: (request: ProfileUpdateRequest) =>
+      speakerPortalService.updateProfile(eventCode!, request),
     onSuccess: (updatedProfile) => {
-      queryClient.setQueryData(['speaker-profile', token], updatedProfile);
+      queryClient.setQueryData(['speaker-profile', eventCode], updatedProfile);
       setHasUnsavedChanges(false);
     },
   });
@@ -127,8 +128,8 @@ const ProfileUpdatePage = () => {
   const handlePhotoUploaded = useCallback(() => {
     setPhotoUploadError(null);
     // Refresh the profile to get the updated photo URL
-    queryClient.invalidateQueries({ queryKey: ['speaker-profile', token] });
-  }, [queryClient, token]);
+    queryClient.invalidateQueries({ queryKey: ['speaker-profile', eventCode] });
+  }, [queryClient, eventCode]);
 
   // Handle photo upload error
   const handlePhotoError = useCallback((error: { type: string; message: string }) => {
@@ -164,7 +165,6 @@ const ProfileUpdatePage = () => {
     if (!validate()) return;
 
     const request: ProfileUpdateRequest = {
-      token: token!,
       firstName: firstName || undefined,
       lastName: lastName || undefined,
       bio: bio || undefined,
@@ -205,8 +205,8 @@ const ProfileUpdatePage = () => {
     };
   };
 
-  // No token in URL
-  if (!token) {
+  // No eventCode in URL
+  if (!eventCode) {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -334,7 +334,7 @@ const ProfileUpdatePage = () => {
                 {/* Profile Photo Upload (AC7) */}
                 <div className="flex justify-center mb-6">
                   <ProfilePhotoUpload
-                    token={token!}
+                    eventCode={eventCode!}
                     currentPhotoUrl={profile.profilePictureUrl}
                     onPhotoUploaded={handlePhotoUploaded}
                     onError={handlePhotoError}
@@ -462,7 +462,7 @@ const ProfileUpdatePage = () => {
                   {t('speakerPortal.profile.contentSubmitDescription')}
                 </p>
                 <Button asChild className="w-full sm:w-auto">
-                  <Link to={`/speaker-portal/content?token=${token}`}>
+                  <Link to={`/speaker-portal/content/${eventCode}`}>
                     {t('speakerPortal.profile.submitContent')}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Link>

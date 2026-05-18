@@ -230,6 +230,22 @@ export function getNavigationForRoles(roles: UserRole[]): NavigationItem[] {
 }
 
 /**
+ * Story 11.E.3 (cherry-pick 73d94688 / Story 9.5): Get navigation items grouped by role section.
+ * Returns an array of role groups, each with a label key (`navigation.section.{role}`) and items.
+ * Used by NavigationMenu when the signed-in user has more than one role — renders a section
+ * header + divider between each role group.
+ */
+export function getGroupedNavigationForRoles(
+  roles: UserRole[]
+): { role: UserRole; labelKey: string; items: NavigationItem[] }[] {
+  return roles.map((role) => ({
+    role,
+    labelKey: `navigation.section.${role}`,
+    items: getNavigationForRole(role),
+  }));
+}
+
+/**
  * Check if a path is active (matches current location)
  */
 export function isPathActive(path: string, currentPath: string): boolean {

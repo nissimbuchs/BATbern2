@@ -110,25 +110,11 @@ public class SecurityConfig {
                 // Email cancellation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
-                // Story 6.1a: Speaker portal magic link validation (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
-
-                // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
-
-                // Story 6.4: Speaker dashboard endpoint (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()
-
-                // Story 6.3: Speaker portal content submission endpoints (no auth required, token-protected)
-                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        "/api/v1/speaker-portal/materials/presigned-url").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
-
-                // Story 9.1: Speaker JWT magic link authentication endpoint (JWT-protected, no Cognito auth)
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()
+                // Story 11.E.3 (ADR-009 §Decision 3): /api/v1/speaker-portal/** is now Cognito-secured
+                // via @PreAuthorize("hasRole('SPEAKER')") on each controller; no permitAll matchers.
+                // Resolved Q#3 (2026-05-17): /api/v1/auth/speaker-magic-login also drops permitAll —
+                // the endpoint is dead from the frontend after AC8; the controller class stays for
+                // Phase F (Story 11.F.1) to delete cleanly.
 
                 // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
                 .requestMatchers("/api/v1/e2e-test/**").permitAll()

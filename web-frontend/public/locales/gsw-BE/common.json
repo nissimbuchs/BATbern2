@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisator",
+      "speaker": "Referänt",
+      "partner": "Partner",
+      "attendee": "Tailnähmer"
+    }
   },
   "public": {
     "login": "Ämälde",

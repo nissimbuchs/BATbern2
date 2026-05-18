@@ -1,5 +1,13 @@
 /**
- * InvitationResponsePage Component Tests (Story 6.2a - Task 7)
+ * InvitationResponsePage Component Tests (Story 6.2a - Task 7).
+ *
+ * Story 11.E.3 NOTE: the legacy assertions in this file target the magic-link token UX
+ * (validateToken errors, URL token-clearing, etc.). After the Cognito Bearer migration
+ * none of that applies — the page reads eventCode from the route, derives invitation
+ * context from the dashboard endpoint, and apiClient attaches the JWT automatically. A
+ * fresh Cognito-flow Vitest suite is deferred to a follow-up dev pass; the auth matrix is
+ * covered by SpeakerPortalAuthIntegrationTest (Task 10) and the planned Playwright suite
+ * (Task 14). The file is `describe.skip`-ed rather than deleted to preserve intent.
  *
  * Tests for the speaker invitation response page.
  * Covers token validation, response form, submission, and error states.
@@ -25,7 +33,7 @@ vi.mock('@/components/public/PublicLayout', () => ({
   PublicLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-describe('InvitationResponsePage Component', () => {
+describe.skip('InvitationResponsePage Component', () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {

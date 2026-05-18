@@ -1,0 +1,21 @@
+meta {
+  name: Dashboard 401/403 without auth (Story 11.E.3 AC5)
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard
+  body: none
+  auth: none
+}
+
+tests {
+  test("should reject unauthenticated callers (Story 11.E.3 AC5 #1)", function() {
+    // Production (via AWS API Gateway) returns 401 before the request reaches Spring.
+    // Spring's own stateless OAuth2 resource server returns 403 when no JWT is present.
+    // Either way: the endpoint is NOT permitAll() after Story 11.E.3.
+    const status = res.getStatus();
+    expect([401, 403]).to.include(status);
+  });
+}

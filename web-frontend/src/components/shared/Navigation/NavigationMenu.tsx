@@ -12,6 +12,8 @@
 
 import React from 'react';
 import {
+  Box,
+  Divider,
   List,
   ListItem,
   ListItemButton,
@@ -20,11 +22,16 @@ import {
   Menu,
   MenuItem,
   Collapse,
+  Typography,
 } from '@mui/material';
 import { ExpandLess, ExpandMore, ArrowDropDown } from '@mui/icons-material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getNavigationForRoles, isPathActive } from '@/config/navigationConfig';
+import {
+  getGroupedNavigationForRoles,
+  getNavigationForRoles,
+  isPathActive,
+} from '@/config/navigationConfig';
 import type { NavigationItem } from '@/config/navigationConfig';
 import type { UserRole } from '@/types/auth';
 
@@ -44,7 +51,12 @@ export const NavigationMenu = React.memo(function NavigationMenu({
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const navigationItems = getNavigationForRoles(userRoles);
+  // Story 11.E.3 (cherry-pick 73d94688 / Story 9.5): when the user has more than one role,
+  // render each role's nav items in its own section (section header + divider). Single-role
+  // users see the existing flat list — no behavioural change for them.
+  const isMultiRole = userRoles.length > 1;
+  const navigationItems = isMultiRole ? [] : getNavigationForRoles(userRoles);
+  const groupedNav = isMultiRole ? getGroupedNavigationForRoles(userRoles) : [];
 
   // Horizontal: track which group's popover menu is open
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
@@ -100,6 +112,197 @@ export const NavigationMenu = React.memo(function NavigationMenu({
     '&:hover': { backgroundColor: 'action.hover' },
   };
 
+  const renderItem = (item: NavigationItem) => {
+    const Icon = item.icon;
+
+    // ── Grouped item (has children) ──────────────────────────────────
+    if (item.children && item.children.length > 0) {
+      const groupActive = isGroupActive(item);
+      const isOpen =
+        variant === 'horizontal' ? openGroupPath === item.path : expandedPaths.has(item.path);
+
+      return (
+        <React.Fragment key={item.path}>
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={groupActive}
+              onClick={(e) => handleGroupClick(e, item.path)}
+              data-testid={`nav-group-${item.path.split('/').filter(Boolean).join('-')}`}
+              aria-haspopup={variant === 'horizontal' ? 'true' : undefined}
+              aria-expanded={isOpen}
+              sx={itemSx}
+            >
+              <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
+                <Icon />
+              </ListItemIcon>
+              {showText && (
+                <ListItemText
+                  primary={t(item.labelKey)}
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    sx: { fontWeight: groupActive ? 600 : 400 },
+                  }}
+                />
+              )}
+              {showText &&
+                (variant === 'horizontal' ? (
+                  <ArrowDropDown sx={{ ml: 0.5, fontSize: 20 }} />
+                ) : isOpen ? (
+                  <ExpandLess />
+                ) : (
+                  <ExpandMore />
+                ))}
+            </ListItemButton>
+          </ListItem>
+
+          {/* Horizontal: popover Menu */}
+          {variant === 'horizontal' && (
+            <Menu
+              anchorEl={menuAnchor}
+              open={openGroupPath === item.path}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            >
+              {item.children.map((child) => {
+                const ChildIcon = child.icon;
+                const childActive = isPathActive(child.path, location.pathname);
+                return (
+                  <MenuItem
+                    key={child.path}
+                    selected={childActive}
+                    onClick={() => handleChildClick(child.path)}
+                    data-testid={`nav-${child.path.split('/').filter(Boolean).join('-')}`}
+                    sx={{ gap: 1.5 }}
+                  >
+                    <ChildIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                    {t(child.labelKey)}
+                  </MenuItem>
+                );
+              })}
+            </Menu>
+          )}
+
+          {/* Vertical: inline Collapse */}
+          {variant === 'vertical' && (
+            <Collapse in={isOpen} unmountOnExit>
+              <List disablePadding>
+                {item.children.map((child) => {
+                  const ChildIcon = child.icon;
+                  const childActive = isPathActive(child.path, location.pathname);
+                  return (
+                    <ListItem key={child.path} disablePadding>
+                      <ListItemButton
+                        component={NavLink}
+                        to={child.path}
+                        selected={childActive}
+                        onClick={onItemClick}
+                        data-testid={`nav-${child.path.split('/').filter(Boolean).join('-')}`}
+                        sx={{ ...itemSx, pl: 4 }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                          <ChildIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={t(child.labelKey)}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            sx: { fontWeight: childActive ? 600 : 400 },
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Collapse>
+          )}
+        </React.Fragment>
+      );
+    }
+
+    // ── Leaf item (no children) ──────────────────────────────────────
+    const active = isPathActive(item.path, location.pathname);
+    return (
+      <ListItem key={item.path} disablePadding>
+        <ListItemButton
+          component={NavLink}
+          to={item.path}
+          selected={active}
+          onClick={onItemClick}
+          data-testid={`nav-${item.path.split('/').filter(Boolean).join('-')}`}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
+            <Icon />
+          </ListItemIcon>
+          {showText && (
+            <ListItemText
+              primary={t(item.labelKey)}
+              primaryTypographyProps={{
+                variant: 'body2',
+                sx: { fontWeight: active ? 600 : 400 },
+              }}
+            />
+          )}
+        </ListItemButton>
+      </ListItem>
+    );
+  };
+
+  // Story 11.E.3 / Story 9.5: multi-role users see each role's items in a labelled section
+  // with a divider between groups. Section headers render only when text is visible (showText),
+  // so the icon-only tablet layout stays compact.
+  if (isMultiRole) {
+    return (
+      <nav aria-label={t('navigation.mainNav')} data-testid="navigation-menu-grouped">
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: variant === 'horizontal' ? 'row' : 'column',
+            alignItems: variant === 'horizontal' ? 'center' : 'stretch',
+            gap: variant === 'horizontal' ? 1 : 0,
+          }}
+        >
+          {groupedNav.map((group, idx) => (
+            <React.Fragment key={group.role}>
+              {idx > 0 && (
+                <Divider
+                  orientation={variant === 'horizontal' ? 'vertical' : 'horizontal'}
+                  flexItem
+                  sx={{ my: variant === 'vertical' ? 1 : 0, mx: variant === 'horizontal' ? 1 : 0 }}
+                  data-testid={`nav-section-divider-${group.role}`}
+                />
+              )}
+              {showText && variant === 'vertical' && (
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                  sx={{ px: 2, pt: 1, display: 'block' }}
+                  data-testid={`nav-section-header-${group.role}`}
+                >
+                  {t(group.labelKey)}
+                </Typography>
+              )}
+              <List
+                disablePadding
+                sx={{
+                  display: 'flex',
+                  flexDirection: variant === 'horizontal' ? 'row' : 'column',
+                  gap: variant === 'horizontal' ? 1 : 0,
+                }}
+                data-testid={`nav-section-${group.role}`}
+                aria-label={t(group.labelKey)}
+              >
+                {group.items.map(renderItem)}
+              </List>
+            </React.Fragment>
+          ))}
+        </Box>
+      </nav>
+    );
+  }
+
   return (
     <nav aria-label={t('navigation.mainNav')}>
       <List
@@ -110,143 +313,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
           p: 0,
         }}
       >
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-
-          // ── Grouped item (has children) ──────────────────────────────────
-          if (item.children && item.children.length > 0) {
-            const groupActive = isGroupActive(item);
-            const isOpen =
-              variant === 'horizontal' ? openGroupPath === item.path : expandedPaths.has(item.path);
-
-            return (
-              <React.Fragment key={item.path}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    selected={groupActive}
-                    onClick={(e) => handleGroupClick(e, item.path)}
-                    data-testid={`nav-group-${item.path.split('/').filter(Boolean).join('-')}`}
-                    aria-haspopup={variant === 'horizontal' ? 'true' : undefined}
-                    aria-expanded={isOpen}
-                    sx={itemSx}
-                  >
-                    <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
-                      <Icon />
-                    </ListItemIcon>
-                    {showText && (
-                      <ListItemText
-                        primary={t(item.labelKey)}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          sx: { fontWeight: groupActive ? 600 : 400 },
-                        }}
-                      />
-                    )}
-                    {showText &&
-                      (variant === 'horizontal' ? (
-                        <ArrowDropDown sx={{ ml: 0.5, fontSize: 20 }} />
-                      ) : isOpen ? (
-                        <ExpandLess />
-                      ) : (
-                        <ExpandMore />
-                      ))}
-                  </ListItemButton>
-                </ListItem>
-
-                {/* Horizontal: popover Menu */}
-                {variant === 'horizontal' && (
-                  <Menu
-                    anchorEl={menuAnchor}
-                    open={openGroupPath === item.path}
-                    onClose={handleMenuClose}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                  >
-                    {item.children.map((child) => {
-                      const ChildIcon = child.icon;
-                      const childActive = isPathActive(child.path, location.pathname);
-                      return (
-                        <MenuItem
-                          key={child.path}
-                          selected={childActive}
-                          onClick={() => handleChildClick(child.path)}
-                          data-testid={`nav-${child.path.split('/').filter(Boolean).join('-')}`}
-                          sx={{ gap: 1.5 }}
-                        >
-                          <ChildIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                          {t(child.labelKey)}
-                        </MenuItem>
-                      );
-                    })}
-                  </Menu>
-                )}
-
-                {/* Vertical: inline Collapse */}
-                {variant === 'vertical' && (
-                  <Collapse in={isOpen} unmountOnExit>
-                    <List disablePadding>
-                      {item.children.map((child) => {
-                        const ChildIcon = child.icon;
-                        const childActive = isPathActive(child.path, location.pathname);
-                        return (
-                          <ListItem key={child.path} disablePadding>
-                            <ListItemButton
-                              component={NavLink}
-                              to={child.path}
-                              selected={childActive}
-                              onClick={onItemClick}
-                              data-testid={`nav-${child.path.split('/').filter(Boolean).join('-')}`}
-                              sx={{ ...itemSx, pl: 4 }}
-                            >
-                              <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-                                <ChildIcon />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={t(child.labelKey)}
-                                primaryTypographyProps={{
-                                  variant: 'body2',
-                                  sx: { fontWeight: childActive ? 600 : 400 },
-                                }}
-                              />
-                            </ListItemButton>
-                          </ListItem>
-                        );
-                      })}
-                    </List>
-                  </Collapse>
-                )}
-              </React.Fragment>
-            );
-          }
-
-          // ── Leaf item (no children) ──────────────────────────────────────
-          const active = isPathActive(item.path, location.pathname);
-          return (
-            <ListItem key={item.path} disablePadding>
-              <ListItemButton
-                component={NavLink}
-                to={item.path}
-                selected={active}
-                onClick={onItemClick}
-                data-testid={`nav-${item.path.split('/').filter(Boolean).join('-')}`}
-                sx={itemSx}
-              >
-                <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
-                  <Icon />
-                </ListItemIcon>
-                {showText && (
-                  <ListItemText
-                    primary={t(item.labelKey)}
-                    primaryTypographyProps={{
-                      variant: 'body2',
-                      sx: { fontWeight: active ? 600 : 400 },
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
+        {navigationItems.map(renderItem)}
       </List>
     </nav>
   );

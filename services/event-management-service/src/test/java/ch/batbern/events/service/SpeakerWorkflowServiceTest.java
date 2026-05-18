@@ -441,6 +441,13 @@ class SpeakerWorkflowServiceTest {
         speaker.setStatus(state);
         speaker.setSpeakerName("Existing Name");
         speaker.setEmail("existing@example.com");
+        // Story 11.E.2 invariant: speakers in READY+ already have a canonical username
+        // (set by the CONTACTED → READY hook). Pre-READY states leave it null so the
+        // provisioning hook test can assert the post-transition value.
+        if (state != SpeakerWorkflowState.IDENTIFIED
+                && state != SpeakerWorkflowState.CONTACTED) {
+            speaker.setUsername("speaker.user");
+        }
         return speaker;
     }
 

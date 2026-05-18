@@ -62,6 +62,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3 (ADR-009 §Decision 3): magic-link flow replaced by Cognito Bearer + "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"). Token field is gone from "
+                + "SpeakerMaterialUploadRequest / SpeakerMaterialConfirmRequest; endpoints "
+                + "moved to /api/v1/speaker-portal/events/{eventCode}/materials/*. Service-level "
+                + "behaviour is covered by SpeakerPortalMaterialsServiceTest; auth matrix lives "
+                + "in SpeakerPortalAuthIntegrationTest (Task 10). Phase F (Story 11.F.1) "
+                + "deletes this file.")
 class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

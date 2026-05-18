@@ -1,0 +1,35 @@
+meta {
+  name: Dashboard 200 with SPEAKER token (Story 11.E.3 AC10)
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{speakerAuthToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.speakerName: isDefined
+  res.body.upcomingEvents: isArray
+  res.body.pastEvents: isArray
+}
+
+tests {
+  test("should return 200 for SPEAKER token (Story 11.E.3 AC5 happy path)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return dashboard shape (Story 11.E.3)", function() {
+    const body = res.getBody();
+    expect(body.speakerName).to.be.a('string');
+    expect(body.upcomingEvents).to.be.an('array');
+    expect(body.pastEvents).to.be.an('array');
+  });
+}

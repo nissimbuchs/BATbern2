@@ -632,6 +632,32 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SpeakerPortalAccessDeniedException — Story 11.E.3.
+     * Returns HTTP 403 Forbidden when a speaker tries to act on a pool row they don't own.
+     * The message is sanitised: the offending eventCode is logged but not echoed to the
+     * client (already in the path; no extra info exposure).
+     */
+    @ExceptionHandler(SpeakerPortalAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleSpeakerPortalAccessDenied(
+            SpeakerPortalAccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Speaker portal access denied: path={} reason={}",
+                request.getRequestURI(), ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
      * Handle AuthorizationDeniedException (access denied)
      * Returns HTTP 403 Forbidden
      * Story 5.1: Event Type Definition (AC8 - ORGANIZER role required)

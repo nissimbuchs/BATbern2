@@ -45,6 +45,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * UserApiClient is mocked via TestUserApiClientConfig.
  */
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3 (ADR-009 §Decision 3): magic-link flow replaced by Cognito Bearer + "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"). GET /api/v1/speaker-portal/dashboard "
+                + "now takes no token query parameter and reads the username from the Cognito "
+                + "JWT. Cognito-side coverage lives in SpeakerPortalAuthIntegrationTest "
+                + "(Task 10). Phase F (Story 11.F.1) deletes this file.")
 class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

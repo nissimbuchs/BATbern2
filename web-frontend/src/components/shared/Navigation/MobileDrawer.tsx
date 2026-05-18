@@ -21,7 +21,6 @@ import {
 import { Close, Logout } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { NavigationMenu } from './NavigationMenu';
-import { RoleSelector } from './RoleSelector';
 import type { UserRole } from '@/types/auth';
 
 interface MobileDrawerProps {
@@ -29,21 +28,9 @@ interface MobileDrawerProps {
   onClose: () => void;
   userRoles: UserRole[];
   userEmail?: string;
-  /** Only provided for multi-role users */
-  allRoles?: UserRole[];
-  activeRole?: UserRole;
-  onRoleChange?: (role: UserRole) => void;
 }
 
-export function MobileDrawer({
-  open,
-  onClose,
-  userRoles,
-  userEmail,
-  allRoles,
-  activeRole,
-  onRoleChange,
-}: MobileDrawerProps) {
+export function MobileDrawer({ open, onClose, userRoles, userEmail }: MobileDrawerProps) {
   const { t } = useTranslation();
   const handleLogout = () => {
     // Logout will be handled by parent component
@@ -105,17 +92,8 @@ export function MobileDrawer({
           </>
         )}
 
-        {/* Role selector — only for multi-role users */}
-        {allRoles && allRoles.length > 1 && activeRole && onRoleChange && (
-          <>
-            <Box sx={{ px: 2, py: 1.5, display: 'flex', justifyContent: 'center' }}>
-              <RoleSelector roles={allRoles} activeRole={activeRole} onChange={onRoleChange} />
-            </Box>
-            <Divider />
-          </>
-        )}
-
-        {/* Navigation Menu */}
+        {/* Navigation Menu — Story 11.E.3: NavigationMenu renders grouped sections
+            (with dividers) for multi-role users; no separate role-selector in the drawer. */}
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
           <NavigationMenu userRoles={userRoles} onItemClick={onClose} variant="vertical" />
         </Box>

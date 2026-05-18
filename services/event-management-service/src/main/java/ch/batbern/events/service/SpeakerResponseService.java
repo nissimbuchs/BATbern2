@@ -5,9 +5,7 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerResponsePreferences;
 import ch.batbern.events.dto.SpeakerResponseRequest;
 import ch.batbern.events.dto.SpeakerResponseResult;
-import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.exception.AlreadyRespondedException;
-import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.SecurityPrincipal;
@@ -16,10 +14,8 @@ import ch.batbern.shared.events.SpeakerResponseReceivedEvent;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +32,10 @@ import java.util.List;
  * {@link SpeakerWorkflowService#transition} — the sole writer of {@code speaker_pool.status}.
  * Provisioning at READY (User lookup-or-create + SPEAKER role grant) is now upstream at
  * {@code CONTACTED → READY}; this service no longer creates Users or Speakers.
+ *
+ * <p>Story 11.E.3 (ADR-009 §Decision 3): the speaker portal is Cognito-secured. The actor is
+ * read from Spring's {@code SecurityContext} by the controller and the pool row is resolved
+ * via {@link SpeakerPortalAuthorizationService}; the magic-link token bridge is gone.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,45 +44,36 @@ public class SpeakerResponseService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
-    private final MagicLinkService magicLinkService;
     private final ApplicationEventPublisher eventPublisher;
     private final SpeakerWorkflowService speakerWorkflowService;
 
-    @Value("${app.base-url:http://localhost:8100}")
-    private String appBaseUrl;
-
     /**
-     * Process a speaker's response (ACCEPT or DECLINE) to an invitation.
+     * Story 11.E.3: process a Cognito-authenticated speaker's response to an invitation.
      *
-     * <p>Per ADR-009 §0.6, the response model is binary — speakers who are unsure simply do
-     * not respond yet; reminder and escalation flows handle response delays.
-     *
-     * @param request the response request containing token, response type, and optional preferences
-     * @return the result with confirmation details and next steps
-     * @throws InvalidTokenException if token is invalid/expired/used
-     * @throws ValidationException if request validation fails
-     * @throws AlreadyRespondedException if speaker already responded
+     * @param actor   the Cognito-derived principal (built by the controller via
+     *                {@link SecurityPrincipal#fromAuthentication})
+     * @param speaker the speaker_pool row already resolved by
+     *                {@link SpeakerPortalAuthorizationService} (caller has verified ownership)
+     * @param request the response body
+     * @return confirmation details and next steps
+     * @throws ValidationException        if request validation fails (e.g. DECLINE without reason)
+     * @throws AlreadyRespondedException  if the speaker already responded
      */
     @Transactional
-    public SpeakerResponseResult processResponse(SpeakerResponseRequest request) {
-        log.info("Processing speaker response: type={}", request.getResponse());
-
-        TokenValidationResult tokenResult = magicLinkService.validateToken(request.getToken());
-        validateTokenResult(tokenResult);
-
-        SpeakerPool speaker = speakerPoolRepository.findById(tokenResult.speakerPoolId())
-                .orElseThrow(() -> InvalidTokenException.notFound());
+    public SpeakerResponseResult processResponse(
+            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
+        log.info("Processing speaker response: type={} username={} speakerPoolId={}",
+                request.getResponse(), actor.username(), speaker.getId());
 
         checkAlreadyResponded(speaker);
-
         validateRequest(request);
 
         Event event = eventRepository.findById(speaker.getEventId())
                 .orElseThrow(() -> new IllegalStateException("Event not found for speaker pool"));
 
         switch (request.getResponse()) {
-            case ACCEPT -> processAcceptResponse(speaker, request);
-            case DECLINE -> processDeclineResponse(speaker, request);
+            case ACCEPT -> processAcceptResponse(actor, speaker, request);
+            case DECLINE -> processDeclineResponse(actor, speaker, request);
             default -> throw new IllegalArgumentException(
                     "Unsupported response type: " + request.getResponse());
         }
@@ -94,18 +85,6 @@ public class SpeakerResponseService {
         publishResponseEvent(speaker, event, request);
 
         return buildResult(speaker, event, request.getResponse());
-    }
-
-    private void validateTokenResult(TokenValidationResult result) {
-        if (!result.valid()) {
-            String errorCode = result.error();
-            throw switch (errorCode) {
-                case "NOT_FOUND" -> InvalidTokenException.notFound();
-                case "EXPIRED" -> InvalidTokenException.expired();
-                case "ALREADY_USED" -> InvalidTokenException.alreadyUsed();
-                default -> new InvalidTokenException(errorCode);
-            };
-        }
     }
 
     /**
@@ -147,13 +126,13 @@ public class SpeakerResponseService {
      * acceptance email. Provisioning (User + SPEAKER role) happened upstream at
      * {@code CONTACTED → READY}.
      */
-    private void processAcceptResponse(SpeakerPool speaker, SpeakerResponseRequest request) {
+    private void processAcceptResponse(
+            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
         if (speaker.getUsername() == null) {
             log.warn("Speaker {} has no username at ACCEPT — provisioning invariant from "
                     + "CONTACTED → READY may have been bypassed", speaker.getId());
         }
 
-        SecurityPrincipal actor = speakerActor(speaker);
         TransitionPayload payload = TransitionPayload.builder()
                 .email(speaker.getEmail())
                 .reason("Accepted invitation via speaker portal")
@@ -171,8 +150,6 @@ public class SpeakerResponseService {
             speakerPoolRepository.save(reloaded);
         }
 
-        magicLinkService.markTokenAsUsed(request.getToken());
-
         log.info("Speaker {} accepted invitation for event {}",
                 speaker.getSpeakerName(), speaker.getEventId());
     }
@@ -182,8 +159,8 @@ public class SpeakerResponseService {
      * The hook sets {@code declinedAt}, {@code declineReason}, deletes any assigned session,
      * and notifies the organizer (since DECLINE from INVITED is post-invitation).
      */
-    private void processDeclineResponse(SpeakerPool speaker, SpeakerResponseRequest request) {
-        SecurityPrincipal actor = speakerActor(speaker);
+    private void processDeclineResponse(
+            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
         TransitionPayload payload = TransitionPayload.builder()
                 .reason(request.getReason())
                 .build();
@@ -191,20 +168,8 @@ public class SpeakerResponseService {
         speakerWorkflowService.transition(
                 speaker.getId(), SpeakerWorkflowState.DECLINED, actor, payload);
 
-        magicLinkService.markTokenAsUsed(request.getToken());
-
         log.info("Speaker {} declined invitation for event {}. Reason: {}",
                 speaker.getSpeakerName(), speaker.getEventId(), request.getReason());
-    }
-
-    private SecurityPrincipal speakerActor(SpeakerPool speaker) {
-        // Magic-link path doesn't populate Spring's SecurityContext — construct directly.
-        // Phase E (Story 11.E.3) replaces this with SecurityContextHelper-derived principals
-        // once /api/v1/speaker-portal/** requires a Cognito session.
-        String username = speaker.getUsername() != null && !speaker.getUsername().isBlank()
-                ? speaker.getUsername()
-                : speaker.getSpeakerName();
-        return new SecurityPrincipal(username, List.of("SPEAKER"));
     }
 
     /**
@@ -257,8 +222,10 @@ public class SpeakerResponseService {
                 nextSteps.add("Submit your presentation title and abstract by " + speaker.getContentDeadline());
             }
 
-            String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
-            profileUrl = appBaseUrl + "/speaker-portal/profile?token=" + viewToken;
+            // Story 11.E.3: profile URL is now a token-less SPA route; the Cognito session
+            // injected by apiClient covers authentication. The eventCode is the meaningful
+            // route segment (ADR-003).
+            profileUrl = "/speaker-portal/profile/" + event.getEventCode();
             log.info("Generated profile URL for speaker {}: {}", speaker.getSpeakerName(), profileUrl);
         }
 

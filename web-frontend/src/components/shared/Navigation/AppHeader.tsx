@@ -13,12 +13,10 @@ import { AppBar, Box, Toolbar, IconButton, Badge, Avatar, Tooltip } from '@mui/m
 import { Menu, Notifications, TaskAlt } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
-import { RoleSelector } from './RoleSelector';
 import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
-import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { UserProfile } from '@/types/user';
@@ -52,17 +50,15 @@ const AppHeader = React.memo(function AppHeader({
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
-  // Build the full roles array for multi-role nav support (e.g. organizer + partner)
+  // Build the full roles array for multi-role nav support (e.g. organizer + partner).
+  // Story 11.E.3 (cherry-pick 73d94688): NavigationMenu renders all roles' items in
+  // grouped sections — there is no longer a single "active role" filter at the header.
   const currentRoles: UserRole[] =
     user && 'roles' in user && Array.isArray(user.roles) && user.roles.length > 0
       ? (user.roles as UserRole[])
       : currentRole
         ? [currentRole as UserRole]
         : [];
-
-  // For multi-role users: which portal is currently active in the nav
-  const [activeRole, setActiveRole] = useActiveRole(currentRoles);
-  const navRoles = currentRoles.length > 1 ? [activeRole] : currentRoles;
 
   const handleNotificationClick = () => {
     navigate('/organizer/notifications');
@@ -139,15 +135,12 @@ const AppHeader = React.memo(function AppHeader({
             />
           </Box>
 
-          {/* Role selector chips — only for multi-role users, desktop/tablet only */}
-          {!isMobile && currentRoles.length > 1 && (
-            <RoleSelector roles={currentRoles} activeRole={activeRole} onChange={setActiveRole} />
-          )}
-
-          {/* Desktop/Tablet Navigation */}
-          {!isMobile && navRoles.length > 0 && (
+          {/* Desktop/Tablet Navigation — Story 11.E.3: NavigationMenu now renders
+              grouped sections (with dividers) for multi-role users; no separate
+              role-selector chip filter is needed at the header level. */}
+          {!isMobile && currentRoles.length > 0 && (
             <Box sx={{ flex: 1 }}>
-              <NavigationMenu userRoles={navRoles} showText={!isTablet} />
+              <NavigationMenu userRoles={currentRoles} showText={!isTablet} />
             </Box>
           )}
 
@@ -187,8 +180,8 @@ const AppHeader = React.memo(function AppHeader({
               )}
             </IconButton>
 
-            {/* Tasks - Only show for organizers */}
-            {currentRole === 'organizer' && (
+            {/* Tasks - Only show for users with organizer role (Story 11.E.3 multi-role aware) */}
+            {currentRoles.includes('organizer') && (
               <Tooltip title={t('navigation.tasks')}>
                 <IconButton
                   color="inherit"
@@ -230,11 +223,8 @@ const AppHeader = React.memo(function AppHeader({
         <MobileDrawer
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          userRoles={navRoles}
+          userRoles={currentRoles}
           userEmail={user.email}
-          allRoles={currentRoles.length > 1 ? currentRoles : undefined}
-          activeRole={currentRoles.length > 1 ? activeRole : undefined}
-          onRoleChange={currentRoles.length > 1 ? setActiveRole : undefined}
         />
       )}
 

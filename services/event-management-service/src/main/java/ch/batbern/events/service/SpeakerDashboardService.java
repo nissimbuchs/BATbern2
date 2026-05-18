@@ -7,7 +7,6 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.DashboardPastEventDto;
 import ch.batbern.events.dto.DashboardUpcomingEventDto;
 import ch.batbern.events.dto.SpeakerDashboardDto;
-import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.ContentSubmissionRepository;
@@ -79,7 +78,6 @@ public class SpeakerDashboardService {
             "REVISION_NEEDED", "Revision Needed"
     );
 
-    private final MagicLinkService magicLinkService;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
@@ -88,14 +86,12 @@ public class SpeakerDashboardService {
     private final UserApiClient userApiClient;
 
     public SpeakerDashboardService(
-            MagicLinkService magicLinkService,
             SpeakerPoolRepository speakerPoolRepository,
             EventRepository eventRepository,
             SessionRepository sessionRepository,
             ContentSubmissionRepository contentSubmissionRepository,
             SessionMaterialsRepository sessionMaterialsRepository,
             UserApiClient userApiClient) {
-        this.magicLinkService = magicLinkService;
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
@@ -106,22 +102,17 @@ public class SpeakerDashboardService {
 
     /**
      * Get the speaker dashboard summary.
-     * AC1: Token validation, AC2: Upcoming events, AC3: Past events,
-     * AC4: Material status, AC5: Organizer contact
+     * AC2: Upcoming events, AC3: Past events, AC4: Material status, AC5: Organizer contact.
      *
-     * @param token the magic link token
+     * <p>Story 11.E.3: the magic-link token bridge is replaced by Cognito Bearer auth on
+     * the controller, which passes the authenticated speaker's username here directly. The
+     * username is the cross-service join key (ADR-003).
+     *
+     * @param username the Cognito-authenticated speaker's username
      * @return dashboard summary DTO
-     * @throws IllegalArgumentException if token is invalid/expired
      */
     @Transactional(readOnly = true)
-    public SpeakerDashboardDto getDashboard(String token) {
-        // AC1: Validate token (VIEW tokens are reusable)
-        TokenValidationResult validation = magicLinkService.validateToken(token);
-        if (!validation.valid()) {
-            throw new IllegalArgumentException("Token is invalid or expired: " + validation.error());
-        }
-
-        String username = validation.username();
+    public SpeakerDashboardDto getDashboard(String username) {
         LOG.info("Loading dashboard for speaker: {}", username);
 
         // Find all speaker pool entries for this speaker
@@ -130,7 +121,7 @@ public class SpeakerDashboardService {
         if (allEntries.isEmpty()) {
             LOG.info("No speaker pool entries found for username: {}", username);
             return SpeakerDashboardDto.builder()
-                    .speakerName(validation.speakerName())
+                    .speakerName(username)
                     .profileCompleteness(0)
                     .upcomingEvents(List.of())
                     .pastEvents(List.of())

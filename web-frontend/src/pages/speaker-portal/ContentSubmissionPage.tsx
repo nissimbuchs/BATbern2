@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -40,8 +40,8 @@ interface FormErrors {
 
 export default function ContentSubmissionPage() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  // Story 11.E.3: eventCode arrives as a route param (Q#1). Page mounted under <SpeakerRoute>.
+  const { eventCode } = useParams<{ eventCode: string }>();
   const queryClient = useQueryClient();
 
   // Form state
@@ -70,17 +70,16 @@ export default function ContentSubmissionPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['speaker-content', token],
-    queryFn: () => speakerPortalService.getContentInfo(token!),
-    enabled: !!token,
+    queryKey: ['speaker-content', eventCode],
+    queryFn: () => speakerPortalService.getContentInfo(eventCode!),
+    enabled: !!eventCode,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Save draft mutation
   const saveDraftMutation = useMutation({
     mutationFn: () =>
-      speakerPortalService.saveDraft({
-        token: token!,
+      speakerPortalService.saveDraft(eventCode!, {
         title: formState.title || null,
         contentAbstract: formState.contentAbstract || null,
       }),
@@ -100,15 +99,14 @@ export default function ContentSubmissionPage() {
   // Submit content mutation
   const submitMutation = useMutation({
     mutationFn: () =>
-      speakerPortalService.submitContent({
-        token: token!,
+      speakerPortalService.submitContent(eventCode!, {
         title: formState.title,
         contentAbstract: formState.contentAbstract,
       }),
     onSuccess: (response) => {
       setSubmitResult(response);
       setIsSubmitted(true);
-      queryClient.invalidateQueries({ queryKey: ['speaker-content', token] });
+      queryClient.invalidateQueries({ queryKey: ['speaker-content', eventCode] });
     },
   });
 
@@ -144,7 +142,7 @@ export default function ContentSubmissionPage() {
 
   // Auto-save effect (AC4)
   useEffect(() => {
-    if (!token || !contentInfo?.canSubmitContent || isSubmitted) {
+    if (!eventCode || !contentInfo?.canSubmitContent || isSubmitted) {
       return;
     }
 
@@ -166,7 +164,14 @@ export default function ContentSubmissionPage() {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [token, contentInfo?.canSubmitContent, isDirty, formState, isSubmitted, saveDraftMutation]);
+  }, [
+    eventCode,
+    contentInfo?.canSubmitContent,
+    isDirty,
+    formState,
+    isSubmitted,
+    saveDraftMutation,
+  ]);
 
   // Handle form field changes
   const handleFieldChange = useCallback(
@@ -210,7 +215,7 @@ export default function ContentSubmissionPage() {
   };
 
   // Render error states
-  if (!token) {
+  if (!eventCode) {
     return (
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center px-4">
@@ -319,7 +324,7 @@ export default function ContentSubmissionPage() {
             </div>
             <p className="text-sm text-gray-500 mt-4">{t('speakerPortal.content.nextStepsInfo')}</p>
             <Link
-              to={`/speaker-portal/dashboard?token=${token}`}
+              to={`/speaker-portal/dashboard`}
               className="inline-block mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             >
               {t('speakerPortal.content.goToDashboard')}
@@ -347,7 +352,7 @@ export default function ContentSubmissionPage() {
               </div>
               <div className="flex gap-2">
                 <Link
-                  to={`/speaker-portal/dashboard?token=${token}`}
+                  to={`/speaker-portal/dashboard`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -355,7 +360,7 @@ export default function ContentSubmissionPage() {
                 </Link>
                 {/* AC10: Edit Profile Navigation */}
                 <Link
-                  to={`/speaker-portal/profile?token=${token}`}
+                  to={`/speaker-portal/profile/${eventCode}`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm"
                 >
                   <User className="h-4 w-4" />
@@ -457,7 +462,7 @@ export default function ContentSubmissionPage() {
               </label>
               {contentInfo.hasSessionAssigned ? (
                 <PresentationUpload
-                  token={token}
+                  eventCode={eventCode!}
                   currentMaterialUrl={materialUrl}
                   currentMaterialName={materialFileName}
                   onMaterialUploaded={(url, fileName) => {

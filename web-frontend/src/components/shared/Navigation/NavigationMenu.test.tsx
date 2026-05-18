@@ -217,12 +217,39 @@ describe('NavigationMenu Component', () => {
       expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
-    test('should_deduplicatePublicSite_when_multipleRolesHaveSameItem', () => {
+    test('should_renderRoleSectionsWithDividersAndHeaders_when_multiRole', () => {
+      // Story 11.E.3 (cherry-pick 73d94688 / Story 9.5): each role's items appear in its
+      // own section, separated by a divider; vertical variant also gets per-section overline
+      // headers (horizontal variant uses dividers only — header pollutes the toolbar layout).
+      renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} variant="vertical" />);
+
+      // The grouped <nav> root carries the regression marker (single-role path lacks it).
+      expect(screen.getByTestId('navigation-menu-grouped')).toBeInTheDocument();
+
+      // Section list landmarks land per role.
+      expect(screen.getByTestId('nav-section-organizer')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-partner')).toBeInTheDocument();
+
+      // A divider appears between roles (the second role gets a divider; the first doesn't).
+      expect(screen.queryByTestId('nav-section-divider-organizer')).not.toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-divider-partner')).toBeInTheDocument();
+
+      // Vertical layout renders the overline section header (translated via i18n).
+      expect(screen.getByTestId('nav-section-header-organizer')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-header-partner')).toBeInTheDocument();
+    });
+
+    test('should_showSharedItemsInEverySection_when_multipleRolesHaveSameItem', () => {
+      // Story 11.E.3 deliberately drops the deduplication that the older single-list model
+      // applied to shared items like "Public Site": when a user has e.g. organizer + partner,
+      // each role's section is rendered independently, so a shared item appears once per
+      // section. The duplicate is informative — it tells the user the item belongs to both
+      // roles' navigation — and removing it would obscure the section grouping.
       renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} />);
 
-      // "Public Site" nav item exists for both organizer and partner — should appear only once
       const publicLinks = screen.queryAllByRole('link', { name: /public site/i });
-      expect(publicLinks.length).toBeLessThanOrEqual(1);
+      // organizer section contributes one, partner section contributes one
+      expect(publicLinks.length).toBeGreaterThanOrEqual(2);
     });
   });
 

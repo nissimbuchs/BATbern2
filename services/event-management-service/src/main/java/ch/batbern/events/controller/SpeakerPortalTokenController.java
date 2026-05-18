@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,19 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST Controller for speaker portal token validation.
- * Story 6.1a: Magic Link Infrastructure (AC5)
+ * Story 6.1a: Magic Link Infrastructure (AC5).
  *
- * Provides the token validation endpoint for the speaker portal.
- * This is a PUBLIC endpoint - no authentication required.
- * The magic link token IS the authentication mechanism.
- *
- * Security:
- * - Rate limited: 5 requests/minute per IP (AC5)
- * - Failed attempts logged with IP for audit (AC6)
- * - Token never logged (AC6)
+ * @deprecated Story 11.E.3 disconnects this controller from the frontend (no SPA route
+ *     invokes it after the Cognito migration); Story 11.F.1 deletes the file along with
+ *     {@code MagicLinkService} and the {@code magic_link_tokens} table. The {@code @PreAuthorize}
+ *     ensures any stray callers receive 403 instead of executing dead validation logic.
  */
+@Deprecated
 @RestController
 @RequestMapping("/api/v1/speaker-portal")
+@PreAuthorize("hasRole('SPEAKER')")
 public class SpeakerPortalTokenController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerPortalTokenController.class);

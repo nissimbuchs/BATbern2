@@ -51,8 +51,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if user exists and has required role
   if (requiresAuth && user) {
-    // Check if user's role is in allowed roles
-    if (!allowedRoles.includes(user.role)) {
+    // Story 11.E.3 (cherry-pick 73d94688): multi-role support — check if ANY of user's roles is allowed
+    const userRoles = user.roles ?? (user.role ? [user.role] : []);
+    if (!userRoles.some((r) => allowedRoles.includes(r))) {
       // Redirect to dashboard instead of showing error
       return <Navigate to="/dashboard" replace />;
     }

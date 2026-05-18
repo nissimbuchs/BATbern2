@@ -11,7 +11,7 @@
  * - Organizer contact information
  */
 
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
@@ -70,7 +70,7 @@ const contentStatusColors: Record<string, string> = {
   REVISION_NEEDED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
 };
 
-function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; token: string }) {
+function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
   const { t } = useTranslation();
 
   return (
@@ -221,7 +221,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         >
           {event.respondUrl && (
             <Link
-              to={`${event.respondUrl}?token=${token}`}
+              to={`/speaker-portal/respond/${event.eventCode}`}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               aria-label={`${t('speakerPortal.dashboard.respond')} to ${event.eventTitle}`}
             >
@@ -230,7 +230,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
             </Link>
           )}
           <Link
-            to={`${event.profileUrl}?token=${token}`}
+            to={`/speaker-portal/profile/${event.eventCode}`}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label={`${t('speakerPortal.dashboard.updateProfile')} for ${event.eventTitle}`}
           >
@@ -239,7 +239,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
           </Link>
           {event.contentUrl && (
             <Link
-              to={`${event.contentUrl}?token=${token}`}
+              to={`/speaker-portal/content/${event.eventCode}`}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               aria-label={`${t('speakerPortal.dashboard.submitContent')} for ${event.eventTitle}`}
             >
@@ -297,25 +297,24 @@ function PastEventCard({ event }: { event: DashboardPastEvent }) {
 }
 
 const SpeakerDashboardPage = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
   const { t } = useTranslation();
 
-  // Fetch dashboard data
+  // Story 11.E.3: the dashboard is now Cognito-authenticated (no `?token=` query param).
+  // The username arrives in the JWT; aggregating across the speaker's pool rows happens
+  // server-side.
   const {
     data: dashboard,
     error: fetchError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-dashboard', token],
-    queryFn: () => speakerPortalService.getDashboard(token!),
-    enabled: !!token,
+    queryKey: ['speaker-dashboard'],
+    queryFn: () => speakerPortalService.getDashboard(),
     retry: false,
   });
 
   // Determine page state
   let pageState: PageState = 'loading';
-  if (!token || fetchError) {
+  if (fetchError) {
     pageState = 'error';
   } else if (!isLoading && dashboard) {
     pageState = 'dashboard';
@@ -323,12 +322,6 @@ const SpeakerDashboardPage = () => {
 
   // Error handling
   const getErrorContent = () => {
-    if (!token) {
-      return {
-        title: t('speakerPortal.dashboard.invalidLink'),
-        message: t('speakerPortal.dashboard.invalidLinkMessage'),
-      };
-    }
     const err = fetchError as Error & { errorCode?: string };
     if (err?.errorCode === 'EXPIRED') {
       return {
@@ -417,7 +410,7 @@ const SpeakerDashboardPage = () => {
                   <ul className="list-none">
                     {dashboard.upcomingEvents.map((event) => (
                       <li key={event.eventCode}>
-                        <UpcomingEventCard event={event} token={token!} />
+                        <UpcomingEventCard event={event} />
                       </li>
                     ))}
                   </ul>

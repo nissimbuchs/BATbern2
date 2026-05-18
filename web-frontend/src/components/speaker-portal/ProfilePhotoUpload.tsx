@@ -24,8 +24,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (AC7.4)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // (AC7.3)
 
 interface ProfilePhotoUploadProps {
-  /** Magic link token for authentication */
-  token: string;
+  /** Story 11.E.3: event code (Cognito session is automatic via apiClient) */
+  eventCode: string;
   /** Current profile photo URL (null if none) */
   currentPhotoUrl: string | null;
   /** Callback when photo is successfully uploaded */
@@ -39,7 +39,7 @@ interface ProfilePhotoUploadProps {
  * Uses presigned URL pattern for direct S3 upload.
  */
 const ProfilePhotoUpload = ({
-  token,
+  eventCode,
   currentPhotoUrl,
   onPhotoUploaded,
   onError,
@@ -120,8 +120,10 @@ const ProfilePhotoUpload = ({
 
       try {
         // Upload using service (3-phase presigned URL flow)
-        const uploadedUrl = await speakerPortalService.uploadProfilePhoto(token, file, (progress) =>
-          setUploadProgress(progress)
+        const uploadedUrl = await speakerPortalService.uploadProfilePhoto(
+          eventCode,
+          file,
+          (progress) => setUploadProgress(progress)
         );
 
         // Clean up preview and notify success
@@ -142,7 +144,7 @@ const ProfilePhotoUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [token, validateFile, onPhotoUploaded, onError]
+    [eventCode, validateFile, onPhotoUploaded, onError]
   );
 
   /**

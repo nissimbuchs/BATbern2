@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -48,8 +48,10 @@ interface ResponseFormData {
 
 const InvitationResponsePage = () => {
   const { t } = useTranslation();
+  // Story 11.E.3: eventCode is now a path parameter (Q#1). The page is mounted under
+  // `<SpeakerRoute>` so we know the user is Cognito-authenticated by the time we render.
+  const { eventCode } = useParams<{ eventCode: string }>();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
   const actionParam = searchParams.get('action'); // 'accept' or 'decline' from email link
 
   const [pageState, setPageState] = useState<PageState>('loading');
@@ -59,23 +61,44 @@ const InvitationResponsePage = () => {
   const [responseResult, setResponseResult] = useState<SpeakerResponseResult | null>(null);
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  // Validate token on load
+  // Story 11.E.3: the dashboard endpoint aggregates per-event invitation context, so we
+  // pull from there instead of the old `validateToken` endpoint. The "invitation" view
+  // for this page derives from the matching upcoming-event entry.
   const {
-    data: invitation,
+    data: dashboard,
     error: validationError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-invitation', token],
-    queryFn: () => speakerPortalService.validateToken(token!),
-    enabled: !!token,
+    queryKey: ['speaker-dashboard'],
+    queryFn: () => speakerPortalService.getDashboard(),
     retry: false,
   });
 
-  // Submit response mutation
+  const invitation = (() => {
+    if (!dashboard || !eventCode) return undefined;
+    const upcoming = dashboard.upcomingEvents.find((e) => e.eventCode === eventCode);
+    if (!upcoming) return undefined;
+    const alreadyResponded =
+      upcoming.workflowState === 'ACCEPTED' || upcoming.workflowState === 'DECLINED';
+    return {
+      valid: true,
+      speakerName: dashboard.speakerName,
+      eventCode: upcoming.eventCode,
+      eventTitle: upcoming.eventTitle,
+      eventDate: upcoming.eventDate,
+      sessionTitle: upcoming.sessionTitle,
+      invitationMessage: undefined as string | undefined,
+      responseDeadline: upcoming.responseDeadline,
+      alreadyResponded,
+      previousResponse: alreadyResponded ? upcoming.workflowState : undefined,
+      previousResponseDate: undefined as string | undefined,
+      error: undefined as string | undefined,
+    };
+  })();
+
   const respondMutation = useMutation({
     mutationFn: (data: ResponseFormData) =>
-      speakerPortalService.respond({
-        token: token!,
+      speakerPortalService.respond(eventCode!, {
         response: data.response,
         reason: data.reason,
         preferences: data.preferences,
@@ -83,8 +106,6 @@ const InvitationResponsePage = () => {
     onSuccess: (result) => {
       setResponseResult(result);
       setPageState('success');
-      // Clear token from URL for security
-      window.history.replaceState({}, '', '/speaker-portal/respond');
     },
   });
 
@@ -115,8 +136,8 @@ const InvitationResponsePage = () => {
     }
   }, [pageState, actionParam, hasAutoSelected]);
 
-  // No token in URL
-  if (!token) {
+  // No eventCode in URL
+  if (!eventCode) {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-12 max-w-3xl">
