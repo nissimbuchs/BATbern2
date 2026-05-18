@@ -126,7 +126,9 @@ class SpeakerInvitationEmailServiceTest {
                 while (result.contains(openTag) && result.contains(closeTag)) {
                     int open = result.indexOf(openTag);
                     int close = result.indexOf(closeTag, open);
-                    if (close < 0) break;
+                    if (close < 0) {
+                        break;
+                    }
                     String before = result.substring(0, open);
                     String content = result.substring(open + openTag.length(), close);
                     String after = result.substring(close + closeTag.length());
