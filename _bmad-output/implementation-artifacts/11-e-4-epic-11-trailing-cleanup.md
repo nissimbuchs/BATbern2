@@ -1,6 +1,6 @@
 # Story 11.E.4: Epic 11 trailing cleanup — sweep residue from Phases A–E
 
-Status: review
+Status: done
 
 <!-- Validation is optional — run validate-create-story for quality check before dev-story. -->
 
@@ -331,6 +331,52 @@ provisionRequest.setLastName(payload.lastName());
   - [x] `git diff --stat` and verify the diff matches the AC8 expected-files list.
   - [x] Stage changes and write the conventional-commits message. Leave the commit itself to the user per Story 11.B.1 convention.
   - [x] Update `_bmad-output/implementation-artifacts/sprint-status.yaml`: set `11-e-4-epic-11-trailing-cleanup: review` (and add a one-line dev note in the `last_updated:` comment per project convention).
+
+### Review Findings
+
+_Code review 2026-05-18 (bmad-code-review, Claude Opus 4.7 1M, 3 parallel reviewers: Blind Hunter, Edge Case Hunter, Acceptance Auditor). 1 P0 patch (CI-blocking), 1 decision-needed, 10 patches, 10 deferred, 6 dismissed._
+
+**Patch application 2026-05-18 (same session):** 12 patches applied in-place (incl. PM decision on rework). Frontend type-check + lint clean, EMS `compileJava` BUILD SUCCESSFUL, EMS targeted tests (SpeakerWorkflowServiceTest + SpeakerPromoteControllerIntegrationTest) GREEN, frontend vitest targeted (PromoteSpeakerDialog 7/7, SpeakerStatusLanes 49/49, StatusHistoryTimeline 7/7) GREEN. Status → done.
+
+#### Decision needed
+
+- [x] **[Review][Decision] ADR-009 §0.2 lists `CONTENT_SUBMITTED → ACCEPTED (rework)` transition that code rejects** — **Resolved 2026-05-18 (PM/Nissim): Option A (doc fix)** — removed `ACCEPTED (rework)` from §0.2 transition list to match shipping code. If rework is ever a product requirement, it lands as a new story with ALLOWED-map + UI + tests. — `docs/architecture/ADR-009-unified-speaker-workflow.md` §0.2 row 5 documents a "rework" transition from CONTENT_SUBMITTED back to ACCEPTED, but `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java:81-82` only allows `CONTENT_SUBMITTED → {QUALITY_REVIEWED, DECLINED}`. The whole point of AC5 was to make ADR-009 §0 the canonical reference — landing it inconsistent on day one defeats the purpose. **Two PM choices:** (a) doc fix — remove `ACCEPTED (rework)` from §0.2, matching today's code; or (b) feature ack — keep §0.2 as aspirational and add a new story to wire rework into the ALLOWED map + UI. Source: Edge Case Hunter.
+
+#### Patches
+
+- [x] **[Review][Patch] P0 — Regenerate frontend `events-api.types.ts`** [`web-frontend/src/types/generated/events-api.types.ts:4505-4515`] — Still shows `firstName?` / `lastName?` with stale "Optional. If absent..." description. AC4 sub-bullet + CLAUDE.md "OpenAPI Type Generation" violated. CI `.github/workflows/build.yml` "Verify API types are up-to-date" step will fail. Run `cd web-frontend && npm run generate:api-types:events && git add src/types/generated/events-api.types.ts`. (Sources: Blind, Edge, Auditor.)
+- [x] **[Review][Patch] P2 — OpenAPI `minLength: 1` allows whitespace-only firstName/lastName** [`docs/api/events-api.openapi.yml` PromoteSpeakerRequest properties firstName, lastName] — Java `@NotBlank` rejects `" "` (whitespace) but OpenAPI `minLength: 1` does not. Spec consumers code-generating clients won't get the same validation as the server. Either add `pattern: '^\\S.*$'` (or equivalent non-whitespace pattern) or note explicitly in description that server enforces stricter NotBlank semantics. (Source: Blind.)
+- [x] **[Review][Patch] P2 — Defense-in-depth: add `requireName` precondition in `runReadyHook`** [`services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerWorkflowService.java:298-306`] — The new code passes `payload.firstName()` / `payload.lastName()` to CUMS without null/blank check, relying on DTO `@NotBlank` at the one current entry. Comment claims "Other entry paths into runReadyHook are expected to enforce the same invariant" but code does not enforce. Add `requireName(payload)` alongside `requireEmail(payload)` in `enforcePrecondition()` for the READY target, throwing `ValidationException` on null/blank. (Source: Edge Case Hunter.)
+- [x] **[Review][Patch] P1 — Verify `useTranslation()` namespace wiring for new error keys** [`web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.tsx`] — New t-calls reference `speakerBrainstorm.promoteDialog.errorFirstNameRequired` (no namespace prefix); keys land in `organizer.json`. The sibling `errorEmailRequired` key already follows the same pattern suggests namespace is correctly bound, but BH could not confirm from diff alone — verify `useTranslation('organizer')` is used (or add the prefix). If broken, all locales silently fall back to the EN default. (Source: Blind.)
+- [x] **[Review][Patch] P3 — Stale Javadoc on promote controller method** [`services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerStatusController.java:94`] — Javadoc still says `firstName/lastName (optional)`. Update to `email/firstName/lastName (all required, @NotBlank)`. (Source: Edge Case Hunter.)
+- [x] **[Review][Patch] P3 — `StatusHistoryTimeline.tsx` STATUS_COLORS has legacy entries + missing current states** [`web-frontend/src/components/organizer/SpeakerStatus/StatusHistoryTimeline.tsx:35-44`] — Map still has `SLOT_ASSIGNED`, `FINAL_AGENDA`; missing `CONTACTED`, `INVITED`, `CONTENT_SUBMITTED`, `QUALITY_REVIEWED`. Type as `Partial<Record<SpeakerWorkflowState, string>>` so future drift surfaces. (Source: Edge Case Hunter.)
+- [x] **[Review][Patch] P3 — `speakerStatusService.ts:37-42` Javadoc lists legacy state model** [`web-frontend/src/services/speakerStatusService.ts:37-42`] — Comment lists transitions like `ACCEPTED → SLOT_ASSIGNED`. Rewrite as a ADR-009 §0.2 reference, similar to AC7's Bruno comment refresh. (Source: Edge Case Hunter.)
+- [x] **[Review][Patch] P3 — `speaker-status-tracking.spec.ts:129` asserts deleted testid** [`web-frontend/e2e/organizer/speaker-status-tracking.spec.ts:129`] — Spec still references `[data-testid="speaker-status-dashboard"]` and a route that doesn't exist. Delete spec (already superseded by `SpeakerStatusLanes.test.tsx` + kanban Playwright specs) or mark `test.fixme` with Phase-F note. (Source: Edge Case Hunter.)
+- [x] **[Review][Patch] P3 — ADR-009 §0.1 row 7 "Terminal happy state" contradicts §0.2 transition `QUALITY_REVIEWED → DECLINED`** [`docs/architecture/ADR-009-unified-speaker-workflow.md` §0.1 row 7] — Reword to "Quasi-terminal — DECLINED is reachable per §0.2" or drop the QUALITY_REVIEWED → DECLINED row from §0.2 since the "DECLINED reachable from any non-terminal state" rule already covers it. (Source: Blind.)
+- [x] **[Review][Patch] P3 — ADR-009 §0.7 column header "History reason recorded" misleading** [`docs/architecture/ADR-009-unified-speaker-workflow.md` §0.7 table] — Three of four rows say "Migrated by V93" (a migration note, not a history reason); only the WITHDREW → DECLINED row writes an actual `speaker_status_history` reason. Rename column to "Migration note" or split into two columns. (Source: Blind.)
+- [x] **[Review][Patch] P3 — Tighten `SpeakerStatusLanes.tsx` post-cleanup comment** [`web-frontend/src/components/organizer/SpeakerStatus/SpeakerStatusLanes.tsx:142-144`] — New comment claims `KanbanLane` "is structurally identical to `SpeakerWorkflowState` post-11.E.4 cleanup," which a future reader will misread as redundancy. Tighten to: "KanbanLane covers exactly the 8 ADR-009 §0.1 states. The OutreachLane / PostAcceptanceLane sub-unions drive column grouping, not type narrowing." (Source: Blind.)
+
+#### Deferred (logged to `deferred-work.md`)
+
+- [x] **[Review][Defer] Sprint-status YAML monstrous comment** [`_bmad-output/implementation-artifacts/sprint-status.yaml:540`] — deferred, hygiene; longstanding sprint-status comment shape on this branch.
+- [x] **[Review][Defer] 5 Bruno tests deleted, AC3 authorized 1** [`bruno-tests/speaker-portal-api/12,13,13b,15-*.bru`] — deferred; dev rationale (orphan chain) is defensible. Tests 12 and 13 had standalone coverage value (INVITED-state setup, invitation-send) — consider whether equivalents are needed in `bruno-tests/events-api/` as a follow-up.
+- [x] **[Review][Defer] CUMS `provisionUserWithRole` still has `"Speaker"`/`"Unknown"` fallback** [`services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserService.java:677-696`] — deferred, out of scope for Epic-11 cleanup; CUMS-side hardening needs its own story. AC4 invariant defended at EMS layer today.
+- [x] **[Review][Defer] `notification.ts` NotificationType still recognises legacy `SLOT_ASSIGNED` / `OVERFLOW`** [`web-frontend/src/types/notification.ts`, `web-frontend/src/components/.../TeamActivityFeed.tsx`] — deferred, separate type system not flagged in deferred-work; tied to backend notification triggers.
+- [x] **[Review][Defer] Bruno test 422 mapping for invalid state transitions not pinned in ADR** [`bruno-tests/events-api/51-speaker-workflow-invalid-transition.bru:41-44` comment locks 422] — deferred, doc nit; either pin contract in ADR-009 §0.2 or remove parenthetical.
+- [x] **[Review][Defer] §0.3 says `magic_link_tokens` is in EMS schema** [`docs/architecture/ADR-009-unified-speaker-workflow.md` §0.3] — deferred, doc nit; clarify which service owns the magic-link table or footnote the table header.
+- [x] **[Review][Defer] `mode: 'onTouched'` + `isValid` initial state may not flip submit-disabled until first blur** [`web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.tsx:107-118`] — deferred, test resilience; tests pass today but could be brittle if defaults change.
+- [x] **[Review][Defer] MUI testid + click+tab fragility in PromoteSpeakerDialog tests** [`web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.test.tsx:1571-1574, 1584-1587`] — deferred, test resilience; consider `getByRole('textbox', { name: /first name/i })` or `inputProps={{ 'data-testid': ... }}`.
+- [x] **[Review][Defer] `splitFullName("Mononym")` pre-fills empty lastName, no visible error on first render** [`web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.tsx:46-55, 107-110`] — deferred, UX papercut for single-word speaker names; trigger initial validation or clear both fields when single-word.
+- [x] **[Review][Defer] CONTACTED-state speaker with non-null username in identity-rebind test fixture** [`services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerWorkflowServiceTest.java:1297-1298`] — deferred, test setup nit; either justify with comment or seed READY+ for the rebind-guard test.
+
+#### Dismissed
+
+- Test mock for `useTranslation` returns fallback regardless — by design; per CLAUDE.md i18n testing rule.
+- `SpeakerStatusDashboard` deletion residue — Edge Hunter project-wide grep confirmed zero live source references.
+- `getSpeakerUsernames` callers — Edge Hunter verified zero non-`build/` references repo-wide.
+- Test for explicit JSON `null` firstName — `@NotBlank` is Spring-tested; one-line gap not worth a fix.
+- Commit-message form drift (`chore(11.E.4)` vs `chore(epic-11)`) — semantically aligned, matches prior epic-11 commits.
+- `docs/architecture/index.md` ADR-009 entry not tightened — spec explicitly marked optional.
 
 ---
 

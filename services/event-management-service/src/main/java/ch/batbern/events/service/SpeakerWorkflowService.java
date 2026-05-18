@@ -207,7 +207,10 @@ public class SpeakerWorkflowService {
             SpeakerPool speaker
     ) {
         switch (target) {
-            case READY -> requireEmail(payload);
+            case READY -> {
+                requireEmail(payload);
+                requireName(payload);
+            }
             case INVITED -> {
                 enforceSlotCapacity(event);
                 requireUsername(speaker);
@@ -220,6 +223,24 @@ public class SpeakerWorkflowService {
     private void requireEmail(TransitionPayload payload) {
         if (payload.email() == null || payload.email().isBlank()) {
             throw new ValidationException("email is required to promote speaker to READY");
+        }
+    }
+
+    /**
+     * Story 11.E.4 code-review patch: defense-in-depth at the workflow-service layer so the
+     * AC4 invariant ("no placeholder Cognito names") survives if a future entry path into
+     * {@code runReadyHook} forgets to enforce {@code @NotBlank} at the DTO. Today the only
+     * caller is the promote endpoint whose DTO carries {@code @NotBlank} on both fields, so
+     * this guard never fires; it exists to catch silent regression.
+     */
+    private void requireName(TransitionPayload payload) {
+        if (payload.firstName() == null || payload.firstName().isBlank()) {
+            throw new ValidationException(
+                    "firstName is required to promote speaker to READY");
+        }
+        if (payload.lastName() == null || payload.lastName().isBlank()) {
+            throw new ValidationException(
+                    "lastName is required to promote speaker to READY");
         }
     }
 

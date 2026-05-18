@@ -30,7 +30,7 @@ The speaker workflow has exactly **8 states**, in this declaration order:
 | `INVITED`             | Formal invitation sent (email contains login link + temporary password). Speaker can authenticate via Cognito. |
 | `ACCEPTED`            | Speaker committed via the portal.                                                              |
 | `CONTENT_SUBMITTED`   | Title + abstract submitted to `content_submissions`. Either organizer-on-behalf or speaker-self submission — both flows traverse `ContentSubmissionService` (see §0.4). |
-| `QUALITY_REVIEWED`    | Moderator approved content. **Terminal happy state.** `is_publishable := QUALITY_REVIEWED ∧ slot_assigned` (see §0.5). |
+| `QUALITY_REVIEWED`    | Moderator approved content. **Quasi-terminal happy state** — `DECLINED` is still reachable from here (see §0.2). `is_publishable := QUALITY_REVIEWED ∧ slot_assigned` (see §0.5). |
 | `DECLINED`            | The single terminal "not happening" state. Reachable from ANY non-terminal state (see §0.2). Replaces the removed `WITHDREW` state. |
 
 _Implemented by Story 11.B.1 (shared-kernel enum reduction)._
@@ -46,7 +46,7 @@ CONTACTED         → READY (via promote endpoint), DECLINED
 READY             → INVITED (subject to slot-capacity gate), DECLINED
 INVITED           → ACCEPTED, DECLINED
 ACCEPTED          → CONTENT_SUBMITTED, DECLINED
-CONTENT_SUBMITTED → QUALITY_REVIEWED, ACCEPTED (rework), DECLINED
+CONTENT_SUBMITTED → QUALITY_REVIEWED, DECLINED
 QUALITY_REVIEWED  → DECLINED  (otherwise terminal)
 DECLINED          → (terminal — no outbound transitions)
 ```
@@ -129,12 +129,12 @@ _Implemented by Story 11.B.1._
 `SpeakerWorkflowState` enum dropped 4 values. Existing data was migrated by Flyway V93
 per this mapping:
 
-| Removed value      | Maps to                                  | History reason recorded                       |
-|--------------------|------------------------------------------|-----------------------------------------------|
-| `SLOT_ASSIGNED`    | `ACCEPTED` (rely on derived `is_slot_assigned`) | Migrated by V93                          |
-| `CONFIRMED`        | `QUALITY_REVIEWED` (rely on derived `is_publishable`) | Migrated by V93                       |
-| `WITHDREW`         | `DECLINED`                               | `"Withdrew after acceptance (legacy)"`        |
-| `OVERFLOW`         | `READY` (organizer may re-invite if a slot opens) | Migrated by V93                       |
+| Removed value      | Maps to                                  | Migration note                                                                  |
+|--------------------|------------------------------------------|---------------------------------------------------------------------------------|
+| `SLOT_ASSIGNED`    | `ACCEPTED` (rely on derived `is_slot_assigned`) | V93 in-place enum remap; **no** history row written (silent migration). |
+| `CONFIRMED`        | `QUALITY_REVIEWED` (rely on derived `is_publishable`) | V93 in-place enum remap; no history row.                           |
+| `WITHDREW`         | `DECLINED`                               | V93 transition with history row, reason `"Withdrew after acceptance (legacy)"`. |
+| `OVERFLOW`         | `READY` (organizer may re-invite if a slot opens) | V93 in-place enum remap; no history row.                            |
 
 The API rejects the four legacy values on inbound `PUT /api/v1/events/{code}/speakers/{speakerId}/status`
 calls with HTTP 422 (tightened in Story 11.B.3).

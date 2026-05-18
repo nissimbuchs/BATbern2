@@ -4487,9 +4487,16 @@ export interface components {
       notes?: string;
     };
     /**
-     * @description Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1).
-     *     Drives the `CONTACTED → READY` workflow transition and provisions a User + SPEAKER
-     *     role via `UserApiClient.provisionUserWithRole(...)`.
+     * @description Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1; tightened by
+     *     Story 11.E.4 AC4). Drives the `CONTACTED → READY` workflow transition and provisions
+     *     a User + SPEAKER role via `UserApiClient.provisionUserWithRole(...)`.
+     *
+     *     `firstName` and `lastName` are **required** (tightened from optional by Story 11.E.4
+     *     AC4, PM decision 2026-05-18). They populate the Cognito user's `given_name` /
+     *     `family_name` attributes; the previous fallback to splitting `speaker_pool.speakerName`
+     *     (with literal placeholders `"Speaker"` / `"Unknown"` when the name was blank) is
+     *     removed. Callers MUST collect these fields from the organizer.
+     *
      *     `additionalProperties: false`: stale fields from pre-refactor frontends are rejected
      *     with HTTP 400 rather than silently ignored.
      */
@@ -4497,22 +4504,24 @@ export interface components {
       /**
        * Format: email
        * @description Required. Speaker email — becomes the canonical `speaker_pool.email` and the
-       *     User lookup key (case-insensitive).
+       *     User lookup key (case-insensitive). Also the Cognito username on first provisioning.
        * @example jane.smith@example.com
        */
       email: string;
       /**
-       * @description Optional. If absent, the User's existing firstName is preserved (or derived from
-       *     `speaker_pool.speakerName` on User creation).
+       * @description Required (Story 11.E.4 AC4). Populates the Cognito user's `given_name` attribute
+       *     and the User's `first_name` column. Blank / whitespace-only values rejected by
+       *     `@NotBlank` validation → HTTP 400.
        * @example Jane
        */
-      firstName?: string;
+      firstName: string;
       /**
-       * @description Optional. If absent, the User's existing lastName is preserved (or derived from
-       *     `speaker_pool.speakerName` on User creation).
+       * @description Required (Story 11.E.4 AC4). Populates the Cognito user's `family_name` attribute
+       *     and the User's `last_name` column. Blank / whitespace-only values rejected by
+       *     `@NotBlank` validation → HTTP 400.
        * @example Smith
        */
-      lastName?: string;
+      lastName: string;
     };
     /**
      * @description Response representing a speaker pool entry.

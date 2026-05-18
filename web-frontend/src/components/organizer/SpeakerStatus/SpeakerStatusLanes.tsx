@@ -140,8 +140,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 // Lane order — ADR-009 §0.1: IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED →
 // CONTENT_SUBMITTED → QUALITY_REVIEWED → DECLINED. Story 11.D.2 reordered to match.
-// `KanbanLane` is structurally identical to `SpeakerWorkflowState` post-11.E.4 cleanup;
-// the split into outreach/post-acceptance buckets is retained for column-grouping rendering.
+// `KanbanLane` covers exactly the 8 ADR-009 §0.1 states. The `OutreachLane` /
+// `PostAcceptanceLane` sub-unions drive column-grouping rendering (two visual
+// buckets in the kanban), not type narrowing — both halves are the same workflow.
 type OutreachLane = 'IDENTIFIED' | 'CONTACTED' | 'READY' | 'INVITED';
 type PostAcceptanceLane = 'ACCEPTED' | 'CONTENT_SUBMITTED' | 'QUALITY_REVIEWED' | 'DECLINED';
 type KanbanLane = OutreachLane | PostAcceptanceLane;

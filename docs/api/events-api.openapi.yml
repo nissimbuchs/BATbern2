@@ -8452,19 +8452,23 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '^.*\S.*$'
           description: |
             Required (Story 11.E.4 AC4). Populates the Cognito user's `given_name` attribute
-            and the User's `first_name` column. Blank / whitespace-only values rejected by
-            `@NotBlank` validation → HTTP 400.
+            and the User's `first_name` column. Must contain at least one non-whitespace
+            character — blank / whitespace-only values are rejected by both the spec
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
           example: Jane
         lastName:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '^.*\S.*$'
           description: |
             Required (Story 11.E.4 AC4). Populates the Cognito user's `family_name` attribute
-            and the User's `last_name` column. Blank / whitespace-only values rejected by
-            `@NotBlank` validation → HTTP 400.
+            and the User's `last_name` column. Must contain at least one non-whitespace
+            character — blank / whitespace-only values are rejected by both the spec
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
           example: Smith
 
     SpeakerPoolResponse:

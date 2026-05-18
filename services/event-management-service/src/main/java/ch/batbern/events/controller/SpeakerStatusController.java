@@ -91,7 +91,10 @@ public class SpeakerStatusController {
      *
      * @param eventCode event code in path (e.g., {@code BATbern56})
      * @param speakerId speaker pool ID in path
-     * @param request   email (required), firstName/lastName (optional)
+     * @param request   email, firstName, lastName — all required and {@code @NotBlank}
+     *                  (Story 11.E.4 AC4). firstName / lastName populate Cognito's
+     *                  {@code given_name} / {@code family_name} attributes; blank values
+     *                  fail {@code GlobalExceptionHandler}'s 400 mapping.
      * @return 200 OK with the updated {@link SpeakerPoolResponse}
      */
     @PostMapping("/{speakerId}/promote")
