@@ -98,6 +98,7 @@ class RegistrationEmailServiceTest {
         ReflectionTestUtils.setField(registrationEmailService, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(registrationEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(registrationEmailService, "organizerEmail", "events@batbern.ch");
+        ReflectionTestUtils.setField(registrationEmailService, "calendarOrganizerEmail", "calendar@batbern.ch");
 
         // Default: no DB template — use classpath fallback
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
@@ -296,14 +297,15 @@ class RegistrationEmailServiceTest {
         // Wait for async operation
         Thread.sleep(100);
 
-        // Then
+        // Then — ORGANIZER address is the non-forwarded calendar mailbox, not the public events@ alias.
+        // Reason: iMIP REPLYs from mail clients on Accept/Decline must not fan out to organizers.
         verify(icsCalendarService, times(1)).generateIcsFile(
                 eq("Test Event"),
                 contains("Test Event"),
                 eq("Test Address"),
                 any(ZonedDateTime.class), // Start time
                 any(ZonedDateTime.class), // End time (start + 4 hours)
-                eq("events@batbern.ch"),
+                eq("calendar@batbern.ch"),
                 eq("BATbern Team")
         );
     }

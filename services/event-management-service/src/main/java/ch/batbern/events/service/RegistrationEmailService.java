@@ -53,6 +53,12 @@ public class RegistrationEmailService {
     @Value("${app.email.organizer-email:events@batbern.ch}")
     private String organizerEmail;
 
+    // .ics ORGANIZER address — must NOT be a forwarded SES alias.
+    // iMIP REPLYs (auto-sent by mail clients on Accept/Decline) hit this address.
+    // Forwarding them to the events@ alias fan-outs every acceptance to all organizers.
+    @Value("${app.email.calendar-organizer-email:calendar@batbern.ch}")
+    private String calendarOrganizerEmail;
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final java.time.ZoneId SWISS_ZONE = java.time.ZoneId.of("Europe/Zurich");
@@ -219,7 +225,7 @@ public class RegistrationEmailService {
                 event.getVenueAddress() != null ? event.getVenueAddress() : "",
                 range.start(),
                 range.end(),
-                organizerEmail,
+                calendarOrganizerEmail,
                 organizerName
         );
     }

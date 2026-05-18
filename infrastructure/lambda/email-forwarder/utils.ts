@@ -75,3 +75,28 @@ export function excludeSender(recipients: string[], senderEmail: string): string
   const senderLower = senderEmail.toLowerCase();
   return recipients.filter((r) => r.toLowerCase() !== senderLower);
 }
+
+/**
+ * Detect iMIP calendar acceptance/reply emails (RFC 5546).
+ *
+ * Mail clients (Apple Mail, Outlook, Google Calendar) auto-send a `METHOD:REPLY`
+ * iCalendar to the ORGANIZER when the user accepts/declines an invitation. If
+ * the ORGANIZER address is a forwarding alias (e.g. events@batbern.ch), every
+ * acceptance fans out to the entire organizer list. Drop these at the
+ * forwarder.
+ *
+ * Returns true if any Content-Type header (top-level or inside any MIME part)
+ * carries both `text/calendar` and `method=REPLY`.
+ */
+export function isCalendarReply(raw: string): boolean {
+  // Unfold RFC 5322 continuation lines (lines starting with whitespace fold
+  // into the previous line) so multi-line Content-Type headers parse correctly.
+  const unfolded = raw.replace(/\r?\n[ \t]+/g, ' ');
+  for (const line of unfolded.split(/\r?\n/)) {
+    if (!/^content-type\s*:/i.test(line)) continue;
+    if (/text\/calendar/i.test(line) && /method\s*=\s*"?reply"?/i.test(line)) {
+      return true;
+    }
+  }
+  return false;
+}

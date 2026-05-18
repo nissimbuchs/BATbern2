@@ -20,6 +20,7 @@ import {
   extractSenderName,
   truncateEmail,
   excludeSender,
+  isCalendarReply,
 } from './utils';
 
 const s3 = new S3Client({});
@@ -38,6 +39,15 @@ export const handler = async (event: S3Event): Promise<void> => {
     // Fetch raw email from S3
     const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
     const rawEmail = await obj.Body!.transformToString('utf-8');
+
+    // iMIP acceptance/decline replies: mail clients auto-send METHOD:REPLY to
+    // the ORGANIZER on every Accept/Decline click. Forwarding these to the
+    // entire organizer list creates inbox spam, so drop them at the edge.
+    if (isCalendarReply(rawEmail)) {
+      console.log('Dropping iMIP calendar reply', { key });
+      await publishMetric('CalendarRepliesDropped');
+      continue;
+    }
 
     // Parse headers — extract all addresses from To and Cc
     const headers = parseHeaders(rawEmail);
