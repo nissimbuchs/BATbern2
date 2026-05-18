@@ -113,6 +113,42 @@ describe('RegistrationStep1 Component', () => {
     });
   });
 
+  // 2026-05-18 bug fix — auth-form regex rejected é/è/à/ç (and stripped fields
+  // silently when users retried). Names with any Unicode letter must be valid.
+  it.each([
+    ['René Strauss'], // French é — primary reproducer
+    ['François Müller'], // French ç + German ü mixed
+    ['Renée Gressly'], // double é
+    ['Çağlar Şahin'], // Turkish (cedilla, breve)
+    ['José García'], // Spanish
+    ['Søren Olesen'], // Danish
+    ['Łukasz Kowalski'], // Polish stroke
+    ['Müller-Lüdenscheid'], // hyphen + double umlaut
+    ["D'Angelo Smith"], // apostrophe
+  ])('should_accept_when_unicodeName: %s', async (name) => {
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <FormWrapper>
+          <RegistrationStep1 onContinue={mockOnContinue} />
+        </FormWrapper>
+      );
+    });
+
+    const nameInput = screen.getByLabelText(/full name/i);
+
+    await act(async () => {
+      await user.type(nameInput, name);
+      await user.tab();
+    });
+
+    // Wait long enough for the onBlur validator to settle.
+    await waitFor(() => {
+      expect(screen.queryByText(/name contains invalid characters/i)).not.toBeInTheDocument();
+    });
+  });
+
   // Test 1.3: should_validateEmail_when_invalidFormat
   it('should_showError_when_emailInvalidFormat', async () => {
     const user = userEvent.setup();
