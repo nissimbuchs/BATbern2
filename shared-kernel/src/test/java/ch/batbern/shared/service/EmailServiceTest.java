@@ -619,16 +619,16 @@ class EmailServiceTest {
 
         @org.junit.jupiter.params.ParameterizedTest(name = "[{index}] {0}")
         @org.junit.jupiter.params.provider.ValueSource(strings = {
-                "anyone@example.com",
-                "anyone@example.org",
-                "anyone@example.net",
-                "root@localhost",
-                "user@anything.test",
-                "user@anything.invalid",
-                "user@anything.example",
-                "user@anything.localhost",
-                "USER@EXAMPLE.COM",                 // case-insensitive
-                "User@SubDomain.Example.com"        // sub of example.com (matches *.example TLD-suffix rule)
+            "anyone@example.com",
+            "anyone@example.org",
+            "anyone@example.net",
+            "root@localhost",
+            "user@anything.test",
+            "user@anything.invalid",
+            "user@anything.example",
+            "user@anything.localhost",
+            "USER@EXAMPLE.COM",                 // case-insensitive
+            "User@SubDomain.Example.com"        // sub of example.com (matches *.example TLD-suffix rule)
         })
         @DisplayName("isReservedRecipientForSes — covers all RFC 2606/6761 reserved patterns")
         void should_recognizeReservedRecipient_when_anyKnownPattern(String recipient) {
@@ -640,10 +640,10 @@ class EmailServiceTest {
 
         @org.junit.jupiter.params.ParameterizedTest(name = "[{index}] {0}")
         @org.junit.jupiter.params.provider.ValueSource(strings = {
-                "user@batbern.ch",
-                "info@swisscom.com",
-                "speaker@example-company.ch",       // contains the substring "example" but not as reserved
-                "test@batbern.ch"                    // local-part "test" is fine; only the domain matters
+            "user@batbern.ch",
+            "info@swisscom.com",
+            "speaker@example-company.ch",       // contains the substring "example" but not as reserved
+            "test@batbern.ch"                    // local-part "test" is fine; only the domain matters
         })
         @DisplayName("isReservedRecipientForSes — does NOT block legitimate domains")
         void should_passThrough_when_legitimateDomain(String recipient) {
