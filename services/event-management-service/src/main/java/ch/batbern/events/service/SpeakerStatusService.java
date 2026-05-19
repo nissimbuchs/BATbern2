@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,7 +80,12 @@ public class SpeakerStatusService {
      * @param request update request with new status and optional reason
      * @return Status change response
      */
-    @CacheEvict(value = {STATUS_SUMMARY_CACHE, STATUS_HISTORY_CACHE}, key = "#eventCode")
+    // STATUS_SUMMARY_CACHE is keyed by eventCode; STATUS_HISTORY_CACHE is keyed by
+    // `eventCode + ':' + speakerId` so we evict its single matching entry by full key.
+    @Caching(evict = {
+        @CacheEvict(value = STATUS_SUMMARY_CACHE, key = "#eventCode"),
+        @CacheEvict(value = STATUS_HISTORY_CACHE, key = "#eventCode + ':' + #speakerId")
+    })
     public SpeakerStatusResponse updateStatus(
         String eventCode,
         UUID speakerId,
@@ -124,22 +130,28 @@ public class SpeakerStatusService {
     /**
      * Get status change history for a speaker
      * Story 5.4 AC15: Query status history
-     * Cached for 60 seconds per event (Story 5.4 cache requirement)
+     * Cached for 60 seconds (Story 5.4 cache requirement).
+     *
+     * <p>Cache key includes BOTH eventCode and speakerId — keying on eventCode alone (the
+     * pre-2026-05-19 implementation) leaked speaker A's history into reads for speaker B
+     * in the same event. The unified history feed in the drawer queries per-speaker.
+     *
+     * <p>Empty history is a legitimate state for any speaker that has not yet transitioned
+     * (e.g. IDENTIFIED brainstorm entries, or transitions written with
+     * {@code TransitionPayload.suppressHistoryRow=true}). Return an empty list rather than
+     * 404 — the drawer's History tab interprets 404 as "session expired" and surfaces a
+     * fetch error to the user.
      *
      * @param eventCode Event code
      * @param speakerId Speaker pool ID
-     * @return List of status changes ordered by time descending
+     * @return List of status changes ordered by time descending (may be empty)
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = STATUS_HISTORY_CACHE, key = "#eventCode")
+    @Cacheable(value = STATUS_HISTORY_CACHE, key = "#eventCode + ':' + #speakerId")
     public List<StatusHistoryItem> getStatusHistory(String eventCode, UUID speakerId) {
         log.debug("Fetching status history for speaker {} in event {}", speakerId, eventCode);
 
         List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
-
-        if (history.isEmpty()) {
-            throw new NotFoundException("No status history found for speaker: " + speakerId);
-        }
 
         return history.stream()
             .map(this::mapToHistoryItem)

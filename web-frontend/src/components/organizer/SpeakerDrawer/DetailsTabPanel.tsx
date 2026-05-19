@@ -13,6 +13,7 @@ import { AttachFile as AttachFileIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '@/utils/date';
 import { usePatchSpeakerPool } from '@/hooks/useSpeakerPool';
+import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 
 interface DetailsTabPanelProps {
@@ -28,6 +29,7 @@ interface EditFormState {
   speakerName: string;
   company: string;
   expertise: string;
+  assignedOrganizerId: string;
   notes: string;
 }
 
@@ -45,6 +47,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
     speakerName: speaker.speakerName ?? '',
     company: speaker.company ?? '',
     expertise: speaker.expertise ?? '',
+    assignedOrganizerId: speaker.assignedOrganizerId ?? '',
     notes: speaker.notes ?? '',
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -57,6 +60,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
         speakerName: speaker.speakerName ?? '',
         company: speaker.company ?? '',
         expertise: speaker.expertise ?? '',
+        assignedOrganizerId: speaker.assignedOrganizerId ?? '',
         notes: speaker.notes ?? '',
       });
       setSubmitError(null);
@@ -67,6 +71,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
     speaker.speakerName,
     speaker.company,
     speaker.expertise,
+    speaker.assignedOrganizerId,
     speaker.notes,
   ]);
 
@@ -84,6 +89,9 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
           speakerName: trimmedName,
           company: form.company,
           expertise: form.expertise,
+          // Empty string means "unassigned" — pass it through so the backend can clear
+          // the column (PatchSpeakerPoolRequest treats empty as a sentinel).
+          assignedOrganizerId: form.assignedOrganizerId,
           notes: form.notes,
         },
       });
@@ -134,6 +142,17 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
             fullWidth
             size="small"
             inputProps={{ 'data-testid': 'details-edit-expertise', maxLength: 1000 }}
+          />
+          {/* Epic 11 bug fix 2026-05-19 — assignedOrganizer is part of the edit-details
+              form (replaces the legacy standalone "Reassign organizer" secondary action). */}
+          <OrganizerSelect
+            value={form.assignedOrganizerId}
+            onChange={(id) => setForm((s) => ({ ...s, assignedOrganizerId: id }))}
+            includeUnassigned={true}
+            disabled={patchMutation.isPending}
+            size="small"
+            fullWidth
+            label={t('speakerBrainstorm.form.assignOrganizer', 'Assigned organizer')}
           />
           <TextField
             label={t('speakers.internalNotes', 'Internal notes')}
@@ -210,6 +229,15 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
             )}
           </>
         )}
+        {/* Epic 11 bug fix 2026-05-19 — assigned organizer shown in the Details read-only
+            view (was previously surfaced only via the now-removed "Reassign organizer"
+            secondary action). */}
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          {t('speakerBrainstorm.form.assignOrganizer', 'Assigned organizer')}
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          {speaker.assignedOrganizerId || t('common.unassigned', 'Unassigned')}
+        </Typography>
         {speaker.notes && (
           <>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>

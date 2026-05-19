@@ -44,7 +44,7 @@ vi.mock('react-i18next', () => ({
         'organizer:speakerStatus.DECLINED': 'Declined',
         // Secondary actions
         'organizer:speakerDrawer.secondaryActions.decline': 'Decline with reason',
-        'organizer:speakerDrawer.secondaryActions.reassignOrganizer': 'Reassign organizer',
+        'organizer:speakerDrawer.secondaryActions.addContactEntry': 'Add contact entry',
         'organizer:speakerDrawer.secondaryActions.editDetails': 'Edit details',
         'organizer:speakerDrawer.secondaryActions.overrideState': 'Override state',
         // Tabs + sub-tabs
@@ -193,22 +193,25 @@ describe('SpeakerDetailDrawer — Story 11.D.4 AC10 cases 31-38', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  // Case 32 — Secondary actions list renders Decline + Reassign + Edit + Override
-  // for a CONTACTED speaker (every legal CONTACTED transition is non-empty so all
-  // four rows are present).
-  it('should_renderSecondaryActionsList_withDeclineEditReassignOverride_forContactedSpeaker', () => {
+  // Case 32 (Epic 11 bug fix 2026-05-19) — Secondary actions list for a CONTACTED
+  // speaker: Decline + Edit + Add-Contact-Entry + Override. The legacy "Reassign
+  // organizer" row was removed — its functionality merged into Edit Details
+  // (assignedOrganizer is now part of the edit form on the Details tab).
+  it('should_renderSecondaryActionsList_forContactedSpeaker', () => {
     const speaker = makeSpeaker('CONTACTED');
     renderDrawer({ speaker });
 
     const list = screen.getByTestId('drawer-secondary-actions');
     expect(within(list).getByTestId('drawer-action-decline')).toBeInTheDocument();
-    expect(within(list).getByTestId('drawer-action-reassign-organizer')).toBeInTheDocument();
     expect(within(list).getByTestId('drawer-action-edit-details')).toBeInTheDocument();
+    expect(within(list).getByTestId('drawer-action-add-contact-entry')).toBeInTheDocument();
     expect(within(list).getByTestId('drawer-action-override-state')).toBeInTheDocument();
 
+    expect(within(list).queryByTestId('drawer-action-reassign-organizer')).not.toBeInTheDocument();
+
     expect(within(list).getByText('Decline with reason')).toBeInTheDocument();
-    expect(within(list).getByText('Reassign organizer')).toBeInTheDocument();
     expect(within(list).getByText('Edit details')).toBeInTheDocument();
+    expect(within(list).getByText('Add contact entry')).toBeInTheDocument();
     expect(within(list).getByText('Override state')).toBeInTheDocument();
   });
 

@@ -374,19 +374,10 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
               <ListItemText primary={t('organizer:speakerDrawer.secondaryActions.decline')} />
             </ListItemButton>
           )}
-          {speakerStatus !== 'DECLINED' && (
-            <ListItemButton
-              onClick={() => setTab('details')}
-              data-testid="drawer-action-reassign-organizer"
-            >
-              <ListItemIcon>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={t('organizer:speakerDrawer.secondaryActions.reassignOrganizer')}
-              />
-            </ListItemButton>
-          )}
+          {/* Epic 11 bug fix 2026-05-19 — the legacy "Reassign organizer" row was a
+              no-op `setTab('details')` and duplicated functionality that now lives in
+              the Details tab edit-mode (assignedOrganizer is part of the edit form).
+              Removed. */}
           <ListItemButton
             onClick={() => {
               setTab('details');
@@ -399,6 +390,26 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
             </ListItemIcon>
             <ListItemText primary={t('organizer:speakerDrawer.secondaryActions.editDetails')} />
           </ListItemButton>
+          {/* Epic 11 bug fix 2026-05-19 — for CONTACTED speakers, surface an
+              "Add contact entry" action that opens the existing MarkContactedModal
+              for recording additional outreach attempts (kanban primary action is
+              "Promote to speaker"). */}
+          {speakerStatus === 'CONTACTED' && (
+            <ListItemButton
+              onClick={() => primaryActionCallbacks.onLogOutreach(speaker)}
+              data-testid="drawer-action-add-contact-entry"
+            >
+              <ListItemIcon>
+                <PersonIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={t(
+                  'organizer:speakerDrawer.secondaryActions.addContactEntry',
+                  'Add contact entry'
+                )}
+              />
+            </ListItemButton>
+          )}
           {overrideTargets.length > 0 && (
             <ListItemButton
               onClick={(e) => setOverrideMenuAnchor(e.currentTarget)}

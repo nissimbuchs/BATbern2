@@ -99,8 +99,11 @@ public class SpeakerStatusController {
      */
     @PostMapping("/{speakerId}/promote")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @CacheEvict(value = {CacheConfig.STATUS_SUMMARY_CACHE, CacheConfig.STATUS_HISTORY_CACHE},
-            key = "#eventCode")
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = CacheConfig.STATUS_SUMMARY_CACHE, key = "#eventCode"),
+        @CacheEvict(value = CacheConfig.STATUS_HISTORY_CACHE,
+                key = "#eventCode + ':' + #speakerId")
+    })
     public ResponseEntity<SpeakerPoolResponse> promoteSpeakerToReady(
             @PathVariable String eventCode,
             @PathVariable UUID speakerId,

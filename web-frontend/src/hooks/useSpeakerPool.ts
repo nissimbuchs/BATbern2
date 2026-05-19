@@ -136,6 +136,11 @@ export function usePromoteSpeakerToReady() {
       queryClient.invalidateQueries({
         queryKey: ['speakerStatusSummary', variables.eventCode],
       });
+      // Epic 11 bug fix 2026-05-19 — promote writes a CONTACTED→READY status_history row
+      // server-side; invalidate the history feed so the drawer's History tab refreshes.
+      queryClient.invalidateQueries({
+        queryKey: ['speakerStatusHistory', variables.eventCode, variables.speakerId],
+      });
     },
   });
 }

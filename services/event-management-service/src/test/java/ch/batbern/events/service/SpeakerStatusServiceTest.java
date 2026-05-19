@@ -254,16 +254,22 @@ public class SpeakerStatusServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw NotFoundException when no history found")
-    void should_throwNotFoundException_when_noHistoryFound() {
+    @DisplayName("Should return empty list when no history found (Epic 11 bug fix 2026-05-19)")
+    void should_returnEmptyList_when_noHistoryFound() {
+        // Empty history is a legitimate state for any speaker that has not yet
+        // transitioned — e.g. fresh IDENTIFIED brainstorm entries, or transitions
+        // written with TransitionPayload.suppressHistoryRow=true. The drawer's
+        // unified history feed interprets 404 as "session expired" and shows a
+        // generic load-error toast; an empty list renders the "no entries yet"
+        // empty state instead.
         String eventCode = "BATbern998";
         UUID speakerId = UUID.randomUUID();
 
         when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
                 .thenReturn(new ArrayList<>());
 
-        assertThatThrownBy(() -> service.getStatusHistory(eventCode, speakerId))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("No status history found");
+        var result = service.getStatusHistory(eventCode, speakerId);
+
+        assertThat(result).isEmpty();
     }
 }

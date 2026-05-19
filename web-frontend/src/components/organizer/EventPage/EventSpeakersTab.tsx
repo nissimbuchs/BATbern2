@@ -71,7 +71,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Local state
   const [addSpeakerDrawerOpen, setAddSpeakerDrawerOpen] = useState(false);
-  const [selectedSpeaker, setSelectedSpeaker] = useState<SpeakerPoolEntry | null>(null);
+  // Track the SELECTED speaker by id, not by snapshot — Epic 11 bug fix 2026-05-19.
+  // Storing the full SpeakerPoolEntry object captured the value at click-time and went
+  // stale after edits/promotions invalidated the speakerPool query; the live entry
+  // (drawer header, Details tab, Content tab) silently rendered the pre-mutation
+  // snapshot. The drawer now reads `selectedSpeaker` derived from the live `speakers`
+  // list, so cache invalidations propagate automatically.
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   // Story 11.D.4 — when the kanban dispatches `legal-input` for ACCEPTED→CONTENT_SUBMITTED
   // or CONTENT_SUBMITTED→QUALITY_REVIEWED, the drawer must open pre-positioned at the
@@ -107,6 +113,15 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Fetch speaker pool (using hook for proper cache invalidation)
   const { data: speakers, isLoading: speakersLoading } = useSpeakerPool(eventCode);
+
+  // Derive the live drawer-selected speaker from the speakerPool query (Epic 11 bug fix
+  // 2026-05-19). Looking up by id at every render means cache invalidations from
+  // patchSpeakerPool / promoteSpeakerToReady / updateStatus propagate into the drawer's
+  // header chip + Details + Content tabs immediately — no manual refresh after edits.
+  const selectedSpeaker = useMemo(
+    () => (selectedSpeakerId ? (speakers?.find((s) => s.id === selectedSpeakerId) ?? null) : null),
+    [speakers, selectedSpeakerId]
+  );
 
   // Fetch event data for sessions view
   const { data: event } = useEvent(eventCode, ['sessions']);
@@ -161,7 +176,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Handle speaker card click (open drawer — default view, no sub-view).
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+    setSelectedSpeakerId(speaker.id);
     setInitialDrawerView(null);
     setDetailsDrawerOpen(true);
   };
@@ -175,7 +190,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // drawer at the in-drawer Promote sub-view (with UserAutocomplete + Create-New-Speaker)
   // instead of the legacy PromoteSpeakerDialog modal.
   const handlePromoteSpeaker = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+    setSelectedSpeakerId(speaker.id);
     setInitialDrawerView('promote');
     setDetailsDrawerOpen(true);
   };
@@ -218,7 +233,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Story 11.D.4 — ACCEPTED card primary-action button + ACCEPTED→CONTENT_SUBMITTED drag target.
   // Opens the drawer pre-positioned at the on-behalf Content sub-tab.
   const handleEnterContent = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+    setSelectedSpeakerId(speaker.id);
     setInitialDrawerView('content-submission');
     setDetailsDrawerOpen(true);
   };
@@ -226,7 +241,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Story 11.D.4 — CONTENT_SUBMITTED card primary-action button + drag target.
   // Opens the drawer pre-positioned at the Quality Review sub-view.
   const handleReviewContent = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+    setSelectedSpeakerId(speaker.id);
     setInitialDrawerView('quality-review');
     setDetailsDrawerOpen(true);
   };
