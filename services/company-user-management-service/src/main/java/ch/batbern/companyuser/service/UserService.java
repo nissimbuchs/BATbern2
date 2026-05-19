@@ -641,8 +641,23 @@ public class UserService {
             roleService.addRole(user.getUsername(), roleToGrant);
             log.info("Provisioning: existing user {} has role {} (created=false)",
                     user.getUsername(), roleToGrant);
-            // Story 11.E.2: existing-user branch does NOT call AdminCreateUser — the Cognito
-            // user already exists from a prior provisioning (or from organic signup).
+            // Epic 11 bug fix 2026-05-19 — the existing-user branch USED to assume the
+            // Cognito user already exists "from a prior provisioning or organic signup".
+            // That assumption breaks in local-dev (DB synced from staging at a time when
+            // Cognito had the user, but staging Cognito has since lost the record) and
+            // would also break in prod if a Cognito user were deleted out-of-band. The
+            // speaker would then land in READY with no Cognito shell, and the subsequent
+            // READY→INVITED `issueInvitationCredentials` call would 404 on
+            // `cognitoService.getUserStatus`.
+            //
+            // `adminCreateUserSilently` is idempotent (catches `UsernameExistsException`
+            // and logs a no-op), so this is safe to call unconditionally — the call is a
+            // round-trip-only no-op when the Cognito user already exists, and creates the
+            // missing shell when it doesn't.
+            String throwawayTempPassword = passwordGenerator.generate();
+            cognitoService.adminCreateUserSilently(
+                    normalizedEmail, throwawayTempPassword, user.getUsername());
+            throwawayTempPassword = null;
             return new ProvisionUserResponse()
                     .username(user.getUsername())
                     .created(false);
@@ -769,7 +784,36 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        UserStatusType status = cognitoService.getUserStatus(user.getEmail());
+        // Epic 11 bug fix 2026-05-19 — self-heal the "DB has user, Cognito doesn't"
+        // case. Previously a missing Cognito user would throw 404 here, surfacing as
+        // a misleading "User not found: <username>" error in EMS (the DB user IS
+        // there; only the Cognito shell is missing). This happens when:
+        //   - Local-dev DB was synced from staging at a time when the Cognito record
+        //     existed, but the staging Cognito has since lost or rotated the user.
+        //   - A pre-Epic 11 provisioning path (existing-user branch in
+        //     `provisionUserWithRole`) skipped Cognito creation.
+        //   - The Cognito user was deleted out-of-band.
+        //
+        // Since READY→INVITED IS the moment the operator commits to inviting the
+        // speaker, transparently creating the missing Cognito shell + proceeding
+        // with FRESH_TEMP_PASSWORD matches the operator's intent. The bug-prevention
+        // fix in `provisionUserWithRole` means this branch only fires for speakers
+        // promoted BEFORE the prevention fix landed (and for the manual out-of-band
+        // delete case).
+        UserStatusType status;
+        try {
+            status = cognitoService.getUserStatus(user.getEmail());
+        } catch (UserNotFoundException ex) {
+            log.warn("Cognito user missing for {} — self-healing by creating the shell",
+                    LoggingUtils.maskEmail(user.getEmail()));
+            String throwawayTempPassword = passwordGenerator.generate();
+            cognitoService.adminCreateUserSilently(
+                    user.getEmail(), throwawayTempPassword, user.getUsername());
+            throwawayTempPassword = null;
+            // Newly-created Cognito users land in FORCE_CHANGE_PASSWORD; fall through
+            // to the corresponding switch branch which issues a fresh known temp.
+            status = UserStatusType.FORCE_CHANGE_PASSWORD;
+        }
         log.info("Cognito status for {}: {}", LoggingUtils.maskEmail(user.getEmail()), status);
 
         return switch (status) {
