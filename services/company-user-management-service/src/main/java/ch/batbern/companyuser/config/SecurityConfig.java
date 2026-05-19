@@ -1,19 +1,16 @@
 package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
+import ch.batbern.shared.security.JwtRolesConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -21,12 +18,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 /**
  * Security configuration for the Company-User Management Service
@@ -67,7 +61,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("local")
-    public SecurityFilterChain localFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain localFilterChain(HttpSecurity http,
+                                                JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
@@ -97,7 +93,7 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
 
@@ -109,7 +105,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("!test & !local")
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable for stateless API
             .sessionManagement(session ->
@@ -145,7 +143,7 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
 
@@ -251,44 +249,17 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from custom:role claim
-     * Story 1.2.6: Migrated from cognito:groups to custom:role (ADR-001)
-     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
+     * JWT Authentication Converter to extract roles from custom:role claim, with a
+     * database fallback when the claim is empty. See {@link JwtRolesConverter}.
+     * Story 1.2.6 / Epic 11.E.7: custom:role primary; DB-by-sub fallback enables
+     * local-dev speakers whose user_profiles row is in the local DB but whose
+     * Cognito user is in staging (so the PreTokenGen Lambda finds no roles).
+     * In staging the JWT always carries custom:role, so the fallback is dormant.
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(DataSource dataSource) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(new JwtRolesConverter(dataSource));
         return converter;
-    }
-
-    /**
-     * Converter to extract roles from JWT claims and map to Spring Security authorities.
-     *
-     * Supports two JWT formats:
-     * - Cognito tokens: roles in "custom:role" claim (comma-separated, e.g. "ORGANIZER,SPEAKER")
-     * - Watch tokens:   role in "role" claim (single value, e.g. "ORGANIZER")
-     *
-     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations.
-     */
-    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-        @Override
-        public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Cognito ID token: "custom:role" claim (comma-separated)
-            String rolesString = jwt.getClaimAsString("custom:role");
-            // Watch JWT fallback: "role" claim (single value)
-            if (rolesString == null || rolesString.isEmpty()) {
-                rolesString = jwt.getClaimAsString("role");
-            }
-
-            if (rolesString == null || rolesString.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            // Split comma-separated roles and map to ROLE_ authorities
-            return Arrays.stream(rolesString.split(","))
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
-                .collect(Collectors.toList());
-        }
     }
 }

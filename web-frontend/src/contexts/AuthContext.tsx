@@ -6,8 +6,15 @@
 
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { authService } from '@services/auth/authService';
-import { AuthenticationState, LoginCredentials, SignUpData, UserRole } from '@/types/auth';
+import {
+  AuthenticationState,
+  LoginCredentials,
+  SignUpData,
+  UserContext,
+  UserRole,
+} from '@/types/auth';
 import apiClient from '@/services/api/apiClient';
+import { getUserProfile } from '@/services/api/userApi';
 
 /**
  * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
@@ -42,6 +49,53 @@ interface UseAuthReturn extends AuthenticationState {
 }
 
 export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
+
+/**
+ * Hydrate roles from the backend when the JWT carries none.
+ *
+ * Background: roles are normally read from the JWT's `custom:role` claim,
+ * which is populated by the PreTokenGeneration Lambda from `role_assignments`
+ * in the staging DB. In local development, however, a speaker provisioned
+ * through CUMS gets a Cognito user in staging but a `user_profiles` row only
+ * in the LOCAL database — so the Lambda finds nothing and the JWT comes back
+ * empty. Without this hydration the speaker lands on a blank dashboard
+ * because `user.roles` is `[]` and Dashboard.tsx defaults to `attendee`.
+ *
+ * When the JWT roles are empty, fetch `GET /users/me?include=roles` and merge
+ * the returned `availableRoles` into the user context. In staging this branch
+ * is dormant — the JWT always carries roles. Silently no-ops on any failure
+ * to preserve the previous behaviour (Dashboard's defensive fallback handles
+ * the still-empty case).
+ *
+ * Epic 11.E.7 — see `JwtRolesConverter` in shared-kernel for the backend twin.
+ */
+async function hydrateRolesIfMissing(user: UserContext): Promise<UserContext> {
+  if (user.roles && user.roles.length > 0) {
+    return user;
+  }
+  try {
+    const profile = await getUserProfile(['roles']);
+    const fetchedRoles = profile.availableRoles ?? [];
+    if (fetchedRoles.length === 0) {
+      return user;
+    }
+    const primary = profile.currentRole ?? fetchedRoles[0];
+    console.log(
+      '[AuthProvider] Hydrated roles from /users/me (JWT custom:role was empty) —',
+      'roles=',
+      fetchedRoles,
+      'primary=',
+      primary
+    );
+    return { ...user, role: primary, roles: fetchedRoles };
+  } catch (error) {
+    console.warn(
+      '[AuthProvider] Could not hydrate roles via GET /users/me — leaving user as-is',
+      error
+    );
+    return user;
+  }
+}
 
 /**
  * Resolve companyName for partner users when not present in JWT.
@@ -88,9 +142,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Get current session tokens
           const tokenResult = await authService.refreshToken();
 
+          // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
+          // (local-dev path; in staging the JWT always has custom:role and this no-ops).
+          const hydratedUser = await hydrateRolesIfMissing(user);
+
           // Resolve companyName for partner users if not in JWT via GET /partners/me
-          let resolvedCompanyName = user.companyName;
-          const isPartner = user.role === 'partner' || user.roles?.includes('partner');
+          let resolvedCompanyName = hydratedUser.companyName;
+          const isPartner =
+            hydratedUser.role === 'partner' || hydratedUser.roles?.includes('partner');
           if (isPartner && !resolvedCompanyName) {
             resolvedCompanyName = await resolvePartnerCompanyName();
           }
@@ -99,13 +158,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isAuthenticated: true,
             isLoading: false,
             user:
-              resolvedCompanyName !== user.companyName
-                ? { ...user, companyName: resolvedCompanyName }
-                : user,
+              resolvedCompanyName !== hydratedUser.companyName
+                ? { ...hydratedUser, companyName: resolvedCompanyName }
+                : hydratedUser,
             error: null,
             accessToken: tokenResult.accessToken || null,
           });
-          console.log('[AuthProvider] Auth initialized - authenticated as:', user.email);
+          console.log('[AuthProvider] Auth initialized - authenticated as:', hydratedUser.email);
         } else {
           console.log('[AuthProvider] No authenticated user found');
           setState((prev) => ({
@@ -157,8 +216,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         console.log('[AuthProvider] Sign in successful, updating global state');
 
+        // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
+        // (local-dev path; in staging the JWT always has custom:role and this no-ops).
+        let signedInUser = await hydrateRolesIfMissing(result.user);
+
         // Resolve companyName for partner users if not in JWT via GET /partners/me
-        let signedInUser = result.user;
         const isPartner =
           signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
         if (isPartner && !signedInUser.companyName) {
@@ -215,7 +277,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const result = await authService.confirmNewPassword(newPassword);
       if (result.success && result.user) {
-        let signedInUser = result.user;
+        // Epic 11.E.7: hydrate roles from /users/me when JWT carries none
+        // (local-dev path; in staging the JWT always has custom:role and this no-ops).
+        let signedInUser = await hydrateRolesIfMissing(result.user);
         const isPartner =
           signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
         if (isPartner && !signedInUser.companyName) {

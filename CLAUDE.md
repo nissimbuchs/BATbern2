@@ -225,7 +225,15 @@ make dev-native-up                                   # Start services natively (
 - ✅ PostgreSQL 15 runs in Docker (persistent volume)
 - ✅ All services run natively (Java processes + Vite dev server)
 - ✅ Uses staging Cognito for authentication (AWS)
-- ✅ Local database is read-only mirror synced from staging
+- ✅ Local database is read-only mirror synced from staging — **except** for CUMS-side
+  writes during speaker invitation (Pattern N): `adminCreateUserSilently` creates the
+  Cognito user in staging while `user_profiles` / `role_assignments` rows land in the
+  local DB only. The PreTokenGen Lambda runs against the staging DB and therefore
+  emits a JWT with no `custom:role` for these users. **Pattern 3b** (DB-fallback in
+  `shared-kernel/.../security/JwtRolesConverter` + `AuthContext.hydrateRolesIfMissing`)
+  resolves roles from the local DB so local-dev speakers can actually log in. The
+  fallback is dormant in staging because the JWT there always carries roles. See
+  `docs/architecture/06b-user-lifecycle-sync.md` §"Pattern 3b" for the full pattern.
 - ✅ **Zero AWS development environment costs** (saves $600-720/year)
 - ✅ 60-70% less resources than Docker Compose
 - See [Local Development Guide](docs/guides/local-development-setup.md) for details

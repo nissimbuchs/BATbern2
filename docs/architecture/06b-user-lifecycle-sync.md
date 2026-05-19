@@ -460,8 +460,91 @@ public class EventController {
 **Key Characteristics**:
 - **Standard Spring Security**: Uses `@PreAuthorize` annotations
 - **Role Mapping**: JWT claim "ATTENDEE" → Authority "ROLE_ATTENDEE"
-- **Empty Roles Handling**: Returns empty list if claim missing (user has no access)
-- **NO Database Queries**: Roles cached in JWT for request duration
+- **Empty Roles Handling**: Falls back to the database lookup in Pattern 3b — only returns
+  empty authorities if the DB also has no roles for the user.
+- **NO Database Queries on the hot path**: in staging the JWT always carries `custom:role`,
+  so the converter never touches the DB. The fallback below activates only when the JWT
+  arrives without roles (local-dev case, or graceful degradation if PreTokenGen Lambda fails).
+
+## Pattern 3b: Database Fallback for Empty JWT Roles (local-dev path, Epic 11.E.7)
+
+**Purpose**: Resolve roles from the local PostgreSQL database when the JWT's `custom:role`
+claim is empty. This is purely a local-dev correctness fix — in staging the JWT always
+carries roles (Pattern 2 always succeeds), so this fallback never fires there. The path
+doubles as graceful-degradation insurance in production if PreTokenGeneration ever fails.
+
+**Why it exists**: in local development the frontend points at staging Cognito (`localhost:8100
+→ AWS Cognito`), but CUMS writes `user_profiles` / `role_assignments` rows into the local
+PostgreSQL (`localhost:5432/batbern_development`). The local DB is supposed to be a one-way
+mirror synced FROM staging, but local provisioning (e.g. `adminCreateUserSilently` during
+speaker invitation in Pattern N) creates Cognito users in staging while the matching DB rows
+land only locally. The PreTokenGeneration Lambda then queries the staging DB, finds nothing,
+and returns a JWT without `custom:role`. Without this fallback, every locally-promoted
+speaker lands on a blank dashboard because the frontend falls back to `attendee` and the
+backend's `@PreAuthorize("hasRole('SPEAKER')")` checks reject every speaker-portal call.
+
+**Backend implementation** (`shared-kernel/.../security/JwtRolesConverter.java`,
+wired into each service's `SecurityConfig.jwtAuthenticationConverter()` bean):
+
+```java
+// 1. Try the JWT claim first (staging path — always populated by PreTokenGen Lambda)
+String rolesString = jwt.getClaimAsString("custom:role");
+if (rolesString == null || rolesString.isEmpty()) {
+    rolesString = jwt.getClaimAsString("role"); // Watch JWT variant
+}
+
+if (rolesString != null && !rolesString.isEmpty()) {
+    return toAuthorities(rolesString.split(","));
+}
+
+// 2. JWT carries no roles — look the user up directly by sub == cognito_user_id
+//    against the local DB. Dormant in staging because branch 1 always succeeds there.
+try {
+    List<String> roles = jdbcTemplate.queryForList(
+        "SELECT ra.role FROM user_profiles u "
+      + "JOIN role_assignments ra ON ra.user_id = u.id "
+      + "WHERE u.cognito_user_id = ?",
+        String.class,
+        jwt.getSubject());
+    return toAuthorities(roles);
+} catch (Exception e) {
+    // Preserve pre-fallback behaviour: empty authorities on any DB error
+    return Collections.emptyList();
+}
+```
+
+**Frontend implementation** (`web-frontend/src/contexts/AuthContext.tsx`):
+after `authService.signIn` (and `initializeAuth`, and `confirmNewPassword`) return a
+`UserContext`, if `user.roles.length === 0` the provider calls
+`GET /users/me?include=roles` and merges `availableRoles` / `currentRole` into the
+context before dropping `isLoading: false`. This fixes UI gating — Dashboard redirect,
+`ProtectedRoute.canAccess`, RoleSelector — for local-dev users whose JWT lacks roles.
+On any failure the user is left as-is (Dashboard's defensive fallback handles the
+still-empty case).
+
+**Where this kicks in**:
+
+| Environment | JWT `custom:role` | Fallback fires? | Why |
+|---|---|---|---|
+| Staging (web)  | `"ORGANIZER,SPEAKER"` (or similar)            | No  | Pattern 2 Lambda populates the claim from the staging DB. |
+| Staging (web) — PreTokenGen Lambda outage | empty | Yes | Graceful degradation: services + frontend look up the user in the staging DB directly. |
+| Local dev — user provisioned via Pattern 1 (PostConfirmation, self-registration) | `"ATTENDEE"` | No | Cognito user + DB row both exist in staging; PreTokenGen finds the row. |
+| Local dev — speaker invited via Pattern N (organizer kanban) | empty | Yes | Cognito user is in staging, but `user_profiles` row is local only; PreTokenGen finds nothing in the staging DB. |
+
+**Caching and performance**: the converter does one indexed-lookup query
+(`user_profiles.cognito_user_id` is a primary-key style index) only when the
+JWT roles claim is empty. In staging this path is dormant — zero queries on
+the hot path. In local dev there is no caching at the converter level (each
+request validates the JWT independently), so the lookup runs once per
+authenticated request. This is acceptable for development; if hot in
+production (which would indicate the Lambda is failing) we would add a small
+Caffeine cache keyed by `sub` with TTL = JWT exp − now.
+
+**What this does NOT replace**: this is a fallback for the role-extraction
+step only. The PreTokenGen Lambda (Pattern 2) remains the canonical role-population
+mechanism. The fallback is invisible in staging by design — anyone debugging
+"why don't my roles work" should still start with Pattern 2 and the Lambda
+CloudWatch logs.
 
 ## What We DON'T Do
 
