@@ -51,9 +51,16 @@ public interface CognitoIntegrationService {
      * @param email speaker's email (becomes the Cognito Username AND the email attribute)
      * @param throwawayTempPassword satisfies the pool policy; never surfaced
      * @param appUsername BATbern's username (set as the {@code preferred_username} Cognito attribute)
+     * @return the new Cognito user's {@code sub} attribute when a user was created,
+     *         {@code null} when an existing user was found (idempotent no-op).
+     *         Epic 11 bug fix 2026-05-19 — callers use this to keep
+     *         {@code user_profiles.cognito_user_id} in sync with the actual Cognito sub
+     *         so the PreTokenGeneration Lambda's primary-key lookup hits on subsequent
+     *         logins (otherwise it must rely on the email-fallback path, which the
+     *         deployed Lambda may or may not have at any given time).
      * @throws CognitoOperationException on any Cognito error other than UsernameExistsException
      */
-    void adminCreateUserSilently(String email, String throwawayTempPassword, String appUsername);
+    String adminCreateUserSilently(String email, String throwawayTempPassword, String appUsername);
 
     /**
      * Read the current Cognito user-status for the given email.

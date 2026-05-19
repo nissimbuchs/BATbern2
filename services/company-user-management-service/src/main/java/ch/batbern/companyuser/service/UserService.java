@@ -655,9 +655,22 @@ public class UserService {
             // round-trip-only no-op when the Cognito user already exists, and creates the
             // missing shell when it doesn't.
             String throwawayTempPassword = passwordGenerator.generate();
-            cognitoService.adminCreateUserSilently(
+            String newCognitoSub = cognitoService.adminCreateUserSilently(
                     normalizedEmail, throwawayTempPassword, user.getUsername());
             throwawayTempPassword = null;
+            // Epic 11 bug fix 2026-05-19 — when we just created a NEW Cognito user,
+            // sync the new `sub` back into user_profiles. Otherwise the DB row keeps
+            // the stale sub from a deleted prior Cognito user and the
+            // PreTokenGeneration Lambda's primary-key lookup misses on the next sign-in
+            // (the speaker's JWT comes through with no `custom:role` claim, blank
+            // dashboard). `newCognitoSub` is null when the Cognito user already existed
+            // (idempotent no-op) — we leave the DB alone in that case.
+            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
+                user.setCognitoUserId(newCognitoSub);
+                userRepository.save(user);
+                log.info("Re-linked user {} to fresh Cognito sub {} (existing-user branch)",
+                        user.getUsername(), newCognitoSub);
+            }
             return new ProvisionUserResponse()
                     .username(user.getUsername())
                     .created(false);
@@ -777,7 +790,10 @@ public class UserService {
      * @throws UserNotFoundException                   if {@code username} is not in CUMS
      * @throws UnprocessableInvitationStateException   if Cognito reports a status that needs operator intervention
      */
-    @Transactional(readOnly = true)
+    // Epic 11 bug fix 2026-05-19 — was `@Transactional(readOnly = true)`. The self-heal
+    // path below (Cognito user missing → create + re-link DB) needs write access to
+    // user_profiles.cognito_user_id; readOnly would silently reject the update.
+    @Transactional
     public InvitationCredentialsResponse issueInvitationCredentials(String username) {
         log.info("issueInvitationCredentials (Story 11.E.2): username={}", username);
 
@@ -807,9 +823,20 @@ public class UserService {
             log.warn("Cognito user missing for {} — self-healing by creating the shell",
                     LoggingUtils.maskEmail(user.getEmail()));
             String throwawayTempPassword = passwordGenerator.generate();
-            cognitoService.adminCreateUserSilently(
+            String newCognitoSub = cognitoService.adminCreateUserSilently(
                     user.getEmail(), throwawayTempPassword, user.getUsername());
             throwawayTempPassword = null;
+            // Epic 11 bug fix 2026-05-19 — sync the freshly-created sub back into
+            // user_profiles. The DB row was carrying a stale sub from a deleted prior
+            // Cognito user; without this re-link the PreTokenGeneration Lambda's
+            // primary-key lookup misses on the next sign-in and the speaker's JWT
+            // ends up with no `custom:role` claim (= blank dashboard).
+            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
+                user.setCognitoUserId(newCognitoSub);
+                userRepository.save(user);
+                log.info("Re-linked user {} to fresh Cognito sub {} (issueInvitationCredentials self-heal)",
+                        user.getUsername(), newCognitoSub);
+            }
             // Newly-created Cognito users land in FORCE_CHANGE_PASSWORD; fall through
             // to the corresponding switch branch which issues a fresh known temp.
             status = UserStatusType.FORCE_CHANGE_PASSWORD;

@@ -61,7 +61,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
     }
 
     @Override
-    public void adminCreateUserSilently(String email, String throwawayTempPassword, String appUsername) {
+    public String adminCreateUserSilently(String email, String throwawayTempPassword, String appUsername) {
         AdminCreateUserRequest req = AdminCreateUserRequest.builder()
                 .userPoolId(userPoolId)
                 .username(email)
@@ -77,10 +77,24 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
                 .build();
 
         try {
-            cognitoClient.adminCreateUser(req);
+            // Epic 11 bug fix 2026-05-19 — extract and return the new user's `sub` so
+            // callers can keep `user_profiles.cognito_user_id` in sync (the DB row may
+            // carry a stale sub from a deleted prior Cognito user; without this the
+            // PreTokenGeneration Lambda's primary-key lookup misses and the JWT
+            // ends up with no roles).
+            var response = cognitoClient.adminCreateUser(req);
             log.info("Cognito user created for {} (FORCE_CHANGE_PASSWORD)", LoggingUtils.maskEmail(email));
+            if (response == null || response.user() == null || response.user().attributes() == null) {
+                return null;
+            }
+            return response.user().attributes().stream()
+                    .filter(attr -> "sub".equals(attr.name()))
+                    .map(AttributeType::value)
+                    .findFirst()
+                    .orElse(null);
         } catch (UsernameExistsException e) {
             log.info("Cognito user already exists for {} - idempotent no-op", LoggingUtils.maskEmail(email));
+            return null;
         } catch (InvalidParameterException | InvalidPasswordException e) {
             // Story 11.E.2 review patch (P6 / E14): caller-side bad input (malformed email,
             // password policy violation). Map to 400 via shared-kernel ValidationException
