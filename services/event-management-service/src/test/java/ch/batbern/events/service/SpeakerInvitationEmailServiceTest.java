@@ -59,6 +59,9 @@ class SpeakerInvitationEmailServiceTest {
     @Mock
     private EmailTemplateService emailTemplateService;
 
+    @Mock
+    private ch.batbern.events.client.UserApiClient userApiClient;
+
     private SpeakerInvitationEmailService invitationEmailService;
 
     private SpeakerPool speaker;
@@ -71,7 +74,7 @@ class SpeakerInvitationEmailServiceTest {
     @BeforeEach
     void setUp() {
         invitationEmailService = new SpeakerInvitationEmailService(
-                emailService, sessionRepository, emailTemplateService);
+                emailService, sessionRepository, emailTemplateService, userApiClient);
         // DB lookup defaults to empty so classpath templates load.
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
                 .thenReturn(Optional.empty());

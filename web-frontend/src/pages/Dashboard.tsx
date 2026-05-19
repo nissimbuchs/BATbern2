@@ -22,7 +22,11 @@ const Dashboard: React.FC = () => {
     } else if (user?.role === 'partner') {
       navigate('/partners/company', { replace: true });
     } else if (user?.role === 'speaker') {
-      navigate('/speaker/dashboard', { replace: true });
+      // Epic 11 bug fix 2026-05-19 — speaker dashboard is mounted at
+      // `/speaker-portal/dashboard` (Story 11.E.3 Cognito-flow speaker portal).
+      // The prior `/speaker/dashboard` target didn't exist; speakers landed
+      // on a blank page with no console error.
+      navigate('/speaker-portal/dashboard', { replace: true });
     } else if (user?.role === 'attendee') {
       navigate('/attendee', { replace: true });
     }

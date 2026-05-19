@@ -112,7 +112,10 @@ export const navigationConfig: NavigationItem[] = [
   // Speaker-specific items
   {
     labelKey: 'navigation.dashboard',
-    path: '/speaker/dashboard',
+    // Epic 11 bug fix 2026-05-19 — speaker dashboard mounted at
+    // `/speaker-portal/dashboard` (Story 11.E.3); `/speaker/dashboard` 404'd
+    // and rendered a blank page when clicked from the nav menu.
+    path: '/speaker-portal/dashboard',
     icon: Dashboard,
     roles: ['speaker'],
     description: 'Speaker dashboard',

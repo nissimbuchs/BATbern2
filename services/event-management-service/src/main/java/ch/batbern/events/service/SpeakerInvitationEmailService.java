@@ -49,6 +49,11 @@ public class SpeakerInvitationEmailService {
     // Story 11.E.2: MagicLinkService dependency removed — the Cognito flow does not
     // generate magic-link tokens for the invitation email.
     private final EmailTemplateService emailTemplateService;
+    // Epic 11 bug fix 2026-05-19 — resolve the linked User's real first+last name
+    // for the {{speakerName}} template variable. Without this we'd ship the
+    // brainstorm-stage placeholder (e.g. "Testreferent2") in the email greeting
+    // instead of the real "Markus Gerber" that the organizer promoted to.
+    private final ch.batbern.events.client.UserApiClient userApiClient;
 
     @Value("${app.email.organizer-name:BATbern Team}")
     private String organizerName;
@@ -178,7 +183,16 @@ public class SpeakerInvitationEmailService {
         String useExistingPasswordFlag = isFresh ? "" : MUSTACHE_TRUTHY;
 
         Map<String, String> variables = new HashMap<>();
-        variables.put("speakerName", escapeHtml(nullToEmpty(speaker.getSpeakerName())));
+        // Epic 11 bug fix 2026-05-19 — resolve the linked User's first+last name for
+        // the email greeting. `speaker.getSpeakerName()` carries the brainstorm-stage
+        // placeholder (e.g. "Testreferent2"); by READY+ the real User exists in CUMS
+        // and that's the name the recipient expects to see.
+        // Fallback chain: linked-User name → brainstorm name → empty. The fallback
+        // protects against (1) UserApiClient transient failures and (2) the
+        // theoretical out-of-order case where invitation is sent before promote
+        // populates `speaker_pool.username` (should not happen via the workflow
+        // service but defensive in case of direct DB manipulation).
+        variables.put("speakerName", escapeHtml(resolveSpeakerDisplayName(speaker)));
         variables.put("eventTitle", escapeHtml(nullToEmpty(event.getTitle())));
         variables.put("eventDate", eventDateTime.format(DATE_FORMATTER));
         variables.put("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr");
@@ -250,6 +264,51 @@ public class SpeakerInvitationEmailService {
 
     private static String nullToEmpty(String s) {
         return s != null ? s : "";
+    }
+
+    /**
+     * Resolve the speaker's display name for the invitation email greeting (Epic 11
+     * bug fix 2026-05-19). Prefers the linked User's {@code firstName + lastName}
+     * (the real identified speaker, e.g. "Markus Gerber") over the brainstorm
+     * placeholder {@code speaker_pool.speakerName} (e.g. "Testreferent2").
+     *
+     * <p>Fallback chain (each step's result reused only if non-blank):
+     * <ol>
+     *   <li>{@code UserApiClient.getUserByUsername(speaker.username)} → "First Last"</li>
+     *   <li>{@code speaker.getSpeakerName()} — brainstorm name</li>
+     *   <li>empty string</li>
+     * </ol>
+     *
+     * <p>The UserApiClient lookup is wrapped in a broad catch because email send is
+     * @Async and we'd rather degrade gracefully (use brainstorm name) than abort the
+     * whole send on a transient UserService blip.
+     */
+    private String resolveSpeakerDisplayName(SpeakerPool speaker) {
+        String username = speaker.getUsername();
+        if (username != null && !username.isBlank()) {
+            try {
+                var user = userApiClient.getUserByUsername(username);
+                if (user != null) {
+                    String first = user.getFirstName();
+                    String last = user.getLastName();
+                    boolean hasFirst = first != null && !first.isBlank();
+                    boolean hasLast = last != null && !last.isBlank();
+                    if (hasFirst && hasLast) {
+                        return first + " " + last;
+                    }
+                    if (hasFirst) {
+                        return first;
+                    }
+                    if (hasLast) {
+                        return last;
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Could not resolve linked User name for speaker {} (username={}): {}",
+                        speaker.getId(), username, ex.getMessage());
+            }
+        }
+        return nullToEmpty(speaker.getSpeakerName());
     }
 
     /**
