@@ -109,10 +109,22 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     const prefillSpeaker = async () => {
       if (speaker && lastPrefilledSpeakerIdRef.current !== speaker.id) {
         try {
-          let users = await searchUsers(speaker.speakerName, 20);
-          if (users.length === 0 && speaker.speakerName.includes(' ')) {
-            const firstName = speaker.speakerName.split(' ')[0];
-            users = await searchUsers(firstName, 20);
+          // Epic 11 bug fix 2026-05-19 — once the speaker has been promoted, the pool
+          // entry carries `username` (the linked User's meaningful ID). Search by
+          // username for an exact match instead of the brainstorm `speakerName`,
+          // which on a promoted entry is typically a placeholder (e.g. "Testreferent2"
+          // for the real "Markus Gerber") and would return no SPEAKER-role matches.
+          // Falls back to the legacy name-search for unpromoted speakers.
+          let users: UserSearchResponse[] = [];
+          if (speaker.username) {
+            users = await searchUsers(speaker.username, 5);
+          }
+          if (users.length === 0) {
+            users = await searchUsers(speaker.speakerName, 20);
+            if (users.length === 0 && speaker.speakerName.includes(' ')) {
+              const firstName = speaker.speakerName.split(' ')[0];
+              users = await searchUsers(firstName, 20);
+            }
           }
           const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
           if (candidates.length > 0) {

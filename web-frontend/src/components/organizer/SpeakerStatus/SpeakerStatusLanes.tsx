@@ -57,6 +57,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
+import { usePublicUser } from '@/hooks/useUserPortrait';
 import { useOrganizers } from '@/components/shared/OrganizerSelect';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import {
@@ -1073,6 +1074,21 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   onAssignSessionSlot,
 }) => {
   const { t, i18n } = useTranslation(['organizer']);
+  // Epic 11 bug fix 2026-05-19 — once CONTACTED→READY promotes the speaker, the pool
+  // entry carries `username` (the linked User). Resolve the real first+last name so
+  // the kanban card shows the actual identified speaker rather than the brainstorm
+  // placeholder (e.g. "Markus Gerber" instead of "Testreferent2"). The 24h staleTime
+  // on usePublicUser means each linked user is fetched at most once per browser
+  // session; cards for unpromoted speakers (`speaker.username == null`) skip the
+  // fetch via the hook's `enabled` guard.
+  const { data: linkedUser } = usePublicUser(speaker.username ?? undefined);
+  const linkedDisplayName =
+    linkedUser?.firstName && linkedUser?.lastName
+      ? `${linkedUser.firstName} ${linkedUser.lastName}`
+      : null;
+  const cardDisplayName = linkedDisplayName ?? speaker.speakerName;
+  const showBrainstormCaption =
+    linkedDisplayName !== null && speaker.speakerName !== linkedDisplayName;
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
     // Story 11.D.4 AC2 — DECLINED is terminal; card is not draggable.
@@ -1269,11 +1285,26 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
           // Pool view (no assigned session)
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                {speaker.speakerName.charAt(0).toUpperCase()}
+              {/* Epic 11 bug fix 2026-05-19 — once promoted, show the linked User's
+                  portrait + initial. Pre-promote (`speaker.username == null`) falls
+                  back to the brainstorm name's first letter. */}
+              <Avatar
+                src={linkedUser?.profilePictureUrl ?? undefined}
+                sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
+              >
+                {cardDisplayName.charAt(0).toUpperCase()}
               </Avatar>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+                <Typography variant="subtitle2">{cardDisplayName}</Typography>
+                {showBrainstormCaption && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', fontStyle: 'italic' }}
+                  >
+                    {speaker.speakerName}
+                  </Typography>
+                )}
                 {speaker.company && (
                   <Typography variant="caption" color="text.secondary">
                     {speaker.company}
