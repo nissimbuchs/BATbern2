@@ -9,9 +9,29 @@ import { authService } from '@services/auth/authService';
 import { AuthenticationState, LoginCredentials, SignUpData, UserRole } from '@/types/auth';
 import apiClient from '@/services/api/apiClient';
 
+/**
+ * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
+ * previous `Promise<boolean>` return collapsed every non-success path into "false",
+ * so the FORCE_CHANGE_PASSWORD challenge emitted by Cognito on first sign-in (with
+ * the temp password from `issueInvitationCredentials`) looked identical to a bad
+ * credentials error. LoginForm now branches on `kind` and renders the inline
+ * "set new password" panel when `requires-new-password` is signalled.
+ */
+export type SignInOutcome =
+  | { kind: 'success' }
+  | { kind: 'requires-new-password' }
+  | { kind: 'failed' };
+
 interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;
-  signIn: (credentials: LoginCredentials) => Promise<boolean>;
+  signIn: (credentials: LoginCredentials) => Promise<SignInOutcome>;
+  /**
+   * Complete the FORCE_CHANGE_PASSWORD challenge with a user-chosen permanent
+   * password. Returns `true` on success (auth state is updated; LoginForm should
+   * navigate to the dashboard), `false` on failure (Cognito error surfaced via
+   * `error` state).
+   */
+  confirmNewPassword: (newPassword: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   signUp: (data: SignUpData) => Promise<boolean>;
   clearError: () => void;
@@ -112,7 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Sign in user
    */
-  const signIn = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
+  const signIn = useCallback(async (credentials: LoginCredentials): Promise<SignInOutcome> => {
     console.log('[AuthProvider] signIn called');
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -122,8 +142,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthProvider] authService.signIn result:', {
         success: result.success,
         hasUser: !!result.user,
+        pendingChallenge: result.pendingChallenge,
         error: result.error,
       });
+
+      // Epic 11 bug fix 2026-05-19 — FORCE_CHANGE_PASSWORD: surface the challenge
+      // to LoginForm so it can render the inline "set new password" panel.
+      // isLoading flips back to false so the panel is interactive.
+      if (result.pendingChallenge === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        setState((prev) => ({ ...prev, isLoading: false, error: null }));
+        return { kind: 'requires-new-password' };
+      }
 
       if (result.success && result.user) {
         console.log('[AuthProvider] Sign in successful, updating global state');
@@ -147,19 +176,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           accessToken: result.accessToken || null,
         });
         console.log('[AuthProvider] Global auth state updated - isAuthenticated: true');
-        return true;
-      } else {
-        console.log('[AuthProvider] Sign in failed:', result.error);
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: result.error || {
-            code: 'SIGN_IN_FAILED',
-            message: 'Sign in failed',
-          },
-        }));
-        return false;
+        return { kind: 'success' };
       }
+
+      console.log('[AuthProvider] Sign in failed:', result.error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: result.error || {
+          code: 'SIGN_IN_FAILED',
+          message: 'Sign in failed',
+        },
+      }));
+      return { kind: 'failed' };
     } catch (error: unknown) {
       console.error('[AuthProvider] Exception during sign in:', error);
       setState((prev) => ({
@@ -168,6 +197,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: {
           code: 'SIGN_IN_ERROR',
           message: error instanceof Error ? error.message : 'An error occurred during sign in',
+        },
+      }));
+      return { kind: 'failed' };
+    }
+  }, []);
+
+  /**
+   * Complete the FORCE_CHANGE_PASSWORD challenge (Epic 11 bug fix 2026-05-19).
+   * Submits the new permanent password to Cognito; on success, populates the
+   * global auth state so the user can proceed to the dashboard. Mirrors the
+   * success path of `signIn` (including the partner companyName resolution).
+   */
+  const confirmNewPassword = useCallback(async (newPassword: string): Promise<boolean> => {
+    console.log('[AuthProvider] confirmNewPassword called');
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const result = await authService.confirmNewPassword(newPassword);
+      if (result.success && result.user) {
+        let signedInUser = result.user;
+        const isPartner =
+          signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
+        if (isPartner && !signedInUser.companyName) {
+          const resolved = await resolvePartnerCompanyName();
+          if (resolved) {
+            signedInUser = { ...signedInUser, companyName: resolved };
+          }
+        }
+        setState({
+          isAuthenticated: true,
+          isLoading: false,
+          user: signedInUser,
+          error: null,
+          accessToken: result.accessToken || null,
+        });
+        return true;
+      }
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: result.error || {
+          code: 'CONFIRM_NEW_PASSWORD_FAILED',
+          message: 'Could not confirm new password',
+        },
+      }));
+      return false;
+    } catch (error: unknown) {
+      console.error('[AuthProvider] Exception during confirmNewPassword:', error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: {
+          code: 'CONFIRM_NEW_PASSWORD_ERROR',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'An error occurred while confirming the new password',
         },
       }));
       return false;
@@ -394,6 +479,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     () => ({
       ...state,
       signIn,
+      confirmNewPassword,
       signOut,
       signUp,
       refreshToken,
@@ -406,6 +492,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [
       state,
       signIn,
+      confirmNewPassword,
       signOut,
       signUp,
       refreshToken,
