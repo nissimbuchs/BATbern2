@@ -1,14 +1,17 @@
 /**
- * ContentSubmissionSubView Tests (Story 11.D.4 — AC10 cases 39–44)
+ * ContentSubmissionSubView Tests (Story 11.D.4 — AC10 cases 39–44;
+ * Epic 11 bug fix 2026-05-19 removed bio + portrait override cases 39/40/42/43).
  *
  * Coverage:
- *  39. Bio field renders with max length 5000 + character counter
- *  40. uploadProfilePictureForUser is called with the selected user id on portrait change
- *  41. The submit request body OMITS the legacy `username` field (AC11 invariant — 11.C.2
- *      backend reads the username from speaker_pool server-side).
- *  42. Non-empty bio is included in the request body.
- *  43. profilePictureUrl is included in the request body when portrait upload succeeds.
+ *  41. The submit request body OMITS the legacy `username` field (AC11 invariant —
+ *      11.C.2 backend reads the username from speaker_pool server-side).
  *  44. An error Alert renders when the submit mutation rejects.
+ *
+ * Removed cases — bio + portrait are user-level attributes managed by the user-edit
+ * modal (the "Edit speaker profile" button), not by the per-event content-submission
+ * form. The form fields, state, and the related request-body keys (`bio`,
+ * `profilePictureUrl`) were dropped from ContentSubmissionSubView; the corresponding
+ * tests are now stale and have been removed.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -19,7 +22,6 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { ContentSubmissionSubView } from '../ContentSubmissionSubView';
 import { speakerContentService } from '@/services/speakerContentService';
-import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
 import { searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { UserSearchResponse } from '@/types/user.types';
@@ -40,13 +42,10 @@ vi.mock('@/services/speakerContentService', () => ({
   },
 }));
 
-vi.mock('@/services/api/userAccountApi', () => ({
-  uploadProfilePictureForUser: vi.fn(),
-}));
-
 vi.mock('@/services/api/userManagementApi', () => ({
   searchUsers: vi.fn(),
   updateUserRoles: vi.fn(),
+  getUserByUsername: vi.fn(),
 }));
 
 // Stub the autocomplete to a deterministic button that injects the test user. This
@@ -120,7 +119,6 @@ async function pickTestUser(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
-  // Title + abstract are required; bio is optional and left to the caller.
   await user.type(screen.getByTestId('presentation-title-field'), 'Cloud-native event sourcing');
   await user.type(
     screen.getByTestId('presentation-abstract-field'),
@@ -130,7 +128,7 @@ async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('ContentSubmissionSubView — AC10 cases 39–44', () => {
+describe('ContentSubmissionSubView — AC10 cases 41 + 44 (post Epic 11 bio/portrait removal)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // The prefill effect runs searchUsers on mount; make it resolve to an empty list
@@ -141,42 +139,10 @@ describe('ContentSubmissionSubView — AC10 cases 39–44', () => {
       poolId: 'speaker-pool-1',
       status: 'CONTENT_SUBMITTED',
     });
-    vi.mocked(uploadProfilePictureForUser).mockResolvedValue(
-      'https://cdn.example.com/portraits/jane.doe.jpg'
-    );
   });
 
   afterEach(() => {
     cleanup();
-  });
-
-  // Case 39 — Bio field rendered with max length 5000 + character counter.
-  it('should_renderBioField_withMaxLength5000_andCharacterCounter', async () => {
-    renderSubView();
-    const bioField = await screen.findByTestId('speaker-bio-field');
-    expect(bioField).toBeInTheDocument();
-    // The component's MAX_BIO_LENGTH constant is 5000 — verify it surfaces in the
-    // helper-text counter on initial render (remaining = 5000).
-    expect(screen.getByText(/5000 \/ 5000 characters remaining/i)).toBeInTheDocument();
-  });
-
-  // Case 40 — Selecting a portrait file calls uploadProfilePictureForUser with the
-  // selected user id (admin presigned-URL helper).
-  it('should_callUploadProfilePictureForUser_withSelectedUserId_whenPortraitChanges', async () => {
-    const user = userEvent.setup();
-    renderSubView();
-    await pickTestUser(user);
-
-    const fileInput = screen.getByTestId('speaker-portrait-file-input') as HTMLInputElement;
-    const file = new File(['fake-bytes'], 'portrait.jpg', { type: 'image/jpeg' });
-    await user.upload(fileInput, file);
-
-    await waitFor(() => {
-      expect(uploadProfilePictureForUser).toHaveBeenCalledTimes(1);
-    });
-    const [calledUserId, calledFile] = vi.mocked(uploadProfilePictureForUser).mock.calls[0];
-    expect(calledUserId).toBe(TEST_USER.id);
-    expect((calledFile as File).name).toBe('portrait.jpg');
   });
 
   // Case 41 — Regression guard: the request body must NOT include `username`. The
@@ -197,48 +163,24 @@ describe('ContentSubmissionSubView — AC10 cases 39–44', () => {
     expect(Object.keys(requestBody)).not.toContain('username');
   });
 
-  // Case 42 — Non-empty bio is propagated into the request body.
-  it('should_includeBioInRequestBody_whenBioIsNonEmpty', async () => {
+  // Epic 11 bug fix 2026-05-19 — bio + profilePictureUrl have been removed from the
+  // form, so the request body must NOT carry them. Keeps the contract narrow: the
+  // form is the per-event submission, user-level fields are edited elsewhere.
+  it('should_omitBioAndProfilePictureUrl_fromSubmitContentRequestBody', async () => {
     const user = userEvent.setup();
     renderSubView();
     await pickTestUser(user);
     await fillRequiredFields(user);
-
-    const bioField = screen.getByTestId('speaker-bio-field');
-    await user.type(bioField, 'Cloud architect & speaker since 2019.');
 
     await user.click(screen.getByTestId('submit-speaker-content-button'));
 
     await waitFor(() => {
       expect(speakerContentService.submitContent).toHaveBeenCalledTimes(1);
     });
-    const requestBody = vi.mocked(speakerContentService.submitContent).mock.calls[0][2];
-    expect(requestBody.bio).toBe('Cloud architect & speaker since 2019.');
-  });
-
-  // Case 43 — profilePictureUrl is captured into the request body after a successful
-  // portrait upload (the admin presigned-URL helper resolves to the CDN URL).
-  it('should_includeProfilePictureUrl_whenPortraitUploadSucceeds', async () => {
-    const user = userEvent.setup();
-    renderSubView();
-    await pickTestUser(user);
-
-    const fileInput = screen.getByTestId('speaker-portrait-file-input') as HTMLInputElement;
-    const file = new File(['fake-bytes'], 'portrait.jpg', { type: 'image/jpeg' });
-    await user.upload(fileInput, file);
-
-    await waitFor(() => {
-      expect(uploadProfilePictureForUser).toHaveBeenCalledTimes(1);
-    });
-
-    await fillRequiredFields(user);
-    await user.click(screen.getByTestId('submit-speaker-content-button'));
-
-    await waitFor(() => {
-      expect(speakerContentService.submitContent).toHaveBeenCalledTimes(1);
-    });
-    const requestBody = vi.mocked(speakerContentService.submitContent).mock.calls[0][2];
-    expect(requestBody.profilePictureUrl).toBe('https://cdn.example.com/portraits/jane.doe.jpg');
+    const calls = vi.mocked(speakerContentService.submitContent).mock.calls;
+    const requestBody = calls[0][2] as Record<string, unknown>;
+    expect(Object.keys(requestBody)).not.toContain('bio');
+    expect(Object.keys(requestBody)).not.toContain('profilePictureUrl');
   });
 
   // Case 44 — Submit mutation rejection surfaces an error Alert.
@@ -254,11 +196,8 @@ describe('ContentSubmissionSubView — AC10 cases 39–44', () => {
 
     await user.click(screen.getByTestId('submit-speaker-content-button'));
 
-    // The Alert renders either the rejected error message OR the i18n fallback
-    // `organizer:speakerContent.errors.submitFailed`. Both are acceptable per the
-    // component's `error instanceof Error ? .message : t(...)` branch.
-    const alert = await screen.findByRole('alert');
-    expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(/Server rejected the payload|Failed to submit content/i);
+    await waitFor(() => {
+      expect(screen.getByText('Server rejected the payload')).toBeInTheDocument();
+    });
   });
 });
