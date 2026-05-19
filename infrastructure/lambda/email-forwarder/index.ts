@@ -19,7 +19,7 @@ import {
   extractSenderEmail,
   extractSenderName,
   truncateEmail,
-  excludeSender,
+  // excludeSender,  // disabled — see commented block below; re-add to enable sender exclusion
   isCalendarReply,
 } from './utils';
 
@@ -96,16 +96,26 @@ export const handler = async (event: S3Event): Promise<void> => {
       return;
     }
 
-    // Exclude sender from recipients to prevent bounce loops
-    const filteredRecipients = excludeSender(recipients, senderEmail);
-    if (filteredRecipients.length < recipients.length) {
-      console.log('Excluded sender from recipients', { sender: truncatedSender });
-    }
-    if (filteredRecipients.length === 0) {
-      console.warn('No recipients after excluding sender', { to: toAddresses });
-      await publishMetric('EmailsUnresolved');
-      return;
-    }
+    // Sender-exclusion intentionally disabled: forwarded copies are sent from
+    // `noreply@batbern.ch` (rewritten From + envelope Source), so delivering a
+    // copy back to the original sender does not produce a bounce or a re-
+    // forwarding loop — resolved recipients are real mailbox addresses, not
+    // batbern.ch aliases. The commit message that introduced this guard
+    // (0a35eb0f) framed it as bounce prevention, but it was effectively a UX
+    // preference. Leaving the block here so it can be restored quickly if a
+    // future receipt setup changes that assumption — re-add `excludeSender`
+    // to the import above and rename `recipients` → `filteredRecipients` in
+    // the send loop below.
+    //
+    // const filteredRecipients = excludeSender(recipients, senderEmail);
+    // if (filteredRecipients.length < recipients.length) {
+    //   console.log('Excluded sender from recipients', { sender: truncatedSender });
+    // }
+    // if (filteredRecipients.length === 0) {
+    //   console.warn('No recipients after excluding sender', { to: toAddresses });
+    //   await publishMetric('EmailsUnresolved');
+    //   return;
+    // }
 
     // Rewrite email headers
     const rewrittenEmail = rewriteEmail(rawEmail, {
@@ -118,7 +128,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     // Send to each recipient with rate limiting
     let sentCount = 0;
     let failCount = 0;
-    for (const recipient of filteredRecipients) {
+    for (const recipient of recipients) {
       try {
         await ses.send(
           new SendRawEmailCommand({
@@ -132,7 +142,7 @@ export const handler = async (event: S3Event): Promise<void> => {
         failCount++;
         console.error('Failed to send to recipient', { recipient: truncateEmail(recipient), error: err });
       }
-      if (sentCount + failCount < filteredRecipients.length) {
+      if (sentCount + failCount < recipients.length) {
         await delay(RATE_DELAY_MS);
       }
     }
