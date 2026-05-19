@@ -19,6 +19,7 @@ import {
   extractSenderEmail,
   extractSenderName,
   truncateEmail,
+  isCalendarReply,
 } from '../../lambda/email-forwarder/utils';
 
 describe('T6 — S3 event parsing and header extraction', () => {
@@ -499,5 +500,126 @@ describe('T10 — Sender excluded from recipients to prevent bounce loops', () =
   test('should_handleEmptyRecipients', () => {
     const result = excludeSender([], 'sender@test.ch');
     expect(result).toEqual([]);
+  });
+});
+
+// ========================
+// T11: Calendar iMIP REPLY detection (drop auto-acceptances)
+// ========================
+
+describe('T11 — isCalendarReply suppresses iMIP acceptance fan-out', () => {
+  test('should_detectReply_when_topLevelTextCalendarMethodReply', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Subject: Accepted: BATbern59',
+      'Content-Type: text/calendar; charset=utf-8; method=REPLY',
+      '',
+      'BEGIN:VCALENDAR',
+      'METHOD:REPLY',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_multipartContainsCalendarReplyPart', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Subject: Accepted: BATbern59',
+      'Content-Type: multipart/alternative; boundary="bnd"',
+      '',
+      '--bnd',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'I accept.',
+      '--bnd',
+      'Content-Type: text/calendar; charset="utf-8"; method=REPLY',
+      'Content-Transfer-Encoding: base64',
+      '',
+      'QkVHSU46VkNBTEVOREFSCk1FVEhPRDpSRVBMWQpFTkQ6VkNBTEVOREFSCg==',
+      '--bnd--',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_methodOnContinuationLine', () => {
+    const raw = [
+      'From: Daniele <daniele@example.com>',
+      'To: events@batbern.ch',
+      'Content-Type: text/calendar;',
+      ' charset="utf-8";',
+      ' method=REPLY',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_methodValueIsQuoted', () => {
+    const raw = [
+      'From: x@y.com',
+      'To: events@batbern.ch',
+      'Content-Type: text/calendar; method="REPLY"',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_detectReply_when_caseVariantMethodReply', () => {
+    const raw = [
+      'From: x@y.com',
+      'To: events@batbern.ch',
+      'content-type: TEXT/CALENDAR; METHOD=reply',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(true);
+  });
+
+  test('should_returnFalse_when_calendarRequestNotReply', () => {
+    const raw = [
+      'From: organizer@batbern.ch',
+      'To: attendee@example.com',
+      'Content-Type: text/calendar; charset=utf-8; method=REQUEST',
+      '',
+      'BEGIN:VCALENDAR',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_calendarCancelNotReply', () => {
+    const raw = [
+      'From: organizer@batbern.ch',
+      'Content-Type: text/calendar; method=CANCEL',
+      '',
+      'body',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_plainTextEmail', () => {
+    const raw = [
+      'From: user@example.com',
+      'To: events@batbern.ch',
+      'Subject: Question about BATbern59',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'When does the event start?',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
+  });
+
+  test('should_returnFalse_when_subjectContainsWordReplyButNotCalendar', () => {
+    const raw = [
+      'From: user@example.com',
+      'To: events@batbern.ch',
+      'Subject: Re: REPLY needed',
+      'Content-Type: text/plain',
+      '',
+      'No method=REPLY here.',
+    ].join('\r\n');
+    expect(isCalendarReply(raw)).toBe(false);
   });
 });

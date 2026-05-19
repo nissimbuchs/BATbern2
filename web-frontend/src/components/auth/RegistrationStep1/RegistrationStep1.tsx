@@ -98,7 +98,12 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
             message: t('register.errors.fullNameTooLong'),
           },
           pattern: {
-            value: /^[a-zA-ZÄäÖöÜüß\s-]+$/,
+            // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
+            // whitespace, dot, apostrophe, and hyphen. The backend slug service
+            // normalises diacritics for the generated username; rejecting them
+            // here used to silently strip required form fields (2026-05-18
+            // incident: "René Strauss" / "Renée Gressly").
+            value: /^[\p{L}\s.'-]+$/u,
             message: t('register.errors.fullNameInvalid'),
           },
         })}

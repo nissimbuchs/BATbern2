@@ -409,6 +409,26 @@ class CompanyRepositoryTest {
 }
 ```
 
+### Lambda Handler Tests
+
+**CRITICAL**: Every Lambda function MUST have a handler-level unit test that directly imports and runs the handler module. CDK `Template.fromStack()` tests only verify the CloudFormation declaration — they do NOT test that the handler can load and execute. A missing native dependency (e.g. `sharp`, `pg-native`) causes `Runtime.ImportModuleError` at Lambda cold-start and 503 for **all** requests; a handler test catches this before any deploy.
+
+```typescript
+// ✅ Correct — imports and runs the handler (catches module load failures)
+test('module loads without crashing', async () => {
+  const { handler } = await import('../../../lib/lambda/image-resize/index');
+  expect(typeof handler).toBe('function');
+});
+
+// ❌ Wrong — only checks CloudFormation properties, not handler behaviour
+template.hasResourceProperties('AWS::CloudFront::Distribution', {
+  DefaultCacheBehavior: Match.objectLike({ LambdaFunctionAssociations: ... })
+});
+// This passes even if the Lambda module crashes at init
+```
+
+**Bundling rule for native dependencies:** The `tryBundle` local bundler MUST return `false` outside Jest (forcing Docker), so that native packages are installed with the correct Linux x64 platform. A local esbuild-only bundle silently omits native binaries. See `infrastructure/lib/stacks/storage-stack.ts` for the reference pattern.
+
 ### File Uploads
 
 **ALWAYS** use presigned URLs for direct S3 uploads. Never proxy files through backend:

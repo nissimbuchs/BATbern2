@@ -4,6 +4,8 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,9 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    /** For parsing the `custom:preferences` JSON blob set by the signup form. */
+    private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
+
     /**
      * Pre-handle method called before controller execution
      * <p>
@@ -85,10 +90,27 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                 return true;
             }
 
-            // Extract user information from JWT
+            // Extract user information from JWT.
+            //
+            // The signup form (authService.ts) packs first/last name into the
+            // `custom:preferences` JSON attribute, NOT the standard given_name /
+            // family_name. PostConfirmation Lambda reads from `custom:preferences`.
+            // When PostConfirmation fails (e.g. username collision blocks INSERT)
+            // and JIT runs as fallback, we'd otherwise create accounts with empty
+            // first/last names — 2026-05-18 incident with nikolay.borissov.2 /
+            // elmar.boschung.2. Read the same source as PostConfirmation.
             String email = jwt.getClaimAsString("email");
             String firstName = jwt.getClaimAsString("given_name");
             String lastName = jwt.getClaimAsString("family_name");
+            if (firstName == null || firstName.isEmpty() || lastName == null || lastName.isEmpty()) {
+                String[] fromPrefs = extractNamesFromPreferences(jwt);
+                if ((firstName == null || firstName.isEmpty()) && fromPrefs[0] != null) {
+                    firstName = fromPrefs[0];
+                }
+                if ((lastName == null || lastName.isEmpty()) && fromPrefs[1] != null) {
+                    lastName = fromPrefs[1];
+                }
+            }
 
             // Check if a pre-existing user record exists for this email (e.g. added by organizer
             // before the user self-registered in Cognito). If so, link the Cognito ID to that record
@@ -145,6 +167,34 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
         // Always return true to continue request
         return true;
+    }
+
+    /**
+     * Read first/last name from the Cognito `custom:preferences` JSON attribute.
+     *
+     * The signup form (web-frontend/src/services/auth/authService.ts:215-241)
+     * packs profile data as JSON in this single attribute because
+     * given_name/family_name are not in our Cognito write-attribute schema.
+     *
+     * Returns [firstName, lastName] with null entries when missing; never throws.
+     */
+    private String[] extractNamesFromPreferences(Jwt jwt) {
+        String raw = jwt.getClaimAsString("custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return new String[] { null, null };
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            String first = node.path("firstName").asText(null);
+            String last  = node.path("lastName").asText(null);
+            return new String[] {
+                    (first != null && !first.isEmpty()) ? first : null,
+                    (last  != null && !last.isEmpty())  ? last  : null
+            };
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON during JIT provisioning: {}", e.getMessage());
+            return new String[] { null, null };
+        }
     }
 
     /**

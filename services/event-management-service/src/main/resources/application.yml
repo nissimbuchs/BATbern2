@@ -88,6 +88,10 @@ app:
     from-name: ${EMAIL_FROM_NAME:BATbern Platform}
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
+    # ORGANIZER address embedded in registration confirmation .ics files.
+    # MUST NOT be a forwarded SES alias — mail clients auto-send iMIP REPLYs here
+    # on Accept/Decline, which would otherwise fan out to every organizer.
+    calendar-organizer-email: ${EMAIL_CALENDAR_ORGANIZER:calendar@batbern.ch}
     reply-to: ${EMAIL_REPLY_TO:replies@batbern.ch}
 
 # Story 10.29: Newsletter send tuning (canary mode)

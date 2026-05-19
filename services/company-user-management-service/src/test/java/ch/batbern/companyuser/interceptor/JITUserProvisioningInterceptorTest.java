@@ -80,6 +80,10 @@ class JITUserProvisioningInterceptorTest {
      */
 
     private Jwt createJwt(String subject, String email, String givenName, String familyName) {
+        return createJwt(subject, email, givenName, familyName, null);
+    }
+
+    private Jwt createJwt(String subject, String email, String givenName, String familyName, String preferencesJson) {
         Map<String, Object> headers = new HashMap<>();
         headers.put("alg", "RS256");
         headers.put("typ", "JWT");
@@ -94,6 +98,9 @@ class JITUserProvisioningInterceptorTest {
         }
         if  (familyName != null) {
             claims.put("family_name", familyName);
+        }
+        if  (preferencesJson != null) {
+            claims.put("custom:preferences", preferencesJson);
         }
         claims.put("iat", Instant.now().getEpochSecond());
         claims.put("exp", Instant.now().plusSeconds(3600).getEpochSecond());
@@ -305,6 +312,85 @@ class JITUserProvisioningInterceptorTest {
 
         // And: UserCreatedEvent was published
         verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    // ============================================================================
+    // 2026-05-18 regression — JIT used to read first/last name only from JWT
+    // given_name / family_name. The signup form actually packs those into a
+    // single `custom:preferences` JSON attribute (per ADR-001), so JIT ended
+    // up creating users with empty first/last name (nikolay.borissov.2 +
+    // elmar.boschung.2 are the recorded victims). Read both sources now.
+    // ============================================================================
+
+    @Test
+    void should_useCustomPreferences_when_givenAndFamilyNameClaimsAreMissing() throws Exception {
+        String cognitoUserId = "auth-signup-cognito-id";
+        String email = "nikolay.borissov@gmail.com";
+        String preferences = "{\"firstName\":\"Nikolay\",\"lastName\":\"Borissov\",\"language\":\"de\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User created = userCaptor.getValue();
+        assertThat(created.getFirstName()).isEqualTo("Nikolay");
+        assertThat(created.getLastName()).isEqualTo("Borissov");
+        assertThat(created.getUsername()).isEqualTo("nikolay.borissov");
+    }
+
+    @Test
+    void should_preferStandardClaim_when_bothStandardAndPreferencesPresent() throws Exception {
+        String cognitoUserId = "mixed-claims-cognito-id";
+        String email = "user@example.com";
+        // Standard claims wins (firstName='Jane'), even though preferences has firstName='Other'
+        String preferences = "{\"firstName\":\"Other\",\"lastName\":\"Person\"}";
+        Jwt jwt = createJwt(cognitoUserId, email, "Jane", "Smith", preferences);
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        interceptor.preHandle(request, response, new Object());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getFirstName()).isEqualTo("Jane");
+        assertThat(userCaptor.getValue().getLastName()).isEqualTo("Smith");
+    }
+
+    @Test
+    void should_failGracefully_when_preferencesJsonMalformed() throws Exception {
+        String cognitoUserId = "malformed-prefs-cognito-id";
+        String email = "noprefs@example.com";
+        Jwt jwt = createJwt(cognitoUserId, email, null, null, "this is not JSON {{");
+        JwtAuthenticationToken authentication = createJwtAuthentication(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE")));
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        boolean result = interceptor.preHandle(request, response, new Object());
+
+        // The interceptor must not block the request (non-blocking contract).
+        assertThat(result).isTrue();
     }
 
     @Test

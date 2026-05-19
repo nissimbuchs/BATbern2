@@ -1,6 +1,6 @@
 {
   "name": "image-resize",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Lambda@Edge function for on-the-fly image resizing via CloudFront",
   "main": "index.js",

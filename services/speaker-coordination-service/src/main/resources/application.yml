@@ -16,7 +16,6 @@ spring:
       minimum-idle: 2
       connection-timeout: 30000
   jpa:
-    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: false

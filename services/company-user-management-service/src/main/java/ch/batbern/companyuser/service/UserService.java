@@ -528,71 +528,45 @@ public class UserService {
     }
 
     /**
-     * Get-or-create pattern for domain services
-     * Story 1.16.2: Returns username as userId (meaningful ID, not UUID)
-     * Story 3.2: Enhanced matching - also matches by name when unambiguous
-     * AC12: Get-or-create user with idempotency
+     * Get-or-create pattern for domain services.
+     *
+     * Email is the only identity key. If the email exists, return the user; if
+     * not, create a new account with a deduplicated username (handled by
+     * {@link SlugGenerationService#ensureUniqueUsername}).
+     *
+     * History: a former name-based fallback existed for the historical batch
+     * import flow (Story 3.2). It was removed on 2026-05-18 because it caused
+     * cross-account email leakage when a person re-registered after a job
+     * change (the old account's stale `@oldemployer.ch` email was used for the
+     * new registration's confirmation, leading to SES bounces). The batch
+     * import path is no longer in active use. See
+     * docs/plans/user-identity-collision-fix-plan.md.
      */
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
         log.info("Get-or-create user for email: {}, name: {} {}",
                 request.getEmail(), request.getFirstName(), request.getLastName());
 
-        // 1. Try to find by email first (primary match)
         Optional<User> userByEmail = userRepository.findByEmail(request.getEmail());
         if (userByEmail.isPresent()) {
             User existingUser = userByEmail.get();
             log.debug("User found by email: {}", existingUser.getUsername());
             return new GetOrCreateUserResponse()
-                    .username(existingUser.getUsername())  // Story 1.16.2: username
-                    .created(false)
-                    .user(responseMapper.mapToResponse(existingUser));
-        }
-
-        // 2. Try to find by name (Story 3.2: Batch import name matching)
-        // Only match by name if unambiguous (exactly one user found)
-        List<User> usersByName = userRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(
-                request.getFirstName(),
-                request.getLastName()
-        );
-
-        if (usersByName.size() == 1) {
-            // Unambiguous name match - use this user
-            User existingUser = usersByName.get(0);
-            log.info("User found by unambiguous name match: {} (firstName: {}, lastName: {})",
-                    existingUser.getUsername(), request.getFirstName(), request.getLastName());
-
-            // Update user's email to the provided email (historical data correction)
-            if (existingUser.getEmail() == null || existingUser.getEmail().isEmpty()
-                    || existingUser.getEmail().endsWith("@batbern.ch")) {
-                log.info("Updating email for user {} from {} to {}",
-                        existingUser.getUsername(), existingUser.getEmail(), request.getEmail());
-                existingUser.setEmail(request.getEmail());
-                existingUser = userRepository.save(existingUser);
-            }
-
-            return new GetOrCreateUserResponse()
                     .username(existingUser.getUsername())
                     .created(false)
                     .user(responseMapper.mapToResponse(existingUser));
-        } else if (usersByName.size() > 1) {
-            log.warn("Ambiguous name match for {} {} - found {} users with same name",
-                    request.getFirstName(), request.getLastName(), usersByName.size());
-            // Fall through to create new user (ambiguous match)
         }
 
-        // 3. No match found or ambiguous match - create new user if allowed
         if (request.getCreateIfMissing() != null && request.getCreateIfMissing()) {
-            log.info("Creating new user: {} (email: {}, name: {} {})",
-                    request.getEmail(), request.getEmail(), request.getFirstName(), request.getLastName());
+            log.info("Creating new user: {} (name: {} {})",
+                    request.getEmail(), request.getFirstName(), request.getLastName());
             User newUser = createNewUser(request);
             return new GetOrCreateUserResponse()
-                    .username(newUser.getUsername())  // Story 1.16.2: username
+                    .username(newUser.getUsername())
                     .created(true)
                     .cognitoUserId(newUser.getCognitoUserId())
                     .user(responseMapper.mapToResponse(newUser));
-        } else {
-            throw new UserNotFoundException("User not found: " + request.getEmail());
         }
+        throw new UserNotFoundException("User not found: " + request.getEmail());
     }
 
     /**

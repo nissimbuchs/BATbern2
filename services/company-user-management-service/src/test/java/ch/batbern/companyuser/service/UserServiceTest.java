@@ -239,6 +239,97 @@ class UserServiceTest {
         verify(eventPublisher).publish(any(UserCreatedEvent.class));
     }
 
+    // ============================================================================
+    // 2026-05-18 regression — Daniel Berger registered with daniel.berger@mobi.ch
+    // but a separate user (daniel.berger@insel.ch) already existed under the same
+    // firstname.lastname. The old `findByFirstNameIgnoreCaseAndLastNameIgnoreCase`
+    // fallback returned the stale insel.ch user, the confirmation email went there
+    // and bounced. The fallback has been removed: distinct emails ⇒ distinct
+    // accounts, with the existing .2/.3 username deduplication.
+    // ============================================================================
+
+    @Test
+    void should_createNewAccount_when_emailIsNewButNameCollidesWithExistingUser() {
+        // Given — an existing user "Daniel Berger" with a different (stale) email
+        User existingDaniel = User.builder()
+                .id(UUID.randomUUID())
+                .username("daniel.berger")
+                .email("daniel.berger@insel.ch")   // stale, bounces
+                .firstName("Daniel")
+                .lastName("Berger")
+                .build();
+
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
+                .email("daniel.berger@mobi.ch")    // NEW email, real person changing jobs
+                .firstName("Daniel")
+                .lastName("Berger")
+                .companyId("Mobiliar")
+                .createIfMissing(true);
+
+        when(userRepository.findByEmail("daniel.berger@mobi.ch")).thenReturn(Optional.empty());
+        when(cognitoService.createCognitoUser(request)).thenReturn("cognito-mobi");
+        when(slugService.generateUsername("Daniel", "Berger")).thenReturn("daniel.berger");
+        when(slugService.ensureUniqueUsername(eq("daniel.berger"), any())).thenReturn("daniel.berger.2");
+
+        ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
+                .name("mobiliar").displayName("Mobiliar").build();
+        when(companyService.getOrCreateCompany("Mobiliar")).thenReturn(mockCompany);
+
+        User newDaniel = User.builder()
+                .id(UUID.randomUUID())
+                .username("daniel.berger.2")
+                .email("daniel.berger@mobi.ch")
+                .firstName("Daniel")
+                .lastName("Berger")
+                .companyId("mobiliar")
+                .cognitoUserId("cognito-mobi")
+                .roles(Set.of(Role.ATTENDEE))
+                .build();
+        when(userRepository.save(any(User.class))).thenReturn(newDaniel);
+        when(securityContext.getCurrentUsername()).thenReturn("anonymous");
+
+        UserResponse newDanielResponse = new UserResponse();
+        newDanielResponse.setId("daniel.berger.2");
+        newDanielResponse.setEmail("daniel.berger@mobi.ch");
+        newDanielResponse.setFirstName("Daniel");
+        newDanielResponse.setLastName("Berger");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(newDanielResponse);
+
+        // When
+        GetOrCreateUserResponse response = userService.getOrCreateUser(request);
+
+        // Then — a NEW account was created, NOT the existing daniel.berger@insel.ch user
+        assertThat(response.getCreated()).isTrue();
+        assertThat(response.getUsername()).isEqualTo("daniel.berger.2");
+        assertThat(response.getUser().getEmail()).isEqualTo("daniel.berger@mobi.ch");
+
+        // Critical: the existing (insel.ch) account must NOT have been touched
+        verify(userRepository, never()).findByFirstNameIgnoreCaseAndLastNameIgnoreCase(any(), any());
+        verify(userRepository).save(any(User.class));
+        verify(cognitoService).createCognitoUser(request);
+        verify(slugService).ensureUniqueUsername(eq("daniel.berger"), any());
+    }
+
+    @Test
+    void should_throwUserNotFound_when_emailNotFoundAndCreateIfMissingFalse() {
+        // Locks in: without name-fallback, missing email + createIfMissing=false → 404.
+        // Previously the name match could silently return some unrelated user with
+        // the same name; now we either find by email or fail.
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
+                .email("nobody@example.com")
+                .firstName("Daniel")
+                .lastName("Berger")
+                .createIfMissing(false);
+
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getOrCreateUser(request))
+                .isInstanceOf(UserNotFoundException.class);
+
+        verify(userRepository, never()).findByFirstNameIgnoreCaseAndLastNameIgnoreCase(any(), any());
+        verify(userRepository, never()).save(any());
+    }
+
     // Test 12.2: should_returnExistingUser_when_userExists (get-or-create)
     @Test
     void should_returnExistingUser_when_userExists() {

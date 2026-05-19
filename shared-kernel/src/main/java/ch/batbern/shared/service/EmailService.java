@@ -1,5 +1,6 @@
 package ch.batbern.shared.service;
 
+import ch.batbern.shared.util.ReservedEmailDomain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,6 +109,7 @@ public class EmailService {
      * through the Configuration Set's event destinations.
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody, String configurationSetName) {
+        assertSendable(to);
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
@@ -164,6 +166,7 @@ public class EmailService {
             String htmlBody,
             List<EmailAttachment> attachments
     ) {
+        assertSendable(to);
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -260,6 +263,7 @@ public class EmailService {
             List<EmailAttachment> attachments,
             String configurationSetName
     ) {
+        assertSendable(to);
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
@@ -396,6 +400,22 @@ public class EmailService {
         /** Backward-compatible constructor — inline defaults to false. */
         public EmailAttachment(String filename, byte[] content, String mimeType) {
             this(filename, content, mimeType, false);
+        }
+    }
+
+    /**
+     * Refuse outbound mail to RFC 2606 / RFC 6761 reserved domains (example.com,
+     * *.test, *.invalid, …). Throwing before the SES call protects SES quota and
+     * reputation from test fixtures, fuzzers, and security scanners.
+     *
+     * Async callers (RegistrationEmailService, NewsletterEmailService, etc.) wrap
+     * outbound sends in a broad try/catch, so this propagates cleanly without
+     * surfacing an error to the end user.
+     */
+    private static void assertSendable(String recipient) {
+        if (ReservedEmailDomain.isReserved(recipient)) {
+            log.warn("Refusing SES send to reserved-domain recipient: {}", recipient);
+            throw new ReservedEmailRecipientException(recipient);
         }
     }
 

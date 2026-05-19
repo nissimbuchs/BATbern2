@@ -1097,7 +1097,8 @@ jobs:
             echo "Running smoke tests against deployed staging environment..."
             ./scripts/ci/smoke-tests.sh \
               https://www.batbern.ch \
-              https://api.batbern.ch
+              https://api.batbern.ch \
+              https://cdn.batbern.ch
             echo "✅ Smoke tests passed"
           else
             echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"

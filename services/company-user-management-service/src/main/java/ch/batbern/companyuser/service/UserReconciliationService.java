@@ -3,6 +3,8 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -308,6 +310,23 @@ public class UserReconciliationService {
         String firstName = extractAttribute(cognitoUser, "given_name");
         String lastName = extractAttribute(cognitoUser, "family_name");
 
+        // The signup form stores names in `custom:preferences` JSON, NOT in
+        // given_name/family_name (ADR-001 — Cognito = authn only). If the
+        // standard claims are missing, fall back to the same source the
+        // PostConfirmation Lambda reads. Without this, the nightly 02:00
+        // reconciliation creates user_profile rows with empty first_name/
+        // last_name for every new Cognito user — the `user.X` pattern that
+        // produced today's empty-name BATbern59 registrations.
+        if (firstName == null || firstName.isEmpty() || lastName == null || lastName.isEmpty()) {
+            String[] fromPrefs = extractNamesFromPreferences(cognitoUser);
+            if ((firstName == null || firstName.isEmpty()) && fromPrefs[0] != null) {
+                firstName = fromPrefs[0];
+            }
+            if ((lastName == null || lastName.isEmpty()) && fromPrefs[1] != null) {
+                lastName = fromPrefs[1];
+            }
+        }
+
         // Generate username from first/last name or email (firstname.lastname format required)
         String username = generateUsername(firstName, lastName, email);
 
@@ -328,6 +347,35 @@ public class UserReconciliationService {
 
         log.info("Missing user created (roles will sync to JWT at next login)",
                 mapOf("cognitoId", cognitoId, "username", username, "roles", roles));
+    }
+
+    /** For parsing the `custom:preferences` JSON blob set by the signup form. */
+    private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
+
+    /**
+     * Read first/last name from the Cognito `custom:preferences` JSON attribute.
+     * Mirrors {@code JITUserProvisioningInterceptor#extractNamesFromPreferences}
+     * so reconciliation and JIT stay in sync on what they extract.
+     *
+     * Returns [firstName, lastName] with null entries when missing; never throws.
+     */
+    private String[] extractNamesFromPreferences(UserType cognitoUser) {
+        String raw = extractAttribute(cognitoUser, "custom:preferences");
+        if (raw == null || raw.isEmpty()) {
+            return new String[] { null, null };
+        }
+        try {
+            JsonNode node = PREFERENCES_MAPPER.readTree(raw);
+            String first = node.path("firstName").asText(null);
+            String last  = node.path("lastName").asText(null);
+            return new String[] {
+                    (first != null && !first.isEmpty()) ? first : null,
+                    (last  != null && !last.isEmpty())  ? last  : null
+            };
+        } catch (Exception e) {
+            log.warn("Failed to parse custom:preferences JSON during reconciliation: {}", e.getMessage());
+            return new String[] { null, null };
+        }
     }
 
     /**

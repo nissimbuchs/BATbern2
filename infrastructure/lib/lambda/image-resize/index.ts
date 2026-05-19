@@ -1,5 +1,12 @@
+// Redeploy marker — bump when the Lambda needs a forced rebuild without code
+// changes (e.g. after a sharp transitive-dep regression). The deploy-staging
+// workflow watches infrastructure/lib/lambda/** for changes; touching this
+// file is what triggers a full layer-based deploy that re-bundles native
+// dependencies through the Docker bundler. Previous touches:
+//   - 2026-05-16 (commit 436c4c9c): sharp transitive deps (detect-libc, color, semver)
+//   - 2026-05-18: forced rebuild after Tier-1 abuse-defense direct-update bypass
+//                 reverted the @img/* native packages back to the pre-fix state.
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import sharp from 'sharp';
 import type { CloudFrontRequestEvent, CloudFrontRequestResult } from 'aws-lambda';
 
 // Injected at CDK build time via esbuild --define (Lambda@Edge has no env vars)
@@ -23,6 +30,16 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
 
   if (!w && !h) return request;
 
+  // Dynamic import keeps the module loadable even if sharp is absent from the Lambda package.
+  // A static top-level import would crash module initialisation and break ALL requests with 503.
+  let sharpFn: typeof import('sharp');
+  try {
+    sharpFn = (await import('sharp')).default as unknown as typeof import('sharp');
+  } catch (err) {
+    console.error('image-resize: sharp import failed, falling back to pass-through', err);
+    return request;
+  }
+
   const fitRaw = params.get('fit') ?? 'cover';
   const fit: Fit = VALID_FIT.has(fitRaw) ? (fitRaw as Fit) : 'cover';
   const key = request.uri.replace(/^\//, '');
@@ -33,7 +50,7 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
     for await (const chunk of s3Resp.Body as AsyncIterable<Uint8Array>) {
       chunks.push(chunk);
     }
-    const resized = await sharp(Buffer.concat(chunks))
+    const resized = await sharpFn(Buffer.concat(chunks))
       .resize(w, h, { fit, withoutEnlargement: true })
       .webp({ quality: 80 })
       .toBuffer();
@@ -48,7 +65,8 @@ export const handler = async (event: CloudFrontRequestEvent): Promise<CloudFront
       body: resized.toString('base64'),
       bodyEncoding: 'base64',
     };
-  } catch {
-    return request; // fail open: pass through to S3 origin
+  } catch (err) {
+    console.error('image-resize: resize failed, falling back to pass-through', { key, err });
+    return request;
   }
 };
