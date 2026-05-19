@@ -35,7 +35,7 @@ import type { AxiosError } from 'axios';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import UserCreateEditModal from '@/components/organizer/UserManagement/UserCreateEditModal';
-import { searchUsers } from '@/services/api/userManagementApi';
+import { getUserByUsername, searchUsers } from '@/services/api/userManagementApi';
 import { usePromoteSpeakerToReady } from '@/hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { UserSearchResponse, User } from '@/types/user.types';
@@ -68,7 +68,9 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
   const [selectedUser, setSelectedUser] = useState<UserSearchResponse | null>(null);
   const [userPickerError, setUserPickerError] = useState<string | undefined>(undefined);
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserSearchResponse | null>(null);
+  // Holds the FULL `User` (UserResponse) shape — UserSearchResponse omits `bio` and
+  // other user-level fields, which would surface as an empty bio in the modal.
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const lastPrefilledSpeakerIdRef = useRef<string | null>(null);
 
@@ -100,9 +102,22 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
     setUserModalOpen(true);
   };
 
-  const handleEditSpeaker = () => {
-    setEditingUser(selectedUser);
+  const handleEditSpeaker = async () => {
+    if (!selectedUser) return;
+    // Epic 11 bug fix 2026-05-19 — fetch the full UserResponse before opening the
+    // modal so the bio + other user-level fields are populated. The narrow
+    // UserSearchResponse omits them; passing it to the modal surfaces an empty bio
+    // (mirrors the bug fixed in ContentSubmissionSubView).
+    setEditingUser(selectedUser as unknown as User);
     setUserModalOpen(true);
+    try {
+      const fullUser = await getUserByUsername(selectedUser.id);
+      if (fullUser) {
+        setEditingUser(fullUser);
+      }
+    } catch (error) {
+      console.error('Failed to fetch full user for edit:', error);
+    }
   };
 
   const handleUserModalClose = () => {
@@ -331,7 +346,7 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
         open={userModalOpen}
         onClose={handleUserModalClose}
         onSuccess={handleUserModalSuccess}
-        user={(editingUser as User) || null}
+        user={editingUser}
       />
     </>
   );

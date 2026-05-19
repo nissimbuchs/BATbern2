@@ -77,7 +77,11 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserSearchResponse | null>(null);
+  // `editingUser` holds the FULL `User` (UserResponse) shape — UserSearchResponse
+  // omits `bio` / `isActive` / other user-level fields, and passing it to the modal
+  // surfaces an empty bio even when the backend has one. Resolved on demand in
+  // `handleEditSpeaker` (fetches the full projection via getUserByUsername).
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const lastPrefilledSpeakerIdRef = useRef<string | null>(null);
 
@@ -204,9 +208,25 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     submitContentMutation.mutate(requestBody);
   };
 
-  const handleEditSpeaker = () => {
-    setEditingUser(selectedUser);
+  const handleEditSpeaker = async () => {
+    if (!selectedUser) return;
+    // Epic 11 bug fix 2026-05-19 — `selectedUser` is the narrow UserSearchResponse
+    // returned by the autocomplete, which omits `bio` / `isActive` and other
+    // user-level fields. Passing that to UserCreateEditModal renders an empty bio
+    // even when the backend has one set (e.g. opening the same modal from the
+    // user-list page shows the bio filled). Fetch the full `UserResponse` here so
+    // every field round-trips correctly. Modal opens optimistically with the
+    // narrow projection so the UI is responsive while the fetch resolves.
+    setEditingUser(selectedUser as unknown as User);
     setUserModalOpen(true);
+    try {
+      const fullUser = await getUserByUsername(selectedUser.id);
+      if (fullUser) {
+        setEditingUser(fullUser);
+      }
+    } catch (error) {
+      console.error('Failed to fetch full user for edit:', error);
+    }
   };
 
   const handleCreateSpeaker = () => {
@@ -410,7 +430,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
         open={userModalOpen}
         onClose={handleUserModalClose}
         onSuccess={handleUserModalSuccess}
-        user={(editingUser as User) || null}
+        user={editingUser}
       />
     </>
   );
