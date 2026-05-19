@@ -241,6 +241,19 @@ public class SpeakerPoolService {
             throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
         }
 
+        if (request.getSpeakerName() != null) {
+            String trimmed = request.getSpeakerName().trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("speakerName must not be blank");
+            }
+            speakerPool.setSpeakerName(trimmed);
+        }
+        if (request.getCompany() != null) {
+            speakerPool.setCompany(request.getCompany());
+        }
+        if (request.getExpertise() != null) {
+            speakerPool.setExpertise(request.getExpertise());
+        }
         if (request.getAssignedOrganizerId() != null) {
             speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
         }

@@ -4470,11 +4470,30 @@ export interface components {
     };
     /**
      * @description Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
-     *     (Story 11.D.1 AR23). All fields are optional — only non-null fields are
-     *     applied to the entry. `additionalProperties: false` rejects stale fields,
-     *     notably `email`, which is captured exclusively by `POST /speakers/{speakerId}/promote`.
+     *     (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
+     *     edits of the brainstorm-level metadata `speakerName` / `company` / `expertise`).
+     *     All fields are optional — only non-null fields are applied to the entry.
+     *     `additionalProperties: false` rejects stale fields, notably `email`, which is
+     *     captured exclusively by `POST /speakers/{speakerId}/promote`.
      */
     PatchSpeakerPoolRequest: {
+      /**
+       * @description Display name on the brainstorm/kanban (nullable not allowed — pass an existing
+       *     value to keep, omit to leave unchanged). For READY+ speakers the canonical name
+       *     lives on the linked User; this field updates the pool entry only.
+       * @example Jane Smith
+       */
+      speakerName?: string;
+      /**
+       * @description Speaker's company affiliation as known at brainstorm time (free text).
+       * @example ACME GmbH
+       */
+      company?: string;
+      /**
+       * @description Comma-separated or free-text expertise tags shown on the kanban card.
+       * @example Cloud Architecture, Kubernetes
+       */
+      expertise?: string;
       /**
        * @description Username of organizer assigned for outreach (nullable to clear).
        * @example alice.mueller
@@ -4510,15 +4529,17 @@ export interface components {
       email: string;
       /**
        * @description Required (Story 11.E.4 AC4). Populates the Cognito user's `given_name` attribute
-       *     and the User's `first_name` column. Blank / whitespace-only values rejected by
-       *     `@NotBlank` validation → HTTP 400.
+       *     and the User's `first_name` column. Must contain at least one non-whitespace
+       *     character — blank / whitespace-only values are rejected by both the spec
+       *     `pattern` and server-side `@NotBlank` validation → HTTP 400.
        * @example Jane
        */
       firstName: string;
       /**
        * @description Required (Story 11.E.4 AC4). Populates the Cognito user's `family_name` attribute
-       *     and the User's `last_name` column. Blank / whitespace-only values rejected by
-       *     `@NotBlank` validation → HTTP 400.
+       *     and the User's `last_name` column. Must contain at least one non-whitespace
+       *     character — blank / whitespace-only values are rejected by both the spec
+       *     `pattern` and server-side `@NotBlank` validation → HTTP 400.
        * @example Smith
        */
       lastName: string;

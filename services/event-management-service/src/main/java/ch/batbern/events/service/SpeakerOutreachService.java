@@ -106,6 +106,9 @@ public class SpeakerOutreachService {
         LOG.info("Created outreach history record {} for speaker {}", savedOutreach.getId(), speakerId);
 
         // 4. Transition speaker state to CONTACTED (if not already) via the sole-writer.
+        //    suppressHistoryRow=true: the OutreachHistory row above IS the audit entry; an
+        //    additional status_history row would surface as a duplicate (and misleading)
+        //    second timeline entry in the unified history feed.
         if (currentState == SpeakerWorkflowState.IDENTIFIED) {
             List<String> roles;
             try {
@@ -115,7 +118,7 @@ public class SpeakerOutreachService {
             }
             SecurityPrincipal actor = new SecurityPrincipal(organizerUsername, roles);
             TransitionPayload payload = TransitionPayload.builder()
-                    .reason("Outreach recorded — speaker contacted")
+                    .suppressHistoryRow(true)
                     .build();
             speakerWorkflowService.transition(
                     speakerId, SpeakerWorkflowState.CONTACTED, actor, payload);

@@ -49,7 +49,6 @@ import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/Sp
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { SpeakerDetailDrawer } from '@/components/organizer/SpeakerDrawer';
 import MarkContactedModal from '@/components/organizer/SpeakerOutreach/MarkContactedModal';
-import { PromoteSpeakerDialog } from '@/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
@@ -77,17 +76,15 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Story 11.D.4 — when the kanban dispatches `legal-input` for ACCEPTED→CONTENT_SUBMITTED
   // or CONTENT_SUBMITTED→QUALITY_REVIEWED, the drawer must open pre-positioned at the
   // matching sub-view. The drawer reads this prop on each `speakerKey` change.
+  // Epic 11 bug fix 2026-05-18 — `'promote'` added (replaces the legacy PromoteSpeakerDialog);
+  // `'content-submission'` now opens the drawer at the Content TAB (not a takeover view).
   const [initialDrawerView, setInitialDrawerView] = useState<
-    null | 'content-submission' | 'quality-review'
+    null | 'content-submission' | 'quality-review' | 'promote'
   >(null);
   const [autoAssignLoading, setAutoAssignLoading] = useState(false);
   const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
   // Story 11.D.2 — hoist modal state so kanban primary-action buttons can drive it.
   const [outreachModalState, setOutreachModalState] = useState<{
-    open: boolean;
-    speaker: SpeakerPoolEntry | null;
-  }>({ open: false, speaker: null });
-  const [promoteModalState, setPromoteModalState] = useState<{
     open: boolean;
     speaker: SpeakerPoolEntry | null;
   }>({ open: false, speaker: null });
@@ -174,9 +171,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     setOutreachModalState({ open: true, speaker });
   };
 
-  // Story 11.D.2 — CONTACTED card primary-action button.
+  // Epic 11 bug fix 2026-05-18 — CONTACTED card primary-action button now opens the
+  // drawer at the in-drawer Promote sub-view (with UserAutocomplete + Create-New-Speaker)
+  // instead of the legacy PromoteSpeakerDialog modal.
   const handlePromoteSpeaker = (speaker: SpeakerPoolEntry) => {
-    setPromoteModalState({ open: true, speaker });
+    setSelectedSpeaker(speaker);
+    setInitialDrawerView('promote');
+    setDetailsDrawerOpen(true);
   };
 
   // Story 11.D.4 — READY card primary-action button + READY→INVITED drag target.
@@ -540,16 +541,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
           eventCode={eventCode}
           speakerId={outreachModalState.speaker.id}
           speakerName={outreachModalState.speaker.speakerName}
-        />
-      )}
-
-      {/* Story 11.D.2 — Hoisted modal: PromoteSpeakerDialog driven by CONTACTED card button */}
-      {promoteModalState.speaker && (
-        <PromoteSpeakerDialog
-          open={promoteModalState.open}
-          onClose={() => setPromoteModalState({ open: false, speaker: null })}
-          speaker={promoteModalState.speaker}
-          eventCode={eventCode}
         />
       )}
     </Stack>

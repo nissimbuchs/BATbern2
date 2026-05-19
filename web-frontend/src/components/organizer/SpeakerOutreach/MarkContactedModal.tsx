@@ -51,6 +51,18 @@ interface FormErrors {
   contactDate?: string;
 }
 
+// `<input type="datetime-local">` interprets its value as **local time**. Building the
+// default with `toISOString().slice(0, 16)` returns UTC and silently shifts the wall-clock
+// time backwards (e.g. CEST organizer at 17:39 sees `15:38` and submits 2h-stale data).
+function nowAsLocalDatetimeLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
   open,
   onClose,
@@ -64,7 +76,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
 
   const initialFormData: FormData = {
     contactMethod: '',
-    contactDate: new Date().toISOString().slice(0, 16), // Default to now (datetime-local format)
+    contactDate: nowAsLocalDatetimeLocal(),
     notes: '',
   };
 
@@ -76,7 +88,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
     if (open) {
       setFormData({
         ...initialFormData,
-        contactDate: new Date().toISOString().slice(0, 16),
+        contactDate: nowAsLocalDatetimeLocal(),
       });
       setErrors({});
     }

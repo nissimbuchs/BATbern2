@@ -136,11 +136,13 @@ describe('AppHeader Component', () => {
       sidebarCollapsed: false,
       notificationDrawerOpen: false,
       userMenuOpen: false,
+      activeNavRole: null,
       setLocale: vi.fn(),
       toggleSidebar: vi.fn(),
       setSidebarCollapsed: vi.fn(),
       setNotificationDrawerOpen: vi.fn(),
       setUserMenuOpen: vi.fn(),
+      setActiveNavRole: vi.fn(),
       reset: vi.fn(),
     });
   });

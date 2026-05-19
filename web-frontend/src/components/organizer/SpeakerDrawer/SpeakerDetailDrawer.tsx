@@ -27,7 +27,6 @@ import {
   Snackbar,
   Tab,
   Tabs,
-  Chip,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -42,10 +41,12 @@ import { useTranslation } from 'react-i18next';
 import { SpeakerDrawerHeader } from './SpeakerDrawerHeader';
 import { DetailsTabPanel } from './DetailsTabPanel';
 import { ContentSubmissionSubView } from './ContentSubmissionSubView';
+import { PromoteSpeakerSubView } from './PromoteSpeakerSubView';
 import { QualityReviewSubView } from './QualityReviewSubView';
 import { PrimaryActionSurface } from './PrimaryActionSurface';
 import { UnifiedHistoryPanel } from './UnifiedHistoryPanel';
 import { getDefaultTab } from './getDefaultTab';
+import type { DrawerTabKey } from './getDefaultTab';
 import { StatusChangeDialog } from '@/components/organizer/SpeakerStatus/StatusChangeDialog';
 import {
   ALLOWED_TRANSITIONS,
@@ -60,9 +61,15 @@ import type {
 } from '@/components/organizer/SpeakerStatus/getPrimaryAction';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 
-export type DrawerView = null | 'content-submission' | 'quality-review';
+export type DrawerView = null | 'content-submission' | 'quality-review' | 'promote';
 
-const CONTENT_CHIP_STATES: ReadonlySet<KanbanState> = new Set([
+/**
+ * States where the Content tab is rendered alongside Details + History (Epic 11 bug fix
+ * 2026-05-18 — previously a Chip that opened a takeover view). In READY the speaker has
+ * not accepted yet, so the Content tab body shows the form with a banner + a disabled
+ * submit button; ACCEPTED+ behaves as before (required fields, active submit).
+ */
+const CONTENT_TAB_STATES: ReadonlySet<KanbanState> = new Set([
   'READY',
   'ACCEPTED',
   'CONTENT_SUBMITTED',
@@ -128,8 +135,9 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<DrawerTabKey>('details');
   const [drawerView, setDrawerView] = useState<DrawerView>(null);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [statusDialogState, setStatusDialogState] = useState<{
     open: boolean;
     newStatus: SpeakerWorkflowState | null;
@@ -148,15 +156,25 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   if (speakerKey !== prevSpeakerKey) {
     setPrevSpeakerKey(speakerKey);
     if (speaker && open) {
-      setTab(getDefaultTab(speaker));
-      // Story 11.D.4 — honor parent-supplied initialDrawerView (kanban drop entry point).
-      setDrawerView(initialDrawerView);
+      // Epic 11 bug fix 2026-05-18 — `initialDrawerView='content-submission'` now
+      // navigates to the Content TAB (not a takeover view); `'quality-review'` and
+      // `'promote'` remain full takeover sub-views. Apply the tab mapping here so the
+      // drawer opens correctly even when the parent dispatcher still uses the legacy
+      // 'content-submission' enum value.
+      if (initialDrawerView === 'content-submission') {
+        setTab('content');
+        setDrawerView(null);
+      } else {
+        setTab(getDefaultTab(speaker));
+        setDrawerView(initialDrawerView);
+      }
       setStatusDialogState({ open: false, newStatus: null });
       setOverrideMenuAnchor(null);
+      setIsEditingDetails(false);
     }
   }
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: DrawerTabKey) => {
     setTab(newValue);
   };
 
@@ -197,13 +215,21 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   const primaryActionCallbacks = useMemo<PrimaryActionCallbacks>(
     () => ({
       onLogOutreach: onLogOutreach ?? (() => undefined),
-      onPromoteSpeaker: onPromoteSpeaker ?? (() => undefined),
+      // Default behaviour when no parent handler is provided: open the in-drawer
+      // Promote sub-view (Epic 11 bug fix 2026-05-18 — replaces PromoteSpeakerDialog).
+      onPromoteSpeaker:
+        onPromoteSpeaker ??
+        ((s) => {
+          void s;
+          setDrawerView('promote');
+        }),
       onSendInvitation: onSendInvitation ?? (() => undefined),
+      // Default behaviour: switch to the Content TAB (no longer a takeover view).
       onEnterContent:
         onEnterContent ??
         ((s) => {
           void s;
-          setDrawerView('content-submission');
+          setTab('content');
         }),
       onReviewContent:
         onReviewContent ??
@@ -242,7 +268,8 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           // now converge on identical modal flows.
           switch (intent.modal) {
             case 'content-form':
-              setDrawerView('content-submission');
+              // Epic 11 bug fix 2026-05-18 — Content is a tab, not a takeover view.
+              setTab('content');
               return;
             case 'quality-review':
               setDrawerView('quality-review');
@@ -313,12 +340,11 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   };
 
   const drawerContent =
-    drawerView === 'content-submission' ? (
-      <ContentSubmissionSubView
+    drawerView === 'promote' ? (
+      <PromoteSpeakerSubView
         speaker={speaker}
         eventCode={eventCode}
         onBack={() => setDrawerView(null)}
-        onClose={onClose}
       />
     ) : drawerView === 'quality-review' ? (
       <QualityReviewSubView
@@ -350,7 +376,7 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           )}
           {speakerStatus !== 'DECLINED' && (
             <ListItemButton
-              onClick={() => setTab(0)}
+              onClick={() => setTab('details')}
               data-testid="drawer-action-reassign-organizer"
             >
               <ListItemIcon>
@@ -361,7 +387,13 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
               />
             </ListItemButton>
           )}
-          <ListItemButton onClick={() => setTab(0)} data-testid="drawer-action-edit-details">
+          <ListItemButton
+            onClick={() => {
+              setTab('details');
+              setIsEditingDetails(true);
+            }}
+            data-testid="drawer-action-edit-details"
+          >
             <ListItemIcon>
               <EditIcon />
             </ListItemIcon>
@@ -400,19 +432,6 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           ))}
         </Menu>
 
-        {/* Content sub-tab chip — AC7.4 */}
-        {CONTENT_CHIP_STATES.has(speakerStatus) && (
-          <Box sx={{ px: 3, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-            <Chip
-              label={t('organizer:speakerDrawer.subTabs.content')}
-              color="primary"
-              variant="outlined"
-              onClick={() => setDrawerView('content-submission')}
-              data-testid="drawer-content-sub-tab-chip"
-            />
-          </Box>
-        )}
-
         <Tabs
           value={tab}
           onChange={handleTabChange}
@@ -420,13 +439,44 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           scrollButtons={isMobile ? 'auto' : false}
           sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}
         >
-          <Tab label={t('organizer:speakerDrawer.tabs.details')} data-testid="drawer-tab-details" />
-          <Tab label={t('organizer:speakerDrawer.tabs.history')} data-testid="drawer-tab-history" />
+          <Tab
+            value="details"
+            label={t('organizer:speakerDrawer.tabs.details')}
+            data-testid="drawer-tab-details"
+          />
+          {CONTENT_TAB_STATES.has(speakerStatus) && (
+            <Tab
+              value="content"
+              label={t('organizer:speakerDrawer.tabs.content', 'Content')}
+              data-testid="drawer-tab-content"
+            />
+          )}
+          <Tab
+            value="history"
+            label={t('organizer:speakerDrawer.tabs.history')}
+            data-testid="drawer-tab-history"
+          />
         </Tabs>
 
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {tab === 0 && <DetailsTabPanel speaker={speaker} />}
-          {tab === 1 && <UnifiedHistoryPanel speaker={speaker} eventCode={eventCode} />}
+          {tab === 'details' && (
+            <DetailsTabPanel
+              speaker={speaker}
+              eventCode={eventCode}
+              isEditing={isEditingDetails}
+              onExitEditMode={() => setIsEditingDetails(false)}
+            />
+          )}
+          {tab === 'content' && CONTENT_TAB_STATES.has(speakerStatus) && (
+            <ContentSubmissionSubView
+              speaker={speaker}
+              eventCode={eventCode}
+              onBack={() => setTab('details')}
+              onClose={onClose}
+              embedded
+            />
+          )}
+          {tab === 'history' && <UnifiedHistoryPanel speaker={speaker} eventCode={eventCode} />}
         </Box>
 
         <StatusChangeDialog

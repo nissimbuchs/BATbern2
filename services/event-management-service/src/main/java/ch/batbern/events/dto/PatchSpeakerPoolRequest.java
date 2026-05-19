@@ -23,6 +23,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class PatchSpeakerPoolRequest {
+    private String speakerName;
+    private String company;
+    private String expertise;
     private String assignedOrganizerId;
     private String notes;
 }

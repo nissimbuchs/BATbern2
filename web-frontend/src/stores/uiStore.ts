@@ -7,6 +7,7 @@
  */
 
 import { create } from 'zustand';
+import type { UserRole } from '@/types/auth';
 
 type Locale = 'de' | 'en';
 
@@ -15,6 +16,8 @@ interface UIState {
   sidebarCollapsed: boolean;
   notificationDrawerOpen: boolean;
   userMenuOpen: boolean;
+  /** Active role filter for the nav RoleSelector; null means "no preference / single-role user". */
+  activeNavRole: UserRole | null;
 }
 
 interface UIActions {
@@ -23,6 +26,7 @@ interface UIActions {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setNotificationDrawerOpen: (open: boolean) => void;
   setUserMenuOpen: (open: boolean) => void;
+  setActiveNavRole: (role: UserRole | null) => void;
   reset: () => void;
 }
 
@@ -33,6 +37,7 @@ const initialState: UIState = {
   sidebarCollapsed: false,
   notificationDrawerOpen: false,
   userMenuOpen: false,
+  activeNavRole: null,
 };
 
 // Initialize locale from localStorage if available
@@ -54,11 +59,20 @@ const getInitialSidebarState = (): boolean => {
   return stored === 'true';
 };
 
+const VALID_ROLES: ReadonlySet<UserRole> = new Set(['organizer', 'partner', 'speaker', 'attendee']);
+
+const getInitialActiveNavRole = (): UserRole | null => {
+  const stored = localStorage.getItem('batbern-ui-active-nav-role');
+  if (!stored) return null;
+  return VALID_ROLES.has(stored as UserRole) ? (stored as UserRole) : null;
+};
+
 export const useUIStore = create<UIStore>()((set) => ({
   locale: getInitialLocale(),
   sidebarCollapsed: getInitialSidebarState(),
   notificationDrawerOpen: false,
   userMenuOpen: false,
+  activeNavRole: getInitialActiveNavRole(),
 
   setLocale: (locale) => {
     localStorage.setItem('batbern-ui-locale', JSON.stringify(locale));
@@ -81,9 +95,19 @@ export const useUIStore = create<UIStore>()((set) => ({
 
   setUserMenuOpen: (userMenuOpen) => set(() => ({ userMenuOpen })),
 
+  setActiveNavRole: (activeNavRole) => {
+    if (activeNavRole) {
+      localStorage.setItem('batbern-ui-active-nav-role', activeNavRole);
+    } else {
+      localStorage.removeItem('batbern-ui-active-nav-role');
+    }
+    set(() => ({ activeNavRole }));
+  },
+
   reset: () => {
     localStorage.removeItem('batbern-ui-locale');
     localStorage.removeItem('batbern-ui-sidebar');
+    localStorage.removeItem('batbern-ui-active-nav-role');
     set(() => ({ ...initialState }));
   },
 }));

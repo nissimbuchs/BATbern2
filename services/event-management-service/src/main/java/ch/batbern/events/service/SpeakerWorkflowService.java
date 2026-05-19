@@ -170,8 +170,12 @@ public class SpeakerWorkflowService {
         speaker.setStatus(target);
         SpeakerPool persisted = speakerPoolRepository.save(speaker);
 
-        // 7. Write status-history row
-        SpeakerStatusHistory historyRow = writeHistoryRow(persisted, current, target, actor, safePayload);
+        // 7. Write status-history row (skip when the caller's own audit log already captures
+        //    this change — e.g. SpeakerOutreachService writes an OutreachHistory row and asks
+        //    the workflow service to suppress the redundant status_history entry).
+        SpeakerStatusHistory historyRow = safePayload.suppressHistoryRow()
+                ? null
+                : writeHistoryRow(persisted, current, target, actor, safePayload);
 
         // 8. Publish SpeakerWorkflowStateChangeEvent (best-effort — failure does NOT roll back)
         publishWorkflowStateChangeEvent(persisted, current, target, actor);

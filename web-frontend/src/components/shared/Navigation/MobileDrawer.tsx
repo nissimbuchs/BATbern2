@@ -21,16 +21,28 @@ import {
 import { Close, Logout } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { NavigationMenu } from './NavigationMenu';
+import { RoleSelector } from './RoleSelector';
 import type { UserRole } from '@/types/auth';
 
 interface MobileDrawerProps {
   open: boolean;
   onClose: () => void;
   userRoles: UserRole[];
+  /** Single role to display nav items for. Always defined; multi-role users get a chip row above the nav. */
+  activeRole: UserRole;
+  /** Multi-role only: invoked when the user picks a different role chip. */
+  onActiveRoleChange?: (role: UserRole) => void;
   userEmail?: string;
 }
 
-export function MobileDrawer({ open, onClose, userRoles, userEmail }: MobileDrawerProps) {
+export function MobileDrawer({
+  open,
+  onClose,
+  userRoles,
+  activeRole,
+  onActiveRoleChange,
+  userEmail,
+}: MobileDrawerProps) {
   const { t } = useTranslation();
   const handleLogout = () => {
     // Logout will be handled by parent component
@@ -92,10 +104,16 @@ export function MobileDrawer({ open, onClose, userRoles, userEmail }: MobileDraw
           </>
         )}
 
-        {/* Navigation Menu — Story 11.E.3: NavigationMenu renders grouped sections
-            (with dividers) for multi-role users; no separate role-selector in the drawer. */}
+        {/* Multi-role users see the same RoleSelector chip row as the desktop
+            header; the nav menu below filters down to the chosen role. */}
+        {userRoles.length > 1 && onActiveRoleChange && (
+          <Box sx={{ px: 2, pt: 2 }}>
+            <RoleSelector roles={userRoles} activeRole={activeRole} onChange={onActiveRoleChange} />
+          </Box>
+        )}
+
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-          <NavigationMenu userRoles={userRoles} onItemClick={onClose} variant="vertical" />
+          <NavigationMenu userRoles={[activeRole]} onItemClick={onClose} variant="vertical" />
         </Box>
 
         <Divider />

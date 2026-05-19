@@ -233,6 +233,29 @@ class SpeakerWorkflowServiceTest {
     }
 
     @Test
+    @DisplayName("suppressHistoryRow=true skips status_history write but still transitions + publishes event")
+    void should_skipStatusHistoryWrite_when_suppressHistoryRowTrue() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+
+        TransitionPayload payload = TransitionPayload.builder().suppressHistoryRow(true).build();
+
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.CONTACTED, ORGANIZER, payload);
+
+        // State persisted on the speaker pool entry
+        assertThat(speaker.getStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
+        verify(speakerPoolRepository).save(speaker);
+
+        // No status_history row written — the caller (e.g. SpeakerOutreachService) owns the audit
+        verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
+
+        // Domain event still published so downstream subscribers see the transition
+        verify(domainEventPublisher).publish(any(SpeakerWorkflowStateChangeEvent.class));
+    }
+
+    @Test
     @DisplayName("READY precondition: email is required to promote from CONTACTED to READY")
     void should_throwValidationException_when_promotingToReadyWithoutEmail() {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);

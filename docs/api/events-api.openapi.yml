@@ -8404,11 +8404,32 @@ components:
       type: object
       description: |
         Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
-        (Story 11.D.1 AR23). All fields are optional — only non-null fields are
-        applied to the entry. `additionalProperties: false` rejects stale fields,
-        notably `email`, which is captured exclusively by `POST /speakers/{speakerId}/promote`.
+        (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
+        edits of the brainstorm-level metadata `speakerName` / `company` / `expertise`).
+        All fields are optional — only non-null fields are applied to the entry.
+        `additionalProperties: false` rejects stale fields, notably `email`, which is
+        captured exclusively by `POST /speakers/{speakerId}/promote`.
       additionalProperties: false
       properties:
+        speakerName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: |
+            Display name on the brainstorm/kanban (nullable not allowed — pass an existing
+            value to keep, omit to leave unchanged). For READY+ speakers the canonical name
+            lives on the linked User; this field updates the pool entry only.
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Speaker's company affiliation as known at brainstorm time (free text).
+          example: ACME GmbH
+        expertise:
+          type: string
+          maxLength: 1000
+          description: Comma-separated or free-text expertise tags shown on the kanban card.
+          example: Cloud Architecture, Kubernetes
         assignedOrganizerId:
           type: string
           maxLength: 255

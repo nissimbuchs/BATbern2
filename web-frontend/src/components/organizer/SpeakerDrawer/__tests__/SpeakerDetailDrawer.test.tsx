@@ -212,41 +212,38 @@ describe('SpeakerDetailDrawer — Story 11.D.4 AC10 cases 31-38', () => {
     expect(within(list).getByText('Override state')).toBeInTheDocument();
   });
 
-  // Case 33 — Content sub-tab chip renders for READY / ACCEPTED / CONTENT_SUBMITTED /
-  // QUALITY_REVIEWED, and only those four states.
-  it('should_renderContentSubTabChip_only_forContentChipStates', () => {
-    const chipStates: SpeakerWorkflowState[] = [
+  // Case 33 (Epic 11 bug fix 2026-05-18) — Content TAB renders for READY / ACCEPTED /
+  // CONTENT_SUBMITTED / QUALITY_REVIEWED, and only those four states. Replaces the
+  // prior Chip-based variant.
+  it('should_renderContentTab_only_forContentTabStates', () => {
+    const tabStates: SpeakerWorkflowState[] = [
       'READY',
       'ACCEPTED',
       'CONTENT_SUBMITTED',
       'QUALITY_REVIEWED',
     ];
-    const nonChipStates: SpeakerWorkflowState[] = [
-      'IDENTIFIED',
-      'CONTACTED',
-      'INVITED',
-      'DECLINED',
-    ];
+    const noTabStates: SpeakerWorkflowState[] = ['IDENTIFIED', 'CONTACTED', 'INVITED', 'DECLINED'];
 
-    for (const status of chipStates) {
+    for (const status of tabStates) {
       const { unmount } = renderDrawer({ speaker: makeSpeaker(status) });
-      expect(screen.getByTestId('drawer-content-sub-tab-chip')).toBeInTheDocument();
+      expect(screen.getByTestId('drawer-tab-content')).toBeInTheDocument();
       unmount();
     }
 
-    for (const status of nonChipStates) {
+    for (const status of noTabStates) {
       const { unmount } = renderDrawer({ speaker: makeSpeaker(status) });
-      expect(screen.queryByTestId('drawer-content-sub-tab-chip')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('drawer-tab-content')).not.toBeInTheDocument();
       unmount();
     }
   });
 
-  // Case 34 — 2-tab layout (Details + History). The deleted Overview + Activity tabs
-  // must NOT render.
-  it('should_render2TabLayout_DetailsAndHistory_andNotOverviewOrActivity', () => {
+  // Case 34 — Tab layout. Details + History always render; Content tab is conditional
+  // (only for READY+). The deleted Overview + Activity tabs must NOT render.
+  it('should_renderTabLayout_DetailsAndHistory_andNotOverviewOrActivity', () => {
     renderDrawer({ speaker: makeSpeaker('ACCEPTED') });
 
     expect(screen.getByTestId('drawer-tab-details')).toBeInTheDocument();
+    expect(screen.getByTestId('drawer-tab-content')).toBeInTheDocument();
     expect(screen.getByTestId('drawer-tab-history')).toBeInTheDocument();
 
     // Regression guard — the deleted OverviewTabPanel / ActivityTabPanel tabs must
@@ -286,20 +283,22 @@ describe('SpeakerDetailDrawer — Story 11.D.4 AC10 cases 31-38', () => {
     expect(within(menu).queryByTestId('drawer-override-target-declined')).not.toBeInTheDocument();
   });
 
-  // Case 37 — Override ACCEPTED → CONTENT_SUBMITTED dispatches to
-  // ContentSubmissionSubView (intent `legal-input` with modal `content-form`).
-  it('should_dispatchToContentSubmissionSubView_when_OverrideACCEPTEDtoCONTENT_SUBMITTED', async () => {
+  // Case 37 (Epic 11 bug fix 2026-05-18) — Override ACCEPTED → CONTENT_SUBMITTED now
+  // switches the drawer to the Content TAB (intent `legal-input` with modal
+  // `content-form`). Previously this opened a takeover sub-view; the tab refactor
+  // converges on the in-drawer Content tab body.
+  it('should_switchToContentTab_when_OverrideACCEPTEDtoCONTENT_SUBMITTED', async () => {
     const user = userEvent.setup();
     const speaker = makeSpeaker('ACCEPTED');
     renderDrawer({ speaker });
 
-    // SubView is not yet rendered (drawerView === null on open).
+    // Default tab for ACCEPTED is Details — the Content tab is mounted but not selected.
     expect(screen.queryByTestId('content-submission-subview-stub')).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('drawer-action-override-state'));
     await user.click(screen.getByTestId('drawer-override-target-content_submitted'));
 
-    // The override switches drawerView to 'content-submission' — the stub mounts.
+    // The override switches the active tab to 'content' — the stub mounts in-place.
     const sub = screen.getByTestId('content-submission-subview-stub');
     expect(sub).toBeInTheDocument();
     expect(sub).toHaveAttribute('data-speaker-id', speaker.id);

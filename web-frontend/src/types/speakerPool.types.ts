@@ -72,6 +72,9 @@ export interface AddSpeakerToPoolRequest {
 }
 
 export interface PatchSpeakerPoolRequest {
+  speakerName?: string;
+  company?: string;
+  expertise?: string;
   assignedOrganizerId?: string;
   notes?: string;
 }

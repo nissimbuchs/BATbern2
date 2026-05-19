@@ -51,6 +51,12 @@ interface ContentSubmissionSubViewProps {
   eventCode: string;
   onBack: () => void;
   onClose: () => void;
+  /**
+   * When true the sub-view renders without its takeover chrome (back-arrow header bar +
+   * onClose-on-success). Used by the drawer's Content TAB so the tab body looks like a
+   * regular panel. Epic 11 bug fix 2026-05-18.
+   */
+  embedded?: boolean;
 }
 
 const MAX_ABSTRACT_LENGTH = 1000;
@@ -62,6 +68,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   eventCode,
   onBack,
   onClose,
+  embedded = false,
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
@@ -89,7 +96,12 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
       queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
       queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
       resetForm();
-      onClose();
+      // Takeover mode auto-closes the drawer on success; embedded mode leaves the
+      // drawer open so the organizer sees the updated state in the now-CONTENT_SUBMITTED
+      // panel (Epic 11 bug fix 2026-05-18 — Content as a tab).
+      if (!embedded) {
+        onClose();
+      }
     },
   });
 
@@ -248,22 +260,42 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   const isBioTooLong = remainingBioChars < 0;
   const isUploading = portraitUploadProgress !== null;
 
+  // In READY state the speaker has been provisioned but has not accepted yet —
+  // content submission requires ACCEPTED on the backend, so we show the form (so the
+  // organizer can pre-draft + manage bio/portrait) but disable Save with an info banner.
+  const isReadyStateDraftOnly = speaker.status === 'READY';
+
   return (
     <>
-      {/* Back Button */}
-      <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton onClick={onBack} size="small" aria-label={t('organizer:speakers.drawer.back')}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h6">{t('organizer:speakerContent.submitContent')}</Typography>
-      </Box>
-
-      <Divider />
+      {!embedded && (
+        <>
+          <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              onClick={onBack}
+              size="small"
+              aria-label={t('organizer:speakers.drawer.back')}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6">{t('organizer:speakerContent.submitContent')}</Typography>
+          </Box>
+          <Divider />
+        </>
+      )}
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
           {t('organizer:speakerContent.presentationDetails')}
         </Typography>
+
+        {isReadyStateDraftOnly && (
+          <Alert severity="info" sx={{ mb: 2 }} data-testid="content-tab-ready-banner">
+            {t(
+              'organizer:speakerContent.readyStateBanner',
+              'Speaker has not accepted yet. You can edit bio / portrait now; title and abstract submission becomes available after the speaker accepts the invitation.'
+            )}
+          </Alert>
+        )}
 
         {submitContentMutation.isError && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -455,7 +487,11 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
           variant="contained"
           onClick={handleSubmit}
           disabled={
-            submitContentMutation.isPending || isAbstractTooLong || isBioTooLong || isUploading
+            submitContentMutation.isPending ||
+            isAbstractTooLong ||
+            isBioTooLong ||
+            isUploading ||
+            isReadyStateDraftOnly
           }
           startIcon={submitContentMutation.isPending ? <CircularProgress size={20} /> : null}
           data-testid="submit-speaker-content-button"
