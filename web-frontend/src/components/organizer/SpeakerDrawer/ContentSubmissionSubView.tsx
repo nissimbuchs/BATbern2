@@ -37,7 +37,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
-import { searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
+import { getUserByUsername, searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
 import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -109,28 +109,43 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     const prefillSpeaker = async () => {
       if (speaker && lastPrefilledSpeakerIdRef.current !== speaker.id) {
         try {
-          // Epic 11 bug fix 2026-05-19 — once the speaker has been promoted, the pool
-          // entry carries `username` (the linked User's meaningful ID). Search by
-          // username for an exact match instead of the brainstorm `speakerName`,
-          // which on a promoted entry is typically a placeholder (e.g. "Testreferent2"
-          // for the real "Markus Gerber") and would return no SPEAKER-role matches.
-          // Falls back to the legacy name-search for unpromoted speakers.
-          let users: UserSearchResponse[] = [];
+          // Epic 11 bug fix 2026-05-19 — once promoted, the pool entry carries
+          // `username` (the linked User's meaningful ID). Direct lookup via
+          // `getUserByUsername` is the only reliable resolver: `/users/search`
+          // matches name/email substrings and does NOT match by username, so
+          // `searchUsers("nissim.buchs.3")` returns `[]` even though the user
+          // exists. Falls back to the legacy name-based search for unpromoted
+          // speakers (where `speaker.username == null`).
+          let resolved: UserSearchResponse | null = null;
           if (speaker.username) {
-            users = await searchUsers(speaker.username, 5);
+            const user = await getUserByUsername(speaker.username);
+            if (user) {
+              resolved = {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                roles: user.roles,
+                profilePictureUrl: user.profilePictureUrl,
+                companyId: user.companyId,
+              };
+            }
           }
-          if (users.length === 0) {
-            users = await searchUsers(speaker.speakerName, 20);
+          if (!resolved) {
+            let users = await searchUsers(speaker.speakerName, 20);
             if (users.length === 0 && speaker.speakerName.includes(' ')) {
               const firstName = speaker.speakerName.split(' ')[0];
               users = await searchUsers(firstName, 20);
             }
+            const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
+            if (candidates.length > 0) {
+              resolved = candidates[0];
+            }
           }
-          const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
-          if (candidates.length > 0) {
-            setSelectedUser(candidates[0]);
-            if (candidates[0].profilePictureUrl) {
-              setProfilePictureUrl(candidates[0].profilePictureUrl);
+          if (resolved) {
+            setSelectedUser(resolved);
+            if (resolved.profilePictureUrl) {
+              setProfilePictureUrl(resolved.profilePictureUrl);
             }
           }
           if (speaker.initialPresentationTitle) {
