@@ -92,29 +92,21 @@ describe('NavigationMenu Component', () => {
     });
   });
 
+  // 2026-05-20 (Q#3 / Q#1b) — SPEAKER admin-nav entries removed. Speakers live in the
+  // public site (their dashboard at /speaker-portal/dashboard, profile at
+  // /speaker-portal/profile) and the public nav surfaces "My Sessions" + "My Profile".
+  // The role-based admin NavigationMenu therefore renders nothing for a speaker-only
+  // user; AppHeader hides the role-selector chip too (RoleSelector filter on
+  // getRolesWithNavEntries).
   describe('Speaker Navigation', () => {
-    test('should_renderSpeakerMenuItems_when_roleIsSpeaker', () => {
+    test('should_renderEmptyMenu_when_roleIsSpeaker', () => {
       renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
 
-      // Speaker should see: Dashboard, My Events, My Content, Profile
-      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my content/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/profile/i)[0]).toBeInTheDocument();
-    });
-
-    test('should_notShowPartnersMenu_when_roleIsSpeaker', () => {
-      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
-
-      // Speaker should NOT see Partners menu
+      // No admin-nav items for speakers — neither the old My Events / My Content nor
+      // Partners (the latter never applied) should appear.
+      expect(screen.queryByText(/^my events$/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^my content$/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/^partners$/i)).not.toBeInTheDocument();
-    });
-
-    test('should_linkToMyEvents_when_myEventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
-
-      const myEventsLink = screen.getAllByText(/my events/i)[0].closest('a');
-      expect(myEventsLink).toHaveAttribute('href', '/speaker/events');
     });
   });
 
@@ -142,28 +134,15 @@ describe('NavigationMenu Component', () => {
     });
   });
 
+  // 2026-05-20 (Q#3 / Q#1b) — ATTENDEE admin-nav entries removed, same reasoning as
+  // the SPEAKER block above. Attendees consume the public website (event browse +
+  // registration + archive), not an admin-app surface.
   describe('Attendee Navigation', () => {
-    test('should_renderAttendeeMenuItems_when_roleIsAttendee', () => {
+    test('should_renderEmptyMenu_when_roleIsAttendee', () => {
       renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
 
-      // Attendee should see: Events, Speakers, My Registrations
-      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my registrations/i)[0]).toBeInTheDocument();
-    });
-
-    test('should_notShowAnalytics_when_roleIsAttendee', () => {
-      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
-
-      // Attendee should NOT see Analytics menu
+      expect(screen.queryByText(/my registrations/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/analytics/i)).not.toBeInTheDocument();
-    });
-
-    test('should_linkToEventsList_when_eventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
-
-      const eventsLink = screen.getAllByText(/events/i)[0].closest('a');
-      expect(eventsLink).toHaveAttribute('href', '/attendee/events');
     });
   });
 
