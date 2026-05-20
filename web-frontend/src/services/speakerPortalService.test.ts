@@ -343,7 +343,6 @@ describe.skip('speakerPortalService', () => {
         hasSessionAssigned: true,
         sessionTitle: 'Kubernetes Security',
         canSubmitContent: true,
-        contentStatus: null,
         hasDraft: false,
         draftTitle: null,
         draftAbstract: null,

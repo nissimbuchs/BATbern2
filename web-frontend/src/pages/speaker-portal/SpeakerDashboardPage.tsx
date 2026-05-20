@@ -64,12 +64,12 @@ const statusBadgeColors: Record<string, string> = {
   CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
 
-const contentStatusColors: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  REVISION_NEEDED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-};
+// 2026-05-20 (Q#D) — `contentStatus` badge dropped from the speaker dashboard. The
+// duplicate-status confusion that motivated removing the same chip from the kanban
+// card (Q#7) applies here too: the speaker_pool workflow badge already conveys
+// where the speaker stands. Content progress is conveyed by the per-field check-
+// marks below (title / abstract / material) which are clearer than a label like
+// "Under Review".
 
 function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
   const { t } = useTranslation();
@@ -108,14 +108,8 @@ function UpcomingEventCard({ event }: { event: DashboardUpcomingEvent }) {
             >
               {event.workflowStateLabel}
             </span>
-            {event.contentStatus && (
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${contentStatusColors[event.contentStatus] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
-                aria-label={`${t('speakerPortal.dashboard.contentStatus')}: ${event.contentStatusLabel}`}
-              >
-                {event.contentStatusLabel}
-              </span>
-            )}
+            {/* 2026-05-20 (Q#D) — contentStatus chip removed; see comment above the
+                deleted `contentStatusColors` map. */}
           </div>
         </div>
 

@@ -20,6 +20,7 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getRolesWithNavEntries } from '@/config/navigationConfig';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
 import type { UserContext, UserRole } from '@/types/auth';
@@ -51,14 +52,20 @@ const AppHeader = React.memo(function AppHeader({
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
-  // Build the full roles array — single-role users see one role, multi-role users get
-  // a RoleSelector chip and the nav filters down to the chosen one.
-  const currentRoles: UserRole[] =
+  // 2026-05-20 (Q#1b) — only roles that have real nav entries (organizer, partner today)
+  // qualify for the RoleSelector + admin NavigationMenu. Speaker and attendee live in
+  // the public site, so they must not appear as chips here (clicking would render an
+  // empty menu). Filter the user's roles down to the set with entries; everything
+  // below — chip visibility, active-role fallback, mobile drawer — branches on the
+  // filtered list.
+  const rolesWithEntries = getRolesWithNavEntries();
+  const allUserRoles: UserRole[] =
     user && 'roles' in user && Array.isArray(user.roles) && user.roles.length > 0
       ? (user.roles as UserRole[])
       : currentRole
         ? [currentRole as UserRole]
         : [];
+  const currentRoles: UserRole[] = allUserRoles.filter((r) => rolesWithEntries.has(r));
 
   // Multi-role: prefer the persisted active role; fall back to the first role if
   // `activeNavRole` is unset or no longer matches any of the user's roles (e.g.

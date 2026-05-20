@@ -70,13 +70,10 @@ public class SpeakerDashboardService {
             SpeakerWorkflowState.QUALITY_REVIEWED, "Quality Reviewed"
     );
 
-    // Friendly labels for content status (AC2)
-    private static final Map<String, String> CONTENT_STATUS_LABELS = Map.of(
-            "PENDING", "Not Submitted",
-            "SUBMITTED", "Under Review",
-            "APPROVED", "Approved",
-            "REVISION_NEEDED", "Revision Needed"
-    );
+    // 2026-05-20 (Q#D) — CONTENT_STATUS_LABELS map dropped along with the
+    // `contentStatus` / `contentStatusLabel` fields on DashboardUpcomingEventDto.
+    // Reviewer feedback is still surfaced via `reviewerFeedback`, derived directly
+    // from the latest history row below.
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
@@ -277,17 +274,18 @@ public class SpeakerDashboardService {
             }
         }
 
-        // AC4: Reviewer feedback (if REVISION_NEEDED). Story 11.E.8: derive contentStatus
-        // from the latest SessionContentVersion's reviewer_feedback at read time.
+        // AC4: Reviewer feedback (surfaced when the moderator left a comment on the
+        // latest submission). 2026-05-20 (Q#D) — the `derivedContentStatus` indirection
+        // was removed along with the `contentStatus` field on the DTO; read the latest
+        // history row's reviewer_feedback directly.
         var latestVersion = entry.getSessionId() != null
                 ? sessionContentHistoryRepository
                         .findFirstBySessionIdOrderBySubmissionVersionDesc(entry.getSessionId())
                 : java.util.Optional.<ch.batbern.events.domain.SessionContentVersion>empty();
-        String derivedContentStatus = ContentStatusDeriver.derive(entry.getStatus(), latestVersion);
-        String reviewerFeedback = null;
-        if ("REVISION_NEEDED".equals(derivedContentStatus) && latestVersion.isPresent()) {
-            reviewerFeedback = latestVersion.get().getReviewerFeedback();
-        }
+        String reviewerFeedback = latestVersion
+                .map(v -> v.getReviewerFeedback())
+                .filter(fb -> fb != null && !fb.isBlank())
+                .orElse(null);
 
         // AC5: Organizer contact
         String organizerName = null;
@@ -329,9 +327,6 @@ public class SpeakerDashboardService {
                 .sessionTitle(sessionTitle)
                 .workflowState(entry.getStatus().name())
                 .workflowStateLabel(WORKFLOW_STATE_LABELS.getOrDefault(entry.getStatus(), entry.getStatus().name()))
-                .contentStatus(derivedContentStatus)
-                .contentStatusLabel(CONTENT_STATUS_LABELS.getOrDefault(
-                        derivedContentStatus, derivedContentStatus))
                 .hasTitle(hasTitle)
                 .hasAbstract(hasAbstract)
                 .hasMaterial(hasMaterial)

@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import {
   Block as BlockIcon,
+  CheckCircle as CheckCircleIcon,
   Edit as EditIcon,
   Person as PersonIcon,
   SwapHoriz as SwapHorizIcon,
@@ -108,6 +109,13 @@ interface SpeakerDetailDrawerProps {
   onSendInvitation?: (speaker: SpeakerPoolEntry) => void;
   onEnterContent?: (speaker: SpeakerPoolEntry) => void;
   onReviewContent?: (speaker: SpeakerPoolEntry) => void;
+  /**
+   * 2026-05-20 (Q#6) — threaded from EventSpeakersTab so the drawer's PrimaryActionSurface
+   * "Assign session slot" button (QUALITY_REVIEWED with no slot) actually navigates to the
+   * slot-assignment page. Before this, the callback was a no-op default and the button
+   * appeared functional but did nothing.
+   */
+  onAssignSessionSlot?: (speaker: SpeakerPoolEntry) => void;
 }
 
 const DEFAULT_SLOT_CAPACITY: SlotCapacityState = {
@@ -125,11 +133,19 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   initialDrawerView = null,
   slotCapacity = DEFAULT_SLOT_CAPACITY,
   onLogOutreach,
-  onPromoteSpeaker,
+  // 2026-05-20 (Q#A) — `onPromoteSpeaker`, `onEnterContent`, `onReviewContent` are
+  // accepted in the prop type for backwards compatibility with the kanban-side
+  // wiring, but the drawer ignores them in favour of internal handlers. See the
+  // comment on `primaryActionCallbacks` below.
+  onPromoteSpeaker: _onPromoteSpeaker,
   onSendInvitation,
-  onEnterContent,
-  onReviewContent,
+  onEnterContent: _onEnterContent,
+  onReviewContent: _onReviewContent,
+  onAssignSessionSlot,
 }) => {
+  void _onPromoteSpeaker;
+  void _onEnterContent;
+  void _onReviewContent;
   const { t } = useTranslation(['organizer']);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -215,32 +231,42 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
   const primaryActionCallbacks = useMemo<PrimaryActionCallbacks>(
     () => ({
       onLogOutreach: onLogOutreach ?? (() => undefined),
-      // Default behaviour when no parent handler is provided: open the in-drawer
-      // Promote sub-view (Epic 11 bug fix 2026-05-18 — replaces PromoteSpeakerDialog).
-      onPromoteSpeaker:
-        onPromoteSpeaker ??
-        ((s) => {
-          void s;
-          setDrawerView('promote');
-        }),
+      // 2026-05-20 (Q#A) — navigation-within-drawer actions ALWAYS use internal
+      // handlers, never the parent's. The parent's handlers
+      // (EventSpeakersTab.handlePromoteSpeaker / handleEnterContent /
+      // handleReviewContent) re-set `selectedSpeakerId` + `initialDrawerView` +
+      // `setDetailsDrawerOpen(true)` — but when the drawer is ALREADY open for the
+      // SAME speaker, those state writes are no-ops (no React re-render), so the
+      // sub-view never opens. The internal `setDrawerView` / `setTab` writes do
+      // re-render the drawer. Parent handlers stay relevant for the kanban-card
+      // click that opens the drawer in the first place.
+      onPromoteSpeaker: (s) => {
+        void s;
+        setDrawerView('promote');
+      },
+      onEnterContent: (s) => {
+        void s;
+        setTab('content');
+      },
+      onReviewContent: (s) => {
+        void s;
+        setDrawerView('quality-review');
+      },
+      // Parent handlers retained for actions that need cross-drawer state (snackbar,
+      // navigation, modal mount points):
       onSendInvitation: onSendInvitation ?? (() => undefined),
-      // Default behaviour: switch to the Content TAB (no longer a takeover view).
-      onEnterContent:
-        onEnterContent ??
-        ((s) => {
-          void s;
-          setTab('content');
-        }),
-      onReviewContent:
-        onReviewContent ??
-        ((s) => {
-          void s;
-          setDrawerView('quality-review');
-        }),
-      onSpeakerClick: () => undefined,
-      onAssignSessionSlot: () => undefined,
+      // 2026-05-20 (Q#6) — the drawer's primary action for INVITED ("View response
+      // status") and DECLINED ("View details") previously had a no-op callback. The
+      // drawer IS the speaker detail view, so the most useful default is to jump to
+      // the History tab where the response/decline audit trail lives. The user can
+      // then see "last reminder sent", the decline reason, etc.
+      onSpeakerClick: () => setTab('history'),
+      // 2026-05-20 (Q#6) — QUALITY_REVIEWED with no slot fires this callback. Wired
+      // through from EventSpeakersTab (handleAssignSessionSlotForSpeaker) so the
+      // button actually navigates to the slot-assignment page.
+      onAssignSessionSlot: onAssignSessionSlot ?? (() => undefined),
     }),
-    [onLogOutreach, onPromoteSpeaker, onSendInvitation, onEnterContent, onReviewContent]
+    [onLogOutreach, onSendInvitation, onAssignSessionSlot]
   );
 
   const dispatchOverride = useCallback(
@@ -260,6 +286,9 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
           directMutation.mutate({ to: target });
           return;
         case 'legal-decline':
+        case 'legal-accept-on-behalf':
+          // Both branches route through the same StatusChangeDialog. The dialog
+          // computes its required-reason rule from (currentStatus, newStatus).
           setStatusDialogState({ open: true, newStatus: target });
           return;
         case 'legal-input':
@@ -406,6 +435,26 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
                 primary={t(
                   'organizer:speakerDrawer.secondaryActions.addContactEntry',
                   'Add contact entry'
+                )}
+              />
+            </ListItemButton>
+          )}
+          {/* 2026-05-20 — READY → ACCEPTED on-behalf path. Same StatusChangeDialog
+              the kanban drag fires; reason is required (audit). For speakers who
+              confirmed off-portal (email/phone) so the organizer skips the formal
+              invitation step. */}
+          {speakerStatus === 'READY' && !slotCapacity.reached && (
+            <ListItemButton
+              onClick={() => dispatchOverride('ACCEPTED')}
+              data-testid="drawer-action-accept-on-behalf"
+            >
+              <ListItemIcon>
+                <CheckCircleIcon color="success" />
+              </ListItemIcon>
+              <ListItemText
+                primary={t(
+                  'organizer:speakerDrawer.secondaryActions.acceptOnBehalf',
+                  'Accept on behalf (skip invitation)'
                 )}
               />
             </ListItemButton>

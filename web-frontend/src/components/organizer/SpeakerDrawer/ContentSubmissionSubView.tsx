@@ -37,6 +37,7 @@ import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { getUserByUsername, searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
@@ -102,6 +103,34 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     },
   });
 
+  // 2026-05-20 (Q#8) — READY-state draft save. Writes directly to sessions.title /
+  // sessions.description (the canonical source per plan §2.9) without transitioning the
+  // workflow state and without inserting a session_content_history row. The speaker can
+  // still later accept normally; their accepted-state Save will be the first real
+  // session_content_history audit row. PATCH /events/{code}/sessions/{slug} is the same
+  // endpoint the organizer's session-edit modal uses.
+  const saveDraftMutation = useMutation({
+    mutationFn: async ({ title, description }: { title: string; description: string }) => {
+      if (!speaker.sessionSlug) {
+        throw new Error(
+          'Session is not yet provisioned for this speaker — re-run promote-to-READY first.'
+        );
+      }
+      return sessionApiClient.updateSession(eventCode, speaker.sessionSlug, {
+        title,
+        description,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      // Embedded mode: keep drawer open so the organizer sees the saved values reflected.
+      if (!embedded) {
+        onClose();
+      }
+    },
+  });
+
   useEffect(() => {
     const prefillSpeaker = async () => {
       if (speaker && lastPrefilledSpeakerIdRef.current !== speaker.id) {
@@ -142,8 +171,20 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
           if (resolved) {
             setSelectedUser(resolved);
           }
-          if (speaker.initialPresentationTitle) {
-            setPresentationTitle(speaker.initialPresentationTitle);
+          // 2026-05-20 (Q#9) — prefill both title and abstract from the canonical
+          // sessions.title / sessions.description (mirrored as submittedTitle /
+          // submittedAbstract on the pool response per plan §2.9). The old code only
+          // read the now-dropped initialPresentationTitle column, so the abstract was
+          // never prefilled and the title was empty in any state past READY. The
+          // initialPresentationTitle fallback is kept for any legacy rows where
+          // submittedTitle is still null.
+          const prefilledTitle = speaker.submittedTitle || speaker.initialPresentationTitle || '';
+          const prefilledAbstract = speaker.submittedAbstract || '';
+          if (prefilledTitle) {
+            setPresentationTitle(prefilledTitle);
+          }
+          if (prefilledAbstract) {
+            setPresentationAbstract(prefilledAbstract);
           }
           lastPrefilledSpeakerIdRef.current = speaker.id;
         } catch (error) {
@@ -162,20 +203,36 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     lastPrefilledSpeakerIdRef.current = null;
   };
 
+  // 2026-05-20 (Q#8) — in READY the workflow doesn't yet allow CONTENT_SUBMITTED, so the
+  // form runs in "draft" mode: title + abstract are OPTIONAL, save writes directly to
+  // sessions.title / sessions.description (no state transition, no audit row). In
+  // ACCEPTED+ the form is a real submission; both title and abstract become required.
+  const isReadyStateDraftOnly = speaker.status === 'READY';
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!selectedUser) {
       newErrors.username = t('organizer:speakerContent.errors.usernameRequired');
     }
-    if (!presentationTitle.trim()) {
-      newErrors.presentationTitle = t('organizer:speakerContent.errors.titleRequired');
-    }
-    if (!presentationAbstract.trim()) {
-      newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractRequired');
-    } else if (presentationAbstract.length > MAX_ABSTRACT_LENGTH) {
-      newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractTooLong', {
-        max: MAX_ABSTRACT_LENGTH,
-      });
+    if (!isReadyStateDraftOnly) {
+      // Real submission: title + abstract required.
+      if (!presentationTitle.trim()) {
+        newErrors.presentationTitle = t('organizer:speakerContent.errors.titleRequired');
+      }
+      if (!presentationAbstract.trim()) {
+        newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractRequired');
+      } else if (presentationAbstract.length > MAX_ABSTRACT_LENGTH) {
+        newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractTooLong', {
+          max: MAX_ABSTRACT_LENGTH,
+        });
+      }
+    } else {
+      // Draft mode: only the abstract-length cap is enforced when an abstract is given.
+      if (presentationAbstract.length > MAX_ABSTRACT_LENGTH) {
+        newErrors.presentationAbstract = t('organizer:speakerContent.errors.abstractTooLong', {
+          max: MAX_ABSTRACT_LENGTH,
+        });
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -191,6 +248,16 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
       } catch (error) {
         console.error('Failed to grant SPEAKER role:', error);
       }
+    }
+
+    if (isReadyStateDraftOnly) {
+      // 2026-05-20 (Q#8) — draft path: PATCH sessions.title / .description directly.
+      // No workflow transition, no session_content_history row.
+      saveDraftMutation.mutate({
+        title: presentationTitle.trim(),
+        description: presentationAbstract.trim(),
+      });
+      return;
     }
 
     // Story 11.D.4 AC8 — request body shape matches the 11.C.2 backend DTO.
@@ -258,10 +325,12 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   const remainingAbstractChars = MAX_ABSTRACT_LENGTH - presentationAbstract.length;
   const isAbstractTooLong = remainingAbstractChars < 0;
 
-  // In READY state the speaker has been provisioned but has not accepted yet —
-  // content submission requires ACCEPTED on the backend, so we show the form (so the
-  // organizer can pre-draft) but disable Save with an info banner.
-  const isReadyStateDraftOnly = speaker.status === 'READY';
+  // 2026-05-20 (Q#8) — `isReadyStateDraftOnly` is hoisted to the validate/submit closures
+  // above (re-declaring it here would shadow). Used below to swap the submit button label
+  // + banner + busy spinner between the draft and real-submit mutations.
+  const isSavingDraft = saveDraftMutation.isPending;
+  const isSubmitting = submitContentMutation.isPending;
+  const isBusy = isSavingDraft || isSubmitting;
 
   return (
     <>
@@ -289,8 +358,8 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
         {isReadyStateDraftOnly && (
           <Alert severity="info" sx={{ mb: 2 }} data-testid="content-tab-ready-banner">
             {t(
-              'organizer:speakerContent.readyStateBanner',
-              'Speaker has not accepted yet. Title and abstract submission becomes available after the speaker accepts the invitation.'
+              'organizer:speakerContent.readyStateDraftBanner',
+              'Speaker has not accepted yet. Saving here writes the title and abstract as a draft on the session — no submission is recorded, and the speaker can still update it after accepting.'
             )}
           </Alert>
         )}
@@ -300,6 +369,14 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
             {submitContentMutation.error instanceof Error
               ? submitContentMutation.error.message
               : t('organizer:speakerContent.errors.submitFailed')}
+          </Alert>
+        )}
+
+        {saveDraftMutation.isError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {saveDraftMutation.error instanceof Error
+              ? saveDraftMutation.error.message
+              : t('organizer:speakerContent.errors.saveDraftFailed', 'Could not save the draft.')}
           </Alert>
         )}
 
@@ -374,9 +451,9 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
             onChange={(e) => setPresentationTitle(e.target.value)}
             error={!!errors.presentationTitle}
             helperText={errors.presentationTitle}
-            required
+            required={!isReadyStateDraftOnly}
             fullWidth
-            disabled={submitContentMutation.isPending}
+            disabled={isBusy}
             inputProps={{ 'data-testid': 'presentation-title-field' }}
           />
 
@@ -389,11 +466,11 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
               errors.presentationAbstract ||
               `${remainingAbstractChars} / ${MAX_ABSTRACT_LENGTH} ${t('organizer:speakerContent.form.charactersRemaining')}`
             }
-            required
+            required={!isReadyStateDraftOnly}
             multiline
             rows={6}
             fullWidth
-            disabled={submitContentMutation.isPending}
+            disabled={isBusy}
             inputProps={{ 'data-testid': 'presentation-abstract-field' }}
           />
         </Box>
@@ -410,19 +487,23 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
           borderColor: 'divider',
         }}
       >
-        <Button variant="outlined" onClick={onBack} disabled={submitContentMutation.isPending}>
+        <Button variant="outlined" onClick={onBack} disabled={isBusy}>
           {t('common:actions.cancel')}
         </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitContentMutation.isPending || isAbstractTooLong || isReadyStateDraftOnly}
-          startIcon={submitContentMutation.isPending ? <CircularProgress size={20} /> : null}
+          // 2026-05-20 (Q#8) — `isReadyStateDraftOnly` no longer disables Save; in READY
+          // we route through `saveDraftMutation` instead of `submitContentMutation`.
+          disabled={isBusy || isAbstractTooLong}
+          startIcon={isBusy ? <CircularProgress size={20} /> : null}
           data-testid="submit-speaker-content-button"
         >
-          {submitContentMutation.isPending
+          {isBusy
             ? t('organizer:speakerContent.submitting')
-            : t('organizer:speakerContent.submitContent')}
+            : isReadyStateDraftOnly
+              ? t('organizer:speakerContent.saveDraft', 'Save draft')
+              : t('organizer:speakerContent.submitContent')}
         </Button>
       </Box>
 

@@ -7,12 +7,8 @@ import type { UserRole } from '@/types/auth';
 import {
   Dashboard,
   Event,
-  People,
   Handshake,
   BarChart,
-  Person,
-  ContentPaste,
-  EventAvailable,
   Business,
   ManageAccounts,
   PeopleAltOutlined,
@@ -109,52 +105,12 @@ export const navigationConfig: NavigationItem[] = [
     description: 'View public website',
   },
 
-  // Speaker-specific items
-  {
-    labelKey: 'navigation.dashboard',
-    // Epic 11 bug fix 2026-05-19 — speaker dashboard mounted at
-    // `/speaker-portal/dashboard` (Story 11.E.3); `/speaker/dashboard` 404'd
-    // and rendered a blank page when clicked from the nav menu.
-    path: '/speaker-portal/dashboard',
-    icon: Dashboard,
-    roles: ['speaker'],
-    description: 'Speaker dashboard',
-  },
-  {
-    labelKey: 'navigation.myEvents',
-    path: '/speaker/events',
-    icon: Event,
-    roles: ['speaker'],
-    description: 'Your assigned events',
-  },
-  {
-    labelKey: 'navigation.myContent',
-    path: '/speaker/content',
-    icon: ContentPaste,
-    roles: ['speaker'],
-    description: 'Manage your content',
-  },
-  {
-    labelKey: 'navigation.myCompany',
-    path: '/speaker/company',
-    icon: Business,
-    roles: ['speaker'],
-    description: 'Your company profile',
-  },
-  {
-    labelKey: 'navigation.profile',
-    path: '/speaker/profile',
-    icon: Person,
-    roles: ['speaker'],
-    description: 'Your speaker profile',
-  },
-  {
-    labelKey: 'navigation.publicSite',
-    path: '/',
-    icon: Public,
-    roles: ['speaker'],
-    description: 'View public website',
-  },
+  // 2026-05-20 (Q#3) — SPEAKER nav entries removed from the non-public navigation.
+  // Speakers redirect to the public site (see App.tsx routing); they never see this
+  // role-based menu. The speaker-relevant links ("My Sessions" → speaker dashboard,
+  // "My Profile" → profile update page) now live in PublicNavigation's user dropdown.
+  // The previous /speaker/events, /speaker/content, /speaker/profile paths did not
+  // resolve to any route — they were dead nav items.
 
   // Partner-specific items
   {
@@ -179,35 +135,10 @@ export const navigationConfig: NavigationItem[] = [
     description: 'View public website',
   },
 
-  // Attendee-specific items
-  {
-    labelKey: 'navigation.events',
-    path: '/attendee/events',
-    icon: Event,
-    roles: ['attendee'],
-    description: 'Browse events',
-  },
-  {
-    labelKey: 'navigation.speakers',
-    path: '/attendee/speakers',
-    icon: People,
-    roles: ['attendee'],
-    description: 'Browse speakers',
-  },
-  {
-    labelKey: 'navigation.myRegistrations',
-    path: '/attendee/registrations',
-    icon: EventAvailable,
-    roles: ['attendee'],
-    description: 'Your event registrations',
-  },
-  {
-    labelKey: 'navigation.publicSite',
-    path: '/',
-    icon: Public,
-    roles: ['attendee'],
-    description: 'View public website',
-  },
+  // 2026-05-20 (Q#3) — ATTENDEE nav entries removed for the same reason as SPEAKER
+  // entries above: attendees consume the public website (event browsing, registration,
+  // archive), not the non-public role-based admin app. The /attendee/* paths did not
+  // resolve to public-styled routes; the items were dead.
 ];
 
 /**
@@ -215,6 +146,23 @@ export const navigationConfig: NavigationItem[] = [
  */
 export function getNavigationForRole(role: UserRole): NavigationItem[] {
   return navigationConfig.filter((item) => item.roles.includes(role));
+}
+
+/**
+ * 2026-05-20 (Q#1b) — set of roles that have any non-public-site entries in this
+ * config. Used by AppHeader to filter the RoleSelector chips: a role with no entries
+ * (currently 'speaker' and 'attendee' — they live in the public site instead) must
+ * not show a chip because clicking it would render an empty NavigationMenu. The
+ * "Public Site" pseudo-entry is excluded so a role with only that link does not
+ * count as "has entries."
+ */
+export function getRolesWithNavEntries(): ReadonlySet<UserRole> {
+  const set = new Set<UserRole>();
+  navigationConfig.forEach((item) => {
+    if (item.path === '/') return; // Public Site is not a "real" admin entry.
+    item.roles.forEach((r) => set.add(r));
+  });
+  return set;
 }
 
 /**

@@ -56,15 +56,17 @@ describe('speakerTransitions — isLegalTransition (AC10 cases 1-13)', () => {
     }
   );
 
-  // Case 6
-  it('should_returnLegalTrue_when_readyToInvited_andReadyToDeclined', () => {
+  // Case 6 — READY's legal targets, including ACCEPTED (organizer-on-behalf path
+  // added 2026-05-20 Q#10). The on-behalf accept lands in the StatusChangeDialog with
+  // required reason; READY → INVITED retains the slot-capacity gate.
+  it('should_returnLegalTrue_when_readyToInvited_acceptedOrDeclined', () => {
     expect(isLegalTransition('READY', 'INVITED')).toBe(true);
+    expect(isLegalTransition('READY', 'ACCEPTED')).toBe(true);
     expect(isLegalTransition('READY', 'DECLINED')).toBe(true);
   });
 
-  // Case 7
-  it('should_returnLegalFalse_when_readyToAccepted', () => {
-    expect(isLegalTransition('READY', 'ACCEPTED')).toBe(false);
+  // Case 7 — skip-ahead targets that remain illegal from READY.
+  it('should_returnLegalFalse_when_readyToContentSubmittedOrQualityReviewed', () => {
     expect(isLegalTransition('READY', 'CONTENT_SUBMITTED')).toBe(false);
     expect(isLegalTransition('READY', 'QUALITY_REVIEWED')).toBe(false);
   });
@@ -170,6 +172,8 @@ describe('speakerTransitions — classifyDrop (AC10 cases 14-20)', () => {
   });
 
   // Case 20 — parameterised skip-ahead matrix.
+  // Note: READY → ACCEPTED was moved out of this matrix on 2026-05-20 (Q#10); it is now
+  // a legal `legal-accept-on-behalf` drop with its own slot-capacity branch.
   it.each([
     ['IDENTIFIED', 'ACCEPTED'],
     ['IDENTIFIED', 'INVITED'],
@@ -178,7 +182,6 @@ describe('speakerTransitions — classifyDrop (AC10 cases 14-20)', () => {
     ['CONTACTED', 'INVITED'],
     ['CONTACTED', 'ACCEPTED'],
     ['CONTACTED', 'CONTENT_SUBMITTED'],
-    ['READY', 'ACCEPTED'],
     ['READY', 'CONTENT_SUBMITTED'],
     ['INVITED', 'CONTENT_SUBMITTED'],
     ['INVITED', 'QUALITY_REVIEWED'],
@@ -192,6 +195,17 @@ describe('speakerTransitions — classifyDrop (AC10 cases 14-20)', () => {
   // Defensive: legal-direct currently only fires for INVITED → ACCEPTED.
   it('should_classifyAsLegalDirect_when_invitedToAccepted', () => {
     expect(classifyDrop('INVITED', 'ACCEPTED', false)).toEqual({ kind: 'legal-direct' });
+  });
+
+  // 2026-05-20 (Q#10) — organizer-on-behalf path: READY → ACCEPTED.
+  it('should_classifyAsLegalAcceptOnBehalf_when_readyToAccepted_andSlotCapacityNotReached', () => {
+    expect(classifyDrop('READY', 'ACCEPTED', false)).toEqual({
+      kind: 'legal-accept-on-behalf',
+    });
+  });
+
+  it('should_classifyAsLegalBlockedSlot_when_readyToAccepted_andSlotCapacityReached', () => {
+    expect(classifyDrop('READY', 'ACCEPTED', true)).toEqual({ kind: 'legal-blocked-slot' });
   });
 });
 
@@ -216,8 +230,11 @@ describe('speakerTransitions — getRejectionExplanation (AC3)', () => {
     expect(msg).toContain('organizer:kanbanDrag.rejection.mustPromoteFirst');
   });
 
-  it('should_returnMustInviteFirstKey_when_readyToAccepted', () => {
-    const msg = getRejectionExplanation('READY', 'ACCEPTED', fakeT);
+  // 2026-05-20 (Q#10) — READY → ACCEPTED is no longer rejected (it's the on-behalf
+  // path). The `mustInviteFirst` rejection still fires for the other two skip-ahead
+  // targets from READY (CONTENT_SUBMITTED, QUALITY_REVIEWED).
+  it('should_returnMustInviteFirstKey_when_readyToContentSubmitted', () => {
+    const msg = getRejectionExplanation('READY', 'CONTENT_SUBMITTED', fakeT);
     expect(msg).toContain('organizer:kanbanDrag.rejection.mustInviteFirst');
   });
 

@@ -196,22 +196,29 @@ describe('AppHeader Component', () => {
       expect(screen.getByText(/companies/i)).toBeInTheDocument();
     });
 
-    test('should_renderSpeakerNavigation_when_userRoleIsSpeaker', async () => {
+    test('should_renderEmptyNavigation_when_userRoleIsSpeaker', async () => {
+      // 2026-05-20 (Q#1b / Q#3) — SPEAKER role has no admin-nav entries. Speakers
+      // live in the public site and reach their dashboard via the public navigation,
+      // not the admin top nav. AppHeader's NavigationMenu therefore renders empty
+      // for a speaker-only user.
       const { useAuth } = await import('@/hooks/useAuth');
       vi.mocked(useAuth).mockReturnValue({
         ...vi.mocked(useAuth)(),
         user: {
           ...vi.mocked(useAuth)().user!,
           role: 'speaker',
+          // Explicit single-role array so the new filter (getRolesWithNavEntries)
+          // does not fall back to the legacy `role` field.
+          roles: ['speaker'],
         },
       });
 
       renderWithProviders(<AppHeader />);
 
-      // Speaker should see Dashboard, My Events, My Content
-      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/my content/i)[0]).toBeInTheDocument();
+      // No nav items for speakers — no Dashboard / My Events / My Content links
+      // in the role-based admin nav.
+      expect(screen.queryByText(/^my events$/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^my content$/i)).not.toBeInTheDocument();
     });
 
     test('should_renderPartnerNavigation_when_userRoleIsPartner', async () => {
@@ -231,21 +238,24 @@ describe('AppHeader Component', () => {
       expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
-    test('should_renderAttendeeNavigation_when_userRoleIsAttendee', async () => {
+    test('should_renderEmptyNavigation_when_userRoleIsAttendee', async () => {
+      // 2026-05-20 (Q#1b / Q#3) — ATTENDEE role has no admin-nav entries either.
+      // Attendees browse events and register through the public website; the
+      // admin top nav is irrelevant for them.
       const { useAuth } = await import('@/hooks/useAuth');
       vi.mocked(useAuth).mockReturnValue({
         ...vi.mocked(useAuth)(),
         user: {
           ...vi.mocked(useAuth)().user!,
           role: 'attendee',
+          roles: ['attendee'],
         },
       });
 
       renderWithProviders(<AppHeader />);
 
-      // Attendee should see Events, Speakers (read-only)
-      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
+      // No nav items for attendees — no "My Registrations" link in the role-based nav.
+      expect(screen.queryByText(/my registrations/i)).not.toBeInTheDocument();
     });
   });
 

@@ -198,8 +198,11 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .andExpect(jsonPath("$.upcomingEvents[0].sessionTitle", is("Cloud Architecture Best Practices")))
                     .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("ACCEPTED")))
                     .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Accepted")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatus", is("PENDING")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatusLabel", is("Not Submitted")));
+                    // 2026-05-20 (Q#D) — contentStatus / contentStatusLabel removed from
+                    // the dashboard DTO end-to-end. The fields are no longer serialised
+                    // (JsonInclude.NON_NULL on the record + record fields absent).
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatus").doesNotExist())
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatusLabel").doesNotExist());
         }
 
         @Test

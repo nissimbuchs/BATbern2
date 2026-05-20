@@ -186,7 +186,10 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .andExpect(jsonPath("$.hasSessionAssigned", is(true)))
                     .andExpect(jsonPath("$.sessionTitle", is("Cloud Architecture Best Practices")))
                     .andExpect(jsonPath("$.canSubmitContent", is(true)))
-                    .andExpect(jsonPath("$.contentStatus", is("PENDING")))
+                    // 2026-05-20 (Q#E) — contentStatus dropped from SpeakerContentInfo.
+                    // The page reads needsRevision + reviewerFeedback directly; the raw
+                    // enum is no longer wire-visible.
+                    .andExpect(jsonPath("$.contentStatus").doesNotExist())
                     .andExpect(jsonPath("$.hasDraft", is(false)));
         }
 

@@ -179,7 +179,9 @@ public class ContentSubmissionService {
                 .hasSessionAssigned(hasSession)
                 .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
                 .canSubmitContent(canSubmit)
-                .contentStatus(contentStatus)
+                // 2026-05-20 (Q#E) — `contentStatus` field dropped from the DTO; the
+                // local `contentStatus` variable is retained as the source of
+                // `needsRevision` below but no longer leaks to the wire.
                 .hasDraft(session != null)
                 .draftTitle(canonicalTitle)
                 .draftAbstract(canonicalAbstract)

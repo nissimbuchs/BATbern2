@@ -37,7 +37,9 @@ export type KanbanState =
 export const ALLOWED_TRANSITIONS: Readonly<Record<KanbanState, ReadonlySet<KanbanState>>> = {
   IDENTIFIED: new Set<KanbanState>(['CONTACTED', 'DECLINED']),
   CONTACTED: new Set<KanbanState>(['READY', 'DECLINED']),
-  READY: new Set<KanbanState>(['INVITED', 'DECLINED']),
+  // READY → ACCEPTED added 2026-05-20: organizer accepts on-behalf for speakers who never
+  // use the portal. Slot-capacity gate applies; reason required (audit trail). No emails.
+  READY: new Set<KanbanState>(['INVITED', 'ACCEPTED', 'DECLINED']),
   INVITED: new Set<KanbanState>(['ACCEPTED', 'DECLINED']),
   ACCEPTED: new Set<KanbanState>(['CONTENT_SUBMITTED', 'DECLINED']),
   CONTENT_SUBMITTED: new Set<KanbanState>(['QUALITY_REVIEWED', 'DECLINED']),
@@ -80,6 +82,7 @@ export type DropIntent =
       modal: 'mark-contacted' | 'promote' | 'invitation' | 'content-form' | 'quality-review';
     }
   | { kind: 'legal-decline' }
+  | { kind: 'legal-accept-on-behalf' }
   | { kind: 'legal-blocked-slot' }
   | { kind: 'illegal' };
 
@@ -107,6 +110,14 @@ export function classifyDrop(
     return slotCapacityReached
       ? { kind: 'legal-blocked-slot' }
       : { kind: 'legal-input', modal: 'invitation' };
+  }
+  // READY → ACCEPTED (on-behalf, 2026-05-20). Same slot-capacity gate as READY → INVITED
+  // because both add a new occupant. Reason is REQUIRED (status_history audit trail) →
+  // routes through the same StatusChangeDialog as decline, with a different label.
+  if (from === 'READY' && to === 'ACCEPTED') {
+    return slotCapacityReached
+      ? { kind: 'legal-blocked-slot' }
+      : { kind: 'legal-accept-on-behalf' };
   }
   if (from === 'ACCEPTED' && to === 'CONTENT_SUBMITTED') {
     return { kind: 'legal-input', modal: 'content-form' };
@@ -148,11 +159,10 @@ function explanationKey(from: KanbanState, to: KanbanState): string {
   ) {
     return 'mustPromoteFirst';
   }
-  // Skip-ahead from READY — must Invite (and have acceptance) first.
-  if (
-    from === 'READY' &&
-    (to === 'ACCEPTED' || to === 'CONTENT_SUBMITTED' || to === 'QUALITY_REVIEWED')
-  ) {
+  // Skip-ahead from READY — must Invite first (READY → ACCEPTED is now a legal
+  // on-behalf transition, not a skip-ahead; this branch only fires for the still-illegal
+  // skip-ahead targets CONTENT_SUBMITTED and QUALITY_REVIEWED).
+  if (from === 'READY' && (to === 'CONTENT_SUBMITTED' || to === 'QUALITY_REVIEWED')) {
     return 'mustInviteFirst';
   }
   // Skip-ahead from INVITED — speaker must accept first.

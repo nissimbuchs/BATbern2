@@ -42,7 +42,6 @@ const mockContentInfoWithSession: SpeakerContentInfo = {
   hasSessionAssigned: true,
   sessionTitle: 'Cloud Architecture Best Practices',
   canSubmitContent: true,
-  contentStatus: 'PENDING',
   hasDraft: false,
   draftTitle: null,
   draftAbstract: null,
@@ -64,7 +63,6 @@ const mockContentInfoNoSession: SpeakerContentInfo = {
   hasSessionAssigned: false,
   sessionTitle: null,
   canSubmitContent: false,
-  contentStatus: null,
   hasDraft: false,
   draftTitle: null,
   draftAbstract: null,
@@ -90,7 +88,6 @@ const mockContentInfoWithDraft: SpeakerContentInfo = {
 
 const mockContentInfoNeedsRevision: SpeakerContentInfo = {
   ...mockContentInfoWithSession,
-  contentStatus: 'REVISION_NEEDED',
   needsRevision: true,
   reviewerFeedback: 'Please add more details about implementation',
   reviewedAt: '2026-01-26T10:00:00Z',

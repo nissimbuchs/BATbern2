@@ -11,13 +11,16 @@ import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 export type DrawerTabKey = 'details' | 'content' | 'history';
 
 /**
- * Story 11.D.4 (AC7.5) — drawer tab layout. Default tab: `History` for INVITED
- * speakers (so the response-status timeline is the first thing the organizer sees on
- * open). Every other state defaults to `Details`.
+ * Drawer tab layout. Every state defaults to `Details` — the brainstorm/identity
+ * metadata is the most "stable" view and the one organizers expect to see when
+ * they click a card. 2026-05-20 (Q#B) — INVITED previously defaulted to `History`
+ * to surface the response-status timeline, but that confused organizers who
+ * expected the card click to show "speaker details". The timeline is one click
+ * away via the History tab.
  *
  * Epic 11 bug fix 2026-05-18 — third Content tab added for READY+ states.
  */
 export function getDefaultTab(speaker: SpeakerPoolEntry): DrawerTabKey {
-  if (speaker.status === 'INVITED') return 'history';
+  void speaker;
   return 'details';
 }

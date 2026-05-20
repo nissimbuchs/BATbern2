@@ -1,5 +1,5 @@
 /**
- * getDefaultTab unit tests — Story 11.D.4 (AC7.5) + Epic 11 bug fix 2026-05-18.
+ * getDefaultTab unit tests — Story 11.D.4 (AC7.5) + Epic 11 bug fixes.
  *
  * The drawer collapsed from 3 tabs (Overview/Details/Activity) to 2 tabs
  * (Details/History) in Story 11.D.4; Epic 11 bug fix 2026-05-18 added a third
@@ -7,8 +7,10 @@
  * (`'details' | 'content' | 'history'`) so the drawer doesn't need to remap indices
  * when the Content tab is hidden.
  *
- *   - `'history'` for INVITED — surfaces the response-status timeline first.
- *   - `'details'` for every other state, including legacy unknown values.
+ * 2026-05-20 (Q#B) — INVITED previously defaulted to `'history'` to surface the
+ * response-status timeline. Bug feedback: organizers expect the card click to open
+ * the speaker's *details*, not the audit log. Every state now defaults to
+ * `'details'`; the History tab is one click away.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -25,18 +27,13 @@ function makeSpeaker(status: SpeakerPoolEntry['status']): SpeakerPoolEntry {
   };
 }
 
-describe('getDefaultTab — Story 11.D.4 + Epic 11 bug fix (3-tab drawer, string-keyed)', () => {
-  describe("History tab ('history')", () => {
-    it("should return 'history' for INVITED", () => {
-      expect(getDefaultTab(makeSpeaker('INVITED'))).toBe('history');
-    });
-  });
-
-  describe("Details tab ('details')", () => {
+describe('getDefaultTab — Story 11.D.4 + Epic 11 bug fixes (3-tab drawer, string-keyed)', () => {
+  describe("Details tab ('details') for every state", () => {
     it.each([
       'IDENTIFIED',
       'CONTACTED',
       'READY',
+      'INVITED',
       'ACCEPTED',
       'CONTENT_SUBMITTED',
       'QUALITY_REVIEWED',

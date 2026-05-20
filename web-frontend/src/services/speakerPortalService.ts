@@ -83,8 +83,9 @@ export interface DashboardUpcomingEvent {
   sessionTitle: string | null;
   workflowState: string;
   workflowStateLabel: string;
-  contentStatus: string | null;
-  contentStatusLabel: string | null;
+  // 2026-05-20 (Q#D) — contentStatus / contentStatusLabel dropped end-to-end.
+  // The workflow state + per-field hasTitle/hasAbstract/hasMaterial checkmarks
+  // cover the same information without the parallel-status confusion.
   hasTitle: boolean;
   hasAbstract: boolean;
   hasMaterial: boolean;
@@ -126,7 +127,10 @@ export interface SpeakerContentInfo {
   hasSessionAssigned: boolean;
   sessionTitle: string | null;
   canSubmitContent: boolean;
-  contentStatus: string | null;
+  // 2026-05-20 (Q#E) — `contentStatus` field dropped. The page reads
+  // `needsRevision` + `reviewerFeedback` directly; the raw enum has no other
+  // consumer. The speaker_pool workflow status is the canonical "where am I"
+  // signal everywhere.
   hasDraft: boolean;
   draftTitle: string | null;
   draftAbstract: string | null;

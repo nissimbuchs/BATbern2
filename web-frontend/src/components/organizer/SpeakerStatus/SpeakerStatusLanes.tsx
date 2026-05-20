@@ -606,6 +606,13 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         setDialogState({ open: true, speaker, newStatus });
         return;
 
+      case 'legal-accept-on-behalf':
+        // 2026-05-20 — READY → ACCEPTED on-behalf path. Same StatusChangeDialog as
+        // decline, but with newStatus=ACCEPTED. The dialog enforces required-reason
+        // when (currentStatus === 'READY' && newStatus === 'ACCEPTED').
+        setDialogState({ open: true, speaker, newStatus });
+        return;
+
       case 'legal-input': {
         // AC4 — open the same rich modal the primary-action button opens.
         const cb = ((): ((s: SpeakerPoolEntry) => void) | undefined => {
@@ -1232,54 +1239,36 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               ))}
             </Stack>
 
-            {/* Epic 11 bug fix 2026-05-19 — Content chip only renders for actually-submitted
-                content. `contentStatus` defaults to PENDING on the backend, so the prior
-                `submittedTitle || contentStatus` condition rendered a misleading "PENDING"
-                badge on every card. */}
-            {speaker.submittedTitle &&
-              speaker.contentStatus &&
-              speaker.contentStatus !== 'PENDING' && (
-                <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                    <Chip
-                      label={speaker.contentStatus}
-                      size="small"
-                      color={
-                        speaker.contentStatus === 'APPROVED'
-                          ? 'success'
-                          : speaker.contentStatus === 'REVISION_NEEDED'
-                            ? 'warning'
-                            : 'info'
-                      }
-                      sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
-                    />
-                  </Box>
-                  {speaker.submittedTitle && (
-                    <Typography
-                      variant="caption"
-                      color="success.dark"
-                      sx={{ display: 'block', fontWeight: 600 }}
-                    >
-                      {speaker.submittedTitle}
-                    </Typography>
-                  )}
-                  {speaker.submittedAbstract && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        mt: 0.5,
-                      }}
-                    >
-                      {speaker.submittedAbstract}
-                    </Typography>
-                  )}
-                </Box>
-              )}
+            {/* 2026-05-20 — the contentStatus chip was a confusing second status on the
+                card (PENDING/SUBMITTED/APPROVED/REVISION_NEEDED) running parallel to the
+                speaker_pool.status workflow. Dropped per Q#7. Title/abstract preview is
+                kept (it's substantive information about the talk, not a status). */}
+            {speaker.submittedTitle && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography
+                  variant="caption"
+                  color="success.dark"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      mt: 0.5,
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
         ) : (
           // Pool view (no assigned session)
@@ -1416,54 +1405,34 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               )}
 
             {/* Submitted Content Display (Story 6.3) */}
-            {/* Epic 11 bug fix 2026-05-19 — Content chip only renders for actually-submitted
-                content. `contentStatus` defaults to PENDING on the backend, so the prior
-                `submittedTitle || contentStatus` condition rendered a misleading "PENDING"
-                badge on every card. */}
-            {speaker.submittedTitle &&
-              speaker.contentStatus &&
-              speaker.contentStatus !== 'PENDING' && (
-                <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                    <Chip
-                      label={speaker.contentStatus}
-                      size="small"
-                      color={
-                        speaker.contentStatus === 'APPROVED'
-                          ? 'success'
-                          : speaker.contentStatus === 'REVISION_NEEDED'
-                            ? 'warning'
-                            : 'info'
-                      }
-                      sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
-                    />
-                  </Box>
-                  {speaker.submittedTitle && (
-                    <Typography
-                      variant="caption"
-                      color="success.dark"
-                      sx={{ display: 'block', fontWeight: 600 }}
-                    >
-                      {speaker.submittedTitle}
-                    </Typography>
-                  )}
-                  {speaker.submittedAbstract && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        mt: 0.5,
-                      }}
-                    >
-                      {speaker.submittedAbstract}
-                    </Typography>
-                  )}
-                </Box>
-              )}
+            {/* 2026-05-20 — contentStatus chip dropped per Q#7 (second status on card
+                was confusing). Title/abstract preview stays. */}
+            {speaker.submittedTitle && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography
+                  variant="caption"
+                  color="success.dark"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      mt: 0.5,
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+              </Box>
+            )}
 
             {speaker.status === 'DECLINED' && speaker.declineReason && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>

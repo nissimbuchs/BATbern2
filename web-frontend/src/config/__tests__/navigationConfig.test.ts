@@ -12,21 +12,26 @@ import {
 } from '../navigationConfig';
 
 describe('navigationConfig — Multi-Role Functions (Story 9.5)', () => {
+  // 2026-05-20 (Q#3) — SPEAKER and ATTENDEE entries dropped from the non-public nav.
+  // Speakers redirect to the public site; attendees consume the public website. The
+  // role-based admin nav is now organizer + partner only. Tests that previously
+  // asserted speaker/attendee items existed have been rewritten to assert their
+  // absence and to use organizer+partner as the multi-role example.
   describe('getNavigationForRoles()', () => {
-    test('should return combined items for organizer+speaker', () => {
-      const items = getNavigationForRoles(['organizer', 'speaker']);
+    test('should return combined items for organizer+partner', () => {
+      const items = getNavigationForRoles(['organizer', 'partner']);
 
       // Should include organizer-specific items
       expect(items.some((i) => i.path === '/organizer/events')).toBe(true);
       expect(items.some((i) => i.path === '/organizer/users')).toBe(true);
 
-      // Should include speaker-specific items
-      expect(items.some((i) => i.path === '/speaker/dashboard')).toBe(true);
-      expect(items.some((i) => i.path === '/speaker/events')).toBe(true);
+      // Should include partner-specific items
+      expect(items.some((i) => i.path === '/partners/company')).toBe(true);
+      expect(items.some((i) => i.path === '/partners/topics')).toBe(true);
     });
 
     test('should deduplicate "Public Site" across roles', () => {
-      const items = getNavigationForRoles(['organizer', 'speaker']);
+      const items = getNavigationForRoles(['organizer', 'partner']);
       const publicSiteItems = items.filter((i) => i.path === '/');
       expect(publicSiteItems.length).toBe(1);
     });
@@ -41,35 +46,48 @@ describe('navigationConfig — Multi-Role Functions (Story 9.5)', () => {
       const items = getNavigationForRoles([]);
       expect(items.length).toBe(0);
     });
+
+    test('should return empty array for SPEAKER role (admin-nav removed per Q#3)', () => {
+      const items = getNavigationForRoles(['speaker']);
+      expect(items).toEqual([]);
+    });
+
+    test('should return empty array for ATTENDEE role (admin-nav removed per Q#3)', () => {
+      const items = getNavigationForRoles(['attendee']);
+      expect(items).toEqual([]);
+    });
   });
 
   describe('getGroupedNavigationForRoles()', () => {
-    test('should return two groups for organizer+speaker', () => {
-      const groups = getGroupedNavigationForRoles(['organizer', 'speaker']);
+    test('should return two groups for organizer+partner', () => {
+      const groups = getGroupedNavigationForRoles(['organizer', 'partner']);
       expect(groups.length).toBe(2);
       expect(groups[0].role).toBe('organizer');
-      expect(groups[1].role).toBe('speaker');
+      expect(groups[1].role).toBe('partner');
     });
 
     test('should have correct label keys', () => {
-      const groups = getGroupedNavigationForRoles(['organizer', 'speaker']);
+      const groups = getGroupedNavigationForRoles(['organizer', 'partner']);
       expect(groups[0].labelKey).toBe('navigation.section.organizer');
-      expect(groups[1].labelKey).toBe('navigation.section.speaker');
+      expect(groups[1].labelKey).toBe('navigation.section.partner');
     });
 
     test('should contain role-specific items in each group', () => {
-      const groups = getGroupedNavigationForRoles(['organizer', 'speaker']);
+      const groups = getGroupedNavigationForRoles(['organizer', 'partner']);
       const organizerPaths = groups[0].items.map((i) => i.path);
-      const speakerPaths = groups[1].items.map((i) => i.path);
+      const partnerPaths = groups[1].items.map((i) => i.path);
 
       expect(organizerPaths).toContain('/organizer/events');
-      expect(speakerPaths).toContain('/speaker/dashboard');
+      expect(partnerPaths).toContain('/partners/company');
     });
 
-    test('should return single group for single role', () => {
+    test('should return single (empty-items) group for attendee role', () => {
+      // 2026-05-20 (Q#3) — ATTENDEE has no admin-nav entries; the group exists but
+      // has zero items.
       const groups = getGroupedNavigationForRoles(['attendee']);
       expect(groups.length).toBe(1);
       expect(groups[0].role).toBe('attendee');
+      expect(groups[0].items).toEqual([]);
     });
   });
 
@@ -96,10 +114,10 @@ describe('navigationConfig — Multi-Role Functions (Story 9.5)', () => {
     });
 
     test('should_retainShared_when_singleRole', () => {
-      // Single-role users are unaffected by dedup.
-      const groups = getGroupedNavigationForRoles(['attendee']);
-      const attendeeHasPublic = groups[0].items.some((i) => i.path === '/');
-      expect(attendeeHasPublic).toBe(true);
+      // Single-role users are unaffected by dedup. Organizer carries "Public Site".
+      const groups = getGroupedNavigationForRoles(['organizer']);
+      const organizerHasPublic = groups[0].items.some((i) => i.path === '/');
+      expect(organizerHasPublic).toBe(true);
     });
   });
 });

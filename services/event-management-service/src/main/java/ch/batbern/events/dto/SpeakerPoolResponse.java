@@ -22,6 +22,10 @@ public class SpeakerPoolResponse {
     private String assignedOrganizerId;
     private String status;
     private UUID sessionId;
+    // 2026-05-20 — sessionSlug surfaced alongside sessionId so the organizer drawer's
+    // content tab can call PATCH /events/{code}/sessions/{slug} directly for READY-state
+    // draft writes (the slug is the addressable identifier on that endpoint).
+    private String sessionSlug;
     private String notes;
     private Instant createdAt;
     private Instant updatedAt;
@@ -144,6 +148,7 @@ public class SpeakerPoolResponse {
         boolean slotAssigned;
         if (session != null) {
             slotAssigned = session.getStartTime() != null;
+            response.sessionSlug = session.getSessionSlug();
         } else {
             slotAssigned = speakerPool.getSessionId() != null;
         }
@@ -258,6 +263,14 @@ public class SpeakerPoolResponse {
 
     public void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public String getSessionSlug() {
+        return sessionSlug;
+    }
+
+    public void setSessionSlug(String sessionSlug) {
+        this.sessionSlug = sessionSlug;
     }
 
     public String getNotes() {

@@ -75,8 +75,13 @@ public class SpeakerWorkflowService {
                     Set.of(SpeakerWorkflowState.CONTACTED, SpeakerWorkflowState.DECLINED)),
             Map.entry(SpeakerWorkflowState.CONTACTED,
                     Set.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.DECLINED)),
+            // READY → ACCEPTED added by the local-dev bug-fix sweep (2026-05-20): organizer
+            // accepts on behalf for speakers who never use the portal. Slot-capacity gate
+            // applies (same as READY → INVITED); a reason is required for the audit trail;
+            // no acceptance email goes out (the speaker isn't in our system).
             Map.entry(SpeakerWorkflowState.READY,
-                    Set.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.DECLINED)),
+                    Set.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED,
+                            SpeakerWorkflowState.DECLINED)),
             Map.entry(SpeakerWorkflowState.INVITED,
                     Set.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.DECLINED)),
             Map.entry(SpeakerWorkflowState.ACCEPTED,
@@ -228,6 +233,16 @@ public class SpeakerWorkflowService {
                 enforceSlotCapacity(event);
                 requireUsername(speaker);
             }
+            case ACCEPTED -> {
+                // READY → ACCEPTED (on-behalf): slot-capacity gate applies (we're adding a
+                // new occupant) and the audit trail requires a reason. INVITED → ACCEPTED
+                // keeps its zero-precondition behaviour (the slot was already taken at the
+                // invitation step, and the speaker did the accepting).
+                if (current == SpeakerWorkflowState.READY) {
+                    enforceSlotCapacity(event);
+                    requireOnBehalfAcceptanceReason(payload);
+                }
+            }
             case DECLINED -> requireDeclineReasonIfPostInvitation(current, payload);
             default -> { /* no precondition */ }
         }
@@ -292,6 +307,14 @@ public class SpeakerWorkflowService {
         }
     }
 
+    private void requireOnBehalfAcceptanceReason(TransitionPayload payload) {
+        if (payload.reason() == null || payload.reason().isBlank()) {
+            throw new ValidationException(
+                    "reason is required when accepting a speaker on behalf "
+                            + "(e.g. 'confirmed by email 2026-05-18')");
+        }
+    }
+
     private boolean isPostInvitation(SpeakerWorkflowState state) {
         return state == SpeakerWorkflowState.INVITED
                 || state == SpeakerWorkflowState.ACCEPTED
@@ -310,7 +333,7 @@ public class SpeakerWorkflowService {
         switch (target) {
             case READY -> runReadyHook(speaker, event, payload);
             case INVITED -> runInvitedHook(speaker, event, payload);
-            case ACCEPTED -> runAcceptedHook(speaker, event);
+            case ACCEPTED -> runAcceptedHook(speaker, event, current);
             case DECLINED -> runDeclinedHook(speaker, event, current, payload);
             case CONTENT_SUBMITTED -> {
                 // No-op: content persistence is owned by ContentSubmissionService (11.C.2).
@@ -493,13 +516,20 @@ public class SpeakerWorkflowService {
         speaker.setInvitedAt(Instant.now());
     }
 
-    private void runAcceptedHook(SpeakerPool speaker, Event event) {
+    private void runAcceptedHook(SpeakerPool speaker, Event event, SpeakerWorkflowState current) {
         // INVITED → ACCEPTED: stamp acceptedAt, confirm the session_users row (Story
         // 11.E.8), send confirmation email, notify organizer. The session_users row was
         // created upstream at the CONTACTED → READY transition; here we flip its
         // is_confirmed flag and stamp confirmed_at. SpeakerAcceptedEvent is published
         // below in publishStateSpecificEvents — its listener transitions the EVENT state
         // to SLOT_ASSIGNMENT (it does NOT touch session_users).
+        //
+        // READY → ACCEPTED (on-behalf path, 2026-05-20): same stamp + confirm steps, but
+        // SKIP the acceptance email and the organizer notify. The speaker never received an
+        // invitation (no INVITED step), so the "thanks for accepting" template would be
+        // confusing; the organizer is the one driving this transition, so notifying them is
+        // self-defeating. The reason field on TransitionPayload (enforced upstream) lands
+        // in the status_history row's change_reason as the audit trail.
         //
         // NB: External side effects (email, organizer notify) fire synchronously inside the
         // @Transactional boundary; rollback after this point leaks the email. AFTER_COMMIT
@@ -514,6 +544,13 @@ public class SpeakerWorkflowService {
         // session_users row — log and skip rather than failing the transition. The
         // V96 backfill migration covers existing local-dev data; production has none yet.
         confirmSessionUserIfPresent(speaker);
+
+        if (current == SpeakerWorkflowState.READY) {
+            // On-behalf path: skip email + organizer notify. See class-level comment above.
+            log.info("Speaker {} accepted on-behalf (READY → ACCEPTED) — no email, no notify",
+                    speaker.getId());
+            return;
+        }
 
         try {
             String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
@@ -647,8 +684,12 @@ public class SpeakerWorkflowService {
             applicationEventPublisher.publishEvent(promoted);
         }
 
-        // INVITED → ACCEPTED → SpeakerAcceptedEvent (consumed by SpeakerAcceptedEventListener).
-        if (from == SpeakerWorkflowState.INVITED && to == SpeakerWorkflowState.ACCEPTED) {
+        // → ACCEPTED → SpeakerAcceptedEvent (consumed by SpeakerAcceptedEventListener that
+        // flips the EVENT-level workflow state to SLOT_ASSIGNMENT). Both INVITED → ACCEPTED
+        // (speaker-self) and READY → ACCEPTED (organizer-on-behalf, 2026-05-20) feed this
+        // listener — the downstream event-workflow transition is identical.
+        if (to == SpeakerWorkflowState.ACCEPTED
+                && (from == SpeakerWorkflowState.INVITED || from == SpeakerWorkflowState.READY)) {
             SpeakerAcceptedEvent accepted = SpeakerAcceptedEvent.builder()
                     .eventId(event.getId())
                     .eventCode(event.getEventCode())

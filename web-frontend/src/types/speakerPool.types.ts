@@ -26,6 +26,11 @@ export interface SpeakerPoolEntry {
   assignedOrganizerId?: string | null;
   status: SpeakerWorkflowState;
   sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
+  // 2026-05-20 — sessionSlug, populated by the list endpoint (fromEntityWithContent →
+  // fromEntity(SpeakerPool, Session)). Used by the organizer drawer's content tab to
+  // PATCH /events/{code}/sessions/{slug} when saving title/abstract drafts in READY
+  // (no state transition; canonical sessions.title/.description per plan §2.9).
+  sessionSlug?: string;
   notes?: string;
   createdAt: string;
   updatedAt?: string;

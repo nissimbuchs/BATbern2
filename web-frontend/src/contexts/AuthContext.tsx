@@ -499,7 +499,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!state.user) return false;
 
-      const { role } = state.user;
+      // 2026-05-20 (Q#2c) — canAccess previously only consulted `state.user.role` (the
+      // primary role). For a user with roles [organizer, speaker] the primary is
+      // 'organizer', so `/speaker-portal/*` failed the check, bounced through
+      // ProtectedRoute → /dashboard → /organizer/events — landing the user on the
+      // organizer dashboard instead of the speaker portal. Iterate over the full
+      // `roles` array (falling back to the singular `role` for legacy callers) and
+      // accept the path if ANY role allows it.
+      const effectiveRoles: UserRole[] =
+        state.user.roles && state.user.roles.length > 0
+          ? state.user.roles
+          : state.user.role
+            ? [state.user.role]
+            : [];
 
       // Role-based path access
       const pathAccess: Record<UserRole, string[]> = {
@@ -512,7 +524,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           '/organizer',
           '/account',
         ],
-        speaker: ['/dashboard', '/profile', '/events', '/materials', '/speaker', '/account'],
+        speaker: [
+          '/dashboard',
+          '/profile',
+          '/events',
+          '/materials',
+          '/speaker',
+          '/speaker-portal',
+          '/account',
+        ],
         partner: [
           '/dashboard',
           '/profile',
@@ -525,7 +545,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         attendee: ['/dashboard', '/events', '/content', '/search', '/attendee', '/account'],
       };
 
-      const allowedPaths = pathAccess[role] || [];
+      const allowedPaths = effectiveRoles.flatMap((r) => pathAccess[r] ?? []);
       return allowedPaths.some((allowedPath) => path.startsWith(allowedPath));
     },
     [state.isAuthenticated, state.user]

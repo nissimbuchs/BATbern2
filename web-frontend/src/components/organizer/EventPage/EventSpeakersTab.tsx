@@ -537,6 +537,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         onSendInvitation={handleSendInvitation}
         onEnterContent={handleEnterContent}
         onReviewContent={handleReviewContent}
+        onAssignSessionSlot={handleAssignSessionSlotForSpeaker}
       />
 
       {/* Story 11.D.4 — invitation feedback (lifted from SpeakerCard so drag + click share). */}

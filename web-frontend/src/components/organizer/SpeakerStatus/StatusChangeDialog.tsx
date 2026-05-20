@@ -91,13 +91,21 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   };
 
   // Story 11.D.4 AC5 — required-reason guard for DECLINED.
+  // 2026-05-20 — also required for READY → ACCEPTED (organizer-on-behalf path).
   const isDeclining = newStatus === 'DECLINED';
-  const reasonMissing = isDeclining && reason.trim().length === 0;
+  const isOnBehalfAccept = currentStatus === 'READY' && newStatus === 'ACCEPTED';
+  const reasonRequired = isDeclining || isOnBehalfAccept;
+  const reasonMissing = reasonRequired && reason.trim().length === 0;
   const confirmDisabled = !!error || reasonMissing;
 
   const dialogTitle = isDeclining
     ? t('organizer:kanbanDrag.declineDialog.title', { speakerName })
-    : t('organizer:speakerStatus.changeStatus');
+    : isOnBehalfAccept
+      ? t('organizer:kanbanDrag.acceptOnBehalfDialog.title', {
+          speakerName,
+          defaultValue: 'Accept {{speakerName}} on behalf',
+        })
+      : t('organizer:speakerStatus.changeStatus');
 
   return (
     <Dialog
@@ -121,7 +129,7 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
           fullWidth
           multiline
           rows={4}
-          required={isDeclining}
+          required={reasonRequired}
           label={t('organizer:speakerStatus.changeReason')}
           value={reason}
           onChange={handleReasonChange}
@@ -130,7 +138,12 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
             error ||
             (isDeclining
               ? t('organizer:kanbanDrag.declineDialog.reasonHint')
-              : t('organizer:speakerStatus.reasonHelperText', { max: MAX_REASON_LENGTH }))
+              : isOnBehalfAccept
+                ? t('organizer:kanbanDrag.acceptOnBehalfDialog.reasonHint', {
+                    defaultValue:
+                      'Record why you are accepting on behalf (e.g. "confirmed by email 2026-05-18"). Lands in the audit trail.',
+                  })
+                : t('organizer:speakerStatus.reasonHelperText', { max: MAX_REASON_LENGTH }))
           }
           placeholder={t('organizer:speakerStatus.reasonPlaceholder')}
           data-testid="status-change-reason"
