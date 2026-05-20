@@ -208,6 +208,8 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.CONTACTED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.CONTACTED, SpeakerWorkflowState.READY},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.READY, SpeakerWorkflowState.INVITED},
+                // 11.E.9 (Q#10): organizer-on-behalf direct accept, skipping INVITED.
+                new SpeakerWorkflowState[]{SpeakerWorkflowState.READY, SpeakerWorkflowState.ACCEPTED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.CONTENT_SUBMITTED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED},
