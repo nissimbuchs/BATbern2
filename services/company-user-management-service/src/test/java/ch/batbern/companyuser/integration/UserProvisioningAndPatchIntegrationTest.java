@@ -514,8 +514,8 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
-    @DisplayName("provision (11.E.2 AC11 #2): existing-user branch does NOT call Cognito")
-    void should_notCallCognito_when_provisioningExistingUser() throws Exception {
+    @DisplayName("provision (11.E.2 AC11 #2): existing-user branch self-heals via Cognito (idempotent)")
+    void should_callCognitoIdempotently_when_provisioningExistingUser() throws Exception {
         // Seed an existing user without SPEAKER role.
         userRepository.save(User.builder()
                 .username("existing.alice")
@@ -544,9 +544,22 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
         User reloaded = userRepository.findByEmail("existing.alice@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER);
 
-        // ... but Cognito was NOT called (user shell already exists from a prior provisioning).
-        Mockito.verify(cognitoIntegrationService, Mockito.never())
-                .adminCreateUserSilently(anyString(), anyString(), anyString());
+        // ... and Cognito IS called — the existing-user branch now self-heals the
+        // Cognito shell via the idempotent `adminCreateUserSilently` (Epic 11.E.7 fix
+        // 13a753e5). The call is a no-op when the user already exists in Cognito;
+        // it creates the missing shell when staging Cognito has lost the record.
+        // The invariant we check is that the User table still has exactly one row for
+        // this email (no duplicate row created) — that's the contract this test
+        // previously expressed via "Cognito never called".
+        Mockito.verify(cognitoIntegrationService, Mockito.times(1))
+                .adminCreateUserSilently(
+                        org.mockito.ArgumentMatchers.eq("existing.alice@example.com"),
+                        anyString(),
+                        org.mockito.ArgumentMatchers.eq("existing.alice"));
+        long matchingRows = userRepository.findAll().stream()
+                .filter(u -> "existing.alice@example.com".equalsIgnoreCase(u.getEmail()))
+                .count();
+        org.assertj.core.api.Assertions.assertThat(matchingRows).isEqualTo(1);
     }
 
     @Test
@@ -561,7 +574,11 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
         // CognitoIntegrationServiceImplTest. This integration test now correctly asserts:
         // "given the Cognito call returns normally (success OR successfully-swallowed at
         // the impl layer), the User + role rows persist."
-        Mockito.doNothing().when(cognitoIntegrationService)
+        // 11.E.9: `adminCreateUserSilently` returns String (the new Cognito sub), not
+        // void — `doNothing()` therefore errors with "Only void methods can doNothing()!".
+        // Use `doReturn(null)` to stub the success/swallowed-at-impl path; `null` matches
+        // the production contract of "Cognito user already exists, no fresh sub to return."
+        Mockito.doReturn(null).when(cognitoIntegrationService)
                 .adminCreateUserSilently(anyString(), anyString(), anyString());
 
         String body = """

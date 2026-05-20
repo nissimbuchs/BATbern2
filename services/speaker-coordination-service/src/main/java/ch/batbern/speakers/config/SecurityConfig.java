@@ -1,6 +1,7 @@
 package ch.batbern.speakers.config;
 
 import ch.batbern.shared.security.JwtRolesConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -97,9 +98,11 @@ public class SecurityConfig {
      * See {@link JwtRolesConverter}.
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter(DataSource dataSource) {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(
+            ObjectProvider<DataSource> dataSourceProvider) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new JwtRolesConverter(dataSource));
+        converter.setJwtGrantedAuthoritiesConverter(
+                new JwtRolesConverter(dataSourceProvider.getIfAvailable()));
         return converter;
     }
 }

@@ -2,6 +2,7 @@ package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
 import ch.batbern.shared.security.JwtRolesConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
@@ -255,11 +256,19 @@ public class SecurityConfig {
      * local-dev speakers whose user_profiles row is in the local DB but whose
      * Cognito user is in staging (so the PreTokenGen Lambda finds no roles).
      * In staging the JWT always carries custom:role, so the fallback is dormant.
+     *
+     * 11.E.9: DataSource is injected via {@link ObjectProvider} so this bean can
+     * load in {@code @WebMvcTest} slices that don't include JPA. With no DataSource
+     * the converter still parses the primary {@code custom:role} claim; only the
+     * DB-fallback path is disabled (already dormant in non-local environments
+     * since the staging JWT always carries roles).
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter(DataSource dataSource) {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(
+            ObjectProvider<DataSource> dataSourceProvider) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new JwtRolesConverter(dataSource));
+        converter.setJwtGrantedAuthoritiesConverter(
+                new JwtRolesConverter(dataSourceProvider.getIfAvailable()));
         return converter;
     }
 }

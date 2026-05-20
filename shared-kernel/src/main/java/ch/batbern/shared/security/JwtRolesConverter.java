@@ -52,8 +52,22 @@ public class JwtRolesConverter implements Converter<Jwt, Collection<GrantedAutho
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * @param dataSource the data source the DB fallback queries; may be {@code null}
+     *                   (e.g. in {@code @WebMvcTest} slices that don't include JPA).
+     *                   With a null data source the converter still validates the
+     *                   primary {@code custom:role} / {@code role} claims; only the
+     *                   DB fallback is disabled. Production / staging / dev always
+     *                   supply a real data source, so this only matters for test
+     *                   slices.
+     */
     public JwtRolesConverter(DataSource dataSource) {
-        this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.jdbcTemplate = dataSource != null ? new JdbcTemplate(dataSource) : null;
+        if (dataSource == null) {
+            LOGGER.warn("JwtRolesConverter constructed without a DataSource — DB fallback "
+                    + "disabled. Expected only in @WebMvcTest slices; production must supply "
+                    + "a DataSource.");
+        }
     }
 
     @Override
@@ -72,6 +86,10 @@ public class JwtRolesConverter implements Converter<Jwt, Collection<GrantedAutho
 
     private Collection<GrantedAuthority> fetchRolesFromDb(String cognitoUserId) {
         if (cognitoUserId == null || cognitoUserId.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (jdbcTemplate == null) {
+            // Constructed without a DataSource (test slice) — fallback is dormant.
             return Collections.emptyList();
         }
         try {
