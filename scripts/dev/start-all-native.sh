@@ -240,8 +240,10 @@ ENABLE_COGNITO_AUTH=${ENABLE_COGNITO_AUTH:-true}
 # ==============================================
 AI_ENABLED=${AI_ENABLED:-false}
 OPENAI_API_KEY=${OPENAI_API_KEY:-}
-# Local dev: CloudFront is MinIO — include bucket name for path-style URL
-CLOUDFRONT_DOMAIN=http://localhost:${MINIO_API_PORT}/${AWS_S3_BUCKET_NAME:-batbern-development-company-logos}
+# Local dev: CloudFront is MinIO. Domain is the MinIO host only — CloudFrontUrlBuilder
+# appends the bucket for localhost (path-style access). Baking the bucket into the
+# domain would double-include it for every consumer that uses the builder.
+CLOUDFRONT_DOMAIN=http://localhost:${MINIO_API_PORT}
 
 # ==============================================
 # Service Ports (Instance ${INSTANCE})

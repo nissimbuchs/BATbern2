@@ -7,6 +7,7 @@ import ch.batbern.events.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.exception.TeaserImageLimitExceededException;
 import ch.batbern.events.exception.TeaserImageNotFoundException;
 import ch.batbern.events.repository.EventTeaserImageRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
@@ -139,7 +140,7 @@ public class EventTeaserImageService {
             throw new IllegalStateException("Uploaded file not found in S3: " + s3Key);
         }
 
-        String imageUrl = cloudFrontDomain + "/" + s3Key;
+        String imageUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key);
         int displayOrder = existing.stream()
                 .mapToInt(EventTeaserImage::getDisplayOrder)
                 .max()
