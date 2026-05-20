@@ -18,7 +18,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -201,16 +200,14 @@ public class SpeakerInvitationService {
         //    The slot-capacity gate (READY → INVITED) is enforced inside transition()
         //    and surfaces as SlotCapacityReachedException → HTTP 409 from GlobalExceptionHandler.
         String currentUser = securityContextHelper.getCurrentUsername();
-        SecurityPrincipal actor = new SecurityPrincipal(
-                currentUser != null ? currentUser : "system",
-                safeRoles());
+        String auditActor = currentUser != null ? currentUser : "system";
         TransitionPayload payload = TransitionPayload.builder()
                 .email(speaker.getEmail())
                 .reason("Invitation email sent")
                 .inviteContext(Map.of("locale", request.locale() != null ? request.locale() : "de"))
                 .build();
 
-        speakerWorkflowService.transition(speaker.getId(), SpeakerWorkflowState.INVITED, actor, payload);
+        speakerWorkflowService.transition(speaker.getId(), SpeakerWorkflowState.INVITED, auditActor, payload);
 
         // 5. Reload to pick up invitedAt (set by INVITED hook) for the response DTO.
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId())
@@ -248,14 +245,6 @@ public class SpeakerInvitationService {
                 updated.getResponseDeadline(),
                 updated.getContentDeadline()
         );
-    }
-
-    private List<String> safeRoles() {
-        try {
-            return securityContextHelper.getCurrentUserRoles();
-        } catch (SecurityException ex) {
-            return List.of();
-        }
     }
 
     /**

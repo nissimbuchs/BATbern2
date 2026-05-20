@@ -13,7 +13,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -93,8 +92,7 @@ class SpeakerWorkflowServiceTest {
 
     private static final UUID SPEAKER_ID = UUID.randomUUID();
     private static final UUID EVENT_ID = UUID.randomUUID();
-    private static final SecurityPrincipal ORGANIZER =
-            new SecurityPrincipal("organizer.user", List.of("ORGANIZER"));
+    private static final String ORGANIZER = "organizer.user";
 
     @BeforeEach
     void setUp() {

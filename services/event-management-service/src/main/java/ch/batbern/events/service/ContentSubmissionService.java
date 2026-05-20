@@ -21,7 +21,6 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -255,7 +254,7 @@ public class ContentSubmissionService {
      * @param speakerPoolId speaker pool entry to submit content for
      * @param eventCode     event code (path parameter)
      * @param payload       principal-agnostic content payload (Story 11.C.2 — AC4)
-     * @param principal     SPEAKER or ORGANIZER security principal (Story 11.B.2 type)
+     * @param username      username of the submitter (speaker or organizer-on-behalf); recorded in audit trail
      * @return submission id + version + status + session title
      */
     @Transactional
@@ -263,7 +262,7 @@ public class ContentSubmissionService {
             UUID speakerPoolId,
             String eventCode,
             ContentSubmissionPayload payload,
-            SecurityPrincipal principal
+            String username
     ) {
         // 1. Validate required fields (lightweight sanity — full @Valid is on the controller DTOs).
         if (payload == null) {
@@ -284,7 +283,7 @@ public class ContentSubmissionService {
         }
 
         log.info("Submitting content (Story 11.C.2): speakerPoolId={}, eventCode={}, actor={}",
-                speakerPoolId, eventCode, principal.username());
+                speakerPoolId, eventCode, username);
 
         // 2. Load the speaker pool entry.
         SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
@@ -367,7 +366,7 @@ public class ContentSubmissionService {
         speakerWorkflowService.transition(
                 speaker.getId(),
                 SpeakerWorkflowState.CONTENT_SUBMITTED,
-                principal,
+                username,
                 transitionPayload
         );
 
@@ -388,7 +387,7 @@ public class ContentSubmissionService {
         eventPublisher.publishEvent(contentEvent);
 
         log.info("Content submitted: speakerPoolId={}, submissionId={}, version={}, actor={}",
-                speaker.getId(), submission.getId(), newVersion, principal.username());
+                speaker.getId(), submission.getId(), newVersion, username);
 
         return new ContentSubmitResponse(
                 submission.getId(),

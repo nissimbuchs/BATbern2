@@ -15,7 +15,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
@@ -41,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -162,10 +162,9 @@ class SpeakerInvitationServiceTest {
         when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
                 .thenReturn(Optional.of(speaker));
         when(securityContextHelper.getCurrentUsername()).thenReturn("organizer.test");
-        when(securityContextHelper.getCurrentUserRoles()).thenReturn(List.of("ORGANIZER"));
         when(speakerWorkflowService.transition(
                 eq(testSpeakerId), eq(SpeakerWorkflowState.INVITED),
-                any(SecurityPrincipal.class), any(TransitionPayload.class)))
+                anyString(), any(TransitionPayload.class)))
                 .thenAnswer(inv -> {
                     speaker.setStatus(SpeakerWorkflowState.INVITED);
                     speaker.setInvitedAt(Instant.now());
@@ -182,12 +181,11 @@ class SpeakerInvitationServiceTest {
         assertThat(response.status()).isEqualTo(SpeakerWorkflowState.INVITED);
         assertThat(response.invitedAt()).isNotNull();
 
-        ArgumentCaptor<SecurityPrincipal> actor = ArgumentCaptor.forClass(SecurityPrincipal.class);
+        ArgumentCaptor<String> actor = ArgumentCaptor.forClass(String.class);
         verify(speakerWorkflowService).transition(
                 eq(testSpeakerId), eq(SpeakerWorkflowState.INVITED),
                 actor.capture(), any(TransitionPayload.class));
-        assertThat(actor.getValue().username()).isEqualTo("organizer.test");
-        assertThat(actor.getValue().roles()).containsExactly("ORGANIZER");
+        assertThat(actor.getValue()).isEqualTo("organizer.test");
 
         // Outreach history is still recorded by SpeakerInvitationService (orthogonal to state).
         verify(outreachHistoryRepository).save(any(OutreachHistory.class));

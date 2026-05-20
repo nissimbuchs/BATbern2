@@ -12,11 +12,11 @@ import ch.batbern.events.dto.SpeakerMaterialUploadRequest;
 import ch.batbern.events.dto.SpeakerMaterialUploadResponse;
 import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.SpeakerPortalAuthorizationService;
 import ch.batbern.events.service.SpeakerPortalMaterialsService;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,27 +60,29 @@ public class SpeakerPortalContentController {
     private final ContentSubmissionService contentSubmissionService;
     private final SpeakerPortalMaterialsService materialsService;
     private final SpeakerPortalAuthorizationService authorizationService;
+    private final SecurityContextHelper securityContextHelper;
 
     public SpeakerPortalContentController(
             ContentSubmissionService contentSubmissionService,
             SpeakerPortalMaterialsService materialsService,
-            SpeakerPortalAuthorizationService authorizationService) {
+            SpeakerPortalAuthorizationService authorizationService,
+            SecurityContextHelper securityContextHelper) {
         this.contentSubmissionService = contentSubmissionService;
         this.materialsService = materialsService;
         this.authorizationService = authorizationService;
+        this.securityContextHelper = securityContextHelper;
     }
 
     @GetMapping("/events/{eventCode}/content")
     public ResponseEntity<SpeakerContentInfo> getContentInfo(
             @PathVariable String eventCode,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(actor.username(), eventCode);
+        String username = securityContextHelper.getCurrentUsername();
+        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Content info request: username={} eventCode={} ip={}",
-                actor.username(), eventCode, getClientIp(httpRequest));
+                username, eventCode, getClientIp(httpRequest));
 
         SpeakerContentInfo contentInfo = contentSubmissionService.getContentInfo(speaker);
         return ResponseEntity.ok(contentInfo);
@@ -91,14 +92,13 @@ public class SpeakerPortalContentController {
     public ResponseEntity<ContentDraftResponse> saveDraft(
             @PathVariable String eventCode,
             @Valid @RequestBody ContentDraftRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(actor.username(), eventCode);
+        String username = securityContextHelper.getCurrentUsername();
+        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.debug("Draft save request: username={} eventCode={} ip={}",
-                actor.username(), eventCode, getClientIp(httpRequest));
+                username, eventCode, getClientIp(httpRequest));
 
         try {
             ContentDraftResponse response = contentSubmissionService.saveDraft(speaker, request);
@@ -114,14 +114,13 @@ public class SpeakerPortalContentController {
     public ResponseEntity<ContentSubmitResponse> submitContent(
             @PathVariable String eventCode,
             @Valid @RequestBody ContentSubmitRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(actor.username(), eventCode);
+        String username = securityContextHelper.getCurrentUsername();
+        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Content submission request: username={} eventCode={} ip={}",
-                actor.username(), eventCode, getClientIp(httpRequest));
+                username, eventCode, getClientIp(httpRequest));
 
         // Code review 2026-05-18 (P1): the redundant per-endpoint username precheck has been
         // lifted into SpeakerPortalAuthorizationService.resolveSpeakerPool, which now throws
@@ -138,7 +137,7 @@ public class SpeakerPortalContentController {
                     request.presentationUploadId());
 
             ContentSubmitResponse response = contentSubmissionService.submit(
-                    speaker.getId(), eventCode, payload, actor);
+                    speaker.getId(), eventCode, payload, username);
 
             LOG.info("Content submitted - submissionId: {} version: {} eventCode={}",
                     response.submissionId(), response.version(), eventCode);
@@ -160,14 +159,13 @@ public class SpeakerPortalContentController {
     public ResponseEntity<SpeakerMaterialUploadResponse> generatePresignedUrl(
             @PathVariable String eventCode,
             @Valid @RequestBody SpeakerMaterialUploadRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(actor.username(), eventCode);
+        String username = securityContextHelper.getCurrentUsername();
+        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Material presigned URL request: username={} eventCode={} ip={}",
-                actor.username(), eventCode, getClientIp(httpRequest));
+                username, eventCode, getClientIp(httpRequest));
 
         try {
             SpeakerMaterialUploadResponse response =
@@ -188,14 +186,13 @@ public class SpeakerPortalContentController {
     public ResponseEntity<SpeakerMaterialConfirmResponse> confirmUpload(
             @PathVariable String eventCode,
             @Valid @RequestBody SpeakerMaterialConfirmRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(actor.username(), eventCode);
+        String username = securityContextHelper.getCurrentUsername();
+        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
 
         LOG.info("Material confirm request: username={} eventCode={} uploadId={} ip={}",
-                actor.username(), eventCode, request.uploadId(), getClientIp(httpRequest));
+                username, eventCode, request.uploadId(), getClientIp(httpRequest));
 
         try {
             SpeakerMaterialConfirmResponse response =

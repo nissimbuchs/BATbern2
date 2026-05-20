@@ -12,7 +12,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
@@ -124,7 +123,7 @@ public class SpeakerWorkflowService {
      *
      * @param speakerPoolId speaker pool primary key
      * @param target target workflow state
-     * @param actor authenticated principal that triggered the change
+     * @param username username of the user that triggered the change (recorded in audit trail)
      * @param payload optional fields used by side-effect hooks (email, reason, preferences, …)
      * @return persisted speaker pool + status-history row
      * @throws NotFoundException speaker pool entry not found
@@ -136,7 +135,7 @@ public class SpeakerWorkflowService {
     public TransitionResult transition(
             UUID speakerPoolId,
             SpeakerWorkflowState target,
-            SecurityPrincipal actor,
+            String username,
             TransitionPayload payload
     ) {
         TransitionPayload safePayload = payload != null ? payload : TransitionPayload.builder().build();
@@ -150,7 +149,7 @@ public class SpeakerWorkflowService {
 
         // 3. Allow-list check
         if (current == target) {
-            return handleSameStateTransition(speaker, current, actor, safePayload);
+            return handleSameStateTransition(speaker, current, username, safePayload);
         }
 
         if (!isAllowed(current, target)) {
@@ -164,7 +163,7 @@ public class SpeakerWorkflowService {
         enforcePrecondition(target, current, event, safePayload, speaker);
 
         // 5. Side-effect hook (target-specific) — may mutate the in-memory speaker
-        runSideEffectHook(speaker, event, current, target, actor, safePayload);
+        runSideEffectHook(speaker, event, current, target, username, safePayload);
 
         // 6. Persist new state — the ONLY production-code call to SpeakerPool#setStatus.
         speaker.setStatus(target);
@@ -175,13 +174,13 @@ public class SpeakerWorkflowService {
         //    the workflow service to suppress the redundant status_history entry).
         SpeakerStatusHistory historyRow = safePayload.suppressHistoryRow()
                 ? null
-                : writeHistoryRow(persisted, current, target, actor, safePayload);
+                : writeHistoryRow(persisted, current, target, username, safePayload);
 
         // 8. Publish SpeakerWorkflowStateChangeEvent (best-effort — failure does NOT roll back)
-        publishWorkflowStateChangeEvent(persisted, current, target, actor);
+        publishWorkflowStateChangeEvent(persisted, current, target, username);
 
         // 9. State-specific domain events
-        publishStateSpecificEvents(persisted, event, current, target, actor);
+        publishStateSpecificEvents(persisted, event, current, target, username);
 
         return new TransitionResult(persisted, historyRow);
     }
@@ -194,12 +193,12 @@ public class SpeakerWorkflowService {
     private TransitionResult handleSameStateTransition(
             SpeakerPool speaker,
             SpeakerWorkflowState state,
-            SecurityPrincipal actor,
+            String username,
             TransitionPayload payload
     ) {
         // Preconditions, side-effects, and state-specific events are all SKIPPED on same-state.
-        SpeakerStatusHistory historyRow = writeHistoryRow(speaker, state, state, actor, payload);
-        publishWorkflowStateChangeEvent(speaker, state, state, actor);
+        SpeakerStatusHistory historyRow = writeHistoryRow(speaker, state, state, username, payload);
+        publishWorkflowStateChangeEvent(speaker, state, state, username);
         return new TransitionResult(speaker, historyRow);
     }
 
@@ -295,7 +294,7 @@ public class SpeakerWorkflowService {
             Event event,
             SpeakerWorkflowState current,
             SpeakerWorkflowState target,
-            SecurityPrincipal actor,
+            String username,
             TransitionPayload payload
     ) {
         switch (target) {
@@ -440,7 +439,7 @@ public class SpeakerWorkflowService {
             SpeakerPool speaker,
             SpeakerWorkflowState previous,
             SpeakerWorkflowState next,
-            SecurityPrincipal actor,
+            String username,
             TransitionPayload payload
     ) {
         SpeakerStatusHistory history = new SpeakerStatusHistory();
@@ -449,7 +448,7 @@ public class SpeakerWorkflowService {
         history.setSessionId(speaker.getSessionId());
         history.setPreviousStatus(previous);
         history.setNewStatus(next);
-        history.setChangedByUsername(actor.username());
+        history.setChangedByUsername(username);
         history.setChangeReason(payload.reason());
         history.setChangedAt(Instant.now());
         return statusHistoryRepository.save(history);
@@ -459,7 +458,7 @@ public class SpeakerWorkflowService {
             SpeakerPool speaker,
             SpeakerWorkflowState from,
             SpeakerWorkflowState to,
-            SecurityPrincipal actor
+            String username
     ) {
         try {
             SpeakerWorkflowStateChangeEvent event = new SpeakerWorkflowStateChangeEvent(
@@ -467,7 +466,7 @@ public class SpeakerWorkflowService {
                     speaker.getEventId(),
                     from,
                     to,
-                    actor.username()
+                    username
             );
             domainEventPublisher.publish(event);
             log.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
@@ -483,7 +482,7 @@ public class SpeakerWorkflowService {
             Event event,
             SpeakerWorkflowState from,
             SpeakerWorkflowState to,
-            SecurityPrincipal actor
+            String username
     ) {
         // CONTACTED → READY → SpeakerPromotedToReadyEvent (consumed by Phase E for Cognito email).
         if (from == SpeakerWorkflowState.CONTACTED && to == SpeakerWorkflowState.READY) {
@@ -493,7 +492,7 @@ public class SpeakerWorkflowService {
                     .username(speaker.getUsername())
                     .email(speaker.getEmail())
                     .promotedAt(Instant.now())
-                    .promotedByUsername(actor.username())
+                    .promotedByUsername(username)
                     .build();
             applicationEventPublisher.publishEvent(promoted);
         }
@@ -507,7 +506,7 @@ public class SpeakerWorkflowService {
                     .speakerName(speaker.getSpeakerName())
                     .company(speaker.getCompany())
                     .expertise(speaker.getExpertise())
-                    .acceptedBy(actor.username())
+                    .acceptedBy(username)
                     .build();
             applicationEventPublisher.publishEvent(accepted);
         }

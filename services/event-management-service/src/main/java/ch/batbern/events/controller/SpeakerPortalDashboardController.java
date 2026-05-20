@@ -1,14 +1,13 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.dto.SpeakerDashboardDto;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SpeakerDashboardService;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,25 +30,28 @@ public class SpeakerPortalDashboardController {
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerPortalDashboardController.class);
 
     private final SpeakerDashboardService dashboardService;
+    private final SecurityContextHelper securityContextHelper;
 
-    public SpeakerPortalDashboardController(SpeakerDashboardService dashboardService) {
+    public SpeakerPortalDashboardController(
+            SpeakerDashboardService dashboardService,
+            SecurityContextHelper securityContextHelper) {
         this.dashboardService = dashboardService;
+        this.securityContextHelper = securityContextHelper;
     }
 
     /**
      * Get speaker dashboard summary across every event the authenticated speaker is in.
      */
     @GetMapping("/dashboard")
-    public ResponseEntity<SpeakerDashboardDto> getDashboard(
-            HttpServletRequest httpRequest, Authentication authentication) {
+    public ResponseEntity<SpeakerDashboardDto> getDashboard(HttpServletRequest httpRequest) {
 
-        SecurityPrincipal actor = SecurityPrincipal.fromAuthentication(authentication);
-        LOG.info("Dashboard request: username={} ip={}", actor.username(), getClientIp(httpRequest));
+        String username = securityContextHelper.getCurrentUsername();
+        LOG.info("Dashboard request: username={} ip={}", username, getClientIp(httpRequest));
 
-        SpeakerDashboardDto dashboard = dashboardService.getDashboard(actor.username());
+        SpeakerDashboardDto dashboard = dashboardService.getDashboard(username);
 
         LOG.info("Dashboard retrieved for speaker: {} ({} upcoming, {} past)",
-                actor.username(),
+                username,
                 dashboard.upcomingEvents() == null ? 0 : dashboard.upcomingEvents().size(),
                 dashboard.pastEvents() == null ? 0 : dashboard.pastEvents().size());
 

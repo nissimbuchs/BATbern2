@@ -5,8 +5,6 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
@@ -33,17 +31,14 @@ public class SpeakerOutreachService {
     private final OutreachHistoryRepository outreachHistoryRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SpeakerWorkflowService speakerWorkflowService;
-    private final SecurityContextHelper securityContextHelper;
 
     public SpeakerOutreachService(
             OutreachHistoryRepository outreachHistoryRepository,
             SpeakerPoolRepository speakerPoolRepository,
-            SpeakerWorkflowService speakerWorkflowService,
-            SecurityContextHelper securityContextHelper
+            SpeakerWorkflowService speakerWorkflowService
     ) {
         this.outreachHistoryRepository = outreachHistoryRepository;
         this.speakerPoolRepository = speakerPoolRepository;
-        this.securityContextHelper = securityContextHelper;
         this.speakerWorkflowService = speakerWorkflowService;
     }
 
@@ -110,18 +105,11 @@ public class SpeakerOutreachService {
         //    additional status_history row would surface as a duplicate (and misleading)
         //    second timeline entry in the unified history feed.
         if (currentState == SpeakerWorkflowState.IDENTIFIED) {
-            List<String> roles;
-            try {
-                roles = securityContextHelper.getCurrentUserRoles();
-            } catch (SecurityException ex) {
-                roles = List.of();
-            }
-            SecurityPrincipal actor = new SecurityPrincipal(organizerUsername, roles);
             TransitionPayload payload = TransitionPayload.builder()
                     .suppressHistoryRow(true)
                     .build();
             speakerWorkflowService.transition(
-                    speakerId, SpeakerWorkflowState.CONTACTED, actor, payload);
+                    speakerId, SpeakerWorkflowState.CONTACTED, organizerUsername, payload);
             LOG.info("Transitioned speaker {} from IDENTIFIED to CONTACTED", speakerId);
         }
 

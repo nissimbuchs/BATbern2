@@ -8,7 +8,6 @@ import ch.batbern.events.dto.SpeakerResponseResult;
 import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.exception.ValidationException;
@@ -31,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
  * <p>Verifies that ACCEPT and DECLINE responses delegate to
  * {@link SpeakerWorkflowService#transition} (the sole writer) and that already-responded
  * speakers are blocked. Story 11.E.3 swaps the magic-link path for Cognito-derived
- * {@link SecurityPrincipal}s injected by the controller; the service no longer consults
+ * String usernames injected by the controller; the service no longer consults
  * {@code MagicLinkService}.
  *
  * <p>Provisioning (User + SPEAKER role grant) is upstream at {@code CONTACTED → READY}
@@ -64,8 +64,7 @@ class SpeakerResponseServiceTest {
 
     private static final UUID SPEAKER_ID = UUID.randomUUID();
     private static final UUID EVENT_ID = UUID.randomUUID();
-    private static final SecurityPrincipal SPEAKER_PRINCIPAL =
-            new SecurityPrincipal("speaker.user", List.of("SPEAKER"));
+    private static final String SPEAKER_USERNAME = "speaker.user";
 
     @BeforeEach
     void setUp() {
@@ -87,7 +86,7 @@ class SpeakerResponseServiceTest {
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
         when(speakerWorkflowService.transition(
                 eq(SPEAKER_ID), eq(SpeakerWorkflowState.ACCEPTED),
-                any(SecurityPrincipal.class), any(TransitionPayload.class)))
+                anyString(), any(TransitionPayload.class)))
                 .thenAnswer(inv -> {
                     speaker.setStatus(SpeakerWorkflowState.ACCEPTED);
                     return new TransitionResult(speaker, new SpeakerStatusHistory());
@@ -98,15 +97,13 @@ class SpeakerResponseServiceTest {
                 .build();
 
         SpeakerResponseResult result =
-                service.processResponse(SPEAKER_PRINCIPAL, speaker, request);
+                service.processResponse(SPEAKER_USERNAME, speaker, request);
 
-        ArgumentCaptor<SecurityPrincipal> actorCaptor =
-                ArgumentCaptor.forClass(SecurityPrincipal.class);
+        ArgumentCaptor<String> actorCaptor = ArgumentCaptor.forClass(String.class);
         verify(speakerWorkflowService).transition(
                 eq(SPEAKER_ID), eq(SpeakerWorkflowState.ACCEPTED),
                 actorCaptor.capture(), any(TransitionPayload.class));
-        assertThat(actorCaptor.getValue().username()).isEqualTo("speaker.user");
-        assertThat(actorCaptor.getValue().roles()).containsExactly("SPEAKER");
+        assertThat(actorCaptor.getValue()).isEqualTo("speaker.user");
 
         assertThat(result.isSuccess()).isTrue();
         // Code review 2026-05-18 (D1): profileUrl was dropped from SpeakerResponseResult.
@@ -125,7 +122,7 @@ class SpeakerResponseServiceTest {
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
         when(speakerWorkflowService.transition(
                 eq(SPEAKER_ID), eq(SpeakerWorkflowState.DECLINED),
-                any(SecurityPrincipal.class), any(TransitionPayload.class)))
+                anyString(), any(TransitionPayload.class)))
                 .thenAnswer(inv -> {
                     speaker.setStatus(SpeakerWorkflowState.DECLINED);
                     return new TransitionResult(speaker, new SpeakerStatusHistory());
@@ -136,13 +133,13 @@ class SpeakerResponseServiceTest {
                 .reason("Scheduling conflict")
                 .build();
 
-        service.processResponse(SPEAKER_PRINCIPAL, speaker, request);
+        service.processResponse(SPEAKER_USERNAME, speaker, request);
 
         ArgumentCaptor<TransitionPayload> payloadCaptor =
                 ArgumentCaptor.forClass(TransitionPayload.class);
         verify(speakerWorkflowService).transition(
                 eq(SPEAKER_ID), eq(SpeakerWorkflowState.DECLINED),
-                any(SecurityPrincipal.class), payloadCaptor.capture());
+                anyString(), payloadCaptor.capture());
         assertThat(payloadCaptor.getValue().reason()).isEqualTo("Scheduling conflict");
     }
 
@@ -157,7 +154,7 @@ class SpeakerResponseServiceTest {
                 .response(SpeakerResponseType.DECLINE)
                 .build();
 
-        assertThatThrownBy(() -> service.processResponse(SPEAKER_PRINCIPAL, speaker, request))
+        assertThatThrownBy(() -> service.processResponse(SPEAKER_USERNAME, speaker, request))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Reason is required");
 
@@ -173,7 +170,7 @@ class SpeakerResponseServiceTest {
                 .response(SpeakerResponseType.ACCEPT)
                 .build();
 
-        assertThatThrownBy(() -> service.processResponse(SPEAKER_PRINCIPAL, speaker, request))
+        assertThatThrownBy(() -> service.processResponse(SPEAKER_USERNAME, speaker, request))
                 .isInstanceOf(AlreadyRespondedException.class);
 
         verify(speakerWorkflowService, never()).transition(any(), any(), any(), any());
@@ -188,7 +185,7 @@ class SpeakerResponseServiceTest {
                 .response(SpeakerResponseType.ACCEPT)
                 .build();
 
-        assertThatThrownBy(() -> service.processResponse(SPEAKER_PRINCIPAL, speaker, request))
+        assertThatThrownBy(() -> service.processResponse(SPEAKER_USERNAME, speaker, request))
                 .isInstanceOf(AlreadyRespondedException.class);
     }
 

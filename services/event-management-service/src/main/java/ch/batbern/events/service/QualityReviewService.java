@@ -6,8 +6,6 @@ import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -42,7 +40,6 @@ public class QualityReviewService {
     private final EmailService emailService;
     private final MagicLinkService magicLinkService;
     private final SpeakerWorkflowService speakerWorkflowService;
-    private final SecurityContextHelper securityContextHelper;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -88,20 +85,12 @@ public class QualityReviewService {
             throw new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId);
         }
 
-        SecurityPrincipal actor = new SecurityPrincipal(moderatorUsername, safeRoles());
         TransitionPayload payload = TransitionPayload.builder()
                 .reason("Content approved by moderator")
                 .build();
 
-        speakerWorkflowService.transition(speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, actor, payload);
-    }
-
-    private List<String> safeRoles() {
-        try {
-            return securityContextHelper.getCurrentUserRoles();
-        } catch (SecurityException ex) {
-            return List.of();
-        }
+        speakerWorkflowService.transition(
+                speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, moderatorUsername, payload);
     }
 
     /**

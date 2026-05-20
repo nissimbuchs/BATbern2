@@ -22,7 +22,6 @@ import ch.batbern.events.service.QualityReviewService;
 import ch.batbern.events.service.SpeakerStatusService;
 import ch.batbern.events.service.SpeakerWorkflowService;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
@@ -127,9 +126,7 @@ public class SpeakerStatusController {
                     buildInvalidPromotionMessage(current));
         }
 
-        SecurityPrincipal actor = new SecurityPrincipal(
-                securityContextHelper.getCurrentUsername(),
-                securityContextHelper.getCurrentUserRoles());
+        String username = securityContextHelper.getCurrentUsername();
         String trimmedEmail = request.email() != null ? request.email().trim() : null;
         TransitionPayload payload = TransitionPayload.builder()
                 .email(trimmedEmail)
@@ -140,7 +137,7 @@ public class SpeakerStatusController {
         SpeakerPool promoted;
         try {
             promoted = speakerWorkflowService
-                    .transition(speakerId, SpeakerWorkflowState.READY, actor, payload)
+                    .transition(speakerId, SpeakerWorkflowState.READY, username, payload)
                     .speakerPool();
         } catch (InvalidStateTransitionException ex) {
             // TOCTOU: state changed between the pre-check and the transition reload. Re-classify
@@ -275,11 +272,9 @@ public class SpeakerStatusController {
                 eventCode, speakerId, request.getPresentationTitle());
 
         // Story 11.C.2 — both content-submission endpoints share ContentSubmissionService.submit().
-        // The organizer principal is built from SecurityContext; the consolidated service handles
+        // The organizer username is read from SecurityContext; the consolidated service handles
         // session/content/profile-patch/workflow-transition in a single transaction.
-        SecurityPrincipal actor = new SecurityPrincipal(
-                securityContextHelper.getCurrentUsername(),
-                securityContextHelper.getCurrentUserRoles());
+        String username = securityContextHelper.getCurrentUsername();
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
@@ -289,7 +284,7 @@ public class SpeakerStatusController {
         );
 
         ContentSubmitResponse response = contentSubmissionService.submit(
-                speakerId, eventCode, payload, actor);
+                speakerId, eventCode, payload, username);
 
         return ResponseEntity.status(201).body(response);
     }

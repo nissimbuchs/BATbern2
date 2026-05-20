@@ -14,8 +14,6 @@ import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +53,6 @@ public class SpeakerStatusService {
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
     private final SpeakerWorkflowService speakerWorkflowService;
-    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Update speaker status by delegating to {@link SpeakerWorkflowService#transition} — the
@@ -65,9 +62,8 @@ public class SpeakerStatusService {
      * <ul>
      *   <li>Loads the speaker for an early 404 check.</li>
      *   <li>Builds a {@link TransitionPayload} with {@code reason} from the request.</li>
-     *   <li>Constructs the {@link SecurityPrincipal} from the controller-supplied
-     *       organizer username + the current Spring Security roles.</li>
-     *   <li>Calls {@code speakerWorkflowService.transition(...)} which validates the
+     *   <li>Calls {@code speakerWorkflowService.transition(...)} with the
+     *       organizer username as the audit actor; the service validates the
      *       transition, runs preconditions + side-effect hooks, persists, writes a
      *       {@code speaker_status_history} row, and publishes the canonical
      *       {@code SpeakerWorkflowStateChangeEvent} + state-specific events.</li>
@@ -112,17 +108,8 @@ public class SpeakerStatusService {
                 .reason(request.getReason())
                 .build();
 
-        List<String> roles;
-        try {
-            roles = securityContextHelper.getCurrentUserRoles();
-        } catch (SecurityException ex) {
-            // No security context (e.g., system-driven path): fall back to empty roles.
-            roles = List.of();
-        }
-        SecurityPrincipal actor = new SecurityPrincipal(organizerUsername, roles);
-
         TransitionResult result = speakerWorkflowService.transition(
-                speakerId, request.getNewStatus(), actor, payload);
+                speakerId, request.getNewStatus(), organizerUsername, payload);
 
         return mapToResponse(result.history(), result.speakerPool());
     }

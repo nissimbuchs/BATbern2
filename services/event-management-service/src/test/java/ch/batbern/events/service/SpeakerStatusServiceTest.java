@@ -11,8 +11,6 @@ import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.exception.NotFoundException;
@@ -33,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,9 +60,6 @@ public class SpeakerStatusServiceTest {
     @Mock
     private SpeakerWorkflowService speakerWorkflowService;
 
-    @Mock
-    private SecurityContextHelper securityContextHelper;
-
     private SpeakerStatusService service;
 
     @BeforeEach
@@ -73,8 +69,7 @@ public class SpeakerStatusServiceTest {
                 speakerPoolRepository,
                 eventRepository,
                 eventTypeService,
-                speakerWorkflowService,
-                securityContextHelper
+                speakerWorkflowService
         );
     }
 
@@ -107,11 +102,10 @@ public class SpeakerStatusServiceTest {
         speaker.setEventId(eventId);
 
         when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
-        when(securityContextHelper.getCurrentUserRoles()).thenReturn(List.of("ORGANIZER"));
         when(speakerWorkflowService.transition(
                 eq(speakerId),
                 eq(SpeakerWorkflowState.CONTACTED),
-                any(SecurityPrincipal.class),
+                anyString(),
                 any(TransitionPayload.class)))
                 .thenReturn(new TransitionResult(speaker, historyRow));
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -125,13 +119,12 @@ public class SpeakerStatusServiceTest {
         assertThat(response.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
         assertThat(response.getChangedByUsername()).isEqualTo(organizerUsername);
 
-        ArgumentCaptor<SecurityPrincipal> actorCaptor = ArgumentCaptor.forClass(SecurityPrincipal.class);
+        ArgumentCaptor<String> actorCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<TransitionPayload> payloadCaptor = ArgumentCaptor.forClass(TransitionPayload.class);
         verify(speakerWorkflowService).transition(
                 eq(speakerId), eq(SpeakerWorkflowState.CONTACTED),
                 actorCaptor.capture(), payloadCaptor.capture());
-        assertThat(actorCaptor.getValue().username()).isEqualTo(organizerUsername);
-        assertThat(actorCaptor.getValue().roles()).containsExactly("ORGANIZER");
+        assertThat(actorCaptor.getValue()).isEqualTo(organizerUsername);
         assertThat(payloadCaptor.getValue().reason()).isEqualTo("Initial contact");
     }
 
@@ -151,49 +144,6 @@ public class SpeakerStatusServiceTest {
         assertThatThrownBy(() -> service.updateStatus(eventCode, speakerId, organizerUsername, request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Speaker not found");
-    }
-
-    @Test
-    @DisplayName("Should fall back to empty roles when SecurityContext throws (no auth in flow)")
-    void should_fallBackToEmptyRoles_when_securityContextUnavailable() {
-        String eventCode = "BATbern998";
-        UUID eventId = UUID.randomUUID();
-        UUID speakerId = UUID.randomUUID();
-
-        UpdateStatusRequest request = new UpdateStatusRequest();
-        request.setNewStatus(SpeakerWorkflowState.CONTACTED);
-        request.setReason("Initial contact");
-
-        Event event = new Event();
-        event.setId(eventId);
-        event.setEventCode(eventCode);
-
-        SpeakerStatusHistory historyRow = new SpeakerStatusHistory();
-        historyRow.setSpeakerPoolId(speakerId);
-        historyRow.setEventId(eventId);
-        historyRow.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
-        historyRow.setNewStatus(SpeakerWorkflowState.CONTACTED);
-
-        SpeakerPool speaker = new SpeakerPool();
-        speaker.setId(speakerId);
-        speaker.setEventId(eventId);
-
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
-        when(securityContextHelper.getCurrentUserRoles()).thenThrow(new SecurityException("No auth"));
-        when(speakerWorkflowService.transition(
-                eq(speakerId), eq(SpeakerWorkflowState.CONTACTED),
-                any(SecurityPrincipal.class), any(TransitionPayload.class)))
-                .thenReturn(new TransitionResult(speaker, historyRow));
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-
-        SpeakerStatusResponse response = service.updateStatus(eventCode, speakerId, "system", request);
-        assertThat(response).isNotNull();
-
-        ArgumentCaptor<SecurityPrincipal> actorCaptor = ArgumentCaptor.forClass(SecurityPrincipal.class);
-        verify(speakerWorkflowService).transition(
-                eq(speakerId), eq(SpeakerWorkflowState.CONTACTED),
-                actorCaptor.capture(), any(TransitionPayload.class));
-        assertThat(actorCaptor.getValue().roles()).isEmpty();
     }
 
     @Test

@@ -8,7 +8,6 @@ import ch.batbern.events.dto.SpeakerResponseResult;
 import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerResponseReceivedEvent;
 import ch.batbern.shared.exception.ValidationException;
@@ -50,20 +49,20 @@ public class SpeakerResponseService {
     /**
      * Story 11.E.3: process a Cognito-authenticated speaker's response to an invitation.
      *
-     * @param actor   the Cognito-derived principal (built by the controller via
-     *                {@link SecurityPrincipal#fromAuthentication})
-     * @param speaker the speaker_pool row already resolved by
-     *                {@link SpeakerPortalAuthorizationService} (caller has verified ownership)
-     * @param request the response body
+     * @param username the authenticated speaker's username (resolved by the controller via
+     *                 {@code SecurityContextHelper.getCurrentUsername()})
+     * @param speaker  the speaker_pool row already resolved by
+     *                 {@link SpeakerPortalAuthorizationService} (caller has verified ownership)
+     * @param request  the response body
      * @return confirmation details and next steps
      * @throws ValidationException        if request validation fails (e.g. DECLINE without reason)
      * @throws AlreadyRespondedException  if the speaker already responded
      */
     @Transactional
     public SpeakerResponseResult processResponse(
-            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
+            String username, SpeakerPool speaker, SpeakerResponseRequest request) {
         log.info("Processing speaker response: type={} username={} speakerPoolId={}",
-                request.getResponse(), actor.username(), speaker.getId());
+                request.getResponse(), username, speaker.getId());
 
         checkAlreadyResponded(speaker);
         validateRequest(request);
@@ -72,8 +71,8 @@ public class SpeakerResponseService {
                 .orElseThrow(() -> new IllegalStateException("Event not found for speaker pool"));
 
         switch (request.getResponse()) {
-            case ACCEPT -> processAcceptResponse(actor, speaker, request);
-            case DECLINE -> processDeclineResponse(actor, speaker, request);
+            case ACCEPT -> processAcceptResponse(username, speaker, request);
+            case DECLINE -> processDeclineResponse(username, speaker, request);
             default -> throw new IllegalArgumentException(
                     "Unsupported response type: " + request.getResponse());
         }
@@ -127,7 +126,7 @@ public class SpeakerResponseService {
      * {@code CONTACTED → READY}.
      */
     private void processAcceptResponse(
-            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
+            String username, SpeakerPool speaker, SpeakerResponseRequest request) {
         // Code review 2026-05-18 (P9): tighten the provisioning-invariant guard. The canonical
         // path through SpeakerPortalAuthorizationService.resolveSpeakerPool already rejects
         // null/blank usernames with 409, so this is belt-and-suspenders for any future direct
@@ -147,7 +146,7 @@ public class SpeakerResponseService {
                 .build();
 
         speakerWorkflowService.transition(
-                speaker.getId(), SpeakerWorkflowState.ACCEPTED, actor, payload);
+                speaker.getId(), SpeakerWorkflowState.ACCEPTED, username, payload);
 
         // Re-fetch and persist optional preferences (status persisted by transition()).
         if (request.getPreferences() != null) {
@@ -167,13 +166,13 @@ public class SpeakerResponseService {
      * and notifies the organizer (since DECLINE from INVITED is post-invitation).
      */
     private void processDeclineResponse(
-            SecurityPrincipal actor, SpeakerPool speaker, SpeakerResponseRequest request) {
+            String username, SpeakerPool speaker, SpeakerResponseRequest request) {
         TransitionPayload payload = TransitionPayload.builder()
                 .reason(request.getReason())
                 .build();
 
         speakerWorkflowService.transition(
-                speaker.getId(), SpeakerWorkflowState.DECLINED, actor, payload);
+                speaker.getId(), SpeakerWorkflowState.DECLINED, username, payload);
 
         log.info("Speaker {} declined invitation for event {}. Reason: {}",
                 speaker.getSpeakerName(), speaker.getEventId(), request.getReason());

@@ -15,7 +15,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
@@ -89,8 +88,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private Event testEvent;
     private UUID testEventId;
     private static final String TEST_EVENT_CODE = "BAT-WF-INT-TEST";
-    private static final SecurityPrincipal ORGANIZER =
-            new SecurityPrincipal("test-organizer", List.of("ORGANIZER"));
+    private static final String ORGANIZER = "test-organizer";
 
     @BeforeEach
     void setUp() {
@@ -110,7 +108,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Test Venue")
                 .venueAddress("123 Test Street")
                 .venueCapacity(200)
-                .organizerUsername(ORGANIZER.username())
+                .organizerUsername(ORGANIZER)
                 .build();
         testEvent = eventRepository.save(testEvent);
         testEventId = testEvent.getId();
@@ -156,7 +154,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(history).hasSize(1);
         assertThat(history.get(0).getPreviousStatus()).isEqualTo(from);
         assertThat(history.get(0).getNewStatus()).isEqualTo(to);
-        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER.username());
+        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER);
     }
 
     // ---- AC10 #2: legal (any) → DECLINED transitions ----

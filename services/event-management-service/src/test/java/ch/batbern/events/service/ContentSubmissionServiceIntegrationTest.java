@@ -15,7 +15,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
-import ch.batbern.events.service.workflow.SecurityPrincipal;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -80,10 +79,8 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     private ApplicationEvents recordedEvents;
 
     private static final String EVENT_CODE = "BAT-11C2-INT";
-    private static final SecurityPrincipal ORGANIZER =
-            new SecurityPrincipal("organizer.alice", List.of("ORGANIZER"));
-    private static final SecurityPrincipal SPEAKER =
-            new SecurityPrincipal("speaker.jane", List.of("SPEAKER"));
+    private static final String ORGANIZER = "organizer.alice";
+    private static final String SPEAKER = "speaker.jane";
 
     private Event testEvent;
 
@@ -100,7 +97,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Test Venue")
                 .venueAddress("123 Test Street")
                 .venueCapacity(100)
-                .organizerUsername(ORGANIZER.username())
+                .organizerUsername(ORGANIZER)
                 .build();
         testEvent = eventRepository.save(testEvent);
     }
@@ -125,7 +122,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_persistContentAndTransitionToContentSubmitted_when_organizerSubmitsOnBehalf")
     void should_persistContentAndTransitionToContentSubmitted_when_organizerSubmitsOnBehalf() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "Zero Trust Security",
                 "Abstract about Zero Trust principles.",
@@ -157,11 +154,11 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         List<SpeakerStatusHistory> history = statusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(
                 speaker.getId());
         assertThat(history).isNotEmpty();
-        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER.username());
+        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER);
         assertThat(history.get(0).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 
         // UserApiClient.patchUserProfile was invoked with bio + pictureUrl.
-        verify(userApiClient, times(1)).patchUserProfile(eq(SPEAKER.username()),
+        verify(userApiClient, times(1)).patchUserProfile(eq(SPEAKER),
                 any(PatchUserProfileRequest.class));
 
         // SpeakerContentSubmittedEvent was published.
@@ -174,7 +171,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_persistContentAndTransitionToContentSubmitted_when_speakerSubmitsSelf")
     void should_persistContentAndTransitionToContentSubmitted_when_speakerSubmitsSelf() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "Speaker Self Title",
                 "Speaker-side abstract.",
@@ -193,7 +190,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         List<SpeakerStatusHistory> history = statusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(
                 speaker.getId());
         assertThat(history).isNotEmpty();
-        assertThat(history.get(0).getChangedByUsername()).isEqualTo(SPEAKER.username());
+        assertThat(history.get(0).getChangedByUsername()).isEqualTo(SPEAKER);
     }
 
     // ============================================================
@@ -202,7 +199,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_notCallPatchUserProfile_when_bioAndPictureBothNull")
     void should_notCallPatchUserProfile_when_bioAndPictureBothNull() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "No-profile-patch title",
                 "Abstract.",
@@ -231,8 +228,8 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 null
         );
 
-        // Submit with ORGANIZER principal so the workflow status-history row can be written
-        // (SecurityPrincipal requires non-null username; the speaker.username being null is the
+        // Submit with ORGANIZER username so the workflow status-history row can be written
+        // (transition() requires non-null username; the speaker.username being null is the
         // pre-11.B.2 legacy data case we are guarding against).
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
@@ -248,7 +245,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_writeSelfTransitionHistory_when_resubmittingFromContentSubmitted")
     void should_writeSelfTransitionHistory_when_resubmittingFromContentSubmitted() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload v1 = new ContentSubmissionPayload(
                 "First title", "First abstract.", null, null, null);
 
@@ -280,7 +277,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_rejectSubmission_when_speakerNotInAcceptedOrContentSubmittedState")
     void should_rejectSubmission_when_speakerNotInAcceptedOrContentSubmittedState() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "Title", "Abstract.", null, null, null);
 
@@ -315,14 +312,14 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_produceIdenticalRows_when_organizerAndSpeakerSubmitSamePayload")
     void should_produceIdenticalRows_when_organizerAndSpeakerSubmitSamePayload() {
-        SpeakerPool speakerForOrganizer = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speakerForOrganizer = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         SpeakerPool speakerForSelf = seedSpeaker(SpeakerWorkflowState.ACCEPTED, "speaker.two");
 
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "Equivalence Title", "Equivalence abstract.", null, null, null);
 
         contentSubmissionService.submit(speakerForOrganizer.getId(), EVENT_CODE, payload, ORGANIZER);
-        SecurityPrincipal speakerTwo = new SecurityPrincipal("speaker.two", java.util.List.of("SPEAKER"));
+        String speakerTwo = "speaker.two";
         contentSubmissionService.submit(speakerForSelf.getId(), EVENT_CODE, payload, speakerTwo);
 
         ContentSubmission organizerSubmission = contentSubmissionRepository
@@ -351,7 +348,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerStatusHistory speakerHistory = statusHistoryRepository
                 .findBySpeakerPoolIdOrderByChangedAtDesc(speakerForSelf.getId())
                 .get(0);
-        assertThat(organizerHistory.getChangedByUsername()).isEqualTo(ORGANIZER.username());
+        assertThat(organizerHistory.getChangedByUsername()).isEqualTo(ORGANIZER);
         assertThat(speakerHistory.getChangedByUsername()).isEqualTo("speaker.two");
         assertThat(organizerHistory.getNewStatus()).isEqualTo(speakerHistory.getNewStatus());
     }
@@ -363,7 +360,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_acceptOrganizerResubmission_when_speakerAlreadyInContentSubmittedState")
     void should_acceptOrganizerResubmission_when_speakerAlreadyInContentSubmittedState() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTENT_SUBMITTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTENT_SUBMITTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "Updated title", "Updated abstract.", null, null, null);
 
@@ -378,7 +375,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         List<SpeakerStatusHistory> history = statusHistoryRepository
                 .findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId());
         assertThat(history).isNotEmpty();
-        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER.username());
+        assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER);
     }
 
     // ============================================================
@@ -387,7 +384,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_rejectSubmission_when_speakerBelongsToDifferentEvent")
     void should_rejectSubmission_when_speakerBelongsToDifferentEvent() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "X", "Abstract.", null, null, null);
 
@@ -407,7 +404,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_rejectSubmission_when_presentationUploadIdIsProvided")
     void should_rejectSubmission_when_presentationUploadIdIsProvided() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER.username());
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "T", "Abstract.", null, null, "upload-id-from-future-story");
 
