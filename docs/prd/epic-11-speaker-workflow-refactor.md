@@ -81,6 +81,16 @@ FR13: Existing legacy `speaker_pool.status` values are migrated per §2.2:
       CONFIRMED → QUALITY_REVIEWED (rely on derived `is_publishable`);
       WITHDREW → DECLINED with reason "Withdrew after acceptance (legacy)";
       OVERFLOW → READY (organizer may re-invite if a slot opens).
+
+FR-G1: Speakers can self-service edit three public-facing fields on their
+       company — `displayName`, `website`, `logo` — via the existing
+       `/speaker-portal/profile` page (a "My Company" section is added; no
+       new page or top-nav link). Each submission is held as a PENDING
+       `company_update_request` row; an organizer must APPROVE or REJECT
+       on `/organizer/companies` before the change is applied to the
+       canonical `companies` row. Per-company invariant: at most one
+       PENDING request open at a time (DB-enforced via unique partial
+       index). Net-new in Phase G; not part of Phases A–F.
 ```
 
 ### Non-Functional Requirements
@@ -129,6 +139,15 @@ NFR10: **Frontend UI i18n keys**: all 10 locales (de, en, fr, it, rm, es, fi, nl
        templates**: de + en only per `CLAUDE.md` §"Localization — Email Templates: DE + EN
        Only; UI i18n: All 10 Locales" (narrowed 2026-05-17 per Story 11.E.3 PM Q#5). The
        8 optional locales for email templates fall back to en at render time.
+
+NFR-G1: Audit-trail immutability + first-decision-wins concurrency. Once a
+        `company_update_requests` row leaves PENDING (i.e. is APPROVED or
+        REJECTED), its `reviewed_by_username`, `reviewed_at`, and
+        `decision_note` are immutable — a second decide attempt returns
+        409 (proposal not in PENDING) and does NOT mutate those fields.
+        Enforced at the service layer (no DB-level constraint exists to
+        catch this — the unique partial index only protects PENDING-vs-
+        PENDING collisions). Net-new in Phase G.
 ```
 
 ### Additional Requirements (Architecture)
@@ -225,6 +244,42 @@ Branch strategy (§9)
         Skip the COGNITO_PASSWORD_ENCRYPTION_KEY secret.
 - AR43: Delete feature/speaker-account-creation and feature/epic-6 branches after
         cherry-picks land.
+
+Phase G — Speaker-side company self-service (net-new; not in §1–§9 of the plan)
+- AR-G1: New CUMS table `company_update_requests` (id, company_name FK,
+         proposed_display_name, proposed_website, proposed_logo_url,
+         proposed_logo_s3_key, proposed_logo_upload_id, status enum
+         PENDING|APPROVED|REJECTED, submitted_by_username, submitted_at,
+         reviewed_by_username, reviewed_at, decision_note, task_id),
+         unique partial index on (company_name) WHERE status='PENDING'.
+         Four new REST endpoints under `/api/v1/companies`:
+         `POST {name}/update-requests` (speaker submit),
+         `GET {name}/update-requests/current` (speaker OR organizer read
+         of most-recent for that company),
+         `GET update-requests?status=PENDING` (organizer list),
+         `POST {name}/update-requests/{id}/decision`
+         (organizer APPROVE | REJECT).
+         New JPA entity `CompanyUpdateProposal`, service
+         `CompanyUpdateProposalService`, controller
+         `CompanyUpdateProposalController`, repository
+         `CompanyUpdateProposalRepository`. New `@Component("companyAuth")`
+         authorisation helper bean for SpEL `@PreAuthorize("hasRole('SPEAKER')
+         and @companyAuth.isSelf(#name)")`.
+- AR-G2: New CUMS → EMS HTTP client `EventTaskApiClient` (first inverse-
+         direction cross-service client; existing clients flow
+         EMS → CUMS). Used by CUMS to insert an unassigned `event_tasks`
+         row on submit (`assigned_organizer_username = NULL`,
+         `trigger_state = 'company_info_update'` sentinel value,
+         `event_id = NULL`) and to mark that task `completed` on
+         decision (best-effort — EMS failure logged, does NOT roll back
+         CUMS proposal/decision). Requires an EMS Flyway migration
+         `V<n>__make_event_tasks_event_id_nullable.sql` dropping
+         `NOT NULL` on `event_tasks.event_id` (the FK is preserved —
+         standard nullable-FK behaviour). `EventTask` JPA entity's
+         `@Column(name = "event_id", nullable = false)` flips to
+         `nullable = true`. The `EventTaskRepository` query methods
+         and the organizer Task Board "All Tasks" view are audited
+         for `null`-safety.
 ```
 
 ### UX Design Requirements
@@ -308,6 +363,56 @@ Cross-cutting frontend
            (de, en, fr, it, rm, es, fi, nl, ja, gsw-BE).
 - UX-DR23: Optional collapsible "What does this mean?" right-side sidebar with
            per-state guidance. Collapses to a thin tab once organizer is fluent.
+
+Phase G — Speaker-side company self-service (net-new; not in §8 or §3.4)
+- UX-DR-G1: Speaker-side company self-service UX (net-new in Phase G):
+           (a) A "My Company" section is added inline on the existing
+               `/speaker-portal/profile` page (`ProfileUpdatePage.tsx`) —
+               below the existing "Basic Info" card, in the same public-
+               portal chrome. NO new page, NO new route, NO new top-nav
+               link. NO reuse of `CompanyForm.tsx` (the section renders
+               the three fields inline, similar to how Basic Info renders
+               firstName/lastName/bio).
+           (b) The section is shown only when `user.companyName` is non-
+               empty. It exposes exactly three editable fields:
+               `displayName` (text, max 255), `website` (URL, max 500),
+               `logo` (image upload via existing presigned-S3 flow).
+               Submit requires at least one field to be dirty.
+           (c) When a PENDING `company_update_request` exists for the
+               speaker's company, the section switches to a read-only
+               pending state: an amber-bordered info card with submission
+               date + an expandable "View what I submitted" diff (only
+               fields that changed, with side-by-side logo thumbnails
+               when a new logo was proposed). No submit button.
+           (d) Organizer surface on `/organizer/companies`:
+               `CompanyManagementScreen` gains a filter chip
+               `[Pending updates (N)]` (count from list endpoint) and
+               each affected row gains a small `[● Update pending]`
+               chip next to the company name.
+           (e) `CompanyDetailView` gains a **review panel** when a
+               PENDING proposal exists, mounted ABOVE the existing
+               organizer "Edit company" form (which is left unchanged
+               — direct organizer edits still go straight to the
+               canonical `companies` row, no review gate). The review
+               panel uses horizontal side-by-side layout at viewport
+               ≥ md and stacks vertically below md; shows ONLY the
+               fields that changed; logo diff is two equal-size
+               thumbnails; `[Approve]` is the primary button,
+               `[Reject]` opens a dialog requiring a `decisionNote`
+               (max 2000 chars).
+           (f) Deep-link `/organizer/companies/{name}?reviewRequest={id}`
+               (from the EventTask `notes` field) auto-scrolls the
+               review panel into view and pulses the action buttons.
+               If the proposal is no longer PENDING (race), a toast
+               explains "this update has already been reviewed."
+           (g) i18n keys for all of the above land in `common.json`
+               under `speakerPortal.profile.companySection.*` (speaker
+               side) and `company.reviewPanel.*` + `company.filters.*`
+               + `company.chip.*` (organizer side), across all 10
+               locales per NFR10. Speaker decision email lives at
+               `services/company-user-management-service/src/main/
+               resources/email-templates/company-update-{approved,
+               rejected}.{html,txt}` in DE + EN only per NFR10.
 ```
 
 ### FR Coverage Map
@@ -1543,7 +1648,158 @@ service), 11.D.4 (organizer drawer/Sessions tab UX).
 
 ---
 
-## Coverage Verification
+### Phase G — Speaker-side company self-service
+
+This phase is **net-new product capability** introduced on the refactor branch — not
+part of the original `docs/plans/speaker-workflow-refactor.md` or ADR-009 scope. It is
+independent of Phases A–D and F; it transitively depends on Phase E (Cognito
+provisioning, Pattern 3b DB-fallback for `custom:role`, `<SpeakerRoute>` guard,
+multi-role nav, Cognito-flow email templates) — all of which are already done on the
+refactor branch, so Phase G can land in any order relative to A–D and F. The story
+below introduces G-prefixed requirements (FR-G1, NFR-G1, AR-G1, AR-G2, UX-DR-G1) that
+do not change the Coverage Verification block below for the refactor's 13 FRs /
+10 NFRs / 43 ARs / 23 UX-DRs.
+
+---
+
+#### Story 11.G.1: Speaker self-service company info (with organizer review)
+
+**As a** speaker whose company logo, display name, and website appear on the public
+BATbern site beside my session,
+**I want** to update those fields from my existing speaker profile page, with an
+organizer reviewing my change before it goes live,
+**So that** I don't have to email an organizer to keep my company's public footprint
+current, and the organizer team still gets a sign-off gate.
+
+**Phase:** G  ·  **Requirements covered:** FR-G1 (speaker self-service company-info
+editing with organizer review), NFR-G1 (audit-trail immutability + first-decision-wins
+concurrency), AR-G1 (new `company_update_requests` table + 4 REST endpoints), AR-G2
+(cross-service EventTask creation from CUMS, with EMS migration to allow `event_id`
+nullable for cross-event tasks), UX-DR-G1 (inline "My Company" section on the existing
+`/speaker-portal/profile` page + organizer review panel with badge + filter chip on
+`/organizer/companies` — no new speaker page, no new top-nav link)  ·  **Inherited
+requirements:** FR8 + FR12 + NFR4 + NFR6 + NFR7 + NFR10 + UX-DR17 + UX-DR22  ·
+**Dependencies:** the existing organizer `/organizer/companies` UI
+(`CompanyManagementScreen`, `CompanyDetailView`) and its underlying `Company` entity +
+`PUT /api/v1/companies/{name}` endpoint; the presigned-S3 logo-upload flow
+(`POST /api/v1/logos/presigned-url`); the existing speaker profile page
+(`web-frontend/src/pages/speaker-portal/ProfileUpdatePage.tsx`); the existing
+`event_tasks` table + EMS task controller (with a new migration to allow
+`event_id` nullable for cross-event tasks); and Phase E (Pattern 3b DB-fallback,
+`<SpeakerRoute>`, multi-role nav) — all already done.
+
+**Story spec:** `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`
+
+**Acceptance Criteria:**
+
+**Given** a Flyway migration runs in the company-user-management service,
+**Then** a new table `company_update_requests` exists with columns `id`, `company_name`
+(FK), `proposed_display_name`, `proposed_website`, `proposed_logo_url`,
+`proposed_logo_s3_key`, `proposed_logo_upload_id`, `status` (PENDING|APPROVED|
+REJECTED), `submitted_by_username`, `submitted_at`, `reviewed_by_username`,
+`reviewed_at`, `decision_note`, `task_id`,
+**And** a unique partial index `(company_name) WHERE status='PENDING'` enforces at most
+one open request per company.
+
+**Given** I am authenticated as a speaker whose `User.companyId = "Acme"`,
+**When** I `POST /api/v1/companies/Acme/update-requests` with `{ displayName?,
+website?, logoUploadId? }` (at least one field required),
+**Then** a new row is inserted with `status='PENDING'`, `submitted_by_username=<me>`,
+**And** the endpoint returns `201 Created` with the new proposal,
+**And** a `403 Forbidden` is returned if I target a company other than my own
+(`@companyAuth.isSelf(#name)`),
+**And** a `409 Conflict` with code `PENDING_UPDATE_EXISTS` is returned if a PENDING
+proposal already exists for that company.
+
+**Given** the proposal is created,
+**Then** CUMS calls EMS via a new `EventTaskApiClient` to insert an unassigned
+`event_tasks` row (`assigned_organizer_username = NULL`, `event_id = NULL`,
+`trigger_state = 'company_info_update'`, `task_name = "Company Info Update
+Review — <displayName-or-companyName>"`, `notes` field includes the deep-link
+`/organizer/companies/<name>?reviewRequest=<id>`),
+**And** an EMS Flyway migration `V<n>__make_event_tasks_event_id_nullable.sql`
+has dropped `NOT NULL` on `event_tasks.event_id` (the FK is preserved — standard
+PostgreSQL nullable-FK behaviour) so cross-event tasks can be persisted,
+**And** the returned `task_id` is persisted on `company_update_requests.task_id`,
+**And** an EMS failure (5xx, network) is logged but does not roll back the proposal —
+the speaker still receives 201.
+
+**Given** I am authenticated as an organizer,
+**When** I `POST /api/v1/companies/{name}/update-requests/{id}/decision` with `{ action:
+APPROVE }`,
+**Then** the proposed fields are copied atomically onto the `companies` row inside a
+single `@Transactional` method,
+**And** `status` becomes `APPROVED`, `reviewed_by_username` / `reviewed_at` are
+stamped,
+**And** an `@TransactionalEventListener(AFTER_COMMIT)` sends the speaker an approval
+email (DE + EN templates only per `CLAUDE.md`) and marks the linked EMS task
+`completed`.
+
+**Given** the same endpoint with `{ action: REJECT, decisionNote: "..." }`,
+**Then** the `companies` row is **not modified**,
+**And** `status` becomes `REJECTED` with the decisionNote stored,
+**And** the speaker receives a rejection email that includes the decisionNote verbatim,
+**And** the EMS task is marked `completed`,
+**And** a missing `decisionNote` returns `400 Bad Request`.
+
+**Given** I am a speaker with a non-empty `User.companyId`,
+**When** I navigate to my existing `/speaker-portal/profile` page (no new route,
+no new top-nav link is added — Q4 PM resolution 2026-05-20),
+**Then** I see a new "My Company" `<Card>` section rendered inline below the
+existing "Basic Info" card, in the same public-portal chrome,
+**And** the section is restricted to three fields — `displayName`, `website`,
+`logo` (rendered inline; `CompanyForm.tsx` is NOT reused),
+**And** if a `PENDING` proposal exists, the section switches to a read-only state
+with an amber-bordered info banner "You have a company-info update awaiting
+organizer review (submitted {date})" plus a "View what I submitted" expandable
+diff (changed fields only, side-by-side logo thumbnails when a new logo was
+proposed). No submit button in this state.
+
+**Given** I am an organizer on `/organizer/companies`,
+**Then** I see a new filter chip `[Pending updates (N)]` whose count matches `GET
+/api/v1/companies/update-requests?status=PENDING`,
+**And** each affected row shows an `[● Update pending]` chip,
+**And** clicking a row with a PENDING proposal opens `CompanyDetailView` with a
+review panel mounted **above** the existing "Edit company" form (horizontal
+side-by-side layout at viewport ≥ md, stacks vertically below md; shows ONLY
+the fields that changed; logo diff is two equal-size thumbnails),
+**And** `[Approve]` (primary) / `[Reject]` (secondary, opens a dialog requiring
+a `decisionNote`) buttons drive the decision endpoint,
+**And** the existing organizer "Edit company" form on the same page is left
+exactly as-is (organizer-direct edits remain immediate, no review gate).
+
+**Given** the deep link `/organizer/companies/{name}?reviewRequest={id}` from the
+EventTask description is followed,
+**Then** the review panel auto-scrolls into view,
+**And** if the proposal is no longer PENDING (e.g. another organizer just decided it),
+a toast explains "this update has already been reviewed."
+
+**Given** new UI i18n keys are added,
+**Then** all 10 locales (`de, en, fr, it, rm, es, fi, nl, ja, gsw-BE`) carry the new
+keys per `CLAUDE.md` "UI i18n: All 10 Locales" rule. EN + DE first-class; the other 8
+get straight translations in the same commit.
+
+**Given** the email templates are added,
+**Then** only `de` + `en` HTML and txt templates exist for `company-update-approved` and
+`company-update-rejected`, per `CLAUDE.md` "Email templates: DE + EN only" rule. Other
+8 locales fall back to EN at render time.
+
+**Given** the full test pyramid is run,
+**Then** backend integration tests (extending `AbstractIntegrationTest`) cover the
+submit / get-current / list / decide flows with real Postgres, verify the
+`@PreAuthorize` boundaries, and verify NFR-G1 audit-trail immutability (a second
+decide attempt on an already-decided proposal returns `409` and does NOT mutate
+`reviewed_by_username` / `reviewed_at` / `decision_note`),
+**And** frontend unit tests extend `ProfileUpdatePage.test.tsx` to cover the new
+"My Company" section (editable form vs pending state), and `CompanyManagementScreen.test.tsx`
++ `CompanyDetailView.test.tsx` cover the organizer filter chip, row chip, and
+review panel,
+**And** Playwright `e2e/speaker/profile-edit-company.spec.ts` (speaker project) and
+`e2e/organizer/company-update-review.spec.ts` (chromium organizer project) exercise the
+end-to-end flow,
+**And** Bruno contract tests cover the new endpoints.
+
+---
 
 **FR Coverage** — all 13 FRs landed in stories:
 
@@ -1561,20 +1817,23 @@ FR9  → 11.E.2 (provisioning + first-login flow)
 FR10 → 11.B.1 (event added) + 11.B.2 (event emission)
 FR11 → 11.B.3 (derived flags)
 FR12 → 11.D.1 (promote endpoint)
-FR13 → 11.B.3 + 11.C.1 (data migration) + 11.F.1 (cutover hygiene)
+FR13  → 11.B.3 + 11.C.1 (data migration) + 11.F.1 (cutover hygiene)
+FR-G1 → 11.G.1 (Phase G — speaker self-service company info)
 ```
 
 **NFR Coverage** — every NFR has at least one story-level AC:
 NFR1 (11.F.1), NFR2 (11.E.1), NFR3 (11.C.2, 11.E.2), NFR4 (11.B.2, 11.C.1, 11.C.2),
 NFR5 (11.E.1), NFR6 (11.B.1, 11.B.2), NFR7 (11.A.1), NFR8 (11.F.1),
-NFR9 (11.E.1, 11.E.2), NFR10 (11.E.2).
+NFR9 (11.E.1, 11.E.2), NFR10 (11.E.2), NFR-G1 (11.G.1).
 
 **AR Coverage** — all 43 ARs landed (verified by phase blocks above; AR41 + AR42
-specifically land via cherry-pick stories 11.E.3 + 11.E.1).
+specifically land via cherry-pick stories 11.E.3 + 11.E.1). Phase G adds
+AR-G1 + AR-G2 → 11.G.1.
 
-**UX-DR Coverage** — all 23 UX-DRs landed:
+**UX-DR Coverage** — all 23 UX-DRs landed (plus UX-DR-G1 in Phase G):
 DR1–DR4 (11.D.2), DR5–DR7 (11.D.3), DR8–DR14 (11.D.4), DR15–DR16 (11.D.1),
 DR17 + DR20 (11.E.3), DR18–DR19 (11.F.1), DR21–DR22 (11.E.2), DR23 (optional, not
-explicitly scoped to a story — flag for the team if you want it as a follow-up).
+explicitly scoped to a story — flag for the team if you want it as a follow-up),
+UX-DR-G1 (11.G.1).
 
 
