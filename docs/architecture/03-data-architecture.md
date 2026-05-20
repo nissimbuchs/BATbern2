@@ -291,7 +291,7 @@ The two user-level attributes BATbern needs for a speaker are already existing c
 - **Short CV / speaker bio** → `user_profiles.bio` (single source of truth, used by Speaker, Attendee, Partner contexts alike).
 - **Speaker portrait** → `user_profiles.profile_picture_url` (managed by the generic logo upload service per ADR-002).
 
-No `user_profiles` schema extension is required. The legacy speaker-only attributes that previously lived on a separate `speakers` table — `availability`, `expertise_areas`, `speaking_topics`, `languages_spoken`, `certifications`, `linkedin_url`, `twitter_handle`, `speaking_history`, `communication_preferences` — are **dropped per ADR-009 §0.3** (not migrated, not retained). They were not used by any production code path the platform depends on. Per-event speaker data (slot preferences, content deadlines) lives on `speaker_pool`; per-event content (title, abstract, presentation, quality-review feedback) lives on `content_submissions` and `session_users`.
+No `user_profiles` schema extension is required. The legacy speaker-only attributes that previously lived on a separate `speakers` table — `availability`, `expertise_areas`, `speaking_topics`, `languages_spoken`, `certifications`, `linkedin_url`, `twitter_handle`, `speaking_history`, `communication_preferences` — are **dropped per ADR-009 §0.3** (not migrated, not retained). They were not used by any production code path the platform depends on. Per-event speaker data (slot preferences, content deadlines, workflow state) lives on `speaker_pool` in event-management-service. Per-event content (title, abstract, presentation, quality-review feedback) is canonicalised on `sessions` (current) + `session_content_history` (versioned audit trail, renamed from `speaker_content_submissions` in Story 11.E.8 V99). `session_users` is the junction; the legacy `speaker_pool.{content_status, content_submitted_at, initial_presentation_title}` and `session_users.presentation_title` columns were dropped in V102 — `contentStatus` is derived at read time via `ContentStatusDeriver` (PENDING / SUBMITTED / REVISION_NEEDED / APPROVED).
 
 #### Relationships
 - **Many-to-One:** User → Company (via `User.companyId`, managed by User Service)
@@ -1488,24 +1488,57 @@ CREATE TABLE sessions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Session-User junction table (many-to-many speakers)
--- Story 4.1.4: ADR-004 pattern - references User via user_id FK
+-- Session-User junction table (many-to-many speakers).
+-- ADR-009 / Story 11.E.8: PRIMARY_SPEAKER row provisioned at the CONTACTED → READY
+-- transition by SpeakerWorkflowService.runReadyHook (idempotent). is_confirmed flipped
+-- at INVITED → ACCEPTED by runAcceptedHook. Username is the cross-service reference
+-- per ADR-003 (re-keyed from user_id to username in V26). presentation_title was
+-- dropped in V102 (Story 11.E.8) — sessions.title is canonical.
 CREATE TABLE session_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL, -- FK to user_profiles.id in company-user-management-service
+    username VARCHAR(100) NOT NULL, -- public identifier per ADR-003
     speaker_role VARCHAR(50) NOT NULL CHECK (speaker_role IN (
         'primary_speaker', 'co_speaker', 'moderator', 'panelist'
     )),
-    presentation_title VARCHAR(255),
     is_confirmed BOOLEAN DEFAULT FALSE,
     invited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     confirmed_at TIMESTAMP WITH TIME ZONE,
     declined_at TIMESTAMP WITH TIME ZONE,
     decline_reason TEXT,
+    -- speaker name cache fields populated on assignment for full-text search (V38)
+    speaker_first_name VARCHAR(100),
+    speaker_last_name VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(session_id, user_id)
+    UNIQUE(session_id, username)
+);
+
+-- Versioned audit log of SPEAKER submissions for a session (renamed from
+-- speaker_content_submissions in V99 — Story 11.E.8 §2.7). Keyed by
+-- (session_id, submission_version). Inserted only by ContentSubmissionService.submit()
+-- — organizer session-edit modal updates sessions.title directly and does NOT write
+-- a history row (Story 11.E.8 §2.9 — history reflects what the speaker submitted,
+-- not all edits). The latest row mirrors sessions.title / sessions.description at the
+-- moment of submission; reviewer feedback on a rejected version stays on that row for
+-- the audit trail. submitted_by_username records the actor (speaker on the portal or
+-- organizer-on-behalf). Reviewer feedback is written here on rejection; approval is
+-- recorded by the speaker_status_history transition to QUALITY_REVIEWED.
+CREATE TABLE session_content_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    abstract TEXT NOT NULL,
+    abstract_char_count INTEGER NOT NULL,
+    submission_version INTEGER NOT NULL DEFAULT 1,
+    submitted_by_username VARCHAR(100) NOT NULL,
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    reviewer_feedback TEXT,         -- non-null iff this version was rejected
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    reviewed_by VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(session_id, submission_version)
 );
 
 -- Topics table with usage tracking
@@ -1546,7 +1579,9 @@ CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_event_date ON events(event_date);
 CREATE INDEX idx_sessions_event_id ON sessions(event_id);
 CREATE INDEX idx_session_users_session_id ON session_users(session_id);
-CREATE INDEX idx_session_users_user_id ON session_users(user_id);
+CREATE INDEX idx_session_users_username ON session_users(username);
+CREATE INDEX idx_session_content_history_session ON session_content_history(session_id);
+CREATE INDEX idx_session_content_history_submitted_by ON session_content_history(submitted_by_username);
 CREATE INDEX idx_session_users_confirmed ON session_users(is_confirmed);
 CREATE INDEX idx_topics_title_vector ON topics USING GIN(title_vector);
 CREATE INDEX idx_topics_description_vector ON topics USING GIN(description_vector);
@@ -1559,7 +1594,7 @@ CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date 
 
 ### Speaker Coordination Service Database Schema
 
-Per **ADR-009 (Unified Speaker Workflow)**, the `speakers` table is deleted and `speaker-coordination-service` no longer owns any entity. SPEAKER is a role on `User` (`role_assignments.role = 'SPEAKER'`); see the User section above for the SPEAKER-role pattern. Per-event speaker data — slot preferences, response state, deadlines — lives on `speaker_pool` in event-management-service. Per-event content lives on `content_submissions` + `session_users` (also event-management-service). There is no `session_speakers` junction table; sessions reference Users directly via `session_users` (cross-service reference by `username` per ADR-003).
+Per **ADR-009 (Unified Speaker Workflow)** + **Story 11.E.8 consolidation**, the `speakers` table is deleted and `speaker-coordination-service` no longer owns any entity. SPEAKER is a role on `User` (`role_assignments.role = 'SPEAKER'`); see the User section above for the SPEAKER-role pattern. Per-event speaker data — slot preferences, response state, deadlines, workflow state — lives on `speaker_pool` in event-management-service. Per-event content lives on `sessions` (canonical current title/description) + `session_content_history` (versioned audit log, keyed by `(session_id, submission_version)`). `session_users` is the junction; PRIMARY_SPEAKER row is provisioned at `CONTACTED → READY` per Story 11.E.8. There is no `session_speakers` junction table; sessions reference Users directly via `session_users` (cross-service reference by `username` per ADR-003). The legacy denormalised columns (`speaker_pool.content_status`, `speaker_pool.content_submitted_at`, `speaker_pool.initial_presentation_title`, `session_users.presentation_title`) were dropped in V102 — `contentStatus` is derived via `ContentStatusDeriver` from workflow state + latest history row's `reviewer_feedback`.
 
 The service remains in the architecture as a thin shell to host future speaker-related capabilities, but post-ADR-009 it contains no Flyway migrations and no JPA entities.
 

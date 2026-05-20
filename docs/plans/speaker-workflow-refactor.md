@@ -249,8 +249,10 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
 > **Implementation status:** the "Drop `speakers` table" row below was implemented in
 > Story 11.C.1 (`V94__drop_speakers_table.sql`). The "Migrate `speaker_pool.status`"
 > + "Drop overflow tables" + "Drop `is_tentative` columns" rows were implemented in
-> Story 11.B.3 (`V93__migrate_legacy_speaker_states.sql`). Magic-link tables and
-> Cognito configuration remain Phase E / F.
+> Story 11.B.3 (`V93__migrate_legacy_speaker_states.sql`). V96–V97 ship the
+> SessionUser provisioning + is_confirmed backfill (Story 11.E.8 §2.6). V98–V102 ship
+> the content_history rename + dead-column drops (Story 11.E.8 §2.7). Magic-link tables
+> and Cognito configuration remain Phase F.
 
 | Migration | Purpose |
 |---|---|
@@ -260,6 +262,11 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
 | Drop `speaker_pool.is_tentative` and `speaker_pool.tentative_reason` columns | TENTATIVE response is removed from the model entirely (see §0.6). |
 | Drop magic-link tables | `magic_link_tokens` and associated infrastructure |
 | Cognito User Pool config | No new Lambda triggers required. Standard Cognito flow with `FORCE_CHANGE_PASSWORD` on user creation is sufficient. |
+| **V96** `backfill_session_users_for_post_ready_speakers.sql` (Story 11.E.8 §2.6) | For each `speaker_pool` row in READY/INVITED/ACCEPTED/CONTENT_SUBMITTED/QUALITY_REVIEWED with `session_id IS NULL`, create a matching `sessions` + PRIMARY_SPEAKER `session_users` row and set the FK. Heals local-dev rows that predate the new `runReadyHook`. Production no-op (no in-flight Epic 11 speakers yet). |
+| **V97** `backfill_session_users_is_confirmed.sql` (Story 11.E.8 §2.6) | Flip `is_confirmed = true` and stamp `confirmed_at = COALESCE(sp.accepted_at, NOW())` for any `session_users` row whose linked speaker is ACCEPTED+ but whose `is_confirmed` is still false (legacy rows created via the old `getOrCreateSession` path that predated the new `runAcceptedHook`). Idempotent. |
+| **V98** `add_submitted_by_username_to_content_submissions.sql` (Story 11.E.8 §2.7) | Add NOT NULL `submitted_by_username` to `speaker_content_submissions`; backfill from `speaker_status_history.changed_by_username` on the closest `content_submitted` transition (or `reviewed_by`, else `'system'`). Makes the audit row self-describing so the speaker_pool_id FK can be dropped in V99. |
+| **V99** `rename_content_submissions_to_session_content_history.sql` (Story 11.E.8 §2.7) | Backfill any null `session_id` from `speaker_pool.session_id`; refuse to rename if any nulls remain; drop the `speaker_pool_id` FK + column; enforce `session_id NOT NULL`; rename the table to `session_content_history`. The audit log is now keyed by session, composing naturally with multi-speaker sessions. |
+| **V102** `drop_dead_content_columns.sql` (Story 11.E.8 §2.7) | Drop `speaker_pool.initial_presentation_title`, `speaker_pool.content_status`, `speaker_pool.content_submitted_at`, `session_users.presentation_title`. All four are dead after the rename + ContentStatusDeriver — derived at read time from `session_content_history` + workflow state. V100/V101 are reserved by EMS test-stub migrations (user_profiles_stub, companies_stub). |
 
 ### 2.3 State-machine consolidation
 
@@ -293,6 +300,119 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
   computation. No persisted columns.
 - `EventWorkflowStateMachine.validateAllSpeakersConfirmed` (the gate for
   `AGENDA_PUBLISHED`) changes its predicate to "all accepted speakers are publishable."
+
+### 2.6 Session + SessionUser provisioning at READY (Story 11.E.8)
+
+Late in Phase E we found that `speaker_pool` was carrying too much. The `sessions` row
+and the `session_users` PRIMARY_SPEAKER row that organizers and the speaker portal
+actually edit were only being created at the `CONTENT_SUBMITTED` transition (inside
+`ContentSubmissionService.getOrCreateSession`). A speaker who was READY/INVITED/ACCEPTED
+but had not yet submitted content had no `session_users` row, and `speaker_pool.session_id`
+stayed NULL — making the existing `SessionSpeakerController` machinery (assign CO_SPEAKER,
+confirm/decline, organizer drawer's content-tab) effectively unreachable for the speaker
+journey. The fix moves session creation upstream:
+
+- **`SpeakerWorkflowService.runReadyHook`** now provisions a `Session` row + a
+  PRIMARY_SPEAKER `session_users` row alongside the User/Cognito provisioning. Idempotent:
+  re-running the transition reuses the existing session. Placeholder slug is
+  `<eventCode>-<username>` (with collision counter), placeholder title is the speaker
+  name. Both are overwritten in `ContentSubmissionService.submit()` when real content
+  arrives.
+- **`SpeakerWorkflowService.runAcceptedHook`** now also calls `SessionUser.confirm()` on
+  the PRIMARY_SPEAKER row — flipping `is_confirmed = true` and stamping `confirmed_at`.
+- **`ContentSubmissionService.getOrCreateSession` is replaced** by a strict
+  `loadAssignedSession` that throws if `speaker_pool.session_id` is NULL — the session
+  must exist by the time content arrives. The on-the-fly create-during-submit path is
+  gone.
+
+### 2.7 Content/session table consolidation (Story 11.E.8)
+
+`speaker_content_submissions` was keyed by `speaker_pool_id`, conflating "who submitted"
+with "which talk." Multi-speaker sessions and post-DECLINED re-promotions made this
+keying brittle. Companion fields on `speaker_pool` (`content_status`,
+`content_submitted_at`, `initial_presentation_title`) were denormalized projections of
+the latest submission's state, and `session_users.presentation_title` was a vestigial
+subtitle column never populated by the submit flow. Consolidation drops all of these and
+moves the audit trail under a session key:
+
+- **Table rename + re-key**: `speaker_content_submissions` → `session_content_history`,
+  keyed by `(session_id, submission_version)`. The `speaker_pool_id` FK is dropped; the
+  link is via `sessions.speaker_pool_id` if needed. A new NOT NULL
+  `submitted_by_username` column carries the actor (speaker on the portal or
+  organizer-on-behalf) so the audit row is self-describing.
+- **`speaker_pool` shrinks** — `content_status`, `content_submitted_at`, and the legacy
+  `initial_presentation_title` are dropped. `contentStatus` is now derived at read time
+  via the `ContentStatusDeriver` helper from the workflow state + latest history row's
+  `reviewer_feedback`: `PENDING` (no history) / `SUBMITTED` (history, no feedback) /
+  `REVISION_NEEDED` (latest has feedback) / `APPROVED` (workflow state is
+  `QUALITY_REVIEWED`).
+- **`session_users.presentation_title` is dropped** — per-speaker subtitle overrides are
+  not part of BATbern's pattern. If a future story needs them, the column can be re-added
+  as additive schema.
+- **`QualityReviewService.rejectContent`** stops writing
+  `speaker_pool.content_status = "REVISION_NEEDED"`. The rejection writes
+  `reviewer_feedback` / `reviewed_at` / `reviewed_by` onto the latest history row; the
+  derived `contentStatus` flips automatically.
+
+### 2.8 QUALITY_REVIEWED → CONTENT_SUBMITTED back-transition (Story 11.E.8)
+
+A speaker can revise their content after the moderator has reviewed it. The transition
+`QUALITY_REVIEWED → CONTENT_SUBMITTED` is added to the allow-list; submission inserts a
+new versioned history row and the derived `contentStatus` returns to `SUBMITTED` until
+the moderator re-reviews. Prior history rows keep their `reviewer_feedback` for the
+audit trail.
+
+### 2.9 `sessions.title` is canonical for ALL edit surfaces (Story 11.E.8)
+
+End-to-end testing revealed that the organizer's session-edit modal updated
+`sessions.title` directly without inserting a `session_content_history` row, while the
+speaker portal's `getContentInfo` initialised the form from the latest history row.
+Result: an organizer edit was invisible to the speaker until they submitted, and vice
+versa. The fix establishes a single source of truth:
+
+- **`sessions.title` / `sessions.description` are the canonical "current"** for every
+  surface — public archive, organizer kanban, organizer session-edit modal, speaker
+  portal form. Reads always come from here.
+- **`session_content_history` is a pure audit log of *speaker* submissions.** Each
+  call to `ContentSubmissionService.submit()` inserts a new row and updates
+  `sessions.title` in the same transaction. Organizer session-modal edits update
+  `sessions.title` only — no history row is written, because the organizer wasn't
+  submitting content. The history table's `submission_version` therefore continues to
+  mean "the n-th speaker submission," unaltered by organizer edits.
+- **Reviewer feedback still lives on the latest history row** (rejected versions); the
+  derived `contentStatus` reads it for `REVISION_NEEDED`.
+- **Speaker portal `saveDraft` endpoint is deleted** — drafts now live in the speaker
+  portal's `localStorage`, keyed by event code. On mount the page initialises from the
+  canonical (`sessions.title`/`description`) unless a newer localStorage draft exists
+  for that event, in which case the local draft wins (the speaker was mid-edit). On
+  successful submit, the localStorage draft is cleared.
+- The single backend write path for title/abstract is `submit()`.
+
+This trades cross-device draft restoration for a much simpler model: one read source,
+one write path, no denormalisation drift. Speakers using a different browser see the
+canonical and start typing from there.
+
+**Read-side propagation audit (§2.9 follow-up).** Every backend read site that exposes
+the talk's title/abstract was inspected and switched to `sessions.title` /
+`sessions.description` as the single source. The previous "history overrides session"
+pattern is removed from:
+
+- `SpeakerDashboardService.buildUpcomingEvent` — the speaker dashboard now greets the
+  speaker with the canonical session title, not the latest history row's title.
+- `SpeakerPoolResponse.fromEntityWithContent` — the `submittedTitle` /
+  `submittedAbstract` response fields mirror `sessions` rather than the latest history
+  row. The latest history row still drives `contentStatus` + `contentSubmittedAt` and
+  the version-counter timeline view.
+- `ContentSubmissionService.getSpeakerContent` — the organizer drawer's content tab
+  reads `sessions.title` / `sessions.description` directly.
+
+The dashboard also switches the **speaker greeting** to the resolved User profile name
+(Cognito-provisioned at `CONTACTED → READY`) instead of `speaker_pool.speaker_name`
+(which is the organizer's original brainstorm-lead label, often a placeholder like
+`testreferent1`). `speaker_pool.speaker_name` remains the audit trail for the
+IDENTIFIED/CONTACTED phase, but once a real user is bound, the User profile is the
+canonical "who is this." Fallback to `speaker_pool.speaker_name` if the User profile
+can't be resolved.
 
 ## 3. Component Changes by Service
 

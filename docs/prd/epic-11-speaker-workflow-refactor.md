@@ -1420,6 +1420,129 @@ merge policy (per-phase chunk merge or end-of-refactor merge, decided per §9.1)
 
 ---
 
+### Phase E follow-ups — local-dev bug sweep + session/content consolidation
+
+These stories were not part of the original Phase E plan; they were carved out during
+test-driving the workflow end-to-end on local dev and reviewing the data model with the
+PM. Both ship on the same refactor branch.
+
+---
+
+#### Story 11.E.7: Local-dev bug-fix sweep + Pattern 3b JWT role fallback
+
+**As a** developer on local dev,
+**I want** the speaker workflow to actually be testable end-to-end against a freshly
+restored database,
+**So that** I can promote → invite → accept → submit → review without hitting
+auth/identity edge cases that don't exist in staging.
+
+**Phase:** E (follow-up)  ·  **Requirements covered:** carries the auth invariants from
+AR1/AR6/AR16/AR17 into the local-dev case where Cognito-user-in-staging vs.
+user_profiles-in-local-DB diverges  ·  **Dependencies:** 11.E.3 (Cognito-secured
+portal) landed.
+
+**Acceptance criteria:**
+
+1. **JWT `custom:role` empty → DB fallback (Pattern 3b).** When a JWT arrives with no
+   `custom:role` claim (the local-dev case where PreTokenGen ran against the staging DB
+   but the user_profiles row only exists locally), every EMS-bound service falls back to
+   reading roles from the local `user_profiles ⨝ role_assignments` by
+   `cognito_user_id = jwt.sub`. Backend path:
+   `shared-kernel/.../security/JwtRolesConverter`. Frontend twin:
+   `AuthContext.hydrateRolesIfMissing` via `GET /users/me?include=roles`.
+2. **CUMS-side write at speaker provisioning is idempotent + self-healing.** When the
+   speaker exists in Cognito but not in the local `user_profiles`, the promotion
+   endpoint creates the user_profiles row and syncs `cognito_user_id`. Re-running the
+   transition is a no-op.
+3. **Multi-role + diagnostic redirect.** Dashboard role-redirect handles speakers who
+   also hold ORGANIZER (multi-role accounts) without bouncing them to a single portal.
+   Defensive fallback when role resolution fails surfaces a clear diagnostic instead of
+   a blank page.
+4. **Documentation.** `CLAUDE.md` carries a Critical Don't-Miss line documenting
+   Pattern 3b's purpose and the staging-vs-local invariant. `docs/architecture/
+   06b-user-lifecycle-sync.md` gets a §"Pattern 3b" subsection.
+
+---
+
+#### Story 11.E.8: Promote SessionUser to first-class at READY + consolidate content versioning to sessions
+
+**As a** speaker workflow architect,
+**I want** the `session_users` and `session_content_history` tables to carry the
+canonical post-READY speaker meta and versioned content (instead of layering them on top
+of `speaker_pool` denormalizations),
+**So that** the organizer-side Sessions tab, the speaker portal content/material flows,
+multi-speaker sessions, and the content-versioning audit log all read and write from a
+single coherent model.
+
+**Phase:** E (follow-up)  ·  **Requirements covered:** sharpens the data-model intent
+behind FR2 (parallel speaker progression) and FR7 (consolidated content service);
+implements the consolidation described in §2.6–§2.8 of the refactor plan  ·
+**Dependencies:** 11.B.2 (workflow service consolidation), 11.C.2 (consolidated content
+service), 11.D.4 (organizer drawer/Sessions tab UX).
+
+**Acceptance criteria:**
+
+1. **Session + SessionUser provisioned at CONTACTED → READY.**
+   `SpeakerWorkflowService.runReadyHook` creates a `Session` row + a PRIMARY_SPEAKER
+   `session_users` row (idempotent — re-runs reuse the existing session). Placeholder
+   slug is `<eventCode>-<username>` (with collision counter); placeholder title is the
+   speaker name. Both are overwritten when `ContentSubmissionService.submit()` runs.
+2. **SessionUser.confirm() called at INVITED → ACCEPTED.**
+   `SpeakerWorkflowService.runAcceptedHook` flips the PRIMARY_SPEAKER row's
+   `is_confirmed = true` and stamps `confirmed_at`. Best-effort for legacy rows that
+   predate this hook (logs a warning; doesn't fail the transition).
+3. **Strict session lookup at content submit.**
+   `ContentSubmissionService.submit()` throws `IllegalStateException` if
+   `speaker_pool.session_id IS NULL`. The on-demand `getOrCreateSession` path is
+   removed — sessions exist by the time content arrives, or there's a data-integrity bug.
+4. **Content versioning re-keyed to session_id.**
+   `speaker_content_submissions` is renamed to `session_content_history`, keyed by
+   `(session_id, submission_version)`. The `speaker_pool_id` FK is dropped; the link is
+   via `sessions.speaker_pool_id`. A new NOT NULL `submitted_by_username` column records
+   the actor (speaker on the portal or organizer-on-behalf). Backfilled from
+   `speaker_status_history` on the closest `CONTENT_SUBMITTED` transition.
+5. **`speaker_pool` shrinks.** Columns `initial_presentation_title`, `content_status`,
+   and `content_submitted_at` are dropped (V102). `contentStatus` is now derived at read
+   time via `ContentStatusDeriver` from the workflow state + latest history row's
+   `reviewer_feedback`. Mapping: `PENDING` (no history) / `SUBMITTED` (history without
+   feedback) / `REVISION_NEEDED` (latest has feedback) / `APPROVED` (workflow state is
+   `QUALITY_REVIEWED`). Public JSON shape on `SpeakerPoolResponse` is preserved — only
+   the source of the field moves.
+6. **`session_users.presentation_title` dropped.** Vestigial column that was never
+   populated by the submit flow. BATbern's pattern is one talk per session; per-speaker
+   subtitles are not part of the model. Response DTOs return `null` for compat.
+7. **QUALITY_REVIEWED → CONTENT_SUBMITTED is a legal back-transition.** A speaker (or
+   organizer-on-behalf) can revise content after the moderator's review. The transition
+   creates a new history row; the derived `contentStatus` returns to `SUBMITTED` until
+   re-reviewed. Prior history rows keep their `reviewer_feedback` for audit.
+8. **Caffeine cache eviction parity.** Speaker-portal mutation endpoints
+   (`/content/submit`, `/materials/confirm`, `/respond`) now carry the same
+   `@CacheEvict(EVENT_WITH_INCLUDES_CACHE)` annotation as the organizer-on-behalf
+   endpoint, so organizer-side reads see speaker-submitted changes immediately rather
+   than waiting on the 15-min TTL.
+9. **Frontend cache fix.** `useEvent` carries `refetchOnWindowFocus: true`; the
+   organizer's `EventSpeakersTab` invalidates `['event', eventCode]` when the speaker
+   detail drawer opens. The Sessions sub-tab no longer shows stale titles after the
+   speaker submits.
+10. **Migrations.** V96 (backfill sessions for legacy READY+ speakers), V97 (backfill
+    `is_confirmed` for ACCEPTED+ legacy session_users rows), V98 (add
+    `submitted_by_username`), V99 (drop `speaker_pool_id`, rename to
+    `session_content_history`), V102 (drop dead columns). V100/V101 reserved by EMS
+    test-stub migrations.
+11. **`sessions.title` is canonical for all edit surfaces (§2.9).** End-to-end testing
+    revealed the organizer's session-edit modal updated `sessions.title` directly while
+    the speaker portal read from the latest `session_content_history` row — edits
+    diverged. Fix: every surface reads from `sessions.title` / `sessions.description`;
+    `session_content_history` becomes a pure audit log of *speaker* submissions only;
+    the backend `saveDraft` endpoint is deleted and the speaker-portal page auto-saves
+    to `localStorage`. The single backend write path for title/abstract is `submit()`.
+    Trades cross-device draft restoration for one read source + one write path.
+12. **Documentation.** Refactor plan §2.6–§2.9 cover the changes;
+    `docs/architecture/06a-workflow-state-machines.md` and
+    `docs/architecture/03-data-architecture.md` reflect the new schema and derivation.
+
+---
+
 ## Coverage Verification
 
 **FR Coverage** — all 13 FRs landed in stories:

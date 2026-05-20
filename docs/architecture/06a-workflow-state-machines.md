@@ -270,21 +270,27 @@ State transitions trigger side effects inside `SpeakerWorkflowService.transition
 | Transition | Side effects |
 |---|---|
 | `IDENTIFIED → CONTACTED` | Append `OutreachHistory` row (organizer logs the outreach) |
-| `CONTACTED → READY` | User lookup-or-create (`UserApiClient.provisionUserWithRole(..., SPEAKER)`); Cognito `AdminCreateUser` with `MessageAction=SUPPRESS` + `FORCE_CHANGE_PASSWORD` (throwaway temp password — never returned, never logged); SPEAKER role grant in `role_assignments`; persist `username` on `speaker_pool`. Returns `{ username, created }` (per Story 11.E.2 Q#1 Variant B — `temporaryPassword` removed from `ProvisionUserResponse`). |
+| `CONTACTED → READY` | (1) User lookup-or-create (`UserApiClient.provisionUserWithRole(..., SPEAKER)`); Cognito `AdminCreateUser` with `MessageAction=SUPPRESS` + `FORCE_CHANGE_PASSWORD` (throwaway temp password — never returned, never logged); SPEAKER role grant in `role_assignments`; persist `username` on `speaker_pool`. (2) **Story 11.E.8**: provision a `Session` row + PRIMARY_SPEAKER `session_users` row (idempotent); set `speaker_pool.session_id`. Placeholder slug `<eventCode>-<username>` (with collision counter); placeholder title is the speaker name — both are overwritten by `ContentSubmissionService.submit()` when real content arrives. |
 | `READY → INVITED` | **Precondition**: slot-capacity gate. **Action**: call CUMS `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — uses `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` to issue a fresh temp password OR signal `USE_EXISTING_PASSWORD` for already-confirmed users); send HTML invitation email (login URL + speaker email + temp-password block OR use-existing-password block based on action discriminator). Templates ship `de` + `en` only per CLAUDE.md §Localization. |
-| `INVITED → ACCEPTED` | Send confirmation email to speaker; notify organizer |
-| `ACCEPTED → CONTENT_SUBMITTED` | Notify moderators of pending review |
-| `CONTENT_SUBMITTED → QUALITY_REVIEWED` | Mark `content_submissions.approved = true`; notify speaker |
-| `(any state) → DECLINED` from `INVITED` or later | Notify organizer; if the slot was held by this speaker, the next speaker in `READY` becomes eligible for `INVITED` |
+| `INVITED → ACCEPTED` | Send confirmation email to speaker; notify organizer. **Story 11.E.8**: also flip the PRIMARY_SPEAKER `session_users.is_confirmed = true` and stamp `confirmed_at` (best-effort — legacy rows that predate the hook log a warning and continue). |
+| `ACCEPTED → CONTENT_SUBMITTED` | Notify moderators of pending review. **Story 11.E.8**: `ContentSubmissionService.submit()` writes a new `session_content_history` row keyed by `(session_id, version)` with `submitted_by_username` set to the actor; updates `sessions.title`/`sessions.description` in lockstep. |
+| `CONTENT_SUBMITTED → QUALITY_REVIEWED` | Approve action: workflow state transition only; no field write on history rows (approval is recorded by the status-history row + the derived `contentStatus = APPROVED`). Reject action writes `reviewer_feedback`/`reviewed_at`/`reviewed_by` onto the latest history row and leaves the workflow state at `CONTENT_SUBMITTED` — the derived `contentStatus` flips to `REVISION_NEEDED`. Notify speaker on either branch. |
+| `QUALITY_REVIEWED → CONTENT_SUBMITTED` | **Story 11.E.8** back-transition: speaker (or organizer-on-behalf) revises content after review. New `session_content_history` row inserted (next version); prior rows keep their `reviewer_feedback`. Derived `contentStatus` returns to `SUBMITTED` until re-reviewed. |
+| `(any state) → DECLINED` from `INVITED` or later | Notify organizer; if the slot was held by this speaker, the next speaker in `READY` becomes eligible for `INVITED`. The session row is deleted (cascade-deletes the `session_users` row via FK). |
 
-### Data Model
+### Data Model (post Story 11.E.8 consolidation)
 
-- **`speaker_pool.status`**: the 8 values above. CHECK constraint enforces the allow-list. No `is_tentative` / `tentative_reason` columns; no `is_overflow` flag.
+- **`speaker_pool.status`**: the 8 values above. CHECK constraint enforces the allow-list. No `is_tentative` / `tentative_reason` / `is_overflow` columns.
 - **`speaker_pool.username`**: cross-service reference to `users.username` (ADR-003 meaningful ID). Populated by the `CONTACTED → READY` provisioning hook. NULL before that.
-- **`speaker_pool.session_id`**: FK to `sessions(id)` within the same service. Determines `is_slot_assigned` via the session's `start_time`.
-- **`status_history`**: append-only audit table — one row per `transition()` invocation. Columns: `speaker_pool_id`, `from_status`, `to_status`, `actor_username`, `reason`, `payload`, `at`.
-- **`content_submissions`**: per-event content (title, abstract, presentation file, quality-review feedback). Note: there is no `submitted_by_username` column on `content_submissions` (Story 11.C.2 Resolved Decision §2). Audit attribution lives on `speaker_status_history.changed_by_username` — written by `SpeakerWorkflowService.transition()` whenever `ContentSubmissionService.submit()` advances the speaker to `CONTENT_SUBMITTED` (organizer or speaker principal). The two flows produce identical `content_submissions` rows; the principal is captured one join away.
-- **`session_users`**: junction between `sessions` and User (`username`). There is no `session_speakers` table (the legacy duplicate is removed per ADR-009).
+- **`speaker_pool.session_id`**: FK to `sessions(id)` within the same service. Populated by the `CONTACTED → READY` hook (Story 11.E.8) — every speaker that reaches READY has a session. Determines `is_slot_assigned` via the session's `start_time`.
+- **`speaker_pool`** — fields that were dropped in Story 11.E.8 (V102) and now derive at read time:
+  - `content_status` → derived via `ContentStatusDeriver` from workflow state + latest `session_content_history.reviewer_feedback` (mapping: PENDING / SUBMITTED / REVISION_NEEDED / APPROVED).
+  - `content_submitted_at` → derived from latest `session_content_history.submitted_at`.
+  - `initial_presentation_title` → legacy working-title field, dropped (sessions.title is canonical).
+- **`speaker_status_history`**: append-only audit table — one row per `transition()` invocation. Columns: `speaker_pool_id`, `previous_status`, `new_status`, `changed_by_username`, `change_reason`, `changed_at`.
+- **`session_content_history`** (renamed from `speaker_content_submissions` in V99; Story 11.E.8 §2.7 / §2.9): per-talk versioned **audit log of speaker submissions**. Keyed by `(session_id, submission_version)`. Columns: `title`, `content_abstract`, `submitted_by_username` (NOT NULL — the speaker or organizer-on-behalf), `submitted_at`, `reviewer_feedback` (null until rejected), `reviewed_at`, `reviewed_by`. Inserted only by `ContentSubmissionService.submit()`. The latest row mirrors `sessions.title` / `sessions.description` at the moment of submission; subsequent organizer-side edits to `sessions.title` do NOT write history rows (history reflects what the speaker submitted, not all edits). Reviewer feedback on a rejected version stays on that row for the audit trail.
+- **`sessions`**: **canonical "now"** for title/description/slug/time/room/capacity per Story 11.E.8 §2.9. Every read surface (public archive, organizer kanban, organizer session-edit modal, speaker portal form) initialises from this row. Updated by `ContentSubmissionService.submit()` (in lockstep with the new history row) and by `SessionController` organizer edits (no history row).
+- **`session_users`**: junction between `sessions` and User (`username`). PRIMARY_SPEAKER row created at the `CONTACTED → READY` transition (Story 11.E.8); CO_SPEAKER / MODERATOR / PANELIST rows added explicitly via the organizer's SessionSpeakersTab. `is_confirmed` flipped at `INVITED → ACCEPTED`. There is no `session_speakers` table and no `presentation_title` column (dropped in V102 — `sessions.title` is canonical, per-speaker subtitles are not part of BATbern's model).
 
 ### Implementation
 
@@ -301,7 +307,8 @@ public class SpeakerWorkflowService {
             Map.entry(INVITED,           Set.of(ACCEPTED, DECLINED)),
             Map.entry(ACCEPTED,          Set.of(CONTENT_SUBMITTED, DECLINED)),
             Map.entry(CONTENT_SUBMITTED, Set.of(QUALITY_REVIEWED, DECLINED)),
-            Map.entry(QUALITY_REVIEWED,  Set.of(DECLINED))
+            // Story 11.E.8: speaker revising content after review — back-transition.
+            Map.entry(QUALITY_REVIEWED,  Set.of(CONTENT_SUBMITTED, DECLINED))
             // DECLINED is terminal — no transitions out
         );
 
@@ -686,11 +693,18 @@ public class QualityReviewService {
 
 **Rejection requires non-empty feedback:** Calling `rejectContent(..., null, ...)` or with a blank feedback string throws `IllegalArgumentException("Feedback is required when rejecting content")` (HTTP 400).
 
-**`content_submissions` table:** Stores the review record. Key fields populated on rejection/approval:
-- `reviewer_feedback` — the moderator's written feedback
-- `reviewed_by` — moderator username
-- `reviewed_at` — review timestamp
-- `submission_version` — version counter for resubmissions
+**`session_content_history` table** (renamed from `speaker_content_submissions` in V99, Story 11.E.8): Stores versioned content + the review record. Key fields populated on rejection:
+- `reviewer_feedback` — the moderator's written feedback (null on approval — approval is recorded by the workflow state transition + the derived `contentStatus = APPROVED`)
+- `reviewed_by` — moderator username (null on approval)
+- `reviewed_at` — review timestamp (null on approval)
+- `submission_version` — version counter, monotonic per `session_id`
+- `submitted_by_username` — actor on the submission (speaker on the portal or organizer-on-behalf); NOT NULL
+
+**Derived `contentStatus` mapping** (Story 11.E.8 — `ContentStatusDeriver`): workflow state + latest history row drive a single-string derivation preserved for FE source-compat:
+- `PENDING` — no `session_content_history` row exists
+- `SUBMITTED` — latest row's `reviewer_feedback IS NULL`
+- `REVISION_NEEDED` — latest row's `reviewer_feedback IS NOT NULL` (the version was rejected; speaker is expected to revise and resubmit)
+- `APPROVED` — workflow state is `QUALITY_REVIEWED` (dominates `REVISION_NEEDED` — historical feedback on prior versions is informational only once review has progressed)
 
 ## Overflow Management & Voting System — Removed (legacy, per ADR-009)
 
