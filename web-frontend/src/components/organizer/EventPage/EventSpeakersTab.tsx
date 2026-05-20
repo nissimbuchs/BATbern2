@@ -9,7 +9,7 @@
  * URL params: ?tab=speakers&view=kanban|table|sessions
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -125,6 +125,18 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Fetch event data for sessions view
   const { data: event } = useEvent(eventCode, ['sessions']);
+
+  // Story 11.E.8 follow-up — invalidate the event query whenever the speaker detail
+  // drawer opens. The drawer's primary use is "I'm about to act on this speaker"
+  // (review content, enter on behalf, send invitation), so the organizer expects to
+  // see the latest data. Without this, the Sessions sub-tab kept showing pre-submit
+  // titles until a quality-review approval invalidated the cache. Pairs with
+  // refetchOnWindowFocus on useEvent.
+  useEffect(() => {
+    if (detailsDrawerOpen) {
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+    }
+  }, [detailsDrawerOpen, eventCode, queryClient]);
 
   // Story 11.D.4 review patch — compute slot-capacity once at the parent so both the
   // kanban (SpeakerStatusLanes) and the drawer (SpeakerDetailDrawer) honor the same

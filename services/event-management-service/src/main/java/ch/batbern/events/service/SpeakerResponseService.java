@@ -191,9 +191,10 @@ public class SpeakerResponseService {
         if (prefs.getTechnicalRequirements() != null && prefs.getTechnicalRequirements().length > 0) {
             speaker.setTechnicalRequirements(String.join(",", prefs.getTechnicalRequirements()));
         }
-        if (prefs.getInitialTitle() != null) {
-            speaker.setInitialPresentationTitle(prefs.getInitialTitle());
-        }
+        // Story 11.E.8 consolidation: initial_presentation_title was dropped from speaker_pool
+        // (V102). The submitted-content workflow (session_content_history) is the single home
+        // for title/abstract now; we no longer persist a separate "working title" at response
+        // time. The prefs.getInitialTitle() value is intentionally discarded.
         if (prefs.getComments() != null) {
             speaker.setPreferenceComments(prefs.getComments());
         }

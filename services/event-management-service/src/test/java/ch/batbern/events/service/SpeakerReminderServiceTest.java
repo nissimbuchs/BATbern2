@@ -8,6 +8,7 @@ import ch.batbern.events.domain.SpeakerReminderLog;
 import ch.batbern.events.notification.NotificationService;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -60,6 +61,9 @@ class SpeakerReminderServiceTest {
     private OutreachHistoryRepository outreachHistoryRepository;
 
     @Mock
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
+
+    @Mock
     private SpeakerReminderEmailService reminderEmailService;
 
     @Mock
@@ -96,7 +100,8 @@ class SpeakerReminderServiceTest {
         // Recreate service with properties (since @InjectMocks doesn't handle this)
         speakerReminderService = new SpeakerReminderService(
                 speakerPoolRepository, eventRepository, reminderLogRepository,
-                outreachHistoryRepository, reminderEmailService, magicLinkService,
+                outreachHistoryRepository, sessionContentHistoryRepository,
+                reminderEmailService, magicLinkService,
                 notificationService, reminderProperties
         );
 
@@ -280,7 +285,6 @@ class SpeakerReminderServiceTest {
         @DisplayName("should process content reminder for ACCEPTED speaker with PENDING content")
         void shouldProcessContentReminder() {
             testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentStatus("PENDING");
             testSpeaker.setContentDeadline(LocalDate.now().plusDays(7)); // TIER_2
             testSpeaker.setResponseDeadline(null); // no response deadline
 
@@ -395,10 +399,15 @@ class SpeakerReminderServiceTest {
         @Test
         @DisplayName("should throw InvalidSpeakerStateException for CONTENT when content already submitted")
         void shouldThrow_whenContentAlreadySubmitted() {
+            // Story 11.E.8: "content already submitted" is now derived from the presence of
+            // any session_content_history row for the speaker's session (previously checked
+            // speaker_pool.content_status which was dropped in V102).
+            UUID sessionId = UUID.randomUUID();
             testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentStatus("SUBMITTED");
             testSpeaker.setContentDeadline(LocalDate.now().plusDays(7));
+            testSpeaker.setSessionId(sessionId);
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+            when(sessionContentHistoryRepository.existsBySessionId(sessionId)).thenReturn(true);
 
             assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
                     speakerPoolId, "CONTENT", "TIER_1", "organizer1"))
@@ -421,7 +430,6 @@ class SpeakerReminderServiceTest {
         void shouldFallbackToEventDate_whenContentDeadlineNull() {
             // Regression: sendManualReminder threw when ACCEPTED speaker had no contentDeadline
             testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentStatus("PENDING");
             testSpeaker.setContentDeadline(null); // no deadline set
 
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));

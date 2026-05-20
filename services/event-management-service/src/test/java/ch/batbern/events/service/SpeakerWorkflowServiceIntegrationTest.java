@@ -133,7 +133,10 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 Arguments.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.INVITED),
                 Arguments.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED),
                 Arguments.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.CONTENT_SUBMITTED),
-                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED)
+                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED),
+                // Story 11.E.8+: speaker (or organizer-on-behalf) revising content after the
+                // moderator's review — back-transition that requeues for re-review.
+                Arguments.of(SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.CONTENT_SUBMITTED)
         );
     }
 
@@ -207,7 +210,9 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.READY, SpeakerWorkflowState.INVITED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED},
                 new SpeakerWorkflowState[]{SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.CONTENT_SUBMITTED},
-                new SpeakerWorkflowState[]{SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED}
+                new SpeakerWorkflowState[]{SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED},
+                // Story 11.E.8+: speaker revising after review — back-transition is legal.
+                new SpeakerWorkflowState[]{SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.CONTENT_SUBMITTED}
         );
         return Stream.of(SpeakerWorkflowState.values())
                 .flatMap(from -> Stream.of(SpeakerWorkflowState.values())

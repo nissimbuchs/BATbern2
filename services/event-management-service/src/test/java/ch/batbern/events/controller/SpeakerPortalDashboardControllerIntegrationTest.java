@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -72,7 +72,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     @Autowired
     private SessionMaterialsRepository sessionMaterialsRepository;
@@ -86,7 +86,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
     @BeforeEach
     void setUp() {
         // Clean up in FK dependency order
-        contentSubmissionRepository.deleteAll();
+        sessionContentHistoryRepository.deleteAll();
         sessionMaterialsRepository.deleteAll();
         tokenRepository.deleteAll();
         speakerPoolRepository.deleteAll();
@@ -133,7 +133,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                 .email("dashboard.speaker@test.com")
                 .company("Test Corp")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentStatus("PENDING")
                 .responseDeadline(LocalDate.now().plusDays(7))
                 .contentDeadline(LocalDate.now().plusDays(20))
                 .build();
@@ -330,7 +329,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.QUALITY_REVIEWED)
-                    .contentStatus("PENDING")
                     .build();
             speakerPoolRepository.save(soonerSpeaker);
 
@@ -385,7 +383,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.QUALITY_REVIEWED)
-                    .contentStatus("APPROVED")
                     .build();
             speakerPoolRepository.save(pastSpeaker);
 
@@ -424,7 +421,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.INVITED)
-                    .contentStatus("PENDING")
                     .build();
             speakerPoolRepository.save(pastInvitedSpeaker);
 
@@ -468,7 +464,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .username(testUsername)
                     .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.DECLINED)
-                    .contentStatus("PENDING")
                     .build();
             declinedSpeaker = speakerPoolRepository.save(declinedSpeaker);
 

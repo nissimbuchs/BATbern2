@@ -1,14 +1,14 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -60,7 +60,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     private Event testEvent;
     private UUID testEventId;
@@ -211,7 +211,6 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     void should_setContentStatusToRevisionNeeded_when_contentRejected() {
         // Given: Speaker with content_submitted
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setContentStatus("SUBMITTED");
         speakerPoolRepository.save(speaker);
 
         // When: Reject content with feedback
@@ -221,30 +220,40 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 "moderator.user"
         );
 
-        // Then: contentStatus set to REVISION_NEEDED
+        // Then: REVISION_NEEDED is now derived from latest session_content_history row
+        // carrying non-null reviewer_feedback (Story 11.E.8 — content_status column dropped).
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getContentStatus()).isEqualTo("REVISION_NEEDED");
+        java.util.Optional<ch.batbern.events.domain.SessionContentVersion> latest =
+                updated.getSessionId() != null
+                        ? sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(
+                                updated.getSessionId())
+                        : java.util.Optional.empty();
+        String derived = ch.batbern.events.service.ContentStatusDeriver.derive(
+                updated.getStatus(), latest);
+        assertThat(derived).isEqualTo("REVISION_NEEDED");
     }
 
     /**
-     * Epic 6 Fix: Reject content stores feedback in ContentSubmission for portal display
+     * Epic 6 Fix: Reject content stores feedback in SessionContentVersion for portal display
      */
     @Test
     void should_storeReviewerFeedbackInContentSubmission_when_contentRejected() {
-        // Given: Speaker with content_submitted and a ContentSubmission record
+        // Given: Speaker with content_submitted and a SessionContentVersion record
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
         speaker.setEmail("john.doe@example.com");
-        speaker.setContentStatus("SUBMITTED");
         speakerPoolRepository.save(speaker);
 
         Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        ContentSubmission submission = new ContentSubmission();
-        submission.setSpeakerPool(speaker);
-        submission.setSession(session);
-        submission.setTitle("My Presentation");
-        submission.setContentAbstract("This is my abstract about architecture.");
-        submission.setSubmissionVersion(1);
-        contentSubmissionRepository.save(submission);
+        SessionContentVersion submission = SessionContentVersion.builder()
+                .session(session)
+                .title("My Presentation")
+                .contentAbstract("This is my abstract about architecture.")
+                .abstractCharCount(39)
+                .submissionVersion(1)
+                // Story 11.E.8: NOT NULL column added in V98.
+                .submittedByUsername("john.doe")
+                .build();
+        sessionContentHistoryRepository.save(submission);
 
         // When: Reject content with feedback
         String feedback = "Please add more focus on lessons learned from the project.";
@@ -254,9 +263,9 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 "moderator.user"
         );
 
-        // Then: ContentSubmission has reviewer feedback
-        ContentSubmission updated = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+        // Then: SessionContentVersion has reviewer feedback (lookup keyed by session_id now)
+        SessionContentVersion updated = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(speaker.getSessionId())
                 .orElseThrow();
         assertThat(updated.getReviewerFeedback()).isEqualTo(feedback);
         assertThat(updated.getReviewedBy()).isEqualTo("moderator.user");

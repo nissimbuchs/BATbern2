@@ -22,26 +22,33 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Content Submission entity representing speaker presentation title/abstract submissions.
- * Story 6.3: Speaker Content Self-Submission Portal
+ * Versioned audit row in {@code session_content_history} (renamed from
+ * {@code speaker_content_submissions} in V99). Each row is one submit of title+abstract
+ * for a {@link Session}. The latest row mirrors what currently lives on
+ * {@code sessions.title}/{@code sessions.description}; older rows preserve prior versions
+ * and reviewer feedback.
  *
- * Matches V53__Add_speaker_content_submissions.sql migration exactly.
- * Supports versioned submissions with revision workflow.
+ * <p>Story 11.E.8 consolidation: the previous {@code ContentSubmission} entity was keyed
+ * by {@code speaker_pool_id}, which conflated "who submitted" with "which talk." This
+ * version is keyed by {@code session_id} so the audit log composes naturally with
+ * multi-speaker sessions and re-promotions. {@code submitted_by_username} carries the
+ * actor (speaker on the portal or organizer-on-behalf).
  *
- * Content Status Flow:
- * PENDING → (speaker submits) → SUBMITTED → (organizer reviews) → APPROVED
- *                                      ↓
- *                               REVISION_NEEDED → (speaker fixes) → SUBMITTED
+ * <p>Reviewer fields ({@code reviewerFeedback}, {@code reviewedAt}, {@code reviewedBy})
+ * are populated by {@link ch.batbern.events.service.QualityReviewService#rejectContent}
+ * on the latest history row when content is rejected. {@code QualityReviewService#approveContent}
+ * does NOT write to this table — approval is recorded by the workflow state transition
+ * to {@code QUALITY_REVIEWED} in {@code speaker_status_history} instead.
  */
 @Entity
-@Table(name = "speaker_content_submissions")
+@Table(name = "session_content_history")
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"speakerPool", "session"})  // Prevent circular reference
-public class ContentSubmission {
+@ToString(exclude = {"session"})
+public class SessionContentVersion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -50,11 +57,7 @@ public class ContentSubmission {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "speaker_pool_id", nullable = false)
-    private SpeakerPool speakerPool;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id")
+    @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 
     @Column(name = "title", nullable = false, length = 200)
@@ -69,6 +72,14 @@ public class ContentSubmission {
     @Column(name = "submission_version", nullable = false)
     @Builder.Default
     private Integer submissionVersion = 1;
+
+    /**
+     * Story 11.E.8 consolidation: the actor who submitted this version (speaker on the
+     * portal or organizer-on-behalf). Lets the audit trail stand on its own without
+     * joining back to {@code speaker_status_history}.
+     */
+    @Column(name = "submitted_by_username", nullable = false, length = 100)
+    private String submittedByUsername;
 
     @Column(name = "reviewer_feedback", columnDefinition = "TEXT")
     private String reviewerFeedback;
@@ -102,7 +113,6 @@ public class ContentSubmission {
         if (submissionVersion == null) {
             submissionVersion = 1;
         }
-        // Calculate character count if not set
         if (abstractCharCount == null && contentAbstract != null) {
             abstractCharCount = contentAbstract.length();
         }
@@ -111,27 +121,8 @@ public class ContentSubmission {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
-        // Recalculate character count on update
         if (contentAbstract != null) {
             abstractCharCount = contentAbstract.length();
         }
-    }
-
-    /**
-     * Validates that the abstract does not exceed the maximum character limit.
-     *
-     * @return true if abstract is within limits
-     */
-    public boolean isAbstractValid() {
-        return contentAbstract == null || contentAbstract.length() <= 1000;
-    }
-
-    /**
-     * Validates that the title does not exceed the maximum character limit.
-     *
-     * @return true if title is within limits
-     */
-    public boolean isTitleValid() {
-        return title == null || title.length() <= 200;
     }
 }

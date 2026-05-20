@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerResponseRequest;
 import ch.batbern.events.dto.SpeakerResponseResult;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,7 +60,13 @@ public class SpeakerPortalResponseController {
      * @param request      response type + optional reason + preferences
      * @param httpRequest  used for IP logging on failure paths
      */
+    // Story 11.E.8 follow-up — accept/decline flips session_users.is_confirmed +
+    // speaker_pool.status (and clears session on post-INVITED DECLINE). All of these are
+    // surfaced in the GET event-with-includes payload (speakers[].isConfirmed, status,
+    // sessions[]). Evict the cache so organizers see the response immediately rather than
+    // waiting up to 15 min for the Caffeine TTL.
     @PostMapping("/events/{eventCode}/respond")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SpeakerResponseResult> respond(
             @PathVariable String eventCode,
             @Valid @RequestBody SpeakerResponseRequest request,

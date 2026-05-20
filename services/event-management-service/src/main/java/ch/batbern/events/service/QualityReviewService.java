@@ -1,9 +1,10 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
@@ -36,7 +37,7 @@ public class QualityReviewService {
     private final EventRepository eventRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final EmailService emailService;
     private final MagicLinkService magicLinkService;
     private final SpeakerWorkflowService speakerWorkflowService;
@@ -96,8 +97,16 @@ public class QualityReviewService {
     /**
      * Reject speaker content with feedback.
      *
-     * Updates contentStatus to REVISION_NEEDED and notifies speaker via email.
-     * Speaker can revise and resubmit via portal (AC15).
+     * <p>Story 11.E.8 consolidation: the legacy {@code speaker_pool.content_status =
+     * "REVISION_NEEDED"} write is gone — the column was dropped in V100. Reviewer
+     * feedback is written onto the latest {@code session_content_history} row (the
+     * version that's being rejected); {@link ContentStatusDeriver} now produces
+     * {@code "REVISION_NEEDED"} at read time whenever the latest history row carries
+     * non-empty {@code reviewerFeedback}.
+     *
+     * <p>Workflow state remains {@code CONTENT_SUBMITTED} (AC14) — the speaker has not
+     * left "submitted" territory; they just need to revise. Resubmission creates a new
+     * version row with no feedback, flipping the derived status back to {@code SUBMITTED}.
      *
      * @param poolId the speaker pool ID
      * @param feedback the rejection feedback (required)
@@ -116,52 +125,54 @@ public class QualityReviewService {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Speaker pool entry not found: " + poolId));
 
-        // Store rejection feedback with timestamp
+        // Audit trail — keep the human-readable note on speaker_pool.notes so the rejection
+        // history is browsable independently of the version table.
         String timestamp = java.time.Instant.now().toString();
-        String rejectionNote = String.format("[%s] REVISION REQUESTED by %s:\n%s",
+        String rejectionNote = String.format("[%s] REVISION REQUESTED by %s:%n%s",
                 timestamp, moderatorUsername, feedback);
         String existingNotes = speaker.getNotes() != null ? speaker.getNotes() + "\n\n" : "";
         speaker.setNotes(existingNotes + rejectionNote);
-
-        // Set contentStatus to REVISION_NEEDED so speaker knows to revise
-        speaker.setContentStatus("REVISION_NEEDED");
-
-        // Status remains CONTENT_SUBMITTED (AC14) - workflow state unchanged
         speakerPoolRepository.save(speaker);
 
-        // Update latest ContentSubmission with reviewer feedback for portal display
-        // If no ContentSubmission exists (organizer-path content), create one from session data
-        // so the speaker portal can display the feedback and pre-populate the revision form
-        java.util.Optional<ch.batbern.events.domain.ContentSubmission> latestSubmission =
-                contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
-        if (latestSubmission.isPresent()) {
-            ch.batbern.events.domain.ContentSubmission submission = latestSubmission.get();
-            submission.setReviewerFeedback(feedback);
-            submission.setReviewedAt(java.time.Instant.now());
-            submission.setReviewedBy(moderatorUsername);
-            contentSubmissionRepository.save(submission);
-        } else if (speaker.getSessionId() != null) {
-            // Create ContentSubmission from session data for organizer-path content
-            sessionRepository.findById(speaker.getSessionId())
-                    .ifPresent(session -> {
-                        var submission = ch.batbern.events.domain.ContentSubmission
-                                .builder()
-                                .speakerPool(speaker)
-                                .session(session)
-                                .title(session.getTitle())
-                                .contentAbstract(session.getDescription())
-                                .abstractCharCount(session.getDescription() != null
-                                        ? session.getDescription().length() : 0)
-                                .submissionVersion(1)
-                                .submittedAt(java.time.Instant.now())
-                                .reviewerFeedback(feedback)
-                                .reviewedAt(java.time.Instant.now())
-                                .reviewedBy(moderatorUsername)
-                                .build();
-                        contentSubmissionRepository.save(submission);
-                        log.info("Created ContentSubmission from session for speaker: {}",
-                                speaker.getId());
-                    });
+        // Write reviewer feedback onto the latest history row. If no version exists yet
+        // (organizer-path content where sessions.title was set directly), synthesize a
+        // v1 row from the session data so the speaker portal can display the feedback
+        // and pre-populate the revision form.
+        if (speaker.getSessionId() == null) {
+            log.warn("Cannot record rejection feedback for speaker {} — no session linked",
+                    speaker.getId());
+        } else {
+            java.util.UUID sessionId = speaker.getSessionId();
+            java.util.Optional<SessionContentVersion> latestSubmission =
+                    sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId);
+            if (latestSubmission.isPresent()) {
+                SessionContentVersion submission = latestSubmission.get();
+                submission.setReviewerFeedback(feedback);
+                submission.setReviewedAt(java.time.Instant.now());
+                submission.setReviewedBy(moderatorUsername);
+                sessionContentHistoryRepository.save(submission);
+            } else {
+                sessionRepository.findById(sessionId).ifPresent(session -> {
+                    SessionContentVersion submission = SessionContentVersion.builder()
+                            .session(session)
+                            .title(session.getTitle())
+                            .contentAbstract(session.getDescription())
+                            .abstractCharCount(session.getDescription() != null
+                                    ? session.getDescription().length() : 0)
+                            .submissionVersion(1)
+                            .submittedByUsername(speaker.getUsername() != null && !speaker.getUsername().isBlank()
+                                    ? speaker.getUsername()
+                                    : speaker.getSpeakerName())
+                            .submittedAt(java.time.Instant.now())
+                            .reviewerFeedback(feedback)
+                            .reviewedAt(java.time.Instant.now())
+                            .reviewedBy(moderatorUsername)
+                            .build();
+                    sessionContentHistoryRepository.save(submission);
+                    log.info("Created v1 session_content_history row from session for speaker: {}",
+                            speaker.getId());
+                });
+            }
         }
 
         // Notify speaker via email about required revisions

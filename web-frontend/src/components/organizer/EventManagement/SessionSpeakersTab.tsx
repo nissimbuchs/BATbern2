@@ -11,8 +11,11 @@
  * - Add a speaker via UserAutocomplete (search any user by name) + role select
  * - Create a new user inline via UserCreateEditModal
  *
- * All mutations operate directly against the session_speaker table.
- * Speaker pool is NOT involved.
+ * All mutations operate directly against the session_users table (entity SessionUser,
+ * exposed in the API as SessionSpeaker). speaker_pool keeps the workflow state machine
+ * only. Story 11.E.8: the PRIMARY_SPEAKER row is auto-provisioned at the CONTACTED →
+ * READY transition by SpeakerWorkflowService.runReadyHook; this tab manages the
+ * CO_SPEAKER / MODERATOR / PANELIST additions plus the confirm/decline status.
  */
 
 import React, { useState, useEffect } from 'react';

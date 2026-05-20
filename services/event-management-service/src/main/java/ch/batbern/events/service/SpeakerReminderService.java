@@ -9,6 +9,7 @@ import ch.batbern.events.notification.NotificationRequest;
 import ch.batbern.events.notification.NotificationService;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -46,6 +47,7 @@ public class SpeakerReminderService {
     private final EventRepository eventRepository;
     private final SpeakerReminderLogRepository reminderLogRepository;
     private final OutreachHistoryRepository outreachHistoryRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SpeakerReminderEmailService reminderEmailService;
     private final MagicLinkService magicLinkService;
     private final NotificationService notificationService;
@@ -99,9 +101,14 @@ public class SpeakerReminderService {
                         }
                     }
 
-                    // Process content deadline reminders (ACCEPTED speakers with PENDING content)
+                    // Process content deadline reminders (ACCEPTED speakers who haven't submitted
+                    // any content version yet). Story 11.E.8: derive "no content submitted" from
+                    // the absence of session_content_history rows rather than the dropped
+                    // speaker_pool.content_status column.
+                    boolean noContentYet = speaker.getSessionId() == null
+                            || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId());
                     if (speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
-                            && "PENDING".equals(speaker.getContentStatus())
+                            && noContentYet
                             && speaker.getContentDeadline() != null) {
                         String tier = findMatchingTier(today, speaker.getContentDeadline());
                         if (tier != null) {
@@ -354,9 +361,13 @@ public class SpeakerReminderService {
                 throw new InvalidSpeakerStateException(
                         "Speaker is not in ACCEPTED state (current: " + speaker.getStatus() + ")");
             }
-            if (!"PENDING".equals(speaker.getContentStatus())) {
+            // Story 11.E.8: "content submitted" is now the presence of any
+            // session_content_history row for the speaker's session.
+            boolean noContentYet = speaker.getSessionId() == null
+                    || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId());
+            if (!noContentYet) {
                 throw new InvalidSpeakerStateException(
-                        "Content already submitted (status: " + speaker.getContentStatus() + ")");
+                        "Content already submitted for session " + speaker.getSessionId());
             }
         } else {
             throw new IllegalArgumentException("Invalid reminder type: " + reminderType);

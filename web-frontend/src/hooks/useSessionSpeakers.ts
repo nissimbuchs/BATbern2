@@ -2,7 +2,10 @@
  * Session Speaker React Query Hooks
  *
  * Custom hooks for assigning and removing speakers from sessions.
- * Speakers are stored in the session_speaker table, entirely separate from the speaker pool.
+ * Speakers are stored in the session_users table (entity SessionUser, exposed in the
+ * API as SessionSpeaker). speaker_pool owns the workflow state machine only; from the
+ * CONTACTED → READY transition onward, session_users is the canonical record for
+ * speaker meta (confirmation, role, presentation title).
  *
  * On success, both mutations invalidate ['event', eventCode] so session.speakers[]
  * is refreshed in the parent session list.

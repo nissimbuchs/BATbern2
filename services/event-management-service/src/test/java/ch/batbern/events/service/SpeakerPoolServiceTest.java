@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerPoolResponse;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -43,7 +43,7 @@ class SpeakerPoolServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     @Mock
     private SessionRepository sessionRepository;
@@ -65,7 +65,7 @@ class SpeakerPoolServiceTest {
     @BeforeEach
     void setUp() {
         service = new SpeakerPoolService(
-                speakerPoolRepository, eventRepository, contentSubmissionRepository,
+                speakerPoolRepository, eventRepository, sessionContentHistoryRepository,
                 sessionRepository, sessionMaterialsRepository, eventPublisher, securityContextHelper
         );
 
@@ -104,7 +104,7 @@ class SpeakerPoolServiceTest {
 
             when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
-            when(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerId))
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
                     .thenReturn(Optional.empty());
             when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
                     .thenReturn(List.of(material));
@@ -145,7 +145,7 @@ class SpeakerPoolServiceTest {
 
             when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
-            when(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerId))
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
                     .thenReturn(Optional.empty());
             // Ascending order: old first, new last
             when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
@@ -174,8 +174,7 @@ class SpeakerPoolServiceTest {
 
             when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
-            when(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerId))
-                    .thenReturn(Optional.empty());
+            // No sessionId on the speaker → no history lookup will happen; nothing to stub.
 
             List<SpeakerPoolResponse> result = service.getSpeakerPoolForEvent("BATbern99");
 
@@ -190,7 +189,7 @@ class SpeakerPoolServiceTest {
     class GetSpeakerPoolSessionFallbackTests {
 
         @Test
-        @DisplayName("should use session title as fallback when no ContentSubmission exists")
+        @DisplayName("should use session title as fallback when no SessionContentVersion exists")
         void shouldUseSessionTitle_whenNoContentSubmission() {
             UUID speakerId = UUID.randomUUID();
             UUID sessionId = UUID.randomUUID();
@@ -213,7 +212,7 @@ class SpeakerPoolServiceTest {
 
             when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
-            when(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerId))
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
                     .thenReturn(Optional.empty());
             when(sessionRepository.findAllById(List.of(sessionId))).thenReturn(List.of(session));
             when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
@@ -227,8 +226,8 @@ class SpeakerPoolServiceTest {
         }
 
         @Test
-        @DisplayName("should not use session fallback when ContentSubmission exists")
-        void shouldPreferContentSubmission_overSessionFallback() {
+        @DisplayName("Story 11.E.8 §2.9: submittedTitle mirrors sessions.title (not the latest history row)")
+        void shouldMirrorSessionTitle_evenWhenHistoryRowDiffers() {
             UUID speakerId = UUID.randomUUID();
             UUID sessionId = UUID.randomUUID();
 
@@ -240,10 +239,18 @@ class SpeakerPoolServiceTest {
                     .sessionId(sessionId)
                     .build();
 
-            ch.batbern.events.domain.ContentSubmission submission =
-                    ch.batbern.events.domain.ContentSubmission.builder()
+            Session session = Session.builder()
+                    .id(sessionId)
+                    .eventId(eventId)
+                    .title("Original Session Title")
+                    .description("Original description")
+                    .sessionType("presentation")
+                    .build();
+
+            ch.batbern.events.domain.SessionContentVersion submission =
+                    ch.batbern.events.domain.SessionContentVersion.builder()
                             .id(UUID.randomUUID())
-                            .speakerPool(speaker)
+                            .session(session)
                             .title("Updated Title from Portal")
                             .contentAbstract("Updated abstract via speaker portal")
                             .abstractCharCount(38)
@@ -252,7 +259,8 @@ class SpeakerPoolServiceTest {
 
             when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
-            when(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerId))
+            when(sessionRepository.findAllById(List.of(sessionId))).thenReturn(List.of(session));
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
                     .thenReturn(Optional.of(submission));
             when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
                     .thenReturn(List.of());
@@ -260,8 +268,14 @@ class SpeakerPoolServiceTest {
             List<SpeakerPoolResponse> result = service.getSpeakerPoolForEvent("BATbern99");
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getSubmittedTitle()).isEqualTo("Updated Title from Portal");
-            assertThat(result.get(0).getSubmittedAbstract()).isEqualTo("Updated abstract via speaker portal");
+            // Story 11.E.8 §2.9: submittedTitle/submittedAbstract are now sourced from
+            // sessions.title / sessions.description (the canonical "current"), NOT from
+            // the latest session_content_history row. The history row drives the version
+            // counter + the derived contentStatus, but the title shown to organizer +
+            // public surfaces must match what an organizer's session-modal edit would
+            // produce.
+            assertThat(result.get(0).getSubmittedTitle()).isEqualTo("Original Session Title");
+            assertThat(result.get(0).getSubmittedAbstract()).isEqualTo("Original description");
         }
     }
 }

@@ -2,6 +2,8 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
@@ -10,6 +12,7 @@ import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -79,13 +83,19 @@ public class SpeakerWorkflowService {
                     Set.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.DECLINED)),
             Map.entry(SpeakerWorkflowState.CONTENT_SUBMITTED,
                     Set.of(SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.DECLINED)),
+            // QUALITY_REVIEWED → CONTENT_SUBMITTED: speaker (or organizer-on-behalf) revises
+            // content after the moderator's review. The previous review is invalidated; the
+            // new submission requires re-review. Status history records the back-transition
+            // with the actor. The content_submissions row is versioned, so the prior
+            // reviewer-feedback row is preserved.
             Map.entry(SpeakerWorkflowState.QUALITY_REVIEWED,
-                    Set.of(SpeakerWorkflowState.DECLINED))
+                    Set.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.DECLINED))
             // DECLINED → terminal (no outgoing transitions)
     );
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
+    private final SessionUserRepository sessionUserRepository;
     private final EventRepository eventRepository;
     private final SpeakerStatusHistoryRepository statusHistoryRepository;
     private final EventTypeService eventTypeService;
@@ -298,7 +308,7 @@ public class SpeakerWorkflowService {
             TransitionPayload payload
     ) {
         switch (target) {
-            case READY -> runReadyHook(speaker, payload);
+            case READY -> runReadyHook(speaker, event, payload);
             case INVITED -> runInvitedHook(speaker, event, payload);
             case ACCEPTED -> runAcceptedHook(speaker, event);
             case DECLINED -> runDeclinedHook(speaker, event, current, payload);
@@ -312,7 +322,7 @@ public class SpeakerWorkflowService {
         }
     }
 
-    private void runReadyHook(SpeakerPool speaker, TransitionPayload payload) {
+    private void runReadyHook(SpeakerPool speaker, Event event, TransitionPayload payload) {
         // CONTACTED → READY: provisioning seam. Story 11.D.1 refactored this hook (per
         // Story 11.C.2 AR13) to call the consolidated UserApiClient.provisionUserWithRole(...) —
         // a single call that creates the User if missing and grants the SPEAKER role
@@ -352,6 +362,114 @@ public class SpeakerWorkflowService {
 
         speaker.setUsername(userResponse.getUsername());
         speaker.setEmail(payload.email());
+
+        // Story 11.E.8: provision the Session + PRIMARY_SPEAKER SessionUser row alongside
+        // the user record. From READY onward, session_users is the canonical record for
+        // speaker meta (title, abstract, materials, confirmation). speaker_pool keeps the
+        // workflow state machine only. Idempotent — re-running the READY transition (e.g.
+        // a same-state save) reuses the existing session.
+        provisionSessionAndPrimarySpeaker(speaker, event);
+    }
+
+    /**
+     * Story 11.E.8: create the {@link Session} + PRIMARY_SPEAKER {@link SessionUser} row at
+     * the CONTACTED → READY transition. From here onward, content/title/abstract/materials
+     * edits flow through session_users + content_submissions + session_materials, not
+     * through speaker_pool.
+     *
+     * <p>Idempotent. Reuses an existing session if {@code speaker.sessionId} is set and the
+     * row still exists. If the FK is stale (session was deleted out-of-band), it is cleared
+     * and a fresh session is provisioned.
+     *
+     * <p>Placeholder title is the speaker name; placeholder slug is
+     * {@code <eventCode>-<username>} (with collision counter). Both are overwritten in
+     * {@code ContentSubmissionService.submit()} when the real content arrives.
+     */
+    private void provisionSessionAndPrimarySpeaker(SpeakerPool speaker, Event event) {
+        UUID currentSessionId = speaker.getSessionId();
+        if (currentSessionId != null) {
+            Optional<Session> existing = sessionRepository.findById(currentSessionId);
+            if (existing.isPresent()) {
+                // Already provisioned — ensure the PRIMARY_SPEAKER row exists too (defensive
+                // against partial state).
+                ensurePrimarySpeakerRow(existing.get(), speaker.getUsername());
+                return;
+            }
+            log.warn("Speaker {} references missing session {} at READY hook — clearing FK and "
+                    + "re-provisioning", speaker.getId(), currentSessionId);
+            speaker.setSessionId(null);
+        }
+
+        String sessionSlug = generateUniqueSlug(event.getEventCode(), speaker.getUsername());
+        String placeholderTitle = speaker.getSpeakerName() != null && !speaker.getSpeakerName().isBlank()
+                ? speaker.getSpeakerName()
+                : "TBD — " + speaker.getUsername();
+
+        Session session = Session.builder()
+                .eventId(event.getId())
+                .eventCode(event.getEventCode())
+                .sessionSlug(sessionSlug)
+                .title(placeholderTitle)
+                .sessionType("presentation")
+                .speakerPoolId(speaker.getId())
+                .build();
+        session = sessionRepository.save(session);
+
+        SessionUser sessionUser = SessionUser.builder()
+                .session(session)
+                .username(speaker.getUsername())
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+        sessionUserRepository.save(sessionUser);
+
+        speaker.setSessionId(session.getId());
+        log.info("Provisioned session {} + PRIMARY_SPEAKER session_users row for speaker {} "
+                + "at READY transition", session.getId(), speaker.getId());
+    }
+
+    private void ensurePrimarySpeakerRow(Session session, String username) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        boolean exists = sessionUserRepository.existsBySessionIdAndUsername(session.getId(), username);
+        if (exists) {
+            return;
+        }
+        SessionUser sessionUser = SessionUser.builder()
+                .session(session)
+                .username(username)
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+        sessionUserRepository.save(sessionUser);
+        log.info("Backfilled missing PRIMARY_SPEAKER session_users row for session {} username '{}'",
+                session.getId(), username);
+    }
+
+    private String generateUniqueSlug(String eventCode, String username) {
+        String base = (eventCode + "-" + username)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9-]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+        if (base.isEmpty()) {
+            base = "session-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+        if (base.length() > 190) {
+            base = base.substring(0, 190);
+        }
+        String candidate = base;
+        int counter = 1;
+        while (sessionRepository.existsBySessionSlug(candidate)) {
+            candidate = base + "-" + counter;
+            counter++;
+            if (counter > 1000) {
+                throw new IllegalStateException(
+                        "Unable to generate unique session slug after 1000 attempts for base '" + base + "'");
+            }
+        }
+        return candidate;
     }
 
     private void runInvitedHook(SpeakerPool speaker, Event event, TransitionPayload payload) {
@@ -376,9 +494,12 @@ public class SpeakerWorkflowService {
     }
 
     private void runAcceptedHook(SpeakerPool speaker, Event event) {
-        // INVITED → ACCEPTED: stamp acceptedAt, send confirmation email, notify organizer.
-        // SpeakerAcceptedEvent is published below in publishStateSpecificEvents — its listener
-        // auto-creates the session.
+        // INVITED → ACCEPTED: stamp acceptedAt, confirm the session_users row (Story
+        // 11.E.8), send confirmation email, notify organizer. The session_users row was
+        // created upstream at the CONTACTED → READY transition; here we flip its
+        // is_confirmed flag and stamp confirmed_at. SpeakerAcceptedEvent is published
+        // below in publishStateSpecificEvents — its listener transitions the EVENT state
+        // to SLOT_ASSIGNMENT (it does NOT touch session_users).
         //
         // NB: External side effects (email, organizer notify) fire synchronously inside the
         // @Transactional boundary; rollback after this point leaks the email. AFTER_COMMIT
@@ -387,6 +508,12 @@ public class SpeakerWorkflowService {
         // Story 11.B.3: dropped the residual setIsTentative(false)/setTentativeReason(null)
         // calls left over from 11.B.2 — those columns no longer exist (V93 dropped them).
         speaker.setAcceptedAt(Instant.now());
+
+        // Story 11.E.8: confirm the PRIMARY_SPEAKER session_users row provisioned at READY.
+        // Best-effort: pre-11.E.8 legacy speakers may have reached ACCEPTED without a
+        // session_users row — log and skip rather than failing the transition. The
+        // V96 backfill migration covers existing local-dev data; production has none yet.
+        confirmSessionUserIfPresent(speaker);
 
         try {
             String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
@@ -405,6 +532,29 @@ public class SpeakerWorkflowService {
         } catch (Exception ex) {
             log.warn("Failed to notify organizer of ACCEPT for speaker {}: {}",
                     speaker.getId(), ex.getMessage());
+        }
+    }
+
+    private void confirmSessionUserIfPresent(SpeakerPool speaker) {
+        UUID sessionId = speaker.getSessionId();
+        String username = speaker.getUsername();
+        if (sessionId == null || username == null || username.isBlank()) {
+            log.warn("Speaker {} reached ACCEPTED without sessionId+username — session_users.is_confirmed "
+                    + "not updated. Pre-11.E.8 legacy speaker?", speaker.getId());
+            return;
+        }
+        Optional<SessionUser> sessionUserOpt =
+                sessionUserRepository.findBySessionIdAndUsername(sessionId, username);
+        if (sessionUserOpt.isPresent()) {
+            SessionUser su = sessionUserOpt.get();
+            su.confirm();
+            sessionUserRepository.save(su);
+            log.info("Confirmed session_users row for speaker {} (session {}, username '{}')",
+                    speaker.getId(), sessionId, username);
+        } else {
+            log.warn("No session_users row found for speaker {} (session {}, username '{}') "
+                    + "at ACCEPTED — is_confirmed not flipped. Pre-11.E.8 legacy speaker?",
+                    speaker.getId(), sessionId, username);
         }
     }
 

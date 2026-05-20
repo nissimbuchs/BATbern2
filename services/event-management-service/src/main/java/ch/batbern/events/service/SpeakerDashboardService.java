@@ -9,7 +9,7 @@ import ch.batbern.events.dto.DashboardUpcomingEventDto;
 import ch.batbern.events.dto.SpeakerDashboardDto;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -81,7 +81,7 @@ public class SpeakerDashboardService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final UserApiClient userApiClient;
 
@@ -89,13 +89,13 @@ public class SpeakerDashboardService {
             SpeakerPoolRepository speakerPoolRepository,
             EventRepository eventRepository,
             SessionRepository sessionRepository,
-            ContentSubmissionRepository contentSubmissionRepository,
+            SessionContentHistoryRepository sessionContentHistoryRepository,
             SessionMaterialsRepository sessionMaterialsRepository,
             UserApiClient userApiClient) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
-        this.contentSubmissionRepository = contentSubmissionRepository;
+        this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.userApiClient = userApiClient;
     }
@@ -190,22 +190,37 @@ public class SpeakerDashboardService {
         // AC3: Sort past by event date descending (most recent first)
         pastEvents.sort(Comparator.comparing(DashboardPastEventDto::eventDate).reversed());
 
-        // Get speaker name from first entry
-        String speakerName = allEntries.get(0).getSpeakerName();
-
-        // Try to get profile picture URL from user service
+        // Story 11.E.8 §2.9 follow-up: greet the speaker by their canonical User profile
+        // name (Cognito-provisioned at CONTACTED → READY), not by speaker_pool.speaker_name
+        // which is the original brainstorm lead name (often a placeholder like
+        // "testreferent1" or a one-line guess from the organizer). speaker_pool.speaker_name
+        // remains the audit field for the IDENTIFIED/CONTACTED phase; once a real user is
+        // bound at READY, the User profile is the source of truth for who the speaker is.
+        // Fall back to speaker_pool.speaker_name if the User profile can't be resolved.
+        String poolFallbackName = allEntries.get(0).getSpeakerName();
+        String speakerName = poolFallbackName;
         String profilePictureUrl = null;
         int profileCompleteness = 0;
         try {
             UserResponse userProfile = userApiClient.getUserByUsername(username);
             if (userProfile != null) {
+                String firstName = userProfile.getFirstName();
+                String lastName = userProfile.getLastName();
+                if (firstName != null || lastName != null) {
+                    String resolvedName = ((firstName != null ? firstName : "") + " "
+                            + (lastName != null ? lastName : "")).trim();
+                    if (!resolvedName.isBlank()) {
+                        speakerName = resolvedName;
+                    }
+                }
                 if (userProfile.getProfilePictureUrl() != null) {
                     profilePictureUrl = userProfile.getProfilePictureUrl().toString();
                 }
                 profileCompleteness = calculateProfileCompleteness(userProfile);
             }
         } catch (UserNotFoundException e) {
-            LOG.debug("User profile not found for {}, using defaults", username);
+            LOG.debug("User profile not found for {}, using speaker_pool.speakerName fallback",
+                    username);
         } catch (Exception e) {
             LOG.warn("Failed to fetch user profile for {}: {}", username, e.getMessage());
         }
@@ -226,21 +241,23 @@ public class SpeakerDashboardService {
         String eventDate = formatEventDate(event.getDate());
         String sessionTitle = session != null ? session.getTitle() : null;
 
-        // AC4: Content status
+        // AC4: Content status. Story 11.E.8 §2.9: sessions.title is the canonical "current"
+        // for every surface (speaker dashboard, organizer kanban, public archive, speaker
+        // portal form). The latest session_content_history row is consulted ONLY to flag
+        // whether the speaker has actually submitted content (vs. the placeholder title
+        // written at CONTACTED → READY) and to surface reviewer feedback. Do NOT override
+        // sessionTitle with the history row — that re-introduces the divergence Story
+        // 11.E.8 §2.9 closed (organizer edits would stop propagating to the dashboard).
         boolean hasTitle = false;
         boolean hasAbstract = false;
         if (entry.getSessionId() != null) {
-            var latestSubmission = contentSubmissionRepository
-                    .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(entry.getId());
-            if (latestSubmission.isPresent()) {
-                hasTitle = latestSubmission.get().getTitle() != null
-                        && !latestSubmission.get().getTitle().isBlank();
-                hasAbstract = latestSubmission.get().getContentAbstract() != null
-                        && !latestSubmission.get().getContentAbstract().isBlank();
-                // Use submitted title if available (overrides original session title)
-                if (hasTitle) {
-                    sessionTitle = latestSubmission.get().getTitle();
-                }
+            var latestSubmissionAtSession = sessionContentHistoryRepository
+                    .findFirstBySessionIdOrderBySubmissionVersionDesc(entry.getSessionId());
+            if (latestSubmissionAtSession.isPresent()) {
+                hasTitle = latestSubmissionAtSession.get().getTitle() != null
+                        && !latestSubmissionAtSession.get().getTitle().isBlank();
+                hasAbstract = latestSubmissionAtSession.get().getContentAbstract() != null
+                        && !latestSubmissionAtSession.get().getContentAbstract().isBlank();
             }
         }
 
@@ -260,14 +277,16 @@ public class SpeakerDashboardService {
             }
         }
 
-        // AC4: Reviewer feedback (if REVISION_NEEDED)
+        // AC4: Reviewer feedback (if REVISION_NEEDED). Story 11.E.8: derive contentStatus
+        // from the latest SessionContentVersion's reviewer_feedback at read time.
+        var latestVersion = entry.getSessionId() != null
+                ? sessionContentHistoryRepository
+                        .findFirstBySessionIdOrderBySubmissionVersionDesc(entry.getSessionId())
+                : java.util.Optional.<ch.batbern.events.domain.SessionContentVersion>empty();
+        String derivedContentStatus = ContentStatusDeriver.derive(entry.getStatus(), latestVersion);
         String reviewerFeedback = null;
-        if ("REVISION_NEEDED".equals(entry.getContentStatus())) {
-            var latestSubmission = contentSubmissionRepository
-                    .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(entry.getId());
-            if (latestSubmission.isPresent()) {
-                reviewerFeedback = latestSubmission.get().getReviewerFeedback();
-            }
+        if ("REVISION_NEEDED".equals(derivedContentStatus) && latestVersion.isPresent()) {
+            reviewerFeedback = latestVersion.get().getReviewerFeedback();
         }
 
         // AC5: Organizer contact
@@ -310,9 +329,9 @@ public class SpeakerDashboardService {
                 .sessionTitle(sessionTitle)
                 .workflowState(entry.getStatus().name())
                 .workflowStateLabel(WORKFLOW_STATE_LABELS.getOrDefault(entry.getStatus(), entry.getStatus().name()))
-                .contentStatus(entry.getContentStatus())
+                .contentStatus(derivedContentStatus)
                 .contentStatusLabel(CONTENT_STATUS_LABELS.getOrDefault(
-                        entry.getContentStatus(), entry.getContentStatus()))
+                        derivedContentStatus, derivedContentStatus))
                 .hasTitle(hasTitle)
                 .hasAbstract(hasAbstract)
                 .hasMaterial(hasMaterial)

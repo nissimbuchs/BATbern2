@@ -1,8 +1,7 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentDraftRequest;
-import ch.batbern.events.dto.ContentDraftResponse;
 import ch.batbern.events.dto.ContentSubmitRequest;
 import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
@@ -22,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -88,29 +88,21 @@ public class SpeakerPortalContentController {
         return ResponseEntity.ok(contentInfo);
     }
 
-    @PostMapping("/events/{eventCode}/content/draft")
-    public ResponseEntity<ContentDraftResponse> saveDraft(
-            @PathVariable String eventCode,
-            @Valid @RequestBody ContentDraftRequest request,
-            HttpServletRequest httpRequest) {
+    // Story 11.E.8 §2.9 — backend draft endpoint removed; drafts live in the speaker
+    // portal's localStorage. The single source of truth for the "current canonical" title
+    // and abstract is sessions.title / sessions.description; the speaker portal reads
+    // that via getContentInfo and auto-saves work-in-progress text to the browser. The
+    // submit endpoint below is the only path that updates the canonical state + appends
+    // a new session_content_history row.
 
-        String username = securityContextHelper.getCurrentUsername();
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
-
-        LOG.debug("Draft save request: username={} eventCode={} ip={}",
-                username, eventCode, getClientIp(httpRequest));
-
-        try {
-            ContentDraftResponse response = contentSubmissionService.saveDraft(speaker, request);
-            LOG.info("Draft saved - draftId: {} eventCode={}", response.draftId(), eventCode);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Draft save failed - {}: eventCode={}", e.getMessage(), eventCode);
-            throw new ValidationException(e.getMessage());
-        }
-    }
-
+    // Story 11.E.8 follow-up — speaker-self submit must evict the eventWithIncludes
+    // Caffeine cache (15-min TTL) so the organizer's GET /events/{code}?include=sessions
+    // serves the freshly-updated session.title and session.description on the next read.
+    // The organizer-on-behalf submitContent at SpeakerStatusController.java:265 has the
+    // same annotation; without this matching one, speaker self-submissions left the
+    // cache stale and organizers kept seeing the prior reviewed title until cache TTL.
     @PostMapping("/events/{eventCode}/content/submit")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<ContentSubmitResponse> submitContent(
             @PathVariable String eventCode,
             @Valid @RequestBody ContentSubmitRequest request,
@@ -182,7 +174,12 @@ public class SpeakerPortalContentController {
         }
     }
 
+    // Story 11.E.8 follow-up — materials/confirm also mutates session-level state
+    // (session_materials → materialsCount, materialsStatus, hasPresentation in the
+    // event response). Evict the same Caffeine cache so the organizer's Sessions tab
+    // reflects new uploads without waiting 15 min for the TTL to expire.
     @PostMapping("/events/{eventCode}/materials/confirm")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SpeakerMaterialConfirmResponse> confirmUpload(
             @PathVariable String eventCode,
             @Valid @RequestBody SpeakerMaterialConfirmRequest request,

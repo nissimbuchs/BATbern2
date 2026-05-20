@@ -94,7 +94,6 @@ class SessionUserServiceTest {
                 .session(testSession)
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
-                .presentationTitle("Test Presentation")
                 .isConfirmed(false)
                 .build();
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
@@ -115,7 +114,6 @@ class SessionUserServiceTest {
         assertThat(captured.getSession()).isEqualTo(testSession);
         assertThat(captured.getUsername()).isEqualTo(username);
         assertThat(captured.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
-        assertThat(captured.getPresentationTitle()).isEqualTo("Test Presentation");
         assertThat(captured.isConfirmed()).isFalse();
 
         // And: Response should contain enriched user data
@@ -365,7 +363,6 @@ class SessionUserServiceTest {
                 .session(testSession)
                 .username(username)
                 .speakerRole(SpeakerRole.MODERATOR)
-                .presentationTitle(null)
                 .isConfirmed(false)
                 .build();
         when(sessionUserRepository.save(any(SessionUser.class))).thenReturn(savedSessionUser);
@@ -379,7 +376,6 @@ class SessionUserServiceTest {
         );
 
         // Then: Should succeed with null presentationTitle
-        assertThat(response.getPresentationTitle()).isNull();
         assertThat(response.getSpeakerRole()).isEqualTo(SpeakerRole.MODERATOR);
     }
 }

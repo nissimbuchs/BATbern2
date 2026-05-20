@@ -38,12 +38,19 @@ public class SessionUserService {
     private final UserApiClient userApiClient;
 
     /**
-     * Assign a speaker to a session
+     * Assign a speaker to a session.
+     *
+     * <p>Story 11.E.8 consolidation: the optional {@code presentationTitle} parameter is
+     * retained on the API surface for source-compat with existing callers, but the value
+     * is discarded — {@code session_users.presentation_title} was dropped in V100. The
+     * session-level title ({@code sessions.title}) is the single source for the talk
+     * title; per-speaker subtitle overrides are not part of BATbern's current pattern.
+     * If a future story needs them, the column can be re-added as additive schema.
      *
      * @param sessionId Session UUID
      * @param username User's username (public identifier per ADR-003/1.16.2)
      * @param speakerRole Role of the speaker
-     * @param presentationTitle Optional speaker-specific presentation title
+     * @param presentationTitle ignored; preserved as a parameter for source-compat
      * @return SessionSpeakerResponse with enriched user data
      * @throws IllegalArgumentException if session or user not found, or duplicate assignment
      * @throws UserNotFoundException if user not found via API
@@ -77,7 +84,6 @@ public class SessionUserService {
                 .session(session)
                 .username(username)
                 .speakerRole(speakerRole)
-                .presentationTitle(presentationTitle)
                 .speakerFirstName(user.getFirstName())  // Cache for full-text search
                 .speakerLastName(user.getLastName())    // Cache for full-text search
                 .isConfirmed(false)
@@ -233,7 +239,9 @@ public class SessionUserService {
                     .company(null) // No company data available for archived speakers
                     .profilePictureUrl(null) // No profile picture for archived speakers
                     .speakerRole(sessionUser.getSpeakerRole())
-                    .presentationTitle(sessionUser.getPresentationTitle())
+                    // Story 11.E.8: session_users.presentation_title dropped (V102). The
+                    // response field is retained for FE source-compat but always null now.
+                    .presentationTitle(null)
                     .isConfirmed(sessionUser.isConfirmed())
                     .build();
         }
@@ -252,7 +260,8 @@ public class SessionUserService {
                 .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
                 .bio(user.getBio())
                 .speakerRole(sessionUser.getSpeakerRole())
-                .presentationTitle(sessionUser.getPresentationTitle())
+                // Story 11.E.8: session_users.presentation_title dropped (V102).
+                .presentationTitle(null)
                 .isConfirmed(sessionUser.isConfirmed())
                 .build();
     }

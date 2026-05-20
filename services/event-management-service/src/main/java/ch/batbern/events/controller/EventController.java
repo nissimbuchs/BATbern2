@@ -481,7 +481,8 @@ public class EventController {
                             su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "");
                     sm.put("speakerRole",
                             su.getSpeakerRole() != null ? su.getSpeakerRole().name() : null);
-                    sm.put("presentationTitle", su.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    sm.put("presentationTitle", null);
                     sm.put("isConfirmed", su.isConfirmed());
                     sm.put("profilePictureUrl", portrait != null ? portrait.getProfilePictureUrl() : null);
                     sm.put("company",          portrait != null ? portrait.getCompanyId() : null);
@@ -703,7 +704,8 @@ public class EventController {
                     // Add SessionUser data (role, confirmation)
                     speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
                     speakerMap.put("isConfirmed", sessionUser.isConfirmed());
-                    speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    speakerMap.put("presentationTitle", null);
 
                     // Fetch and add enriched User data
                     try {

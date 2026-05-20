@@ -2,16 +2,20 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestUserApiClientConfig;
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
@@ -70,9 +74,13 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
     @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
+    @Autowired
+    private SessionRepository sessionRepository;
+    @Autowired
+    private SessionUserRepository sessionUserRepository;
     @Autowired
     private UserApiClient userApiClient;
     @Autowired
@@ -110,10 +118,56 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 .company("Acme")
                 .username(username)
                 .status(status)
-                .contentStatus("PENDING")
                 .acceptedAt(Instant.now())
                 .build();
-        return speakerPoolRepository.save(speaker);
+        speaker = speakerPoolRepository.save(speaker);
+
+        // Story 11.E.8: in production, SpeakerWorkflowService.runReadyHook provisions
+        // a Session + PRIMARY_SPEAKER SessionUser row at the CONTACTED → READY transition.
+        // Integration tests bypass the workflow and call SpeakerPoolRepository.save() directly,
+        // so we have to mirror the provisioning manually for any READY+ speaker; otherwise
+        // ContentSubmissionService.loadAssignedSession throws IllegalStateException on submit.
+        // The username-null legacy case uses the speaker name as the SessionUser.username
+        // fallback — session_users.username is NOT NULL but pre-11.E.8 legacy data may
+        // have a null speaker_pool.username; we test the bio-patch skip path with that shape.
+        if (isPostReady(status)) {
+            String slug = (EVENT_CODE + "-"
+                    + (username != null ? username : "legacy-" + speaker.getId().toString().substring(0, 8))
+                    + "-" + speaker.getId().toString().substring(0, 8))
+                    .toLowerCase().replaceAll("[^a-z0-9-]", "-");
+            Session session = Session.builder()
+                    .eventId(testEvent.getId())
+                    .eventCode(EVENT_CODE)
+                    .sessionSlug(slug)
+                    .title("TBD — " + (username != null ? username : "legacy speaker"))
+                    .sessionType("presentation")
+                    .speakerPoolId(speaker.getId())
+                    .build();
+            session = sessionRepository.save(session);
+            String sessionUsername = (username != null && !username.isBlank())
+                    ? username
+                    : "Jane Speaker";  // mirrors the speaker_name fallback the old code used
+            SessionUser sessionUser = SessionUser.builder()
+                    .session(session)
+                    .username(sessionUsername)
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .isConfirmed(status == SpeakerWorkflowState.ACCEPTED
+                            || status == SpeakerWorkflowState.CONTENT_SUBMITTED
+                            || status == SpeakerWorkflowState.QUALITY_REVIEWED)
+                    .build();
+            sessionUserRepository.save(sessionUser);
+            speaker.setSessionId(session.getId());
+            speaker = speakerPoolRepository.save(speaker);
+        }
+        return speaker;
+    }
+
+    private boolean isPostReady(SpeakerWorkflowState status) {
+        return status == SpeakerWorkflowState.READY
+                || status == SpeakerWorkflowState.INVITED
+                || status == SpeakerWorkflowState.ACCEPTED
+                || status == SpeakerWorkflowState.CONTENT_SUBMITTED
+                || status == SpeakerWorkflowState.QUALITY_REVIEWED;
     }
 
     // ============================================================
@@ -142,9 +196,9 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 
-        // Content row exists with version 1.
-        List<ContentSubmission> submissions = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+        // Story 11.E.8: session_content_history is keyed by session_id now.
+        List<SessionContentVersion> submissions = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(reloaded.getSessionId())
                 .stream().toList();
         assertThat(submissions).hasSize(1);
         assertThat(submissions.get(0).getTitle()).isEqualTo("Zero Trust Security");
@@ -306,7 +360,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
 
     // ============================================================
     // AC9 #6 — explicit equivalence: organizer and speaker flows produce identical
-    // ContentSubmission, Session, and SpeakerPool rows (modulo speaker_status_history.changed_by_username).
+    // SessionContentVersion, Session, and SpeakerPool rows (modulo speaker_status_history.changed_by_username).
     // Review patch A2 (Story 11.C.2 code review 2026-05-16).
     // ============================================================
     @Test
@@ -322,11 +376,17 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         String speakerTwo = "speaker.two";
         contentSubmissionService.submit(speakerForSelf.getId(), EVENT_CODE, payload, speakerTwo);
 
-        ContentSubmission organizerSubmission = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerForOrganizer.getId())
+        // Story 11.E.8: session_content_history is keyed by session_id now. Reload both
+        // SpeakerPool rows to get their freshly-linked session_ids.
+        SpeakerPool reloadedOrganizerSpeaker = speakerPoolRepository.findById(speakerForOrganizer.getId())
                 .orElseThrow();
-        ContentSubmission speakerSubmission = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speakerForSelf.getId())
+        SpeakerPool reloadedSelfSpeaker = speakerPoolRepository.findById(speakerForSelf.getId())
+                .orElseThrow();
+        SessionContentVersion organizerSubmission = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(reloadedOrganizerSpeaker.getSessionId())
+                .orElseThrow();
+        SessionContentVersion speakerSubmission = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(reloadedSelfSpeaker.getSessionId())
                 .orElseThrow();
 
         // Content row payload identical modulo identity fields (id, speakerPool, session).
@@ -335,11 +395,13 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(organizerSubmission.getAbstractCharCount()).isEqualTo(speakerSubmission.getAbstractCharCount());
         assertThat(organizerSubmission.getSubmissionVersion()).isEqualTo(speakerSubmission.getSubmissionVersion());
 
-        // SpeakerPool side: both end in CONTENT_SUBMITTED with content_status SUBMITTED.
+        // SpeakerPool side: both end in CONTENT_SUBMITTED. Story 11.E.8 dropped
+        // speaker_pool.content_status (V100) — content_status is derived from latest
+        // session_content_history.reviewer_feedback at read time; equivalence holds because
+        // both speakers' histories are in the same "just submitted, no review yet" shape.
         SpeakerPool reloadedOrganizerSide = speakerPoolRepository.findById(speakerForOrganizer.getId()).orElseThrow();
         SpeakerPool reloadedSpeakerSide = speakerPoolRepository.findById(speakerForSelf.getId()).orElseThrow();
         assertThat(reloadedOrganizerSide.getStatus()).isEqualTo(reloadedSpeakerSide.getStatus());
-        assertThat(reloadedOrganizerSide.getContentStatus()).isEqualTo(reloadedSpeakerSide.getContentStatus());
 
         // The ONLY documented difference: speaker_status_history.changed_by_username.
         SpeakerStatusHistory organizerHistory = statusHistoryRepository
@@ -396,6 +458,84 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 .satisfiesAnyOf(
                         e -> assertThat(e).isInstanceOf(IllegalArgumentException.class),
                         e -> assertThat(e).isInstanceOf(jakarta.persistence.EntityNotFoundException.class));
+    }
+
+    // ============================================================
+    // Story 11.E.8+ — speaker may revise content after the moderator's review. The
+    // back-transition QUALITY_REVIEWED → CONTENT_SUBMITTED requeues the submission;
+    // the prior content_submissions row keeps its reviewer feedback (versioned).
+    // ============================================================
+    @Test
+    @DisplayName("should_acceptResubmissionAndTransitionBackToContentSubmitted_when_speakerInQualityReviewed")
+    void should_acceptResubmissionAndTransitionBackToContentSubmitted_when_speakerInQualityReviewed() {
+        // Seed in QUALITY_REVIEWED — session is provisioned by the helper (mirrors READY hook).
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.QUALITY_REVIEWED, SPEAKER);
+        // Pre-existing v1 submission representing the content the organizer reviewed.
+        ContentSubmissionPayload v1 = new ContentSubmissionPayload(
+                "Original title", "Original abstract.", null, null, null);
+        contentSubmissionService.submit(speaker.getId(), EVENT_CODE,
+                new ContentSubmissionPayload("Bootstrap title", "Bootstrap abstract.", null, null, null),
+                ORGANIZER);
+        // The bootstrap submit transitioned QUALITY_REVIEWED → CONTENT_SUBMITTED, so reset
+        // the speaker back to QUALITY_REVIEWED to mimic a re-reviewed-then-revised flow.
+        SpeakerPool reset = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
+        reset.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
+        speakerPoolRepository.save(reset);
+
+        // Now the speaker revises the content. Expected: transition back to CONTENT_SUBMITTED,
+        // version increments, status_history records the back-transition with the speaker as actor.
+        ContentSubmissionPayload v2 = new ContentSubmissionPayload(
+                "Revised title", "Revised abstract.", null, null, null);
+        ContentSubmitResponse response = contentSubmissionService.submit(
+                speaker.getId(), EVENT_CODE, v2, SPEAKER);
+
+        assertThat(response.status()).isEqualTo("SUBMITTED");
+        SpeakerPool reloaded = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+
+        // Story 11.E.8: latest session_content_history row is keyed by session_id.
+        SessionContentVersion latest = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(reloaded.getSessionId())
+                .orElseThrow();
+        assertThat(latest.getTitle()).isEqualTo("Revised title");
+
+        // Status history has a QUALITY_REVIEWED → CONTENT_SUBMITTED row with the speaker as actor.
+        List<SpeakerStatusHistory> history = statusHistoryRepository
+                .findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId());
+        assertThat(history).isNotEmpty();
+        SpeakerStatusHistory mostRecent = history.get(0);
+        assertThat(mostRecent.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
+        assertThat(mostRecent.getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+        assertThat(mostRecent.getChangedByUsername()).isEqualTo(SPEAKER);
+    }
+
+    // ============================================================
+    // Story 11.E.8 — strict guard: submission rejected if speaker lacks a session_id.
+    // The session is supposed to be provisioned at the CONTACTED → READY transition;
+    // arriving at ACCEPTED without one is a data-integrity bug (or pre-11.E.8 legacy data).
+    // ============================================================
+    @Test
+    @DisplayName("should_rejectSubmission_when_speakerHasNoSessionId")
+    void should_rejectSubmission_when_speakerHasNoSessionId() {
+        // Manually create a speaker_pool row in ACCEPTED state but WITHOUT going through
+        // seedSpeaker() (which now provisions a session). This mirrors a pre-11.E.8 legacy row.
+        SpeakerPool speaker = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .speakerName("Orphan Speaker")
+                .email("orphan@example.com")
+                .username("orphan.speaker")
+                .status(SpeakerWorkflowState.ACCEPTED)
+                .acceptedAt(Instant.now())
+                .build();
+        speaker = speakerPoolRepository.save(speaker);
+
+        ContentSubmissionPayload payload = new ContentSubmissionPayload(
+                "Title", "Abstract.", null, null, null);
+        UUID poolId = speaker.getId();
+        assertThatThrownBy(() -> contentSubmissionService.submit(
+                        poolId, EVENT_CODE, payload, ORGANIZER))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("session_id");
     }
 
     // ============================================================

@@ -141,15 +141,9 @@ export interface SpeakerContentInfo {
   materialFileName: string | null;
 }
 
-export interface ContentDraftRequest {
-  title: string | null;
-  contentAbstract: string | null;
-}
-
-export interface ContentDraftResponse {
-  draftId: string;
-  savedAt: string;
-}
+// Story 11.E.8 §2.9: backend draft endpoint removed — drafts live in localStorage
+// (see ContentSubmissionPage.tsx auto-save). The single backend write path for
+// title/abstract is submitContent below.
 
 export interface ContentSubmitRequest {
   title: string;
@@ -272,17 +266,8 @@ class SpeakerPortalService {
     }
   }
 
-  async saveDraft(eventCode: string, request: ContentDraftRequest): Promise<ContentDraftResponse> {
-    try {
-      const response = await apiClient.post<ContentDraftResponse>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/content/draft`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
+  // Story 11.E.8 §2.9 — saveDraft removed; ContentSubmissionPage stores drafts in
+  // localStorage keyed by event + speaker.
 
   async submitContent(
     eventCode: string,

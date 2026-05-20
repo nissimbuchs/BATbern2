@@ -2,6 +2,7 @@ package ch.batbern.events.dto;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.service.ContentStatusDeriver;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 
 import java.time.Instant;
@@ -125,15 +126,19 @@ public class SpeakerPoolResponse {
         response.preferredTimeSlot = speakerPool.getPreferredTimeSlot();
         response.travelRequirements = speakerPool.getTravelRequirements();
         response.technicalRequirements = speakerPool.getTechnicalRequirements();
-        response.initialPresentationTitle = speakerPool.getInitialPresentationTitle();
+        // Story 11.E.8 consolidation: initialPresentationTitle column was dropped (V102).
+        // sessions.title is canonical now; FE's display fallback chain handles a null value.
         response.preferenceComments = speakerPool.getPreferenceComments();
 
         // Story 6.5: Automated Deadline Reminders
         response.remindersDisabled = speakerPool.getRemindersDisabled();
 
-        // Story 6.3: Speaker Content Submission Portal fields
-        response.contentStatus = speakerPool.getContentStatus();
-        response.contentSubmittedAt = speakerPool.getContentSubmittedAt();
+        // Story 11.E.8 consolidation: contentStatus and contentSubmittedAt are derived from
+        // session_content_history at read time. fromEntity() has no version context, so the
+        // defaults below (PENDING, null) are correct for the no-content case. Callers with
+        // access to a session and its latest history row should use fromEntityWithContent(...).
+        response.contentStatus = ContentStatusDeriver.derive(speakerPool.getStatus(), java.util.Optional.empty());
+        response.contentSubmittedAt = null;
 
         // Story 11.B.3: derived flags per ADR-009 §0.1 (computed at read time, not stored).
         boolean slotAssigned;
@@ -150,44 +155,42 @@ public class SpeakerPoolResponse {
     }
 
     /**
-     * Create response DTO from SpeakerPool entity with content submission data.
+     * Create response DTO from SpeakerPool entity with the speaker's session AND the
+     * latest {@link ch.batbern.events.domain.SessionContentVersion}. Use when the caller
+     * has both available — derived flags + content fields + the derived {@code contentStatus}
+     * are populated in one shot.
      *
-     * <p>Derived flags ({@code isSlotAssigned}, {@code isPublishable}) are computed from
-     * the SpeakerPool alone (fallback path — see {@link #fromEntity(SpeakerPool)}). When
-     * a Session is available, prefer
-     * {@link #fromEntityWithContent(SpeakerPool, Session, String, String)}.
-     *
-     * @param speakerPool the speaker pool entity
-     * @param submittedTitle the submitted presentation title (from ContentSubmission)
-     * @param submittedAbstract the submitted presentation abstract (from ContentSubmission)
-     * @return the response DTO
-     */
-    public static SpeakerPoolResponse fromEntityWithContent(
-            SpeakerPool speakerPool,
-            String submittedTitle,
-            String submittedAbstract) {
-        return fromEntityWithContent(speakerPool, null, submittedTitle, submittedAbstract);
-    }
-
-    /**
-     * Create response DTO from SpeakerPool entity with the speaker's session AND content
-     * submission data. Use when the caller has both available for accurate derived flags
-     * + content fields in a single read.
+     * <p>Story 11.E.8 consolidation: this is the canonical "rich" factory. The latest
+     * version is the source for both {@code submittedTitle/submittedAbstract} (mirroring
+     * what's on {@code sessions.title}/{@code .description}) and the derived
+     * {@code contentStatus} + {@code contentSubmittedAt}.
      *
      * @param speakerPool the speaker pool entity
      * @param session the speaker's assigned session (nullable)
-     * @param submittedTitle the submitted presentation title (from ContentSubmission)
-     * @param submittedAbstract the submitted presentation abstract (from ContentSubmission)
+     * @param latestVersion the latest content version for this session (nullable)
      * @return the response DTO
      */
     public static SpeakerPoolResponse fromEntityWithContent(
             SpeakerPool speakerPool,
             Session session,
-            String submittedTitle,
-            String submittedAbstract) {
+            ch.batbern.events.domain.SessionContentVersion latestVersion) {
         SpeakerPoolResponse response = fromEntity(speakerPool, session);
-        response.submittedTitle = submittedTitle;
-        response.submittedAbstract = submittedAbstract;
+        // Story 11.E.8 §2.9: sessions.title / sessions.description are the canonical
+        // "current" for every read surface (kanban card, public archive, speaker portal,
+        // speaker dashboard). The submittedTitle / submittedAbstract response fields
+        // therefore mirror the session row — not the latest history row — so that an
+        // organizer's session-edit modal propagates everywhere immediately. The latest
+        // history row still drives the derived contentStatus + contentSubmittedAt for
+        // the audit/timeline view.
+        if (session != null) {
+            response.submittedTitle = session.getTitle();
+            response.submittedAbstract = session.getDescription();
+        }
+        if (latestVersion != null) {
+            response.contentSubmittedAt = latestVersion.getSubmittedAt();
+            response.contentStatus = ContentStatusDeriver.derive(
+                    speakerPool.getStatus(), java.util.Optional.of(latestVersion));
+        }
         return response;
     }
 

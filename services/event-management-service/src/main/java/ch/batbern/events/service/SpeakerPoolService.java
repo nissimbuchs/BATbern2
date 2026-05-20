@@ -1,15 +1,15 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -37,7 +37,7 @@ public class SpeakerPoolService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -45,14 +45,14 @@ public class SpeakerPoolService {
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
-                              ContentSubmissionRepository contentSubmissionRepository,
+                              SessionContentHistoryRepository sessionContentHistoryRepository,
                               SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
-        this.contentSubmissionRepository = contentSubmissionRepository;
+        this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.eventPublisher = eventPublisher;
@@ -129,23 +129,8 @@ public class SpeakerPoolService {
 
         List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
 
-        // Fetch latest content submissions for all speakers in one query
-        // This avoids N+1 query problem
-        List<UUID> speakerIds = speakers.stream()
-                .map(SpeakerPool::getId)
-                .collect(Collectors.toList());
-
-        // Build map of speakerId -> latest content submission
-        Map<UUID, ContentSubmission> contentMap = speakerIds.stream()
-                .map(id -> contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(id))
-                .filter(opt -> opt.isPresent())
-                .map(opt -> opt.get())
-                .collect(Collectors.toMap(
-                        cs -> cs.getSpeakerPool().getId(),
-                        cs -> cs
-                ));
-
-        // Batch-fetch sessions for speakers that have sessionIds (for title fallback + materials)
+        // Story 11.E.8 consolidation: content history is now keyed by session_id. Batch-fetch
+        // sessions first, then the latest version per session.
         List<UUID> sessionIds = speakers.stream()
                 .map(SpeakerPool::getSessionId)
                 .filter(id -> id != null)
@@ -156,36 +141,29 @@ public class SpeakerPoolService {
                 : sessionRepository.findAllById(sessionIds).stream()
                         .collect(Collectors.toMap(Session::getId, s -> s));
 
+        // Build map of sessionId -> latest SessionContentVersion. Light N+1 inside the
+        // stream is acceptable here (an event tops out at a few dozen speakers); if the
+        // workload grows the SessionContentHistoryRepository can add a batch latest-per
+        // -session query.
+        Map<UUID, SessionContentVersion> latestVersionBySession = sessionIds.stream()
+                .map(sid -> sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sid))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(Collectors.toMap(
+                        v -> v.getSession().getId(),
+                        v -> v
+                ));
+
         return speakers.stream()
                 .map(speaker -> {
-                    ContentSubmission content = contentMap.get(speaker.getId());
-                    // Story 11.B.3: Pass the speaker's session to SpeakerPoolResponse factories
-                    // so derived isSlotAssigned/isPublishable flags reflect session.start_time
-                    // (strict ADR-009 §0.1 predicate) rather than the sessionId-only fallback.
                     Session session = speaker.getSessionId() != null
                             ? sessionMap.get(speaker.getSessionId())
                             : null;
-                    SpeakerPoolResponse response;
-                    if (content != null) {
-                        response = SpeakerPoolResponse.fromEntityWithContent(
-                                speaker,
-                                session,
-                                content.getTitle(),
-                                content.getContentAbstract()
-                        );
-                    } else if (session != null && session.getTitle() != null) {
-                        // Fallback: use session title/description when no ContentSubmission exists
-                        // (e.g., legacy rows from before Story 11.C.2 consolidation, or sessions
-                        // created without persisting a content_submission row)
-                        response = SpeakerPoolResponse.fromEntityWithContent(
-                                speaker,
-                                session,
-                                session.getTitle(),
-                                session.getDescription()
-                        );
-                    } else {
-                        response = SpeakerPoolResponse.fromEntity(speaker, session);
-                    }
+                    SessionContentVersion latestVersion = session != null
+                            ? latestVersionBySession.get(session.getId())
+                            : null;
+                    SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
+                            speaker, session, latestVersion);
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {
                         List<SessionMaterial> materials = sessionMaterialsRepository

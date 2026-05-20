@@ -177,7 +177,6 @@ class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
                 .acceptedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .responseDeadline(LocalDate.now().plusDays(10))
                 .contentDeadline(LocalDate.now().plusDays(30))
-                .contentStatus("PENDING")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

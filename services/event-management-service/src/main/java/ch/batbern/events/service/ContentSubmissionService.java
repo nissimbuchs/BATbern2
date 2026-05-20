@@ -1,21 +1,19 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.ContentDraftRequest;
-import ch.batbern.events.dto.ContentDraftResponse;
 import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.SpeakerContentResponse;
 import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
-import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -45,9 +43,12 @@ import java.util.UUID;
  * but they delegate to a single backend write path here. The principal-agnostic
  * {@link ContentSubmissionPayload} record is the unified shape both flows pass in.
  *
- * <p>Magic-link helpers ({@link #getContentInfo(String)} and {@link #saveDraft}) are
- * kept on this class until Phase E (Story 11.E.3) moves the portal to Cognito Bearer
- * auth and Phase F (Story 11.F.1) deletes the magic-link bridging code.
+ * <p>{@link #getContentInfo(SpeakerPool)} drives the speaker portal's read side; per
+ * Story 11.E.8 §2.9 it returns {@code sessions.title}/{@code sessions.description} as
+ * the canonical "current" so organizer-side edits to the session propagate instantly.
+ * The legacy {@code saveDraft} method is gone — speaker-portal drafts live in
+ * {@code localStorage} on the frontend, and {@link #submit} is the only backend write
+ * path for content.
  *
  * <p>This service is the sole production caller of
  * {@code SpeakerWorkflowService.transition(CONTENT_SUBMITTED, ...)} — status mutation
@@ -67,7 +68,7 @@ public class ContentSubmissionService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SpeakerWorkflowService speakerWorkflowService;
@@ -113,7 +114,8 @@ public class ContentSubmissionService {
 
         boolean canSubmit = hasSession
                 || speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
-                || speaker.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED;
+                || speaker.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED
+                || speaker.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED;
 
         if (!canSubmit) {
             return SpeakerContentInfo.noSession(
@@ -123,16 +125,24 @@ public class ContentSubmissionService {
             );
         }
 
-        Optional<ContentSubmission> latestSubmission = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
+        // Story 11.E.8 §2.9 consolidation: sessions.title / sessions.description are the
+        // canonical "current" — every editor (speaker submit, organizer-on-behalf submit,
+        // organizer session-edit modal) writes there. The speaker portal form must
+        // initialise from the same canonical so an organizer edit propagates instantly.
+        // The latest session_content_history row is only consulted for reviewer feedback
+        // (REVISION_NEEDED) and the version counter shown on the timeline.
+        Optional<SessionContentVersion> latestSubmission = session != null
+                ? sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(session.getId())
+                : Optional.empty();
 
-        boolean needsRevision = "REVISION_NEEDED".equals(speaker.getContentStatus());
+        String contentStatus = ContentStatusDeriver.derive(speaker.getStatus(), latestSubmission);
+        boolean needsRevision = "REVISION_NEEDED".equals(contentStatus);
         String reviewerFeedback = null;
         Instant reviewedAt = null;
         String reviewedBy = null;
 
         if (needsRevision && latestSubmission.isPresent()) {
-            ContentSubmission submission = latestSubmission.get();
+            SessionContentVersion submission = latestSubmission.get();
             reviewerFeedback = submission.getReviewerFeedback();
             reviewedAt = submission.getReviewedAt();
             reviewedBy = submission.getReviewedBy();
@@ -152,6 +162,16 @@ public class ContentSubmissionService {
             }
         }
 
+        // Canonical title/abstract for the form come from sessions.title/description.
+        // hasDraft remains true once a session exists (a placeholder title was written at
+        // CONTACTED → READY), and the speaker portal uses it as the signal that the form
+        // is editable. draftVersion / lastSavedAt reflect the latest history row so the
+        // portal can show "v3 submitted on …" alongside the (potentially organizer-edited)
+        // current title.
+        String canonicalTitle = session != null ? session.getTitle() : null;
+        String canonicalAbstract = session != null ? session.getDescription() : null;
+        Instant canonicalUpdatedAt = session != null ? session.getUpdatedAt() : null;
+
         return SpeakerContentInfo.builder()
                 .speakerName(speaker.getSpeakerName())
                 .eventCode(event.getEventCode())
@@ -159,12 +179,12 @@ public class ContentSubmissionService {
                 .hasSessionAssigned(hasSession)
                 .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
                 .canSubmitContent(canSubmit)
-                .contentStatus(speaker.getContentStatus())
-                .hasDraft(latestSubmission.isPresent())
-                .draftTitle(latestSubmission.map(ContentSubmission::getTitle).orElse(null))
-                .draftAbstract(latestSubmission.map(ContentSubmission::getContentAbstract).orElse(null))
-                .draftVersion(latestSubmission.map(ContentSubmission::getSubmissionVersion).orElse(null))
-                .lastSavedAt(latestSubmission.map(ContentSubmission::getUpdatedAt).orElse(null))
+                .contentStatus(contentStatus)
+                .hasDraft(session != null)
+                .draftTitle(canonicalTitle)
+                .draftAbstract(canonicalAbstract)
+                .draftVersion(latestSubmission.map(SessionContentVersion::getSubmissionVersion).orElse(null))
+                .lastSavedAt(latestSubmission.map(SessionContentVersion::getUpdatedAt).orElse(canonicalUpdatedAt))
                 .needsRevision(needsRevision)
                 .reviewerFeedback(reviewerFeedback)
                 .reviewedAt(reviewedAt)
@@ -175,54 +195,9 @@ public class ContentSubmissionService {
                 .build();
     }
 
-    /**
-     * Save content draft.
-     * Story 6.3 AC4: Draft auto-save.
-     *
-     * <p>Story 11.E.3: caller has resolved the speaker_pool row via
-     * {@link SpeakerPortalAuthorizationService} (Cognito-authenticated path).
-     *
-     * @param speaker  speaker_pool row (pre-resolved by the controller)
-     * @param request  draft body (title + abstract)
-     */
-    @Transactional
-    public ContentDraftResponse saveDraft(SpeakerPool speaker, ContentDraftRequest request) {
-        Optional<ContentSubmission> existingDraft = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
-
-        ContentSubmission draft;
-        String contentStatus = speaker.getContentStatus();
-        boolean canUpdateExisting = "PENDING".equals(contentStatus) || "REVISION_NEEDED".equals(contentStatus);
-        if (existingDraft.isPresent() && canUpdateExisting) {
-            draft = existingDraft.get();
-            draft.setTitle(truncate(request.title(), MAX_TITLE_LENGTH));
-            draft.setContentAbstract(truncate(request.contentAbstract(), MAX_ABSTRACT_LENGTH));
-            draft.setAbstractCharCount(request.contentAbstract() != null ? request.contentAbstract().length() : 0);
-        } else {
-            Session session = speaker.getSessionId() != null
-                    ? sessionRepository.findById(speaker.getSessionId()).orElse(null)
-                    : null;
-
-            Integer nextVersion = Optional.ofNullable(
-                    contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId())
-            ).map(v -> v + 1).orElse(1);
-
-            draft = ContentSubmission.builder()
-                    .speakerPool(speaker)
-                    .session(session)
-                    .title(truncate(request.title(), MAX_TITLE_LENGTH))
-                    .contentAbstract(truncate(request.contentAbstract(), MAX_ABSTRACT_LENGTH))
-                    .abstractCharCount(request.contentAbstract() != null ? request.contentAbstract().length() : 0)
-                    .submissionVersion(nextVersion)
-                    .build();
-        }
-
-        draft = contentSubmissionRepository.save(draft);
-
-        log.info("Draft saved for speaker pool: {}, version: {}", speaker.getId(), draft.getSubmissionVersion());
-
-        return new ContentDraftResponse(draft.getId(), draft.getUpdatedAt());
-    }
+    // Story 11.E.8 §2.9 — backend saveDraft is gone. Drafts now live in the speaker
+    // portal's localStorage. sessions.title / sessions.description are the single source
+    // of truth for the canonical title and abstract; submit() is the only write path.
 
     // ============================================================
     // Consolidated submit (Story 11.C.2 — AC3, AC4)
@@ -240,7 +215,7 @@ public class ContentSubmissionService {
      *       (resubmission). Throws if other.</li>
      *   <li>Compute the next submission version.</li>
      *   <li>Get or create the session (slug-collision handled).</li>
-     *   <li>Persist the new {@link ContentSubmission} row.</li>
+     *   <li>Persist the new {@link SessionContentVersion} row (Story 11.E.8 rename).</li>
      *   <li>If the payload carries a non-null bio or profilePictureUrl, call
      *       {@code UserApiClient.patchUserProfile(...)} (AR14). Skipped (with warning)
      *       when {@code speaker.getUsername()} is null — pre-11.B.2 legacy data.</li>
@@ -306,34 +281,39 @@ public class ContentSubmissionService {
 
         // 3. Pre-check the source state. SpeakerWorkflowService.transition() will also enforce
         //    this — we surface a friendly error message here before the workflow check runs.
+        //    QUALITY_REVIEWED is accepted as a source state: a speaker (or organizer-on-behalf)
+        //    can revise content after the moderator's review; the back-transition
+        //    QUALITY_REVIEWED → CONTENT_SUBMITTED requeues the submission for re-review.
         SpeakerWorkflowState currentStatus = speaker.getStatus();
         if (currentStatus != SpeakerWorkflowState.ACCEPTED
-                && currentStatus != SpeakerWorkflowState.CONTENT_SUBMITTED) {
+                && currentStatus != SpeakerWorkflowState.CONTENT_SUBMITTED
+                && currentStatus != SpeakerWorkflowState.QUALITY_REVIEWED) {
             throw new IllegalStateException(
-                    "Cannot submit content — speaker must be in ACCEPTED or CONTENT_SUBMITTED state (was: "
-                            + currentStatus + ")");
+                    "Cannot submit content — speaker must be in ACCEPTED, CONTENT_SUBMITTED, or "
+                            + "QUALITY_REVIEWED state (was: " + currentStatus + ")");
         }
 
-        // 4. Determine next version (1 if first submission).
-        Integer maxVersion = contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId());
-        int newVersion = (maxVersion != null) ? maxVersion + 1 : 1;
-
-        // 5. Get-or-create the session. Reuse existing session if speaker.sessionId is set and
-        //    the row still exists; otherwise create a new one with slug-collision handling.
-        Session session = getOrCreateSession(speaker, eventCode, payload.title().trim(),
+        // 4. Story 11.E.8: strict lookup — the session was provisioned at the CONTACTED → READY
+        //    transition. If it's missing here, that's a data-integrity bug (out-of-band delete)
+        //    rather than a legitimate first-time submission. Throw rather than silently re-create.
+        Session session = loadAssignedSession(speaker, payload.title().trim(),
                 payload.contentAbstract().trim());
 
-        // 6. Persist the new ContentSubmission row.
-        ContentSubmission submission = ContentSubmission.builder()
-                .speakerPool(speaker)
+        // 5. Determine next version (1 if first submission). Story 11.E.8: keyed by session_id.
+        Integer maxVersion = sessionContentHistoryRepository.findMaxVersionBySessionId(session.getId());
+        int newVersion = (maxVersion != null) ? maxVersion + 1 : 1;
+
+        // 6. Persist the new SessionContentVersion row (renamed from ContentSubmission per V99).
+        SessionContentVersion submission = SessionContentVersion.builder()
                 .session(session)
                 .title(payload.title().trim())
                 .contentAbstract(payload.contentAbstract().trim())
                 .abstractCharCount(payload.contentAbstract().trim().length())
                 .submissionVersion(newVersion)
+                .submittedByUsername(username)
                 .submittedAt(Instant.now())
                 .build();
-        submission = contentSubmissionRepository.save(submission);
+        submission = sessionContentHistoryRepository.save(submission);
 
         // 7. Patch user profile (bio / profilePictureUrl) if the payload carries either.
         //    Story 11.C.2 — AR14. The User profile is the single source of truth (ADR-007 +
@@ -351,11 +331,9 @@ public class ContentSubmissionService {
                             + " — Story 11.D.4 wires the materials helper");
         }
 
-        // 9. Keep the legacy content_status / content_submitted_at columns in sync (Phase F
-        //    cleanup target). Workflow status mutation is owned by SpeakerWorkflowService.
-        speaker.setContentStatus("SUBMITTED");
-        speaker.setContentSubmittedAt(Instant.now());
-        speakerPoolRepository.save(speaker);
+        // 9. (Story 11.E.8 removed) legacy speaker_pool.content_status / content_submitted_at
+        //    writes are gone — V100 dropped those columns. contentStatus is now derived at
+        //    read time from session_content_history.
 
         // 10. Delegate the workflow transition to the sole writer (Story 11.B.2 AC1). On a
         //     same-state CONTENT_SUBMITTED → CONTENT_SUBMITTED resubmission, transition()
@@ -398,85 +376,32 @@ public class ContentSubmissionService {
     }
 
     /**
-     * Get-or-create the session for this speaker's content submission. Reuses the existing
-     * session row if {@code speaker.sessionId} is set and the row still exists; otherwise
-     * creates a new session with slug-collision handling (parallels the logic the previous
-     * two services shared).
+     * Story 11.E.8: strict lookup of the {@link Session} provisioned at the
+     * CONTACTED → READY transition. This method updates the placeholder title and
+     * description that {@code SpeakerWorkflowService.provisionSessionAndPrimarySpeaker}
+     * wrote at READY-time to the real presentation title and abstract.
+     *
+     * <p>Throws {@link IllegalStateException} if the speaker has no {@code session_id}
+     * or the referenced session row is missing. Both conditions indicate a data-integrity
+     * problem (speaker reached CONTENT_SUBMITTED without going through READY, or the
+     * session was deleted out-of-band) rather than a legitimate first-time submission.
+     * Pre-11.E.8 local-dev data is covered by the V96 backfill migration.
      */
-    private Session getOrCreateSession(SpeakerPool speaker, String eventCode,
-            String presentationTitle, String presentationAbstract) {
-        // Reuse existing session if linked + still present.
-        if (speaker.getSessionId() != null) {
-            Optional<Session> existing = sessionRepository.findById(speaker.getSessionId());
-            if (existing.isPresent()) {
-                Session session = existing.get();
-                session.setTitle(presentationTitle);
-                session.setDescription(presentationAbstract);
-                return sessionRepository.save(session);
-            }
-            log.warn("Session {} was deleted for speaker {} — creating a new session",
-                    speaker.getSessionId(), speaker.getId());
-            // P2 (review patch): persist the cleared sessionId immediately so the mutation isn't
-            // dependent on JPA flush-on-commit. Defensive: lets this helper be safely extracted
-            // outside the @Transactional caller (Story 11.D.4 will reuse it from the organizer form).
-            speaker.setSessionId(null);
-            speakerPoolRepository.save(speaker);
+    private Session loadAssignedSession(SpeakerPool speaker, String presentationTitle,
+            String presentationAbstract) {
+        UUID sessionId = speaker.getSessionId();
+        if (sessionId == null) {
+            throw new IllegalStateException(
+                    "Speaker " + speaker.getId() + " has no session_id — must be promoted to "
+                            + "READY before content submission (Story 11.E.8)");
         }
-
-        // Generate a slug + handle collisions (parallels both legacy services).
-        String baseSlug = presentationTitle
-                .toLowerCase()
-                .replaceAll("[^a-z0-9\\s-]", "")
-                .replaceAll("\\s+", "-")
-                .replaceAll("-+", "-")
-                .replaceAll("^-|-$", "");
-        if (baseSlug.length() > 200) {
-            baseSlug = baseSlug.substring(0, 200);
-        }
-        if (baseSlug.isEmpty()) {
-            baseSlug = "session-" + speaker.getId().toString().substring(0, 8);
-        }
-
-        String sessionSlug = baseSlug;
-        int counter = 1;
-        while (sessionRepository.existsBySessionSlug(sessionSlug)) {
-            sessionSlug = baseSlug + "-" + counter;
-            counter++;
-            if (counter > 1000) {
-                throw new IllegalStateException("Unable to generate unique session slug after 1000 attempts");
-            }
-        }
-
-        Session session = Session.builder()
-                .eventId(speaker.getEventId())
-                .eventCode(eventCode)
-                .sessionSlug(sessionSlug)
-                .title(presentationTitle)
-                .description(presentationAbstract)
-                .sessionType("presentation")
-                .build();
-        session = sessionRepository.save(session);
-
-        // Create session_users link (organizer side; speaker side has it idempotent via username).
-        String usernameForLink = speaker.getUsername() != null && !speaker.getUsername().isBlank()
-                ? speaker.getUsername()
-                : speaker.getSpeakerName();
-        SessionUser sessionUser = SessionUser.builder()
-                .session(session)
-                .username(usernameForLink)
-                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
-                .isConfirmed(false)
-                .build();
-        sessionUserRepository.save(sessionUser);
-
-        // Bind the new session back to the speaker pool entry.
-        // P2 (review patch): explicit save — see note above; the mutation is no longer
-        // dependent on JPA's auto-flush at commit time.
-        speaker.setSessionId(session.getId());
-        speakerPoolRepository.save(speaker);
-        log.info("Created session {} for speaker {} on content submission",
-                session.getId(), speaker.getId());
-        return session;
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Speaker " + speaker.getId() + " references missing session " + sessionId
+                                + " — data integrity issue; re-provision at READY"));
+        session.setTitle(presentationTitle);
+        session.setDescription(presentationAbstract);
+        return sessionRepository.save(session);
     }
 
     /**
@@ -581,14 +506,12 @@ public class ContentSubmissionService {
         List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
         String username = sessionUsers.isEmpty() ? null : sessionUsers.get(0).getUsername();
 
-        ContentSubmission latestSubmission = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
-                .orElse(null);
-
-        String presentationTitle = latestSubmission != null
-                ? latestSubmission.getTitle() : session.getTitle();
-        String presentationAbstract = latestSubmission != null
-                ? latestSubmission.getContentAbstract() : session.getDescription();
+        // Story 11.E.8 §2.9: sessions.title / sessions.description are the canonical
+        // "current" for every read surface. Don't override with the history row — that
+        // re-introduces the divergence §2.9 closed (organizer session-modal edits would
+        // stop propagating to the organizer drawer).
+        String presentationTitle = session.getTitle();
+        String presentationAbstract = session.getDescription();
 
         boolean hasMaterial = false;
         String materialUrl = null;

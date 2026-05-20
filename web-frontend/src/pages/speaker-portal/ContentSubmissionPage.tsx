@@ -1,5 +1,5 @@
 /**
- * ContentSubmissionPage (Story 6.3)
+ * ContentSubmissionPage (Story 6.3, revised in 11.E.8 §2.9)
  *
  * Speaker content self-submission portal page.
  * Allows speakers to submit their presentation title, abstract, and materials.
@@ -8,7 +8,9 @@
  * - AC1: Session assignment check
  * - AC2: Title input with 200 char limit
  * - AC3: Abstract input with 1000 char limit
- * - AC4: Draft auto-save every 30 seconds
+ * - AC4: Draft auto-save every 30 seconds — to localStorage (no backend draft endpoint
+ *        since Story 11.E.8 §2.9; sessions.title is the canonical "current" so an
+ *        organizer's session-modal edit now propagates to this form immediately).
  * - AC5: Content submission with validation
  * - AC8: Revision feedback display
  */
@@ -27,6 +29,54 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 const MAX_TITLE_LENGTH = 200;
 const MAX_ABSTRACT_LENGTH = 1000;
 const AUTO_SAVE_INTERVAL_MS = 30000; // 30 seconds
+
+// Story 11.E.8 §2.9: drafts live in localStorage. Key includes the event code so the
+// same speaker drafting against two events doesn't cross-pollinate.
+const DRAFT_STORAGE_KEY_PREFIX = 'batbern.speaker-portal.draft';
+interface StoredDraft {
+  title: string;
+  contentAbstract: string;
+  savedAt: string; // ISO timestamp
+}
+const draftStorageKey = (eventCode: string) => `${DRAFT_STORAGE_KEY_PREFIX}.${eventCode}`;
+const readDraftFromStorage = (eventCode: string): StoredDraft | null => {
+  try {
+    const raw = localStorage.getItem(draftStorageKey(eventCode));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredDraft;
+    if (
+      typeof parsed.title === 'string' &&
+      typeof parsed.contentAbstract === 'string' &&
+      typeof parsed.savedAt === 'string'
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+const writeDraftToStorage = (
+  eventCode: string,
+  draft: Omit<StoredDraft, 'savedAt'>
+): StoredDraft => {
+  const payload: StoredDraft = { ...draft, savedAt: new Date().toISOString() };
+  try {
+    localStorage.setItem(draftStorageKey(eventCode), JSON.stringify(payload));
+  } catch {
+    // localStorage may be unavailable (privacy mode, quota exceeded); silently swallow —
+    // the speaker loses cross-reload restoration in that browser but the submit path is
+    // unaffected.
+  }
+  return payload;
+};
+const clearDraftFromStorage = (eventCode: string) => {
+  try {
+    localStorage.removeItem(draftStorageKey(eventCode));
+  } catch {
+    // ignore
+  }
+};
 
 interface FormState {
   title: string;
@@ -76,25 +126,18 @@ export default function ContentSubmissionPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Save draft mutation
-  const saveDraftMutation = useMutation({
-    mutationFn: () =>
-      speakerPortalService.saveDraft(eventCode!, {
-        title: formState.title || null,
-        contentAbstract: formState.contentAbstract || null,
-      }),
-    onMutate: () => {
-      setIsSaving(true);
-    },
-    onSuccess: (response) => {
-      setLastSavedAt(response.savedAt);
-      lastSavedStateRef.current = { ...formState };
-      setIsSaving(false);
-    },
-    onError: () => {
-      setIsSaving(false);
-    },
-  });
+  // Story 11.E.8 §2.9: auto-save to localStorage (no backend draft endpoint).
+  const saveDraftToLocalStorage = useCallback(() => {
+    if (!eventCode) return;
+    setIsSaving(true);
+    const stored = writeDraftToStorage(eventCode, {
+      title: formState.title,
+      contentAbstract: formState.contentAbstract,
+    });
+    setLastSavedAt(stored.savedAt);
+    lastSavedStateRef.current = { ...formState };
+    setIsSaving(false);
+  }, [eventCode, formState]);
 
   // Submit content mutation
   const submitMutation = useMutation({
@@ -106,56 +149,77 @@ export default function ContentSubmissionPage() {
     onSuccess: (response) => {
       setSubmitResult(response);
       setIsSubmitted(true);
+      // Story 11.E.8 §2.9: the canonical now has the submitted content — drop the
+      // localStorage draft so subsequent mounts don't shadow organizer edits.
+      if (eventCode) {
+        clearDraftFromStorage(eventCode);
+      }
       queryClient.invalidateQueries({ queryKey: ['speaker-content', eventCode] });
     },
   });
 
-  // Initialize form from draft (AC4) and material (AC7)
+  // Initialize form (AC4 — Story 11.E.8 §2.9 revised):
+  //   - draftTitle / draftAbstract now come from the canonical sessions.title /
+  //     sessions.description on the backend, so an organizer's session-modal edit
+  //     propagates here immediately.
+  //   - If localStorage holds a draft for this event that is *newer* than the
+  //     backend's lastSavedAt, prefer the localStorage draft (the speaker was mid-edit
+  //     and refreshed). Otherwise prefer the canonical (so organizer edits don't get
+  //     shadowed by a stale draft).
+  //   - On a brand-new editor (no canonical content), localStorage still wins if
+  //     present.
   useEffect(() => {
-    if (contentInfo) {
-      if (contentInfo.hasDraft) {
-        setFormState({
-          title: contentInfo.draftTitle || '',
-          contentAbstract: contentInfo.draftAbstract || '',
-        });
-        lastSavedStateRef.current = {
-          title: contentInfo.draftTitle || '',
-          contentAbstract: contentInfo.draftAbstract || '',
-        };
-        if (contentInfo.lastSavedAt) {
-          setLastSavedAt(contentInfo.lastSavedAt);
-        }
+    if (!contentInfo || !eventCode) {
+      return;
+    }
+    const canonicalTitle = contentInfo.draftTitle ?? '';
+    const canonicalAbstract = contentInfo.draftAbstract ?? '';
+    const canonicalSavedAt = contentInfo.lastSavedAt ?? null;
+    const localDraft = readDraftFromStorage(eventCode);
+
+    let initialTitle = canonicalTitle;
+    let initialAbstract = canonicalAbstract;
+    let initialSavedAt = canonicalSavedAt;
+    if (localDraft) {
+      const localTime = Date.parse(localDraft.savedAt);
+      const canonicalTime = canonicalSavedAt ? Date.parse(canonicalSavedAt) : 0;
+      if (!Number.isNaN(localTime) && localTime > canonicalTime) {
+        initialTitle = localDraft.title;
+        initialAbstract = localDraft.contentAbstract;
+        initialSavedAt = localDraft.savedAt;
       } else {
-        // Initialize saved state for new content (enables auto-save on first edit)
-        lastSavedStateRef.current = {
-          title: '',
-          contentAbstract: '',
-        };
-      }
-      // Initialize material state
-      if (contentInfo.hasMaterial) {
-        setMaterialUrl(contentInfo.materialUrl);
-        setMaterialFileName(contentInfo.materialFileName);
+        // localStorage draft is stale (or organizer edited after); discard it.
+        clearDraftFromStorage(eventCode);
       }
     }
-  }, [contentInfo]);
 
-  // Auto-save effect (AC4)
+    setFormState({ title: initialTitle, contentAbstract: initialAbstract });
+    lastSavedStateRef.current = { title: initialTitle, contentAbstract: initialAbstract };
+    if (initialSavedAt) {
+      setLastSavedAt(initialSavedAt);
+    }
+
+    // Initialize material state
+    if (contentInfo.hasMaterial) {
+      setMaterialUrl(contentInfo.materialUrl);
+      setMaterialFileName(contentInfo.materialFileName);
+    }
+  }, [contentInfo, eventCode]);
+
+  // Auto-save effect (AC4) — writes to localStorage every 30s when the form is dirty.
   useEffect(() => {
     if (!eventCode || !contentInfo?.canSubmitContent || isSubmitted) {
       return;
     }
 
-    // Set up auto-save interval
     autoSaveTimerRef.current = setInterval(() => {
-      // Only save if dirty and content has changed
       if (
         isDirty &&
         lastSavedStateRef.current &&
         (formState.title !== lastSavedStateRef.current.title ||
           formState.contentAbstract !== lastSavedStateRef.current.contentAbstract)
       ) {
-        saveDraftMutation.mutate();
+        saveDraftToLocalStorage();
       }
     }, AUTO_SAVE_INTERVAL_MS);
 
@@ -170,7 +234,7 @@ export default function ContentSubmissionPage() {
     isDirty,
     formState,
     isSubmitted,
-    saveDraftMutation,
+    saveDraftToLocalStorage,
   ]);
 
   // Handle form field changes

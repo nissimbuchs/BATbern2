@@ -106,7 +106,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 .speakerName("Jane Accepted")
                 .email("jane@example.com")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentStatus("PENDING")
                 .contentDeadline(LocalDate.now().plusDays(7))
                 .remindersDisabled(false)
                 .build();

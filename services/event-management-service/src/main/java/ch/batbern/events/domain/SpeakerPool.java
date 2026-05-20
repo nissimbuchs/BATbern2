@@ -121,8 +121,12 @@ public class SpeakerPool {
     @Column(name = "technical_requirements", columnDefinition = "TEXT")
     private String technicalRequirements;
 
-    @Column(name = "initial_presentation_title", length = 500)
-    private String initialPresentationTitle;
+    // Story 11.E.8 consolidation: dropped fields
+    //   - initial_presentation_title (V102): legacy "working title" — sessions.title is canonical now
+    //   - content_status              (V102): denormalized projection — derived from
+    //                                          session_content_history.reviewer_feedback at read time
+    //   - content_submitted_at        (V102): denormalized projection — derived from
+    //                                          latest session_content_history.submitted_at at read time
 
     @Column(name = "preference_comments", columnDefinition = "TEXT")
     private String preferenceComments;
@@ -130,13 +134,6 @@ public class SpeakerPool {
     // Story 6.5: Automated Deadline Reminders
     @Column(name = "reminders_disabled")
     private Boolean remindersDisabled = false;
-
-    // Story 6.3: Speaker Content Submission Portal fields
-    @Column(name = "content_status", length = 50)
-    private String contentStatus = "PENDING"; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
-
-    @Column(name = "content_submitted_at")
-    private Instant contentSubmittedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

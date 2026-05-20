@@ -127,7 +127,6 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .email("alice@example.com")
                 .username(SPEAKER_USERNAME)
                 .status(SpeakerWorkflowState.INVITED)
-                .contentStatus("PENDING")
                 .build());
 
         // Dashboard happy-path fetches the speaker's user profile for profile-completeness;

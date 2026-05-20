@@ -2,6 +2,8 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
@@ -11,6 +13,7 @@ import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
@@ -65,6 +68,8 @@ class SpeakerWorkflowServiceTest {
     @Mock
     private SessionRepository sessionRepository;
     @Mock
+    private SessionUserRepository sessionUserRepository;
+    @Mock
     private EventRepository eventRepository;
     @Mock
     private SpeakerStatusHistoryRepository statusHistoryRepository;
@@ -98,6 +103,7 @@ class SpeakerWorkflowServiceTest {
         service = new SpeakerWorkflowService(
                 speakerPoolRepository,
                 sessionRepository,
+                sessionUserRepository,
                 eventRepository,
                 statusHistoryRepository,
                 eventTypeService,
@@ -119,7 +125,10 @@ class SpeakerWorkflowServiceTest {
                 Arguments.of(SpeakerWorkflowState.READY, SpeakerWorkflowState.INVITED),
                 Arguments.of(SpeakerWorkflowState.INVITED, SpeakerWorkflowState.ACCEPTED),
                 Arguments.of(SpeakerWorkflowState.ACCEPTED, SpeakerWorkflowState.CONTENT_SUBMITTED),
-                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED)
+                Arguments.of(SpeakerWorkflowState.CONTENT_SUBMITTED, SpeakerWorkflowState.QUALITY_REVIEWED),
+                // Story 11.E.8+: speaker (or organizer-on-behalf) revising content after the
+                // moderator's review — back-transition that requeues for re-review.
+                Arguments.of(SpeakerWorkflowState.QUALITY_REVIEWED, SpeakerWorkflowState.CONTENT_SUBMITTED)
         );
     }
 
@@ -163,6 +172,20 @@ class SpeakerWorkflowServiceTest {
         lenient().when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
         lenient().when(magicLinkService.generateToken(any(), any())).thenReturn("respond-token");
         lenient().when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
+        // Story 11.E.8: READY hook provisions Session + SessionUser. Stub save() to populate
+        // ids so downstream code (speaker.setSessionId(session.getId())) doesn't NPE on mocks.
+        lenient().when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> {
+            Session s = inv.getArgument(0);
+            if (s.getId() == null) {
+                s.setId(UUID.randomUUID());
+            }
+            return s;
+        });
+        lenient().when(sessionUserRepository.save(any(SessionUser.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(sessionUserRepository.existsBySessionIdAndUsername(any(), any())).thenReturn(false);
+        lenient().when(sessionUserRepository.findBySessionIdAndUsername(any(), any()))
+                .thenReturn(Optional.empty());
 
         TransitionPayload payload = TransitionPayload.builder()
                 .email("speaker@example.com")
@@ -315,6 +338,16 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
         when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
+        // Story 11.E.8: READY hook provisions Session + SessionUser.
+        lenient().when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> {
+            Session s = inv.getArgument(0);
+            if (s.getId() == null) {
+                s.setId(UUID.randomUUID());
+            }
+            return s;
+        });
+        lenient().when(sessionUserRepository.save(any(SessionUser.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
 
         TransitionPayload payload = TransitionPayload.builder()
                 .email("speaker@example.com")
@@ -402,6 +435,8 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
         when(magicLinkService.generateToken(eq(SPEAKER_ID), any(), anyLong())).thenReturn("view-token");
+        lenient().when(sessionUserRepository.findBySessionIdAndUsername(any(), any()))
+                .thenReturn(Optional.empty());
 
         TransitionPayload payload = TransitionPayload.builder().build();
         service.transition(SPEAKER_ID, SpeakerWorkflowState.ACCEPTED, ORGANIZER, payload);
@@ -411,6 +446,176 @@ class SpeakerWorkflowServiceTest {
         assertThat(accepted.getValue().getSpeakerPoolId()).isEqualTo(SPEAKER_ID);
         assertThat(accepted.getValue().getAcceptedBy()).isEqualTo("organizer.user");
         assertThat(speaker.getAcceptedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Story 11.E.8: CONTACTED -> READY provisions Session + PRIMARY_SPEAKER SessionUser")
+    void should_provisionSessionAndPrimarySpeaker_when_transitioningContactedToReady() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        speaker.setSpeakerName("Test Speaker");
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
+        when(sessionRepository.existsBySessionSlug(any())).thenReturn(false);
+        when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> {
+            Session s = inv.getArgument(0);
+            if (s.getId() == null) {
+                s.setId(UUID.randomUUID());
+            }
+            return s;
+        });
+        when(sessionUserRepository.save(any(SessionUser.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("speaker@example.com")
+                .firstName("Test")
+                .lastName("Speaker")
+                .build();
+
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
+
+        // 1. Session row created with placeholder title + deterministic slug
+        //    (dots in the username are normalised to hyphens by generateUniqueSlug)
+        ArgumentCaptor<Session> sessionCaptor = ArgumentCaptor.forClass(Session.class);
+        verify(sessionRepository).save(sessionCaptor.capture());
+        Session session = sessionCaptor.getValue();
+        assertThat(session.getEventId()).isEqualTo(EVENT_ID);
+        assertThat(session.getEventCode()).isEqualTo("BATbern99");
+        assertThat(session.getSessionSlug()).isEqualTo("batbern99-speaker-user");
+        assertThat(session.getTitle()).isEqualTo("Test Speaker");
+        assertThat(session.getSessionType()).isEqualTo("presentation");
+        assertThat(session.getSpeakerPoolId()).isEqualTo(SPEAKER_ID);
+
+        // 2. PRIMARY_SPEAKER SessionUser row created, unconfirmed
+        ArgumentCaptor<SessionUser> sessionUserCaptor = ArgumentCaptor.forClass(SessionUser.class);
+        verify(sessionUserRepository).save(sessionUserCaptor.capture());
+        SessionUser sessionUser = sessionUserCaptor.getValue();
+        assertThat(sessionUser.getUsername()).isEqualTo("speaker.user");
+        assertThat(sessionUser.getSpeakerRole()).isEqualTo(SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        assertThat(sessionUser.isConfirmed()).isFalse();
+
+        // 3. speaker_pool.session_id is set
+        assertThat(speaker.getSessionId()).isNotNull();
+        assertThat(speaker.getSessionId()).isEqualTo(session.getId());
+    }
+
+    @Test
+    @DisplayName("Story 11.E.8: slug collision falls back to incremented suffix")
+    void should_appendSuffix_when_sessionSlugCollision() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
+        when(sessionRepository.existsBySessionSlug("batbern99-speaker-user")).thenReturn(true);
+        when(sessionRepository.existsBySessionSlug("batbern99-speaker-user-1")).thenReturn(true);
+        when(sessionRepository.existsBySessionSlug("batbern99-speaker-user-2")).thenReturn(false);
+        when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> {
+            Session s = inv.getArgument(0);
+            if (s.getId() == null) {
+                s.setId(UUID.randomUUID());
+            }
+            return s;
+        });
+        when(sessionUserRepository.save(any(SessionUser.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("s@example.com").firstName("F").lastName("L").build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
+
+        ArgumentCaptor<Session> sessionCaptor = ArgumentCaptor.forClass(Session.class);
+        verify(sessionRepository).save(sessionCaptor.capture());
+        assertThat(sessionCaptor.getValue().getSessionSlug()).isEqualTo("batbern99-speaker-user-2");
+    }
+
+    @Test
+    @DisplayName("Story 11.E.8: re-running READY hook when session already exists is idempotent")
+    void should_reuseExistingSession_when_runReadyHookCalledAgain() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
+        UUID existingSessionId = UUID.randomUUID();
+        speaker.setSessionId(existingSessionId);
+        Session existingSession = Session.builder().id(existingSessionId).build();
+
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
+        when(sessionRepository.findById(existingSessionId)).thenReturn(Optional.of(existingSession));
+        when(sessionUserRepository.existsBySessionIdAndUsername(existingSessionId, "speaker.user"))
+                .thenReturn(true);
+
+        TransitionPayload payload = TransitionPayload.builder()
+                .email("s@example.com").firstName("F").lastName("L").build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
+
+        // No new session or session_user created — both already exist.
+        verify(sessionRepository, never()).save(any(Session.class));
+        verify(sessionUserRepository, never()).save(any(SessionUser.class));
+        assertThat(speaker.getSessionId()).isEqualTo(existingSessionId);
+    }
+
+    @Test
+    @DisplayName("Story 11.E.8: INVITED -> ACCEPTED confirms the PRIMARY_SPEAKER session_users row")
+    void should_confirmSessionUser_when_transitioningInvitedToAccepted() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
+        UUID sessionId = UUID.randomUUID();
+        speaker.setSessionId(sessionId);
+        SessionUser primarySpeaker = SessionUser.builder()
+                .session(Session.builder().id(sessionId).build())
+                .username("speaker.user")
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
+        when(sessionUserRepository.findBySessionIdAndUsername(sessionId, "speaker.user"))
+                .thenReturn(Optional.of(primarySpeaker));
+
+        TransitionPayload payload = TransitionPayload.builder().build();
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.ACCEPTED, ORGANIZER, payload);
+
+        // SessionUser.confirm() was called and saved.
+        ArgumentCaptor<SessionUser> captor = ArgumentCaptor.forClass(SessionUser.class);
+        verify(sessionUserRepository).save(captor.capture());
+        assertThat(captor.getValue().isConfirmed()).isTrue();
+        assertThat(captor.getValue().getConfirmedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Story 11.E.8: ACCEPTED is best-effort when session_users row missing (legacy)")
+    void should_notFail_when_acceptedHookFindsNoSessionUser() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
+        UUID sessionId = UUID.randomUUID();
+        speaker.setSessionId(sessionId);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+        when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
+        when(sessionUserRepository.findBySessionIdAndUsername(sessionId, "speaker.user"))
+                .thenReturn(Optional.empty());
+
+        TransitionPayload payload = TransitionPayload.builder().build();
+        // Should NOT throw — the warning is logged and the transition continues.
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.ACCEPTED, ORGANIZER, payload);
+
+        verify(sessionUserRepository, never()).save(any(SessionUser.class));
+        assertThat(speaker.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
     }
 
     @Test

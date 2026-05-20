@@ -1,12 +1,12 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
@@ -86,7 +86,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -102,7 +102,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
     @BeforeEach
     void setUp() {
         // Clean up in correct order (FK constraints)
-        contentSubmissionRepository.deleteAll();
+        sessionContentHistoryRepository.deleteAll();
         tokenRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         sessionRepository.deleteAll();
@@ -156,7 +156,6 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                 .acceptedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .responseDeadline(LocalDate.now().plusDays(10))
                 .contentDeadline(LocalDate.now().plusDays(30))
-                .contentStatus("PENDING")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -216,15 +215,14 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         @Test
         void should_returnDraftContent_when_draftExists() throws Exception {
             // Given - Create a draft submission
-            ContentSubmission draft = ContentSubmission.builder()
-                    .speakerPool(testSpeakerPool)
+            SessionContentVersion draft = SessionContentVersion.builder()
                     .session(testSession)
                     .title("My Draft Title")
                     .contentAbstract("My draft abstract content")
                     .abstractCharCount(25)
                     .submissionVersion(1)
                     .build();
-            contentSubmissionRepository.save(draft);
+            sessionContentHistoryRepository.save(draft);
 
             mockMvc.perform(get("/api/v1/speaker-portal/content")
                             .param("token", validToken))
@@ -242,11 +240,9 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         @Test
         void should_includeRevisionFeedback_when_revisionNeeded() throws Exception {
             // Given - Speaker needs revision with feedback
-            testSpeakerPool.setContentStatus("REVISION_NEEDED");
             speakerPoolRepository.save(testSpeakerPool);
 
-            ContentSubmission submission = ContentSubmission.builder()
-                    .speakerPool(testSpeakerPool)
+            SessionContentVersion submission = SessionContentVersion.builder()
                     .session(testSession)
                     .title("Original Title")
                     .contentAbstract("Original abstract")
@@ -256,7 +252,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .reviewedAt(Instant.now().minus(1, ChronoUnit.DAYS))
                     .reviewedBy("organizer.test")
                     .build();
-            contentSubmissionRepository.save(submission);
+            sessionContentHistoryRepository.save(submission);
 
             mockMvc.perform(get("/api/v1/speaker-portal/content")
                             .param("token", validToken))
@@ -320,111 +316,11 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         }
     }
 
-    // ==================== AC4: Draft Save Tests ====================
-
-    @Nested
-    @DisplayName("AC4: Draft Save (POST /speaker-portal/content/draft)")
-    class SaveDraftTests {
-
-        /**
-         * AC4: Should save draft and return 200
-         */
-        @Test
-        void should_saveDraftAndReturn200_when_validRequest() throws Exception {
-            mockMvc.perform(post("/api/v1/speaker-portal/content/draft")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "title": "My Presentation Title",
-                                    "contentAbstract": "This is my presentation abstract describing the topic."
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.draftId", notNullValue()))
-                    .andExpect(jsonPath("$.savedAt", notNullValue()));
-
-            // Verify database
-            var drafts = contentSubmissionRepository.findAll();
-            assertThat(drafts).hasSize(1);
-            assertThat(drafts.get(0).getTitle()).isEqualTo("My Presentation Title");
-            assertThat(drafts.get(0).getContentAbstract()).isEqualTo("This is my presentation abstract describing the topic.");
-        }
-
-        /**
-         * AC4: Should update existing draft
-         */
-        @Test
-        void should_updateExistingDraft_when_draftAlreadyExists() throws Exception {
-            // Given - Existing draft
-            ContentSubmission existingDraft = ContentSubmission.builder()
-                    .speakerPool(testSpeakerPool)
-                    .session(testSession)
-                    .title("Old Title")
-                    .contentAbstract("Old abstract")
-                    .abstractCharCount(12)
-                    .submissionVersion(1)
-                    .build();
-            contentSubmissionRepository.save(existingDraft);
-
-            // When
-            mockMvc.perform(post("/api/v1/speaker-portal/content/draft")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "title": "Updated Title",
-                                    "contentAbstract": "Updated abstract content"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk());
-
-            // Verify - Should have updated existing, not created new
-            var drafts = contentSubmissionRepository.findAll();
-            assertThat(drafts).hasSize(1);
-            assertThat(drafts.get(0).getTitle()).isEqualTo("Updated Title");
-            assertThat(drafts.get(0).getContentAbstract()).isEqualTo("Updated abstract content");
-        }
-
-        /**
-         * Should return 400 when token missing
-         */
-        @Test
-        void should_return400_when_tokenMissingInDraftRequest() throws Exception {
-            mockMvc.perform(post("/api/v1/speaker-portal/content/draft")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "title": "My Title",
-                                    "contentAbstract": "My abstract"
-                                }
-                                """))
-                    .andExpect(status().isBadRequest());
-        }
-
-        /**
-         * Should truncate title that exceeds max length
-         */
-        @Test
-        void should_truncateTitle_when_exceedsMaxLength() throws Exception {
-            String longTitle = "x".repeat(250);
-
-            mockMvc.perform(post("/api/v1/speaker-portal/content/draft")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "title": "%s",
-                                    "contentAbstract": "Short abstract"
-                                }
-                                """.formatted(validToken, longTitle)))
-                    .andExpect(status().isOk());
-
-            // Verify truncation to 200 chars
-            var drafts = contentSubmissionRepository.findAll();
-            assertThat(drafts.get(0).getTitle()).hasSize(200);
-        }
-    }
+    // Story 11.E.8 §2.9: AC4 (draft auto-save) moved to the frontend's localStorage.
+    // The backend /content/draft endpoint and its service method are deleted; the
+    // canonical title/abstract are sessions.title / sessions.description, updated by
+    // the submit endpoint only. The original SaveDraftTests nested class was removed
+    // with the endpoint.
 
     // ==================== AC5: Content Submit Tests ====================
 
@@ -453,14 +349,15 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .andExpect(jsonPath("$.sessionTitle", is("My Final Presentation Title")));
 
             // Verify database
-            var submissions = contentSubmissionRepository.findAll();
+            var submissions = sessionContentHistoryRepository.findAll();
             assertThat(submissions).hasSize(1);
             assertThat(submissions.get(0).getSubmittedAt()).isNotNull();
 
-            // Verify speaker pool status updated
+            // Verify the submission landed — content_status and content_submitted_at columns
+            // were dropped in Story 11.E.8, derived now from latest session_content_history.
             SpeakerPool updated = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
-            assertThat(updated.getContentStatus()).isEqualTo("SUBMITTED");
-            assertThat(updated.getContentSubmittedAt()).isNotNull();
+            assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+            assertThat(submissions.get(0).getSubmittedAt()).isNotNull();
         }
 
         /**
@@ -469,8 +366,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         @Test
         void should_incrementVersion_when_resubmitting() throws Exception {
             // Given - Previous submission exists
-            ContentSubmission previous = ContentSubmission.builder()
-                    .speakerPool(testSpeakerPool)
+            SessionContentVersion previous = SessionContentVersion.builder()
                     .session(testSession)
                     .title("Previous Title")
                     .contentAbstract("Previous abstract")
@@ -478,10 +374,9 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .submissionVersion(1)
                     .submittedAt(Instant.now().minus(1, ChronoUnit.DAYS))
                     .build();
-            contentSubmissionRepository.save(previous);
+            sessionContentHistoryRepository.save(previous);
 
             // Reset status for resubmission
-            testSpeakerPool.setContentStatus("REVISION_NEEDED");
             speakerPoolRepository.save(testSpeakerPool);
 
             // When
@@ -498,7 +393,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .andExpect(jsonPath("$.version", is(2)));
 
             // Verify - Should have 2 submissions now
-            var submissions = contentSubmissionRepository.findAll();
+            var submissions = sessionContentHistoryRepository.findAll();
             assertThat(submissions).hasSize(2);
         }
 
