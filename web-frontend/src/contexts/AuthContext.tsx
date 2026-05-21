@@ -75,11 +75,33 @@ async function hydrateRolesIfMissing(user: UserContext): Promise<UserContext> {
   }
   try {
     const profile = await getUserProfile(['roles']);
-    const fetchedRoles = profile.availableRoles ?? [];
+    // 2026-05-21 (Q#H): the backend `/users/me` OpenAPI response (UserResponse, see
+    // user-api.types.ts) returns `roles: ('ORGANIZER' | 'SPEAKER' | …)[]` — UPPERCASE
+    // enum values, plural, no "available" prefix. The old code read
+    // `profile.availableRoles` (lowercase, with "available" prefix) — a field that
+    // simply doesn't exist on the response. The cast to `UserProfileResponse` in
+    // userApi.ts was a lie; TypeScript never noticed because the response is
+    // untyped at runtime. The whole Pattern 3b fallback was a silent no-op as a
+    // result: every locally-created speaker hit this with `availableRoles=undefined`
+    // → `fetchedRoles=[]` → returned the user unchanged → empty dashboard.
+    //
+    // Fix: read the actual `roles` field, lowercase the enum values to match the
+    // frontend `UserRole` union, and let the existing logic run. `currentRole` is
+    // not on the response either; the first role serves as the primary.
+    const raw = profile as unknown as { roles?: string[]; currentRole?: string };
+    const fetchedRoles: UserRole[] = (raw.roles ?? [])
+      .map((r) => r.toLowerCase())
+      .filter(
+        (r): r is UserRole =>
+          r === 'organizer' || r === 'speaker' || r === 'partner' || r === 'attendee'
+      );
     if (fetchedRoles.length === 0) {
       return user;
     }
-    const primary = profile.currentRole ?? fetchedRoles[0];
+    const primary: UserRole =
+      raw.currentRole && fetchedRoles.includes(raw.currentRole.toLowerCase() as UserRole)
+        ? (raw.currentRole.toLowerCase() as UserRole)
+        : fetchedRoles[0];
     console.log(
       '[AuthProvider] Hydrated roles from /users/me (JWT custom:role was empty) —',
       'roles=',

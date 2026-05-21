@@ -150,8 +150,18 @@ const InvitationResponsePage = () => {
     },
   });
 
-  // Update page state based on validation result
+  // Update page state based on validation result.
+  //
+  // 2026-05-21: once `respondMutation` has succeeded, leave pageState alone —
+  // `respondMutation.onSuccess` owns the transition to 'success' and we must not
+  // overwrite it. The IIFE that builds `invitation` (lines ~85-138) returns a new
+  // object reference on every render, so this effect's `invitation` dep changes
+  // identity on every render even when nothing meaningful changed. Without the
+  // early return, the success view rendered for a single frame and was then
+  // overwritten back to the form on the next render — the bug reported as
+  // "response dialog doesn't close after Antwort senden."
   useEffect(() => {
+    if (respondMutation.isSuccess) return;
     if (isLoading) {
       setPageState('loading');
     } else if (validationError) {
@@ -163,7 +173,7 @@ const InvitationResponsePage = () => {
     } else if (invitation && !invitation.valid) {
       setPageState('error');
     }
-  }, [isLoading, validationError, invitation]);
+  }, [isLoading, validationError, invitation, respondMutation.isSuccess]);
 
   // Auto-select response based on action parameter from email link
   useEffect(() => {
