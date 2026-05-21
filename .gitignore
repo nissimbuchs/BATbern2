@@ -162,6 +162,13 @@ credentials.yml
 *secret*
 *password*
 *passwd*
+
+# Whitelist legitimate source files matching the secret/password patterns
+# above (those patterns are defensive — they guard against accidental commits
+# of credential files like passwords.csv / *.password / secrets.yaml — and
+# must not swallow real source code).
+!**/PasswordGenerator.java
+!**/PasswordGeneratorTest.java
 *.keystore
 *.jks
 *.truststore
