@@ -72,6 +72,7 @@ public class SpeakerPortalMaterialsService {
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -193,12 +194,15 @@ public class SpeakerPortalMaterialsService {
                 .fileSize(request.fileSize())
                 .mimeType(request.mimeType())
                 .materialType(request.materialType() != null ? request.materialType() : "PRESENTATION")
-                // Code review 2026-05-18 (P2): drop the display-name fallback. The auth helper
-                // SpeakerPortalAuthorizationService.resolveSpeakerPool now rejects pool rows with
-                // null/blank username at the controller boundary (→ 409), so we can rely on
-                // speaker.getUsername() being non-null here. Falling back to speakerName would
-                // poison joins from session_materials.uploaded_by to users.username.
-                .uploadedBy(speaker.getUsername())
+                // Story 11.E.9: username comes from session_users via PrimarySpeakerResolver
+                // (the speaker_pool.username column is gone). Speakers reaching material upload
+                // are CONTENT_SUBMITTED+ and always have a primary session_users row; the
+                // resolver returning empty here would be a real provisioning bug.
+                .uploadedBy(primarySpeakerResolver.resolve(speaker)
+                        .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Speaker " + speaker.getId() + " has no resolvable username — "
+                                        + "missing PRIMARY_SPEAKER session_users row")))
                 .contentExtracted(false)
                 .extractionStatus("PENDING")
                 .build();

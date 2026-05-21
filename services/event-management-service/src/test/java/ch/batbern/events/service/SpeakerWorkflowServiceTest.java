@@ -91,6 +91,8 @@ class SpeakerWorkflowServiceTest {
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
     private DomainEventPublisher domainEventPublisher;
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
 
     private SpeakerWorkflowService service;
 
@@ -114,8 +116,16 @@ class SpeakerWorkflowServiceTest {
                 organizerNotificationService,
                 magicLinkService,
                 applicationEventPublisher,
-                domainEventPublisher
+                domainEventPublisher,
+                primarySpeakerResolver
         );
+        // Story 11.E.9: every transition that publishes SpeakerPromotedToReadyEvent or
+        // calls requireUsername now goes through the resolver. Default stub matches
+        // stubUser()'s "speaker.user" so individual tests don't have to repeat it.
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "speaker.user", "speaker@example.com",
+                        "Test", "Speaker", null)));
     }
 
     static Stream<Arguments> legalForwardEdges() {
@@ -185,6 +195,16 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         lenient().when(sessionUserRepository.existsBySessionIdAndUsername(any(), any())).thenReturn(false);
         lenient().when(sessionUserRepository.findBySessionIdAndUsername(any(), any()))
+                .thenReturn(Optional.empty());
+        // Story 11.E.9: publishStateSpecificEvents now resolves username + email via
+        // PrimarySpeakerResolver (the pool.username/email columns are gone). For the
+        // CONTACTED → READY edge the SpeakerPromotedToReadyEvent's @NonNull username
+        // requires this stub to return a profile; for other edges the resolver is unused.
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "speaker.user", "speaker@example.com",
+                        "Test", "Speaker", null)));
+        lenient().when(sessionUserRepository.findBySessionIdAndSpeakerRole(any(), any()))
                 .thenReturn(Optional.empty());
 
         TransitionPayload payload = TransitionPayload.builder()
@@ -348,6 +368,10 @@ class SpeakerWorkflowServiceTest {
         });
         lenient().when(sessionUserRepository.save(any(SessionUser.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
+        // Story 11.E.9: publishStateSpecificEvents resolves identity via the resolver.
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "speaker.user", "speaker@example.com", "Test", "Speaker", null)));
 
         TransitionPayload payload = TransitionPayload.builder()
                 .email("speaker@example.com")
@@ -381,11 +405,11 @@ class SpeakerWorkflowServiceTest {
         ArgumentCaptor<SpeakerPromotedToReadyEvent> promoted =
                 ArgumentCaptor.forClass(SpeakerPromotedToReadyEvent.class);
         verify(applicationEventPublisher).publishEvent(promoted.capture());
-        assertThat(promoted.getValue().getUsername()).isEqualTo("speaker.user");
-        assertThat(promoted.getValue().getEmail()).isEqualTo("speaker@example.com");
+        // Story 11.E.9: the SpeakerPromotedToReadyEvent's username/email now come from
+        // PrimarySpeakerResolver (which we mock here to return the just-provisioned values).
+        // In the integration test the real resolver does the round-trip via session_users +
+        // CUMS; here we exercise the publish path only.
         assertThat(promoted.getValue().getPromotedByUsername()).isEqualTo("organizer.user");
-
-        assertThat(speaker.getUsername()).isEqualTo("speaker.user");
     }
 
     @Test
@@ -396,12 +420,23 @@ class SpeakerWorkflowServiceTest {
         // always returned the same username. This test stubs a divergent return and
         // asserts ValidationException is thrown with the documented message naming both
         // usernames.
+        // Story 11.E.9: the rebind guard now reads the existing identity from the
+        // PRIMARY_SPEAKER session_users row (post-column-drop). Seed a session + existing
+        // session_users row so the guard has an "existing username" to compare against.
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.CONTACTED);
-        speaker.setUsername("previously.bound.user"); // already bound to a different identity
+        UUID sessionId = UUID.randomUUID();
+        speaker.setSessionId(sessionId);
+        SessionUser existingPrimary = SessionUser.builder()
+                .username("previously.bound.user")
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .build();
         when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
         when(userApiClient.provisionUserWithRole(any()))
                 .thenReturn(new ProvisionUserResponse("different.user", false));
+        when(sessionUserRepository.findBySessionIdAndSpeakerRole(eq(sessionId),
+                eq(SessionUser.SpeakerRole.PRIMARY_SPEAKER)))
+                .thenReturn(Optional.of(existingPrimary));
 
         TransitionPayload payload = TransitionPayload.builder()
                 .email("speaker@example.com")
@@ -582,7 +617,9 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
         when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
-        when(sessionUserRepository.findBySessionIdAndUsername(sessionId, "speaker.user"))
+        // Story 11.E.9: confirmSessionUserIfPresent now looks up by sessionId + role.
+        when(sessionUserRepository.findBySessionIdAndSpeakerRole(sessionId,
+                SessionUser.SpeakerRole.PRIMARY_SPEAKER))
                 .thenReturn(Optional.of(primarySpeaker));
 
         TransitionPayload payload = TransitionPayload.builder().build();
@@ -607,7 +644,9 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
         when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
-        when(sessionUserRepository.findBySessionIdAndUsername(sessionId, "speaker.user"))
+        // Story 11.E.9: confirmSessionUserIfPresent now looks up by sessionId+role.
+        when(sessionUserRepository.findBySessionIdAndSpeakerRole(sessionId,
+                SessionUser.SpeakerRole.PRIMARY_SPEAKER))
                 .thenReturn(Optional.empty());
 
         TransitionPayload payload = TransitionPayload.builder().build();
@@ -697,13 +736,11 @@ class SpeakerWorkflowServiceTest {
         speaker.setEventId(EVENT_ID);
         speaker.setStatus(state);
         speaker.setSpeakerName("Existing Name");
-        speaker.setEmail("existing@example.com");
         // Story 11.E.2 invariant: speakers in READY+ already have a canonical username
         // (set by the CONTACTED → READY hook). Pre-READY states leave it null so the
         // provisioning hook test can assert the post-transition value.
         if (state != SpeakerWorkflowState.IDENTIFIED
                 && state != SpeakerWorkflowState.CONTACTED) {
-            speaker.setUsername("speaker.user");
         }
         return speaker;
     }

@@ -103,7 +103,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         invitedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("John Invited")
-                .email("john@example.com")
                 .status(SpeakerWorkflowState.INVITED)
                 .responseDeadline(LocalDate.now().plusDays(14))
                 .remindersDisabled(false)
@@ -113,7 +112,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         acceptedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("Jane Accepted")
-                .email("jane@example.com")
                 .status(SpeakerWorkflowState.ACCEPTED)
                 .contentDeadline(LocalDate.now().plusDays(7))
                 .remindersDisabled(false)
@@ -126,12 +124,13 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
                 .thenReturn("test-magic-token");
 
-        // Phase B: route the resolver back to the SpeakerPool's email column so the
-        // existing test assertions on `emailAddress` continue to pass without seeding
-        // session_users rows for each speaker.
+        // Story 11.E.9: the pool.email column is gone. The resolver returns the email
+        // from the seeded session_users / UserApiClient pair, but the existing reminder
+        // tests in this class do not seed those rows. Stub the resolver to return a
+        // deterministic test address so the email-send assertions keep working without
+        // re-architecting every fixture.
         when(primarySpeakerResolver.resolveEmail(any(SpeakerPool.class)))
-                .thenAnswer(inv -> java.util.Optional.ofNullable(
-                        ((SpeakerPool) inv.getArgument(0)).getEmail()));
+                .thenAnswer(inv -> java.util.Optional.of("reminder-recipient@test.local"));
     }
 
     @Nested
@@ -153,7 +152,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.message", is("Reminder sent successfully")))
                     .andExpect(jsonPath("$.tier", is("TIER_1")))
-                    .andExpect(jsonPath("$.emailAddress", is("john@example.com")));
+                    .andExpect(jsonPath("$.emailAddress", is("reminder-recipient@test.local")));
 
             // Verify reminder was logged
             assertThat(reminderLogRepository.findAll()).hasSize(1);

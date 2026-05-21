@@ -45,8 +45,10 @@ public class SpeakerPool {
     @Column(name = "event_id", nullable = false, columnDefinition = "UUID")
     private UUID eventId;
 
-    @Column(name = "username", length = 255)
-    private String username; // Username for authenticated speakers (Story BAT-11)
+    // Story 11.E.9 consolidation: username + email columns dropped (V103).
+    // The canonical post-READY identity lives on session_users.username + UserApiClient;
+    // pre-READY pool rows (IDENTIFIED/CONTACTED) have no User record yet. Use
+    // PrimarySpeakerResolver.resolve(pool) to fetch the live identity.
 
     @Column(name = "speaker_name", nullable = false, length = 255)
     private String speakerName;
@@ -90,8 +92,7 @@ public class SpeakerPool {
     private String notes;
 
     // Story 6.1b: Speaker Invitation System fields
-    @Column(name = "email", length = 255)
-    private String email;
+    // Story 11.E.9: email column dropped (V103) — see note at top of class.
 
     @Column(name = "invited_at")
     private Instant invitedAt;

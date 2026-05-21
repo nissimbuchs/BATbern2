@@ -74,6 +74,7 @@ public class ContentSubmissionService {
     private final SpeakerWorkflowService speakerWorkflowService;
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     // ============================================================
     // Speaker portal helpers — Story 11.E.3 (Cognito Bearer auth)
@@ -408,9 +409,9 @@ public class ContentSubmissionService {
 
     /**
      * Patch the speaker's User profile (bio + profilePictureUrl) when the payload carries
-     * non-null values. Skipped (with a warning) when {@code speaker.getUsername()} is null —
-     * pre-11.B.2 legacy data where the speaker arrived at CONTENT_SUBMITTED without going
-     * through a CONTACTED → READY provisioning.
+     * non-null values. Skipped (with a warning) when the canonical username (resolved via
+     * session_users) is null — pre-11.B.2 legacy data where the speaker arrived at
+     * CONTENT_SUBMITTED without going through a CONTACTED → READY provisioning.
      *
      * <p><b>Dual-write asymmetry (known issue, code review 2026-05-16):</b> this HTTP
      * PATCH against CUMS commits in the User Management Service immediately. If a later
@@ -433,10 +434,12 @@ public class ContentSubmissionService {
             return;
         }
 
-        String username = speaker.getUsername();
+        String username = primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElse(null);
         if (username == null || username.isBlank()) {
-            log.warn("Skipping profile patch for speaker {} — username is null (pre-11.B.2 legacy"
-                    + " speaker; expected to be set at CONTACTED → READY)", speaker.getId());
+            log.warn("Skipping profile patch for speaker {} — no canonical username (pre-11.B.2"
+                    + " legacy speaker, or session_users overlay missing)", speaker.getId());
             return;
         }
 

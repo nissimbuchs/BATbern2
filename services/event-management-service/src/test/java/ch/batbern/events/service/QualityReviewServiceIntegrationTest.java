@@ -240,7 +240,6 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     void should_storeReviewerFeedbackInContentSubmission_when_contentRejected() {
         // Given: Speaker with content_submitted and a SessionContentVersion record
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setEmail("john.doe@example.com");
         speakerPoolRepository.save(speaker);
 
         Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();

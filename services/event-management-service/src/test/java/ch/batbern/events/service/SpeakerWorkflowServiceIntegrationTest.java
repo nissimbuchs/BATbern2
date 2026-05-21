@@ -4,6 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.generated.EventType;
@@ -69,6 +70,8 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private SpeakerPoolRepository speakerPoolRepository;
     @Autowired
     private SessionRepository sessionRepository;
+    @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
     @Autowired
     private EventRepository eventRepository;
     @Autowired
@@ -324,9 +327,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
 
         SpeakerPool persisted = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(persisted.getUsername()).isEqualTo("speaker.user");
-        assertThat(persisted.getEmail()).isEqualTo("speaker@example.com");
         assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.READY);
+        // Story 11.E.9: canonical identity moved to session_users + CUMS. After READY the
+        // session_users row carries the username; the email lives in CUMS.
+        assertThat(persisted.getSessionId()).as("session provisioned at READY").isNotNull();
+        SessionUser primary = sessionUserRepository.findBySessionIdAndSpeakerRole(
+                persisted.getSessionId(), SessionUser.SpeakerRole.PRIMARY_SPEAKER).orElseThrow();
+        assertThat(primary.getUsername()).isEqualTo("speaker.user");
     }
 
     // ---- AC10 #7: INVITED slot-capacity gate ----
@@ -373,17 +380,23 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool candidate = createSpeaker(SpeakerWorkflowState.READY);
         TransitionPayload payload = TransitionPayload.builder().build();
 
+        // Story 11.E.9: resolve the seeded username from the PRIMARY_SPEAKER session_users
+        // row (the speaker_pool.username column is gone).
+        String candidateUsername = sessionUserRepository.findBySessionIdAndSpeakerRole(
+                candidate.getSessionId(), SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .orElseThrow().getUsername();
+
         // Override the default stub with a fresh-temp-password response for assertions.
         InvitationCredentialsResponse stubbedResponse = new InvitationCredentialsResponse(
                 InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
                 .temporaryPassword("Test1234!@#abcde");
-        when(userApiClient.issueInvitationCredentials(candidate.getUsername()))
+        when(userApiClient.issueInvitationCredentials(candidateUsername))
                 .thenReturn(stubbedResponse);
 
         workflowService.transition(candidate.getId(), SpeakerWorkflowState.INVITED, ORGANIZER, payload);
 
         // Exactly one call to issueInvitationCredentials with the speaker's username.
-        verify(userApiClient, times(1)).issueInvitationCredentials(candidate.getUsername());
+        verify(userApiClient, times(1)).issueInvitationCredentials(candidateUsername);
 
         // The email service was invoked once with the captured InvitationCredentialsResponse.
         org.mockito.ArgumentCaptor<InvitationCredentialsResponse> credentialsCaptor =
@@ -453,17 +466,38 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         speaker.setSpeakerName("Speaker " + UUID.randomUUID().toString().substring(0, 8));
         speaker.setCompany("Tech Corp");
         speaker.setExpertise("Architecture");
-        speaker.setEmail("existing." + UUID.randomUUID().toString().substring(0, 8) + "@example.com");
-        // Story 11.E.2 review patch (P2 / E5): SpeakerWorkflowService.requireUsername now
-        // fails-fast when a READY speaker reaches INVITED without a username. Pre-seed a
-        // username for READY+ states (mirroring the real runReadyHook output) so the
-        // INVITED-precondition guard passes. Earlier states (IDENTIFIED/CONTACTED) leave
-        // it null so the runReadyHook identity-rebind guard doesn't fire on transition.
-        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
-            speaker.setUsername("speaker." + UUID.randomUUID().toString().substring(0, 8));
-        }
         speaker.setStatus(status);
-        return speakerPoolRepository.save(speaker);
+        speaker = speakerPoolRepository.save(speaker);
+        // Story 11.E.9: when seeding a speaker DIRECTLY at READY+ (bypassing the
+        // runReadyHook), also provision a Session + PRIMARY_SPEAKER session_users row
+        // so PrimarySpeakerResolver finds a canonical identity. Earlier states
+        // (IDENTIFIED/CONTACTED) leave session_users empty so the runReadyHook
+        // identity-rebind guard doesn't fire on transition.
+        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
+            seedPrimarySessionUser(speaker, "speaker." + UUID.randomUUID().toString().substring(0, 8));
+        }
+        return speaker;
+    }
+
+    private void seedPrimarySessionUser(SpeakerPool speaker, String username) {
+        Session session = Session.builder()
+                .eventId(testEventId)
+                .eventCode(testEvent.getEventCode())
+                .title("Seeded — " + username)
+                .sessionSlug("seeded-" + UUID.randomUUID().toString().substring(0, 8))
+                .sessionType("presentation")
+                .speakerPoolId(speaker.getId())
+                .build();
+        session = sessionRepository.save(session);
+        SessionUser su = SessionUser.builder()
+                .session(session)
+                .username(username)
+                .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+        sessionUserRepository.save(su);
+        speaker.setSessionId(session.getId());
+        speakerPoolRepository.save(speaker);
     }
 
     private static boolean statusIsAtOrAfter(SpeakerWorkflowState a, SpeakerWorkflowState b) {
@@ -491,16 +525,21 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         speaker.setSpeakerName("Speaker With Session");
         speaker.setCompany("Tech Corp");
         speaker.setExpertise("Architecture");
-        speaker.setEmail("session.speaker@example.com");
-        // Story 11.E.2 review patch (P2 / E5): seed username for READY+ states so the
-        // INVITED precondition (requireUsername) passes; leave null for IDENTIFIED/CONTACTED
-        // so the runReadyHook identity-rebind guard doesn't fire on transition.
-        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
-            speaker.setUsername("session.speaker." + UUID.randomUUID().toString().substring(0, 8));
-        }
         speaker.setStatus(status);
         speaker.setSessionId(session.getId());
-        return speakerPoolRepository.save(speaker);
+        speaker = speakerPoolRepository.save(speaker);
+        // Story 11.E.9: provision PRIMARY_SPEAKER session_users row when seeding at
+        // READY+ so PrimarySpeakerResolver finds a canonical identity.
+        if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
+            SessionUser su = SessionUser.builder()
+                    .session(session)
+                    .username("speaker." + UUID.randomUUID().toString().substring(0, 8))
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .isConfirmed(false)
+                    .build();
+            sessionUserRepository.save(su);
+        }
+        return speaker;
     }
 
     private TransitionPayload payloadFor(SpeakerWorkflowState target) {

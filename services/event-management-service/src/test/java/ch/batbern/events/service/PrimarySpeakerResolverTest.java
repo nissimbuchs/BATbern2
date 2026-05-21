@@ -51,8 +51,6 @@ class PrimarySpeakerResolverTest {
                     .id(UUID.randomUUID())
                     .sessionId(sessionId)
                     // Stale pool columns — deliberately wrong to prove resolver ignores them.
-                    .username("stale.pool.user")
-                    .email("stale@old.example")
                     .speakerName("Stale Brainstorm Name")
                     .build();
 
@@ -93,7 +91,6 @@ class PrimarySpeakerResolverTest {
             SpeakerPool pool = SpeakerPool.builder()
                     .id(UUID.randomUUID())
                     .sessionId(null)
-                    .email("brainstorm.notes@example")
                     .build();
 
             assertThat(resolver.resolve(pool)).isEmpty();

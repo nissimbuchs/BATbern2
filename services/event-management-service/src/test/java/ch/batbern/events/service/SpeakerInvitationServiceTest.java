@@ -71,6 +71,8 @@ class SpeakerInvitationServiceTest {
     private OutreachHistoryRepository outreachHistoryRepository;
     @Mock
     private SpeakerWorkflowService speakerWorkflowService;
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
 
     @InjectMocks
     private SpeakerInvitationService speakerInvitationService;
@@ -94,6 +96,14 @@ class SpeakerInvitationServiceTest {
 
         lenient().when(outreachHistoryRepository.save(any(OutreachHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
+        // Story 11.E.9: sendInvitation resolves recipient email + response identity via
+        // PrimarySpeakerResolver (pool.email column is gone). Default to a valid profile;
+        // individual tests can override.
+        lenient().when(primarySpeakerResolver.resolveEmail(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(testEmail));
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        testUsername, testEmail, "Test", "Speaker", "TestCorp")));
     }
 
     // -------- inviteSpeaker (pool-entry creation; unchanged) --------
@@ -105,8 +115,8 @@ class SpeakerInvitationServiceTest {
                 testEmail, "Test", "Speaker", "TestCorp", null, null);
 
         when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
-        when(speakerPoolRepository.findByEventIdAndEmail(testEventId, testEmail))
-                .thenReturn(Optional.empty());
+        // Story 11.E.9: findByEventIdAndEmail was removed when the email column was
+        // dropped from speaker_pool. The email-based idempotency check went away with it.
         GetOrCreateUserResponse userResp = new GetOrCreateUserResponse();
         userResp.setUsername(testUsername);
         userResp.setCreated(true);
@@ -149,8 +159,6 @@ class SpeakerInvitationServiceTest {
         SpeakerPool speaker = SpeakerPool.builder()
                 .id(testSpeakerId)
                 .eventId(testEventId)
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Test Speaker")
                 .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())

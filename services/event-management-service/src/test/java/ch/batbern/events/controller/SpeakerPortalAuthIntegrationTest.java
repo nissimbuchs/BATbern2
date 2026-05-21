@@ -144,8 +144,6 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .eventId(testEvent.getId())
                 .sessionId(aliceSession.getId())
                 .speakerName("Alice Speaker")
-                .email("alice@example.com")
-                .username(SPEAKER_USERNAME)
                 .status(SpeakerWorkflowState.INVITED)
                 .build());
         aliceSession.setSpeakerPoolId(alicePool.getId());

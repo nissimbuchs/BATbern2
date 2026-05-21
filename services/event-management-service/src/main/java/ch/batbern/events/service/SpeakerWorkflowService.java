@@ -112,6 +112,7 @@ public class SpeakerWorkflowService {
     private final MagicLinkService magicLinkService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final DomainEventPublisher domainEventPublisher;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     // Story 11.E.2: speaker-portal login URL embedded in the Cognito-flow invitation email.
     // The fallback default is the production URL — keep for backward compatibility but warn
@@ -280,12 +281,16 @@ public class SpeakerWorkflowService {
      * A speaker should always have a username by the time it reaches READY (set in the
      * READY hook); this guards against legacy migration / same-state edge cases.
      */
-    private void requireUsername(SpeakerPool speaker) {
-        if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
-            throw new ValidationException(
-                    "Speaker username is missing — provisioning at READY did not complete. "
-                            + "Re-run the CONTACTED → READY transition before promoting to INVITED.");
-        }
+    private String requireUsername(SpeakerPool speaker) {
+        // Story 11.E.9: canonical username lives on session_users. requireUsername now
+        // both validates *and* returns the resolved username so callers don't make a
+        // second resolver round-trip.
+        return primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .filter(u -> u != null && !u.isBlank())
+                .orElseThrow(() -> new ValidationException(
+                        "Speaker username is missing — provisioning at READY did not complete. "
+                                + "Re-run the CONTACTED → READY transition before promoting to INVITED."));
     }
 
     private void enforceSlotCapacity(Event event) {
@@ -364,34 +369,32 @@ public class SpeakerWorkflowService {
 
         ProvisionUserResponse userResponse = userApiClient.provisionUserWithRole(provisionRequest);
 
-        // Identity-rebind guard: if the speaker is already bound to a different username/email,
-        // the lookup result may point at a wholly different User account (e.g. organizer corrected
-        // a typo and the new email already belonged to someone else). Reject the implicit re-bind
-        // rather than silently overwriting the audit trail.
-        String existingUsername = speaker.getUsername();
-        if (existingUsername != null && !existingUsername.isBlank()
-                && !existingUsername.equals(userResponse.getUsername())) {
-            throw new ValidationException(String.format(
-                    "Cannot rebind speaker %s from user '%s' to user '%s' implicitly — "
-                            + "explicit identity change requires a dedicated organizer action.",
-                    speaker.getId(), existingUsername, userResponse.getUsername()));
+        // Identity-rebind guard (Story 11.E.9): the prior speaker identity, if any, lives
+        // on the existing PRIMARY_SPEAKER session_users row. A re-run of CONTACTED → READY
+        // for a session that's already bound to a different user is a probable typo
+        // correction and must be made explicit rather than silently overwriting the audit
+        // trail. If there's no session yet, no rebind concern.
+        UUID currentSessionId = speaker.getSessionId();
+        if (currentSessionId != null) {
+            sessionUserRepository.findBySessionIdAndSpeakerRole(
+                            currentSessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .ifPresent(existing -> {
+                        if (existing.getUsername() != null && !existing.getUsername().isBlank()
+                                && !existing.getUsername().equals(userResponse.getUsername())) {
+                            throw new ValidationException(String.format(
+                                    "Cannot rebind speaker %s from user '%s' to user '%s' implicitly — "
+                                            + "explicit identity change requires a dedicated organizer action.",
+                                    speaker.getId(), existing.getUsername(), userResponse.getUsername()));
+                        }
+                    });
         }
-        String existingEmail = speaker.getEmail();
-        if (existingEmail != null && !existingEmail.isBlank()
-                && !existingEmail.equalsIgnoreCase(payload.email())) {
-            log.warn("Speaker {} email change at READY: '{}' → '{}' (resolved to user '{}')",
-                    speaker.getId(), existingEmail, payload.email(), userResponse.getUsername());
-        }
-
-        speaker.setUsername(userResponse.getUsername());
-        speaker.setEmail(payload.email());
 
         // Story 11.E.8: provision the Session + PRIMARY_SPEAKER SessionUser row alongside
         // the user record. From READY onward, session_users is the canonical record for
         // speaker meta (title, abstract, materials, confirmation). speaker_pool keeps the
         // workflow state machine only. Idempotent — re-running the READY transition (e.g.
         // a same-state save) reuses the existing session.
-        provisionSessionAndPrimarySpeaker(speaker, event);
+        provisionSessionAndPrimarySpeaker(speaker, event, userResponse.getUsername());
     }
 
     /**
@@ -408,14 +411,14 @@ public class SpeakerWorkflowService {
      * {@code <eventCode>-<username>} (with collision counter). Both are overwritten in
      * {@code ContentSubmissionService.submit()} when the real content arrives.
      */
-    private void provisionSessionAndPrimarySpeaker(SpeakerPool speaker, Event event) {
+    private void provisionSessionAndPrimarySpeaker(SpeakerPool speaker, Event event, String username) {
         UUID currentSessionId = speaker.getSessionId();
         if (currentSessionId != null) {
             Optional<Session> existing = sessionRepository.findById(currentSessionId);
             if (existing.isPresent()) {
                 // Already provisioned — ensure the PRIMARY_SPEAKER row exists too (defensive
                 // against partial state).
-                ensurePrimarySpeakerRow(existing.get(), speaker.getUsername());
+                ensurePrimarySpeakerRow(existing.get(), username);
                 return;
             }
             log.warn("Speaker {} references missing session {} at READY hook — clearing FK and "
@@ -423,10 +426,10 @@ public class SpeakerWorkflowService {
             speaker.setSessionId(null);
         }
 
-        String sessionSlug = generateUniqueSlug(event.getEventCode(), speaker.getUsername());
+        String sessionSlug = generateUniqueSlug(event.getEventCode(), username);
         String placeholderTitle = speaker.getSpeakerName() != null && !speaker.getSpeakerName().isBlank()
                 ? speaker.getSpeakerName()
-                : "TBD — " + speaker.getUsername();
+                : "TBD — " + username;
 
         Session session = Session.builder()
                 .eventId(event.getId())
@@ -440,7 +443,7 @@ public class SpeakerWorkflowService {
 
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
-                .username(speaker.getUsername())
+                .username(username)
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -504,8 +507,14 @@ public class SpeakerWorkflowService {
         // NB: Email send currently fires synchronously inside the @Transactional boundary; if the
         // transition rolls back after this point, the email has already been sent. Moving to
         // AFTER_COMMIT semantics is tracked in deferred-work (code review 11.B.2, P2).
+        // Story 11.E.9: canonical username from session_users (the requireUsername guard
+        // at READY → INVITED already validated this resolves).
+        String username = primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Speaker " + speaker.getId() + " reached INVITED with no resolvable username"));
         InvitationCredentialsResponse credentials =
-                userApiClient.issueInvitationCredentials(speaker.getUsername());
+                userApiClient.issueInvitationCredentials(username);
 
         Locale locale = resolveLocale(payload);
         String loginUrl = baseUrl + "/login";
@@ -574,24 +583,24 @@ public class SpeakerWorkflowService {
 
     private void confirmSessionUserIfPresent(SpeakerPool speaker) {
         UUID sessionId = speaker.getSessionId();
-        String username = speaker.getUsername();
-        if (sessionId == null || username == null || username.isBlank()) {
-            log.warn("Speaker {} reached ACCEPTED without sessionId+username — session_users.is_confirmed "
+        if (sessionId == null) {
+            log.warn("Speaker {} reached ACCEPTED without a sessionId — session_users.is_confirmed "
                     + "not updated. Pre-11.E.8 legacy speaker?", speaker.getId());
             return;
         }
-        Optional<SessionUser> sessionUserOpt =
-                sessionUserRepository.findBySessionIdAndUsername(sessionId, username);
+        // Story 11.E.9: look up by sessionId + PRIMARY_SPEAKER role (unique by design).
+        Optional<SessionUser> sessionUserOpt = sessionUserRepository
+                .findBySessionIdAndSpeakerRole(sessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
         if (sessionUserOpt.isPresent()) {
             SessionUser su = sessionUserOpt.get();
             su.confirm();
             sessionUserRepository.save(su);
             log.info("Confirmed session_users row for speaker {} (session {}, username '{}')",
-                    speaker.getId(), sessionId, username);
+                    speaker.getId(), sessionId, su.getUsername());
         } else {
-            log.warn("No session_users row found for speaker {} (session {}, username '{}') "
+            log.warn("No PRIMARY_SPEAKER session_users row found for speaker {} (session {}) "
                     + "at ACCEPTED — is_confirmed not flipped. Pre-11.E.8 legacy speaker?",
-                    speaker.getId(), sessionId, username);
+                    speaker.getId(), sessionId);
         }
     }
 
@@ -672,12 +681,16 @@ public class SpeakerWorkflowService {
             String username
     ) {
         // CONTACTED → READY → SpeakerPromotedToReadyEvent (consumed by Phase E for Cognito email).
+        // Story 11.E.9: resolve username+email from session_users + CUMS (the speaker_pool
+        // columns are gone; the READY hook just provisioned both upstream).
         if (from == SpeakerWorkflowState.CONTACTED && to == SpeakerWorkflowState.READY) {
+            PrimarySpeakerResolver.PrimarySpeakerProfile profile =
+                    primarySpeakerResolver.resolve(speaker).orElse(null);
             SpeakerPromotedToReadyEvent promoted = SpeakerPromotedToReadyEvent.builder()
                     .speakerPoolId(speaker.getId())
                     .eventCode(event.getEventCode())
-                    .username(speaker.getUsername())
-                    .email(speaker.getEmail())
+                    .username(profile != null ? profile.username() : null)
+                    .email(profile != null ? profile.email() : null)
                     .promotedAt(Instant.now())
                     .promotedByUsername(username)
                     .build();

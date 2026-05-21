@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -107,6 +108,43 @@ public class PrimarySpeakerResolver {
         return resolve(pool)
                 .map(PrimarySpeakerProfile::email)
                 .filter(e -> e != null && !e.isBlank());
+    }
+
+    /**
+     * Apply the session-derived identity overlay to a speaker pool response.
+     *
+     * <p>Single-row variant of the bulk overlay applied by
+     * {@code SpeakerPoolService.applySessionIdentityOverlay}. Use this on PATCH/POST
+     * response paths where the caller has one pool row and wants the same live-identity
+     * semantics the list path gives.
+     *
+     * <p>When the pool has no session (status {@code IDENTIFIED}/{@code CONTACTED}),
+     * {@code response.username} and {@code response.email} stay {@code null} — there is
+     * no canonical identity until READY. Caller's responsibility to document.
+     *
+     * @param response the response DTO to mutate in-place
+     * @param pool     the source pool row
+     */
+    public void applyOverlay(SpeakerPoolResponse response, SpeakerPool pool) {
+        if (response == null || pool == null) {
+            return;
+        }
+        Optional<PrimarySpeakerProfile> profile = resolve(pool);
+        if (profile.isEmpty()) {
+            return;
+        }
+        PrimarySpeakerProfile p = profile.get();
+        response.setUsername(p.username());
+        if (p.email() != null && !p.email().isBlank()) {
+            response.setEmail(p.email());
+        }
+        String full = p.fullName();
+        if (!full.isEmpty()) {
+            response.setSpeakerName(full);
+        }
+        if (p.companyName() != null && !p.companyName().isBlank()) {
+            response.setCompany(p.companyName());
+        }
     }
 
     /**

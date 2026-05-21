@@ -103,6 +103,20 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
 
         when(userApiClient.provisionUserWithRole(any(ProvisionUserRequest.class)))
                 .thenAnswer(inv -> new ProvisionUserResponse(SPEAKER_USERNAME, true));
+        // Story 11.E.9: PROMOTE_TO_READY responses apply the resolver overlay, which calls
+        // UserApiClient.getUserByUsername to populate the live email + name. Stub the
+        // response so the overlay returns the expected SPEAKER_EMAIL. The generated
+        // UserResponse uses `id` for the username (Story 1.16.2).
+        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(SPEAKER_USERNAME))
+                .thenAnswer(inv -> {
+                    ch.batbern.events.dto.generated.users.UserResponse u =
+                            new ch.batbern.events.dto.generated.users.UserResponse();
+                    u.setId(SPEAKER_USERNAME);
+                    u.setEmail(SPEAKER_EMAIL);
+                    u.setFirstName("Jane");
+                    u.setLastName("Smith");
+                    return u;
+                });
     }
 
     // -------- AC1: happy path --------
@@ -137,8 +151,11 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
 
         SpeakerPool persisted = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.READY);
-        assertThat(persisted.getUsername()).isEqualTo(SPEAKER_USERNAME);
-        assertThat(persisted.getEmail()).isEqualTo(SPEAKER_EMAIL);
+        // Story 11.E.9: canonical identity moved off speaker_pool. The username now lives
+        // on the PRIMARY_SPEAKER session_users row provisioned at CONTACTED → READY; the
+        // response-body asserts above already cover that the JSON carries the live values
+        // via the overlay.
+        assertThat(persisted.getSessionId()).as("session provisioned at READY").isNotNull();
 
         List<SpeakerStatusHistory> history = statusHistoryRepository
                 .findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId());
@@ -264,8 +281,6 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
         // silently dropping the email payload. Rejecting at the controller surface keeps
         // the contract honest.
         SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.READY);
-        speaker.setUsername(SPEAKER_USERNAME);
-        speaker.setEmail(SPEAKER_EMAIL);
         speakerPoolRepository.save(speaker);
 
         mockMvc.perform(post("/api/v1/events/{code}/speakers/{id}/promote",

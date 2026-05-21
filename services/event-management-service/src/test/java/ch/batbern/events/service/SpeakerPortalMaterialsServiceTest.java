@@ -52,6 +52,9 @@ class SpeakerPortalMaterialsServiceTest {
     @Mock
     private S3Client s3Client;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private SpeakerPortalMaterialsService service;
 
     private UUID speakerPoolId;
@@ -63,10 +66,16 @@ class SpeakerPortalMaterialsServiceTest {
     @BeforeEach
     void setUp() {
         service = new SpeakerPortalMaterialsService(
-                sessionRepository, sessionMaterialsRepository, s3Presigner, s3Client
+                sessionRepository, sessionMaterialsRepository, s3Presigner, s3Client,
+                primarySpeakerResolver
         );
         ReflectionTestUtils.setField(service, "bucketName", "test-bucket");
         ReflectionTestUtils.setField(service, "cloudFrontDomain", "https://cdn.test.ch");
+        // Story 11.E.9: confirmUpload reads uploadedBy via PrimarySpeakerResolver. Default
+        // stub returns a valid username so the S3-copy regression tests can run.
+        org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(java.util.Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "speaker.user", "speaker@example.com", "Test", "Speaker", null)));
 
         speakerPoolId = UUID.randomUUID();
         sessionId = UUID.randomUUID();
@@ -76,7 +85,6 @@ class SpeakerPortalMaterialsServiceTest {
                 .id(speakerPoolId)
                 .eventId(eventId)
                 .speakerName("Test Speaker")
-                .username("test.speaker")
                 .sessionId(sessionId)
                 .build();
 

@@ -58,6 +58,8 @@ class SpeakerResponseServiceTest {
     private ApplicationEventPublisher eventPublisher;
     @Mock
     private SpeakerWorkflowService speakerWorkflowService;
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
 
     private SpeakerResponseService service;
 
@@ -71,14 +73,21 @@ class SpeakerResponseServiceTest {
                 speakerPoolRepository,
                 eventRepository,
                 eventPublisher,
-                speakerWorkflowService);
+                speakerWorkflowService,
+                primarySpeakerResolver);
+        // Story 11.E.9: processAcceptResponse calls primarySpeakerResolver.resolve()
+        // and orElseThrows when empty. Default to returning a valid profile so the
+        // happy-path tests don't have to repeat this stub.
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        SPEAKER_USERNAME, "speaker@example.com",
+                        "Test", "Speaker", null)));
     }
 
     @Test
     @DisplayName("ACCEPT delegates to SpeakerWorkflowService.transition() with Cognito actor")
     void should_delegateToTransition_when_acceptResponseSubmitted() {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
-        speaker.setUsername("speaker.user");
         Event event = seedEvent();
 
         when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
@@ -114,7 +123,6 @@ class SpeakerResponseServiceTest {
     @DisplayName("DECLINE delegates to transition() with reason payload")
     void should_delegateToTransition_when_declineResponseSubmitted() {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.INVITED);
-        speaker.setUsername("speaker.user");
         Event event = seedEvent();
 
         when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
@@ -196,7 +204,6 @@ class SpeakerResponseServiceTest {
         speaker.setEventId(EVENT_ID);
         speaker.setStatus(state);
         speaker.setSpeakerName("Test Speaker");
-        speaker.setEmail("test@example.com");
         return speaker;
     }
 

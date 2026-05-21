@@ -103,7 +103,6 @@ class SpeakerPortalTokenControllerIntegrationTest extends AbstractIntegrationTes
                 .company("Swiss Tech AG")
                 .expertise("Cloud Architecture")
                 .status(SpeakerWorkflowState.CONTACTED)
-                .username("alice.speaker")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

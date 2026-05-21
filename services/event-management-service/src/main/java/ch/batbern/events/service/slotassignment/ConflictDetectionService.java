@@ -143,7 +143,7 @@ public class ConflictDetectionService {
                 .toList();
 
         if (!conflictingSessionIds.isEmpty()) {
-            String speakerName = speaker.getUsername() != null ? speaker.getUsername() : speaker.getSpeakerName();
+            String speakerName = speaker.getSpeakerName();
             // Get the conflicting session slug for the error response
             String conflictingSlug = allSessions.stream()
                     .filter(s -> s.getSpeakerPoolId() != null && s.getSpeakerPoolId().equals(speakerId))
@@ -205,7 +205,7 @@ public class ConflictDetectionService {
         };
 
         if (!matchesPreference) {
-            String speakerName = speaker.getUsername() != null ? speaker.getUsername() : speaker.getSpeakerName();
+            String speakerName = speaker.getSpeakerName();
             return Optional.of(SchedulingConflict.builder()
                     .conflictType(ConflictType.PREFERENCE_MISMATCH)
                     .severity(ConflictSeverity.WARNING)

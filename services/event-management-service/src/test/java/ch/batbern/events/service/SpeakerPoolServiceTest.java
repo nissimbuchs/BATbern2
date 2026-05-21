@@ -67,6 +67,9 @@ class SpeakerPoolServiceTest {
     @Mock
     private SecurityContextHelper securityContextHelper;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private SpeakerPoolService service;
 
     private Event testEvent;
@@ -77,7 +80,8 @@ class SpeakerPoolServiceTest {
         service = new SpeakerPoolService(
                 speakerPoolRepository, eventRepository, sessionContentHistoryRepository,
                 sessionRepository, sessionMaterialsRepository, sessionUserRepository,
-                userApiClient, eventPublisher, securityContextHelper
+                userApiClient, eventPublisher, securityContextHelper,
+                primarySpeakerResolver
         );
 
         eventId = UUID.randomUUID();
@@ -311,8 +315,6 @@ class SpeakerPoolServiceTest {
                     .expertise("Some topic")
                     .status(SpeakerWorkflowState.CONTENT_SUBMITTED)
                     .sessionId(sessionId)
-                    .username("philipp.thomas")
-                    .email("philipp.thomas@old.example")
                     .build();
 
             Session session = Session.builder()

@@ -82,7 +82,6 @@ class SpeakerInvitationTokenRepositoryTest extends AbstractIntegrationTest {
                 .company("Test Corp")
                 .expertise("Java, Spring Boot")
                 .status(SpeakerWorkflowState.IDENTIFIED)
-                .username("john.speaker")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

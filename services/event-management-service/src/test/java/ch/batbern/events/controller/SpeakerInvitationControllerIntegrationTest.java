@@ -69,6 +69,12 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
     @MockitoBean
     private UserApiClient userApiClient;
 
@@ -114,6 +120,49 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         // Mock EmailService (don't actually send emails)
         doNothing().when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+
+        // Story 11.E.9: sendInvitation resolves the recipient email via
+        // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email
+        // column is gone). Stub the lookup so the email-resolution step doesn't 500.
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                new ch.batbern.events.dto.generated.users.UserResponse();
+        userProfile.setId(testUsername);
+        userProfile.setEmail(testEmail);
+        userProfile.setFirstName("Test");
+        userProfile.setLastName("Speaker");
+        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(testUsername))
+                .thenReturn(userProfile);
+        // Filler speakers in slot-capacity tests get arbitrary usernames; stub any() as a
+        // safe default so the resolver doesn't 500 for them.
+        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(anyString()))
+                .thenReturn(userProfile);
+    }
+
+    /**
+     * Story 11.E.9 helper: provision a Session + PRIMARY_SPEAKER session_users row for
+     * a speaker pool entry that was seeded directly at READY+. Without this, the
+     * {@code findByEventIdAndUsername} JOIN query returns empty and {@code sendInvitation}
+     * 404s before reaching its business logic.
+     */
+    private void seedPrimarySessionUser(SpeakerPool speaker, String username) {
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(speaker.getEventId())
+                .eventCode(testEventCode)
+                .title("Seeded — " + username)
+                .sessionSlug("seeded-" + java.util.UUID.randomUUID().toString().substring(0, 8))
+                .sessionType("presentation")
+                .speakerPoolId(speaker.getId())
+                .build();
+        session = sessionRepository.save(session);
+        ch.batbern.events.domain.SessionUser su = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username(username)
+                .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+        sessionUserRepository.save(su);
+        speaker.setSessionId(session.getId());
+        speakerPoolRepository.save(speaker);
     }
 
     // ==================== AC1: Single Invitation Tests ====================
@@ -149,17 +198,19 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     /**
-     * Test 1.2: Should return 200 for existing speaker (idempotency)
-     * AC7: Returns existing entry if speaker already invited
+     * Test 1.2: inviteSpeaker is no longer idempotent at IDENTIFIED.
+     *
+     * <p>Story 11.E.9: the email-based idempotency check was removed when
+     * speaker_pool.email column was dropped. Multiple pool rows for the same
+     * email/user at the brainstorm stage are now acceptable per the documented
+     * brainstorm UX. Always creates a new pool row.
      */
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return200_when_speakerAlreadyInvited() throws Exception {
-        // Given - Create existing speaker pool entry
+    void should_alwaysCreateNewEntry_when_emailReinvited() throws Exception {
+        // Given - existing speaker pool entry with the same email
         SpeakerPool existingSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Existing Speaker")
                 .status(SpeakerWorkflowState.CONTACTED)
                 .createdAt(Instant.now())
@@ -167,7 +218,13 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .build();
         speakerPoolRepository.save(existingSpeaker);
 
-        // When/Then - Invite same email again
+        // Story 11.E.9: re-inviting the same email creates another pool row.
+        ch.batbern.events.dto.generated.users.GetOrCreateUserResponse userResp =
+                new ch.batbern.events.dto.generated.users.GetOrCreateUserResponse();
+        userResp.setUsername(testUsername);
+        userResp.setCreated(false);
+        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class))).thenReturn(userResp);
+
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -177,13 +234,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                                 "lastName": "Speaker"
                             }
                             """.formatted(testEmail)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.speakerName", is("Existing Speaker")))
-                .andExpect(jsonPath("$.status", is("CONTACTED")))
-                .andExpect(jsonPath("$.created", is(false)));
-
-        // Verify UserApiClient was NOT called (idempotency)
-        verify(userApiClient, never()).getOrCreateUser(any(GetOrCreateUserRequest.class));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status", is("IDENTIFIED")));
     }
 
     /**
@@ -271,14 +323,15 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // because provisioning runs at CONTACTED -> READY first).
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Test Speaker")
                 .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        speakerPoolRepository.save(speaker);
+        speaker = speakerPoolRepository.save(speaker);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users — provision a
+        // primary session_users row so the lookup resolves.
+        seedPrimarySessionUser(speaker, testUsername);
 
         // Story 11.E.2 review patch (P8 / B10): stub the new sibling endpoint that the
         // INVITED hook now calls. Without this stub the mock would return null and the
@@ -339,8 +392,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // Given - Create speaker pool entry
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Test Speaker")
                 .status(SpeakerWorkflowState.IDENTIFIED)
                 .createdAt(Instant.now())
@@ -373,8 +424,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         for (int i = 0; i < saturate; i++) {
             SpeakerPool filler = SpeakerPool.builder()
                     .eventId(testEvent.getId())
-                    .username("filler." + i)
-                    .email("filler" + i + "@example.com")
                     .speakerName("Filler " + i)
                     .status(SpeakerWorkflowState.ACCEPTED)
                     .createdAt(Instant.now())
@@ -385,14 +434,14 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         SpeakerPool candidate = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Slot Capacity Candidate")
                 .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        speakerPoolRepository.save(candidate);
+        candidate = speakerPoolRepository.save(candidate);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users.
+        seedPrimarySessionUser(candidate, testUsername);
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
@@ -430,8 +479,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         for (int i = 0; i < half; i++) {
             speakerPoolRepository.save(SpeakerPool.builder()
                     .eventId(testEvent.getId())
-                    .username("accepted." + i)
-                    .email("accepted" + i + "@example.com")
                     .speakerName("Accepted " + i)
                     .status(SpeakerWorkflowState.ACCEPTED)
                     .createdAt(Instant.now())
@@ -439,8 +486,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                     .build());
             speakerPoolRepository.save(SpeakerPool.builder()
                     .eventId(testEvent.getId())
-                    .username("invited." + i)
-                    .email("invited" + i + "@example.com")
                     .speakerName("Invited " + i)
                     .status(SpeakerWorkflowState.INVITED)
                     .createdAt(Instant.now())
@@ -450,14 +495,14 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         SpeakerPool candidate = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Mix Saturation Candidate")
                 .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        speakerPoolRepository.save(candidate);
+        candidate = speakerPoolRepository.save(candidate);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users.
+        seedPrimarySessionUser(candidate, testUsername);
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 

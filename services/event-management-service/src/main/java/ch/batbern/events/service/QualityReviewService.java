@@ -161,9 +161,10 @@ public class QualityReviewService {
                             .abstractCharCount(session.getDescription() != null
                                     ? session.getDescription().length() : 0)
                             .submissionVersion(1)
-                            .submittedByUsername(speaker.getUsername() != null && !speaker.getUsername().isBlank()
-                                    ? speaker.getUsername()
-                                    : speaker.getSpeakerName())
+                            .submittedByUsername(primarySpeakerResolver.resolve(speaker)
+                                    .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                                    .filter(u -> u != null && !u.isBlank())
+                                    .orElse(speaker.getSpeakerName()))
                             .submittedAt(java.time.Instant.now())
                             .reviewerFeedback(feedback)
                             .reviewedAt(java.time.Instant.now())
@@ -187,11 +188,11 @@ public class QualityReviewService {
      * Sends email with feedback and magic link to the speaker portal.
      */
     private void notifySpeakerOfRejection(SpeakerPool speaker, String feedback) {
-        // Phase B (2026-05-21): recipient routing flows through PrimarySpeakerResolver
-        // (session_users + UserApiClient) so a Sessions-tab reassignment is honored;
-        // falls back to the legacy speaker_pool.email column for pre-session rows.
-        String recipientEmail = primarySpeakerResolver.resolveEmail(speaker)
-                .orElseGet(speaker::getEmail);
+        // Story 11.E.9 (post-pool-email drop): recipient routing flows through
+        // PrimarySpeakerResolver (session_users + UserApiClient); rejected content
+        // always belongs to a speaker with a session (status CONTENT_SUBMITTED+),
+        // so resolveEmail is expected non-empty.
+        String recipientEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
         if (recipientEmail == null || recipientEmail.isBlank()) {
             log.warn("Cannot notify speaker {} - no resolvable primary speaker email", speaker.getId());
             return;

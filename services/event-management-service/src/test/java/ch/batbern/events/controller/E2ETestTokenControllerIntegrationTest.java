@@ -96,7 +96,6 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         speakerWithSession = new SpeakerPool();
         speakerWithSession.setEventId(testEvent.getId());
         speakerWithSession.setSpeakerName("Speaker With Session");
-        speakerWithSession.setEmail("with.session@test.com");
         speakerWithSession.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
         speakerWithSession.setSessionId(testSession.getId());
         speakerWithSession.setCreatedAt(Instant.now());
@@ -106,7 +105,6 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         speakerWithoutSession = new SpeakerPool();
         speakerWithoutSession.setEventId(testEvent.getId());
         speakerWithoutSession.setSpeakerName("Speaker Without Session");
-        speakerWithoutSession.setEmail("without.session@test.com");
         speakerWithoutSession.setStatus(SpeakerWorkflowState.ACCEPTED);
         speakerWithoutSession.setSessionId(null);
         speakerWithoutSession.setCreatedAt(Instant.now());

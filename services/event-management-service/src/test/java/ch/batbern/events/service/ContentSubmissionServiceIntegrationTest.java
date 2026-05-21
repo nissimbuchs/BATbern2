@@ -114,9 +114,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("Jane Speaker")
-                .email("jane@example.com")
                 .company("Acme")
-                .username(username)
                 .status(status)
                 .acceptedAt(Instant.now())
                 .build();
@@ -271,9 +269,33 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     // AC9 #9 — Missing username invariant: warn + skip patch, still submit
     // ============================================================
     @Test
-    @DisplayName("should_logWarningAndSkipProfilePatch_when_speakerUsernameIsNull")
-    void should_logWarningAndSkipProfilePatch_when_speakerUsernameIsNull() {
-        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, null);
+    @DisplayName("should_logWarningAndSkipProfilePatch_when_speakerHasNoPrimarySessionUser")
+    void should_logWarningAndSkipProfilePatch_when_speakerHasNoPrimarySessionUser() {
+        // Story 11.E.9: the "pool.username is null" legacy data case is gone (column dropped).
+        // The equivalent post-column-drop scenario is: no PRIMARY_SPEAKER session_users row,
+        // which makes PrimarySpeakerResolver.resolve() return empty. Seed an ACCEPTED speaker
+        // directly without provisioning session_users — mirrors pre-11.E.8 legacy data that
+        // never went through the runReadyHook seam.
+        SpeakerPool speaker = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .speakerName("Jane Speaker")
+                .company("Acme")
+                .status(SpeakerWorkflowState.ACCEPTED)
+                .acceptedAt(Instant.now())
+                .build();
+        speaker = speakerPoolRepository.save(speaker);
+        Session orphanSession = Session.builder()
+                .eventId(testEvent.getId())
+                .eventCode(EVENT_CODE)
+                .sessionSlug("legacy-" + speaker.getId().toString().substring(0, 8))
+                .title("Legacy session")
+                .sessionType("presentation")
+                .speakerPoolId(speaker.getId())
+                .build();
+        orphanSession = sessionRepository.save(orphanSession);
+        speaker.setSessionId(orphanSession.getId());
+        speaker = speakerPoolRepository.save(speaker);
+
         ContentSubmissionPayload payload = new ContentSubmissionPayload(
                 "With-bio title",
                 "Abstract.",
@@ -283,8 +305,8 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         );
 
         // Submit with ORGANIZER username so the workflow status-history row can be written
-        // (transition() requires non-null username; the speaker.username being null is the
-        // pre-11.B.2 legacy data case we are guarding against).
+        // (transition() requires non-null username; the missing PRIMARY_SPEAKER session_user
+        // is the pre-11.E.8 legacy-data case we are guarding against).
         ContentSubmitResponse response = contentSubmissionService.submit(
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
@@ -522,8 +544,6 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("Orphan Speaker")
-                .email("orphan@example.com")
-                .username("orphan.speaker")
                 .status(SpeakerWorkflowState.ACCEPTED)
                 .acceptedAt(Instant.now())
                 .build();

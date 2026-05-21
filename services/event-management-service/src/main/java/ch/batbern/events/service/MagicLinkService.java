@@ -160,12 +160,12 @@ public class MagicLinkService {
         KeyPair keyPair = jwtConfig.getKeyPair();
         Instant now = Instant.now();
 
-        // Phase B (2026-05-21): JWT email claim now comes from the canonical primary
-        // speaker (session_users + CUMS) when a session exists; falls back to the
-        // legacy speaker_pool.email column for pre-session rows. A Sessions-tab
-        // reassignment takes effect on the next JWT issuance.
-        String resolvedEmail = primarySpeakerResolver.resolveEmail(speakerPool)
-                .orElseGet(speakerPool::getEmail);
+        // Story 11.E.9 (post-pool-email drop): JWT email claim comes from the canonical
+        // primary speaker (session_users + CUMS). Pre-session rows have no resolvable
+        // email — the JWT is issued without a stable email claim. Magic-link tokens for
+        // pre-session speakers should not reach this code path in practice (only
+        // INVITED+ speakers receive magic links).
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speakerPool).orElse(null);
 
         String jwt = Jwts.builder()
                 .subject(speakerPoolId.toString())
@@ -278,11 +278,16 @@ public class MagicLinkService {
             }
         }
 
-        // AC2: Return valid result with full context
+        // AC2: Return valid result with full context. Story 11.E.9: resolve username
+        // from session_users; pre-session rows return null (token holders past INVITED
+        // always have a session).
+        String resolvedUsername = primarySpeakerResolver.resolve(speakerPool)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElse(null);
         LOG.info("Token validated successfully for speaker pool: {}", token.getSpeakerPoolId());
         return TokenValidationResult.valid(
                 token.getSpeakerPoolId(),
-                speakerPool.getUsername(),
+                resolvedUsername,
                 speakerPool.getSpeakerName(),
                 eventCode,
                 eventTitle,

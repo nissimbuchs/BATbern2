@@ -51,6 +51,7 @@ public class SpeakerPoolService {
     private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
@@ -60,7 +61,8 @@ public class SpeakerPoolService {
                               SessionUserRepository sessionUserRepository,
                               UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
-                              SecurityContextHelper securityContextHelper) {
+                              SecurityContextHelper securityContextHelper,
+                              PrimarySpeakerResolver primarySpeakerResolver) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionContentHistoryRepository = sessionContentHistoryRepository;
@@ -70,6 +72,7 @@ public class SpeakerPoolService {
         this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
+        this.primarySpeakerResolver = primarySpeakerResolver;
     }
 
     /**
@@ -124,7 +127,11 @@ public class SpeakerPoolService {
         eventPublisher.publishEvent(speakerAddedEvent);
         log.debug("Published SpeakerAddedToPoolEvent for speaker: {}, event: {}", saved.getSpeakerName(), eventCode);
 
-        return SpeakerPoolResponse.fromEntity(saved);
+        // Story 11.E.9: IDENTIFIED pool rows have no session yet, so the overlay is a
+        // no-op here. Kept for symmetry with the other single-entity response paths.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
+        primarySpeakerResolver.applyOverlay(response, saved);
+        return response;
     }
 
     /**
@@ -287,7 +294,11 @@ public class SpeakerPoolService {
         speakerPool.setAssignedOrganizerId(organizerId);
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
 
-        return SpeakerPoolResponse.fromEntity(updated);
+        // Story 11.E.9: apply overlay so PATCH responses carry live username/email
+        // when a session_users primary speaker exists.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        primarySpeakerResolver.applyOverlay(response, updated);
+        return response;
     }
 
     /**
@@ -333,7 +344,11 @@ public class SpeakerPoolService {
         }
 
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
-        return SpeakerPoolResponse.fromEntity(updated);
+        // Story 11.E.9: apply overlay so PATCH responses carry live username/email
+        // when a session_users primary speaker exists.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        primarySpeakerResolver.applyOverlay(response, updated);
+        return response;
     }
 
     /**

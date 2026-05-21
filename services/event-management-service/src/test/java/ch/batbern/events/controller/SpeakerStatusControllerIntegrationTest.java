@@ -353,7 +353,6 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
         // Given: Speaker in ACCEPTED state (Story 11.C.2: identity established upstream;
         // request body no longer carries username/speakerName/email/company).
         testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
-        testSpeaker.setUsername("john.doe");
         speakerPoolRepository.save(testSpeaker);
 
         String contentRequest = """

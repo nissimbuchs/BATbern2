@@ -148,9 +148,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                 .speakerName("Jane Speaker")
                 .company("Tech Corp AG")
                 .expertise("Cloud Architecture")
-                .email("jane@techcorp.ch")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .username("jane.speaker")
                 .sessionId(testSessionId) // Session assigned
                 .invitedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .acceptedAt(Instant.now().minus(5, ChronoUnit.DAYS))
@@ -537,7 +535,6 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
          */
         @Test
         void should_return400_when_speakerHasNoCanonicalUsername() throws Exception {
-            testSpeakerPool.setUsername(null);
             speakerPoolRepository.save(testSpeakerPool);
 
             mockMvc.perform(post("/api/v1/speaker-portal/content/submit")

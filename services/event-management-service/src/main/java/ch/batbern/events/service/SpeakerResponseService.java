@@ -45,6 +45,7 @@ public class SpeakerResponseService {
     private final EventRepository eventRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SpeakerWorkflowService speakerWorkflowService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     /**
      * Story 11.E.3: process a Cognito-authenticated speaker's response to an invitation.
@@ -127,20 +128,20 @@ public class SpeakerResponseService {
      */
     private void processAcceptResponse(
             String username, SpeakerPool speaker, SpeakerResponseRequest request) {
-        // Code review 2026-05-18 (P9): tighten the provisioning-invariant guard. The canonical
-        // path through SpeakerPortalAuthorizationService.resolveSpeakerPool already rejects
-        // null/blank usernames with 409, so this is belt-and-suspenders for any future direct
-        // service caller. Promoting log.warn → IllegalStateException ensures the workflow
-        // transition never persists with a stale display-name fallback.
-        if (speaker.getUsername() == null || speaker.getUsername().isBlank()) {
-            throw new IllegalStateException(
-                    "Speaker pool row id=" + speaker.getId()
-                            + " has no canonical username — provisioning invariant from"
-                            + " CONTACTED → READY was bypassed; cannot record ACCEPT");
-        }
+        // Code review 2026-05-18 (P9) / Story 11.E.9: tighten the provisioning-invariant
+        // guard. The canonical path through SpeakerPortalAuthorizationService.resolveSpeakerPool
+        // already rejects null/blank usernames with 409, so this is belt-and-suspenders for any
+        // future direct service caller. With the pool.username column gone, the resolver is the
+        // single source of truth — if it returns empty, the speaker has no primary session_user
+        // and the workflow contract is broken.
+        PrimarySpeakerResolver.PrimarySpeakerProfile profile = primarySpeakerResolver.resolve(speaker)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Speaker pool row id=" + speaker.getId()
+                                + " has no resolvable primary speaker — provisioning invariant from"
+                                + " CONTACTED → READY was bypassed; cannot record ACCEPT"));
 
         TransitionPayload payload = TransitionPayload.builder()
-                .email(speaker.getEmail())
+                .email(profile.email())
                 .reason("Accepted invitation via speaker portal")
                 .responsePreferences(request.getPreferences())
                 .build();
@@ -208,7 +209,9 @@ public class SpeakerResponseService {
     private void publishResponseEvent(SpeakerPool speaker, Event event, SpeakerResponseRequest request) {
         SpeakerResponseReceivedEvent domainEvent = SpeakerResponseReceivedEvent.builder()
                 .speakerPoolId(speaker.getId())
-                .username(speaker.getUsername())
+                .username(primarySpeakerResolver.resolve(speaker)
+                        .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                        .orElse(null))
                 .eventCode(event.getEventCode())
                 .responseType(request.getResponse())
                 .reason(request.getReason())

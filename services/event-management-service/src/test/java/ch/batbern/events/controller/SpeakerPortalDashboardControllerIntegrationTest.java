@@ -133,8 +133,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                 .eventId(testEventId)
                 .sessionId(testSessionId)
                 .speakerName("Dashboard Speaker")
-                .username(testUsername)
-                .email("dashboard.speaker@test.com")
                 .company("Test Corp")
                 .status(SpeakerWorkflowState.ACCEPTED)
                 .responseDeadline(LocalDate.now().plusDays(7))

@@ -116,9 +116,11 @@ public class SpeakerPoolResponse {
         response.createdAt = speakerPool.getCreatedAt();
         response.updatedAt = speakerPool.getUpdatedAt();
 
-        // Story 6.1b: Speaker Invitation System fields
-        response.username = speakerPool.getUsername();
-        response.email = speakerPool.getEmail();
+        // Story 11.E.9: username + email columns dropped from speaker_pool (V103).
+        // These response fields are now populated exclusively by
+        // PrimarySpeakerResolver.applyOverlay(response, pool) — call it after
+        // fromEntity() when the caller wants the live identity (any path past READY).
+        // Pre-READY pool rows have no User record; the fields stay null.
         response.invitedAt = speakerPool.getInvitedAt();
         response.responseDeadline = speakerPool.getResponseDeadline();
         response.contentDeadline = speakerPool.getContentDeadline();

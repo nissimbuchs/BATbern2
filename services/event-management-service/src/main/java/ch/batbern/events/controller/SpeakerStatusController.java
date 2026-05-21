@@ -72,6 +72,7 @@ public class SpeakerStatusController {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
+    private final ch.batbern.events.service.PrimarySpeakerResolver primarySpeakerResolver;
 
     /**
      * Promote a CONTACTED speaker to READY (Story 11.D.1).
@@ -149,7 +150,12 @@ public class SpeakerStatusController {
                     buildInvalidPromotionMessage(latest));
         }
 
-        return ResponseEntity.ok(SpeakerPoolResponse.fromEntity(promoted));
+        // Story 11.E.9: PROMOTE_TO_READY just provisioned the session_users primary
+        // speaker row inside the workflow transition; apply the overlay so the response
+        // carries the live username/email instead of nulls from the now-dropped columns.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(promoted);
+        primarySpeakerResolver.applyOverlay(response, promoted);
+        return ResponseEntity.ok(response);
     }
 
     private static String buildInvalidPromotionMessage(SpeakerWorkflowState state) {

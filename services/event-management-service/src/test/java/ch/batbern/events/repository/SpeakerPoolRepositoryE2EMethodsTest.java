@@ -212,7 +212,6 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
         SpeakerPool speaker = new SpeakerPool();
         speaker.setEventId(testEvent.getId());
         speaker.setSpeakerName(name);
-        speaker.setEmail(name.toLowerCase().replace(" ", ".") + "@test.com");
         speaker.setStatus(status);
         speaker.setSessionId(sessionId);
         speaker.setCreatedAt(Instant.now());
