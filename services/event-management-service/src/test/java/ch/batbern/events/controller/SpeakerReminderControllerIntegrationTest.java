@@ -8,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.events.service.MagicLinkService;
+import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -65,6 +66,14 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private MagicLinkService magicLinkService;
 
+    // Phase B: PrimarySpeakerResolver is the canonical recipient-routing seam. The
+    // legacy fixture seeds only SpeakerPool rows (no Session / session_users), so a real
+    // resolver would return Optional.empty() and short-circuit reminder dispatch.
+    // Mock it to fall back to the pool email (legacy contract) — full session-overlay
+    // integration is covered by the unit test.
+    @MockitoBean
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private Event testEvent;
     private SpeakerPool invitedSpeaker;
     private SpeakerPool acceptedSpeaker;
@@ -116,6 +125,13 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 any(), any(), any(), any(), any(), any(), any());
         when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
                 .thenReturn("test-magic-token");
+
+        // Phase B: route the resolver back to the SpeakerPool's email column so the
+        // existing test assertions on `emailAddress` continue to pass without seeding
+        // session_users rows for each speaker.
+        when(primarySpeakerResolver.resolveEmail(any(SpeakerPool.class)))
+                .thenAnswer(inv -> java.util.Optional.ofNullable(
+                        ((SpeakerPool) inv.getArgument(0)).getEmail()));
     }
 
     @Nested

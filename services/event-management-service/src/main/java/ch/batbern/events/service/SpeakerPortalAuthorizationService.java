@@ -1,15 +1,20 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SpeakerPortalAccessDeniedException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Story 11.E.3: resolves the {@link SpeakerPool} row that a Cognito-authenticated speaker
@@ -32,6 +37,7 @@ public class SpeakerPortalAuthorizationService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
+    private final SessionUserRepository sessionUserRepository;
 
     /**
      * Looks up the speaker_pool row for {@code (username, eventCode)} and returns it.
@@ -71,30 +77,6 @@ public class SpeakerPortalAuthorizationService {
                     "No invitation found for the requested event");
         }
 
-        SpeakerPool pool =
-                speakerPoolRepository
-                        .findByEventCodeAndUsername(eventCode, username)
-                        .orElseThrow(
-                                () -> {
-                                    log.warn(
-                                            "Speaker portal access denied: username={}"
-                                                    + " eventCode={}",
-                                            username,
-                                            eventCode);
-                                    return new SpeakerPortalAccessDeniedException(
-                                            "No invitation found for the requested event");
-                                });
-
-        if (pool.getUsername() == null || pool.getUsername().isBlank()) {
-            log.error(
-                    "Provisioning invariant violation: speaker_pool row id={} for eventCode={}"
-                            + " has null/blank username — refusing write path",
-                    pool.getId(),
-                    eventCode);
-            throw new IllegalStateException(
-                    "Speaker pool row has no canonical username — contact organizer");
-        }
-
         Event event =
                 eventRepository
                         .findByEventCode(eventCode)
@@ -102,6 +84,50 @@ public class SpeakerPortalAuthorizationService {
                                 () ->
                                         new SpeakerPortalAccessDeniedException(
                                                 "No invitation found for the requested event"));
+
+        // Post-Epic-11 cleanup (2026-05-21): canonical identity is session_users.username
+        // (NOT the deprecated speaker_pool.username column). Find PRIMARY_SPEAKER
+        // memberships for this user, filter to the requested event, and derive the pool
+        // row from the linked session.
+        List<SessionUser> memberships = sessionUserRepository.findByUsername(username).stream()
+                .filter(su -> su.getSpeakerRole() == SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .filter(su -> event.getId().equals(su.getSession().getEventId()))
+                .toList();
+        if (memberships.isEmpty()) {
+            log.warn("Speaker portal access denied: username={} eventCode={}",
+                    username, eventCode);
+            throw new SpeakerPortalAccessDeniedException(
+                    "No invitation found for the requested event");
+        }
+        // If the speaker is PRIMARY on multiple sessions in the same event (rare),
+        // pick the deterministically-first one. The single-pool-row contract is a
+        // legacy of pre-multi-session days — controllers that need session granularity
+        // should evolve to a session-scoped endpoint.
+        SessionUser membership = memberships.stream()
+                .min(Comparator.comparing(su -> su.getSession().getId()))
+                .orElseThrow();
+        java.util.UUID sessionId = membership.getSession().getId();
+
+        // Pool row lookup: prefer session.speakerPoolId back-reference (set by Story
+        // 11.E.8 provisionSessionAndPrimarySpeaker); fall back to the reverse lookup
+        // (legacy data where the back-ref wasn't backfilled).
+        SpeakerPool pool = null;
+        java.util.UUID poolIdHint = membership.getSession().getSpeakerPoolId();
+        if (poolIdHint != null) {
+            pool = speakerPoolRepository.findById(poolIdHint).orElse(null);
+        }
+        if (pool == null) {
+            pool = speakerPoolRepository.findBySessionId(sessionId).stream()
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (pool == null) {
+            log.warn("Speaker portal access denied: no pool row for session={} username={}",
+                    sessionId, username);
+            throw new SpeakerPortalAccessDeniedException(
+                    "No invitation found for the requested event");
+        }
+
         if (event.getWorkflowState() == EventWorkflowState.EVENT_COMPLETED) {
             log.info(
                     "Speaker portal write rejected: event is past. username={} eventCode={}"

@@ -69,6 +69,9 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
     private SessionRepository sessionRepository;
 
     @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
+    @Autowired
     private EventRepository eventRepository;
 
     @Autowired
@@ -89,6 +92,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         sessionContentHistoryRepository.deleteAll();
         sessionMaterialsRepository.deleteAll();
         tokenRepository.deleteAll();
+        sessionUserRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         sessionRepository.deleteAll();
         eventRepository.deleteAll();
@@ -138,6 +142,21 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                 .build();
         speaker = speakerPoolRepository.save(speaker);
         testSpeakerPoolId = speaker.getId();
+
+        // 2026-05-21 (BATbern75 follow-up) — dashboard's canonical data source is now
+        // session_users (not speaker_pool.username). Mirror the production fixture
+        // shape from Story 11.E.8 provisionSessionAndPrimarySpeaker: session.speakerPoolId
+        // back-reference + a PRIMARY_SPEAKER session_users row.
+        session.setSpeakerPoolId(testSpeakerPoolId);
+        sessionRepository.save(session);
+        ch.batbern.events.domain.SessionUser membership =
+                ch.batbern.events.domain.SessionUser.builder()
+                        .session(session)
+                        .username(testUsername)
+                        .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                        .isConfirmed(true)
+                        .build();
+        sessionUserRepository.save(membership);
 
         // Generate VIEW token for dashboard
         validToken = magicLinkService.generateToken(testSpeakerPoolId, TokenAction.VIEW);
@@ -329,8 +348,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool soonerSpeaker = SpeakerPool.builder()
                     .eventId(soonerEvent.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .build();
             speakerPoolRepository.save(soonerSpeaker);
@@ -383,8 +400,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .eventId(pastEvent.getId())
                     .sessionId(pastSession.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .build();
             speakerPoolRepository.save(pastSpeaker);
@@ -421,8 +436,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool pastInvitedSpeaker = SpeakerPool.builder()
                     .eventId(pastEvent.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.INVITED)
                     .build();
             speakerPoolRepository.save(pastInvitedSpeaker);
@@ -464,8 +477,6 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool declinedSpeaker = SpeakerPool.builder()
                     .eventId(testEventId)
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.DECLINED)
                     .build();
             declinedSpeaker = speakerPoolRepository.save(declinedSpeaker);

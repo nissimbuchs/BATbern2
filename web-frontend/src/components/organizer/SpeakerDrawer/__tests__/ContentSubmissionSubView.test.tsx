@@ -183,6 +183,50 @@ describe('ContentSubmissionSubView — AC10 cases 41 + 44 (post Epic 11 bio/port
     expect(Object.keys(requestBody)).not.toContain('profilePictureUrl');
   });
 
+  // Phase D.5 (BATbern75 follow-up, 2026-05-21) — once a session is provisioned
+  // (sessionId set, status ≥ READY), the speaker identity is owned by session_users.
+  // The Content tab must NOT expose the user-picker / Create-new-speaker controls
+  // for the speaker; only title + abstract remain editable. Speaker reassignment is
+  // exclusively a Sessions-tab operation.
+  it('should_hideSpeakerPicker_when_sessionIsAssigned', async () => {
+    const sessionAssignedSpeaker = makeSpeaker({
+      sessionId: 'session-abc',
+      sessionSlug: 'batbern75-jane-doe',
+      status: 'CONTENT_SUBMITTED',
+      username: 'jane.doe',
+    });
+
+    renderSubView(sessionAssignedSpeaker);
+
+    // User-picker stub is suppressed in the session-assigned branch.
+    expect(screen.queryByTestId('user-autocomplete-stub')).not.toBeInTheDocument();
+    // The "Create New Speaker" button is also hidden — creating users is a brainstorm
+    // operation, not a per-session one.
+    expect(
+      screen.queryByText(i18n.t('organizer:speakerContent.createNewSpeaker'))
+    ).not.toBeInTheDocument();
+    // A static read-only block takes the picker's place, with an inline hint
+    // pointing the organizer to the Sessions tab.
+    expect(screen.getByTestId('content-tab-speaker-readonly')).toBeInTheDocument();
+    expect(
+      screen.getByText(i18n.t('organizer:speakerContent.speakerLockedHint'))
+    ).toBeInTheDocument();
+  });
+
+  // Phase D.5: pre-session brainstorm UX is preserved.
+  it('should_showSpeakerPicker_when_noSessionAssigned', () => {
+    const preSessionSpeaker = makeSpeaker({
+      sessionId: undefined,
+      status: 'IDENTIFIED',
+    });
+
+    renderSubView(preSessionSpeaker);
+
+    // Picker is present, lockdown markers are absent.
+    expect(screen.getByTestId('user-autocomplete-stub')).toBeInTheDocument();
+    expect(screen.queryByTestId('content-tab-speaker-readonly')).not.toBeInTheDocument();
+  });
+
   // Case 44 — Submit mutation rejection surfaces an error Alert.
   it('should_renderErrorAlert_whenSubmitMutationRejects', async () => {
     vi.mocked(speakerContentService.submitContent).mockRejectedValueOnce(

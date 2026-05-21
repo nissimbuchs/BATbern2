@@ -49,11 +49,12 @@ public class SpeakerInvitationEmailService {
     // Story 11.E.2: MagicLinkService dependency removed — the Cognito flow does not
     // generate magic-link tokens for the invitation email.
     private final EmailTemplateService emailTemplateService;
-    // Epic 11 bug fix 2026-05-19 — resolve the linked User's real first+last name
-    // for the {{speakerName}} template variable. Without this we'd ship the
-    // brainstorm-stage placeholder (e.g. "Testreferent2") in the email greeting
-    // instead of the real "Markus Gerber" that the organizer promoted to.
-    private final ch.batbern.events.client.UserApiClient userApiClient;
+    // Phase B of the post-Epic-11 cleanup (2026-05-21): the linked User's identity is
+    // now resolved through session_users + UserApiClient (PrimarySpeakerResolver) so
+    // that organizer reassignments on the Sessions tab take effect on the next
+    // invitation. Previously this service read speaker_pool.username/email directly —
+    // those columns went stale at reassign time.
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${app.email.organizer-name:BATbern Team}")
     private String organizerName;
@@ -94,9 +95,25 @@ public class SpeakerInvitationEmailService {
             InvitationCredentialsResponse credentials,
             Locale locale
     ) {
+        // Phase B: recipient routing via PrimarySpeakerResolver (session_users + CUMS),
+        // not the stale speaker_pool.email column. Resolve once at the top so the email
+        // body, recipient header, and logs all agree on the same address.
+        Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary =
+                primarySpeakerResolver.resolve(speaker);
+        String recipientEmail = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::email)
+                .filter(e -> e != null && !e.isBlank())
+                .orElse(null);
+        if (recipientEmail == null) {
+            log.error("Cannot send invitation: speaker pool {} has no resolvable primary speaker "
+                    + "email (session not yet linked, no PRIMARY_SPEAKER session_user, or CUMS degraded). "
+                    + "The READY→INVITED transition should have provisioned this — investigate.",
+                    speaker.getId());
+            return;
+        }
+
         try {
             log.info("Sending invitation email to: {} for event: {} (action={})",
-                    LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode(),
+                    LoggingUtils.maskEmail(recipientEmail), event.getEventCode(),
                     credentials != null ? credentials.getAction() : "null");
 
             // Default to German locale if not specified.
@@ -105,34 +122,47 @@ public class SpeakerInvitationEmailService {
             // Convert event date to Swiss timezone.
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
-            // Load + populate the email template (html + subject).
+            // Load + populate the email template (html + subject). The recipient
+            // bundle carries the live primary-speaker identity + resolved email so
+            // the template uses session_users data, not stale pool columns.
+            RecipientContext recipient = new RecipientContext(primary.orElse(null), recipientEmail);
             EmailContent content = loadEmailTemplate(
                     emailLocale,
                     speaker,
                     event,
                     eventDateTime,
                     loginUrl,
-                    credentials
+                    credentials,
+                    recipient
             );
 
             // Send email (no attachments for invitation; HTML only per Q#3).
             emailService.sendHtmlEmail(
-                    speaker.getEmail(),
+                    recipientEmail,
                     content.subject(),
                     content.html()
             );
 
             log.info("Invitation email sent successfully to: {}",
-                    LoggingUtils.maskEmail(speaker.getEmail()));
+                    LoggingUtils.maskEmail(recipientEmail));
 
         } catch (Exception e) {
             log.error("Failed to send invitation email to: {}",
-                    LoggingUtils.maskEmail(speaker.getEmail()), e);
+                    LoggingUtils.maskEmail(recipientEmail), e);
             // Don't re-throw — email failure shouldn't block the workflow transition.
         }
     }
 
     private record EmailContent(String html, String subject) {}
+
+    /**
+     * Bundles the resolved primary speaker profile + recipient email so the template
+     * loader sees one parameter for "who we're addressing" instead of two. Keeps the
+     * loadEmailTemplate signature under the Checkstyle 7-parameter limit.
+     */
+    private record RecipientContext(
+            PrimarySpeakerResolver.PrimarySpeakerProfile primary,
+            String email) {}
 
     /**
      * Load and populate the email template with speaker / event / Cognito-flow data.
@@ -143,8 +173,11 @@ public class SpeakerInvitationEmailService {
             Event event,
             ZonedDateTime eventDateTime,
             String loginUrl,
-            InvitationCredentialsResponse credentials
+            InvitationCredentialsResponse credentials,
+            RecipientContext recipient
     ) {
+        PrimarySpeakerResolver.PrimarySpeakerProfile primary = recipient.primary();
+        String recipientEmail = recipient.email();
         // Determine template file based on locale (de + en officially supported per CLAUDE.md
         // §Localization; other locales fall back to en at the repository layer).
         String localeStr = locale.getLanguage();
@@ -192,7 +225,14 @@ public class SpeakerInvitationEmailService {
         // theoretical out-of-order case where invitation is sent before promote
         // populates `speaker_pool.username` (should not happen via the workflow
         // service but defensive in case of direct DB manipulation).
-        variables.put("speakerName", escapeHtml(resolveSpeakerDisplayName(speaker)));
+        // Phase B: PrimarySpeakerResolver gives us the live User name (session_users ⨝
+        // CUMS). Invitations only send post-READY (session always exists), so primary
+        // should never be null here — but if CUMS degrades and resolver returns an
+        // empty profile, fall back to the brainstorm-stage speaker name on pool.
+        String speakerNameDisplay = primary != null && !primary.fullName().isEmpty()
+                ? primary.fullName()
+                : nullToEmpty(speaker.getSpeakerName());
+        variables.put("speakerName", escapeHtml(speakerNameDisplay));
         variables.put("eventTitle", escapeHtml(nullToEmpty(event.getTitle())));
         variables.put("eventDate", eventDateTime.format(DATE_FORMATTER));
         variables.put("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr");
@@ -204,7 +244,10 @@ public class SpeakerInvitationEmailService {
         // chars from PasswordGenerator's symbol alphabet (& < > ") — escape both values so the
         // rendered email is well-formed and the password is preserved verbatim on copy/paste.
         variables.put("loginUrl", loginUrl);
-        variables.put("usernameForLogin", escapeHtml(nullToEmpty(speaker.getEmail())));
+        // Phase B: usernameForLogin must be the live recipient email — that's what the
+        // speaker types into Cognito at login. Falls back to the recipient address resolved
+        // by PrimarySpeakerResolver at the top of sendInvitationEmail.
+        variables.put("usernameForLogin", escapeHtml(nullToEmpty(recipientEmail)));
         variables.put("temporaryPassword", escapeHtml(temporaryPasswordValue));
         variables.put("useExistingPassword", useExistingPasswordFlag);
         variables.put("tempPasswordValidityDays", String.valueOf(tempPasswordValidityDays));
@@ -264,51 +307,6 @@ public class SpeakerInvitationEmailService {
 
     private static String nullToEmpty(String s) {
         return s != null ? s : "";
-    }
-
-    /**
-     * Resolve the speaker's display name for the invitation email greeting (Epic 11
-     * bug fix 2026-05-19). Prefers the linked User's {@code firstName + lastName}
-     * (the real identified speaker, e.g. "Markus Gerber") over the brainstorm
-     * placeholder {@code speaker_pool.speakerName} (e.g. "Testreferent2").
-     *
-     * <p>Fallback chain (each step's result reused only if non-blank):
-     * <ol>
-     *   <li>{@code UserApiClient.getUserByUsername(speaker.username)} → "First Last"</li>
-     *   <li>{@code speaker.getSpeakerName()} — brainstorm name</li>
-     *   <li>empty string</li>
-     * </ol>
-     *
-     * <p>The UserApiClient lookup is wrapped in a broad catch because email send is
-     * @Async and we'd rather degrade gracefully (use brainstorm name) than abort the
-     * whole send on a transient UserService blip.
-     */
-    private String resolveSpeakerDisplayName(SpeakerPool speaker) {
-        String username = speaker.getUsername();
-        if (username != null && !username.isBlank()) {
-            try {
-                var user = userApiClient.getUserByUsername(username);
-                if (user != null) {
-                    String first = user.getFirstName();
-                    String last = user.getLastName();
-                    boolean hasFirst = first != null && !first.isBlank();
-                    boolean hasLast = last != null && !last.isBlank();
-                    if (hasFirst && hasLast) {
-                        return first + " " + last;
-                    }
-                    if (hasFirst) {
-                        return first;
-                    }
-                    if (hasLast) {
-                        return last;
-                    }
-                }
-            } catch (Exception ex) {
-                log.warn("Could not resolve linked User name for speaker {} (username={}): {}",
-                        speaker.getId(), username, ex.getMessage());
-            }
-        }
-        return nullToEmpty(speaker.getSpeakerName());
     }
 
     /**

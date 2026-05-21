@@ -286,6 +286,7 @@
     "submitting": "Submitting...",
     "editSpeakerProfile": "Edit Speaker Profile",
     "createNewSpeaker": "Create New Speaker",
+    "speakerLockedHint": "The speaker is fixed for this session. Use the Sessions tab to reassign.",
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
@@ -329,6 +330,17 @@
       "editDetails": "Edit details",
       "overrideState": "Override state"
     },
+    "editDetails": {
+      "speakerNameLockedHint": "Name comes from the linked user profile. Use the Content tab's \"Edit speaker profile\" to change it.",
+      "companyLockedHint": "Company comes from the linked user profile once a session is assigned.",
+      "expertiseLockedHint": "Expertise is a brainstorm-only field; sessions own the talk topic from READY onward.",
+      "notesLockedHint": "Internal notes are a brainstorm-only field. Use the History timeline for post-session annotations.",
+      "errors": {
+        "nameRequired": "Speaker name is required",
+        "saveFailed": "Could not save changes."
+      }
+    },
+    "brainstormNameLabel": "brainstormed as",
     "tabs": {
       "details": "Details",
       "history": "History"

@@ -1,17 +1,22 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
@@ -20,8 +25,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -40,6 +47,8 @@ public class SpeakerPoolService {
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
+    private final SessionUserRepository sessionUserRepository;
+    private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
 
@@ -48,6 +57,8 @@ public class SpeakerPoolService {
                               SessionContentHistoryRepository sessionContentHistoryRepository,
                               SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
+                              SessionUserRepository sessionUserRepository,
+                              UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
@@ -55,6 +66,8 @@ public class SpeakerPoolService {
         this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
+        this.sessionUserRepository = sessionUserRepository;
+        this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
     }
@@ -154,6 +167,36 @@ public class SpeakerPoolService {
                         v -> v
                 ));
 
+        // Phase A of the post-Epic-11 cleanup (BATbern75 bug fix): the canonical post-READY
+        // identity is session_users.username → UserApiClient profile, NOT the stale
+        // speaker_pool.username/email columns. Batch-load primary speakers + profiles per
+        // unique username so the response factory can be enriched in one pass.
+        Map<UUID, SessionUser> primaryBySession = sessionIds.isEmpty()
+                ? Map.of()
+                : sessionUserRepository
+                        .findBySessionIdInAndSpeakerRole(sessionIds, SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                su -> su.getSession().getId(),
+                                su -> su,
+                                (existing, duplicate) -> existing));
+        Map<String, UserResponse> userByUsername = new HashMap<>();
+        for (SessionUser su : primaryBySession.values()) {
+            if (su.getUsername() == null || userByUsername.containsKey(su.getUsername())) {
+                continue;
+            }
+            try {
+                userByUsername.put(su.getUsername(), userApiClient.getUserByUsername(su.getUsername()));
+            } catch (UserServiceException ex) {
+                // CUMS unavailable for this user — degrade gracefully (the response
+                // will fall back to the SessionUser cached firstName/lastName, with
+                // null email). Logged at WARN; do not 500 the entire pool query.
+                log.warn("UserApiClient failed for {} when loading speaker pool — degrading: {}",
+                        su.getUsername(), ex.getMessage());
+                userByUsername.put(su.getUsername(), null);
+            }
+        }
+
         return speakers.stream()
                 .map(speaker -> {
                     Session session = speaker.getSessionId() != null
@@ -164,6 +207,17 @@ public class SpeakerPoolService {
                             : null;
                     SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
                             speaker, session, latestVersion);
+                    // Phase A: session-derived identity overlay. The primary SessionUser
+                    // gives us the canonical username; the UserApiClient profile gives us
+                    // the live email + full name + company. When the profile is missing
+                    // we fall back to the SessionUser's cached firstName/lastName.
+                    if (session != null) {
+                        SessionUser primary = primaryBySession.get(session.getId());
+                        if (primary != null) {
+                            UserResponse user = userByUsername.get(primary.getUsername());
+                            applySessionIdentityOverlay(response, primary, user);
+                        }
+                    }
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {
                         List<SessionMaterial> materials = sessionMaterialsRepository
@@ -177,6 +231,45 @@ public class SpeakerPoolService {
                     return response;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Apply session-derived identity overlay to a speaker pool response.
+     *
+     * <p>Post-Epic-11 cleanup (Phase A). When a session exists for a pool row, the
+     * canonical identity lives at {@code session_users.username} → {@code UserApiClient}.
+     * The {@code speaker_pool.username/email} columns are duplicates that go stale when
+     * the organizer reassigns the session's primary speaker on the Sessions tab; this
+     * method overwrites them with the live values so the response reflects whoever is
+     * currently the primary speaker.
+     *
+     * <p>When the UserApiClient profile is missing (CUMS down, user deleted), falls
+     * back to the SessionUser cached firstName/lastName. Email stays null in that case
+     * — better to show "no email known" than a wrong one.
+     */
+    private static void applySessionIdentityOverlay(
+            SpeakerPoolResponse response, SessionUser primary, UserResponse user) {
+        response.setUsername(primary.getUsername());
+        if (user != null) {
+            response.setEmail(user.getEmail());
+            String first = Optional.ofNullable(user.getFirstName()).orElse("");
+            String last = Optional.ofNullable(user.getLastName()).orElse("");
+            String full = (first + " " + last).trim();
+            if (!full.isEmpty()) {
+                response.setSpeakerName(full);
+            }
+            if (user.getCompanyId() != null && !user.getCompanyId().isBlank()) {
+                response.setCompany(user.getCompanyId());
+            }
+        } else {
+            response.setEmail(null);
+            String cachedFirst = Optional.ofNullable(primary.getSpeakerFirstName()).orElse("");
+            String cachedLast = Optional.ofNullable(primary.getSpeakerLastName()).orElse("");
+            String cachedFull = (cachedFirst + " " + cachedLast).trim();
+            if (!cachedFull.isEmpty()) {
+                response.setSpeakerName(cachedFull);
+            }
+        }
     }
 
     /**

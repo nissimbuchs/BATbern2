@@ -286,6 +286,7 @@
     "submitting": "Wird eingereicht...",
     "editSpeakerProfile": "Sprecher-Profil bearbeiten",
     "createNewSpeaker": "Neuen Sprecher erstellen",
+    "speakerLockedHint": "Der Sprecher ist für diese Session fixiert. Verwenden Sie den Sessions-Tab, um ihn neu zuzuweisen.",
     "bioLabel": "Kurzbiografie (optional)",
     "portraitLabel": "Sprecherportrait (optional)",
     "portraitUploadInProgress": "Portrait wird hochgeladen…",
@@ -329,6 +330,17 @@
       "editDetails": "Details bearbeiten",
       "overrideState": "Status überschreiben"
     },
+    "editDetails": {
+      "speakerNameLockedHint": "Der Name stammt aus dem verknüpften Benutzerprofil. Verwenden Sie im Tab \"Inhalt\" die Schaltfläche \"Sprecherprofil bearbeiten\", um ihn zu ändern.",
+      "companyLockedHint": "Das Unternehmen stammt aus dem verknüpften Benutzerprofil, sobald eine Session zugewiesen ist.",
+      "expertiseLockedHint": "Das Fachgebiet ist nur ein Brainstorming-Feld; Sessions übernehmen das Vortragsthema ab READY.",
+      "notesLockedHint": "Interne Notizen sind nur ein Brainstorming-Feld. Verwenden Sie die Verlauf-Zeitleiste für Anmerkungen nach Session-Zuweisung.",
+      "errors": {
+        "nameRequired": "Sprechername ist erforderlich",
+        "saveFailed": "Änderungen konnten nicht gespeichert werden."
+      }
+    },
+    "brainstormNameLabel": "Brainstorming-Name",
     "tabs": {
       "details": "Details",
       "history": "Verlauf"

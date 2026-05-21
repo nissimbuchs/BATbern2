@@ -41,6 +41,7 @@ public class QualityReviewService {
     private final EmailService emailService;
     private final MagicLinkService magicLinkService;
     private final SpeakerWorkflowService speakerWorkflowService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -186,8 +187,13 @@ public class QualityReviewService {
      * Sends email with feedback and magic link to the speaker portal.
      */
     private void notifySpeakerOfRejection(SpeakerPool speaker, String feedback) {
-        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
-            log.warn("Cannot notify speaker {} - no email address", speaker.getId());
+        // Phase B (2026-05-21): recipient routing flows through PrimarySpeakerResolver
+        // (session_users + UserApiClient) so a Sessions-tab reassignment is honored;
+        // falls back to the legacy speaker_pool.email column for pre-session rows.
+        String recipientEmail = primarySpeakerResolver.resolveEmail(speaker)
+                .orElseGet(speaker::getEmail);
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            log.warn("Cannot notify speaker {} - no resolvable primary speaker email", speaker.getId());
             return;
         }
 
@@ -195,7 +201,10 @@ public class QualityReviewService {
             Event event = eventRepository.findById(speaker.getEventId())
                     .orElse(null);
             String eventName = event != null ? event.getTitle() : "BATbern Event";
-            String speakerName = speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker";
+            String speakerName = primarySpeakerResolver.resolve(speaker)
+                    .map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                    .filter(n -> !n.isEmpty())
+                    .orElseGet(() -> speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker");
 
             // Generate a new magic link token for the speaker portal
             // 14-day validity aligns with typical revision deadline and reduces security exposure
@@ -205,7 +214,7 @@ public class QualityReviewService {
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
 
-            emailService.sendHtmlEmail(speaker.getEmail(), subject, body);
+            emailService.sendHtmlEmail(recipientEmail, subject, body);
             // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
             log.info("Revision notification sent to speaker pool entry: {} with portal link", speaker.getId());
         } catch (Exception e) {

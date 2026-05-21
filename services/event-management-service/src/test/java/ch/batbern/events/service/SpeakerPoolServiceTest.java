@@ -1,14 +1,18 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -52,6 +56,12 @@ class SpeakerPoolServiceTest {
     private SessionMaterialsRepository sessionMaterialsRepository;
 
     @Mock
+    private SessionUserRepository sessionUserRepository;
+
+    @Mock
+    private UserApiClient userApiClient;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -66,7 +76,8 @@ class SpeakerPoolServiceTest {
     void setUp() {
         service = new SpeakerPoolService(
                 speakerPoolRepository, eventRepository, sessionContentHistoryRepository,
-                sessionRepository, sessionMaterialsRepository, eventPublisher, securityContextHelper
+                sessionRepository, sessionMaterialsRepository, sessionUserRepository,
+                userApiClient, eventPublisher, securityContextHelper
         );
 
         eventId = UUID.randomUUID();
@@ -276,6 +287,163 @@ class SpeakerPoolServiceTest {
             // produce.
             assertThat(result.get(0).getSubmittedTitle()).isEqualTo("Original Session Title");
             assertThat(result.get(0).getSubmittedAbstract()).isEqualTo("Original description");
+        }
+    }
+
+    @Nested
+    @DisplayName("getSpeakerPool — session-derived identity overlay (Phase A)")
+    class GetSpeakerPoolSessionIdentityOverlayTests {
+
+        @Test
+        @DisplayName("BATbern75 bug fix: response username/email/speakerName/company "
+                + "come from session_users + UserApiClient when session exists, ignoring stale pool columns")
+        void shouldOverlayIdentityFromSession_whenSessionExists() {
+            UUID speakerId = UUID.randomUUID();
+            UUID sessionId = UUID.randomUUID();
+
+            // Pool row carries stale columns from a prior promotion; the organizer
+            // has since reassigned the session's primary speaker on the Sessions tab.
+            SpeakerPool speaker = SpeakerPool.builder()
+                    .id(speakerId)
+                    .eventId(eventId)
+                    .speakerName("Stale Brainstorm Name")
+                    .company("StaleCo")
+                    .expertise("Some topic")
+                    .status(SpeakerWorkflowState.CONTENT_SUBMITTED)
+                    .sessionId(sessionId)
+                    .username("philipp.thomas")
+                    .email("philipp.thomas@old.example")
+                    .build();
+
+            Session session = Session.builder()
+                    .id(sessionId)
+                    .eventId(eventId)
+                    .title("Session Title")
+                    .description("Session Description")
+                    .sessionType("presentation")
+                    .build();
+
+            SessionUser primary = SessionUser.builder()
+                    .id(UUID.randomUUID())
+                    .session(session)
+                    .username("nissim.buchs.3")
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .isConfirmed(true)
+                    .build();
+
+            UserResponse user = new UserResponse();
+            user.setId("nissim.buchs.3");
+            user.setEmail("nissim3@elca.example");
+            user.setFirstName("Nissim3");
+            user.setLastName("Buchs");
+            user.setCompanyId("ELCA");
+
+            when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
+            when(sessionRepository.findAllById(List.of(sessionId))).thenReturn(List.of(session));
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
+                    .thenReturn(Optional.empty());
+            when(sessionUserRepository.findBySessionIdInAndSpeakerRole(
+                    List.of(sessionId), SessionUser.SpeakerRole.PRIMARY_SPEAKER))
+                    .thenReturn(List.of(primary));
+            when(userApiClient.getUserByUsername("nissim.buchs.3")).thenReturn(user);
+            when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
+                    .thenReturn(List.of());
+
+            List<SpeakerPoolResponse> result = service.getSpeakerPoolForEvent("BATbern99");
+
+            assertThat(result).hasSize(1);
+            SpeakerPoolResponse response = result.get(0);
+            // The session-overlay wins over the stale pool columns: this is the entire
+            // point of the BATbern75 fix.
+            // The session-overlay wins over the stale pool columns: this is the entire
+            // point of the BATbern75 fix.
+            assertThat(response.getUsername()).isEqualTo("nissim.buchs.3");
+            assertThat(response.getEmail()).isEqualTo("nissim3@elca.example");
+            assertThat(response.getSpeakerName()).isEqualTo("Nissim3 Buchs");
+            assertThat(response.getCompany()).isEqualTo("ELCA");
+        }
+
+        @Test
+        @DisplayName("pre-session rows (no sessionId) keep pool columns untouched — brainstorm UX preserved")
+        void shouldKeepPoolColumns_whenNoSession() {
+            UUID speakerId = UUID.randomUUID();
+
+            SpeakerPool speaker = SpeakerPool.builder()
+                    .id(speakerId)
+                    .eventId(eventId)
+                    .speakerName("Brainstorm Candidate")
+                    .company("BrainstormCo")
+                    .expertise("Topic")
+                    .status(SpeakerWorkflowState.IDENTIFIED)
+                    .sessionId(null)
+                    .build();
+
+            when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
+
+            List<SpeakerPoolResponse> result = service.getSpeakerPoolForEvent("BATbern99");
+
+            assertThat(result).hasSize(1);
+            SpeakerPoolResponse response = result.get(0);
+            assertThat(response.getSpeakerName()).isEqualTo("Brainstorm Candidate");
+            assertThat(response.getCompany()).isEqualTo("BrainstormCo");
+            // Pre-session: no overlay because there's no session_user yet.
+        }
+
+        @Test
+        @DisplayName("UserApiClient failure on a single row degrades gracefully — speakerName falls back to SessionUser cache, response still returned")
+        void shouldDegrade_whenUserApiClientFails() {
+            UUID speakerId = UUID.randomUUID();
+            UUID sessionId = UUID.randomUUID();
+
+            SpeakerPool speaker = SpeakerPool.builder()
+                    .id(speakerId)
+                    .eventId(eventId)
+                    .speakerName("Pool Name")
+                    .company("PoolCo")
+                    .status(SpeakerWorkflowState.CONTENT_SUBMITTED)
+                    .sessionId(sessionId)
+                    .build();
+
+            Session session = Session.builder()
+                    .id(sessionId)
+                    .eventId(eventId)
+                    .title("Session")
+                    .sessionType("presentation")
+                    .build();
+
+            // Primary session_user carries its cached firstName/lastName (from V38).
+            SessionUser primary = SessionUser.builder()
+                    .id(UUID.randomUUID())
+                    .session(session)
+                    .username("orphaned.user")
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .speakerFirstName("Cached")
+                    .speakerLastName("Name")
+                    .build();
+
+            when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(speaker));
+            when(sessionRepository.findAllById(List.of(sessionId))).thenReturn(List.of(session));
+            when(sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
+                    .thenReturn(Optional.empty());
+            when(sessionUserRepository.findBySessionIdInAndSpeakerRole(
+                    List.of(sessionId), SessionUser.SpeakerRole.PRIMARY_SPEAKER))
+                    .thenReturn(List.of(primary));
+            when(userApiClient.getUserByUsername("orphaned.user"))
+                    .thenThrow(new ch.batbern.events.exception.UserServiceException(
+                            "CUMS unavailable", new RuntimeException()));
+            when(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(sessionId))
+                    .thenReturn(List.of());
+
+            List<SpeakerPoolResponse> result = service.getSpeakerPoolForEvent("BATbern99");
+
+            assertThat(result).hasSize(1);
+            SpeakerPoolResponse response = result.get(0);
+            // Username comes from session_users (no HTTP call needed); name falls back
+            // to the SessionUser cache; email is unknown (CUMS down) → null is acceptable.
+            assertThat(response.getSpeakerName()).isEqualTo("Cached Name");
         }
     }
 }

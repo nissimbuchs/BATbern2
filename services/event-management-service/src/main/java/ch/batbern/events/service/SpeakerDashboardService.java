@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.DashboardPastEventDto;
 import ch.batbern.events.dto.DashboardUpcomingEventDto;
@@ -13,6 +14,7 @@ import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
@@ -80,6 +82,7 @@ public class SpeakerDashboardService {
     private final SessionRepository sessionRepository;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
+    private final SessionUserRepository sessionUserRepository;
     private final UserApiClient userApiClient;
 
     public SpeakerDashboardService(
@@ -88,12 +91,14 @@ public class SpeakerDashboardService {
             SessionRepository sessionRepository,
             SessionContentHistoryRepository sessionContentHistoryRepository,
             SessionMaterialsRepository sessionMaterialsRepository,
+            SessionUserRepository sessionUserRepository,
             UserApiClient userApiClient) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
         this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
+        this.sessionUserRepository = sessionUserRepository;
         this.userApiClient = userApiClient;
     }
 
@@ -112,72 +117,109 @@ public class SpeakerDashboardService {
     public SpeakerDashboardDto getDashboard(String username) {
         LOG.info("Loading dashboard for speaker: {}", username);
 
-        // Find all speaker pool entries for this speaker
-        List<SpeakerPool> allEntries = speakerPoolRepository.findByUsername(username);
+        // 2026-05-21 (BATbern75 follow-up) — canonical source is session_users.username,
+        // NOT speaker_pool.username. The pool column carries one sessionId per row and
+        // goes stale after a Sessions-tab reassignment (the new PRIMARY_SPEAKER's
+        // dashboard would otherwise miss the session entirely). Querying session_users
+        // also surfaces CO_SPEAKER / MODERATOR / PANELIST assignments that never had a
+        // pool row of their own. One dashboard entry = one session_users row.
+        List<SessionUser> memberships = sessionUserRepository.findByUsername(username);
 
-        if (allEntries.isEmpty()) {
-            LOG.info("No speaker pool entries found for username: {}", username);
-            // Code review 2026-05-18 (P23): fall back to the User's display name from CUMS
-            // rather than echoing the raw username (e.g. "alice.muller" → "Alice Müller").
-            // A speaker with the SPEAKER role but no current pool rows still deserves a
-            // proper greeting on the empty-state dashboard.
-            String fallbackName = username;
-            try {
-                UserResponse userProfile = userApiClient.getUserByUsername(username);
-                if (userProfile != null
-                        && userProfile.getFirstName() != null
-                        && userProfile.getLastName() != null) {
-                    fallbackName = (userProfile.getFirstName() + " " + userProfile.getLastName())
-                            .trim();
-                }
-            } catch (Exception e) {
-                LOG.debug(
-                        "Could not resolve display name for empty-pool dashboard: {} ({})",
-                        username,
-                        e.getMessage());
-            }
-            return SpeakerDashboardDto.builder()
-                    .speakerName(fallbackName)
-                    .profileCompleteness(0)
-                    .upcomingEvents(List.of())
-                    .pastEvents(List.of())
-                    .build();
+        if (memberships.isEmpty()) {
+            LOG.info("No session_users rows found for username: {}", username);
+            return buildEmptyDashboard(username);
         }
 
-        // Collect all event IDs and fetch events in batch
-        Set<UUID> eventIds = allEntries.stream()
-                .map(SpeakerPool::getEventId)
-                .collect(Collectors.toSet());
-        Map<UUID, Event> eventsById = eventRepository.findAllById(eventIds).stream()
-                .collect(Collectors.toMap(Event::getId, Function.identity()));
-
-        // Collect session IDs and fetch sessions in batch
-        Set<UUID> sessionIds = allEntries.stream()
-                .map(SpeakerPool::getSessionId)
-                .filter(id -> id != null)
+        // Batch-load sessions referenced by the memberships. SessionUser.session is a
+        // LAZY @ManyToOne; the explicit batch fetch avoids N+1.
+        Set<UUID> sessionIds = memberships.stream()
+                .map(su -> su.getSession().getId())
                 .collect(Collectors.toSet());
         Map<UUID, Session> sessionsById = sessionRepository.findAllById(sessionIds).stream()
                 .collect(Collectors.toMap(Session::getId, Function.identity()));
 
+        // Batch-load events referenced by those sessions.
+        Set<UUID> eventIds = sessionsById.values().stream()
+                .map(Session::getEventId)
+                .collect(Collectors.toSet());
+        Map<UUID, Event> eventsById = eventRepository.findAllById(eventIds).stream()
+                .collect(Collectors.toMap(Event::getId, Function.identity()));
+
+        // Batch-load pool rows linked back via session.speakerPoolId. Sessions for which
+        // this speaker is CO_SPEAKER (added via the Sessions tab without a pool row)
+        // will have speakerPoolId pointing to whoever the PRIMARY pool row was, OR be
+        // null. We tolerate both: the pool row is only used to enrich the entry with
+        // workflow status + deadlines; absence means the speaker_users.isConfirmed
+        // flag drives the displayed state.
+        Set<UUID> poolIds = sessionsById.values().stream()
+                .map(Session::getSpeakerPoolId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<UUID, SpeakerPool> poolById = poolIds.isEmpty()
+                ? Map.of()
+                : speakerPoolRepository.findAllById(poolIds).stream()
+                        .collect(Collectors.toMap(SpeakerPool::getId, Function.identity()));
+
         Instant now = Instant.now();
 
-        // Build upcoming and past event lists
+        // Build upcoming and past event lists — one entry per membership (i.e. per
+        // session). A speaker with 3 sessions = 3 cards.
         List<DashboardUpcomingEventDto> upcomingEvents = new ArrayList<>();
         List<DashboardPastEventDto> pastEvents = new ArrayList<>();
 
-        for (SpeakerPool entry : allEntries) {
-            Event event = eventsById.get(entry.getEventId());
+        for (SessionUser membership : memberships) {
+            Session session = sessionsById.get(membership.getSession().getId());
+            if (session == null) {
+                continue;
+            }
+            Event event = eventsById.get(session.getEventId());
             if (event == null) {
                 continue;
             }
+            // Pool row is optional — only present when the session was provisioned via
+            // the PRIMARY_SPEAKER workflow (Story 11.E.8 provisionSessionAndPrimary).
+            // For a CO_SPEAKER added via the Sessions tab, the pool row attached to the
+            // session belongs to a DIFFERENT user — its workflow state is theirs, not
+            // ours. Only inherit pool state when the pool row was provisioned FOR this
+            // speaker (i.e. the membership role is PRIMARY_SPEAKER).
+            //
+            // Legacy fallback (BATbern74 case, 2026-05-21): pre-Story-11.E.8 data has the
+            // pool→session FK set but the session→pool back-reference missing (it wasn't
+            // backfilled). If session.speakerPoolId is null, try the reverse lookup via
+            // speakerPoolRepository.findBySessionId so the dashboard still picks up the
+            // canonical workflow state. The slot's pool row represents the session's
+            // workflow regardless of who the current PRIMARY_SPEAKER is — after a
+            // reassignment the new speaker still inherits the slot's state (e.g. content
+            // already submitted by the previous speaker; the content lives on session_-
+            // content_history keyed by session_id, not by username).
+            SpeakerPool pool = null;
+            if (membership.getSpeakerRole() == SessionUser.SpeakerRole.PRIMARY_SPEAKER) {
+                if (session.getSpeakerPoolId() != null) {
+                    pool = poolById.get(session.getSpeakerPoolId());
+                }
+                if (pool == null) {
+                    pool = speakerPoolRepository.findBySessionId(session.getId()).stream()
+                            .findFirst()
+                            .orElse(null);
+                }
+            }
 
-            Session session = entry.getSessionId() != null ? sessionsById.get(entry.getSessionId()) : null;
             boolean isUpcoming = event.getDate() != null && event.getDate().isAfter(now);
-
-            if (isUpcoming && UPCOMING_STATES.contains(entry.getStatus())) {
-                upcomingEvents.add(buildUpcomingEvent(entry, event, session));
-            } else if (!isUpcoming && PAST_STATES.contains(entry.getStatus())) {
-                pastEvents.add(buildPastEvent(entry, event, session));
+            SpeakerWorkflowState effectiveState = pool != null
+                    ? pool.getStatus()
+                    : (membership.isConfirmed() ? SpeakerWorkflowState.ACCEPTED
+                            : SpeakerWorkflowState.INVITED);
+            // For PRIMARY_SPEAKER paths we keep the existing UPCOMING/PAST state filters
+            // (they encode "the speaker has actually been invited" semantics). For
+            // co-speaker entries we synthesise a state that always falls into the
+            // displayable range. Membership decline (declinedAt set) hides the entry.
+            if (membership.getDeclinedAt() != null) {
+                continue;
+            }
+            if (isUpcoming && UPCOMING_STATES.contains(effectiveState)) {
+                upcomingEvents.add(buildUpcomingEvent(membership, pool, event, session));
+            } else if (!isUpcoming && PAST_STATES.contains(effectiveState)) {
+                pastEvents.add(buildPastEvent(membership, pool, event, session));
             }
         }
 
@@ -187,15 +229,80 @@ public class SpeakerDashboardService {
         // AC3: Sort past by event date descending (most recent first)
         pastEvents.sort(Comparator.comparing(DashboardPastEventDto::eventDate).reversed());
 
-        // Story 11.E.8 §2.9 follow-up: greet the speaker by their canonical User profile
-        // name (Cognito-provisioned at CONTACTED → READY), not by speaker_pool.speaker_name
-        // which is the original brainstorm lead name (often a placeholder like
-        // "testreferent1" or a one-line guess from the organizer). speaker_pool.speaker_name
-        // remains the audit field for the IDENTIFIED/CONTACTED phase; once a real user is
-        // bound at READY, the User profile is the source of truth for who the speaker is.
-        // Fall back to speaker_pool.speaker_name if the User profile can't be resolved.
-        String poolFallbackName = allEntries.get(0).getSpeakerName();
-        String speakerName = poolFallbackName;
+        DashboardHeader header = resolveDashboardHeader(memberships, poolById, username);
+
+        LOG.info("Dashboard loaded for speaker: {} - {} upcoming, {} past events",
+                username, upcomingEvents.size(), pastEvents.size());
+
+        return SpeakerDashboardDto.builder()
+                .speakerName(header.speakerName())
+                .profilePictureUrl(header.profilePictureUrl())
+                .profileCompleteness(header.profileCompleteness())
+                .upcomingEvents(upcomingEvents)
+                .pastEvents(pastEvents)
+                .build();
+    }
+
+    /**
+     * Empty-state dashboard for speakers with the SPEAKER role but no current
+     * session memberships. Greets the speaker by their CUMS display name; falls
+     * back to the raw username on profile-resolve failure.
+     */
+    private SpeakerDashboardDto buildEmptyDashboard(String username) {
+        // Code review 2026-05-18 (P23): fall back to the User's display name from CUMS
+        // rather than echoing the raw username (e.g. "alice.muller" → "Alice Müller").
+        String fallbackName = username;
+        try {
+            UserResponse userProfile = userApiClient.getUserByUsername(username);
+            if (userProfile != null
+                    && userProfile.getFirstName() != null
+                    && userProfile.getLastName() != null) {
+                fallbackName = (userProfile.getFirstName() + " " + userProfile.getLastName())
+                        .trim();
+            }
+        } catch (Exception e) {
+            LOG.debug("Could not resolve display name for empty-dashboard: {} ({})",
+                    username, e.getMessage());
+        }
+        return SpeakerDashboardDto.builder()
+                .speakerName(fallbackName)
+                .profileCompleteness(0)
+                .upcomingEvents(List.of())
+                .pastEvents(List.of())
+                .build();
+    }
+
+    /** Header fields for the speaker dashboard: name + portrait + profile completeness. */
+    private record DashboardHeader(
+            String speakerName, String profilePictureUrl, int profileCompleteness) {}
+
+    /**
+     * Resolve the dashboard header — Story 11.E.8 §2.9 follow-up: prefer the CUMS
+     * User profile name; fall back to a pool brainstorm name or the SessionUser
+     * cached name. The profile picture + completeness ride along with the lookup.
+     */
+    private DashboardHeader resolveDashboardHeader(
+            List<SessionUser> memberships,
+            Map<UUID, SpeakerPool> poolById,
+            String username) {
+        String poolFallbackName = poolById.values().stream()
+                .findFirst()
+                .map(SpeakerPool::getSpeakerName)
+                .orElse(null);
+        String cachedFallback = memberships.stream()
+                .map(su -> {
+                    String f = su.getSpeakerFirstName();
+                    String l = su.getSpeakerLastName();
+                    if ((f == null || f.isBlank()) && (l == null || l.isBlank())) {
+                        return null;
+                    }
+                    return ((f != null ? f : "") + " " + (l != null ? l : "")).trim();
+                })
+                .filter(n -> n != null && !n.isBlank())
+                .findFirst()
+                .orElse(null);
+        String speakerName = poolFallbackName != null ? poolFallbackName
+                : (cachedFallback != null ? cachedFallback : username);
         String profilePictureUrl = null;
         int profileCompleteness = 0;
         try {
@@ -221,68 +328,56 @@ public class SpeakerDashboardService {
         } catch (Exception e) {
             LOG.warn("Failed to fetch user profile for {}: {}", username, e.getMessage());
         }
-
-        LOG.info("Dashboard loaded for speaker: {} - {} upcoming, {} past events",
-                username, upcomingEvents.size(), pastEvents.size());
-
-        return SpeakerDashboardDto.builder()
-                .speakerName(speakerName)
-                .profilePictureUrl(profilePictureUrl)
-                .profileCompleteness(profileCompleteness)
-                .upcomingEvents(upcomingEvents)
-                .pastEvents(pastEvents)
-                .build();
+        return new DashboardHeader(speakerName, profilePictureUrl, profileCompleteness);
     }
 
-    private DashboardUpcomingEventDto buildUpcomingEvent(SpeakerPool entry, Event event, Session session) {
+    private DashboardUpcomingEventDto buildUpcomingEvent(
+            SessionUser membership, SpeakerPool pool, Event event, Session session) {
         String eventDate = formatEventDate(event.getDate());
-        String sessionTitle = session != null ? session.getTitle() : null;
+        String sessionTitle = session.getTitle();
+        UUID sessionId = session.getId();
+
+        // Effective workflow state: pool row's when PRIMARY-via-pool; synthesized from
+        // session_users.isConfirmed when CO_SPEAKER / no pool.
+        SpeakerWorkflowState effectiveState = pool != null
+                ? pool.getStatus()
+                : (membership.isConfirmed() ? SpeakerWorkflowState.ACCEPTED
+                        : SpeakerWorkflowState.INVITED);
 
         // AC4: Content status. Story 11.E.8 §2.9: sessions.title is the canonical "current"
         // for every surface (speaker dashboard, organizer kanban, public archive, speaker
         // portal form). The latest session_content_history row is consulted ONLY to flag
         // whether the speaker has actually submitted content (vs. the placeholder title
-        // written at CONTACTED → READY) and to surface reviewer feedback. Do NOT override
-        // sessionTitle with the history row — that re-introduces the divergence Story
-        // 11.E.8 §2.9 closed (organizer edits would stop propagating to the dashboard).
+        // written at CONTACTED → READY) and to surface reviewer feedback.
         boolean hasTitle = false;
         boolean hasAbstract = false;
-        if (entry.getSessionId() != null) {
-            var latestSubmissionAtSession = sessionContentHistoryRepository
-                    .findFirstBySessionIdOrderBySubmissionVersionDesc(entry.getSessionId());
-            if (latestSubmissionAtSession.isPresent()) {
-                hasTitle = latestSubmissionAtSession.get().getTitle() != null
-                        && !latestSubmissionAtSession.get().getTitle().isBlank();
-                hasAbstract = latestSubmissionAtSession.get().getContentAbstract() != null
-                        && !latestSubmissionAtSession.get().getContentAbstract().isBlank();
-            }
+        var latestSubmissionAtSession = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId);
+        if (latestSubmissionAtSession.isPresent()) {
+            hasTitle = latestSubmissionAtSession.get().getTitle() != null
+                    && !latestSubmissionAtSession.get().getTitle().isBlank();
+            hasAbstract = latestSubmissionAtSession.get().getContentAbstract() != null
+                    && !latestSubmissionAtSession.get().getContentAbstract().isBlank();
         }
 
         // AC4: Material status
-        boolean hasMaterial = false;
+        boolean hasMaterial = sessionMaterialsRepository
+                .existsBySession_IdAndMaterialType(sessionId, "PRESENTATION");
         String materialFileName = null;
-        if (entry.getSessionId() != null) {
-            hasMaterial = sessionMaterialsRepository
-                    .existsBySession_IdAndMaterialType(entry.getSessionId(), "PRESENTATION");
-            if (hasMaterial) {
-                var materials = sessionMaterialsRepository.findBySession_Id(entry.getSessionId());
-                materialFileName = materials.stream()
-                        .filter(m -> "PRESENTATION".equals(m.getMaterialType()))
-                        .findFirst()
-                        .map(m -> m.getFileName())
-                        .orElse(null);
-            }
+        if (hasMaterial) {
+            var materials = sessionMaterialsRepository.findBySession_Id(sessionId);
+            materialFileName = materials.stream()
+                    .filter(m -> "PRESENTATION".equals(m.getMaterialType()))
+                    .findFirst()
+                    .map(m -> m.getFileName())
+                    .orElse(null);
         }
 
         // AC4: Reviewer feedback (surfaced when the moderator left a comment on the
         // latest submission). 2026-05-20 (Q#D) — the `derivedContentStatus` indirection
         // was removed along with the `contentStatus` field on the DTO; read the latest
         // history row's reviewer_feedback directly.
-        var latestVersion = entry.getSessionId() != null
-                ? sessionContentHistoryRepository
-                        .findFirstBySessionIdOrderBySubmissionVersionDesc(entry.getSessionId())
-                : java.util.Optional.<ch.batbern.events.domain.SessionContentVersion>empty();
-        String reviewerFeedback = latestVersion
+        String reviewerFeedback = latestSubmissionAtSession
                 .map(v -> v.getReviewerFeedback())
                 .filter(fb -> fb != null && !fb.isBlank())
                 .orElse(null);
@@ -302,21 +397,24 @@ public class SpeakerDashboardService {
             }
         }
 
-        // Format deadlines
-        String responseDeadline = entry.getResponseDeadline() != null
-                ? entry.getResponseDeadline().toString() : null;
-        String contentDeadline = entry.getContentDeadline() != null
-                ? entry.getContentDeadline().toString() : null;
+        // Format deadlines. Only available when this speaker has a pool row (PRIMARY
+        // workflow); CO_SPEAKER memberships don't carry workflow deadlines.
+        String responseDeadline = pool != null && pool.getResponseDeadline() != null
+                ? pool.getResponseDeadline().toString() : null;
+        String contentDeadline = pool != null && pool.getContentDeadline() != null
+                ? pool.getContentDeadline().toString() : null;
 
-        // Quick-action URLs (AC2)
-        String respondUrl = entry.getStatus() == SpeakerWorkflowState.INVITED
+        // Quick-action URLs (AC2). For pool-backed PRIMARY memberships we surface the
+        // workflow-driven respond/submit links; for CO_SPEAKER we never offer the
+        // accept/decline portal because the workflow lives on the pool row.
+        String respondUrl = effectiveState == SpeakerWorkflowState.INVITED && pool != null
                 ? "/speaker-portal/respond" : null;
-        // Show content submit for any speaker who has accepted or beyond
-        boolean canSubmitContent = entry.getStatus() != SpeakerWorkflowState.INVITED
-                && entry.getStatus() != SpeakerWorkflowState.IDENTIFIED
-                && entry.getStatus() != SpeakerWorkflowState.CONTACTED
-                && entry.getStatus() != SpeakerWorkflowState.READY
-                && entry.getStatus() != SpeakerWorkflowState.DECLINED;
+        boolean canSubmitContent = pool != null
+                && effectiveState != SpeakerWorkflowState.INVITED
+                && effectiveState != SpeakerWorkflowState.IDENTIFIED
+                && effectiveState != SpeakerWorkflowState.CONTACTED
+                && effectiveState != SpeakerWorkflowState.READY
+                && effectiveState != SpeakerWorkflowState.DECLINED;
         String contentUrl = canSubmitContent ? "/speaker-portal/content" : null;
 
         return DashboardUpcomingEventDto.builder()
@@ -325,8 +423,8 @@ public class SpeakerDashboardService {
                 .eventDate(eventDate)
                 .eventLocation(event.getVenueName())
                 .sessionTitle(sessionTitle)
-                .workflowState(entry.getStatus().name())
-                .workflowStateLabel(WORKFLOW_STATE_LABELS.getOrDefault(entry.getStatus(), entry.getStatus().name()))
+                .workflowState(effectiveState.name())
+                .workflowStateLabel(WORKFLOW_STATE_LABELS.getOrDefault(effectiveState, effectiveState.name()))
                 .hasTitle(hasTitle)
                 .hasAbstract(hasAbstract)
                 .hasMaterial(hasMaterial)
@@ -341,24 +439,22 @@ public class SpeakerDashboardService {
                 .build();
     }
 
-    private DashboardPastEventDto buildPastEvent(SpeakerPool entry, Event event, Session session) {
+    private DashboardPastEventDto buildPastEvent(
+            SessionUser membership, SpeakerPool pool, Event event, Session session) {
         String eventDate = formatEventDate(event.getDate());
-        String sessionTitle = session != null ? session.getTitle() : null;
+        String sessionTitle = session.getTitle();
+        UUID sessionId = session.getId();
 
-        // Material status for past events
-        boolean hasMaterial = false;
+        boolean hasMaterial = sessionMaterialsRepository
+                .existsBySession_IdAndMaterialType(sessionId, "PRESENTATION");
         String materialFileName = null;
-        if (entry.getSessionId() != null) {
-            hasMaterial = sessionMaterialsRepository
-                    .existsBySession_IdAndMaterialType(entry.getSessionId(), "PRESENTATION");
-            if (hasMaterial) {
-                var materials = sessionMaterialsRepository.findBySession_Id(entry.getSessionId());
-                materialFileName = materials.stream()
-                        .filter(m -> "PRESENTATION".equals(m.getMaterialType()))
-                        .findFirst()
-                        .map(m -> m.getFileName())
-                        .orElse(null);
-            }
+        if (hasMaterial) {
+            var materials = sessionMaterialsRepository.findBySession_Id(sessionId);
+            materialFileName = materials.stream()
+                    .filter(m -> "PRESENTATION".equals(m.getMaterialType()))
+                    .findFirst()
+                    .map(m -> m.getFileName())
+                    .orElse(null);
         }
 
         return DashboardPastEventDto.builder()

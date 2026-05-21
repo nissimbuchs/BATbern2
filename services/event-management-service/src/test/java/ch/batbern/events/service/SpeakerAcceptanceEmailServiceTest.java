@@ -58,6 +58,9 @@ class SpeakerAcceptanceEmailServiceTest {
     @Mock
     private EmailTemplateService emailTemplateService;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private SpeakerAcceptanceEmailService acceptanceEmailService;
 
     private SpeakerPool speaker;
@@ -67,7 +70,8 @@ class SpeakerAcceptanceEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        acceptanceEmailService = new SpeakerAcceptanceEmailService(emailService, sessionRepository, emailTemplateService);
+        acceptanceEmailService = new SpeakerAcceptanceEmailService(
+                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver);
         ReflectionTestUtils.setField(acceptanceEmailService, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(acceptanceEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(acceptanceEmailService, "organizerEmail", "events@batbern.ch");
@@ -95,10 +99,15 @@ class SpeakerAcceptanceEmailServiceTest {
         speaker = new SpeakerPool();
         speaker.setId(speakerId);
         speaker.setSpeakerName("John Doe");
-        speaker.setEmail("john.doe@example.com");
         speaker.setEventId(eventId);
         speaker.setSessionId(sessionId);
         speaker.setContentDeadline(LocalDate.of(2026, 2, 15));
+
+        // Phase B: route through PrimarySpeakerResolver. Default identity matches the
+        // speaker's pool columns so existing assertions on email / name continue to pass.
+        when(primarySpeakerResolver.resolve(any()))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "john.doe", "john.doe@example.com", "John", "Doe", "TestCo")));
 
         viewToken = "test-view-token-12345";
 

@@ -66,6 +66,12 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     private SpeakerPoolRepository speakerPoolRepository;
 
     @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
+    @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
 
     /**
@@ -87,7 +93,9 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         statusHistoryRepository.deleteAll();
+        sessionUserRepository.deleteAll();
         speakerPoolRepository.deleteAll();
+        sessionRepository.deleteAll();
         eventRepository.deleteAll();
 
         testEvent = eventRepository.save(Event.builder()
@@ -121,12 +129,32 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
         // Alice has an INVITED pool row on testEvent only — none on foreignEvent.
         // contentStatus="PENDING" satisfies the dashboard's Map.getOrDefault assertion
         // (the immutable CONTENT_STATUS_LABELS map rejects null keys).
-        speakerPoolRepository.save(SpeakerPool.builder()
+        // 2026-05-21 (BATbern75 follow-up) — the dashboard's canonical source is now
+        // session_users, so a Session + PRIMARY_SPEAKER session_users row are needed too
+        // (mirrors the Story 11.E.8 provisionSessionAndPrimarySpeaker shape).
+        ch.batbern.events.domain.Session aliceSession = sessionRepository.save(
+                ch.batbern.events.domain.Session.builder()
+                        .eventId(testEvent.getId())
+                        .eventCode(EVENT_CODE)
+                        .sessionSlug("auth-matrix-alice-session")
+                        .title("Alice's Session")
+                        .sessionType("presentation")
+                        .build());
+        SpeakerPool alicePool = speakerPoolRepository.save(SpeakerPool.builder()
                 .eventId(testEvent.getId())
+                .sessionId(aliceSession.getId())
                 .speakerName("Alice Speaker")
                 .email("alice@example.com")
                 .username(SPEAKER_USERNAME)
                 .status(SpeakerWorkflowState.INVITED)
+                .build());
+        aliceSession.setSpeakerPoolId(alicePool.getId());
+        sessionRepository.save(aliceSession);
+        sessionUserRepository.save(ch.batbern.events.domain.SessionUser.builder()
+                .session(aliceSession)
+                .username(SPEAKER_USERNAME)
+                .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
                 .build());
 
         // Dashboard happy-path fetches the speaker's user profile for profile-completeness;

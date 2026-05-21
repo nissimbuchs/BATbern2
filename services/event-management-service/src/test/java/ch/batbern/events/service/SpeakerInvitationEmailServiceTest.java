@@ -60,7 +60,7 @@ class SpeakerInvitationEmailServiceTest {
     private EmailTemplateService emailTemplateService;
 
     @Mock
-    private ch.batbern.events.client.UserApiClient userApiClient;
+    private PrimarySpeakerResolver primarySpeakerResolver;
 
     private SpeakerInvitationEmailService invitationEmailService;
 
@@ -74,7 +74,7 @@ class SpeakerInvitationEmailServiceTest {
     @BeforeEach
     void setUp() {
         invitationEmailService = new SpeakerInvitationEmailService(
-                emailService, sessionRepository, emailTemplateService, userApiClient);
+                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver);
         // DB lookup defaults to empty so classpath templates load.
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -102,11 +102,17 @@ class SpeakerInvitationEmailServiceTest {
         speaker = new SpeakerPool();
         speaker.setId(speakerId);
         speaker.setSpeakerName("John Doe");
-        speaker.setEmail("john.doe@example.com");
         speaker.setEventId(eventId);
         speaker.setSessionId(sessionId);
         speaker.setResponseDeadline(LocalDate.of(2026, 2, 28));
         speaker.setContentDeadline(LocalDate.of(2026, 3, 10));
+
+        // Phase B: recipient routing now flows through PrimarySpeakerResolver.
+        // Default to the speaker's "as-if pool" identity so existing assertions on
+        // body content (name, email) keep passing; individual tests can override.
+        when(primarySpeakerResolver.resolve(any()))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "john.doe", "john.doe@example.com", "John", "Doe", "TestCo")));
 
         loginUrl = "https://batbern.ch/login";
 

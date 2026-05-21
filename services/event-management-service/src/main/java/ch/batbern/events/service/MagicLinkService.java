@@ -74,6 +74,7 @@ public class MagicLinkService {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final JwtConfig jwtConfig;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
     private final SecureRandom secureRandom;
 
     public MagicLinkService(
@@ -81,12 +82,14 @@ public class MagicLinkService {
             SpeakerPoolRepository speakerPoolRepository,
             EventRepository eventRepository,
             SessionRepository sessionRepository,
-            JwtConfig jwtConfig) {
+            JwtConfig jwtConfig,
+            PrimarySpeakerResolver primarySpeakerResolver) {
         this.tokenRepository = tokenRepository;
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
         this.jwtConfig = jwtConfig;
+        this.primarySpeakerResolver = primarySpeakerResolver;
         this.secureRandom = new SecureRandom();
     }
 
@@ -157,19 +160,26 @@ public class MagicLinkService {
         KeyPair keyPair = jwtConfig.getKeyPair();
         Instant now = Instant.now();
 
+        // Phase B (2026-05-21): JWT email claim now comes from the canonical primary
+        // speaker (session_users + CUMS) when a session exists; falls back to the
+        // legacy speaker_pool.email column for pre-session rows. A Sessions-tab
+        // reassignment takes effect on the next JWT issuance.
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speakerPool)
+                .orElseGet(speakerPool::getEmail);
+
         String jwt = Jwts.builder()
                 .subject(speakerPoolId.toString())
                 .issuer(jwtConfig.getIssuer())
                 .issuedAt(java.util.Date.from(now))
                 .expiration(java.util.Date.from(now.plus(jwtConfig.getExpiryDays(), ChronoUnit.DAYS)))
-                .claim("email", speakerPool.getEmail())
+                .claim("email", resolvedEmail)
                 .claim("roles", List.of("SPEAKER"))
                 .claim("speakerPoolId", speakerPoolId.toString())
                 .signWith(keyPair.getPrivate(), Jwts.SIG.RS256)
                 .compact();
 
         String maskedEmail = LoggingUtils.maskEmail(
-                speakerPool.getEmail() != null ? speakerPool.getEmail() : "unknown");
+                resolvedEmail != null ? resolvedEmail : "unknown");
         LOG.info("Generated JWT token for speaker pool: {} (email: {})", speakerPoolId, maskedEmail);
         return jwt;
     }

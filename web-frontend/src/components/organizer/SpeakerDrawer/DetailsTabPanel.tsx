@@ -43,6 +43,14 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
     ? `${linkedUser!.firstName} ${linkedUser!.lastName}`
     : null;
 
+  // Phase D.5 (BATbern75 follow-up, 2026-05-21) — once a session is provisioned
+  // (status ≥ READY per Story 11.E.8), the drawer is a workflow surface only. The
+  // Details subtab locks all identity / brainstorm columns and exposes ONLY the
+  // assigned-organizer field for edit; the canonical identity flows from
+  // session_users + User (via the kanban card / drawer header / Phase A's overlay).
+  // Pre-session (IDENTIFIED/CONTACTED) brainstorm UX is preserved.
+  const isSessionAssigned = !!speaker.sessionId;
+
   const [form, setForm] = useState<EditFormState>({
     speakerName: speaker.speakerName ?? '',
     company: speaker.company ?? '',
@@ -82,18 +90,27 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
     if (nameError) return;
     setSubmitError(null);
     try {
+      // Phase D.5: when a session is assigned, the only editable field is
+      // assignedOrganizerId; strip the locked fields from the payload to avoid
+      // sending no-op writes (and to make the "drawer is workflow-only post-session"
+      // contract explicit on the wire).
+      const payload = isSessionAssigned
+        ? {
+            // Empty string means "unassigned" — pass it through so the backend can
+            // clear the column (PatchSpeakerPoolRequest treats empty as a sentinel).
+            assignedOrganizerId: form.assignedOrganizerId,
+          }
+        : {
+            speakerName: trimmedName,
+            company: form.company,
+            expertise: form.expertise,
+            assignedOrganizerId: form.assignedOrganizerId,
+            notes: form.notes,
+          };
       await patchMutation.mutateAsync({
         eventCode,
         speakerId: speaker.id,
-        request: {
-          speakerName: trimmedName,
-          company: form.company,
-          expertise: form.expertise,
-          // Empty string means "unassigned" — pass it through so the backend can clear
-          // the column (PatchSpeakerPoolRequest treats empty as a sentinel).
-          assignedOrganizerId: form.assignedOrganizerId,
-          notes: form.notes,
-        },
+        request: payload,
       });
       onExitEditMode();
     } catch (err) {
@@ -152,6 +169,15 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
             onChange={(e) => setForm((s) => ({ ...s, company: e.target.value }))}
             fullWidth
             size="small"
+            disabled={isSessionAssigned}
+            helperText={
+              isSessionAssigned
+                ? t(
+                    'speakerDrawer.editDetails.companyLockedHint',
+                    'Company comes from the linked user profile once a session is assigned.'
+                  )
+                : undefined
+            }
             inputProps={{ 'data-testid': 'details-edit-company', maxLength: 255 }}
           />
           <TextField
@@ -160,6 +186,15 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
             onChange={(e) => setForm((s) => ({ ...s, expertise: e.target.value }))}
             fullWidth
             size="small"
+            disabled={isSessionAssigned}
+            helperText={
+              isSessionAssigned
+                ? t(
+                    'speakerDrawer.editDetails.expertiseLockedHint',
+                    'Expertise is a brainstorm-only field; sessions own the talk topic from READY onward.'
+                  )
+                : undefined
+            }
             inputProps={{ 'data-testid': 'details-edit-expertise', maxLength: 1000 }}
           />
           {/* Epic 11 bug fix 2026-05-19 — assignedOrganizer is part of the edit-details
@@ -181,6 +216,15 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
             multiline
             rows={3}
             size="small"
+            disabled={isSessionAssigned}
+            helperText={
+              isSessionAssigned
+                ? t(
+                    'speakerDrawer.editDetails.notesLockedHint',
+                    'Internal notes are a brainstorm-only field. Use the History timeline for post-session annotations.'
+                  )
+                : undefined
+            }
             inputProps={{ 'data-testid': 'details-edit-notes' }}
           />
 

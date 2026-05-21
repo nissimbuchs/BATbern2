@@ -70,6 +70,9 @@ class MagicLinkServiceTest {
     @Mock
     private JwtConfig jwtConfig;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private MagicLinkService magicLinkService;
 
     private UUID testSpeakerPoolId;
@@ -85,7 +88,8 @@ class MagicLinkServiceTest {
         when(jwtConfig.getExpiryDays()).thenReturn(30);
 
         magicLinkService = new MagicLinkService(
-                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository, jwtConfig);
+                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository,
+                jwtConfig, primarySpeakerResolver);
 
         testSpeakerPoolId = UUID.randomUUID();
         testSpeakerPool = SpeakerPool.builder()
@@ -616,7 +620,6 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
 
         // Act
@@ -634,8 +637,11 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
+        // Phase B: JWT email claim now derived from PrimarySpeakerResolver
+        // (session_users + UserApiClient), not the stale pool.email column.
+        when(primarySpeakerResolver.resolveEmail(speakerPool))
+                .thenReturn(Optional.of("jane@example.com"));
 
         // Act
         String jwt = magicLinkService.generateJwtToken(speakerPoolId);
@@ -657,7 +663,6 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
 
         Instant before = Instant.now();

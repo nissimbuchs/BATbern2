@@ -209,9 +209,20 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   // ACCEPTED+ the form is a real submission; both title and abstract become required.
   const isReadyStateDraftOnly = speaker.status === 'READY';
 
+  // Phase D.5 (BATbern75 follow-up, 2026-05-21) — once a session is provisioned (status
+  // ≥ READY per Story 11.E.8) the speaker identity is owned by session_users; this tab
+  // only handles content (title, abstract, materials). The user-picker is suppressed
+  // and a static identity label takes its place, with an inline hint pointing the
+  // organizer to the Sessions tab for any speaker reassignment.
+  const isSessionAssigned = !!speaker.sessionId;
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!selectedUser) {
+    // Phase D.5: speaker identity is fixed once a session is assigned (session_users
+    // owns it). Skip the username-required check in that case; the prefill effect has
+    // already resolved selectedUser from speaker.username, and the picker is not
+    // editable.
+    if (!selectedUser && !isSessionAssigned) {
       newErrors.username = t('organizer:speakerContent.errors.usernameRequired');
     }
     if (!isReadyStateDraftOnly) {
@@ -239,14 +250,21 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
   };
 
   const handleSubmit = async () => {
-    if (!validateForm() || !selectedUser) return;
+    if (!validateForm()) return;
+    // Phase D.5: post-session, selectedUser may be null if the prefill failed but the
+    // server-side identity is already established via session_users. We still want
+    // submission to work. The SPEAKER-role grant below is a no-op anyway (the user
+    // received the role at the READY transition).
+    if (!selectedUser && !isSessionAssigned) return;
 
-    const existingRoles = (selectedUser.roles ?? []) as Role[];
-    if (!existingRoles.includes('SPEAKER')) {
-      try {
-        await updateUserRoles(selectedUser.id, [...existingRoles, 'SPEAKER']);
-      } catch (error) {
-        console.error('Failed to grant SPEAKER role:', error);
+    if (selectedUser) {
+      const existingRoles = (selectedUser.roles ?? []) as Role[];
+      if (!existingRoles.includes('SPEAKER')) {
+        try {
+          await updateUserRoles(selectedUser.id, [...existingRoles, 'SPEAKER']);
+        } catch (error) {
+          console.error('Failed to grant SPEAKER role:', error);
+        }
       }
     }
 
@@ -381,67 +399,114 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-          {/* Speaker selection */}
+          {/* Speaker selection (or, post-session, static identity readout) */}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
               {t('organizer:speakerContent.speakerInformation')}
             </Typography>
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <UserAutocomplete
-                value={selectedUser}
-                onChange={setSelectedUser}
-                error={errors.username}
-                label={t('organizer:speakerContent.form.username')}
-                role="SPEAKER"
-                disabled={submitContentMutation.isPending}
-                data-testid="speaker-search-field"
-              />
-
-              {selectedUser && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                  <Box sx={{ mb: 2 }}>
-                    <UserAvatar
-                      firstName={selectedUser.firstName}
-                      lastName={selectedUser.lastName}
-                      company={selectedUser.companyId}
-                      profilePictureUrl={selectedUser.profilePictureUrl}
-                      size={40}
-                      showCompany={true}
-                    />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {selectedUser.email}
-                  </Typography>
-                  {selectedUser.roles && selectedUser.roles.length > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      Role: {selectedUser.roles.join(', ')}
+              {isSessionAssigned ? (
+                // Phase D.5: post-session, speaker identity is owned by session_users
+                // (mutated only via the Sessions tab). Render a read-only label
+                // sourced from the prefilled selectedUser (resolved from
+                // speaker.username, which Phase A's overlay now keeps live). The
+                // user-picker / Create-new buttons are hidden so the Content tab
+                // cannot double-write the identity.
+                <Box data-testid="content-tab-speaker-readonly">
+                  {selectedUser ? (
+                    <Box sx={{ mb: 2 }}>
+                      <UserAvatar
+                        firstName={selectedUser.firstName}
+                        lastName={selectedUser.lastName}
+                        company={selectedUser.companyId}
+                        profilePictureUrl={selectedUser.profilePictureUrl}
+                        size={40}
+                        showCompany={true}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        {selectedUser.email}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {speaker.speakerName ?? '—'}
                     </Typography>
                   )}
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    {t(
+                      'organizer:speakerContent.speakerLockedHint',
+                      'The speaker is fixed for this session. Use the Sessions tab to reassign.'
+                    )}
+                  </Alert>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleEditSpeaker}
+                    disabled={!selectedUser || submitContentMutation.isPending}
+                    fullWidth
+                  >
+                    {t('organizer:speakerContent.editSpeakerProfile')}
+                  </Button>
+                </Box>
+              ) : (
+                <>
+                  <UserAutocomplete
+                    value={selectedUser}
+                    onChange={setSelectedUser}
+                    error={errors.username}
+                    label={t('organizer:speakerContent.form.username')}
+                    role="SPEAKER"
+                    disabled={submitContentMutation.isPending}
+                    data-testid="speaker-search-field"
+                  />
+
+                  {selectedUser && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Box sx={{ mb: 2 }}>
+                        <UserAvatar
+                          firstName={selectedUser.firstName}
+                          lastName={selectedUser.lastName}
+                          company={selectedUser.companyId}
+                          profilePictureUrl={selectedUser.profilePictureUrl}
+                          size={40}
+                          showCompany={true}
+                        />
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {selectedUser.email}
+                      </Typography>
+                      {selectedUser.roles && selectedUser.roles.length > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          Role: {selectedUser.roles.join(', ')}
+                        </Typography>
+                      )}
+                      <Box sx={{ mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={handleEditSpeaker}
+                          disabled={submitContentMutation.isPending}
+                          fullWidth
+                        >
+                          {t('organizer:speakerContent.editSpeakerProfile')}
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+
                   <Box sx={{ mt: 2 }}>
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={handleEditSpeaker}
+                      onClick={handleCreateSpeaker}
                       disabled={submitContentMutation.isPending}
                       fullWidth
                     >
-                      {t('organizer:speakerContent.editSpeakerProfile')}
+                      {t('organizer:speakerContent.createNewSpeaker')}
                     </Button>
                   </Box>
-                </Box>
+                </>
               )}
-
-              <Box sx={{ mt: 2 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={handleCreateSpeaker}
-                  disabled={submitContentMutation.isPending}
-                  fullWidth
-                >
-                  {t('organizer:speakerContent.createNewSpeaker')}
-                </Button>
-              </Box>
             </Paper>
           </Box>
 

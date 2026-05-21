@@ -72,6 +72,9 @@ class SpeakerReminderServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private ReminderProperties reminderProperties;
 
     @InjectMocks
@@ -102,7 +105,8 @@ class SpeakerReminderServiceTest {
                 speakerPoolRepository, eventRepository, reminderLogRepository,
                 outreachHistoryRepository, sessionContentHistoryRepository,
                 reminderEmailService, magicLinkService,
-                notificationService, reminderProperties
+                notificationService, reminderProperties,
+                primarySpeakerResolver
         );
 
         testEvent = Event.builder()
@@ -116,11 +120,22 @@ class SpeakerReminderServiceTest {
                 .id(speakerPoolId)
                 .eventId(eventId)
                 .speakerName("John Doe")
-                .email("john@example.com")
                 .status(SpeakerWorkflowState.INVITED)
                 .responseDeadline(LocalDate.now().plusDays(14)) // exactly TIER_1
                 .remindersDisabled(false)
                 .build();
+
+        // Phase B: contactability is now resolved via PrimarySpeakerResolver. Default to
+        // the speaker's pool email so existing assertions about reminder-eligible
+        // speakers continue to hold. Individual tests can override to simulate
+        // "no resolvable recipient". lenient() because pure-utility tests (findMatchingTier,
+        // autoDetectTier) never touch the resolver.
+        org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolveEmail(any()))
+                .thenReturn(java.util.Optional.of("john@example.com"));
+        org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolve(any()))
+                .thenReturn(java.util.Optional.of(
+                        new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                                "john.doe", "john@example.com", "John", "Doe", "TestCo")));
     }
 
     @Nested
@@ -206,18 +221,23 @@ class SpeakerReminderServiceTest {
         }
 
         @Test
-        @DisplayName("should skip when no email")
-        void shouldSkip_whenNoEmail() {
-            testSpeaker.setEmail(null);
+        @DisplayName("should skip when PrimarySpeakerResolver returns no email")
+        void shouldSkip_whenNoResolvableEmail() {
+            // Phase B: contactability is now derived from PrimarySpeakerResolver
+            // (session_users + UserApiClient), not the pool.email column.
+            when(primarySpeakerResolver.resolveEmail(testSpeaker))
+                    .thenReturn(java.util.Optional.empty());
             boolean result = speakerReminderService.shouldSendReminder(
                     testSpeaker, "RESPONSE", "TIER_1", testSpeaker.getResponseDeadline());
             assertThat(result).isFalse();
         }
 
         @Test
-        @DisplayName("should skip when email is blank")
-        void shouldSkip_whenEmailBlank() {
-            testSpeaker.setEmail("  ");
+        @DisplayName("should skip when resolved email is blank — defensive filter")
+        void shouldSkip_whenResolvedEmailBlank() {
+            // resolveEmail's filter() drops blank strings; emulate by returning empty.
+            when(primarySpeakerResolver.resolveEmail(testSpeaker))
+                    .thenReturn(java.util.Optional.empty());
             boolean result = speakerReminderService.shouldSendReminder(
                     testSpeaker, "RESPONSE", "TIER_1", testSpeaker.getResponseDeadline());
             assertThat(result).isFalse();

@@ -52,6 +52,7 @@ public class SpeakerReminderService {
     private final MagicLinkService magicLinkService;
     private final NotificationService notificationService;
     private final ReminderProperties reminderProperties;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     private static final String REMINDER_TYPE_RESPONSE = "RESPONSE";
     private static final String REMINDER_TYPE_CONTENT = "CONTENT";
@@ -185,7 +186,11 @@ public class SpeakerReminderService {
         // Send (bypass dedup for manual triggers)
         sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy);
 
-        return new ManualReminderResult(effectiveTier, speaker.getEmail());
+        // Phase B: recipient routing now flows through PrimarySpeakerResolver. For manual
+        // reminder result, surface whatever email was actually used (may be null if the
+        // sender path skipped due to no resolvable recipient).
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
+        return new ManualReminderResult(effectiveTier, resolvedEmail);
     }
 
     /**
@@ -228,9 +233,14 @@ public class SpeakerReminderService {
      * Check if a reminder should be sent (deduplication + smart skipping).
      */
     boolean shouldSendReminder(SpeakerPool speaker, String reminderType, String tier, LocalDate deadline) {
-        // Skip if no email
-        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
-            log.debug("Skipping reminder for speaker {} - no email", speaker.getId());
+        // Skip if no resolvable recipient. Phase B: the contactable predicate is now
+        // "has a session with a PRIMARY_SPEAKER session_user whose User profile carries
+        // an email" — i.e. PrimarySpeakerResolver.resolveEmail returns a value. The old
+        // speaker.getEmail() check missed the case where the organizer reassigned the
+        // session speaker and pool.email had not been kept in sync.
+        if (primarySpeakerResolver.resolveEmail(speaker).isEmpty()) {
+            log.debug("Skipping reminder for speaker {} - no resolvable primary speaker email",
+                    speaker.getId());
             return false;
         }
 
@@ -275,12 +285,15 @@ public class SpeakerReminderService {
         String portalToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
 
         // Persist reminder log BEFORE sending email (dedup safety)
+        // Phase B: log the recipient as resolved by PrimarySpeakerResolver — that's the
+        // address the email service will actually use.
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
         SpeakerReminderLog reminderLog = SpeakerReminderLog.builder()
                 .speakerPoolId(speaker.getId())
                 .eventId(event.getId())
                 .reminderType(reminderType)
                 .tier(tier)
-                .emailAddress(speaker.getEmail())
+                .emailAddress(resolvedEmail)
                 .deadlineDate(deadline)
                 .triggeredBy(triggeredBy)
                 .build();

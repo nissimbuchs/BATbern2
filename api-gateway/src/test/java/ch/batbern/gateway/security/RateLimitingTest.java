@@ -287,11 +287,15 @@ class RateLimitingTest {
     @Test
     @DisplayName("anonPathLimit — GET on a watched path falls back to global anon limit")
     void should_notMatch_when_methodIsNotPost() {
+        // 11.E.9: Story 11.C.1/D3 changed the anonymous bucket key from the shared
+        // "anonymous" to per-IP "anonymous:<ip>" so one attacker cannot exhaust the
+        // global anonymous quota. The stub argument must match the new keying.
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setRequestURI("/api/v1/newsletter/subscribe");
         request.setRemoteAddr("203.0.113.20");
-        when(rateLimitStorage.getCurrentRequestCount("anonymous", "/api/v1/newsletter/subscribe", "anonymous"))
+        when(rateLimitStorage.getCurrentRequestCount(
+                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribe", "anonymous"))
                 .thenReturn(0);
         when(rateLimitStorage.getRateLimit("anonymous", "/api/v1/newsletter/subscribe")).thenReturn(50);
 
@@ -299,7 +303,8 @@ class RateLimitingTest {
 
         assertThat(allowed).isTrue();
         verify(rateLimitStorage, never()).tryAcquireForPath(any(), any(), any(), any(), any());
-        verify(rateLimitStorage).incrementRequestCount("anonymous", "/api/v1/newsletter/subscribe", "anonymous");
+        verify(rateLimitStorage).incrementRequestCount(
+                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribe", "anonymous");
     }
 
     @Test
@@ -309,7 +314,8 @@ class RateLimitingTest {
         request.setMethod("POST");
         request.setRequestURI("/api/v1/content/search");
         request.setRemoteAddr("203.0.113.21");
-        when(rateLimitStorage.getCurrentRequestCount("anonymous", "/api/v1/content/search", "anonymous"))
+        when(rateLimitStorage.getCurrentRequestCount(
+                "anonymous:203.0.113.21", "/api/v1/content/search", "anonymous"))
                 .thenReturn(0);
         when(rateLimitStorage.getRateLimit("anonymous", "/api/v1/content/search")).thenReturn(50);
 
