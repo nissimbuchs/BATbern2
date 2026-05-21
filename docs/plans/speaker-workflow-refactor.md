@@ -37,7 +37,9 @@ from this document.
 
 ### 0.1 Speaker workflow states
 
-| State | Meaning | `speaker_pool.username` | Cognito user |
+> **Story 11.E.9 (2026-05-21):** `speaker_pool.username` + `speaker_pool.email` columns dropped (Flyway V103). The "username" column below should be read as the `PRIMARY_SPEAKER` `session_users.username` (joined via `speaker_pool.session_id`). `PrimarySpeakerResolver.resolve(pool)` is the canonical accessor.
+
+| State | Meaning | `session_users.username` (PRIMARY) | Cognito user |
 |---|---|---|---|
 | `IDENTIFIED` | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. | NULL | none |
 | `CONTACTED` | Organizer is reaching out — to the candidate, to partners, to network contacts — to figure out who will actually speak. **Still brainstorming.** All conversations logged via `OutreachHistory`. | NULL | none |
@@ -267,6 +269,7 @@ in-flight magic-link sessions to preserve. Cutover is therefore a clean swap.
 | **V98** `add_submitted_by_username_to_content_submissions.sql` (Story 11.E.8 §2.7) | Add NOT NULL `submitted_by_username` to `speaker_content_submissions`; backfill from `speaker_status_history.changed_by_username` on the closest `content_submitted` transition (or `reviewed_by`, else `'system'`). Makes the audit row self-describing so the speaker_pool_id FK can be dropped in V99. |
 | **V99** `rename_content_submissions_to_session_content_history.sql` (Story 11.E.8 §2.7) | Backfill any null `session_id` from `speaker_pool.session_id`; refuse to rename if any nulls remain; drop the `speaker_pool_id` FK + column; enforce `session_id NOT NULL`; rename the table to `session_content_history`. The audit log is now keyed by session, composing naturally with multi-speaker sessions. |
 | **V102** `drop_dead_content_columns.sql` (Story 11.E.8 §2.7) | Drop `speaker_pool.initial_presentation_title`, `speaker_pool.content_status`, `speaker_pool.content_submitted_at`, `session_users.presentation_title`. All four are dead after the rename + ContentStatusDeriver — derived at read time from `session_content_history` + workflow state. V100/V101 are reserved by EMS test-stub migrations (user_profiles_stub, companies_stub). |
+| **V103** `drop_speaker_pool_username_email.sql` (Story 11.E.9, 2026-05-21) | Drop `speaker_pool.username` and `speaker_pool.email` columns + `idx_speaker_pool_event_email`. Both columns duplicated identity that lives on the `PRIMARY_SPEAKER` `session_users` row (joined via `session_id`) + the User record in CUMS. They went stale on Sessions-tab reassignments — the BATbern75 stale-Thomas bug. Identity reads now route through `PrimarySpeakerResolver.resolve(pool)`. Pre-flight check rejects the migration if any pool row would lose its identity (legacy `username IS NOT NULL AND session_id IS NULL` rows). |
 
 ### 2.3 State-machine consolidation
 

@@ -546,6 +546,46 @@ mechanism. The fallback is invisible in staging by design — anyone debugging
 "why don't my roles work" should still start with Pattern 2 and the Lambda
 CloudWatch logs.
 
+### Pattern 3b twin: username fallback (Story 11.E.9, 2026-05-21)
+
+Same root cause as the role-extraction fallback above, applied to the `custom:username`
+claim. The PreTokenGen Lambda (Pattern 2) writes `custom:username` from
+`user_profiles.username` — for locally-provisioned speakers (Pattern N), the Lambda
+runs against the staging DB, finds no `user_profiles` row, and either omits the claim
+or returns an empty string. The pre-fix `getCurrentUsername()` check was
+`if (username == null)` only, so empty string passed through and downstream queries
+like `sessionUserRepository.findByUsername("")` matched nothing — locally-promoted
+speakers saw an empty dashboard.
+
+**Backend implementation** (`services/event-management-service/.../security/
+SecurityContextHelper.java`):
+
+```java
+String username = jwt.getClaim("custom:username");
+if (username != null && !username.isBlank()) {
+    return username;            // staging path — claim is populated
+}
+// Local-dev fallback: resolve by cognito_user_id (mirrors JwtRolesConverter)
+String resolved = jdbcTemplate.queryForObject(
+        "SELECT username FROM user_profiles WHERE cognito_user_id = ?",
+        String.class,
+        jwt.getSubject());
+return resolved != null ? resolved : jwt.getSubject();  // final fallback: UUID
+```
+
+**Symptom this fixes**: `GET /api/v1/speaker-portal/dashboard` returns
+`{ speakerName: "", upcomingEvents: [], pastEvents: [] }` for a locally-provisioned
+speaker whose `session_users` and `user_profiles` rows exist correctly. The log
+line `Dashboard request: username= ip=...` is the diagnostic giveaway —
+`SecurityContextHelper` emitted an empty username.
+
+**Where this kicks in**: identical to the role twin above — dormant in staging
+(JWT always carries a non-empty `custom:username`), fires only for the local-dev
+"speaker invited via Pattern N" case. The fallback is scoped to event-management-service
+today; if other services start reading `custom:username` in code paths that touch
+speaker identity, they need the same twin (the shared-kernel home would be a clean
+follow-up if reuse appears).
+
 ## What We DON'T Do
 
 ### ❌ No Cognito Groups

@@ -225,7 +225,9 @@ stateDiagram-v2
 
 ### State Definitions
 
-| State | Description | `speaker_pool.username` | Cognito user |
+> **Story 11.E.9 (2026-05-21):** `speaker_pool.username` + `speaker_pool.email` columns dropped (Flyway V103). The "Identity" column below now refers to the `PRIMARY_SPEAKER` `session_users.username` row (joined via `speaker_pool.session_id → sessions → session_users`). `PrimarySpeakerResolver.resolve(pool)` is the canonical accessor. "populated" means the `session_users` row exists; "NULL" means it doesn't yet (pre-READY).
+
+| State | Description | Identity (`session_users.username`) | Cognito user |
 |-------|-------------|--------------------------|--------------|
 | **IDENTIFIED** | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. | NULL | none |
 | **CONTACTED** | Organizer is reaching out — to the candidate, to partners, to network contacts — to figure out who will actually speak. **Still brainstorming.** All conversations logged via `OutreachHistory`. No User row exists yet; no email is sent at this state. | NULL | none |
@@ -281,7 +283,7 @@ State transitions trigger side effects inside `SpeakerWorkflowService.transition
 ### Data Model (post Story 11.E.8 consolidation)
 
 - **`speaker_pool.status`**: the 8 values above. CHECK constraint enforces the allow-list. No `is_tentative` / `tentative_reason` / `is_overflow` columns.
-- **`speaker_pool.username`**: cross-service reference to `users.username` (ADR-003 meaningful ID). Populated by the `CONTACTED → READY` provisioning hook. NULL before that.
+- **Speaker identity (post-READY)**: stored on the `PRIMARY_SPEAKER` `session_users` row joined via `speaker_pool.session_id`. Cross-service reference to `users.username` (ADR-003 meaningful ID). The `speaker_pool.username` and `speaker_pool.email` columns were dropped in **Story 11.E.9 (V103)** — they duplicated `session_users.username` + CUMS-resolved email and went stale whenever an organizer reassigned the session's primary speaker on the Sessions tab. Read live identity via `PrimarySpeakerResolver.resolve(pool)`.
 - **`speaker_pool.session_id`**: FK to `sessions(id)` within the same service. Populated by the `CONTACTED → READY` hook (Story 11.E.8) — every speaker that reaches READY has a session. Determines `is_slot_assigned` via the session's `start_time`.
 - **`speaker_pool`** — fields that were dropped in Story 11.E.8 (V102) and now derive at read time:
   - `content_status` → derived via `ContentStatusDeriver` from workflow state + latest `session_content_history.reviewer_feedback` (mapping: PENDING / SUBMITTED / REVISION_NEEDED / APPROVED).

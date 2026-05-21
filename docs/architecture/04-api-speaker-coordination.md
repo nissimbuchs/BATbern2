@@ -215,8 +215,10 @@ requestBody:
 responses:
   '200':
     description: |
-      Speaker promoted. speaker_pool.status is now READY. speaker_pool.username
-      is populated. Cognito user exists with FORCE_CHANGE_PASSWORD. SPEAKER
+      Speaker promoted. speaker_pool.status is now READY. A PRIMARY_SPEAKER
+      session_users row exists with the canonical username (post Story 11.E.9 /
+      V103 — speaker_pool.username column was dropped, identity lives on
+      session_users). Cognito user exists with FORCE_CHANGE_PASSWORD. SPEAKER
       role granted. Idempotent — re-calling for an already-promoted speaker
       returns 200 with no side effects.
     content:

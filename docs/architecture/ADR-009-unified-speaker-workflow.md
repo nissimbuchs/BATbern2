@@ -22,11 +22,13 @@ at this section before it existed.
 
 The speaker workflow has exactly **8 states**, in this declaration order:
 
+> **Story 11.E.9 (2026-05-21):** `speaker_pool.username` and `speaker_pool.email` columns were dropped (Flyway V103). Canonical identity post-READY lives on the `PRIMARY_SPEAKER` `session_users` row (joined via `speaker_pool.session_id → sessions → session_users`). All references below to "`speaker_pool.username`" should be read as "the primary `session_users.username` for the speaker's session". `PrimarySpeakerResolver.resolve(pool)` is the canonical accessor for the live username + CUMS-backed email.
+
 | State                 | Semantics                                                                                     |
 |-----------------------|-----------------------------------------------------------------------------------------------|
-| `IDENTIFIED`          | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. No User exists. `speaker_pool.username` is `NULL`. No Cognito user. |
+| `IDENTIFIED`          | Name on the brainstorm list. May be a candidate, a lead, or a contact the organizer plans to ask. No User exists, no session, no `session_users` row. No Cognito user. |
 | `CONTACTED`           | **Still brainstorming.** Organizer is reaching out — to the candidate, to partners, to network contacts — to figure out who will actually speak. No User yet. |
-| `READY`               | **Provisioning gate.** The real speaker has been identified. User provisioning (lookup-or-create) + Cognito user provisioning + SPEAKER role grant + `speaker_pool.username` persistence happens at the transition INTO this state. Reached only via `POST /api/v1/events/{code}/speakers/{speakerId}/promote`. |
+| `READY`               | **Provisioning gate.** The real speaker has been identified. User provisioning (lookup-or-create) + Cognito user provisioning + SPEAKER role grant + `PRIMARY_SPEAKER` `session_users` row creation happens at the transition INTO this state. Reached only via `POST /api/v1/events/{code}/speakers/{speakerId}/promote`. |
 | `INVITED`             | Formal invitation sent (email contains login link + temporary password). Speaker can authenticate via Cognito. |
 | `ACCEPTED`            | Speaker committed via the portal.                                                              |
 | `CONTENT_SUBMITTED`   | Title + abstract submitted to `content_submissions`. Either organizer-on-behalf or speaker-self submission — both flows traverse `ContentSubmissionService` (see §0.4). |

@@ -1270,8 +1270,11 @@ paths:
             `SpeakerWorkflowService.transition(...)` (the sole status writer).
           - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if
             none exists for the email; SPEAKER role is granted (idempotent).
-          - `speaker_pool.username` is populated with the canonical username; `email` is
-            populated with the request body's email.
+          - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the
+            canonical username (Story 11.E.8). The legacy `speaker_pool.username` and
+            `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the
+            response's `username` / `email` are now overlay-derived via
+            `PrimarySpeakerResolver.applyOverlay(...)`.
           - `speaker_status_history` row is inserted (previous_status=contacted,
             new_status=ready, changed_by_username=organizer).
           - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.
@@ -8466,8 +8469,10 @@ components:
           format: email
           maxLength: 320
           description: |
-            Required. Speaker email — becomes the canonical `speaker_pool.email` and the
-            User lookup key (case-insensitive). Also the Cognito username on first provisioning.
+            Required. Speaker email — becomes the User lookup key (case-insensitive) in
+            CUMS and the Cognito username on first provisioning. Post Story 11.E.9 (V103)
+            the email is not duplicated on `speaker_pool`; it lives only in CUMS and is
+            resolved via `PrimarySpeakerResolver.resolveEmail(pool)` at read time.
           example: jane.smith@example.com
         firstName:
           type: string

@@ -15,10 +15,13 @@ info:
     **ADR-009 (Unified Speaker Workflow)**: there is no stand-alone `Speaker`
     entity. A speaker is a `User` with the `SPEAKER` role on user_profiles
     (managed by company-user-management-service). Speaker identity in this API
-    is `speaker_pool.username` — the cross-service ID per ADR-003. User-profile
-    fields (email, firstName, lastName, bio, profilePictureUrl) are NOT
-    duplicated here; they are fetched via UserApiClient (HTTP enrichment per
-    ADR-004) when a response needs to project them.
+    is the `PRIMARY_SPEAKER` `session_users.username` joined via
+    `speaker_pool.session_id` — the cross-service ID per ADR-003. The legacy
+    `speaker_pool.username` and `speaker_pool.email` columns were dropped in
+    Story 11.E.9 (Flyway V103); use `PrimarySpeakerResolver.resolve(pool)` for
+    the live identity. User-profile fields (email, firstName, lastName, bio,
+    profilePictureUrl) are NOT duplicated here; they are fetched via UserApiClient
+    (HTTP enrichment per ADR-004) when a response needs to project them.
 
     **Status**: IMPLEMENTED (Story 11.C.1: Speaker entity + table dropped; this API now
     serves only event-scoped operations on speaker_pool entries).

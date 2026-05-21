@@ -850,8 +850,9 @@ inside this service (per AR15: this service holds Cognito provisioning logic onl
 
 **Given** the event-management-service is built,
 **When** I look at how speaker identity is referenced from `speaker_pool`,
-**Then** `speaker_pool.username` (the meaningful cross-service ID per ADR-003) is the
-sole reference,
+**Then** the `PRIMARY_SPEAKER` `session_users.username` joined via `speaker_pool.session_id`
+is the sole reference (the meaningful cross-service ID per ADR-003 — the original
+`speaker_pool.username` column was dropped in Story 11.E.9 / V103),
 **And** there is no foreign-key constraint to any service that previously held a
 `speakers` table.
 
@@ -954,9 +955,11 @@ hook).
 payload,
 **And** `UserApiClient.provisionUserWithRole` is called (User created if missing,
 SPEAKER role granted),
-**And** `speaker_pool.username` is populated with the returned username,
+**And** a `Session` + `PRIMARY_SPEAKER` `session_users` row are provisioned with the
+returned username (Story 11.E.8 / V96; post Story 11.E.9 the legacy `speaker_pool.username`
+column is gone — identity reads route through `PrimarySpeakerResolver`),
 **And** the response returns `200 OK` with the updated speaker DTO (status `READY`,
-populated `username`),
+populated `username` via the resolver overlay on `SpeakerPoolResponse`),
 **And** a `SpeakerPromotedToReadyEvent` is emitted.
 
 **Given** the same endpoint is called with no `email` in the body,
