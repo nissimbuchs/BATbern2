@@ -142,7 +142,7 @@ public class EmailService {
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
-                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
+                localEmailCapture.capture(to, ccClean, subject, htmlBody, fromEmail, fromName, List.of());
             } else {
                 log.info("Would send email to: {}, cc: {}, subject: {}", to, ccClean, subject);
             }
@@ -219,6 +219,15 @@ public class EmailService {
             List<EmailAttachment> attachments
     ) {
         assertSendable(to);
+        // Story 10.32: normalise CC list the same way the SES MIME path below does,
+        // so the local /dev/emails inbox shows exactly what staging/prod would deliver.
+        List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
+                : cc.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .filter(s -> !s.equalsIgnoreCase(to))
+                    .toList();
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -227,13 +236,13 @@ public class EmailService {
                     .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
                     .toList();
                 java.util.UUID emailId = localEmailCapture.capture(
-                        to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                        to, ccClean, subject, htmlBody, fromEmail, fromName, attachmentInfos);
                 for (EmailAttachment attachment : attachments) {
                     localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
                 }
             } else {
-                log.info("Would send email with {} attachment(s) to: {}, subject: {}",
-                        attachments.size(), to, subject);
+                log.info("Would send email with {} attachment(s) to: {}, cc: {}, subject: {}",
+                        attachments.size(), to, ccClean, subject);
             }
             return;
         }
@@ -248,15 +257,7 @@ public class EmailService {
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-            // Story 10.32: CC additional emails (if any). Drop any cc that
-            // matches to case-insensitively to avoid duplicate delivery.
-            List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
-                    : cc.stream()
-                        .filter(java.util.Objects::nonNull)
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .filter(s -> !s.equalsIgnoreCase(to))
-                        .toList();
+            // Story 10.32: CC additional emails (if any) — list normalised at method top.
             if (!ccClean.isEmpty()) {
                 message.setRecipients(
                         Message.RecipientType.CC,
@@ -336,8 +337,10 @@ public class EmailService {
                 List<CapturedEmail.AttachmentInfo> attachmentInfos = attachments.stream()
                     .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
                     .toList();
+                // Newsletter sync path — no CC (newsletter is email-keyed by design).
                 java.util.UUID emailId = localEmailCapture.capture(
-                        to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+                        to, java.util.Collections.emptyList(), subject, htmlBody,
+                        fromEmail, fromName, attachmentInfos);
                 for (EmailAttachment attachment : attachments) {
                     localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
                 }

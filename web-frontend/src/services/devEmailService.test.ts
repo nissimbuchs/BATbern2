@@ -16,6 +16,7 @@ vi.stubGlobal('fetch', mockFetch);
 const EMS_EMAIL = {
   id: 'ems-1',
   to: 'alice@batbern.ch',
+  cc: [],
   subject: 'Speaker Invitation',
   htmlBody: '<p>Hello</p>',
   fromEmail: 'noreply@batbern.ch',
@@ -27,6 +28,7 @@ const EMS_EMAIL = {
 const PCS_EMAIL = {
   id: 'pcs-1',
   to: 'partner@company.com',
+  cc: ['partner.assistant@company.com'],
   subject: 'Einladung: BATbern Partner-Meeting',
   htmlBody: '<p>Liebe Partner</p>',
   fromEmail: 'noreply@batbern.ch',

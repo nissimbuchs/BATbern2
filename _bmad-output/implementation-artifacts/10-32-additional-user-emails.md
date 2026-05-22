@@ -266,6 +266,18 @@ CUMS /api/v1/users API
   - [x] T19.1 — `./gradlew :services:event-management-service:test` — 1167/1167 GREEN.
   - [x] T19.2 — `./gradlew :shared-kernel:test` — 321/321 GREEN.
 
+### Phase 8 — `/dev/emails` UI shows CC (added 2026-05-22 after PM review)
+
+- [x] **T20 — Thread `cc` through the local-dev email capture stack** (AC: #24 — observability)
+  - [x] T20.1 — `shared-kernel/.../service/CapturedEmail.java` — record gains 3rd field `List<String> cc`; compact constructor null-coerces to `List.of()`.
+  - [x] T20.2 — `shared-kernel/.../service/LocalEmailCapture.java` — `capture(...)` accepts `cc` (slot 2); log line emits `ccCount=N`.
+  - [x] T20.3 — `shared-kernel/.../service/EmailService.java` — all 3 capture call sites pass the normalised CC list (the dropped-self-CC `ccClean` from the new 4-arg `sendHtmlEmail`, the same `ccClean` recomputed at the top of `sendHtmlEmailWithAttachments`, and `List.of()` for the no-CC newsletter path `sendHtmlEmailSyncWithAttachments`).
+  - [x] T20.4 — `web-frontend/src/services/devEmailService.ts` — `CapturedEmail` interface gets `cc: string[]`.
+  - [x] T20.5 — `web-frontend/src/pages/dev/DevEmailInboxPage.tsx` — render a `Cc:` row in the email header, comma-separated, conditional on non-empty list; `data-testid="captured-email-cc"`.
+  - [x] T20.6 — `web-frontend/src/pages/dev/DevEmailInboxPage.test.tsx` — 2 new tests (Cc hidden when empty; Cc row renders comma-separated when populated). Existing `MOCK_EMAIL` fixture gets `cc: []`.
+  - [x] T20.7 — `web-frontend/src/services/devEmailService.test.ts` — fixtures get `cc: []` and `cc: ['…']` respectively to satisfy the new TS interface field.
+  - [x] T20.8 — shared-kernel 321/321 green; frontend dev-email suite 17/17 green; `tsc --noEmit` clean. EMS + PCS restarted in local dev.
+
 ---
 
 ## Dev Notes
@@ -403,6 +415,12 @@ After this story lands on `develop` and auto-deploys to staging:
 - `docs/prd/epic-8-partner-coordination.md` (Phase 6 — recipient resolution now includes additional emails)
 - `docs/architecture/06d-notification-system.md` (Phase 7 — new subsection "Additional-email CC fan-out (Story 10.32)" documents the overload matrix and explicit exclusions)
 - `docs/user-guide/partner-portal/meetings.md` (Phase 6 — partners receive at primary + additional emails; troubleshooting note)
+- `shared-kernel/src/main/java/ch/batbern/shared/service/CapturedEmail.java` (Phase 8 — `cc: List<String>` field added)
+- `shared-kernel/src/main/java/ch/batbern/shared/service/LocalEmailCapture.java` (Phase 8 — `capture(...)` accepts `cc`)
+- `web-frontend/src/services/devEmailService.ts` (Phase 8 — `CapturedEmail.cc: string[]`)
+- `web-frontend/src/pages/dev/DevEmailInboxPage.tsx` (Phase 8 — Cc row in header, conditional)
+- `web-frontend/src/pages/dev/DevEmailInboxPage.test.tsx` (Phase 8 — 2 new tests + fixture update)
+- `web-frontend/src/services/devEmailService.test.ts` (Phase 8 — fixture updates to satisfy new TS field)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/domain/User.java` (added `@OneToMany additionalEmails` + helpers)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserService.java` (add/remove methods + audit logging)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserResponseMapper.java` (enrich UserResponse)
@@ -433,6 +451,7 @@ After this story lands on `develop` and auto-deploys to staging:
 | 2026-05-22 | Story 10.32 implemented end-to-end across 5 phases (data model, frontend UI, Lambda fan-out, EMS registration CC). All 9 EMS + 14 CUMS + 8 frontend + 64 Lambda tests green. 4963 frontend Vitest tests pass overall (zero regressions). The 2026-05-20 `ok@batbern.ch` rejection regression is now covered by a dedicated unit test in `email-forwarder.test.ts`. |
 | 2026-05-22 (Phase 6) | AC23 + T14 added after the partner-coordination service was found to still send invites to the primary address only. `PartnerMeetingService.fetchEmailsByRole` now flattens primary + `additionalEmails`. 3 new integration tests in `PartnerMeetingControllerIntegrationTest`; full PCS suite 153/153 green. |
 | 2026-05-22 (Phase 7) | AC24 + T15–T19 added: sibling EMS senders (speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, waitlist confirmation) now CC the recipient's additional emails. Shared-kernel `EmailService` gained 4-arg async + 5-arg sync `sendHtmlEmail` overloads using SES `Destination.ccAddresses`. `PrimarySpeakerResolver.PrimarySpeakerProfile` extended with 6th field via backwards-compatible secondary constructor. Test sweep across 3 test files (~23 `verify`/`when` updates) + 2 new CC-specific tests. Full EMS suite 1167/1167, shared-kernel 321/321. |
+| 2026-05-22 (Phase 8) | T20 — local-dev `/dev/emails` inbox UI now shows the Cc line. PM noticed during Phase 7 verification that captured emails on `localhost:8100/dev/emails` were not displaying CC. Threaded `cc` through `CapturedEmail` record, `LocalEmailCapture.capture()`, all 3 `EmailService` capture call sites, the frontend `CapturedEmail` interface, and the `DevEmailInboxPage` header. 2 new frontend tests; existing fixtures updated to the new TS interface field. |
 
 ---
 
