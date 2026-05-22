@@ -64,6 +64,17 @@ public class SpeakerDashboardService {
             SpeakerWorkflowState.QUALITY_REVIEWED
     );
 
+    // 2026-05-22 (BATbern75 bug report) — structural slot types that the organizer
+    // self-assigns to (moderation/break/lunch/networking) leaked onto the SPEAKER
+    // dashboard because the dashboard query is rooted in `session_users` (canonical
+    // since 2026-05-21) and never filtered by session type. Worse, an ACCEPTED
+    // moderation entry hid the real INVITED talk on the InvitationResponsePage
+    // (`upcomingEvents.find(e => e.eventCode === X)`), surfacing as the misleading
+    // "Already Responded — Accepted" banner. Single source of truth for the set
+    // lives on Session.STRUCTURAL_SESSION_TYPES so SpeakerPortalAuthorizationService
+    // (which has the same gap shape on the /respond endpoint) can reuse it via
+    // Session.isStructuralSlot().
+
     // Friendly labels for workflow states (AC2)
     private static final Map<SpeakerWorkflowState, String> WORKFLOW_STATE_LABELS = Map.of(
             SpeakerWorkflowState.INVITED, "Invitation Pending",
@@ -170,6 +181,11 @@ public class SpeakerDashboardService {
         for (SessionUser membership : memberships) {
             Session session = sessionsById.get(membership.getSession().getId());
             if (session == null) {
+                continue;
+            }
+            // 2026-05-22 (BATbern75) — drop structural slot types (moderation, break,
+            // lunch, networking). NULL session_type passes through (legacy data).
+            if (session.isStructuralSlot()) {
                 continue;
             }
             Event event = eventsById.get(session.getEventId());
