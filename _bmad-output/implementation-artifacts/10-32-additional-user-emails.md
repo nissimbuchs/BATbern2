@@ -139,6 +139,12 @@ CUMS /api/v1/users API
 
 22. **AC22 — Coverage**: Per project standard ≥ 80% line coverage on the new service code (`UserService.addAdditionalEmail`, `UserService.removeAdditionalEmail`), ≥ 90% on the validation paths. Lambda tests ≥ 90% on the changed functions.
 
+### Partner meeting fan-out (added 2026-05-22 — bug surfaced post-merge)
+
+23. **AC23 — Partner meeting calendar invites fan out to additional emails**: `PartnerMeetingService.sendInvite` (and the matching cancellation notice in `deleteMeeting`) must dispatch the .ics calendar invite to every primary AND every additional email returned by `userServiceClient.getUsersByRole("PARTNER"|"ORGANIZER")`. Recipients remain deduplicated case-insensitively via the existing `distinct()` step in `collectInviteRecipientEmails`. Failure mode is unchanged: if the User Service call fails entirely, the existing per-role `catch` returns an empty list and logs a `WARN`. A null `additionalEmails` field on the generated client DTO is tolerated (backwards-compat with a CUMS that pre-dates this story). Bug discovered 2026-05-22 immediately after the story merged: the partner-coordination path was never enumerated in AC12/AC15/AC17 so the fix was missed.
+
+24. **AC24 — All EMS transactional emails CC the recipient's additional emails**: Every EMS email-sender service that delivers a user-addressed transactional message (speaker invitations, speaker acceptance confirmations, speaker reminders, quality-review revision requests, waitlist promotion, waitlist confirmation) MUST resolve the recipient's `additionalEmails[]` via `UserApiClient`/`PrimarySpeakerResolver` and pass that list as the `cc` argument to `EmailService.sendHtmlEmail`. Newsletter sends are deliberately excluded (Open Q#4 — email-keyed). Inbound-email confirmation replies (`InboundEmailConfirmationEmailService`) are excluded because their recipients are arbitrary external senders without a `user_profiles` row. The CC list is empty (preserving pre-Story-10.32 wire format) when (a) the resolver returns degraded, (b) the user has no additional emails, or (c) the CUMS response predates Story 10.32. The shared-kernel `EmailService.sendHtmlEmail` gains a 4-arg `(to, cc, subject, html)` overload (async) and `sendHtmlEmailSync` gains a 5-arg `(to, cc, subject, html, configSet)` overload — both built on SES `Destination.ccAddresses(...)`; CC entries matching `to` case-insensitively are dropped to avoid duplicate delivery. The `PrimarySpeakerResolver.PrimarySpeakerProfile` record gains a 6th field `List<String> additionalEmails` with a backwards-compatible 5-arg secondary constructor so the 11 existing test fixtures (constructed with the 5-arg signature) continue to compile and default `additionalEmails` to an empty list.
+
 ---
 
 ## Tasks / Subtasks
@@ -224,6 +230,41 @@ CUMS /api/v1/users API
   - [x] T13.2 — From that mailbox, send a test mail to `ok@batbern.ch`. Verify CloudWatch log line `Forwarded email { ..., outcome: 'forwarded' }` (NOT `Unauthorized sender`). Verify all organizers receive the forwarded copy, including the sender at both addresses.
   - [x] T13.3 — Register an attendee account (or use a test account) with one additional email. Register for an upcoming event. Verify the confirmation email arrives at both addresses.
   - [x] T13.4 — Document the procedure in this story's Dev Agent Record on completion.
+
+### Phase 6 — Partner meeting fan-out (post-merge bug fix — added 2026-05-22)
+
+- [x] **T14 — Partner-coordination service: flatten additional emails into invite recipients** (AC: #23)
+  - [x] T14.1 — Write 3 integration tests FIRST (RED) in `PartnerMeetingControllerIntegrationTest`: (a) additional emails are included in `recipientCount` for `POST /partner-meetings/{id}/send-invite`; (b) cross-role + cross-list deduplication of an additional address shared between a partner and an organizer; (c) backwards-compat — `null` `additionalEmails` on the generated client DTO still yields primary-only recipient set.
+  - [x] T14.2 — Implement: in `PartnerMeetingService.fetchEmailsByRole`, after the primary-email collection step, iterate `u.getAdditionalEmails()` (null-safe) and append each non-blank `email`. Let the existing `distinct()` in `collectInviteRecipientEmails` handle dedupe.
+  - [x] T14.3 — Run `./gradlew :services:partner-coordination-service:test` — full 153-test suite GREEN, zero regressions.
+
+### Phase 7 — EMS sender sweep (added 2026-05-22 after Phase 6 raised the question)
+
+- [x] **T15 — Shared-kernel `EmailService` gains a CC-aware overload** (AC: #24)
+  - [x] T15.1 — Add `sendHtmlEmail(to, cc, subject, html)` (`@Async`) + `sendHtmlEmailSync(to, cc, subject, html, configSet)` to `shared-kernel/.../service/EmailService.java`. Implementation uses SES `Destination.builder().ccAddresses(...)`; CC entries matching `to` case-insensitively are dropped (parity with the existing `sendHtmlEmailWithAttachments` 5-arg path from Phase 4). The 3-arg `sendHtmlEmail` now delegates to the new 5-arg sync with `Collections.emptyList()` so existing call sites compile unchanged.
+  - [x] T15.2 — `:shared-kernel:publishToMavenLocal` + `:shared-kernel:test` — 321/321 green.
+
+- [x] **T16 — `PrimarySpeakerResolver.PrimarySpeakerProfile` carries `additionalEmails`** (AC: #24)
+  - [x] T16.1 — Add 6th field `List<String> additionalEmails` to the record. Compact constructor null-coerces to `List.of()`. Backwards-compatible 5-arg secondary constructor delegates to the canonical 6-arg with `List.of()` so the 11 existing test fixtures (counted via `grep -rnE "new PrimarySpeakerProfile"`) continue to compile.
+  - [x] T16.2 — In `resolve()` happy path: flatten `user.getAdditionalEmails()` via the existing OpenAPI-generated `AdditionalEmail` DTO and pass it into the record. Degraded branches pass `List.of()` (no CC fan-out on CUMS unavailability).
+
+- [x] **T17 — Wire 5 EMS senders to the new CC overload** (AC: #24)
+  - [x] T17.1 — `SpeakerInvitationEmailService.sendInvitationEmail` — read `profile.additionalEmails()`, pass as `cc`.
+  - [x] T17.2 — `SpeakerAcceptanceEmailService.sendAcceptanceConfirmationEmail` — same pattern.
+  - [x] T17.3 — `SpeakerReminderEmailService.sendReminderEmail` — same pattern.
+  - [x] T17.4 — `QualityReviewService.notifySpeakerOfRejection` — consolidate the two `primarySpeakerResolver.resolve(speaker)` calls into one `Optional<PrimarySpeakerProfile>`; read `additionalEmails()`.
+  - [x] T17.5 — `WaitlistPromotionEmailService` (BOTH `sendPromotionEmail` AND `sendWaitlistConfirmationEmail`) — call new helper `additionalEmailsFor(attendee)` that flattens the EMS-generated `AdditionalEmail` DTO list.
+
+- [x] **T18 — Test sweep: existing `verify(emailService).sendHtmlEmail(...)` assertions** (AC: #24)
+  - [x] T18.1 — `SpeakerInvitationEmailServiceTest` — all 10 `verify` sites + 1 `doThrow.when` site updated from 3-arg to 4-arg matchers (`anyList()` in slot 2). Import `org.mockito.ArgumentMatchers.anyList`.
+  - [x] T18.2 — `SpeakerAcceptanceEmailServiceTest` — all 11 `verify` sites + 1 `doThrow.when` site updated likewise.
+  - [x] T18.3 — `SpeakerInvitationControllerIntegrationTest` — single `doNothing().when(emailService).sendHtmlEmail(...)` stub updated to 4-arg signature.
+  - [x] T18.4 — Add 2 focused tests to `SpeakerInvitationEmailServiceTest`: (a) `should_ccAdditionalEmails_when_speakerHasThemRegistered` — speaker with 2 additional emails → captured CC equals those 2 in order; (b) `should_passEmptyCc_when_speakerHasNoAdditionalEmails` — default 5-arg `PrimarySpeakerProfile` (no additional emails) → captured CC is empty (NOT null).
+  - [x] T18.5 — `SpeakerReminderEmailService`, `QualityReviewService`, `WaitlistPromotionEmailService` have no direct unit tests of the email-send path (verified via `find` — they're tested through parent services that mock the email-sender). No test updates required for them; the chain is covered by the contract-level tests on `PrimarySpeakerProfile.additionalEmails()` and the EmailService 4-arg overload.
+
+- [x] **T19 — Full EMS + shared-kernel sweep** (AC: #24)
+  - [x] T19.1 — `./gradlew :services:event-management-service:test` — 1167/1167 GREEN.
+  - [x] T19.2 — `./gradlew :shared-kernel:test` — 321/321 GREEN.
 
 ---
 
@@ -345,7 +386,23 @@ After this story lands on `develop` and auto-deploys to staging:
 - `bruno-tests/users-api/16-list-with-additional-emails.bru`
 - `bruno-tests/users-api/17-delete-additional-email.bru`
 
-**UPDATED (14):**
+**UPDATED:**
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/PartnerMeetingService.java` (Phase 6 — flatten additional emails in `fetchEmailsByRole`)
+- `services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingControllerIntegrationTest.java` (Phase 6 — 3 new tests for AC23)
+- `shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java` (Phase 7 — `sendHtmlEmail` 4-arg async + `sendHtmlEmailSync` 5-arg overloads with CC)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/PrimarySpeakerResolver.java` (Phase 7 — `PrimarySpeakerProfile` gains `additionalEmails` + secondary 5-arg constructor for backwards-compat)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java` (Phase 7 — pass `profile.additionalEmails()` as CC)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerAcceptanceEmailService.java` (Phase 7 — same)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerReminderEmailService.java` (Phase 7 — same)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/QualityReviewService.java` (Phase 7 — consolidate resolve() + pass CC)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/WaitlistPromotionEmailService.java` (Phase 7 — both send sites pass CC via new `additionalEmailsFor` helper)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationEmailServiceTest.java` (Phase 7 — 4-arg verify sweep + 2 new CC tests)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAcceptanceEmailServiceTest.java` (Phase 7 — 4-arg verify sweep)
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerInvitationControllerIntegrationTest.java` (Phase 7 — 4-arg stub signature)
+- `docs/prd/epic-10-additional-stories.md` (Phase 6/7 — Story 10.32 Scope + DoD extended with partner-meeting and EMS-sender sweep)
+- `docs/prd/epic-8-partner-coordination.md` (Phase 6 — recipient resolution now includes additional emails)
+- `docs/architecture/06d-notification-system.md` (Phase 7 — new subsection "Additional-email CC fan-out (Story 10.32)" documents the overload matrix and explicit exclusions)
+- `docs/user-guide/partner-portal/meetings.md` (Phase 6 — partners receive at primary + additional emails; troubleshooting note)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/domain/User.java` (added `@OneToMany additionalEmails` + helpers)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserService.java` (add/remove methods + audit logging)
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserResponseMapper.java` (enrich UserResponse)
@@ -374,6 +431,8 @@ After this story lands on `develop` and auto-deploys to staging:
 | Date | Change |
 |------|--------|
 | 2026-05-22 | Story 10.32 implemented end-to-end across 5 phases (data model, frontend UI, Lambda fan-out, EMS registration CC). All 9 EMS + 14 CUMS + 8 frontend + 64 Lambda tests green. 4963 frontend Vitest tests pass overall (zero regressions). The 2026-05-20 `ok@batbern.ch` rejection regression is now covered by a dedicated unit test in `email-forwarder.test.ts`. |
+| 2026-05-22 (Phase 6) | AC23 + T14 added after the partner-coordination service was found to still send invites to the primary address only. `PartnerMeetingService.fetchEmailsByRole` now flattens primary + `additionalEmails`. 3 new integration tests in `PartnerMeetingControllerIntegrationTest`; full PCS suite 153/153 green. |
+| 2026-05-22 (Phase 7) | AC24 + T15–T19 added: sibling EMS senders (speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, waitlist confirmation) now CC the recipient's additional emails. Shared-kernel `EmailService` gained 4-arg async + 5-arg sync `sendHtmlEmail` overloads using SES `Destination.ccAddresses`. `PrimarySpeakerResolver.PrimarySpeakerProfile` extended with 6th field via backwards-compatible secondary constructor. Test sweep across 3 test files (~23 `verify`/`when` updates) + 2 new CC-specific tests. Full EMS suite 1167/1167, shared-kernel 321/321. |
 
 ---
 

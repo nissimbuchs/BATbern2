@@ -85,7 +85,18 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
-        sendHtmlEmailSync(to, subject, htmlBody, configurationSetName);
+        sendHtmlEmailSync(to, java.util.Collections.emptyList(), subject, htmlBody, configurationSetName);
+    }
+
+    /**
+     * Story 10.32 — async HTML email with CC support. Used by speaker / waitlist /
+     * quality-review notification flows to deliver a copy to each of the recipient's
+     * declared additional emails. Empty / null {@code cc} is equivalent to the 3-arg
+     * signature.
+     */
+    @Async
+    public void sendHtmlEmail(String to, List<String> cc, String subject, String htmlBody) {
+        sendHtmlEmailSync(to, cc, subject, htmlBody, configurationSetName);
     }
 
     /**
@@ -100,7 +111,7 @@ public class EmailService {
      * @param htmlBody HTML content
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody) {
-        sendHtmlEmailSync(to, subject, htmlBody, configurationSetName);
+        sendHtmlEmailSync(to, java.util.Collections.emptyList(), subject, htmlBody, configurationSetName);
     }
 
     /**
@@ -109,25 +120,48 @@ public class EmailService {
      * through the Configuration Set's event destinations.
      */
     public void sendHtmlEmailSync(String to, String subject, String htmlBody, String configurationSetName) {
+        sendHtmlEmailSync(to, java.util.Collections.emptyList(), subject, htmlBody, configurationSetName);
+    }
+
+    /**
+     * Story 10.32 — synchronous variant with CC + optional SES Configuration Set.
+     * CC entries that match {@code to} case-insensitively are dropped to avoid
+     * duplicate delivery (same rule as {@link #sendHtmlEmailWithAttachments}).
+     */
+    public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody, String configurationSetName) {
         assertSendable(to);
+
+        List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
+                : cc.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .filter(s -> !s.equalsIgnoreCase(to))
+                    .toList();
+
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
                 localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
             } else {
-                log.info("Would send email to: {}, subject: {}", to, subject);
+                log.info("Would send email to: {}, cc: {}, subject: {}", to, ccClean, subject);
             }
             return;
         }
 
         try {
-            log.debug("Sending HTML email (sync) to: {}, subject: {}, configSet: {}",
-                    to, subject, configurationSetName);
+            log.debug("Sending HTML email (sync) to: {}, cc: {}, subject: {}, configSet: {}",
+                    to, ccClean, subject, configurationSetName);
+
+            Destination.Builder destBuilder = Destination.builder().toAddresses(to);
+            if (!ccClean.isEmpty()) {
+                destBuilder.ccAddresses(ccClean);
+            }
 
             SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
                     .source(String.format("%s <%s>", fromName, fromEmail))
                     .replyToAddresses(replyToEmail)
-                    .destination(Destination.builder().toAddresses(to).build())
+                    .destination(destBuilder.build())
                     .message(software.amazon.awssdk.services.ses.model.Message.builder()
                             .subject(Content.builder().data(subject).charset("UTF-8").build())
                             .body(Body.builder()
@@ -140,7 +174,8 @@ public class EmailService {
             }
 
             SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
-            log.info("Email sent (sync) to: {}, MessageId: {}", to, response.messageId());
+            log.info("Email sent (sync) to: {}, ccCount: {}, MessageId: {}",
+                    to, ccClean.size(), response.messageId());
 
         } catch (SesException e) {
             log.error("Failed to send email (sync) to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);

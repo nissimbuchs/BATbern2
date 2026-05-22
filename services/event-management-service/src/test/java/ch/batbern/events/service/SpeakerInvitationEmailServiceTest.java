@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -166,7 +167,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
         String body = bodyCaptor.getValue();
         // Temp password value appears.
         assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
@@ -184,7 +185,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, useExistingCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
         String body = bodyCaptor.getValue();
         // No temp password appears.
         assertThat(body).doesNotContain("Tk7!aB2@nx9pQ4#z");
@@ -204,7 +205,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-        verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), bodyCaptor.capture());
         assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         // German body must contain the German "temporary password" wording.
         String body = bodyCaptor.getValue();
@@ -221,7 +222,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
         assertThat(bodyCaptor.getValue()).contains(loginUrl);
         // Speaker email is the Cognito username.
         assertThat(bodyCaptor.getValue()).contains("john.doe@example.com");
@@ -241,6 +242,7 @@ class SpeakerInvitationEmailServiceTest {
 
             verify(emailService).sendHtmlEmail(
                     eq("john.doe@example.com"),
+                    anyList(),
                     contains("Speaker Invitation"),
                     anyString());
         }
@@ -254,7 +256,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String body = bodyCaptor.getValue();
             assertThat(body).contains("BATbern 2026");
             assertThat(body).contains("15.03.2026");
@@ -272,7 +274,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, null);
 
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
             assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         }
 
@@ -281,7 +283,7 @@ class SpeakerInvitationEmailServiceTest {
         void should_notThrow_when_emailSendingFails() {
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             doThrow(new RuntimeException("Email server unavailable"))
-                    .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+                    .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString());
 
             // No exception escapes.
             invitationEmailService.sendInvitationEmail(
@@ -299,7 +301,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             assertThat(bodyCaptor.getValue()).contains("TBA");
         }
 
@@ -316,9 +318,60 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             assertThat(bodyCaptor.getValue()).contains("John Doe");
             assertThat(bodyCaptor.getValue()).contains("Tk7!aB2@nx9pQ4#z");
         }
+    }
+
+    // ─── Story 10.32 — additional emails fan out on speaker invite ─────────
+
+    @Test
+    @DisplayName("Story 10.32: CCs speaker's additional emails on invitation send")
+    void should_ccAdditionalEmails_when_speakerHasThemRegistered() {
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        // Override the default profile mock to include 2 additional emails.
+        when(primarySpeakerResolver.resolve(any()))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "john.doe",
+                        "john.doe@example.com",
+                        "John",
+                        "Doe",
+                        "TestCo",
+                        java.util.List.of("john.work@example.com", "john.private@example.com"))));
+
+        ArgumentCaptor<java.util.List<String>> ccCaptor = ArgumentCaptor.forClass(java.util.List.class);
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(
+                eq("john.doe@example.com"),
+                ccCaptor.capture(),
+                anyString(),
+                anyString());
+        assertThat(ccCaptor.getValue())
+                .containsExactly("john.work@example.com", "john.private@example.com");
+    }
+
+    @Test
+    @DisplayName("Story 10.32: backwards-compat — empty additionalEmails sends with empty CC")
+    void should_passEmptyCc_when_speakerHasNoAdditionalEmails() {
+        // The default mock in @BeforeEach uses the 5-arg PrimarySpeakerProfile constructor,
+        // which defaults additionalEmails to List.of() — this test asserts that the CC list
+        // passed to EmailService is empty (not null), preserving the existing behaviour for
+        // every speaker not yet using the 10.32 feature.
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        ArgumentCaptor<java.util.List<String>> ccCaptor = ArgumentCaptor.forClass(java.util.List.class);
+        invitationEmailService.sendInvitationEmail(
+                speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(
+                eq("john.doe@example.com"),
+                ccCaptor.capture(),
+                anyString(),
+                anyString());
+        assertThat(ccCaptor.getValue()).isEmpty();
     }
 }

@@ -141,7 +141,7 @@ As an **organizer**, I want to manage the Spring and Autumn partner meetings, so
 **Scope (what it is):**
 - Meeting record linked to a BATbern event by event code; fields: date (auto-filled), start/end time, location, type (Spring/Autumn)
 - Agenda as free text — included in the calendar invite description
-- Calendar invite: standard `.ics` file (RFC 5545) with two VEVENTs (partner lunch + BATbern event itself), sent via AWS SES to all partner contacts
+- Calendar invite: standard `.ics` file (RFC 5545) with two VEVENTs (partner lunch + BATbern event itself), sent via AWS SES to all partner contacts (Story 10.32 Phase 6: each contact's `additionalEmails[]` is included alongside their primary address — dedup is case-insensitive)
 - Post-meeting notes: free-text, visible to all organizers
 - Meeting list: all past and upcoming meetings with status (invite sent / not sent)
 - Organizer-only access (partners do not interact with this screen)
@@ -179,7 +179,8 @@ PartnerMeetingController (202 Accepted immediately)
        │    (Caffeine cache 1h)
        ├─ IcsGeneratorService.generate() → byte[] (pure RFC 5545, no library)
        └─ @Async: SesEmailService.sendCalendarInvite(recipients, ics)
-              → sends to all partner contacts on record
+              → sends to all partner contacts on record (primary + each contact's
+                additionalEmails[] per Story 10.32 Phase 6; deduplicated case-insensitively)
 ```
 
 **Key endpoints:**

@@ -87,8 +87,11 @@ public class WaitlistPromotionEmailService {
                             ? "Sie wurden von der Warteliste registriert – " + event.getTitle()
                             : "You've been promoted from the waitlist – " + event.getTitle());
 
-            emailService.sendHtmlEmail(attendee.getEmail(), subject, html);
-            log.info("Waitlist-promotion email sent to: {}", LoggingUtils.maskEmail(attendee.getEmail()));
+            // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = additionalEmailsFor(attendee);
+            emailService.sendHtmlEmail(attendee.getEmail(), cc, subject, html);
+            log.info("Waitlist-promotion email sent to: {} (ccCount={})",
+                    LoggingUtils.maskEmail(attendee.getEmail()), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send waitlist-promotion email for registration: {}",
@@ -142,8 +145,11 @@ public class WaitlistPromotionEmailService {
                             ? "Sie stehen auf der Warteliste – " + event.getTitle()
                             : "You're on the waitlist – " + event.getTitle());
 
-            emailService.sendHtmlEmail(attendee.getEmail(), subject, html);
-            log.info("Waitlist-confirmation email sent to: {}", LoggingUtils.maskEmail(attendee.getEmail()));
+            // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = additionalEmailsFor(attendee);
+            emailService.sendHtmlEmail(attendee.getEmail(), cc, subject, html);
+            log.info("Waitlist-confirmation email sent to: {} (ccCount={})",
+                    LoggingUtils.maskEmail(attendee.getEmail()), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send waitlist-confirmation email for registration: {}",
@@ -192,6 +198,27 @@ public class WaitlistPromotionEmailService {
             log.warn("Cannot send waitlist email — user not found: {}", username);
             return null;
         }
+    }
+
+    /**
+     * Story 10.32 — flatten the attendee's additional emails into a list of plain
+     * strings for CC routing. Returns an empty list when the field is absent (CUMS
+     * predates Story 10.32) or the user has none.
+     */
+    private static java.util.List<String> additionalEmailsFor(UserResponse attendee) {
+        if (attendee == null) {
+            return java.util.List.of();
+        }
+        java.util.List<ch.batbern.events.dto.generated.users.AdditionalEmail> raw =
+                attendee.getAdditionalEmails();
+        if (raw == null || raw.isEmpty()) {
+            return java.util.List.of();
+        }
+        return raw.stream()
+                .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
+                .filter(java.util.Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     private Event resolveEvent(java.util.UUID eventId) {

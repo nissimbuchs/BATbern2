@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -143,6 +144,7 @@ class SpeakerAcceptanceEmailServiceTest {
             // Then
             verify(emailService).sendHtmlEmail(
                     eq("john.doe@example.com"),
+                    anyList(),
                     contains("Speaker Confirmation"),
                     anyString()
             );
@@ -160,7 +162,7 @@ class SpeakerAcceptanceEmailServiceTest {
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).doesNotContain("/speaker-portal/profile?token=");
         }
@@ -174,7 +176,7 @@ class SpeakerAcceptanceEmailServiceTest {
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             // Cognito-authenticated SPA route — eventCode lives in the path, no ?token= suffix.
             assertThat(emailBody).contains("/speaker-portal/content/" + event.getEventCode());
@@ -190,7 +192,7 @@ class SpeakerAcceptanceEmailServiceTest {
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("/speaker-portal/dashboard");
             assertThat(emailBody).doesNotContain("/speaker-portal/dashboard?token=");
@@ -208,7 +210,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.GERMAN);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
             String subject = subjectCaptor.getValue();
             assertThat(subject).contains("Bestätigung");
         }
@@ -225,7 +227,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.ENGLISH);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
             String subject = subjectCaptor.getValue();
             assertThat(subject).contains("Confirmation");
         }
@@ -242,7 +244,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.ENGLISH);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("BATbern 2026");
             assertThat(emailBody).contains("15.03.2026");
@@ -260,7 +262,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.ENGLISH);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("Cloud Architecture Patterns");
         }
@@ -277,7 +279,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.ENGLISH);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("15.02.2026");
         }
@@ -288,7 +290,7 @@ class SpeakerAcceptanceEmailServiceTest {
             // Given
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             doThrow(new RuntimeException("Email server unavailable"))
-                    .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+                    .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString());
 
             // When/Then - should not throw
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
@@ -311,7 +313,7 @@ class SpeakerAcceptanceEmailServiceTest {
                     speaker, event, viewToken, Locale.ENGLISH);
 
             // Then
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             assertThat(bodyCaptor.getValue()).contains("DB template for John Doe");
         }
 

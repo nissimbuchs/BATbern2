@@ -343,6 +343,84 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(json.get("recipientCount").asInt()).isEqualTo(1);
     }
 
+    // ─── Story 10.32 extension: additional email fan-out ─────────────────────
+
+    @Test
+    void should_includeAdditionalEmails_in_recipientCount_for_sendInvite() throws Exception {
+        // Partner has primary + 2 additional emails — all should receive the invite.
+        UserResponse partner = new UserResponse();
+        partner.setEmail("primary@partner.com");
+        ch.batbern.partners.client.user.dto.AdditionalEmail extra1 =
+                new ch.batbern.partners.client.user.dto.AdditionalEmail();
+        extra1.setEmail("extra1@partner.com");
+        ch.batbern.partners.client.user.dto.AdditionalEmail extra2 =
+                new ch.batbern.partners.client.user.dto.AdditionalEmail();
+        extra2.setEmail("extra2@partner.com");
+        partner.setAdditionalEmails(List.of(extra1, extra2));
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));
+
+        String meetingId = createMeeting("BATbern57");
+
+        MvcResult result = mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(json.get("recipientCount").asInt()).isEqualTo(3);
+    }
+
+    @Test
+    void should_deduplicateAdditionalEmails_across_roles() throws Exception {
+        // Partner additional collides with organizer additional → counted once.
+        UserResponse partner = new UserResponse();
+        partner.setEmail("partner@batbern.ch");
+        ch.batbern.partners.client.user.dto.AdditionalEmail partnerExtra =
+                new ch.batbern.partners.client.user.dto.AdditionalEmail();
+        partnerExtra.setEmail("shared@batbern.ch");
+        partner.setAdditionalEmails(List.of(partnerExtra));
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));
+
+        UserResponse organizer = new UserResponse();
+        organizer.setEmail("organizer@batbern.ch");
+        ch.batbern.partners.client.user.dto.AdditionalEmail organizerExtra =
+                new ch.batbern.partners.client.user.dto.AdditionalEmail();
+        organizerExtra.setEmail("shared@batbern.ch");
+        organizer.setAdditionalEmails(List.of(organizerExtra));
+        when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of(organizer));
+
+        String meetingId = createMeeting("BATbern57");
+
+        MvcResult result = mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        // {partner@, shared@ (×2 → dedup), organizer@} = 3 unique
+        assertThat(json.get("recipientCount").asInt()).isEqualTo(3);
+    }
+
+    @Test
+    void should_tolerate_nullAdditionalEmails_field() throws Exception {
+        // Backwards-compatibility: UserResponse without the additionalEmails field set
+        // (e.g. rolling deploy) must still produce a recipient list from primary only.
+        UserResponse partner = new UserResponse();
+        partner.setEmail("primary@partner.com");
+        // explicitly leave additionalEmails null
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));
+
+        String meetingId = createMeeting("BATbern57");
+
+        MvcResult result = mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(json.get("recipientCount").asInt()).isEqualTo(1);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private String createMeeting(String eventCode) throws Exception {

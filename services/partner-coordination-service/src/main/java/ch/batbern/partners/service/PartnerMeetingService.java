@@ -229,10 +229,21 @@ public class PartnerMeetingService {
 
     private List<String> fetchEmailsByRole(String role) {
         try {
-            return userServiceClient.getUsersByRole(role).stream()
-                    .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
-                    .map(UserResponse::getEmail)
-                    .collect(Collectors.toList());
+            List<String> emails = new ArrayList<>();
+            for (UserResponse u : userServiceClient.getUsersByRole(role)) {
+                if (u.getEmail() != null && !u.getEmail().isBlank()) {
+                    emails.add(u.getEmail());
+                }
+                // Story 10.32 extension: include user's verified additional emails so
+                // calendar invites reach every address the user has registered.
+                if (u.getAdditionalEmails() != null) {
+                    u.getAdditionalEmails().stream()
+                            .map(ch.batbern.partners.client.user.dto.AdditionalEmail::getEmail)
+                            .filter(e -> e != null && !e.isBlank())
+                            .forEach(emails::add);
+                }
+            }
+            return emails;
         } catch (Exception e) {
             log.warn("Could not fetch {} emails from User Service: {}", role, e.getMessage());
             return new ArrayList<>();

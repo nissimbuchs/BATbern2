@@ -95,10 +95,13 @@ public class SpeakerReminderEmailService {
             EmailContent content = loadReminderTemplate(
                     emailLocale, recipientName, event, reminderType, tier, deadline, portalToken);
 
-            emailService.sendHtmlEmail(recipientEmail, content.subject(), content.html());
+            // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                    .orElse(java.util.Collections.emptyList());
+            emailService.sendHtmlEmail(recipientEmail, cc, content.subject(), content.html());
 
-            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}",
-                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), event.getEventCode());
+            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
+                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), event.getEventCode(), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send reminder email: type={}, tier={}, speaker={}",
