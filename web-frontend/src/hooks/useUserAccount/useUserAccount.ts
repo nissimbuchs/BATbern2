@@ -151,3 +151,31 @@ export const useRemoveProfilePicture = () => {
     },
   });
 };
+
+/**
+ * Story 10.32 — register an additional email on the current user's profile.
+ * Invalidates the user-profile cache so the UI shows the new row immediately.
+ */
+export const useAddAdditionalEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: userAccountApi.AddAdditionalEmailPayload) =>
+      userAccountApi.addAdditionalEmail(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
+  });
+};
+
+/**
+ * Story 10.32 — remove an additional email from the current user's profile.
+ */
+export const useDeleteAdditionalEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => userAccountApi.deleteAdditionalEmail(email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
+  });
+};

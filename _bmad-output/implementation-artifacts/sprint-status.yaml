@@ -174,7 +174,7 @@ development_status:
   10-29-ses-bounce-processing-newsletter-list-hygiene: done            # SES bounce/complaint pipeline; BounceProcessingService; suppressed subscribers; canary send; admin unsuppress; prereq: 10.7, 10.28
   10-30-speaker-drawer-redesign: done                                  # tabbed drawer (Overview/Details/Activity); inline organizer assignment; sub-views for content submission + quality review; mobile UX; replaces 3 monolithic drawers
   10-31-bot-protection-turnstile: done                                 # Cloudflare Turnstile gateway filter + useTurnstile hook; protects newsletter/subscribe + event registrations; fail-open; GH#582
-  10-32-additional-user-emails: in-progress                            # user_additional_emails table; /users/me/additional-emails endpoints; UserSettingsTab Account-tab section in 10 locales; sender-auth + address-resolver Lambda fan-out (closes 2026-05-20 info@berner-architekten-treffen.ch rejection); registration-confirmation CC; prereq: 10.26
+  10-32-additional-user-emails: review                                 # user_additional_emails table; /users/me/additional-emails endpoints; UserSettingsTab Account-tab section in 10 locales; sender-auth + address-resolver Lambda fan-out (closes 2026-05-20 info@berner-architekten-treffen.ch rejection); registration-confirmation CC; prereq: 10.26
   epic-10-retrospective: optional
 
   # Epic 11: Unified Speaker Workflow Refactor - IN PROGRESS (per ADR-009; branch feature/speaker-workflow-refactor; 6 phases A-F)

@@ -210,7 +210,20 @@
       "themeDark": "Dunkel",
       "themeAuto": "Automatisch (Systemeinstellung)",
       "timezone": "Zeitzone",
-      "save": "Kontoeinstellungen speichern"
+      "save": "Kontoeinstellungen speichern",
+      "additionalEmailsTitle": "Zusätzliche E-Mail-Adressen",
+      "additionalEmailsHelp": "Mails, die BATbern an dich sendet oder weiterleitet (Organizer-Verteiler, Anmeldebestätigungen), erreichen auch diese Adressen, und du kannst von jeder dieser Adressen an ok@/partner@/batbern{N}@ senden. Newsletter-Kopien gehen nur an deine Hauptadresse — abonniere jede Adresse separat, falls gewünscht.",
+      "additionalEmailLabel": "Bezeichnung (optional)",
+      "additionalEmailAddButton": "E-Mail hinzufügen",
+      "additionalEmailAtLimit": "Du hast die maximale Anzahl zusätzlicher E-Mails erreicht. Entferne eine, um eine weitere hinzuzufügen.",
+      "additionalEmailAdded": "Zusätzliche E-Mail hinzugefügt",
+      "additionalEmailRemoved": "Zusätzliche E-Mail entfernt",
+      "additionalEmailErrorDuplicate": "Diese E-Mail ist bereits einem Profil zugeordnet.",
+      "additionalEmailErrorLimit": "Du hast bereits die maximale Anzahl zusätzlicher E-Mails.",
+      "additionalEmailErrorInvalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "additionalEmailUnverifiedPill": "Nicht verifiziert",
+      "additionalEmailRemoveConfirm": "Diese zusätzliche E-Mail aus deinem Profil entfernen?",
+      "additionalEmailDeleteAriaLabel": "Zusätzliche E-Mail {{email}} entfernen"
     },
     "notifications": {
       "title": "Benachrichtigungseinstellungen",

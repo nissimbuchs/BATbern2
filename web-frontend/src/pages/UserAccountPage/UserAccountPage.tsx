@@ -131,6 +131,7 @@ const UserAccountPage: React.FC = () => {
           email={profileData.user.email}
           preferences={profileData.preferences}
           settings={profileData.settings}
+          additionalEmails={profileData.user.additionalEmails}
         />
       </TabPanel>
     </Box>

@@ -22,5 +22,22 @@
     "linked": "Cognito verchüpft",
     "notLinked": "Kei Cognito-Konto",
     "tooltip": "Cognito-Konto verknüpft"
+  },
+  "settings": {
+    "account": {
+      "additionalEmailsTitle": "Zuesätzlechi E-Mail-Adresse",
+      "additionalEmailsHelp": "Maile wo BATbern an dech schickt oder wytterleitet (Organizer-Verteiler, Aamäldigsbeschtätigige) chöme ou a die Adresse, u du chasch vo jedere vo dene Adresse aa ok@/partner@/batbern{N}@ schicke. Newsletter-Kopie gönge nume a dyni Hauptadrässe — abonnier jedi Adrässe separat, we du wottsch.",
+      "additionalEmailLabel": "Bezeichnig (optional)",
+      "additionalEmailAddButton": "E-Mail hinzuefüege",
+      "additionalEmailAtLimit": "Du hesch d Maximalzahl vo zuesätzleche E-Mails erreicht. Nimm eini ewägg, um e wytteri hinzuezfüege.",
+      "additionalEmailAdded": "Zuesätzlechi E-Mail hinzuegfüegt",
+      "additionalEmailRemoved": "Zuesätzlechi E-Mail entfernt",
+      "additionalEmailErrorDuplicate": "Die E-Mail isch scho bi mene Profil dranne.",
+      "additionalEmailErrorLimit": "Du hesch scho d Maximalzahl vo zuesätzleche E-Mails.",
+      "additionalEmailErrorInvalid": "Bitte gib e gültigi E-Mail-Adrässe i.",
+      "additionalEmailUnverifiedPill": "Nid verifiziert",
+      "additionalEmailRemoveConfirm": "Die zuesätzlechi E-Mail vo dym Profil entferne?",
+      "additionalEmailDeleteAriaLabel": "Zuesätzlechi E-Mail {{email}} entferne"
+    }
   }
 }

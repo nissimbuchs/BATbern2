@@ -112,19 +112,54 @@ public class RegistrationEmailService {
                     true  // inline → accept/decline in Apple Mail, Outlook, Gmail
             );
 
+            // Story 10.32: CC the registrant's additional emails (if any) so
+            // a single registration confirmation reaches every address they
+            // declared on their profile. Anonymous registrants (no user_profiles
+            // link) have an empty list and behave unchanged.
+            List<String> cc = additionalEmailsFor(userProfile);
+
             emailService.sendHtmlEmailWithAttachments(
                     userProfile.getEmail(),
+                    cc,
                     content.subject(),
                     content.html(),
                     List.of(calendarAttachment)
             );
 
-            log.info("Registration confirmation email sent successfully to: {}", userProfile.getEmail());
+            if (!cc.isEmpty()) {
+                log.info(
+                        "Registration confirmation email sent to: {} with {} CC additional email(s)",
+                        userProfile.getEmail(),
+                        cc.size());
+            } else {
+                log.info("Registration confirmation email sent successfully to: {}", userProfile.getEmail());
+            }
 
         } catch (Exception e) {
             log.error("Failed to send registration confirmation email to: {}", userProfile.getEmail(), e);
             // Don't re-throw - email failure shouldn't block registration
         }
+    }
+
+    /**
+     * Story 10.32 — collect additional emails from the (Story 10.32-aware)
+     * UserResponse DTO. Returns an empty list for anonymous registrants and
+     * for users whose CUMS response predates the additional-emails field.
+     */
+    private static List<String> additionalEmailsFor(UserResponse userProfile) {
+        if (userProfile == null) {
+            return List.of();
+        }
+        List<ch.batbern.events.dto.generated.users.AdditionalEmail> raw =
+                userProfile.getAdditionalEmails();
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return raw.stream()
+                .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
+                .filter(java.util.Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     private record EmailContent(String html, String subject) {}

@@ -210,7 +210,20 @@
       "themeDark": "ダーク",
       "themeAuto": "自動（システム設定に従う）",
       "timezone": "タイムゾーン",
-      "save": "アカウント設定を保存"
+      "save": "アカウント設定を保存",
+      "additionalEmailsTitle": "Additional email addresses",
+      "additionalEmailsHelp": "Mail BATbern sends or forwards to you (organizer fan-out, event confirmations) also reaches these addresses, and you can send to ok@/partner@/batbern{N}@ from any of them. Newsletter copies go to your primary email only — subscribe each address separately if needed.",
+      "additionalEmailLabel": "Label (optional)",
+      "additionalEmailAddButton": "Add email",
+      "additionalEmailAtLimit": "You have reached the maximum number of additional emails. Remove one to add another.",
+      "additionalEmailAdded": "Additional email added",
+      "additionalEmailRemoved": "Additional email removed",
+      "additionalEmailErrorDuplicate": "This email is already registered on a profile.",
+      "additionalEmailErrorLimit": "You already have the maximum number of additional emails.",
+      "additionalEmailErrorInvalid": "Please enter a valid email address.",
+      "additionalEmailUnverifiedPill": "Unverified",
+      "additionalEmailRemoveConfirm": "Remove this additional email from your profile?",
+      "additionalEmailDeleteAriaLabel": "Remove additional email {{email}}"
     },
     "notifications": {
       "title": "通知設定",

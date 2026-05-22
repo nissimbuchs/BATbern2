@@ -166,6 +166,23 @@ public class EmailService {
             String htmlBody,
             List<EmailAttachment> attachments
     ) {
+        sendHtmlEmailWithAttachments(to, java.util.Collections.emptyList(), subject, htmlBody, attachments);
+    }
+
+    /**
+     * Story 10.32 — overload that CCs additional addresses. Used by EMS
+     * registration-confirmation flow to deliver a copy to each of the
+     * registrant's declared additional emails. Empty / null {@code cc} is
+     * a no-op (equivalent to the original signature). CC entries that match
+     * {@code to} case-insensitively are dropped to avoid duplicate delivery.
+     */
+    public void sendHtmlEmailWithAttachments(
+            String to,
+            List<String> cc,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments
+    ) {
         assertSendable(to);
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
@@ -196,6 +213,20 @@ public class EmailService {
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            // Story 10.32: CC additional emails (if any). Drop any cc that
+            // matches to case-insensitively to avoid duplicate delivery.
+            List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
+                    : cc.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .filter(s -> !s.equalsIgnoreCase(to))
+                        .toList();
+            if (!ccClean.isEmpty()) {
+                message.setRecipients(
+                        Message.RecipientType.CC,
+                        InternetAddress.parse(String.join(",", ccClean)));
+            }
             message.setSubject(subject, "UTF-8");
             message.setReplyTo(InternetAddress.parse(replyToEmail));
 
