@@ -908,6 +908,95 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/additional-emails:
+    post:
+      tags:
+        - User Account
+      summary: Add an additional email address to the current user
+      description: |
+        Story 10.32 — register a new additional email on the caller's profile.
+        Additional emails receive forwarded copies of mail addressed to this user
+        (ok@/partner@/batbern{N}@ role fan-out, registration confirmations) and are
+        accepted as authorised senders by the Story 10.26 SES forwarder Lambda.
+
+        Cap: 5 per user (configurable via `batbern.user.additional-emails.max`).
+        Uniqueness: global, case-insensitive, across BOTH primary emails on
+        `user_profiles` AND additional emails on any user.
+      operationId: addAdditionalEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddAdditionalEmailRequest'
+      responses:
+        '201':
+          description: Additional email created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdditionalEmail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: |
+            The email is already registered as a primary email on `user_profiles`
+            or as an additional email on any user. Error code: `ADDITIONAL_EMAIL_DUPLICATE`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            Per-user cap reached. Error code: `ADDITIONAL_EMAIL_LIMIT_REACHED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/additional-emails/{email}:
+    delete:
+      tags:
+        - User Account
+      summary: Remove an additional email address from the current user
+      description: |
+        Story 10.32 — remove an additional email previously registered on the
+        caller's profile. The primary email on `user_profiles` is NEVER affected
+        by this endpoint.
+      operationId: deleteAdditionalEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: |
+            URL-encoded email address. Case-insensitive match against the caller's
+            additional emails.
+          schema:
+            type: string
+            format: email
+          example: info@berner-architekten-treffen.ch
+      responses:
+        '204':
+          description: Additional email removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No matching additional email on the caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/{username}/roles:
     get:
       tags:
@@ -1905,6 +1994,58 @@ components:
           $ref: '#/components/schemas/UserPreferences'
         settings:
           $ref: '#/components/schemas/UserSettings'
+        additionalEmails:
+          type: array
+          description: |
+            Story 10.32: additional email addresses registered on this profile.
+            Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
+            role fan-out, registration confirmations) and are accepted as authorised
+            senders by the Story 10.26 forwarder Lambda. Always present; may be empty.
+          items:
+            $ref: '#/components/schemas/AdditionalEmail'
+
+    AdditionalEmail:
+      type: object
+      description: Story 10.32 — one additional email address registered on a user profile.
+      required:
+        - email
+        - createdAt
+      properties:
+        email:
+          type: string
+          format: email
+          example: info@berner-architekten-treffen.ch
+        label:
+          type: string
+          nullable: true
+          description: Optional free-text user hint (e.g. "Hostpoint shared mailbox").
+          example: Hostpoint shared
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-05-22T10:00:00Z
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
+            v1 always returns null.
+
+    AddAdditionalEmailRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: info@berner-architekten-treffen.ch
+        label:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: Hostpoint shared
 
     UserPreferences:
       type: object

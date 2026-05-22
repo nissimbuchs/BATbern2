@@ -1,6 +1,6 @@
 # Story 10.32: Additional Email Addresses per User Profile
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Prerequisites: Story 10.26 (SES email forwarding + sender-auth Lambda) MUST be deployed -->
 

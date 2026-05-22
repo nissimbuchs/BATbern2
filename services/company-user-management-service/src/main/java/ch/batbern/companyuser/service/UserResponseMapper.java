@@ -5,6 +5,9 @@ import ch.batbern.companyuser.dto.generated.UserResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Maps User entities to UserResponse DTOs
  * Story 1.16.2: Expose username as id, not UUID
@@ -48,6 +51,19 @@ public class UserResponseMapper {
                 .updatedAt(user.getUpdatedAt() != null
                         ? user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
                 .lastLoginAt(user.getLastLoginAt() != null
-                        ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
+                        ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                // Story 10.32: flatten additional emails. Always present; may be
+                // empty. Consumed by the SES forwarder Lambda (sender-auth +
+                // address-resolver) and by the user-settings UI.
+                .additionalEmails(mapAdditionalEmails(user));
+    }
+
+    private List<ch.batbern.companyuser.dto.generated.AdditionalEmail> mapAdditionalEmails(User user) {
+        if (user.getAdditionalEmails() == null || user.getAdditionalEmails().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return user.getAdditionalEmails().stream()
+                .map(UserService::mapAdditionalEmailToDto)
+                .toList();
     }
 }

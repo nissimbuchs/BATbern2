@@ -1,0 +1,30 @@
+meta {
+  name: Delete Additional Email (10.32)
+  type: http
+  seq: 17
+}
+
+delete {
+  url: {{baseUrl}}/users/me/additional-emails/{{additionalEmail}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 on successful delete", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -61,6 +61,59 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(AdditionalEmailDuplicateException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailDuplicateException(
+            AdditionalEmailDuplicateException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email duplicate: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("ADDITIONAL_EMAIL_DUPLICATE")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(AdditionalEmailLimitReachedException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailLimitReachedException(
+            AdditionalEmailLimitReachedException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email limit reached: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .errorCode("ADDITIONAL_EMAIL_LIMIT_REACHED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(AdditionalEmailNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailNotFoundException(
+            AdditionalEmailNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email not found: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     @ExceptionHandler(UserValidationException.class)
     public ResponseEntity<ErrorResponse> handleUserValidationException(
             UserValidationException ex,

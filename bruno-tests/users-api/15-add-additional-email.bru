@@ -1,0 +1,62 @@
+meta {
+  name: Add Additional Email (10.32)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/users/me/additional-emails
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "bruno-additional-{{$randomInt}}@example.com",
+    "label": "Bruno smoke"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.email: isDefined
+  res.body.createdAt: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("additionalEmail", res.getBody().email);
+    console.log("Created additional email:", res.getBody().email);
+  }
+}
+
+tests {
+  test("should return 201 with the created email", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should echo email normalised to lowercase", function() {
+    const body = res.getBody();
+    expect(body.email).to.equal(body.email.toLowerCase());
+  });
+
+  test("should set createdAt on the response", function() {
+    const body = res.getBody();
+    expect(body.createdAt).to.exist;
+  });
+
+  test("should leave verifiedAt null in v1", function() {
+    const body = res.getBody();
+    expect(body.verifiedAt == null).to.be.true;
+  });
+}
