@@ -137,14 +137,19 @@ public class SpeakerInvitationEmailService {
             );
 
             // Send email (no attachments for invitation; HTML only per Q#3).
+            // Story 10.32: CC the speaker's additional emails so the invite reaches
+            // every declared address (empty list = unchanged 3-arg behaviour).
+            java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                    .orElse(java.util.Collections.emptyList());
             emailService.sendHtmlEmail(
                     recipientEmail,
+                    cc,
                     content.subject(),
                     content.html()
             );
 
-            log.info("Invitation email sent successfully to: {}",
-                    LoggingUtils.maskEmail(recipientEmail));
+            log.info("Invitation email sent successfully to: {} (ccCount={})",
+                    LoggingUtils.maskEmail(recipientEmail), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send invitation email to: {}",

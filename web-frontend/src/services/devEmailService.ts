@@ -12,6 +12,8 @@ const PCS_BASE = `http://localhost:${import.meta.env.VITE_PCS_PORT ?? 8004}`;
 export interface CapturedEmail {
   id: string;
   to: string;
+  /** Story 10.32 — additional recipient addresses copied via CC. Empty array when none. */
+  cc: string[];
   subject: string;
   htmlBody: string;
   fromEmail: string;

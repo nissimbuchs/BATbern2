@@ -267,4 +267,81 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
                 .andExpect(status().isOk());
     }
+
+    // ---------- Non-speaker session filtering (BATbern75 bug report 2026-05-22) ----------
+
+    /**
+     * Organizers who self-assign as PRIMARY_SPEAKER on a moderation slot (or break /
+     * lunch / networking slot) were seeing those entries on the speaker dashboard.
+     * Worse, the {@code InvitationResponsePage} looks up by eventCode via
+     * {@code dashboard.upcomingEvents.find(e => e.eventCode === X)} — if a moderation
+     * entry for the same event was ACCEPTED, the real speaker session (INVITED) was
+     * hidden behind it and the page mistakenly showed "Already Responded".
+     *
+     * <p>Fix is in {@code SpeakerDashboardService}: exclude memberships whose session
+     * has {@code session_type} in the structural set ({@code moderation, break, lunch,
+     * networking}). NULL session_type is tolerated as a real speaker session for
+     * legacy data (pre-V21 / V59).
+     */
+    @Test
+    @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})
+    @DisplayName("excludes moderation / break / lunch / networking sessions from upcomingEvents")
+    void shouldExcludeStructuralSessions_fromDashboard() throws Exception {
+        // Seed one structural session of each non-speaker type, all on the same event,
+        // with Alice as PRIMARY_SPEAKER on every one. Without the filter these would
+        // surface as 4 extra "speaker" rows on the dashboard.
+        for (String structuralType : java.util.List.of("moderation", "break", "lunch", "networking")) {
+            ch.batbern.events.domain.Session s = sessionRepository.save(
+                    ch.batbern.events.domain.Session.builder()
+                            .eventId(testEvent.getId())
+                            .eventCode(EVENT_CODE)
+                            .sessionSlug(structuralType + "-slot-" + System.nanoTime())
+                            .title("Structural: " + structuralType)
+                            .sessionType(structuralType)
+                            .build());
+            sessionUserRepository.save(ch.batbern.events.domain.SessionUser.builder()
+                    .session(s)
+                    .username(SPEAKER_USERNAME)
+                    .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .isConfirmed(true)
+                    .build());
+        }
+
+        // The only entry surfaced should be Alice's real "presentation" session.
+        mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.upcomingEvents.length()")
+                        .value(org.hamcrest.Matchers.is(1)))
+                .andExpect(jsonPath("$.upcomingEvents[0].sessionTitle")
+                        .value("Alice's Session"));
+    }
+
+    @Test
+    @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})
+    @DisplayName("includes sessions with NULL session_type (legacy data tolerance)")
+    void shouldIncludeSessionsWithNullSessionType() throws Exception {
+        // Sessions created before V21 / V59 may have NULL session_type. Treat these as
+        // speaker sessions — pre-MVP data is virtually all real talks; the alternative
+        // (exclude them) would hide legitimate historical dashboard entries.
+        ch.batbern.events.domain.Session legacy = sessionRepository.save(
+                ch.batbern.events.domain.Session.builder()
+                        .eventId(testEvent.getId())
+                        .eventCode(EVENT_CODE)
+                        .sessionSlug("legacy-null-type-" + System.nanoTime())
+                        .title("Legacy Session Without Type")
+                        // sessionType deliberately null
+                        .build());
+        sessionUserRepository.save(ch.batbern.events.domain.SessionUser.builder()
+                .session(legacy)
+                .username(SPEAKER_USERNAME)
+                .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(true)
+                .build());
+
+        // Two entries: Alice's real 'presentation' session + the legacy NULL-type one.
+        mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.upcomingEvents.length()")
+                        .value(org.hamcrest.Matchers.is(2)));
+    }
 }

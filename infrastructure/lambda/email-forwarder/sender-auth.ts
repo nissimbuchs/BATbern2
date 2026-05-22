@@ -45,7 +45,16 @@ export async function isAuthorizedSender(
   return organizerEmails.includes(senderEmail.toLowerCase());
 }
 
-/** Get cached organizer email list (5-minute TTL). Paginates all pages. */
+/**
+ * Get cached organizer email list (5-minute TTL). Paginates all pages.
+ *
+ * Story 10.32: the returned list flattens primary `email` PLUS every entry in
+ * `additionalEmails[*].email`. So an organizer who declared a legacy/shared
+ * mailbox (e.g. `info@berner-architekten-treffen.ch`) under their profile is
+ * authorised to send from either address. Backwards-compatible with older
+ * CUMS deploys: if `additionalEmails` is missing/undefined, only the primary
+ * email is contributed.
+ */
 async function getOrganizerEmails(): Promise<string[]> {
   const now = Date.now();
 
@@ -54,8 +63,11 @@ async function getOrganizerEmails(): Promise<string[]> {
   }
 
   try {
+    interface AdditionalEmail {
+      email?: string;
+    }
     interface UserEmailResponse {
-      data: Array<{ email: string }>;
+      data: Array<{ email: string; additionalEmails?: AdditionalEmail[] }>;
       pagination?: { totalPages: number; page: number };
     }
 
@@ -76,6 +88,11 @@ async function getOrganizerEmails(): Promise<string[]> {
       for (const u of data.data) {
         if (u.email) {
           emails.push(u.email.toLowerCase());
+        }
+        for (const extra of u.additionalEmails ?? []) {
+          if (extra.email) {
+            emails.push(extra.email.toLowerCase());
+          }
         }
       }
 

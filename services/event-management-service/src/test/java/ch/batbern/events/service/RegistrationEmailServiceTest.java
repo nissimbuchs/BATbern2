@@ -188,6 +188,7 @@ class RegistrationEmailServiceTest {
         // Then
         verify(emailService, times(1)).sendHtmlEmailWithAttachments(
                 emailCaptor.capture(),
+                anyList(), // Story 10.32: cc parameter
                 subjectCaptor.capture(),
                 htmlBodyCaptor.capture(),
                 attachmentsCaptor.capture()
@@ -248,6 +249,7 @@ class RegistrationEmailServiceTest {
         // Then
         verify(emailService, times(1)).sendHtmlEmailWithAttachments(
                 emailCaptor.capture(),
+                anyList(), // Story 10.32: cc parameter
                 subjectCaptor.capture(),
                 htmlBodyCaptor.capture(),
                 attachmentsCaptor.capture()
@@ -531,7 +533,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         doThrow(new RuntimeException("Email sending failed"))
-                .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), any(), anyList());
+                .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyList(), anyString(), any(), anyList());
 
         // When & Then - should not throw exception
         registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
@@ -540,6 +542,121 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Verify the attempt was made
-        verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyString(), any(), anyList());
+        verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyList(), anyString(), any(), anyList());
+    }
+
+    // ===========================================================
+    // Story 10.32 — Additional emails CC'd on registration confirm
+    // ===========================================================
+
+    @Test
+    @DisplayName("should_ccAdditionalEmails_when_userHasAdditionalEmails")
+    void should_ccAdditionalEmails_when_userHasAdditionalEmails() throws InterruptedException {
+        // Given
+        Registration registration = Registration.builder()
+                .registrationCode("BATbern142-reg-cc1")
+                .eventId(UUID.randomUUID())
+                .eventCode("BATbern142")
+                .attendeeUsername("nissim.buchs")
+                .build();
+
+        ch.batbern.events.dto.generated.users.AdditionalEmail hostpoint =
+                new ch.batbern.events.dto.generated.users.AdditionalEmail()
+                        .email("info@berner-architekten-treffen.ch")
+                        .label("Hostpoint shared");
+
+        UserResponse userProfile = new UserResponse()
+                .id("nissim.buchs")
+                .firstName("Nissim")
+                .lastName("Buchs")
+                .email("nissim.buchs@elca.ch")
+                .additionalEmails(List.of(hostpoint));
+
+        Event event = Event.builder()
+                .id(registration.getEventId())
+                .eventCode("BATbern142")
+                .title("BATbern Architekten Treffen #142")
+                .date(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
+                .venueName("Kornhausforum")
+                .venueAddress("Kornhausplatz 18, 3011 Bern")
+                .eventType(EventType.EVENING)
+                .build();
+
+        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
+                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+                .thenReturn("ics".getBytes());
+
+        when(emailService.replaceVariables(anyString(), anyMap()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+
+        org.mockito.ArgumentCaptor<List<String>> ccCaptor = org.mockito.ArgumentCaptor.forClass(List.class);
+
+        // When
+        registrationEmailService.sendRegistrationConfirmation(
+                registration, userProfile, event,
+                "tok", "cancel", "http://x/deregister?token=t", Locale.GERMAN);
+        Thread.sleep(100);
+
+        // Then
+        verify(emailService, times(1)).sendHtmlEmailWithAttachments(
+                eq("nissim.buchs@elca.ch"),
+                ccCaptor.capture(),
+                anyString(),
+                anyString(),
+                anyList()
+        );
+        assertThat(ccCaptor.getValue()).containsExactly("info@berner-architekten-treffen.ch");
+    }
+
+    @Test
+    @DisplayName("should_passEmptyCc_when_userHasNoAdditionalEmails")
+    void should_passEmptyCc_when_userHasNoAdditionalEmails() throws InterruptedException {
+        // Given
+        Registration registration = Registration.builder()
+                .registrationCode("BATbern142-reg-cc2")
+                .eventId(UUID.randomUUID())
+                .eventCode("BATbern142")
+                .attendeeUsername("anon.attendee")
+                .build();
+
+        UserResponse userProfile = new UserResponse()
+                .id("anon.attendee")
+                .firstName("Anon")
+                .lastName("Attendee")
+                .email("anon@example.com");
+                // additionalEmails: not set → null → treated as empty.
+
+        Event event = Event.builder()
+                .id(registration.getEventId())
+                .eventCode("BATbern142")
+                .title("BATbern Architekten Treffen #142")
+                .date(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
+                .venueName("Kornhausforum")
+                .venueAddress("Kornhausplatz 18, 3011 Bern")
+                .eventType(EventType.EVENING)
+                .build();
+
+        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
+                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+                .thenReturn("ics".getBytes());
+
+        when(emailService.replaceVariables(anyString(), anyMap()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+
+        org.mockito.ArgumentCaptor<List<String>> ccCaptor = org.mockito.ArgumentCaptor.forClass(List.class);
+
+        registrationEmailService.sendRegistrationConfirmation(
+                registration, userProfile, event,
+                "tok", "cancel", "http://x/deregister?token=t", Locale.GERMAN);
+        Thread.sleep(100);
+
+        verify(emailService, times(1)).sendHtmlEmailWithAttachments(
+                eq("anon@example.com"),
+                ccCaptor.capture(),
+                anyString(),
+                anyString(),
+                anyList()
+        );
+        assertThat(ccCaptor.getValue()).isEmpty();
     }
 }

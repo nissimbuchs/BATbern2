@@ -8,6 +8,8 @@ import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.ProfilePictureUploadRequest;
 import ch.batbern.companyuser.dto.ReconciliationReportDTO;
 import ch.batbern.companyuser.dto.SyncStatusDTO;
+import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
+import ch.batbern.companyuser.dto.generated.AdditionalEmail;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
@@ -21,6 +23,7 @@ import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
 import ch.batbern.companyuser.exception.UserValidationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
@@ -535,6 +538,43 @@ public class UserController {
         return ResponseEntity.ok(new UserRolesResponse()
                 .username(username)
                 .roles(rolesDto));
+    }
+
+    /**
+     * Story 10.32 — Register an additional email on the caller's profile.
+     */
+    @PostMapping("/me/additional-emails")
+    @Timed(value = "users.additionalEmails.add",
+            description = "Time to add an additional email to the current user",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<AdditionalEmail> addAdditionalEmail(
+            @Valid @RequestBody AddAdditionalEmailRequest request) {
+        log.info("Adding additional email for current user");
+        AdditionalEmail created = userService.addAdditionalEmail(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * Story 10.32 — Remove an additional email from the caller's profile.
+     *
+     * <p>The {@code {email:.+}} path-variable regex is critical: Spring's
+     * default path matcher historically strips file-style extensions from
+     * path variables, so {@code /additional-emails/foo@example.com} would
+     * leave {@code email = "foo@example"} (with {@code .com} dropped). The
+     * regex tells Spring to greedy-match the remainder of the URL. Found in
+     * review 2026-05-22 finding P1-7.
+     *
+     * <p>Frontend callers MUST {@code encodeURIComponent} the email before
+     * embedding it in the URL — see {@code userAccountApi.ts}.
+     */
+    @DeleteMapping("/me/additional-emails/{email:.+}")
+    @Timed(value = "users.additionalEmails.delete",
+            description = "Time to remove an additional email from the current user",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> deleteAdditionalEmail(@PathVariable String email) {
+        log.info("Removing additional email for current user");
+        userService.deleteAdditionalEmail(email);
+        return ResponseEntity.noContent().build();
     }
 
     /**

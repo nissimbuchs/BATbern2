@@ -246,6 +246,20 @@ export default function DevEmailInboxPage() {
                     To:
                   </Typography>
                   <Typography variant="body2">{selected.to}</Typography>
+                  {selected.cc && selected.cc.length > 0 && (
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        Cc:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ wordBreak: 'break-all' }}
+                        data-testid="captured-email-cc"
+                      >
+                        {selected.cc.join(', ')}
+                      </Typography>
+                    </>
+                  )}
                   <Typography variant="body2" color="text.secondary">
                     From:
                   </Typography>

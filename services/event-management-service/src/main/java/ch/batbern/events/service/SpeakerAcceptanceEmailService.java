@@ -111,15 +111,18 @@ public class SpeakerAcceptanceEmailService {
                     recipientName
             );
 
-            // Send email
+            // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                    .orElse(java.util.Collections.emptyList());
             emailService.sendHtmlEmail(
                     recipientEmail,
+                    cc,
                     content.subject(),
                     content.html()
             );
 
-            log.info("Acceptance confirmation email sent successfully to: {}",
-                    LoggingUtils.maskEmail(recipientEmail));
+            log.info("Acceptance confirmation email sent successfully to: {} (ccCount={})",
+                    LoggingUtils.maskEmail(recipientEmail), cc.size());
 
         } catch (Exception e) {
             log.error("Failed to send acceptance confirmation email to: {}",

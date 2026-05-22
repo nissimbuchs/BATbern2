@@ -14,7 +14,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
@@ -68,6 +68,7 @@ const InvitationResponsePage = () => {
   // Code review 2026-05-18 (P14): scope the queryKey to the authenticated user to avoid
   // multi-tab cache leaks across logout-then-login as a different speaker.
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const {
     data: dashboard,
     error: validationError,
@@ -147,6 +148,13 @@ const InvitationResponsePage = () => {
     onSuccess: (result) => {
       setResponseResult(result);
       setPageState('success');
+      // 2026-05-22 (BATbern75 follow-up bug): the dashboard query (`['speaker-dashboard',
+      // username]`) had the pre-accept invitation cached. Without an explicit invalidation,
+      // navigating back to /speaker-portal/dashboard re-renders the stale INVITED entry
+      // even though speaker_pool.status is already ACCEPTED in the database. Invalidate
+      // (not just refetch) so the cache is dropped immediately and the dashboard re-fetches
+      // on its next mount/focus.
+      void queryClient.invalidateQueries({ queryKey: ['speaker-dashboard', user?.username] });
     },
   });
 

@@ -191,9 +191,14 @@ public class QualityReviewService {
         // Story 11.E.9 (post-pool-email drop): recipient routing flows through
         // PrimarySpeakerResolver (session_users + UserApiClient); rejected content
         // always belongs to a speaker with a session (status CONTENT_SUBMITTED+),
-        // so resolveEmail is expected non-empty.
-        String recipientEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
-        if (recipientEmail == null || recipientEmail.isBlank()) {
+        // so the resolve result is expected non-empty.
+        java.util.Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary =
+                primarySpeakerResolver.resolve(speaker);
+        String recipientEmail = primary
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::email)
+                .filter(e -> e != null && !e.isBlank())
+                .orElse(null);
+        if (recipientEmail == null) {
             log.warn("Cannot notify speaker {} - no resolvable primary speaker email", speaker.getId());
             return;
         }
@@ -202,7 +207,7 @@ public class QualityReviewService {
             Event event = eventRepository.findById(speaker.getEventId())
                     .orElse(null);
             String eventName = event != null ? event.getTitle() : "BATbern Event";
-            String speakerName = primarySpeakerResolver.resolve(speaker)
+            String speakerName = primary
                     .map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
                     .filter(n -> !n.isEmpty())
                     .orElseGet(() -> speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker");
@@ -215,9 +220,14 @@ public class QualityReviewService {
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
 
-            emailService.sendHtmlEmail(recipientEmail, subject, body);
+            // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
+            java.util.List<String> cc = primary
+                    .map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                    .orElse(java.util.Collections.emptyList());
+            emailService.sendHtmlEmail(recipientEmail, cc, subject, body);
             // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
-            log.info("Revision notification sent to speaker pool entry: {} with portal link", speaker.getId());
+            log.info("Revision notification sent to speaker pool entry: {} with portal link (ccCount={})",
+                    speaker.getId(), cc.size());
         } catch (Exception e) {
             log.error("Failed to send revision notification to speaker {}: {}",
                     speaker.getId(), e.getMessage());

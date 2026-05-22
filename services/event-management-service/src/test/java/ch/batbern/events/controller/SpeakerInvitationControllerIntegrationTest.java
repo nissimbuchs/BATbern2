@@ -30,10 +30,10 @@ import java.time.temporal.ChronoUnit;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -119,7 +119,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .thenReturn(userResponse);
 
         // Mock EmailService (don't actually send emails)
-        doNothing().when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doNothing().when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString());
 
         // Story 11.E.9: sendInvitation resolves the recipient email via
         // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email

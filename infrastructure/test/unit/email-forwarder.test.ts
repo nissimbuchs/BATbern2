@@ -310,6 +310,69 @@ describe('T7 — Address resolution', () => {
     const combined = [...new Set([...okRecipients, ...infoRecipients])];
     expect(combined).toEqual(['org@test.ch']);
   });
+
+  // ----- Story 10.32: fan-out to additional emails -----
+
+  test('should_fanOutToAdditionalEmails_when_organizerHasAdditional_10_32', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: {
+          data: [
+            {
+              email: 'nissim.buchs@elca.ch',
+              additionalEmails: [{ email: 'info@berner-architekten-treffen.ch' }],
+            },
+            { email: 'other.org@example.com' },
+          ],
+          pagination: { totalPages: 1, page: 0 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    expect(result).toEqual([
+      'nissim.buchs@elca.ch',
+      'info@berner-architekten-treffen.ch',
+      'other.org@example.com',
+    ]);
+  });
+
+  test('should_dedupCaseInsensitively_when_additionalEmailsFlattened_10_32', async () => {
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: {
+          data: [
+            { email: 'a@x.ch', additionalEmails: [{ email: 'shared@example.com' }] },
+            { email: 'b@x.ch', additionalEmails: [{ email: 'SHARED@example.com' }] },
+          ],
+          pagination: { totalPages: 1, page: 0 },
+        },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    // shared@example.com appears only once
+    expect(result.map(e => e.toLowerCase())).toEqual([
+      'a@x.ch',
+      'shared@example.com',
+      'b@x.ch',
+    ]);
+  });
+
+  test('should_handleMissingAdditionalEmails_when_oldApiResponse_10_32', async () => {
+    // Backwards-compat: old CUMS API without the additionalEmails field
+    mockFetch({
+      'role=ORGANIZER': {
+        status: 200,
+        body: { data: [{ email: 'org@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+      },
+    });
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('ok@batbern.ch');
+    expect(result).toEqual(['org@test.ch']);
+  });
 });
 
 // ========================
@@ -396,6 +459,72 @@ describe('T8 — Sender authorization', () => {
     await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
     // Should only call fetch once (cached)
     expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  // ----- Story 10.32: additional emails as authorised senders -----
+
+  /**
+   * Regression test for the 2026-05-22 incident: an organizer (Nissim,
+   * primary nissim.buchs@elca.ch) forwarded an email to ok@batbern.ch from
+   * his legacy Hostpoint shared mailbox info@berner-architekten-treffen.ch.
+   * The shared address was not in role_assignments → silently rejected.
+   * After Story 10.32 the shared address can be registered as an additional
+   * email on the organizer's profile, and the Lambda treats it as authorised.
+   */
+  test('should_authoriseSender_when_matchesAdditionalEmail_2026_05_20_regression', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          {
+            email: 'nissim.buchs@elca.ch',
+            additionalEmails: [{ email: 'info@berner-architekten-treffen.ch' }],
+          },
+        ],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('ok@batbern.ch', 'info@berner-architekten-treffen.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_authoriseSender_when_additionalEmailDeclaredAndMixedCase', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { email: 'a@x.ch', additionalEmails: [{ email: 'Shared@Example.com' }] },
+        ],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    expect(await isAuthorizedSender('ok@batbern.ch', 'SHARED@example.COM')).toBe(true);
+  });
+
+  test('should_authoriseByPrimaryOnly_when_additionalEmailsFieldMissing', async () => {
+    // Backwards-compat: CUMS deployed without Story 10.32 returns no
+    // additionalEmails field. The Lambda must continue to work.
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    expect(await isAuthorizedSender('ok@batbern.ch', 'org@test.ch')).toBe(true);
+    expect(await isAuthorizedSender('ok@batbern.ch', 'random@test.ch')).toBe(false);
   });
 });
 

@@ -1,9 +1,16 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserAdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AdditionalEmail;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Maps User entities to UserResponse DTOs
@@ -48,6 +55,40 @@ public class UserResponseMapper {
                 .updatedAt(user.getUpdatedAt() != null
                         ? user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
                 .lastLoginAt(user.getLastLoginAt() != null
-                        ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
+                        ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                // Story 10.32: flatten additional emails. Always present; may be
+                // empty. Consumed by the SES forwarder Lambda (sender-auth +
+                // address-resolver) and by the user-settings UI.
+                .additionalEmails(mapAdditionalEmails(user));
+    }
+
+    private List<AdditionalEmail> mapAdditionalEmails(User user) {
+        if (user.getAdditionalEmails() == null || user.getAdditionalEmails().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return user.getAdditionalEmails().stream()
+                .map(UserResponseMapper::mapAdditionalEmailToDto)
+                .toList();
+    }
+
+    /**
+     * Story 10.32 — map a {@link UserAdditionalEmail} entity to its OpenAPI
+     * DTO. Lives on this mapper (not on {@code UserService}) so the DTO
+     * layout is a mapper-only concern; the service stays focused on business
+     * logic. Static so it can be used both from list streams and from
+     * {@code UserService.addAdditionalEmail} without instantiating the
+     * mapper bean.
+     */
+    public static AdditionalEmail mapAdditionalEmailToDto(UserAdditionalEmail row) {
+        AdditionalEmail dto = new AdditionalEmail();
+        dto.setEmail(row.getEmail());
+        dto.setLabel(row.getLabel());
+        dto.setCreatedAt(row.getCreatedAt() != null
+                ? OffsetDateTime.ofInstant(row.getCreatedAt(), ZoneOffset.UTC)
+                : null);
+        dto.setVerifiedAt(row.getVerifiedAt() != null
+                ? OffsetDateTime.ofInstant(row.getVerifiedAt(), ZoneOffset.UTC)
+                : null);
+        return dto;
     }
 }

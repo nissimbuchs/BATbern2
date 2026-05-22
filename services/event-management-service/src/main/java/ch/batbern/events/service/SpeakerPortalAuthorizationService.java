@@ -89,9 +89,15 @@ public class SpeakerPortalAuthorizationService {
         // (NOT the deprecated speaker_pool.username column). Find PRIMARY_SPEAKER
         // memberships for this user, filter to the requested event, and derive the pool
         // row from the linked session.
+        //
+        // 2026-05-22 (BATbern75 bug report) — also reject structural slot memberships
+        // (moderation/break/lunch/networking) so an organizer who self-assigned as
+        // PRIMARY on a moderation slot can't accidentally win the deterministic-min
+        // selection below and steal the authorization context from their real talk.
         List<SessionUser> memberships = sessionUserRepository.findByUsername(username).stream()
                 .filter(su -> su.getSpeakerRole() == SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .filter(su -> event.getId().equals(su.getSession().getEventId()))
+                .filter(su -> !su.getSession().isStructuralSlot())
                 .toList();
         if (memberships.isEmpty()) {
             log.warn("Speaker portal access denied: username={} eventCode={}",

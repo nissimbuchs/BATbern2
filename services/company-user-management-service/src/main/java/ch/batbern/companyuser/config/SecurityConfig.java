@@ -135,6 +135,17 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/users/*")
                     .access(new VpcInternalAuthorizationManager(vpcCidr))
                 // Story 10.26: Allow user list by role (Lambda email forwarder — routes via NAT GW, no VPC IP)
+                // Story 10.32 (D1 from 2026-05-22 review): this endpoint is *fully*
+                // public — neither VPC-scoped nor authenticated. The Lambda forwarder
+                // needs primary + additional emails from the same response, so
+                // splitting "additionalEmails" off into a separate gated route would
+                // require a Lambda auth path that the current cache-driven NAT-GW
+                // design doesn't have. PM (Nissim) explicitly accepted the resulting
+                // PII surface in the 2026-05-22 review: organizer + partner additional
+                // emails (legacy info@, gmail, etc.) ride along here, same as the
+                // primary email already did. If you later add IAM/SigV4 auth for the
+                // Lambda, swap this to an authenticated rule and the DTO doesn't have
+                // to change.
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
                 // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/pair").permitAll()

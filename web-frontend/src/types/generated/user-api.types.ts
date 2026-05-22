@@ -344,6 +344,55 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/additional-emails': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add an additional email address to the current user
+     * @description Story 10.32 — register a new additional email on the caller's profile.
+     *     Additional emails receive forwarded copies of mail addressed to this user
+     *     (ok@/partner@/batbern{N}@ role fan-out, registration confirmations) and are
+     *     accepted as authorised senders by the Story 10.26 SES forwarder Lambda.
+     *
+     *     Cap: 5 per user (configurable via `batbern.user.additional-emails.max`).
+     *     Uniqueness: global, case-insensitive, across BOTH primary emails on
+     *     `user_profiles` AND additional emails on any user.
+     */
+    post: operations['addAdditionalEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/additional-emails/{email}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove an additional email address from the current user
+     * @description Story 10.32 — remove an additional email previously registered on the
+     *     caller's profile. The primary email on `user_profiles` is NEVER affected
+     *     by this endpoint.
+     */
+    delete: operations['deleteAdditionalEmail'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/{username}/roles': {
     parameters: {
       query?: never;
@@ -905,6 +954,46 @@ export interface components {
       company?: components['schemas']['Company'];
       preferences?: components['schemas']['UserPreferences'];
       settings?: components['schemas']['UserSettings'];
+      /**
+       * @description Story 10.32: additional email addresses registered on this profile.
+       *     Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
+       *     role fan-out, registration confirmations) and are accepted as authorised
+       *     senders by the Story 10.26 forwarder Lambda. Always present; may be empty.
+       */
+      additionalEmails?: components['schemas']['AdditionalEmail'][];
+    };
+    /** @description Story 10.32 — one additional email address registered on a user profile. */
+    AdditionalEmail: {
+      /**
+       * Format: email
+       * @example info@berner-architekten-treffen.ch
+       */
+      email: string;
+      /**
+       * @description Optional free-text user hint (e.g. "Hostpoint shared mailbox").
+       * @example Hostpoint shared
+       */
+      label?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-05-22T10:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
+       *     v1 always returns null.
+       */
+      verifiedAt?: string | null;
+    };
+    AddAdditionalEmailRequest: {
+      /**
+       * Format: email
+       * @example info@berner-architekten-treffen.ch
+       */
+      email: string;
+      /** @example Hostpoint shared */
+      label?: string | null;
     };
     UserPreferences: {
       /**
@@ -1962,6 +2051,90 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  addAdditionalEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddAdditionalEmailRequest'];
+      };
+    };
+    responses: {
+      /** @description Additional email created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmail'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      /**
+       * @description The email is already registered as a primary email on `user_profiles`
+       *     or as an additional email on any user. Error code: `ADDITIONAL_EMAIL_DUPLICATE`.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Per-user cap reached. Error code: `ADDITIONAL_EMAIL_LIMIT_REACHED`. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteAdditionalEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description URL-encoded email address. Case-insensitive match against the caller's
+         *     additional emails.
+         * @example info@berner-architekten-treffen.ch
+         */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Additional email removed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

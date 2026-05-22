@@ -1,0 +1,49 @@
+meta {
+  name: Add Additional Email - Duplicate (10.32 — P3-12)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/users/me/additional-emails
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+# Story 10.32 (review 2026-05-22 P3-12): exercise the 409 duplicate-error
+# branch. We POST the user's own PRIMARY email — uniqueness is enforced
+# across both `user_profiles.email` AND existing `user_additional_emails`,
+# so this always conflicts with the caller's own primary row regardless of
+# prior test state.
+body:json {
+  {
+    "email": "{{authUserEmail}}",
+    "label": "duplicate smoke"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.errorCode: eq ADDITIONAL_EMAIL_DUPLICATE
+}
+
+tests {
+  test("should return 409 Conflict when email is the caller's primary", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("should set errorCode = ADDITIONAL_EMAIL_DUPLICATE", function() {
+    const body = res.getBody();
+    expect(body.errorCode).to.equal("ADDITIONAL_EMAIL_DUPLICATE");
+  });
+}

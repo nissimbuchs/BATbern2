@@ -2246,4 +2246,64 @@ web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify h
 
 ---
 
+### Story 10.32: Additional Email Addresses per User Profile
+
+**Story file**: `_bmad-output/implementation-artifacts/10-32-additional-user-emails.md`
+**Status**: ready-for-dev
+**Prerequisites**: Story 10.26 (SES email forwarding + sender-auth Lambda)
+**Trigger**: 2026-05-20 incident — Nissim's iPhone-Mail forward from legacy `info@berner-architekten-treffen.ch` to `ok@batbern.ch` was silently dropped because the shared mailbox is not in `role_assignments` for `ORGANIZER`.
+
+**User Story:**
+As a **logged-in user (primarily an organizer)**, I want to register one or more additional email addresses on my profile, so that mail forwarded or sent to me by BATbern (`ok@batbern.ch` fan-out, event-registration confirmations, etc.) reaches all of my addresses AND mail I send to BATbern from any of those addresses is treated as authorised — without needing my legacy/shared mailbox to be a separate BATbern user.
+
+**Scope:**
+- **Data model**: new `user_additional_emails` table (one row per (user, email)), unique on `LOWER(email)` across both `user_profiles.email` and `user_additional_emails.email`; per-user cap of 5 (configurable)
+- **API (CUMS)**: `POST /users/me/additional-emails`, `DELETE /users/me/additional-emails/{email}`; `UserResponse` (on `GET /users/me` AND `GET /users`) gains `additionalEmails[]`
+- **Frontend**: new "Additional emails" section in `UserSettingsTab.tsx` → Account sub-tab (below the read-only primary email); inline add form + chip-list + delete; 13 new i18n keys in all 10 locales
+- **Email Forwarder Lambda (Story 10.26)**: `sender-auth.ts` `getOrganizerEmails()` and `address-resolver.ts` `fetchUsersByRole()` flatten primary + additional emails — closes the 2026-05-20 regression
+- **Registration confirmation**: `RegistrationEmailService.sendRegistrationConfirmation` CCs additional emails when the registration belongs to a known user (anonymous registrations unchanged)
+- **Partner meeting calendar invites (Phase 6, added 2026-05-22)**: `PartnerMeetingService.fetchEmailsByRole` flattens primary + additional emails for both `POST /partner-meetings/{id}/send-invite` and the `METHOD:CANCEL` notice in `DELETE /partner-meetings/{id}`. Dedup is case-insensitive via the existing `distinct()` step. A null `additionalEmails` field on the generated client DTO is tolerated for rolling-deploy backwards-compat.
+- **EMS transactional senders (Phase 7, added 2026-05-22)**: every EMS email-sender that delivers a user-addressed transactional message now CCs the recipient's additional emails — speaker invitations (`SpeakerInvitationEmailService`), speaker acceptance confirmations (`SpeakerAcceptanceEmailService`), speaker reminders (`SpeakerReminderEmailService`), quality-review revision requests (`QualityReviewService.notifySpeakerOfRejection`), waitlist promotion (`WaitlistPromotionEmailService.sendPromotionEmail`), waitlist confirmation (`WaitlistPromotionEmailService.sendWaitlistConfirmationEmail`). Newsletter and inbound-email confirmation replies are explicitly excluded.
+- **Shared-kernel `EmailService` plumbing (Phase 7)**: new `sendHtmlEmail(to, cc, subject, html)` async + `sendHtmlEmailSync(to, cc, subject, html, configSet)` overloads using SES `Destination.ccAddresses`. CC entries matching `to` case-insensitively are dropped. 3-arg `sendHtmlEmail` retained as a thin delegate so existing callers compile unchanged.
+- **`PrimarySpeakerResolver.PrimarySpeakerProfile` (Phase 7)**: 6th record field `List<String> additionalEmails` (compact constructor null-coerces to `List.of()`); backwards-compatible 5-arg secondary constructor preserves the 11 existing test fixtures.
+- **Audit log**: `ActivityHistoryEntity` rows on add/remove
+- **Out of scope (v1)**: ownership verification of additional emails (column reserved); newsletter auto-routing to additional emails; Cognito primary-email change; admin-managed editing of other users' additional emails; `address-resolver.fetchEventRegistrants` (event-registration distribution stays attendee-email-driven per AC15); `InboundEmailConfirmationEmailService` (recipients are arbitrary external senders, not registered users)
+
+**Key files (estimated):**
+```
+services/company-user-management-service/.../db/migration/V16__create_user_additional_emails.sql       — NEW
+services/company-user-management-service/.../domain/UserAdditionalEmail.java                            — NEW entity
+services/company-user-management-service/.../repository/UserAdditionalEmailRepository.java              — NEW
+services/company-user-management-service/.../domain/User.java                                           — extend with @OneToMany collection
+services/company-user-management-service/.../service/UserService.java                                   — add/remove methods + audit
+services/company-user-management-service/.../controller/UserController.java                             — 2 new endpoints under /me/additional-emails
+docs/api/users-api.openapi.yml                                                                          — AdditionalEmail schema + 2 paths + UserResponse extension
+web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx                                    — Account-tab section
+web-frontend/src/hooks/useUserAccount/useAdditionalEmails.ts                                            — NEW hook
+web-frontend/public/locales/{de,en,...,gsw-BE}/userManagement.json                                      — 13 new keys × 10 locales
+infrastructure/lambda/email-forwarder/sender-auth.ts                                                    — flatten in getOrganizerEmails
+infrastructure/lambda/email-forwarder/address-resolver.ts                                               — flatten in fetchUsersByRole
+services/event-management-service/.../service/RegistrationEmailService.java                             — CC additional emails
+bruno-tests/users/add-additional-email.bru + list + delete                                              — NEW contract tests
+web-frontend/e2e/organizer/user-settings-additional-emails.spec.ts                                      — NEW Playwright spec
+```
+
+**Definition of Done (Story 10.32):**
+- [ ] V16 migration applies cleanly; unique-across-primary-and-additional constraint enforced
+- [ ] `POST /users/me/additional-emails` returns 201; 409 on collision (vs any primary or any additional); 422 at cap; 400 on bad format
+- [ ] `DELETE /users/me/additional-emails/{email}` returns 204; 404 on unknown
+- [ ] `GET /users/me` and `GET /users` responses include `additionalEmails[]`
+- [ ] Organizer adds `info@berner-architekten-treffen.ch` → sends mail to `ok@batbern.ch` from that mailbox → CloudWatch shows `outcome: 'forwarded'`, all organizers (including sender at both addresses) receive a copy. **Regression test for the 2026-05-20 incident.**
+- [ ] User with additional emails receives event-registration confirmation at all addresses (CC); anonymous registrants unchanged
+- [ ] `UserSettingsTab` Account sub-tab shows the new section; add/remove flows wired; limit alert at 5
+- [ ] Bruno + Vitest + Playwright + Lambda Jest + EMS integration test suites all GREEN
+- [ ] Audit-log row written on add and remove
+- [ ] Backwards-compatible: Lambda continues to authorise organizers by primary email if the CUMS response is missing `additionalEmails` (no regression to Story 10.26 happy path)
+- [ ] **Phase 6 (AC23)**: `POST /partner-meetings/{id}/send-invite` returned `recipientCount` reflects primary + additional emails across PARTNER and ORGANIZER roles; deduplicated case-insensitively
+- [ ] **Phase 7 (AC24)**: speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, and waitlist confirmation emails all CC the recipient's additional emails when present (verified by `verify(emailService).sendHtmlEmail(to, cc, ...)` assertions in `SpeakerInvitationEmailServiceTest` + EMS sweep 1167/1167 green; shared-kernel 321/321 green; PCS 153/153 green)
+
+**Resolved Decisions** (PM 2026-05-22, all 6 OQs): no ownership verification in v1 (`verified_at` column reserved); separate table (not JSONB / not `@ElementCollection`); cap = 5 (configurable); newsletter NOT auto-routed to additional emails (UI helper text explicit); `additionalEmails` included on every `GET /users` response the caller can already see; audit-log entries include the email value.
+
+---
+
 **END OF EPIC 10**

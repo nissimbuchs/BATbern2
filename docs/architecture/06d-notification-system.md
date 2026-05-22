@@ -425,6 +425,24 @@ public class UserApiClient {
 
 **Templates**: Thymeleaf templates in `resources/templates/notifications/`
 
+#### Additional-email CC fan-out (Story 10.32)
+
+As of Story 10.32 (Phase 4 + 6 + 7, 2026-05-22), the shared-kernel `EmailService` exposes CC-aware overloads on both the simple-HTML and attachment paths:
+
+| Method | Signature | Used by |
+|---|---|---|
+| `sendHtmlEmail` (async) | `(to, subject, html)` — 3-arg, no CC | legacy / anonymous flows |
+| `sendHtmlEmail` (async) | `(to, cc, subject, html)` — 4-arg | speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, waitlist confirmation |
+| `sendHtmlEmailSync` | `(to, cc, subject, html, configSet)` — 5-arg | sync newsletter-bulk and inline-loop callers (newsletter itself does NOT use CC; remains primary-only by design) |
+| `sendHtmlEmailWithAttachments` | `(to, cc, subject, html, attachments)` — 5-arg | event registration confirmation (ICS attachment); partner meeting calendar invite (ICS attachment) |
+
+Each EMS service that delivers a user-addressed transactional message resolves the recipient via `UserApiClient.getUserByUsername(...)` (directly or through `PrimarySpeakerResolver`), flattens `UserResponse.additionalEmails[]` into a `List<String>`, and passes it as the `cc` argument. SES `Destination.ccAddresses` carries the list; CC entries matching `to` case-insensitively are dropped to avoid duplicate delivery. A null/missing `additionalEmails` field (e.g. rolling-deploy backwards-compat) is treated as an empty list — behaviour is identical to the 3-arg signature in that case.
+
+**Explicitly excluded** from additional-email fan-out:
+- `NewsletterEmailService` — newsletter is email-keyed (Open Q#4); subscribers register addresses independently of user profiles.
+- `InboundEmailConfirmationEmailService` (unsubscribe + cancel reply paths) — recipients are arbitrary external senders, not registered users.
+- `address-resolver.fetchEventRegistrants` in the email-forwarder Lambda (AC15) — event-registration distribution stays attendee-email-driven, not user-keyed.
+
 ```java
 @Service
 @RequiredArgsConstructor

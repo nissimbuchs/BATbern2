@@ -738,10 +738,9 @@ class SpeakerWorkflowServiceTest {
         speaker.setSpeakerName("Existing Name");
         // Story 11.E.2 invariant: speakers in READY+ already have a canonical username
         // (set by the CONTACTED → READY hook). Pre-READY states leave it null so the
-        // provisioning hook test can assert the post-transition value.
-        if (state != SpeakerWorkflowState.IDENTIFIED
-                && state != SpeakerWorkflowState.CONTACTED) {
-        }
+        // provisioning hook test can assert the post-transition value. The TODO body
+        // is intentionally empty — this is a placeholder for a future per-state
+        // username seed (see Story 11.E.2 review notes).
         return speaker;
     }
 

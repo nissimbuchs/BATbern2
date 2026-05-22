@@ -4,6 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.dto.generated.users.AdditionalEmail;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -11,6 +12,8 @@ import ch.batbern.events.repository.SessionUserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -78,7 +81,8 @@ public class PrimarySpeakerResolver {
                     user.getEmail(),
                     user.getFirstName(),
                     user.getLastName(),
-                    user.getCompanyId()));
+                    user.getCompanyId(),
+                    flattenAdditionalEmails(user)));
         } catch (UserNotFoundException ex) {
             log.warn("PrimarySpeakerResolver: user {} not found in CUMS for pool row {} — "
                     + "falling back to SessionUser cached identity",
@@ -94,7 +98,25 @@ public class PrimarySpeakerResolver {
                 null,
                 su.getSpeakerFirstName(),
                 su.getSpeakerLastName(),
-                null));
+                null,
+                List.of()));
+    }
+
+    /**
+     * Story 10.32 — flatten the speaker's additional emails into a list of plain
+     * strings. Returns an empty list when the CUMS response predates Story 10.32
+     * (field absent) or when the user has none.
+     */
+    private static List<String> flattenAdditionalEmails(UserResponse user) {
+        List<AdditionalEmail> raw = user.getAdditionalEmails();
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return raw.stream()
+                .map(AdditionalEmail::getEmail)
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     /**
@@ -151,18 +173,39 @@ public class PrimarySpeakerResolver {
      * Resolved primary-speaker identity. All fields are nullable; callers must handle
      * the degraded-from-CUMS case where everything but {@code username} may be null.
      *
-     * @param username    canonical username (always non-null when this record exists)
-     * @param email       primary email address from CUMS (may be null on degrade)
-     * @param firstName   first name from CUMS or SessionUser cache (may be null)
-     * @param lastName    last name from CUMS or SessionUser cache (may be null)
-     * @param companyName company display name (may be null pre-CUMS or pre-Company assignment)
+     * @param username         canonical username (always non-null when this record exists)
+     * @param email            primary email address from CUMS (may be null on degrade)
+     * @param firstName        first name from CUMS or SessionUser cache (may be null)
+     * @param lastName         last name from CUMS or SessionUser cache (may be null)
+     * @param companyName      company display name (may be null pre-CUMS or pre-Company assignment)
+     * @param additionalEmails Story 10.32 — speaker's additional email addresses from CUMS,
+     *                         flattened and lower-bound-validated. Never null; empty when the
+     *                         user has none OR the CUMS response predates Story 10.32.
      */
     public record PrimarySpeakerProfile(
             String username,
             String email,
             String firstName,
             String lastName,
-            String companyName) {
+            String companyName,
+            List<String> additionalEmails) {
+
+        /**
+         * Backwards-compatible 5-arg constructor — defaults {@code additionalEmails}
+         * to an empty list. Used by existing test fixtures that pre-date Story 10.32.
+         */
+        public PrimarySpeakerProfile(String username, String email, String firstName,
+                                     String lastName, String companyName) {
+            this(username, email, firstName, lastName, companyName, List.of());
+        }
+
+        /**
+         * Compact constructor — defensively swap a {@code null} additionalEmails for an
+         * empty list so callers can always iterate without a null-check.
+         */
+        public PrimarySpeakerProfile {
+            additionalEmails = (additionalEmails == null) ? List.of() : additionalEmails;
+        }
 
         /**
          * Convenience: joined "FirstName LastName" (trimmed; empty string if both null).

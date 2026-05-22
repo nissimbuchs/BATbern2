@@ -2,10 +2,12 @@ package ch.batbern.companyuser.repository;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,6 +38,23 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Optional user
      */
     Optional<User> findByUsername(String username);
+
+    /**
+     * Story 10.32 (P0-1 fix) — find user by username with a pessimistic
+     * write lock on the {@code user_profiles} row. Used by
+     * {@code addAdditionalEmail} to serialise concurrent POSTs against the
+     * per-user 5-email cap. The default READ_COMMITTED isolation lets two
+     * concurrent transactions both see {@code countByUser=4}, both pass the
+     * gate, and both INSERT; pessimistic lock on the parent row forces one
+     * to wait until the other commits, at which point its re-read of the
+     * count sees the updated value and rejects the 6th entry.
+     *
+     * @param username User's username
+     * @return Optional user (locked FOR UPDATE if present)
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.username = :username")
+    Optional<User> findByUsernameForUpdate(@Param("username") String username);
 
     /**
      * Check if user exists by username

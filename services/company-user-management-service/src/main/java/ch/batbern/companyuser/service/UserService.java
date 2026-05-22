@@ -2,6 +2,9 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserAdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
+import ch.batbern.companyuser.dto.generated.AdditionalEmail;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
@@ -14,17 +17,23 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
+import ch.batbern.companyuser.exception.AdditionalEmailDuplicateException;
+import ch.batbern.companyuser.exception.AdditionalEmailLimitReachedException;
+import ch.batbern.companyuser.exception.AdditionalEmailNotFoundException;
 import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.UserValidationException;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.utils.LoggingUtils;
 import io.micrometer.core.annotation.Counted;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,6 +59,7 @@ import java.util.Set;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserAdditionalEmailRepository additionalEmailRepository;
     private final CognitoIntegrationService cognitoService;
     private final DomainEventPublisher eventPublisher;
     private final UserSearchService searchService;
@@ -59,6 +70,13 @@ public class UserService {
     private final RoleService roleService;
     // Story 11.E.2: throwaway temp passwords at READY, fresh temp passwords at INVITED.
     private final PasswordGenerator passwordGenerator;
+
+    /**
+     * Story 10.32: per-user cap on additional emails (Resolved Decision #3).
+     * Configurable; default 5.
+     */
+    @Value("${batbern.user.additional-emails.max:5}")
+    private int maxAdditionalEmailsPerUser;
 
     /**
      * Get current authenticated user
@@ -1317,6 +1335,90 @@ public class UserService {
             log.debug("No authenticated user in context, using 'anonymous' for audit");
             return "anonymous";
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Story 10.32: additional email addresses per user
+    // ------------------------------------------------------------------
+
+    /**
+     * Story 10.32 — register an additional email on the caller's profile.
+     *
+     * <p>Uniqueness is enforced globally (case-insensitive) across both the
+     * primary {@code user_profiles.email} column and existing additional
+     * emails. The per-user cap defaults to 5 (configurable via
+     * {@code batbern.user.additional-emails.max}).
+     */
+    public AdditionalEmail addAdditionalEmail(@Valid AddAdditionalEmailRequest request) {
+        String username = securityContext.getCurrentUsername();
+        // P0-1 race-condition fix (review 2026-05-22): pessimistic lock on the
+        // user_profiles row serialises concurrent POSTs so the cap check + insert
+        // observe each other. Without this, two parallel adds at count=4 both
+        // pass the gate and the user ends up with 6 rows.
+        // P2-7: do NOT echo the JWT-derived username in the 404 body — the
+        // /me path means the principal is the request author; a missing row
+        // is an internal data state issue.
+        User user = userRepository.findByUsernameForUpdate(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+
+        String emailNormalized = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        if (additionalEmailRepository.countByUser(user) >= maxAdditionalEmailsPerUser) {
+            throw new AdditionalEmailLimitReachedException(maxAdditionalEmailsPerUser);
+        }
+        if (userRepository.existsByEmailIgnoreCase(emailNormalized)
+                || additionalEmailRepository.existsByEmailIgnoreCase(emailNormalized)) {
+            throw new AdditionalEmailDuplicateException(emailNormalized);
+        }
+
+        UserAdditionalEmail entity = UserAdditionalEmail.builder()
+                .email(emailNormalized)
+                .label(request.getLabel() != null ? request.getLabel().trim() : null)
+                .createdAt(java.time.Instant.now())
+                .build();
+        user.addAdditionalEmail(entity);
+        userRepository.save(user);
+
+        // Audit: persistent audit table is reserved infra (activity_history has
+        // no JPA entity yet — see Story 10.32 Dev Notes; AC19 deferred per the
+        // 2026-05-22 code review). Until that lands we emit a structured INFO
+        // line ingested by CloudWatch. Emails are masked because the log is
+        // operator-facing only (no user-visible timeline yet — OQ#6 downgraded
+        // in the same review). The created_at timestamp on the entity remains
+        // the row-level audit trail.
+        log.info("ADDITIONAL_EMAIL_ADDED user={} email={}",
+                LoggingUtils.maskEmail(user.getEmail()),
+                LoggingUtils.maskEmail(emailNormalized));
+
+        return UserResponseMapper.mapAdditionalEmailToDto(entity);
+    }
+
+    /**
+     * Story 10.32 — remove an additional email from the caller's profile.
+     */
+    public void deleteAdditionalEmail(String email) {
+        String username = securityContext.getCurrentUsername();
+        // P2-7: see note above.
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+
+        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
+        UserAdditionalEmail row = additionalEmailRepository
+                .findByUserAndEmailIgnoreCase(user, emailNormalized)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+
+        // P2-9 fix: delete the row directly via the repository rather than
+        // routing through the aggregate's orphanRemoval collection. The User
+        // entity's additionalEmails list is LAZY and may not be initialised
+        // here, in which case user.removeAdditionalEmail(row).remove(...) is
+        // a no-op and orphanRemoval never fires. Direct delete is unambiguous
+        // and avoids relying on session-state of an unloaded collection.
+        user.removeAdditionalEmail(row);
+        additionalEmailRepository.delete(row);
+
+        log.info("ADDITIONAL_EMAIL_REMOVED user={} email={}",
+                LoggingUtils.maskEmail(user.getEmail()),
+                LoggingUtils.maskEmail(emailNormalized));
     }
 
 }

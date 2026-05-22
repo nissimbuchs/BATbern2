@@ -74,12 +74,16 @@ class UserServiceTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @Mock
+    private ch.batbern.companyuser.repository.UserAdditionalEmailRepository additionalEmailRepository;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         userService = new UserService(
             userRepository,
+            additionalEmailRepository,
             cognitoService,
             eventPublisher,
             searchService,

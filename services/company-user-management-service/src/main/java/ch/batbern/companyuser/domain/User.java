@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -13,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -24,7 +26,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -132,6 +136,28 @@ public class User {
     @BatchSize(size = 50)
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    /**
+     * Story 10.32: additional email addresses registered on this profile.
+     *
+     * <p>Used by the SES email forwarder Lambda (Story 10.26) so legacy /
+     * shared mailboxes (e.g. {@code info@berner-architekten-treffen.ch}) can be
+     * declared once and then count as the user's own address for both
+     * receiving forwarded copies and authorising as a sender.
+     *
+     * <p>Performance: LAZY fetch. Use {@code @BatchSize(50)} for batched
+     * loading across paginated user lists (matches the pattern used for
+     * {@link #roles}).
+     */
+    @OneToMany(
+        mappedBy = "user",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<UserAdditionalEmail> additionalEmails = new ArrayList<>();
 
     /**
      * Embedded user preferences (theme, language, notifications)
@@ -257,5 +283,34 @@ public class User {
      */
     public boolean isAnonymous() {
         return this.cognitoUserId == null;
+    }
+
+    /**
+     * Story 10.32: attach an additional email to this user. Caller is
+     * responsible for uniqueness + cap checks at the service layer; this
+     * method exists so the bidirectional relationship is wired correctly
+     * before flush.
+     */
+    public void addAdditionalEmail(UserAdditionalEmail additionalEmail) {
+        if (this.additionalEmails == null) {
+            this.additionalEmails = new ArrayList<>();
+        }
+        additionalEmail.setUser(this);
+        this.additionalEmails.add(additionalEmail);
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Story 10.32: detach an additional email from this user. Relies on
+     * {@code orphanRemoval = true} to delete the row on flush.
+     */
+    public void removeAdditionalEmail(UserAdditionalEmail additionalEmail) {
+        if (this.additionalEmails == null) {
+            return;
+        }
+        if (this.additionalEmails.remove(additionalEmail)) {
+            additionalEmail.setUser(null);
+            this.updatedAt = Instant.now();
+        }
     }
 }

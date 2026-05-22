@@ -2,13 +2,30 @@
  * Address Resolver (Story 10.26 — AC4, AC5)
  *
  * Resolves forwarding recipients by calling existing APIs via API Gateway.
+ *
+ * Story 10.32 — role-based resolution (`fetchUsersByRole`) now flattens each
+ * user's primary `email` PLUS every entry in `additionalEmails[*].email`, so
+ * `ok@`, `info@`, `events@`, `partner@` and the role-based portion of
+ * `support@` deliver a copy to every additional address an organizer / partner
+ * has declared on their profile. Backwards-compatible: missing
+ * `additionalEmails` collapses to the primary-only behaviour.
+ *
+ * Note: `fetchEventRegistrants` reads `attendeeEmail` from
+ * `/events/{eventCode}/registrations` and is intentionally NOT updated to
+ * fan out to additional emails (Story 10.32 AC15). Registration-confirmation
+ * CC'ing happens server-side in RegistrationEmailService, not here.
  */
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:8000';
 const FORWARDING_DOMAIN = process.env.FORWARDING_DOMAIN ?? 'batbern.ch';
 
+interface AdditionalEmail {
+  email?: string;
+}
+
 interface UserResponse {
   email: string;
+  additionalEmails?: AdditionalEmail[];
 }
 
 interface PaginatedUsersResponse {
@@ -74,8 +91,13 @@ export async function resolveRecipients(toAddress: string): Promise<string[]> {
   return [];
 }
 
-/** Fetch all users with a specific role. */
+/**
+ * Fetch all users with a specific role. Story 10.32 flattens primary +
+ * `additionalEmails[*].email` and deduplicates case-insensitively before
+ * returning so the caller sees the full recipient set in a single list.
+ */
 async function fetchUsersByRole(role: string): Promise<string[]> {
+  const seen = new Set<string>();
   const emails: string[] = [];
   let page = 0;
   let totalPages = 1;
@@ -91,8 +113,27 @@ async function fetchUsersByRole(role: string): Promise<string[]> {
 
     const data = (await response.json()) as PaginatedUsersResponse;
     for (const user of data.data) {
+      const candidates: string[] = [];
       if (user.email) {
-        emails.push(user.email);
+        candidates.push(user.email);
+      }
+      for (const extra of user.additionalEmails ?? []) {
+        if (extra.email) {
+          candidates.push(extra.email);
+        }
+      }
+      for (const c of candidates) {
+        const key = c.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          // P3-7 (review 2026-05-22): push the lowercased key, not the original
+          // first-seen casing. SES is case-insensitive on recipients, downstream
+          // MIME headers are nicer with consistent casing, and this defends
+          // against any (rare) CUMS data drift where the same address differs in
+          // case across users — keeping the lookup map and outgoing recipients
+          // canonically lowercased keeps both halves in sync.
+          emails.push(key);
+        }
       }
     }
 

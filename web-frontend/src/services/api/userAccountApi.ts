@@ -340,6 +340,48 @@ export const uploadProfilePicture = async (
   return confirmResponse.cloudFrontUrl;
 };
 
+// =====================================================================
+// Story 10.32 — Additional emails per user profile
+// =====================================================================
+
+export interface AdditionalEmail {
+  email: string;
+  label: string | null;
+  createdAt: string;
+  verifiedAt: string | null;
+}
+
+export interface AddAdditionalEmailPayload {
+  email: string;
+  label?: string;
+}
+
+export interface AdditionalEmailErrorResponse {
+  errorCode?: string;
+  message?: string;
+}
+
+/**
+ * Story 10.32 — register an additional email on the caller's profile.
+ * Throws on non-2xx; surface the error code via the Axios error shape.
+ */
+export const addAdditionalEmail = async (
+  payload: AddAdditionalEmailPayload
+): Promise<AdditionalEmail> => {
+  const response = await apiClient.post<AdditionalEmail>(
+    `${USER_API_PATH}/me/additional-emails`,
+    payload
+  );
+  return response.data;
+};
+
+/**
+ * Story 10.32 — remove an additional email from the caller's profile.
+ */
+export const deleteAdditionalEmail = async (email: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
+};
+
 // Admin endpoints for uploading profile pictures for other users
 
 /**

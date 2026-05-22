@@ -37,9 +37,15 @@ public class LocalEmailCapture {
     /**
      * Capture an email. Returns the generated UUID for the captured email so
      * callers can subsequently store attachment bytes via {@link #storeAttachmentBytes}.
+     *
+     * <p>Story 10.32 — {@code cc} reflects the addresses passed via the
+     * CC-aware {@code sendHtmlEmail(to, cc, ...)} overloads. The dev /dev/emails
+     * UI renders this list so developers can see who would have received the
+     * additional copies in staging/prod. Pass {@link List#of()} for no-CC sends.
      */
     public synchronized UUID capture(
             String to,
+            List<String> cc,
             String subject,
             String htmlBody,
             String fromEmail,
@@ -49,6 +55,7 @@ public class LocalEmailCapture {
         CapturedEmail email = new CapturedEmail(
             id,
             to,
+            cc == null ? List.of() : cc,
             subject,
             htmlBody,
             fromEmail,
@@ -61,8 +68,8 @@ public class LocalEmailCapture {
             CapturedEmail removed = inbox.removeLast();
             attachmentBytes.remove(removed.id());
         }
-        log.info("📧 [LOCAL] Email captured to={} subject='{}' attachments={}",
-                to, subject, email.attachments().size());
+        log.info("📧 [LOCAL] Email captured to={} ccCount={} subject='{}' attachments={}",
+                to, email.cc().size(), subject, email.attachments().size());
         return id;
     }
 

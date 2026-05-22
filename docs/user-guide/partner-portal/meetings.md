@@ -114,7 +114,7 @@ Confirm that the location, agenda, and linked event are correct before sending. 
 
 **Click "Send Calendar Invite"**
 
-The system sends the `.ics` file asynchronously to all contacts on all partner records. The API responds with **202 Accepted** immediately — the actual email delivery happens in the background (typically within a few seconds).
+The system sends the `.ics` file asynchronously to all contacts on all partner records. Each contact receives the invite at both their **primary** email AND every **additional email** they have registered in their profile (Story 10.32) — addresses are deduplicated case-insensitively so a contact who appears in two roles or shares an address across roles gets a single copy per inbox. The API responds with **202 Accepted** immediately — the actual email delivery happens in the background (typically within a few seconds).
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -211,7 +211,8 @@ Email delivery uses **AWS SES** with the `.ics` file attached as `text/calendar;
 
 1. Verify the partner has at least one contact with a valid email address on their partner record
 2. Ask the partner to check their spam folder (calendar invites from unfamiliar senders can be filtered)
-3. The invite can be resent by editing the meeting and clicking **Send Calendar Invite** again — partners who already added it to their calendar will see an update
+3. If the partner expected the invite at an additional email they registered on their profile, confirm that address is listed under Settings → Account → Additional emails (Story 10.32)
+4. The invite can be resent by editing the meeting and clicking **Send Calendar Invite** again — partners who already added it to their calendar will see an update
 
 ### "The agenda in the invite is wrong"
 
