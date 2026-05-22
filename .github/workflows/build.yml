@@ -187,7 +187,14 @@ jobs:
           SHOULD_BUILD="false"
 
           # Build if infrastructure changed (deploy will deploy all)
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package"; then
+          # Note: the `lambda` alternation (no `lib/` prefix) catches
+          # `infrastructure/lambda/email-forwarder/**` and the other
+          # standalone Lambdas that live outside `infrastructure/lib/`.
+          # Without it, a pure-Lambda-code change (e.g. the Story 10.32
+          # address-resolver fan-out patch) is classified as code-only,
+          # the deploy chooses fast-path, and the Lambda asset is never
+          # rebuilt or published. See 2026-05-22 post-merge incident.
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package"; then
             echo "✓ Infrastructure changes detected - building all services"
             SHOULD_BUILD="true"
           # Build if shared-kernel changed (deploy will deploy all)
@@ -566,7 +573,10 @@ jobs:
           CHANGED_SERVICES=""
 
           # If infrastructure or shared-kernel changed, analyze everything
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin)/|^infrastructure/package|^shared-kernel/"; then
+          # Note: the `lambda` alternation (no `lib/` prefix) catches
+          # `infrastructure/lambda/email-forwarder/**` and the other
+          # standalone Lambdas that live outside `infrastructure/lib/`.
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package|^shared-kernel/"; then
             echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"
             ANALYZE_ALL="true"
           fi
