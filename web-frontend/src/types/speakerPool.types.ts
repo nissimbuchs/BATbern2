@@ -6,14 +6,11 @@
 
 import type { components } from '@/types/generated/speakers-api.types';
 
-// Use OpenAPI generated workflow state type, extended with INVITED state from Story 6.1b
-// The generated types from speakers-api.types.ts may not include all states
-export type SpeakerWorkflowState =
-  | components['schemas']['SpeakerWorkflowState']
-  | 'INVITED'
-  | 'SLOT_ASSIGNED'
-  | 'WITHDREW'
-  | 'OVERFLOW';
+// Use OpenAPI-generated workflow state type — the 8 ADR-009 §0.1 states.
+// Legacy widenings ('SLOT_ASSIGNED' | 'WITHDREW' | 'OVERFLOW') dropped per Story 11.E.4 AC1
+// (Phase B residue from Story 11.B.1 that 11.D.2 / 11.D.4 reviews flagged for cleanup).
+// 'INVITED' is already part of the generated union; the local widening was redundant.
+export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 // ============================================================================
 // Speaker Pool Types
@@ -29,6 +26,11 @@ export interface SpeakerPoolEntry {
   assignedOrganizerId?: string | null;
   status: SpeakerWorkflowState;
   sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
+  // 2026-05-20 — sessionSlug, populated by the list endpoint (fromEntityWithContent →
+  // fromEntity(SpeakerPool, Session)). Used by the organizer drawer's content tab to
+  // PATCH /events/{code}/sessions/{slug} when saving title/abstract drafts in READY
+  // (no state transition; canonical sessions.title/.description per plan §2.9).
+  sessionSlug?: string;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
@@ -43,13 +45,15 @@ export interface SpeakerPoolEntry {
   acceptedAt?: string;
   declinedAt?: string;
   declineReason?: string;
-  isTentative?: boolean;
-  tentativeReason?: string;
   preferredTimeSlot?: string;
   travelRequirements?: string;
   technicalRequirements?: string;
   initialPresentationTitle?: string;
   preferenceComments?: string;
+
+  // Story 11.B.3: Derived flags (ADR-009 §0.1) — computed at read time, NOT persisted
+  isSlotAssigned?: boolean;
+  isPublishable?: boolean;
 
   // Story 6.3: Speaker Content Submission Portal fields
   contentStatus?: string; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
@@ -73,9 +77,22 @@ export interface AddSpeakerToPoolRequest {
 }
 
 export interface PatchSpeakerPoolRequest {
+  speakerName?: string;
+  company?: string;
+  expertise?: string;
   assignedOrganizerId?: string;
   notes?: string;
-  email?: string;
+}
+
+// Story 11.D.1: POST /speakers/{speakerId}/promote — drives CONTACTED → READY transition
+// and provisions the User + SPEAKER role server-side.
+// Story 11.E.4 AC4: firstName + lastName tightened from optional to REQUIRED (PM decision
+// 2026-05-18). They populate the Cognito user's given_name / family_name attributes; the
+// fallback path with literal placeholders ("Speaker" / "Unknown") on the backend is removed.
+export interface PromoteSpeakerRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
 }
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;

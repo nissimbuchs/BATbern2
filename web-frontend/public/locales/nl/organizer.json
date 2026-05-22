@@ -182,7 +182,37 @@
     },
     "actions": {
       "skipForNow": "Nu overslaan",
-      "continue": "Doorgaan naar benadering"
+      "continue": "Doorgaan naar benadering",
+      "promoteToSpeaker": "Promoveren tot spreker"
+    },
+    "promoteDialog": {
+      "title": "Promoveren tot spreker",
+      "description": "De spreker wordt verplaatst naar de READY-baan en krijgt een gebruikersaccount. Er wordt nog geen uitnodigingsmail verzonden — verstuur de uitnodiging vanuit de READY-baan wanneer je er klaar voor bent.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Voornaam",
+      "lastNameLabel": "Achternaam",
+      "cancelButton": "Annuleren",
+      "submitButton": "Promoveren",
+      "submitting": "Bezig met promoveren…",
+      "errorTitle": "Spreker kon niet worden gepromoveerd",
+      "errorEmailRequired": "E-mail is vereist",
+      "errorEmailInvalid": "E-mail moet geldig zijn",
+      "errorFirstNameRequired": "Voornaam is vereist",
+      "errorLastNameRequired": "Achternaam is vereist",
+      "errorAlreadyPromoted": "Spreker is al in {{currentState}}; promotie is alleen geldig vanaf Gecontacteerd.",
+      "errorStillIdentified": "Spreker moet eerst worden gecontacteerd — registreer het contact voor promotie.",
+      "errorDeclined": "Spreker heeft geweigerd — maak een nieuwe entry aan in plaats van te promoveren.",
+      "errorAlreadyReady": "Spreker is al klaar — verstuur de uitnodiging vanuit de READY-baan."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Geïdentificeerd",
+      "CONTACTED": "Gecontacteerd",
+      "READY": "Klaar",
+      "INVITED": "Uitgenodigd",
+      "ACCEPTED": "Geaccepteerd",
+      "DECLINED": "Geweigerd",
+      "CONTENT_SUBMITTED": "Inhoud ingediend",
+      "QUALITY_REVIEWED": "Kwaliteit beoordeeld"
     }
   },
   "speakerOutreach": {
@@ -261,8 +291,14 @@
       "titleRequired": "Presentatietitel is verplicht",
       "abstractRequired": "Presentatiesamenvatting is verplicht",
       "abstractTooLong": "De samenvatting mag maximaal {{max}} tekens bevatten",
-      "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw."
-    }
+      "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw.",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "Kwaliteitsbeoordeling",
@@ -308,7 +344,6 @@
     "invalidEmail": "Voer een geldig e-mailadres in",
     "saveEmail": "E-mail opslaan",
     "emailSaved": "E-mail opgeslagen",
-    "tentative": "Voorlopig",
     "responseDetails": "Reactiedetails",
     "acceptedAt": "Geaccepteerd op",
     "preferredTimeSlot": "Gewenst tijdslot",
@@ -319,16 +354,12 @@
     "declineDetails": "Details afwijzing",
     "declinedAt": "Geweigerd op",
     "declineReason": "Reden",
-    "tentativeDetails": "Voorlopige details",
-    "tentativeReason": "Reden",
     "sendReminder": "Herinnering sturen",
     "sendingReminder": "Verzenden...",
     "reminderSent": "Herinnering verzonden naar {{email}}",
     "reminderFailed": "Verzenden van herinnering mislukt",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -480,5 +511,74 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Contact registreren",
+      "promoteToSpeaker": "Promoten tot spreker",
+      "sendInvitation": "Uitnodiging verzenden",
+      "viewResponseStatus": "Reactiestatus bekijken",
+      "enterContent": "Inhoud invoeren",
+      "reviewContent": "Inhoud beoordelen",
+      "assignSessionSlot": "Sessieblok toewijzen",
+      "viewDetails": "Details bekijken"
+    },
+    "publishable": "Publiceerbaar",
+    "publishableTooltip": "Spreker is goedgekeurd en heeft een sessieblok",
+    "slotCapacityTooltip": "Slotcapaciteit bereikt. {{invited}} openstaande uitnodigingen + {{accepted}} bevestigingen voor {{slots}} slots. Wacht of wijs een geaccepteerde spreker af om een slot vrij te maken.",
+    "timeInStateTooltip": "Huidige status sinds {{date}}",
+    "inviteSent": "Uitnodiging verzonden",
+    "inviteFailed": "Verzenden van uitnodiging mislukt",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} verouderd (>14 dagen)",
+      "readySlotCapacitySubline": "⚠ Slotcapaciteit bereikt",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} deadline nadert",
+        "past": "⏰ {{count}} deadline verstreken",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} wacht op inhoud",
+      "contentSubmittedSubline": "👀 {{count}} wacht op moderatie",
+      "qualityReviewedSubline": "🪑 {{count}} wacht op slot",
+      "sublineFilterAriaLabel": "Kolom {{state}} filteren: {{description}}",
+      "filterClearedAnnouncement": "Kolomfilter opgeheven",
+      "filterAppliedAnnouncement": "Kolom {{state}} gefilterd, {{count}} kaarten zichtbaar"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

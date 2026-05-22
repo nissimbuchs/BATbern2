@@ -204,10 +204,6 @@ public class SecurityConfig {
                         // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
-                        // SpeakerController: public read endpoints (speaker directory)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/speakers").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/speakers/*").permitAll()
-
                         // Story 5.9: Public materials download endpoint for archived events
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
@@ -236,6 +232,10 @@ public class SecurityConfig {
                         // Public organizers endpoint for About page
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
 
+                        // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
+                        // CUMS PublicUserController. Filters to SPEAKER role only.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/users/*").permitAll()
+
                         // Global teaser images: public list for presenter view (_global = all events)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/_global/teaser-images").permitAll()
 
@@ -246,13 +246,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
                         // Story 6.1a/6.2a/6.2b: Speaker portal endpoints (token-protected, no JWT auth)
+                        // Story 11.C.1: profile endpoints removed (controller deleted, frontend tear-down in Phase F)
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
                         // Story 6.4: Speaker dashboard endpoint (token-protected, no JWT auth)
                         .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()

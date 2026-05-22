@@ -1,17 +1,22 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SessionMaterial;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
@@ -20,8 +25,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,26 +44,35 @@ public class SpeakerPoolService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
+    private final SessionUserRepository sessionUserRepository;
+    private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
-                              ContentSubmissionRepository contentSubmissionRepository,
+                              SessionContentHistoryRepository sessionContentHistoryRepository,
                               SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
+                              SessionUserRepository sessionUserRepository,
+                              UserApiClient userApiClient,
                               ApplicationEventPublisher eventPublisher,
-                              SecurityContextHelper securityContextHelper) {
+                              SecurityContextHelper securityContextHelper,
+                              PrimarySpeakerResolver primarySpeakerResolver) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
-        this.contentSubmissionRepository = contentSubmissionRepository;
+        this.sessionContentHistoryRepository = sessionContentHistoryRepository;
         this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
+        this.sessionUserRepository = sessionUserRepository;
+        this.userApiClient = userApiClient;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
+        this.primarySpeakerResolver = primarySpeakerResolver;
     }
 
     /**
@@ -111,7 +127,11 @@ public class SpeakerPoolService {
         eventPublisher.publishEvent(speakerAddedEvent);
         log.debug("Published SpeakerAddedToPoolEvent for speaker: {}, event: {}", saved.getSpeakerName(), eventCode);
 
-        return SpeakerPoolResponse.fromEntity(saved);
+        // Story 11.E.9: IDENTIFIED pool rows have no session yet, so the overlay is a
+        // no-op here. Kept for symmetry with the other single-entity response paths.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(saved);
+        primarySpeakerResolver.applyOverlay(response, saved);
+        return response;
     }
 
     /**
@@ -129,23 +149,8 @@ public class SpeakerPoolService {
 
         List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
 
-        // Fetch latest content submissions for all speakers in one query
-        // This avoids N+1 query problem
-        List<UUID> speakerIds = speakers.stream()
-                .map(SpeakerPool::getId)
-                .collect(Collectors.toList());
-
-        // Build map of speakerId -> latest content submission
-        Map<UUID, ContentSubmission> contentMap = speakerIds.stream()
-                .map(id -> contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(id))
-                .filter(opt -> opt.isPresent())
-                .map(opt -> opt.get())
-                .collect(Collectors.toMap(
-                        cs -> cs.getSpeakerPool().getId(),
-                        cs -> cs
-                ));
-
-        // Batch-fetch sessions for speakers that have sessionIds (for title fallback + materials)
+        // Story 11.E.8 consolidation: content history is now keyed by session_id. Batch-fetch
+        // sessions first, then the latest version per session.
         List<UUID> sessionIds = speakers.stream()
                 .map(SpeakerPool::getSessionId)
                 .filter(id -> id != null)
@@ -156,32 +161,69 @@ public class SpeakerPoolService {
                 : sessionRepository.findAllById(sessionIds).stream()
                         .collect(Collectors.toMap(Session::getId, s -> s));
 
+        // Build map of sessionId -> latest SessionContentVersion. Light N+1 inside the
+        // stream is acceptable here (an event tops out at a few dozen speakers); if the
+        // workload grows the SessionContentHistoryRepository can add a batch latest-per
+        // -session query.
+        Map<UUID, SessionContentVersion> latestVersionBySession = sessionIds.stream()
+                .map(sid -> sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sid))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(Collectors.toMap(
+                        v -> v.getSession().getId(),
+                        v -> v
+                ));
+
+        // Phase A of the post-Epic-11 cleanup (BATbern75 bug fix): the canonical post-READY
+        // identity is session_users.username → UserApiClient profile, NOT the stale
+        // speaker_pool.username/email columns. Batch-load primary speakers + profiles per
+        // unique username so the response factory can be enriched in one pass.
+        Map<UUID, SessionUser> primaryBySession = sessionIds.isEmpty()
+                ? Map.of()
+                : sessionUserRepository
+                        .findBySessionIdInAndSpeakerRole(sessionIds, SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                su -> su.getSession().getId(),
+                                su -> su,
+                                (existing, duplicate) -> existing));
+        Map<String, UserResponse> userByUsername = new HashMap<>();
+        for (SessionUser su : primaryBySession.values()) {
+            if (su.getUsername() == null || userByUsername.containsKey(su.getUsername())) {
+                continue;
+            }
+            try {
+                userByUsername.put(su.getUsername(), userApiClient.getUserByUsername(su.getUsername()));
+            } catch (UserServiceException ex) {
+                // CUMS unavailable for this user — degrade gracefully (the response
+                // will fall back to the SessionUser cached firstName/lastName, with
+                // null email). Logged at WARN; do not 500 the entire pool query.
+                log.warn("UserApiClient failed for {} when loading speaker pool — degrading: {}",
+                        su.getUsername(), ex.getMessage());
+                userByUsername.put(su.getUsername(), null);
+            }
+        }
+
         return speakers.stream()
                 .map(speaker -> {
-                    ContentSubmission content = contentMap.get(speaker.getId());
-                    SpeakerPoolResponse response;
-                    if (content != null) {
-                        response = SpeakerPoolResponse.fromEntityWithContent(
-                                speaker,
-                                content.getTitle(),
-                                content.getContentAbstract()
-                        );
-                    } else if (speaker.getSessionId() != null) {
-                        // Fallback: use session title/description when no ContentSubmission exists
-                        // This handles content submitted via organizer path (SpeakerContentSubmissionService)
-                        // which stores content on Session, not in speaker_content_submissions table
-                        Session session = sessionMap.get(speaker.getSessionId());
-                        if (session != null && session.getTitle() != null) {
-                            response = SpeakerPoolResponse.fromEntityWithContent(
-                                    speaker,
-                                    session.getTitle(),
-                                    session.getDescription()
-                            );
-                        } else {
-                            response = SpeakerPoolResponse.fromEntity(speaker);
+                    Session session = speaker.getSessionId() != null
+                            ? sessionMap.get(speaker.getSessionId())
+                            : null;
+                    SessionContentVersion latestVersion = session != null
+                            ? latestVersionBySession.get(session.getId())
+                            : null;
+                    SpeakerPoolResponse response = SpeakerPoolResponse.fromEntityWithContent(
+                            speaker, session, latestVersion);
+                    // Phase A: session-derived identity overlay. The primary SessionUser
+                    // gives us the canonical username; the UserApiClient profile gives us
+                    // the live email + full name + company. When the profile is missing
+                    // we fall back to the SessionUser's cached firstName/lastName.
+                    if (session != null) {
+                        SessionUser primary = primaryBySession.get(session.getId());
+                        if (primary != null) {
+                            UserResponse user = userByUsername.get(primary.getUsername());
+                            applySessionIdentityOverlay(response, primary, user);
                         }
-                    } else {
-                        response = SpeakerPoolResponse.fromEntity(speaker);
                     }
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {
@@ -199,6 +241,45 @@ public class SpeakerPoolService {
     }
 
     /**
+     * Apply session-derived identity overlay to a speaker pool response.
+     *
+     * <p>Post-Epic-11 cleanup (Phase A). When a session exists for a pool row, the
+     * canonical identity lives at {@code session_users.username} → {@code UserApiClient}.
+     * The {@code speaker_pool.username/email} columns are duplicates that go stale when
+     * the organizer reassigns the session's primary speaker on the Sessions tab; this
+     * method overwrites them with the live values so the response reflects whoever is
+     * currently the primary speaker.
+     *
+     * <p>When the UserApiClient profile is missing (CUMS down, user deleted), falls
+     * back to the SessionUser cached firstName/lastName. Email stays null in that case
+     * — better to show "no email known" than a wrong one.
+     */
+    private static void applySessionIdentityOverlay(
+            SpeakerPoolResponse response, SessionUser primary, UserResponse user) {
+        response.setUsername(primary.getUsername());
+        if (user != null) {
+            response.setEmail(user.getEmail());
+            String first = Optional.ofNullable(user.getFirstName()).orElse("");
+            String last = Optional.ofNullable(user.getLastName()).orElse("");
+            String full = (first + " " + last).trim();
+            if (!full.isEmpty()) {
+                response.setSpeakerName(full);
+            }
+            if (user.getCompanyId() != null && !user.getCompanyId().isBlank()) {
+                response.setCompany(user.getCompanyId());
+            }
+        } else {
+            response.setEmail(null);
+            String cachedFirst = Optional.ofNullable(primary.getSpeakerFirstName()).orElse("");
+            String cachedLast = Optional.ofNullable(primary.getSpeakerLastName()).orElse("");
+            String cachedFull = (cachedFirst + " " + cachedLast).trim();
+            if (!cachedFull.isEmpty()) {
+                response.setSpeakerName(cachedFull);
+            }
+        }
+    }
+
+    /**
      * Assign a speaker pool entry to a specific organizer for outreach.
      *
      * @param speakerPoolId the speaker pool entry ID
@@ -213,7 +294,11 @@ public class SpeakerPoolService {
         speakerPool.setAssignedOrganizerId(organizerId);
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
 
-        return SpeakerPoolResponse.fromEntity(updated);
+        // Story 11.E.9: apply overlay so PATCH responses carry live username/email
+        // when a session_users primary speaker exists.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        primarySpeakerResolver.applyOverlay(response, updated);
+        return response;
     }
 
     /**
@@ -238,18 +323,32 @@ public class SpeakerPoolService {
             throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
         }
 
+        if (request.getSpeakerName() != null) {
+            String trimmed = request.getSpeakerName().trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("speakerName must not be blank");
+            }
+            speakerPool.setSpeakerName(trimmed);
+        }
+        if (request.getCompany() != null) {
+            speakerPool.setCompany(request.getCompany());
+        }
+        if (request.getExpertise() != null) {
+            speakerPool.setExpertise(request.getExpertise());
+        }
         if (request.getAssignedOrganizerId() != null) {
             speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
         }
         if (request.getNotes() != null) {
             speakerPool.setNotes(request.getNotes());
         }
-        if (request.getEmail() != null) {
-            speakerPool.setEmail(request.getEmail());
-        }
 
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
-        return SpeakerPoolResponse.fromEntity(updated);
+        // Story 11.E.9: apply overlay so PATCH responses carry live username/email
+        // when a session_users primary speaker exists.
+        SpeakerPoolResponse response = SpeakerPoolResponse.fromEntity(updated);
+        primarySpeakerResolver.applyOverlay(response, updated);
+        return response;
     }
 
     /**

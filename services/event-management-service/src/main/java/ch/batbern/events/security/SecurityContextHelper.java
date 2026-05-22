@@ -1,6 +1,8 @@
 package ch.batbern.events.security;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -8,6 +10,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +24,33 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class SecurityContextHelper {
+
+    /**
+     * Pattern 3b twin for the {@code custom:username} claim.
+     *
+     * <p>Same root cause as {@code JwtRolesConverter}: in local dev, CUMS provisions a
+     * speaker by creating the Cognito user in staging while writing {@code user_profiles}
+     * into the LOCAL DB. The PreTokenGen Lambda runs against the staging DB, finds nothing,
+     * and the JWT comes back with {@code custom:username = ""} (empty string, not null).
+     * Without this fallback every locally-promoted speaker sees an empty dashboard because
+     * {@code sessionUserRepository.findByUsername("")} matches nothing. Looks the user up
+     * by {@code cognito_user_id == jwt.subject} against the local DB. In staging the JWT
+     * always carries a non-empty username so this branch is dormant.
+     */
+    private static final String USERNAME_LOOKUP_SQL =
+            "SELECT username FROM user_profiles WHERE cognito_user_id = ?";
+
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public SecurityContextHelper(DataSource dataSource) {
+        this.jdbcTemplate = dataSource != null ? new JdbcTemplate(dataSource) : null;
+    }
+
+    /** No-args constructor for test slices without a DataSource. */
+    public SecurityContextHelper() {
+        this.jdbcTemplate = null;
+    }
 
     /**
      * Gets the current authenticated user's ID from JWT token or mock user
@@ -58,14 +88,25 @@ public class SecurityContextHelper {
 
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            // ADR-001: PreTokenGeneration Lambda sets 'custom:username' claim from database
+            // ADR-001: PreTokenGeneration Lambda sets 'custom:username' claim from database.
             String username = jwt.getClaim("custom:username");
-            if (username == null) {
-                log.warn("custom:username claim not found in JWT, falling back to subject (UUID). "
-                        + "This indicates PreTokenGeneration Lambda may not be configured properly.");
-                return jwt.getSubject(); // Fallback to subject for backward compatibility
+            if (username != null && !username.isBlank()) {
+                return username;
             }
-            return username;
+            // Local-dev twin of Pattern 3b (see field-level javadoc). The Lambda runs
+            // against staging DB and emits an empty claim for locally-provisioned users;
+            // resolve via user_profiles.cognito_user_id instead. Falls back to the raw
+            // subject (UUID) only if the DB lookup is unavailable or finds nothing —
+            // matches the legacy behaviour rather than throwing.
+            String resolved = lookupUsernameByCognitoUserId(jwt.getSubject());
+            if (resolved != null) {
+                return resolved;
+            }
+            log.warn("custom:username claim is missing or blank and DB fallback found "
+                    + "no user_profiles row for cognito_user_id={}; falling back to "
+                    + "subject (UUID). PreTokenGeneration Lambda may not be configured.",
+                    jwt.getSubject());
+            return jwt.getSubject();
         } else if (authentication.getPrincipal() instanceof User) {
             // In test environment with @WithMockUser, use username
             User user = (User) authentication.getPrincipal();
@@ -176,5 +217,32 @@ public class SecurityContextHelper {
         }
 
         return authentication;
+    }
+
+    /**
+     * Pattern 3b twin: look up a username by Cognito user id when the JWT carries an
+     * empty {@code custom:username} claim. Returns {@code null} on any miss (no
+     * DataSource, no match, DB error) — caller decides how to degrade.
+     */
+    private String lookupUsernameByCognitoUserId(String cognitoUserId) {
+        if (cognitoUserId == null || cognitoUserId.isBlank() || jdbcTemplate == null) {
+            return null;
+        }
+        try {
+            List<String> matches =
+                    jdbcTemplate.queryForList(USERNAME_LOOKUP_SQL, String.class, cognitoUserId);
+            if (matches.isEmpty()) {
+                return null;
+            }
+            String resolved = matches.get(0);
+            log.info("JWT username fallback hit for cognito_user_id={} → username={} "
+                    + "(local-dev path; staging JWTs always carry custom:username).",
+                    cognitoUserId, resolved);
+            return resolved;
+        } catch (Exception e) {
+            log.warn("JWT username fallback failed for cognito_user_id={}: {}",
+                    cognitoUserId, e.getMessage());
+            return null;
+        }
     }
 }

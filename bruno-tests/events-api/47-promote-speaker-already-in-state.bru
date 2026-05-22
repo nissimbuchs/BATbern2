@@ -1,0 +1,46 @@
+meta {
+  name: Promote Speaker - Same-state READY is Idempotent 200 (Story 11.D.1 AC3)
+  type: http
+  seq: 47
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{promoteTestSpeakerId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "promote-e2e-idempotent@batbern-test.ch"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq READY
+}
+
+tests {
+  test("returns 200 OK (idempotent same-state on READY) per Story 11.D.1 AC3", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal('READY');
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC3 (idempotent branch). Test 45 already promoted this
+  speaker to READY. Re-calling /promote with the same speaker is the audit-meaningful
+  same-state branch in SpeakerWorkflowService.transition() (Story 11.B.2 AC2) — writes a
+  self-transition history row but skips preconditions, side-effect hooks, and the
+  SpeakerPromotedToReadyEvent. The endpoint returns the unchanged speaker pool entry
+  with status=READY rather than erroring.
+
+  The 409 branch (INVITED / IDENTIFIED / DECLINED / etc.) is covered by the Java
+  integration tests in SpeakerPromoteControllerIntegrationTest (avoiding stateful Bruno
+  setup for every post-CONTACTED state).
+}

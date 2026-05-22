@@ -4,20 +4,28 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
+import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
+import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
+import ch.batbern.shared.utils.LoggingUtils;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +56,9 @@ public class UserService {
     private final SlugGenerationService slugService;
     private final UserResponseMapper responseMapper;
     private final CompanyService companyService;
+    private final RoleService roleService;
+    // Story 11.E.2: throwaway temp passwords at READY, fresh temp passwords at INVITED.
+    private final PasswordGenerator passwordGenerator;
 
     /**
      * Get current authenticated user
@@ -559,6 +570,409 @@ public class UserService {
     }
 
     /**
+     * Provision a User with a role (idempotent).
+     *
+     * <p>Story 11.C.2 (AR13). Used by
+     * {@link ch.batbern.events.service.SpeakerWorkflowService#transition} at the
+     * CONTACTED → READY hook (called via {@code UserApiClient.provisionUserWithRole}).
+     *
+     * <p>Behaviour:
+     * <ul>
+     *   <li>If a User exists by email (case-insensitive lookup, matching the existing
+     *       {@link #getOrCreateUser} contract), grants the requested role if it is not
+     *       already held and returns the existing username with {@code created=false}.</li>
+     *   <li>If the User does not exist, creates the User row, grants the requested role,
+     *       and returns the generated username with {@code created=true}.</li>
+     *   <li>Idempotent: re-calling for an already-provisioned user is a no-op and returns
+     *       the same username. The {@code role_assignments} UNIQUE constraint plus
+     *       {@link RoleService#addRole}'s duplicate-detection backs the guarantee at the
+     *       persistence layer.</li>
+     * </ul>
+     *
+     * <p>Story 11.E.2 (Resolved Q#1 Variant B): on the new-user branch, calls Cognito
+     * {@code AdminCreateUser} silently ({@code MessageAction=SUPPRESS}) with a throwaway
+     * temporary password. The Cognito user lands in {@code FORCE_CHANGE_PASSWORD} state.
+     * The throwaway password is immediately discarded — the speaker's real temporary
+     * password is issued at READY → INVITED via the sibling
+     * {@link #issueInvitationCredentials} endpoint. The {@code temporaryPassword} field was
+     * removed from {@link ProvisionUserResponse} in 11.E.2.
+     *
+     * <p>If Cognito {@code AdminCreateUser} fails (any error other than
+     * {@code UsernameExistsException}), the surrounding {@code @Transactional} aborts and
+     * the User + role-assignment rows are rolled back. EMS receives HTTP 502 and the
+     * workflow transition aborts at CONTACTED → READY (no partial state).
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag
+     * @throws UserValidationException if email or role is missing/invalid
+     */
+    @Counted(value = "users.provisioning", description = "Count of user provisioning calls (Story 11.C.2)")
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new UserValidationException("email", "Email is required for user provisioning");
+        }
+        if (request.getRole() == null) {
+            throw new UserValidationException("role", "Role is required for user provisioning");
+        }
+        Role roleToGrant = parseRole(request.getRole().getValue());
+
+        // P0 (review patch): role-grant whitelist. A non-ADMIN caller (ORGANIZER) must not be able to
+        // grant arbitrary roles via this endpoint — Epic 11 only needs SPEAKER. Anything else is a 403
+        // unless the caller is ADMIN.
+        if (!securityContext.hasRole("ADMIN") && roleToGrant != Role.SPEAKER) {
+            throw new UserValidationException(
+                    "role",
+                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got "
+                            + roleToGrant + ")");
+        }
+
+        // P1 (review patch): normalize email to lowercase for both lookup AND persist so
+        // "Jane@x.com" and "jane@x.com" resolve to the same User row. Idempotency claim now holds.
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}", normalizedEmail, roleToGrant);
+
+        // 1. Look up existing user by email (case-insensitive). Matches the getOrCreateUser contract.
+        Optional<User> existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
+
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            // Idempotent role grant — RoleService.addRole is a no-op if the role is already held.
+            roleService.addRole(user.getUsername(), roleToGrant);
+            log.info("Provisioning: existing user {} has role {} (created=false)",
+                    user.getUsername(), roleToGrant);
+            // Epic 11 bug fix 2026-05-19 — the existing-user branch USED to assume the
+            // Cognito user already exists "from a prior provisioning or organic signup".
+            // That assumption breaks in local-dev (DB synced from staging at a time when
+            // Cognito had the user, but staging Cognito has since lost the record) and
+            // would also break in prod if a Cognito user were deleted out-of-band. The
+            // speaker would then land in READY with no Cognito shell, and the subsequent
+            // READY→INVITED `issueInvitationCredentials` call would 404 on
+            // `cognitoService.getUserStatus`.
+            //
+            // `adminCreateUserSilently` is idempotent (catches `UsernameExistsException`
+            // and logs a no-op), so this is safe to call unconditionally — the call is a
+            // round-trip-only no-op when the Cognito user already exists, and creates the
+            // missing shell when it doesn't.
+            String throwawayTempPassword = passwordGenerator.generate();
+            String newCognitoSub = cognitoService.adminCreateUserSilently(
+                    normalizedEmail, throwawayTempPassword, user.getUsername());
+            throwawayTempPassword = null;
+            // Epic 11 bug fix 2026-05-19 — when we just created a NEW Cognito user,
+            // sync the new `sub` back into user_profiles. Otherwise the DB row keeps
+            // the stale sub from a deleted prior Cognito user and the
+            // PreTokenGeneration Lambda's primary-key lookup misses on the next sign-in
+            // (the speaker's JWT comes through with no `custom:role` claim, blank
+            // dashboard). `newCognitoSub` is null when the Cognito user already existed
+            // (idempotent no-op) — we leave the DB alone in that case.
+            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
+                user.setCognitoUserId(newCognitoSub);
+                userRepository.save(user);
+                log.info("Re-linked user {} to fresh Cognito sub {} (existing-user branch)",
+                        user.getUsername(), newCognitoSub);
+            }
+            return new ProvisionUserResponse()
+                    .username(user.getUsername())
+                    .created(false);
+        }
+
+        // P1 (review patch): firstName/lastName are optional in the API spec; SlugGenerationService
+        // rejects blank inputs. Derive sensible defaults from the email local-part so the request
+        // succeeds without forcing the caller to supply names (Story 11.E.2 may not have them yet).
+        String firstName = request.getFirstName();
+        String lastName = request.getLastName();
+        if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
+            String localPart = normalizedEmail.contains("@")
+                    ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                    : normalizedEmail;
+            String[] parts = localPart.split("[._\\-+]", 2);
+            if (firstName == null || firstName.isBlank()) {
+                firstName = parts[0].isBlank() ? "Speaker" : capitalize(parts[0]);
+            }
+            if (lastName == null || lastName.isBlank()) {
+                lastName = parts.length > 1 && !parts[1].isBlank()
+                        ? capitalize(parts[1])
+                        : "Unknown";
+            }
+            log.debug("Provisioning: derived firstName='{}' lastName='{}' from email local-part", firstName, lastName);
+        }
+
+        // 2. No user yet — create one, then grant the role.
+        // Reuse the GetOrCreateUserRequest path so a single create-policy lives in one place.
+        // cognitoSync=false: Cognito provisioning is Story 11.E.2's responsibility.
+        GetOrCreateUserRequest createRequest = new GetOrCreateUserRequest()
+                .email(normalizedEmail)
+                .firstName(firstName)
+                .lastName(lastName)
+                .createIfMissing(true)
+                .cognitoSync(false);
+
+        User created;
+        try {
+            created = createNewUser(createRequest);
+        } catch (DataIntegrityViolationException e) {
+            // P1 (review patch): another caller raced us to createNewUser for the same email
+            // and won. The email UNIQUE constraint fired. Treat as idempotent: re-fetch and
+            // grant the role.
+            log.info("Provisioning: lost create race for email={} — re-fetching as idempotent existing-user case",
+                    normalizedEmail);
+            User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "DataIntegrityViolation on createNewUser but email not found on re-fetch: "
+                                    + normalizedEmail, e));
+            roleService.addRole(user.getUsername(), roleToGrant);
+            // Story 11.E.2: race-loser branch does NOT call AdminCreateUser — the parallel
+            // caller that won the create race has already (or will) handle the Cognito shell.
+            return new ProvisionUserResponse()
+                    .username(user.getUsername())
+                    .created(false);
+        }
+
+        // The default initial role from createNewUser is ATTENDEE. Grant the requested role if it's not
+        // already there. addRole is idempotent per RoleService.addRole(...) duplicate-detection.
+        roleService.addRole(created.getUsername(), roleToGrant);
+
+        log.info("Provisioning: created user {} with role {} (created=true)", created.getUsername(), roleToGrant);
+
+        // Story 11.E.2 (AC1): create the Cognito user shell with a throwaway password and
+        // FORCE_CHANGE_PASSWORD status. The throwaway is immediately discarded — the real
+        // temporary password is issued at READY → INVITED via issueInvitationCredentials.
+        // Any failure here aborts the surrounding @Transactional, rolling back createNewUser
+        // + addRole (per AC5 item 1).
+        String throwawayTempPassword = passwordGenerator.generate();
+        cognitoService.adminCreateUserSilently(
+                normalizedEmail, throwawayTempPassword, created.getUsername());
+        // Discard the throwaway from this scope by reassigning. The local variable goes
+        // out of scope on method return; the value is never logged or persisted.
+        throwawayTempPassword = null;
+        log.info("Cognito user provisioned for {} (status=FORCE_CHANGE_PASSWORD)",
+                LoggingUtils.maskEmail(normalizedEmail));
+
+        return new ProvisionUserResponse()
+                .username(created.getUsername())
+                .created(true);
+    }
+
+    /**
+     * Issue (or skip) Cognito temp credentials at READY → INVITED.
+     *
+     * <p>Story 11.E.2 (AC2 — Resolved Q#1 Variant B + Q#4). Called by EMS's
+     * {@code SpeakerWorkflowService.runInvitedHook} via the sibling
+     * {@code POST /api/v1/users/{username}/issue-invitation-credentials} endpoint.
+     *
+     * <p>Branches on the Cognito user's current status:
+     * <ul>
+     *   <li>{@code FORCE_CHANGE_PASSWORD} / {@code RESET_REQUIRED} → generate fresh
+     *       temp password, call {@code AdminSetUserPassword(Permanent=false)}, return
+     *       {@code FRESH_TEMP_PASSWORD}.</li>
+     *   <li>{@code CONFIRMED} → no Cognito mutation; return
+     *       {@code USE_EXISTING_PASSWORD} with {@code temporaryPassword=null}.</li>
+     *   <li>{@code UNCONFIRMED} → defensive: treat as FORCE_CHANGE_PASSWORD (organic
+     *       sign-ups do not occur in BATbern's invite-only flow, but the branch is safe).</li>
+     *   <li>{@code ARCHIVED} / {@code COMPROMISED} / {@code UNKNOWN} → throw
+     *       {@link UnprocessableInvitationStateException} (mapped to HTTP 422).</li>
+     * </ul>
+     *
+     * <p>Annotated {@code @Transactional(readOnly = true)} — the DB layer only performs a
+     * single read ({@code userRepository.findByUsername}); the Cognito calls
+     * ({@code AdminGetUser}, {@code AdminSetUserPassword}) mutate external state but do not
+     * touch the PostgreSQL transaction. {@code readOnly = true} accurately describes the
+     * DB-transactional semantics (no rollback needed because no DB write occurs).
+     *
+     * <p>Review patch B2 (P15) noted this could mislead readers into expecting "no
+     * side-effects"; the Javadoc here calls out the external mutation explicitly.
+     * {@code NOT_SUPPORTED} would be more semantically pure but suspends the test
+     * transaction so seeded fixtures aren't visible — keep {@code readOnly = true} and
+     * document the external-mutation invariant in code comments.
+     *
+     * @param username target user's username (must exist in PostgreSQL)
+     * @return action discriminator + fresh temp password (or null)
+     * @throws UserNotFoundException                   if {@code username} is not in CUMS
+     * @throws UnprocessableInvitationStateException   if Cognito reports a status that needs operator intervention
+     */
+    // Epic 11 bug fix 2026-05-19 — was `@Transactional(readOnly = true)`. The self-heal
+    // path below (Cognito user missing → create + re-link DB) needs write access to
+    // user_profiles.cognito_user_id; readOnly would silently reject the update.
+    @Transactional
+    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
+        log.info("issueInvitationCredentials (Story 11.E.2): username={}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Epic 11 bug fix 2026-05-19 — self-heal the "DB has user, Cognito doesn't"
+        // case. Previously a missing Cognito user would throw 404 here, surfacing as
+        // a misleading "User not found: <username>" error in EMS (the DB user IS
+        // there; only the Cognito shell is missing). This happens when:
+        //   - Local-dev DB was synced from staging at a time when the Cognito record
+        //     existed, but the staging Cognito has since lost or rotated the user.
+        //   - A pre-Epic 11 provisioning path (existing-user branch in
+        //     `provisionUserWithRole`) skipped Cognito creation.
+        //   - The Cognito user was deleted out-of-band.
+        //
+        // Since READY→INVITED IS the moment the operator commits to inviting the
+        // speaker, transparently creating the missing Cognito shell + proceeding
+        // with FRESH_TEMP_PASSWORD matches the operator's intent. The bug-prevention
+        // fix in `provisionUserWithRole` means this branch only fires for speakers
+        // promoted BEFORE the prevention fix landed (and for the manual out-of-band
+        // delete case).
+        UserStatusType status;
+        try {
+            status = cognitoService.getUserStatus(user.getEmail());
+        } catch (UserNotFoundException ex) {
+            log.warn("Cognito user missing for {} — self-healing by creating the shell",
+                    LoggingUtils.maskEmail(user.getEmail()));
+            String throwawayTempPassword = passwordGenerator.generate();
+            String newCognitoSub = cognitoService.adminCreateUserSilently(
+                    user.getEmail(), throwawayTempPassword, user.getUsername());
+            throwawayTempPassword = null;
+            // Epic 11 bug fix 2026-05-19 — sync the freshly-created sub back into
+            // user_profiles. The DB row was carrying a stale sub from a deleted prior
+            // Cognito user; without this re-link the PreTokenGeneration Lambda's
+            // primary-key lookup misses on the next sign-in and the speaker's JWT
+            // ends up with no `custom:role` claim (= blank dashboard).
+            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
+                user.setCognitoUserId(newCognitoSub);
+                userRepository.save(user);
+                log.info("Re-linked user {} to fresh Cognito sub {} (issueInvitationCredentials self-heal)",
+                        user.getUsername(), newCognitoSub);
+            }
+            // Newly-created Cognito users land in FORCE_CHANGE_PASSWORD; fall through
+            // to the corresponding switch branch which issues a fresh known temp.
+            status = UserStatusType.FORCE_CHANGE_PASSWORD;
+        }
+        log.info("Cognito status for {}: {}", LoggingUtils.maskEmail(user.getEmail()), status);
+
+        return switch (status) {
+            case FORCE_CHANGE_PASSWORD, RESET_REQUIRED -> {
+                String fresh = passwordGenerator.generate();
+                cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
+                yield new InvitationCredentialsResponse(
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword(fresh);
+            }
+            case CONFIRMED -> new InvitationCredentialsResponse(
+                    InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
+            case UNCONFIRMED -> {
+                log.warn("UNCONFIRMED Cognito user for {} — defensively treating as FORCE_CHANGE_PASSWORD",
+                        LoggingUtils.maskEmail(user.getEmail()));
+                String fresh = passwordGenerator.generate();
+                cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
+                yield new InvitationCredentialsResponse(
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                        .temporaryPassword(fresh);
+            }
+            case ARCHIVED, COMPROMISED, UNKNOWN_TO_SDK_VERSION -> {
+                String msg = String.format(
+                        "Cognito user %s is in state %s — requires operator intervention "
+                                + "before invitation credentials can be issued.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                throw new UnprocessableInvitationStateException(msg);
+            }
+            default -> {
+                // Story 11.E.2 review patch (P16 / B4): if AWS Cognito SDK adds a new
+                // UserStatusType value that this switch does not enumerate (e.g.
+                // EXTERNAL_PROVIDER, a future MFA_PENDING, …), log a WARN so the unknown
+                // status is traceable in CloudWatch before the 422 fires. The unenumerated
+                // state may be a legitimate flow that simply isn't handled yet — surface it
+                // for triage rather than silently rejecting future Cognito states.
+                log.warn("Unenumerated Cognito UserStatusType for {}: {} — review the switch"
+                        + " in UserService.issueInvitationCredentials. Falling back to 422.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                String msg = String.format(
+                        "Cognito user %s is in state %s — requires operator intervention "
+                                + "before invitation credentials can be issued.",
+                        LoggingUtils.maskEmail(user.getEmail()), status);
+                throw new UnprocessableInvitationStateException(msg);
+            }
+        };
+    }
+
+    private static String capitalize(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();
+    }
+
+    /**
+     * Patch user profile fields (bio, profilePictureUrl).
+     *
+     * <p>Story 11.C.2 (AR14). Called by the consolidated
+     * {@code ContentSubmissionService} when an organizer (on behalf) or a speaker (self)
+     * submits content that includes a CV blurb or a portrait.
+     *
+     * <p>Per ADR-009 §"Decision 2" + ADR-007 + Confirmed Decision §6.7: {@code bio} and
+     * {@code profilePictureUrl} are owned by the User entity (single source of truth) and
+     * are overwritten globally — there is no per-event snapshot.
+     *
+     * <p>Authorization (controller-enforced): ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may
+     * patch only their own profile (controller verifies the path variable matches the
+     * current username).
+     *
+     * @param username target user's username
+     * @param request  bio (nullable) + profilePictureUrl (nullable); ≥1 must be non-null
+     * @return updated {@link UserResponse}
+     * @throws UserNotFoundException   if the username does not exist
+     * @throws UserValidationException if both fields are null (no-op patches rejected)
+     */
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+        if (request == null
+                || (request.getBio() == null && request.getProfilePictureUrl() == null)) {
+            throw new UserValidationException(
+                    "patchUserProfile",
+                    "At least one of 'bio' or 'profilePictureUrl' must be present");
+        }
+
+        // P2 (review patch): treat blank-but-non-null values as "no change". Prevents accidental
+        // data loss when a UI submits an empty textarea (`{"bio":""}` previously silently cleared bio).
+        // To explicitly clear a field, the caller should send `null` (which by the null-check above
+        // is treated as "no change") — clearing is intentionally not supported via this endpoint.
+        boolean bioPresent = request.getBio() != null && !request.getBio().isBlank();
+        boolean picturePresent = request.getProfilePictureUrl() != null && !request.getProfilePictureUrl().isBlank();
+        if (!bioPresent && !picturePresent) {
+            throw new UserValidationException(
+                    "patchUserProfile",
+                    "At least one of 'bio' or 'profilePictureUrl' must be non-blank");
+        }
+
+        log.info("Patching user profile (Story 11.C.2): username={}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        if (bioPresent) {
+            user.setBio(request.getBio());
+        }
+        if (picturePresent) {
+            user.setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+
+        User saved = userRepository.save(user);
+
+        // Invalidate user-search caches (matches updateUserByUsername behaviour).
+        searchService.invalidateCache();
+
+        // Publish a UserUpdatedEvent so downstream listeners can refresh their view.
+        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
+        if (bioPresent) {
+            updatedFields.put("bio", request.getBio());
+        }
+        if (picturePresent) {
+            updatedFields.put("profilePictureUrl", request.getProfilePictureUrl());
+        }
+        UserUpdatedEvent event = new UserUpdatedEvent(
+                saved.getUsername(),
+                updatedFields,
+                null,
+                getAuditUsername());
+        eventPublisher.publish(event);
+
+        log.info("User profile patched: username={}, fields={}", saved.getUsername(), updatedFields.keySet());
+        return responseMapper.mapToResponse(saved);
+    }
+
+    /**
      * Create new user (for ORGANIZER/ADMIN via API)
      * Story 2.5.2 AC4: User Creation
      *
@@ -650,7 +1064,7 @@ public class UserService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .companyId(companyId)  // Story 1.16.2: company name (slug)
-                .roles(Set.of(Role.ATTENDEE))
+                .roles(new java.util.HashSet<>(Set.of(Role.ATTENDEE)))  // mutable so callers can add roles
                 .build();
 
         User savedUser = userRepository.save(user);

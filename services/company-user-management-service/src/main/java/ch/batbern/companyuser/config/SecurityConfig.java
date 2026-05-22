@@ -1,28 +1,27 @@
 package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
+import ch.batbern.shared.security.JwtRolesConverter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
+import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * Security configuration for the Company-User Management Service
@@ -43,6 +42,9 @@ public class SecurityConfig {
     @Value("${vpc.cidr:10.1.0.0/16}")
     private String vpcCidr;
 
+    @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}")
+    private String watchJwtSecret;
+
     /**
      * Enable method-level security for production and staging environments
      * Enforces @PreAuthorize annotations on controller methods
@@ -60,7 +62,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("local")
-    public SecurityFilterChain localFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain localFilterChain(HttpSecurity http,
+                                                JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
@@ -76,6 +80,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Public user profile endpoint (GET only for service-to-service calls from localhost)
@@ -88,7 +94,7 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
 
@@ -100,7 +106,9 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("!test & !local")
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable for stateless API
             .sessionManagement(session ->
@@ -116,6 +124,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
@@ -134,7 +144,7 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
 
@@ -165,6 +175,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
                 // Story 10.8a: Public presentation settings (moderator page)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
@@ -192,7 +204,19 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT decoder for AWS Cognito tokens
+     * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
+     *
+     * Story 11.C.1: Watch organizer JWTs are now propagated to CUMS by EMS's
+     * {@code WatchEventController} / {@code WatchSpeakerArrivalService} when they call
+     * {@code UserApiClient.getUserByUsername(...)}, so CUMS must accept the Watch issuer too.
+     * Mirrors the multi-issuer pattern in EMS {@code SecurityConfig#jwtDecoder()}.
+     *
+     * Routing strategy: peek at the "iss" claim in the (unverified) JWT payload to select
+     * the correct decoder. Signature verification is then performed by the selected decoder,
+     * so a forged issuer claim cannot bypass verification — it would just fail with the wrong key.
+     *
+     * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
+     * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
      */
     @Bean
     @Profile("!test")
@@ -200,43 +224,51 @@ public class SecurityConfig {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");
         }
-        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+        NimbusJwtDecoder cognitoDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        cognitoDecoder.setJwtValidator(JwtValidators.createDefault());
+
+        SecretKeySpec watchKey = new SecretKeySpec(
+                watchJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        NimbusJwtDecoder watchDecoder = NimbusJwtDecoder.withSecretKey(watchKey).build();
+
+        return token -> isWatchJwt(token) ? watchDecoder.decode(token) : cognitoDecoder.decode(token);
+    }
+
+    /** Peeks at the JWT payload (base64url, no signature check) to read the "iss" claim. */
+    private static boolean isWatchJwt(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return false;
+            }
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            return payload.contains("\"iss\":\"batbern-watch\"");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
-     * JWT Authentication Converter to extract roles from custom:role claim
-     * Story 1.2.6: Migrated from cognito:groups to custom:role (ADR-001)
-     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
+     * JWT Authentication Converter to extract roles from custom:role claim, with a
+     * database fallback when the claim is empty. See {@link JwtRolesConverter}.
+     * Story 1.2.6 / Epic 11.E.7: custom:role primary; DB-by-sub fallback enables
+     * local-dev speakers whose user_profiles row is in the local DB but whose
+     * Cognito user is in staging (so the PreTokenGen Lambda finds no roles).
+     * In staging the JWT always carries custom:role, so the fallback is dormant.
+     *
+     * 11.E.9: DataSource is injected via {@link ObjectProvider} so this bean can
+     * load in {@code @WebMvcTest} slices that don't include JPA. With no DataSource
+     * the converter still parses the primary {@code custom:role} claim; only the
+     * DB-fallback path is disabled (already dormant in non-local environments
+     * since the staging JWT always carries roles).
      */
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(
+            ObjectProvider<DataSource> dataSourceProvider) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(
+                new JwtRolesConverter(dataSourceProvider.getIfAvailable()));
         return converter;
-    }
-
-    /**
-     * Converter to extract custom:role claim and map to Spring Security authorities
-     * Story 1.2.6: ADR-001 Database-centric architecture
-     *
-     * Roles are stored in PostgreSQL and synced to Cognito custom:role attribute
-     * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
-     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
-     */
-    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-        @Override
-        public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract roles from custom:role claim (comma-separated string)
-            String rolesString = jwt.getClaimAsString("custom:role");
-
-            if (rolesString == null || rolesString.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            // Split comma-separated roles and map to ROLE_ authorities
-            return Arrays.stream(rolesString.split(","))
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
-                .collect(Collectors.toList());
-        }
     }
 }

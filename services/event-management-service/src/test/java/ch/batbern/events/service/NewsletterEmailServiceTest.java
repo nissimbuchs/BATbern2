@@ -242,7 +242,6 @@ class NewsletterEmailServiceTest {
                 .firstName("Mustapha")
                 .lastName("Bouaaoud")
                 .company("postfinance")
-                .presentationTitle("Zero Trust at PostFinance")
                 .build();
         SessionSpeakerResponse sp2 = SessionSpeakerResponse.builder()
                 .username("philippe.halbeisen")
@@ -413,16 +412,20 @@ class NewsletterEmailServiceTest {
     void buildSpeakersSection_companyFromUserProfiles() {
         testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
 
+        // Story 11.E.8 consolidation: session_users.presentation_title was dropped (V102).
+        // Per-speaker title overrides are no longer a concept — sessions.title is canonical.
+        // The original test set a per-speaker presentationTitle "Zero Trust at SBB" and
+        // asserted it rendered. With the column gone, the full presentation title lives on
+        // sessions.title instead.
         Session session = new Session();
         session.setSessionType("presentation");
-        session.setTitle("Zero Trust");
+        session.setTitle("Zero Trust at SBB");
 
         SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
                 .username("igor.masen")
                 .firstName("Igor")
                 .lastName("Masen")
                 .company("sbb")
-                .presentationTitle("Zero Trust at SBB")
                 .build();
 
         when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))

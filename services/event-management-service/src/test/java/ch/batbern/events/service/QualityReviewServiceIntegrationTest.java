@@ -1,14 +1,14 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.domain.ContentSubmission;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -60,7 +60,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     private Event testEvent;
     private UUID testEventId;
@@ -142,10 +142,13 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * AC17: Approve content auto-updates to confirmed when slot already assigned
+     * Story 11.B.2 (ADR-009): approveContent transitions to QUALITY_REVIEWED.
+     * The legacy auto-confirm path is gone — CONFIRMED no longer exists; the
+     * derived is_publishable predicate (QUALITY_REVIEWED AND slot_assigned) is
+     * computed at read time (exposure in 11.B.3).
      */
     @Test
-    void should_updateToConfirmed_when_approvedAndSlotAlreadyAssigned() {
+    void should_transitionToQualityReviewed_when_approvedAndSlotAlreadyAssigned() {
         // Given: Speaker with content_submitted AND slot assigned
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
         Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
@@ -156,14 +159,9 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         // When: Approve content
         qualityReviewService.approveContent(speaker.getId().toString(), "moderator.user");
 
-        // Then: Status auto-updated to confirmed (not quality_reviewed)
+        // Then: Status transitions to QUALITY_REVIEWED (is_publishable is derived elsewhere)
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
-
-        // And: session_users.is_confirmed updated
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isTrue();
+        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
     }
 
     /**
@@ -213,7 +211,6 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
     void should_setContentStatusToRevisionNeeded_when_contentRejected() {
         // Given: Speaker with content_submitted
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setContentStatus("SUBMITTED");
         speakerPoolRepository.save(speaker);
 
         // When: Reject content with feedback
@@ -223,30 +220,39 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 "moderator.user"
         );
 
-        // Then: contentStatus set to REVISION_NEEDED
+        // Then: REVISION_NEEDED is now derived from latest session_content_history row
+        // carrying non-null reviewer_feedback (Story 11.E.8 — content_status column dropped).
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getContentStatus()).isEqualTo("REVISION_NEEDED");
+        java.util.Optional<ch.batbern.events.domain.SessionContentVersion> latest =
+                updated.getSessionId() != null
+                        ? sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(
+                                updated.getSessionId())
+                        : java.util.Optional.empty();
+        String derived = ch.batbern.events.service.ContentStatusDeriver.derive(
+                updated.getStatus(), latest);
+        assertThat(derived).isEqualTo("REVISION_NEEDED");
     }
 
     /**
-     * Epic 6 Fix: Reject content stores feedback in ContentSubmission for portal display
+     * Epic 6 Fix: Reject content stores feedback in SessionContentVersion for portal display
      */
     @Test
     void should_storeReviewerFeedbackInContentSubmission_when_contentRejected() {
-        // Given: Speaker with content_submitted and a ContentSubmission record
+        // Given: Speaker with content_submitted and a SessionContentVersion record
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setEmail("john.doe@example.com");
-        speaker.setContentStatus("SUBMITTED");
         speakerPoolRepository.save(speaker);
 
         Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        ContentSubmission submission = new ContentSubmission();
-        submission.setSpeakerPool(speaker);
-        submission.setSession(session);
-        submission.setTitle("My Presentation");
-        submission.setContentAbstract("This is my abstract about architecture.");
-        submission.setSubmissionVersion(1);
-        contentSubmissionRepository.save(submission);
+        SessionContentVersion submission = SessionContentVersion.builder()
+                .session(session)
+                .title("My Presentation")
+                .contentAbstract("This is my abstract about architecture.")
+                .abstractCharCount(39)
+                .submissionVersion(1)
+                // Story 11.E.8: NOT NULL column added in V98.
+                .submittedByUsername("john.doe")
+                .build();
+        sessionContentHistoryRepository.save(submission);
 
         // When: Reject content with feedback
         String feedback = "Please add more focus on lessons learned from the project.";
@@ -256,9 +262,9 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 "moderator.user"
         );
 
-        // Then: ContentSubmission has reviewer feedback
-        ContentSubmission updated = contentSubmissionRepository
-                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+        // Then: SessionContentVersion has reviewer feedback (lookup keyed by session_id now)
+        SessionContentVersion updated = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(speaker.getSessionId())
                 .orElseThrow();
         assertThat(updated.getReviewerFeedback()).isEqualTo(feedback);
         assertThat(updated.getReviewedBy()).isEqualTo("moderator.user");
@@ -307,61 +313,8 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(updated.getNotes()).contains("Previous rejection: Abstract too short.");
     }
 
-    /**
-     * AC17: Auto-update to confirmed when slot assigned AFTER quality review
-     */
-    @Test
-    void should_updateToConfirmed_when_slotAssignedAfterQualityReview() {
-        // Given: Speaker with quality_reviewed (already approved)
-        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
-
-        // When: Assign slot (set start_time)
-        Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        session.setStartTime(Instant.now().plus(90, ChronoUnit.DAYS));
-        session.setEndTime(Instant.now().plus(90, ChronoUnit.DAYS).plus(1, ChronoUnit.HOURS));
-        sessionRepository.save(session);
-
-        // And: Trigger check (simulates workflow event listener)
-        qualityReviewService.checkAndUpdateToConfirmed(speaker);
-
-        // Then: Status auto-updated to confirmed
-        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
-
-        // And: session_users.is_confirmed updated
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isTrue();
-    }
-
-    /**
-     * AC16: Quality review can happen before or after slot assignment (order doesn't matter)
-     */
-    @Test
-    void should_notUpdateToConfirmed_when_onlyQualityReviewedButNoSlot() {
-        // Given: Speaker with quality_reviewed but NO slot assigned
-        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
-        speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
-
-        // Session has NO start_time (slot not assigned)
-        Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
-        assertThat(session.getStartTime()).isNull();
-
-        // When: Trigger check
-        qualityReviewService.checkAndUpdateToConfirmed(speaker);
-
-        // Then: Status remains quality_reviewed (not confirmed)
-        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
-
-        // And: session_users.is_confirmed still false
-        List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
-        assertThat(sessionUsers).hasSize(1);
-        assertThat(sessionUsers.get(0).isConfirmed()).isFalse();
-    }
+    // Story 11.B.2: legacy auto-confirm + "is_publishable derived from slot" tests removed —
+    // CONFIRMED state is gone; the derived predicate exposure lands in 11.B.3.
 
     /**
      * AC35: Optimistic locking prevents lost updates during concurrent modifications

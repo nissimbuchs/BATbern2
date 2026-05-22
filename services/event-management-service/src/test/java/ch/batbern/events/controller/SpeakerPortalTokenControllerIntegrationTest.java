@@ -41,6 +41,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The token itself IS the authentication mechanism.
  */
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3: SpeakerPortalTokenController is disconnected (carries "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"); no SPA route invokes it). The "
+                + "endpoint remains compilable for Phase F (Story 11.F.1) to delete cleanly "
+                + "along with MagicLinkService. No replacement test is needed.")
 class SpeakerPortalTokenControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -98,7 +103,6 @@ class SpeakerPortalTokenControllerIntegrationTest extends AbstractIntegrationTes
                 .company("Swiss Tech AG")
                 .expertise("Cloud Architecture")
                 .status(SpeakerWorkflowState.CONTACTED)
-                .username("alice.speaker")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

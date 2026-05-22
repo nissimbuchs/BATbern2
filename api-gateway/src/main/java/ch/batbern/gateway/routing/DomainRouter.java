@@ -81,7 +81,6 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/notifications")
                 || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
-                || cleanPath.startsWith("/api/v1/speakers") // SpeakerController lives in EMS
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS
                 || cleanPath.startsWith("/api/v1/e2e-test") // Story 6.3: E2E test endpoints
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
@@ -101,7 +100,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
-        } else if (cleanPath.startsWith("/api/v1/admin")) { // Story 10.20: Legacy export/import
+        } else if (cleanPath.startsWith("/api/v1/admin")) { // Admin endpoints (e.g. AdminSettingsController)
             return "event-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);

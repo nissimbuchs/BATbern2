@@ -182,7 +182,37 @@
     },
     "actions": {
       "skipForNow": "今はスキップ",
-      "continue": "アウトリーチへ進む"
+      "continue": "アウトリーチへ進む",
+      "promoteToSpeaker": "登壇者に昇格"
+    },
+    "promoteDialog": {
+      "title": "登壇者に昇格",
+      "description": "登壇者は READY レーンに移動し、ユーザーアカウントがプロビジョニングされます。招待メールはまだ送信されません — 準備ができたら READY レーンから招待を送信してください。",
+      "emailLabel": "メールアドレス",
+      "firstNameLabel": "名",
+      "lastNameLabel": "姓",
+      "cancelButton": "キャンセル",
+      "submitButton": "昇格",
+      "submitting": "昇格中…",
+      "errorTitle": "登壇者の昇格に失敗しました",
+      "errorEmailRequired": "メールアドレスは必須です",
+      "errorEmailInvalid": "有効なメールアドレスを入力してください",
+      "errorFirstNameRequired": "名は必須です",
+      "errorLastNameRequired": "姓は必須です",
+      "errorAlreadyPromoted": "登壇者はすでに {{currentState}} 状態です。昇格は「連絡済み」状態からのみ可能です。",
+      "errorStillIdentified": "登壇者をまず連絡済みにする必要があります — 昇格の前にコンタクトを記録してください。",
+      "errorDeclined": "登壇者は辞退しました — 昇格ではなく新規エントリを作成してください。",
+      "errorAlreadyReady": "登壇者はすでに準備完了です — READY レーンから招待を送信してください。"
+    },
+    "workflowState": {
+      "IDENTIFIED": "特定済み",
+      "CONTACTED": "連絡済み",
+      "READY": "準備完了",
+      "INVITED": "招待済み",
+      "ACCEPTED": "承諾済み",
+      "DECLINED": "辞退",
+      "CONTENT_SUBMITTED": "コンテンツ送信済み",
+      "QUALITY_REVIEWED": "品質確認済み"
     }
   },
   "speakerOutreach": {
@@ -261,8 +291,14 @@
       "titleRequired": "プレゼンテーションタイトルは必須です",
       "abstractRequired": "プレゼンテーション概要は必須です",
       "abstractTooLong": "概要は{{max}}文字以内にしてください",
-      "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。"
-    }
+      "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "品質レビュー",
@@ -308,7 +344,6 @@
     "invalidEmail": "有効なメールアドレスを入力してください",
     "saveEmail": "メールアドレスを保存",
     "emailSaved": "メールアドレスを保存しました",
-    "tentative": "仮確定",
     "responseDetails": "返信の詳細",
     "acceptedAt": "承諾日",
     "preferredTimeSlot": "希望の時間帯",
@@ -319,16 +354,12 @@
     "declineDetails": "辞退の詳細",
     "declinedAt": "辞退日",
     "declineReason": "理由",
-    "tentativeDetails": "仮確定の詳細",
-    "tentativeReason": "理由",
     "sendReminder": "リマインダーを送信",
     "sendingReminder": "送信中...",
     "reminderSent": "{{email}}にリマインダーを送信しました",
     "reminderFailed": "リマインダーの送信に失敗しました",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -480,5 +511,74 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "コンタクトを記録",
+      "promoteToSpeaker": "スピーカーに昇格",
+      "sendInvitation": "招待状を送信",
+      "viewResponseStatus": "回答状況を表示",
+      "enterContent": "コンテンツを入力",
+      "reviewContent": "コンテンツをレビュー",
+      "assignSessionSlot": "セッション枠を割り当て",
+      "viewDetails": "詳細を表示"
+    },
+    "publishable": "公開可能",
+    "publishableTooltip": "スピーカーは承認済みでセッション枠があります",
+    "slotCapacityTooltip": "枠の上限に達しました。{{slots}}枠に対して未回答の招待{{invited}}件 + 承諾{{accepted}}件。承諾済みのスピーカーを辞退するか、待機してください。",
+    "timeInStateTooltip": "{{date}}から現在の状態",
+    "inviteSent": "招待を送信しました",
+    "inviteFailed": "招待の送信に失敗しました",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}}件が停滞中（>14日）",
+      "readySlotCapacitySubline": "⚠ スロット定員に達しました",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}}件が締切間近",
+        "past": "⏰ {{count}}件が締切超過",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}}件がコンテンツ待ち",
+      "contentSubmittedSubline": "👀 {{count}}件がモデレーターレビュー待ち",
+      "qualityReviewedSubline": "🪑 {{count}}件がスロット待ち",
+      "sublineFilterAriaLabel": "{{state}}列をフィルター: {{description}}",
+      "filterClearedAnnouncement": "列のフィルターを解除しました",
+      "filterAppliedAnnouncement": "{{state}}列をフィルター、{{count}}件のカードを表示中"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
@@ -11,25 +12,21 @@ import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.validator.StatusTransitionValidator;
-import ch.batbern.shared.events.DomainEventPublisher;
-import ch.batbern.shared.events.SpeakerAcceptedEvent;
-import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
+import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.events.service.workflow.TransitionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static ch.batbern.events.config.CacheConfig.STATUS_HISTORY_CACHE;
 import static ch.batbern.events.config.CacheConfig.STATUS_SUMMARY_CACHE;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,10 +37,10 @@ import java.util.stream.Collectors;
  * Story 5.4: Speaker Status Management - Task 5 (GREEN Phase)
  *
  * Handles:
- * - Status updates with validation (AC1-2)
- * - Status history tracking (AC3-4)
+ * - Status updates with validation (AC1-2) — delegates to {@link SpeakerWorkflowService#transition}
+ *   (Story 11.B.2: sole status writer per ADR-009).
+ * - Status history reads (AC3-4)
  * - Status summary calculation with acceptance rate (AC5-6)
- * - Overflow detection (AC13)
  */
 @Service
 @RequiredArgsConstructor
@@ -52,26 +49,39 @@ import java.util.stream.Collectors;
 public class SpeakerStatusService {
 
     private final SpeakerStatusHistoryRepository repository;
-    private final StatusTransitionValidator validator;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
-    private final SessionRepository sessionRepository;
     private final EventTypeService eventTypeService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final DomainEventPublisher domainEventPublisher;
+    private final SpeakerWorkflowService speakerWorkflowService;
 
     /**
-     * Update speaker status with validation
-     * Story 5.4 AC1-2: Manual status updates with workflow validation
-     * Cache eviction: Invalidates both status summary and history caches for the event
+     * Update speaker status by delegating to {@link SpeakerWorkflowService#transition} — the
+     * sole writer of {@code speaker_pool.status} per ADR-009.
      *
-     * @param eventCode Event code
-     * @param speakerId Speaker pool ID
-     * @param organizerUsername Username of organizer making the change
-     * @param request Update request with new status and optional reason
+     * <p>This method:
+     * <ul>
+     *   <li>Loads the speaker for an early 404 check.</li>
+     *   <li>Builds a {@link TransitionPayload} with {@code reason} from the request.</li>
+     *   <li>Calls {@code speakerWorkflowService.transition(...)} with the
+     *       organizer username as the audit actor; the service validates the
+     *       transition, runs preconditions + side-effect hooks, persists, writes a
+     *       {@code speaker_status_history} row, and publishes the canonical
+     *       {@code SpeakerWorkflowStateChangeEvent} + state-specific events.</li>
+     *   <li>Evicts the status-summary and status-history caches for the event.</li>
+     * </ul>
+     *
+     * @param eventCode event code
+     * @param speakerId speaker pool ID
+     * @param organizerUsername username of organizer making the change
+     * @param request update request with new status and optional reason
      * @return Status change response
      */
-    @CacheEvict(value = {STATUS_SUMMARY_CACHE, STATUS_HISTORY_CACHE}, key = "#eventCode")
+    // STATUS_SUMMARY_CACHE is keyed by eventCode; STATUS_HISTORY_CACHE is keyed by
+    // `eventCode + ':' + speakerId` so we evict its single matching entry by full key.
+    @Caching(evict = {
+        @CacheEvict(value = STATUS_SUMMARY_CACHE, key = "#eventCode"),
+        @CacheEvict(value = STATUS_HISTORY_CACHE, key = "#eventCode + ':' + #speakerId")
+    })
     public SpeakerStatusResponse updateStatus(
         String eventCode,
         UUID speakerId,
@@ -81,125 +91,54 @@ public class SpeakerStatusService {
         log.info("Updating speaker {} status to {} for event {} by {}",
             speakerId, request.getNewStatus(), eventCode, organizerUsername);
 
-        // Get speaker from pool
+        // Early existence check
         SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
                 .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
 
-        // Get current status from speaker_pool entity (source of truth)
-        SpeakerWorkflowState currentStatus = speaker.getStatus() != null
-            ? speaker.getStatus()
-            : SpeakerWorkflowState.IDENTIFIED;
-
-        // Validate state transition - Story 5.4 AC12
-        validator.validateTransition(currentStatus, request.getNewStatus());
-
-        // Update speaker_pool status column
-        speaker.setStatus(request.getNewStatus());
-
-        // Clean up associated session when speaker is declined
-        if (request.getNewStatus() == SpeakerWorkflowState.DECLINED && speaker.getSessionId() != null) {
-            UUID sessionId = speaker.getSessionId();
-            log.info("Declining speaker {} - deleting associated session {}", speakerId, sessionId);
-            speaker.setSessionId(null);
-            sessionRepository.deleteById(sessionId);
+        // Organizer-facing API: forbid same-state writes on terminal DECLINED to prevent
+        // audit-trail pollution via reason-less "re-affirm" clicks. Programmatic same-state
+        // writes via transition() remain possible (e.g. system replay).
+        if (request.getNewStatus() == SpeakerWorkflowState.DECLINED
+                && speaker.getStatus() == SpeakerWorkflowState.DECLINED) {
+            throw new ValidationException(
+                    "Cannot re-affirm a DECLINED speaker — terminal state has no outgoing transitions.");
         }
 
-        // Save updated speaker pool entry
-        speakerPoolRepository.save(speaker);
+        TransitionPayload payload = TransitionPayload.builder()
+                .reason(request.getReason())
+                .build();
 
-        // Publish SpeakerAcceptedEvent if status changed to ACCEPTED (triggers workflow transition)
-        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED) {
-            Event event = eventRepository.findById(speaker.getEventId())
-                    .orElseThrow(() -> new NotFoundException("Event not found: " + speaker.getEventId()));
+        TransitionResult result = speakerWorkflowService.transition(
+                speakerId, request.getNewStatus(), organizerUsername, payload);
 
-            SpeakerAcceptedEvent acceptedEvent = SpeakerAcceptedEvent.builder()
-                    .eventId(event.getId())
-                    .eventCode(event.getEventCode())
-                    .speakerPoolId(speaker.getId())
-                    .speakerName(speaker.getSpeakerName())
-                    .company(speaker.getCompany())
-                    .expertise(speaker.getExpertise())
-                    .acceptedBy(organizerUsername)
-                    .build();
-            eventPublisher.publishEvent(acceptedEvent);
-            log.debug("Published SpeakerAcceptedEvent for speaker: {}, event: {}",
-                    speaker.getSpeakerName(), event.getEventCode());
-        }
-
-        // Create history record - Story 5.4 AC3-4
-        SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
-        historyRecord.setSpeakerPoolId(speakerId);
-        // Session ID from speaker pool (null until content submitted)
-        historyRecord.setSessionId(speaker.getSessionId());
-        historyRecord.setEventId(speaker.getEventId()); // V29: Use eventId instead of eventCode
-        historyRecord.setPreviousStatus(currentStatus);
-        historyRecord.setNewStatus(request.getNewStatus());
-        historyRecord.setChangedByUsername(organizerUsername);
-        historyRecord.setChangeReason(request.getReason());
-        historyRecord.setChangedAt(Instant.now());
-
-        SpeakerStatusHistory saved = repository.save(historyRecord);
-
-        // Publish SpeakerWorkflowStateChangeEvent to EventBridge (Story 6.0a CODE-001)
-        publishWorkflowStateChangeEvent(speaker, currentStatus, request.getNewStatus(), organizerUsername);
-
-        // Build response
-        return mapToResponse(saved);
-    }
-
-    /**
-     * Publish a speaker workflow state change event to EventBridge.
-     * Story 6.0a CODE-001: Domain event publishing
-     *
-     * @param speaker The speaker pool entry
-     * @param fromState Previous workflow state
-     * @param toState New workflow state
-     * @param organizerUsername Username of the organizer making the change
-     */
-    private void publishWorkflowStateChangeEvent(
-            SpeakerPool speaker,
-            SpeakerWorkflowState fromState,
-            SpeakerWorkflowState toState,
-            String organizerUsername
-    ) {
-        try {
-            SpeakerWorkflowStateChangeEvent event = new SpeakerWorkflowStateChangeEvent(
-                    speaker.getId(),
-                    speaker.getEventId(),
-                    fromState,
-                    toState,
-                    speaker.getUsername() != null ? speaker.getUsername() : organizerUsername
-            );
-
-            domainEventPublisher.publish(event);
-            log.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
-                    fromState, toState, speaker.getId());
-        } catch (Exception e) {
-            // Log but don't fail the transaction if event publishing fails
-            log.warn("Failed to publish SpeakerWorkflowStateChangeEvent for speaker {}: {}",
-                    speaker.getId(), e.getMessage());
-        }
+        return mapToResponse(result.history(), result.speakerPool());
     }
 
     /**
      * Get status change history for a speaker
      * Story 5.4 AC15: Query status history
-     * Cached for 60 seconds per event (Story 5.4 cache requirement)
+     * Cached for 60 seconds (Story 5.4 cache requirement).
+     *
+     * <p>Cache key includes BOTH eventCode and speakerId — keying on eventCode alone (the
+     * pre-2026-05-19 implementation) leaked speaker A's history into reads for speaker B
+     * in the same event. The unified history feed in the drawer queries per-speaker.
+     *
+     * <p>Empty history is a legitimate state for any speaker that has not yet transitioned
+     * (e.g. IDENTIFIED brainstorm entries, or transitions written with
+     * {@code TransitionPayload.suppressHistoryRow=true}). Return an empty list rather than
+     * 404 — the drawer's History tab interprets 404 as "session expired" and surfaces a
+     * fetch error to the user.
      *
      * @param eventCode Event code
      * @param speakerId Speaker pool ID
-     * @return List of status changes ordered by time descending
+     * @return List of status changes ordered by time descending (may be empty)
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = STATUS_HISTORY_CACHE, key = "#eventCode")
+    @Cacheable(value = STATUS_HISTORY_CACHE, key = "#eventCode + ':' + #speakerId")
     public List<StatusHistoryItem> getStatusHistory(String eventCode, UUID speakerId) {
         log.debug("Fetching status history for speaker {} in event {}", speakerId, eventCode);
 
         List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
-
-        if (history.isEmpty()) {
-            throw new NotFoundException("No status history found for speaker: " + speakerId);
-        }
 
         return history.stream()
             .map(this::mapToHistoryItem)
@@ -209,7 +148,6 @@ public class SpeakerStatusService {
     /**
      * Get status summary with counts and acceptance rate
      * Story 5.4 AC5-6: Status dashboard with acceptance rate
-     * Story 5.4 AC13: Overflow detection
      * Cached for 60 seconds per event (Story 5.4 cache requirement - TTL: 60s)
      *
      * @param eventCode Event code
@@ -220,11 +158,9 @@ public class SpeakerStatusService {
     public StatusSummaryResponse getStatusSummary(String eventCode) {
         log.debug("Calculating status summary for event {}", eventCode);
 
-        // Load event to get its type - Story 5.4 IMPL-002
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
 
-        // Get slot configuration from event type - Story 5.4 IMPL-002
         EventSlotConfigurationResponse typeConfig = eventTypeService.getEventType(event.getEventType());
         int minSlots = typeConfig.getMinSlots();
         int maxSlots = typeConfig.getMaxSlots();
@@ -232,36 +168,31 @@ public class SpeakerStatusService {
         log.debug("Event {} type {} has slot config: min={}, max={}",
                 eventCode, event.getEventType(), minSlots, maxSlots);
 
-        // Get all speakers for the event from speaker_pool table (BUG FIX)
-        // Query speaker_pool directly to get current status, not speaker_status_history
         List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
 
-        // Extract current status from each speaker
         Map<UUID, SpeakerWorkflowState> speakerStatuses = speakers.stream()
             .collect(Collectors.toMap(
                 SpeakerPool::getId,
                 SpeakerPool::getStatus
             ));
 
-        // Calculate counts - Story 5.4 AC5
         Map<SpeakerWorkflowState, Long> statusCounts = speakerStatuses.values().stream()
             .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
 
         long totalSpeakers = speakerStatuses.size();
-        // Count speakers in ACCEPTED and all subsequent states (Story 5.5)
+        // ADR-009 §0.1: CONFIRMED is removed; "accepted-track" speakers are ACCEPTED + later
+        // content-lifecycle states. The derived is_publishable predicate (QUALITY_REVIEWED AND
+        // slot_assigned) is exposed in 11.B.3, not here.
         long acceptedCount = statusCounts.getOrDefault(SpeakerWorkflowState.ACCEPTED, 0L)
             + statusCounts.getOrDefault(SpeakerWorkflowState.CONTENT_SUBMITTED, 0L)
-            + statusCounts.getOrDefault(SpeakerWorkflowState.QUALITY_REVIEWED, 0L)
-            + statusCounts.getOrDefault(SpeakerWorkflowState.CONFIRMED, 0L);
+            + statusCounts.getOrDefault(SpeakerWorkflowState.QUALITY_REVIEWED, 0L);
         long declinedCount = statusCounts.getOrDefault(SpeakerWorkflowState.DECLINED, 0L);
         long pendingCount = totalSpeakers - acceptedCount - declinedCount;
 
-        // Calculate acceptance rate - Story 5.4 AC6
         double acceptanceRate = (totalSpeakers > 0)
             ? (acceptedCount * 100.0 / totalSpeakers)
             : 0.0;
 
-        // Check thresholds and overflow using event type configuration - Story 5.4 AC13, IMPL-002
         boolean thresholdMet = acceptedCount >= minSlots;
         boolean overflowDetected = acceptedCount > maxSlots;
 
@@ -273,8 +204,8 @@ public class SpeakerStatusService {
         response.setDeclinedCount(declinedCount);
         response.setPendingCount(pendingCount);
         response.setAcceptanceRate(Math.round(acceptanceRate * 100.0) / 100.0);
-        response.setMinSlotsRequired(minSlots);  // From event type configuration
-        response.setMaxSlotsAllowed(maxSlots);   // From event type configuration
+        response.setMinSlotsRequired(minSlots);
+        response.setMaxSlotsAllowed(maxSlots);
         response.setThresholdMet(thresholdMet);
         response.setOverflowDetected(overflowDetected);
 
@@ -289,11 +220,10 @@ public class SpeakerStatusService {
      * Map entity to response DTO
      * V29: Fetch eventCode from Event entity since history now stores eventId
      */
-    private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history) {
+    private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history, SpeakerPool speakerPool) {
         SpeakerStatusResponse response = new SpeakerStatusResponse();
         response.setSpeakerId(history.getSpeakerPoolId());
 
-        // V29: Look up eventCode from events table using eventId
         String eventCode = eventRepository.findById(history.getEventId())
             .map(Event::getEventCode)
             .orElse("UNKNOWN");
@@ -304,6 +234,9 @@ public class SpeakerStatusService {
         response.setChangedByUsername(history.getChangedByUsername());
         response.setChangeReason(history.getChangeReason());
         response.setChangedAt(history.getChangedAt());
+        boolean slotAssigned = speakerPool.getSessionId() != null;
+        response.setIsSlotAssigned(slotAssigned);
+        response.setIsPublishable(speakerPool.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED && slotAssigned);
         return response;
     }
 

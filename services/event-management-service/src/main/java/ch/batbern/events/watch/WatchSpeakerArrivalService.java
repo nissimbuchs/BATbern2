@@ -1,8 +1,10 @@
 package ch.batbern.events.watch;
 
-import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.events.watch.domain.SpeakerArrival;
 import ch.batbern.events.watch.dto.ArrivalCount;
 import ch.batbern.events.watch.dto.ArrivalStatusDto;
@@ -24,6 +26,9 @@ import java.util.stream.Collectors;
  *
  * Architecture note: Belongs to event-management-service (not company-user-management-service)
  * because EMS owns session/event data and WebSocket connections.
+ *
+ * Story 11.C.1: speaker identity (first/last name) is now resolved via UserApiClient
+ * (per-record HTTP enrichment per ADR-004) instead of the deleted Speaker entity.
  */
 @Slf4j
 @Service
@@ -32,7 +37,7 @@ public class WatchSpeakerArrivalService {
 
     private final SpeakerArrivalRepository arrivalRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final SpeakerRepository speakerRepository;
+    private final UserApiClient userApiClient;
     private final SessionRepository sessionRepository;
 
     /**
@@ -81,11 +86,21 @@ public class WatchSpeakerArrivalService {
         long arrivedCount = arrivalRepository.countByEventCode(eventCode);
         long totalSpeakers = getTotalSpeakerCount(eventCode);
 
-        // Look up speaker name for broadcast
-        Speaker speaker = speakerRepository.findByUsername(speakerUsername)
-                .orElse(null);
-        String firstName = speaker != null ? speaker.getFirstName() : speakerUsername;
-        String lastName = speaker != null ? speaker.getLastName() : "";
+        // Look up speaker name for broadcast via UserApiClient (ADR-004 HTTP enrichment).
+        // Fall back to username if the user is unknown OR user-management-service is degraded —
+        // the arrival broadcast (FR38) must fire regardless, since the arrival is already persisted.
+        String firstName = speakerUsername;
+        String lastName = "";
+        try {
+            UserResponse user = userApiClient.getUserByUsername(speakerUsername);
+            firstName = user.getFirstName() != null ? user.getFirstName() : speakerUsername;
+            lastName = user.getLastName() != null ? user.getLastName() : "";
+        } catch (UserNotFoundException e) {
+            log.debug("User {} not found in user-management-service; using username fallback", speakerUsername);
+        } catch (UserServiceException e) {
+            log.warn("user-management-service degraded ({}); using username fallback for arrival {}/{}",
+                    e.getMessage(), eventCode, speakerUsername);
+        }
 
         SpeakerArrivalBroadcast broadcast = new SpeakerArrivalBroadcast(
                 "SPEAKER_ARRIVED",

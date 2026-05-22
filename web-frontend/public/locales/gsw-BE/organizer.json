@@ -2,6 +2,40 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
+  "speakerBrainstorm": {
+    "actions": {
+      "promoteToSpeaker": "Zum Speaker mache"
+    },
+    "promoteDialog": {
+      "title": "Zum Speaker mache",
+      "description": "De Speaker chunnt i die READY-Spaltä und überchunnt e Benutzerkonto. Es Iladigsmail wird no nöd verschickt — du chasch d'Iladig spöter us de READY-Spaltä la rusgo.",
+      "emailLabel": "E-Mail",
+      "firstNameLabel": "Vornamä",
+      "lastNameLabel": "Nochnamä",
+      "cancelButton": "Abbräche",
+      "submitButton": "Promote",
+      "submitting": "Wird promotet…",
+      "errorTitle": "Speaker het nöd chönne promotet wärde",
+      "errorEmailRequired": "E-Mail isch zwingend",
+      "errorEmailInvalid": "E-Mail muess gültig sii",
+      "errorFirstNameRequired": "Vorname isch nötig",
+      "errorLastNameRequired": "Nachname isch nötig",
+      "errorAlreadyPromoted": "Speaker isch scho i {{currentState}}; promote isch nume vo Kontaktiert us mögli.",
+      "errorStillIdentified": "Speaker muess zerscht kontaktiert wärde — Outreach erfasse, dänn promote.",
+      "errorDeclined": "Speaker het abgseit — mach e neue Pool-Iitrag schtatt z'promote.",
+      "errorAlreadyReady": "Speaker isch scho parat — schick d'Iladig us de READY-Spaltä."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifiziert",
+      "CONTACTED": "Kontaktiert",
+      "READY": "Parat",
+      "INVITED": "Iglade",
+      "ACCEPTED": "Aagnoh",
+      "DECLINED": "Abglehnt",
+      "CONTENT_SUBMITTED": "Inhalt iigriicht",
+      "QUALITY_REVIEWED": "Qualität prüeft"
+    }
+  },
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
   },
@@ -31,9 +65,7 @@
   },
   "speakers": {
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -46,5 +78,84 @@
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
     "noDetails": "Kei Details verfüegbar"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Kontakt notiere",
+      "promoteToSpeaker": "Zum Redner befördere",
+      "sendInvitation": "Yladig schicke",
+      "viewResponseStatus": "Antwortstatus aaluege",
+      "enterContent": "Inhalt yytraage",
+      "reviewContent": "Inhalt prüefe",
+      "assignSessionSlot": "Session-Slot zueteile",
+      "viewDetails": "Detail aazeige"
+    },
+    "publishable": "Publizierbar",
+    "publishableTooltip": "Dr Redner isch akzeptiert und het än Session-Slot",
+    "slotCapacityTooltip": "Slot-Kapazität erreicht. {{invited}} offni Yladige + {{accepted}} Zuesage für {{slots}} Slots. Warte oder än zuegseiti Redner absage zum än Slot freizmache.",
+    "timeInStateTooltip": "Aktuelle Status sit {{date}}",
+    "inviteSent": "Yladig gschickt",
+    "inviteFailed": "Yladig het nid könne gschickt wärde",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} überfellig (>14 Tääg)",
+      "readySlotCapacitySubline": "⚠ Slot-Kapazität erreicht",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} Frischt lauft bald ab",
+        "past": "⏰ {{count}} Frischt verstriche",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} warte uf Inhalt",
+      "contentSubmittedSubline": "👀 {{count}} warte uf Moderation",
+      "qualityReviewedSubline": "🪑 {{count}} warte uf Slot",
+      "sublineFilterAriaLabel": "Spalte {{state}} filtere: {{description}}",
+      "filterClearedAnnouncement": "Spalte-Filter ufghoben",
+      "filterAppliedAnnouncement": "Spalte {{state}} gfilteret, {{count}} Charte sichtbar"
+    }
+  },
+  "speakerContent": {
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "errors": {
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

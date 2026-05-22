@@ -6,12 +6,14 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -158,7 +160,11 @@ public class EventWorkflowStateMachine {
                 validateMinimumThresholdMet(event);
                 break;
             case AGENDA_PUBLISHED:
-                validateQualityReviewComplete(event);
+                // Story 11.B.3: Renamed from validateQualityReviewComplete and reanchored
+                // on the derived is_publishable predicate (ADR-009 §0.1). Replaces the
+                // dual session-timing + content-status check with a single JOIN-backed
+                // count.
+                validateAllSpeakersConfirmed(event);
                 break;
             // Other states don't require additional validation
             default:
@@ -228,7 +234,8 @@ public class EventWorkflowStateMachine {
                 ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED
         );
 
-        // Check for speakers in later states as well (CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED)
+        // Check for speakers in later content-lifecycle states (ADR-009 §0.1: CONFIRMED is
+        // gone; is_publishable is derived at read time, exposure lands in 11.B.3).
         long contentSubmitted = speakerPoolRepository.countByEventIdAndStatus(
                 event.getId(),
                 ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
@@ -237,12 +244,8 @@ public class EventWorkflowStateMachine {
                 event.getId(),
                 ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
         );
-        long confirmed = speakerPoolRepository.countByEventIdAndStatus(
-                event.getId(),
-                ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED
-        );
 
-        long totalReadyForSlots = acceptedSpeakers + contentSubmitted + qualityReviewed + confirmed;
+        long totalReadyForSlots = acceptedSpeakers + contentSubmitted + qualityReviewed;
 
         if (totalReadyForSlots < 1) {
             throw new WorkflowValidationException(
@@ -259,38 +262,54 @@ public class EventWorkflowStateMachine {
     }
 
     /**
-     * Validates that agenda is ready to be published.
+     * Validates that every accepted-or-beyond speaker is publishable.
      *
-     * Required for transition to AGENDA_PUBLISHED.
+     * <p>Required for transition to {@code AGENDA_PUBLISHED}.
      *
-     * Story 5.7 (BAT-11): Checks that all sessions have timing assigned
-     * before publishing the agenda to attendees.
+     * <p>Story 11.B.3 (ADR-009 §0.1): the {@code is_publishable} predicate is
+     * {@code QUALITY_REVIEWED AND session.start_time IS NOT NULL}. The gate fires when
+     * the count of "accepted or beyond" speakers (ACCEPTED + CONTENT_SUBMITTED +
+     * QUALITY_REVIEWED) exceeds the count of publishable speakers — i.e., at least one
+     * speaker has accepted but is missing either quality review or session timing.
+     *
+     * <p>Replaces the prior {@code validateQualityReviewComplete} which layered two
+     * predicates ("all sessions have timing" + implicit quality state). The new gate
+     * folds both into the single JOIN-backed {@code countPublishableByEventId} query.
      *
      * @param event Event being validated
-     * @throws WorkflowValidationException if agenda not ready for publishing
+     * @throws WorkflowValidationException if any accepted speaker is not publishable
      */
-    private void validateQualityReviewComplete(Event event) {
-        long totalSessions = sessionRepository.countByEventId(event.getId());
-        long sessionsWithTiming = sessionRepository.countByEventIdAndStartTimeNotNull(event.getId());
+    private void validateAllSpeakersConfirmed(Event event) {
+        long acceptedOrBeyondSpeakers = speakerPoolRepository.countByEventIdAndStatusIn(
+                event.getId(),
+                List.of(
+                        SpeakerWorkflowState.ACCEPTED,
+                        SpeakerWorkflowState.CONTENT_SUBMITTED,
+                        SpeakerWorkflowState.QUALITY_REVIEWED
+                )
+        );
 
-        if (totalSessions == 0) {
+        if (acceptedOrBeyondSpeakers == 0) {
             throw new WorkflowValidationException(
-                    "Cannot publish agenda - no sessions exist for this event",
-                    Map.of("totalSessions", 0)
+                    "Cannot publish agenda — no accepted speakers exist for this event",
+                    Map.of("acceptedOrBeyond", 0)
             );
         }
 
-        if (sessionsWithTiming < totalSessions) {
+        long publishableSpeakers = speakerPoolRepository.countPublishableByEventId(event.getId());
+
+        if (acceptedOrBeyondSpeakers > publishableSpeakers) {
             throw new WorkflowValidationException(
-                    "Cannot publish agenda - not all sessions have timing assigned",
+                    "Not all accepted speakers are publishable",
                     Map.of(
-                            "totalSessions", totalSessions,
-                            "sessionsWithTiming", sessionsWithTiming,
-                            "unassigned", totalSessions - sessionsWithTiming
+                            "accepted", acceptedOrBeyondSpeakers,
+                            "publishable", publishableSpeakers,
+                            "gap", acceptedOrBeyondSpeakers - publishableSpeakers
                     )
             );
         }
 
-        log.debug("All {} sessions have timing assigned - agenda ready for publishing", totalSessions);
+        log.debug("Publishable check passed: {}/{} accepted speakers are publishable",
+                publishableSpeakers, acceptedOrBeyondSpeakers);
     }
 }

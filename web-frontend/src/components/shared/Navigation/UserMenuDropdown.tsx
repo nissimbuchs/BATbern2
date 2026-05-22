@@ -119,8 +119,10 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <Typography variant="body2" fontWeight="medium">
           {user.email}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {t(`role.${user.role}`)}
+        <Typography variant="caption" color="text.secondary" data-testid="user-menu-roles">
+          {/* Story 11.E.3 (cherry-pick 73d94688 + 396a9045): list every role the user holds,
+              null-safe in case a legacy auth shape predates the multi-role array. */}
+          {(user.roles ?? (user.role ? [user.role] : [])).map((r) => t(`role.${r}`)).join(', ')}
         </Typography>
       </Box>
 
@@ -134,8 +136,8 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <ListItemText>{t('menu.profile')}</ListItemText>
       </MenuItem>
 
-      {/* Administration Menu Item - organizer only (Story 10.1) */}
-      {user.role === 'organizer' && (
+      {/* Administration Menu Item - organizer only (Story 10.1; Story 11.E.3 multi-role aware) */}
+      {(user.roles ?? (user.role ? [user.role] : [])).includes('organizer') && (
         <MenuItem
           onClick={handleAdministrationClick}
           role="menuitem"

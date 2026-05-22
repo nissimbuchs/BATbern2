@@ -11,11 +11,18 @@ import ch.batbern.companyuser.dto.SyncStatusDTO;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
+import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
+import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.dto.generated.UserRolesResponse;
+import ch.batbern.companyuser.exception.UserValidationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.PatchMapping;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ProfilePictureService;
@@ -262,6 +269,141 @@ public class UserController {
         log.info("Updating user {} by organizer/admin", username);
 
         UserResponse response = userService.updateUserByUsername(username, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR13): Provision a User with a role.
+     * POST /api/v1/users/provision
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.transition()} (event-management-service) at the
+     * CONTACTED → READY hook to materialise the Speaker as a User + SPEAKER role
+     * (replaces the deleted {@code Speaker} entity per ADR-009 / Story 11.C.1).
+     *
+     * <p>Idempotent: re-calling for an already-provisioned user is a no-op and returns
+     * the same canonical username with {@code created=false}.
+     *
+     * <p>Cognito wiring is stubbed (Story 11.E.2 owns it); {@code temporaryPassword} is
+     * always {@code null} in this story.
+     *
+     * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     */
+    @PostMapping("/provision")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Timed(value = "users.provisionUser",
+            description = "Time to provision a user with role (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<ProvisionUserResponse> provisionUser(
+            @Valid @RequestBody ProvisionUserRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level.
+        // The OpenAPI Generator emits `@JsonAnySetter` on the request DTO which silently
+        // collects unknown fields into a map instead of rejecting them. Read that map and
+        // 400 if non-empty, matching the spec contract (Resolved Decision §3).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on ProvisionUserRequest: "
+                            + request.getAdditionalProperties().keySet());
+        }
+        log.info("POST /api/v1/users/provision — email: {}, role: {}",
+                request.getEmail(), request.getRole());
+
+        ProvisionUserResponse response = userService.provisionUserWithRole(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
+     * POST /api/v1/users/{username}/issue-invitation-credentials
+     *
+     * <p>Service-to-service endpoint called by
+     * {@code SpeakerWorkflowService.runInvitedHook} at READY → INVITED. Delegates to Cognito
+     * {@code AdminGetUser} + conditional {@code AdminSetUserPassword(Permanent=false)} via
+     * {@link UserService#issueInvitationCredentials} to issue a fresh temp password (or
+     * confirm the existing password remains valid for previously-confirmed users).
+     *
+     * <p>Idempotent: repeated calls are safe. Returns {@link InvitationCredentialsResponse}
+     * with an action discriminator (FRESH_TEMP_PASSWORD or USE_EXISTING_PASSWORD).
+     *
+     * @param username target user's username
+     * @return action discriminator + fresh temp password (or null when use-existing)
+     */
+    @PostMapping("/{username}/issue-invitation-credentials")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.issueInvitationCredentials",
+            description = "Time to issue invitation credentials (Story 11.E.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<InvitationCredentialsResponse> issueInvitationCredentials(
+            @PathVariable String username) {
+        // Story 11.E.2 review patch (D3): narrow from hasAnyRole('ORGANIZER','ADMIN') to
+        // hasRole('ORGANIZER') and log the actor → target → action triple for post-incident
+        // review. The endpoint rotates Cognito passwords; minting credentials for arbitrary
+        // users by ADMIN was unnecessary in the current trust model.
+        String actor = securityContextHelper.getCurrentUsername();
+        log.info("POST /api/v1/users/{}/issue-invitation-credentials (actor={})",
+                username, actor != null ? actor : "<unknown>");
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(username);
+        log.info("Issued invitation credentials: actor={} target={} action={}",
+                actor != null ? actor : "<unknown>", username, response.getAction());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 11.C.2 (AR14): Patch user profile fields (bio, profilePictureUrl).
+     * PATCH /api/v1/users/{username}/profile
+     *
+     * <p>Narrow profile-patch entry point used by the consolidated
+     * {@code ContentSubmissionService} when speaker content includes a CV blurb or a
+     * portrait. Replaces the broader Story 6.2b {@code PUT /api/v1/users/{username}}
+     * path for this specific flow with sharper auth semantics.
+     *
+     * <p>Authorization: ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may patch only their own
+     * profile (the method body enforces {@code currentUsername == pathVariable.username}
+     * and throws {@link AccessDeniedException} otherwise).
+     *
+     * @param username target user's username
+     * @param request  bio + profilePictureUrl (≥1 must be present; null fields are left unchanged)
+     * @return updated user profile
+     */
+    @PatchMapping("/{username}/profile")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN', 'SPEAKER')")
+    @Timed(value = "users.patchUserProfile",
+            description = "Time to patch user profile fields (Story 11.C.2)",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserResponse> patchUserProfile(
+            @PathVariable String username,
+            @Valid @RequestBody PatchUserProfileRequest request) {
+        // P2 (review patch): enforce `additionalProperties: false` at the controller level
+        // (the generated DTO silently absorbs unknown fields via `@JsonAnySetter`).
+        if (request.getAdditionalProperties() != null && !request.getAdditionalProperties().isEmpty()) {
+            throw new UserValidationException(
+                    "request",
+                    "Unknown fields not allowed on PatchUserProfileRequest: "
+                            + request.getAdditionalProperties().keySet());
+        }
+        log.info("PATCH /api/v1/users/{}/profile", username);
+
+        // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
+        // may patch only their own profile. The class-level @PreAuthorize already
+        // restricts the endpoint to ORGANIZER/ADMIN/SPEAKER principals.
+        if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
+            String currentUsername = securityContextHelper.getCurrentUsername();
+            // P3 (review patch): case-insensitive username comparison. The JWT issues canonical-case
+            // usernames; URL path-segments can be CDN-lowercased or mistyped. Both refer to the
+            // same identity.
+            if (currentUsername == null || !currentUsername.equalsIgnoreCase(username)) {
+                log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
+                        currentUsername, username);
+                throw new AccessDeniedException(
+                        "SPEAKER may only patch their own profile");
+            }
+        }
+
+        UserResponse response = userService.patchUserProfile(username, request);
 
         return ResponseEntity.ok(response);
     }

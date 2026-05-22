@@ -481,7 +481,8 @@ public class EventController {
                             su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "");
                     sm.put("speakerRole",
                             su.getSpeakerRole() != null ? su.getSpeakerRole().name() : null);
-                    sm.put("presentationTitle", su.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    sm.put("presentationTitle", null);
                     sm.put("isConfirmed", su.isConfirmed());
                     sm.put("profilePictureUrl", portrait != null ? portrait.getProfilePictureUrl() : null);
                     sm.put("company",          portrait != null ? portrait.getCompanyId() : null);
@@ -539,25 +540,23 @@ public class EventController {
     private void expandMetricsToDTO(Event event, EventResponse response) {
         UUID eventId = event.getId();
 
-        // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
+        // Count speakers along the content lifecycle (ADR-009 §0.1: CONFIRMED + SLOT_ASSIGNED
+        // are removed; the derived is_publishable predicate lands in 11.B.3).
         long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
         long contentSubmittedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
         long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
                 eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
-        long slotAssignedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED);
-        long confirmedCount = speakerPoolRepository.countByEventIdAndStatus(
-                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
 
-        // Total confirmed speakers (accepted or higher)
-        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount
-                + qualityReviewedCount + slotAssignedCount + confirmedCount;
+        // Total committed speakers (ACCEPTED + later content-lifecycle states).
+        // NB: persisted via {@code response.setConfirmedSpeakersCount} for wire-format stability
+        // — the field name "confirmed" predates ADR-009's removal of CONFIRMED and is preserved
+        // here while OpenAPI changes are owned by Story 11.B.3.
+        long totalCommittedSpeakers = acceptedCount + contentSubmittedCount + qualityReviewedCount;
 
         // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
-        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount
-                + slotAssignedCount + confirmedCount;
+        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount;
 
         // Pending materials = accepted but haven't submitted content yet
         long pendingMaterials = acceptedCount;
@@ -591,7 +590,7 @@ public class EventController {
                 .count();
 
         // Set metrics on EventResponse
-        response.setConfirmedSpeakersCount((int) totalConfirmedSpeakers);
+        response.setConfirmedSpeakersCount((int) totalCommittedSpeakers);
         response.setSpeakersWithCompleteInfoCount((int) speakersWithCompleteInfo);
         response.setPendingMaterialsCount((int) pendingMaterials);
         response.setMaxSpeakerSlots(maxSpeakerSlots);
@@ -600,7 +599,7 @@ public class EventController {
 
         log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
                         + "pending materials: {}, max slots: {}, sessions with materials: {}/{}",
-                event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
+                event.getEventCode(), totalCommittedSpeakers, speakersWithCompleteInfo,
                 pendingMaterials, maxSpeakerSlots, sessionsWithMaterials, totalSessions);
     }
 
@@ -705,7 +704,8 @@ public class EventController {
                     // Add SessionUser data (role, confirmation)
                     speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
                     speakerMap.put("isConfirmed", sessionUser.isConfirmed());
-                    speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+                    // Story 11.E.8: session_users.presentation_title dropped (V102).
+                    speakerMap.put("presentationTitle", null);
 
                     // Fetch and add enriched User data
                     try {
@@ -2560,7 +2560,9 @@ public class EventController {
     @PatchMapping("/{eventCode}/speakers/pool/{speakerId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Patch speaker pool entry",
-            description = "Partial update of a speaker pool entry (assigned organizer, notes, email)")
+            description = "Partial update of a speaker pool entry (assigned organizer, notes). "
+                    + "Story 11.D.1 (AR23): email may NOT be updated through this endpoint — "
+                    + "use POST /speakers/{speakerId}/promote. Unknown fields return HTTP 400.")
     public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> patchSpeakerPoolEntry(
             @PathVariable String eventCode,
             @PathVariable String speakerId,

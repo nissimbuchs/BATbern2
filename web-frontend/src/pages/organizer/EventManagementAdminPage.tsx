@@ -28,7 +28,6 @@ import { ImportDataTab } from '@/components/organizer/Admin/ImportDataTab';
 import { TaskTemplatesTab } from '@/components/organizer/Admin/TaskTemplatesTab';
 import { EmailTemplatesTab } from '@/components/organizer/Admin/EmailTemplatesTab';
 import { PresentationSettingsTab } from '@/components/organizer/Admin/PresentationSettingsTab';
-import { ExportImportTab } from '@/components/organizer/Admin/ExportImportTab';
 import { AiPromptsTab } from '@/components/organizer/Admin/AiPromptsTab';
 import { AdminSettingsTab } from '@/components/organizer/Admin/AdminSettingsTab';
 import { GlobalImagesTab } from '@/components/organizer/Admin/GlobalImagesTab';
@@ -38,7 +37,7 @@ const EventManagementAdminPage: React.FC = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabIndex = Math.max(0, Math.min(8, Number(searchParams.get('tab') ?? 0)));
+  const tabIndex = Math.max(0, Math.min(7, Number(searchParams.get('tab') ?? 0)));
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [{ label: t('common:menu.administration', 'Administration') }],
@@ -69,7 +68,6 @@ const EventManagementAdminPage: React.FC = () => {
       label: t('tabs.presentationSettings', 'Presentation'),
       component: <PresentationSettingsTab />,
     },
-    { label: t('tabs.exportImport', 'Export / Import'), component: <ExportImportTab /> },
     { label: t('tabs.aiPrompts', 'AI Prompts'), component: <AiPromptsTab /> },
     { label: t('tabs.settings', 'Settings'), component: <AdminSettingsTab /> },
     { label: t('tabs.globalImages', 'Global Images'), component: <GlobalImagesTab /> },

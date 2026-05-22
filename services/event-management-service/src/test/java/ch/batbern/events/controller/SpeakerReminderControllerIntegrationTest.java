@@ -8,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.events.service.MagicLinkService;
+import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -65,6 +66,14 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private MagicLinkService magicLinkService;
 
+    // Phase B: PrimarySpeakerResolver is the canonical recipient-routing seam. The
+    // legacy fixture seeds only SpeakerPool rows (no Session / session_users), so a real
+    // resolver would return Optional.empty() and short-circuit reminder dispatch.
+    // Mock it to fall back to the pool email (legacy contract) — full session-overlay
+    // integration is covered by the unit test.
+    @MockitoBean
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private Event testEvent;
     private SpeakerPool invitedSpeaker;
     private SpeakerPool acceptedSpeaker;
@@ -94,7 +103,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         invitedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("John Invited")
-                .email("john@example.com")
                 .status(SpeakerWorkflowState.INVITED)
                 .responseDeadline(LocalDate.now().plusDays(14))
                 .remindersDisabled(false)
@@ -104,9 +112,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
         acceptedSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("Jane Accepted")
-                .email("jane@example.com")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentStatus("PENDING")
                 .contentDeadline(LocalDate.now().plusDays(7))
                 .remindersDisabled(false)
                 .build();
@@ -117,6 +123,14 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 any(), any(), any(), any(), any(), any(), any());
         when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
                 .thenReturn("test-magic-token");
+
+        // Story 11.E.9: the pool.email column is gone. The resolver returns the email
+        // from the seeded session_users / UserApiClient pair, but the existing reminder
+        // tests in this class do not seed those rows. Stub the resolver to return a
+        // deterministic test address so the email-send assertions keep working without
+        // re-architecting every fixture.
+        when(primarySpeakerResolver.resolveEmail(any(SpeakerPool.class)))
+                .thenAnswer(inv -> java.util.Optional.of("reminder-recipient@test.local"));
     }
 
     @Nested
@@ -138,7 +152,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.message", is("Reminder sent successfully")))
                     .andExpect(jsonPath("$.tier", is("TIER_1")))
-                    .andExpect(jsonPath("$.emailAddress", is("john@example.com")));
+                    .andExpect(jsonPath("$.emailAddress", is("reminder-recipient@test.local")));
 
             // Verify reminder was logged
             assertThat(reminderLogRepository.findAll()).hasSize(1);

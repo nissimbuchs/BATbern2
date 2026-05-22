@@ -36,7 +36,7 @@ describe('CognitoStack Tests', () => {
           RequireUppercase: true,
           RequireNumbers: true,
           RequireSymbols: true,
-          TemporaryPasswordValidityDays: 7,
+          TemporaryPasswordValidityDays: 14,  // Story 11.E.1 / Resolved Q#4 — was 7
         },
       },
     });
@@ -111,6 +111,15 @@ describe('CognitoStack Tests', () => {
       CallbackURLs: ['http://localhost:3000/auth/callback'],
       LogoutURLs: ['http://localhost:3000/logout'],
       SupportedIdentityProviders: ['COGNITO'],
+    });
+  });
+
+  // Test: ALLOW_ADMIN_USER_PASSWORD_AUTH required for server-side Cognito authentication (Story 11.E.1 / AR29)
+  test('should_enableAdminUserPasswordAuth_when_appClientCreated', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      ExplicitAuthFlows: Match.arrayWith([
+        'ALLOW_ADMIN_USER_PASSWORD_AUTH',
+      ]),
     });
   });
 

@@ -182,7 +182,37 @@
     },
     "actions": {
       "skipForNow": "Salta per ora",
-      "continue": "Continua al contatto"
+      "continue": "Continua al contatto",
+      "promoteToSpeaker": "Promuovi a relatore"
+    },
+    "promoteDialog": {
+      "title": "Promuovi a relatore",
+      "description": "Il relatore viene spostato nella corsia READY e gli viene fornito un account utente. Nessuna e-mail di invito viene ancora inviata — invierai l'invito dalla corsia READY quando sarai pronto.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Nome",
+      "lastNameLabel": "Cognome",
+      "cancelButton": "Annulla",
+      "submitButton": "Promuovi",
+      "submitting": "Promozione in corso…",
+      "errorTitle": "Impossibile promuovere il relatore",
+      "errorEmailRequired": "L'e-mail è obbligatoria",
+      "errorEmailInvalid": "L'e-mail deve essere valida",
+      "errorFirstNameRequired": "Il nome è obbligatorio",
+      "errorLastNameRequired": "Il cognome è obbligatorio",
+      "errorAlreadyPromoted": "Il relatore è già in {{currentState}}; la promozione è valida solo dallo stato Contattato.",
+      "errorStillIdentified": "Il relatore deve essere prima contattato — registra il contatto prima di promuovere.",
+      "errorDeclined": "Il relatore ha rifiutato — crea una nuova voce invece di promuovere.",
+      "errorAlreadyReady": "Il relatore è già pronto — invia l'invito dalla corsia READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identificato",
+      "CONTACTED": "Contattato",
+      "READY": "Pronto",
+      "INVITED": "Invitato",
+      "ACCEPTED": "Accettato",
+      "DECLINED": "Rifiutato",
+      "CONTENT_SUBMITTED": "Contenuto inviato",
+      "QUALITY_REVIEWED": "Qualità verificata"
     }
   },
   "speakerOutreach": {
@@ -261,8 +291,14 @@
       "titleRequired": "Il titolo della presentazione è obbligatorio",
       "abstractRequired": "L'abstract della presentazione è obbligatorio",
       "abstractTooLong": "L'abstract deve contenere al massimo {{max}} caratteri",
-      "submitFailed": "Invio contenuto non riuscito. Riprova."
-    }
+      "submitFailed": "Invio contenuto non riuscito. Riprova.",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "Revisione qualità",
@@ -308,7 +344,6 @@
     "invalidEmail": "Inserisci un indirizzo e-mail valido",
     "saveEmail": "Salva e-mail",
     "emailSaved": "E-mail salvata",
-    "tentative": "Provvisorio",
     "responseDetails": "Dettagli risposta",
     "acceptedAt": "Accettato il",
     "preferredTimeSlot": "Fascia oraria preferita",
@@ -319,16 +354,12 @@
     "declineDetails": "Dettagli rifiuto",
     "declinedAt": "Rifiutato il",
     "declineReason": "Motivo",
-    "tentativeDetails": "Dettagli provvisori",
-    "tentativeReason": "Motivo",
     "sendReminder": "Invia promemoria",
     "sendingReminder": "Invio in corso...",
     "reminderSent": "Promemoria inviato a {{email}}",
     "reminderFailed": "Invio promemoria non riuscito",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -480,5 +511,86 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Registra contatto",
+      "promoteToSpeaker": "Promuovi a relatore",
+      "sendInvitation": "Invia invito",
+      "viewResponseStatus": "Visualizza stato risposta",
+      "enterContent": "Inserisci contenuto",
+      "reviewContent": "Rivedi contenuto",
+      "assignSessionSlot": "Assegna slot sessione",
+      "viewDetails": "Visualizza dettagli"
+    },
+    "publishable": "Pubblicabile",
+    "publishableTooltip": "Il relatore è approvato e ha uno slot di sessione",
+    "slotCapacityTooltip": "Capacità degli slot raggiunta. {{invited}} inviti in sospeso + {{accepted}} accettazioni per {{slots}} slot. Attendi o rifiuta un relatore accettato per liberare uno slot.",
+    "timeInStateTooltip": "Stato attuale dal {{date}}",
+    "inviteSent": "Invito inviato",
+    "inviteFailed": "Invio dell'invito non riuscito",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsoleti (>14 giorni)",
+      "contactedSubline_one": "⚠ {{count}} obsoleto (>14 giorni)",
+      "contactedSubline_other": "⚠ {{count}} obsoleti (>14 giorni)",
+      "readySlotCapacitySubline": "⚠ Capacità slot raggiunta",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} scadenza vicina",
+        "approaching_one": "⏰ {{count}} scadenza vicina",
+        "approaching_other": "⏰ {{count}} scadenze vicine",
+        "past": "⏰ {{count}} scadenza superata",
+        "past_one": "⏰ {{count}} scadenza superata",
+        "past_other": "⏰ {{count}} scadenze superate",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} in attesa di contenuto",
+      "acceptedSubline_one": "📝 {{count}} in attesa di contenuto",
+      "acceptedSubline_other": "📝 {{count}} in attesa di contenuto",
+      "contentSubmittedSubline": "👀 {{count}} in attesa di revisione",
+      "contentSubmittedSubline_one": "👀 {{count}} in attesa di revisione",
+      "contentSubmittedSubline_other": "👀 {{count}} in attesa di revisione",
+      "qualityReviewedSubline": "🪑 {{count}} in attesa di slot",
+      "qualityReviewedSubline_one": "🪑 {{count}} in attesa di slot",
+      "qualityReviewedSubline_other": "🪑 {{count}} in attesa di slot",
+      "sublineFilterAriaLabel": "Filtra colonna {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Filtro colonna rimosso",
+      "filterAppliedAnnouncement": "Colonna {{state}} filtrata, {{count}} carte visibili"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

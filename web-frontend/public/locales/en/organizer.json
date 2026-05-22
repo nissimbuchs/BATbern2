@@ -188,7 +188,37 @@
     },
     "actions": {
       "skipForNow": "Skip for Now",
-      "continue": "Continue to Outreach"
+      "continue": "Continue to Outreach",
+      "promoteToSpeaker": "Promote to speaker"
+    },
+    "promoteDialog": {
+      "title": "Promote to speaker",
+      "description": "The speaker moves to the READY lane and a user account is provisioned. No invitation email is sent yet — send the invitation from the READY lane when you are ready.",
+      "emailLabel": "Email",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "cancelButton": "Cancel",
+      "submitButton": "Promote",
+      "submitting": "Promoting…",
+      "errorTitle": "Could not promote speaker",
+      "errorEmailRequired": "Email is required",
+      "errorEmailInvalid": "Email must be valid",
+      "errorFirstNameRequired": "First name is required",
+      "errorLastNameRequired": "Last name is required",
+      "errorAlreadyPromoted": "Speaker is already in {{currentState}}; promote is only valid from Contacted.",
+      "errorStillIdentified": "Speaker must be Contacted first — log outreach before promoting.",
+      "errorDeclined": "Speaker has Declined — create a new pool entry instead of promoting.",
+      "errorAlreadyReady": "Speaker is already Ready — send the invitation from the Ready lane."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identified",
+      "CONTACTED": "Contacted",
+      "READY": "Ready",
+      "INVITED": "Invited",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Declined",
+      "CONTENT_SUBMITTED": "Content submitted",
+      "QUALITY_REVIEWED": "Quality reviewed"
     }
   },
   "speakerOutreach": {
@@ -256,18 +286,77 @@
     "submitting": "Submitting...",
     "editSpeakerProfile": "Edit Speaker Profile",
     "createNewSpeaker": "Create New Speaker",
+    "speakerLockedHint": "The speaker is fixed for this session. Use the Sessions tab to reassign.",
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)",
     "form": {
       "username": "Search Speaker",
       "presentationTitle": "Presentation Title",
       "presentationAbstract": "Presentation Abstract",
-      "charactersRemaining": "characters remaining"
+      "charactersRemaining": "characters remaining",
+      "bioHelperText": "Leave blank to keep the existing bio. {{remaining}} / {{max}} characters remaining."
     },
     "errors": {
-      "usernameRequired": "Speaker is required",
+      "usernameRequired": "Please select a speaker",
       "titleRequired": "Presentation title is required",
       "abstractRequired": "Presentation abstract is required",
       "abstractTooLong": "Abstract must be {{max}} characters or less",
+      "bioTooLong": "Bio must be {{max}} characters or less",
       "submitFailed": "Failed to submit content. Please try again."
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "editDetails": {
+      "speakerNameLockedHint": "Name comes from the linked user profile. Use the Content tab's \"Edit speaker profile\" to change it.",
+      "companyLockedHint": "Company comes from the linked user profile once a session is assigned.",
+      "expertiseLockedHint": "Expertise is a brainstorm-only field; sessions own the talk topic from READY onward.",
+      "notesLockedHint": "Internal notes are a brainstorm-only field. Use the History timeline for post-session annotations.",
+      "errors": {
+        "nameRequired": "Speaker name is required",
+        "saveFailed": "Could not save changes."
+      }
+    },
+    "brainstormNameLabel": "brainstormed as",
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    },
+    "responseDeadline": "Response due {{date}}",
+    "errors": {
+      "statusUpdateFailed": "Could not update speaker status."
     }
   },
   "qualityReview": {
@@ -314,7 +403,6 @@
     "invalidEmail": "Please enter a valid email address",
     "saveEmail": "Save Email",
     "emailSaved": "Email saved",
-    "tentative": "Tentative",
     "responseDetails": "Response Details",
     "acceptedAt": "Accepted",
     "preferredTimeSlot": "Preferred Time Slot",
@@ -325,16 +413,12 @@
     "declineDetails": "Decline Details",
     "declinedAt": "Declined",
     "declineReason": "Reason",
-    "tentativeDetails": "Tentative Details",
-    "tentativeReason": "Reason",
     "sendReminder": "Send Reminder",
     "sendingReminder": "Sending...",
     "reminderSent": "Reminder sent to {{email}}",
     "reminderFailed": "Failed to send reminder",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -481,5 +565,39 @@
     "shortenedAbstract": "Shortened abstract",
     "words": "words",
     "copyShortened": "Copy shortened abstract"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Log outreach",
+      "promoteToSpeaker": "Promote to speaker",
+      "sendInvitation": "Send invitation",
+      "viewResponseStatus": "View response status",
+      "enterContent": "Enter content",
+      "reviewContent": "Review content",
+      "assignSessionSlot": "Assign session slot",
+      "viewDetails": "View details"
+    },
+    "publishable": "Publishable",
+    "publishableTooltip": "Speaker is approved and has a session slot",
+    "slotCapacityTooltip": "Slot capacity reached. {{invited}} invitations outstanding + {{accepted}} acceptances for {{slots}} slots. Wait or decline an accepted speaker to free a slot.",
+    "statusUpdateFailed": "Could not update speaker status. Please refresh and try again.",
+    "timeInStateTooltip": "Current state since {{date}}",
+    "inviteSent": "Invitation sent",
+    "inviteFailed": "Failed to send invitation",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} stale (>14 days)",
+      "readySlotCapacitySubline": "⚠ Slot capacity reached",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} approaching deadline",
+        "past": "⏰ {{count}} past deadline",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} awaiting content",
+      "contentSubmittedSubline": "👀 {{count}} awaiting moderator review",
+      "qualityReviewedSubline": "🪑 {{count}} awaiting slot",
+      "sublineFilterAriaLabel": "Filter {{state}} column: {{description}}",
+      "filterClearedAnnouncement": "Column filter cleared",
+      "filterAppliedAnnouncement": "{{state}} column filtered, showing {{count}} cards"
+    }
   }
 }

@@ -13,6 +13,10 @@ import java.time.Instant;
  * - Current draft/submission (AC4)
  * - Revision feedback (AC8)
  */
+// 2026-05-20 (Q#E) — `contentStatus` field dropped. It was only read internally by
+// ContentSubmissionService to compute `needsRevision`; no UI surface consumes the
+// raw string. The portal reads `needsRevision` + `reviewerFeedback` directly. The
+// speaker_pool workflow status is the single canonical status everywhere.
 @Builder
 public record SpeakerContentInfo(
         // Speaker info
@@ -25,8 +29,7 @@ public record SpeakerContentInfo(
         String sessionTitle,
         boolean canSubmitContent,
 
-        // Current content status
-        String contentStatus,
+        // Current draft
         boolean hasDraft,
         String draftTitle,
         String draftAbstract,
@@ -54,7 +57,6 @@ public record SpeakerContentInfo(
                 .eventTitle(eventTitle)
                 .hasSessionAssigned(false)
                 .canSubmitContent(false)
-                .contentStatus("PENDING")
                 .hasDraft(false)
                 .needsRevision(false)
                 .hasMaterial(false)

@@ -5,6 +5,7 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,13 +100,16 @@ public class SpeakerOutreachService {
 
         LOG.info("Created outreach history record {} for speaker {}", savedOutreach.getId(), speakerId);
 
-        // 4. Transition speaker state to CONTACTED (if not already)
+        // 4. Transition speaker state to CONTACTED (if not already) via the sole-writer.
+        //    suppressHistoryRow=true: the OutreachHistory row above IS the audit entry; an
+        //    additional status_history row would surface as a duplicate (and misleading)
+        //    second timeline entry in the unified history feed.
         if (currentState == SpeakerWorkflowState.IDENTIFIED) {
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                    speakerId,
-                    SpeakerWorkflowState.CONTACTED,
-                    organizerUsername
-            );
+            TransitionPayload payload = TransitionPayload.builder()
+                    .suppressHistoryRow(true)
+                    .build();
+            speakerWorkflowService.transition(
+                    speakerId, SpeakerWorkflowState.CONTACTED, organizerUsername, payload);
             LOG.info("Transitioned speaker {} from IDENTIFIED to CONTACTED", speakerId);
         }
 

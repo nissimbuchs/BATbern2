@@ -4,103 +4,6 @@
  */
 
 export interface paths {
-  '/speakers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List speakers
-     * @description Retrieve a list of speakers with optional filtering by company, expertise, or availability.
-     *
-     *     **Response combines User + Speaker data** (ADR-004):
-     *     - User fields: username, email, firstName, lastName, bio, profilePictureUrl, companyName
-     *     - Speaker fields: availability, workflowState, expertiseAreas, speakingTopics
-     */
-    get: operations['listSpeakers'];
-    put?: never;
-    /**
-     * Create speaker profile
-     * @description Create a new speaker profile for an existing user.
-     *     Story 6.0: Speaker Profile Foundation (AC2)
-     *
-     *     **Prerequisites**:
-     *     - User must already exist in User service
-     *     - Requires ORGANIZER role
-     */
-    post: operations['createSpeaker'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/speakers/{username}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get speaker by username
-     * @description Retrieve a specific speaker by their username (public identifier from User entity).
-     *
-     *     **Response combines User + Speaker data** (ADR-004).
-     */
-    get: operations['getSpeakerByUsername'];
-    put?: never;
-    post?: never;
-    /**
-     * Soft delete speaker profile
-     * @description Soft delete a speaker profile (sets deletedAt timestamp).
-     *     Story 6.0: Speaker Profile Foundation (AC2)
-     *
-     *     **Notes**:
-     *     - Speaker is not permanently deleted, just marked as deleted
-     *     - Does not delete the underlying User entity
-     *     - Requires ORGANIZER role
-     */
-    delete: operations['deleteSpeaker'];
-    options?: never;
-    head?: never;
-    /**
-     * Update speaker profile
-     * @description Update speaker-specific fields (availability, expertise, topics).
-     *
-     *     **Important (ADR-004)**:
-     *     - To update email, name, bio, photo, company: Use User API (/users/{username})
-     *     - This endpoint updates ONLY speaker-specific fields
-     */
-    patch: operations['updateSpeaker'];
-    trace?: never;
-  };
-  '/speakers/{username}/preferences': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get speaker slot preferences
-     * @description Retrieve speaker's slot preferences for a specific event.
-     */
-    get: operations['getSpeakerPreferences'];
-    put?: never;
-    /**
-     * Submit speaker slot preferences
-     * @description Speaker submits their slot preferences for an event.
-     */
-    post: operations['submitSpeakerPreferences'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/speakers/{speakerId}/status': {
     parameters: {
       query?: never;
@@ -112,14 +15,25 @@ export interface paths {
     /**
      * Update speaker status
      * @description Update the workflow status of a speaker for a specific event.
-     *     Story 5.4: Speaker Status Management (AC1-2, AC10-12)
+     *     Story 5.4 (original) + Story 11.B.3 (8-state model tighten).
      *
-     *     Valid state transitions:
+     *     Per ADR-009 the legal transitions are:
      *     - IDENTIFIED → CONTACTED, DECLINED
-     *     - CONTACTED → READY, DECLINED
-     *     - READY → ACCEPTED, DECLINED
-     *     - ACCEPTED → SLOT_ASSIGNED, CONFIRMED (cannot go back to DECLINED)
-     *     - DECLINED is terminal (cannot transition out)
+     *     - CONTACTED → DECLINED (transition to READY requires POST /promote — has email payload)
+     *     - INVITED → ACCEPTED, DECLINED
+     *     - ACCEPTED → CONTENT_SUBMITTED, DECLINED
+     *     - CONTENT_SUBMITTED → QUALITY_REVIEWED, DECLINED
+     *     - QUALITY_REVIEWED → DECLINED
+     *     - DECLINED is terminal — no transitions out.
+     *
+     *     Notes:
+     *     - Setting newStatus = READY via this endpoint returns 400 READY_REQUIRES_PROMOTE_ENDPOINT.
+     *       Use POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote instead (Story 11.D.1).
+     *     - Setting newStatus to any of SLOT_ASSIGNED, CONFIRMED, OVERFLOW, WITHDREW, TENTATIVE
+     *       (legacy 10-state values) returns 400 INVALID_SPEAKER_WORKFLOW_STATE — those states
+     *       were removed per ADR-009 §0.7.
+     *     - Same-state re-affirm (current == newStatus) is permitted and writes an audit-trail
+     *       self-transition row to speaker_status_history (no side-effects fire).
      */
     put: operations['updateSpeakerStatus'];
     post?: never;
@@ -284,277 +198,81 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/speaker-portal/events/{eventCode}/content/submit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit speaker content via the speaker portal (Cognito-authenticated)
+     * @description Speaker self-service content submission used by the Cognito-authenticated speaker
+     *     portal. Refactored by Story 11.C.2 to share the consolidated
+     *     `ContentSubmissionService.submit(...)` backend write path with the organizer-on-behalf
+     *     endpoint (`POST /events/{eventCode}/speakers/{speakerId}/content`).
+     *
+     *     **Auth**: Cognito Bearer JWT with the SPEAKER scope. The controller carries
+     *     `@PreAuthorize("hasRole('SPEAKER')")` and resolves the speaker pool by
+     *     `(authPrincipal.username, eventCode)` via `SpeakerPortalAuthorizationService` before
+     *     delegating to the shared service. A SPEAKER token whose username has no pool row for
+     *     the requested `eventCode` receives 403; an unauthenticated request receives 401.
+     *
+     *     **State precondition**: speaker must be in ACCEPTED (first submission) or
+     *     CONTENT_SUBMITTED (resubmission). Returns 422 otherwise.
+     *
+     *     **Downstream effects** (identical to the organizer endpoint, modulo the audit
+     *     principal):
+     *     - `speaker_content_submissions` row inserted with the next version.
+     *     - Session created or updated with the submitted title/abstract.
+     *     - `speaker_pool.status` transitions to CONTENT_SUBMITTED (or same-state self-transition
+     *       on resubmission) via `SpeakerWorkflowService.transition()` — the sole status writer
+     *       per ADR-009.
+     *     - `speaker_status_history` row written with `changed_by_username = speaker.username`.
+     *     - `SpeakerContentSubmittedEvent` published.
+     */
+    post: operations['submitSpeakerPortalContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
-     * @description Speaker response combines User entity fields with Speaker domain fields (ADR-004).
-     *     Internal: Speaker.userId (UUID FK) -> User.id
-     *     External: username is the public identifier
-     */
-    SpeakerResponse: {
-      /**
-       * @description Public identifier from User (ADR-003)
-       * @example john.doe
-       */
-      username?: string;
-      /**
-       * Format: email
-       * @description From User entity
-       * @example john.doe@example.com
-       */
-      email?: string;
-      /**
-       * @description From User entity
-       * @example John
-       */
-      firstName?: string;
-      /**
-       * @description From User entity
-       * @example Doe
-       */
-      lastName?: string;
-      /**
-       * @description From User entity (single source of truth, no detailedBio)
-       * @example Experienced software architect with 15 years in the industry.
-       */
-      bio?: string;
-      /**
-       * Format: uri
-       * @description From User entity
-       * @example https://cdn.batbern.ch/users/john.doe/profile.jpg
-       */
-      profilePictureUrl?: string;
-      /**
-       * @description From User.companyId (company name, ADR-003)
-       * @example GoogleZH
-       */
-      companyName?: string;
-      availability?: components['schemas']['SpeakerAvailability'];
-      workflowState?: components['schemas']['SpeakerWorkflowState'];
-      /**
-       * @description Areas of technical expertise
-       * @example [
-       *       "Security",
-       *       "Cloud Architecture",
-       *       "DevOps"
-       *     ]
-       */
-      expertiseAreas?: string[];
-      /**
-       * @description Topics the speaker can present
-       * @example [
-       *       "Blockchain Security",
-       *       "Zero Trust Architecture"
-       *     ]
-       */
-      speakingTopics?: string[];
-      /**
-       * Format: uri
-       * @description LinkedIn profile (speaker-specific)
-       * @example https://linkedin.com/in/johndoe
-       */
-      linkedInUrl?: string;
-      /**
-       * @description Twitter/X handle (speaker-specific)
-       * @example @johndoe
-       */
-      twitterHandle?: string;
-      /**
-       * @description Professional certifications
-       * @example [
-       *       "CISSP",
-       *       "AWS Solutions Architect"
-       *     ]
-       */
-      certifications?: string[];
-      /**
-       * @description Languages speaker can present in
-       * @example [
-       *       "de",
-       *       "en",
-       *       "fr"
-       *     ]
-       */
-      languages?: string[];
-      /** Format: date-time */
-      createdAt?: string;
-      /** Format: date-time */
-      updatedAt?: string;
-      /** @description Speaking history (when ?include=speakingHistory) */
-      speakingHistory?: components['schemas']['SpeakingHistoryEntry'][];
-      /** @description Events speaker has presented at (when ?include=events) */
-      events?: Record<string, never>[];
-      /** @description Sessions speaker has delivered (when ?include=sessions) */
-      sessions?: Record<string, never>[];
-    };
-    /** @description A single entry in speaker's speaking history */
-    SpeakingHistoryEntry: {
-      /**
-       * @description Event code (ADR-003)
-       * @example BATbern55
-       */
-      eventCode?: string;
-      /** @example BATbern Q3 2025 */
-      eventTitle?: string;
-      /** @example Zero Trust Security in Enterprise */
-      sessionTitle?: string;
-      /** Format: date-time */
-      presentedAt?: string;
-    };
-    /**
-     * @description Create a new speaker profile for an existing user.
-     *     Story 6.0: Speaker Profile Foundation (AC2)
+     * @description Speaker coordination workflow state (UPPER_CASE per project-context.md §"Enum Value Flow").
+     *     Per ADR-009 (Unified Speaker Workflow) — 8 states; SLOT_ASSIGNED, CONFIRMED, OVERFLOW, WITHDREW removed.
+     *     - IDENTIFIED: brainstorm-list entry; no User, no Cognito user.
+     *     - CONTACTED: organizer reaching out; still brainstorming; no User, no Cognito user.
+     *     - READY: real speaker identified with email; User provisioning happens at the transition INTO this state.
+     *       Reached ONLY via POST /events/{code}/speakers/{speakerId}/promote (Story 11.D.1), never via PUT /status.
+     *     - INVITED: formal invitation sent; speaker can authenticate via Cognito.
+     *       READY → INVITED blocked when count(ACCEPTED) + count(INVITED) >= max_slots.
+     *     - ACCEPTED: speaker committed via the portal (or via organizer-on-behalf).
+     *     - CONTENT_SUBMITTED: title + abstract submitted (by speaker or by organizer).
+     *     - QUALITY_REVIEWED: moderator approved content. Terminal happy state.
+     *       Combined with session.start_time IS NOT NULL, makes the speaker publishable.
+     *     - DECLINED: terminal "not happening"; reachable from every non-terminal state.
      *
-     *     **Requires**: User must exist in User service (validated via UserApiClient)
-     */
-    CreateSpeakerRequest: {
-      /**
-       * @description Username of existing user (ADR-003)
-       * @example john.doe
-       */
-      username: string;
-      availability?: components['schemas']['SpeakerAvailability'];
-      workflowState?: components['schemas']['SpeakerWorkflowState'];
-      /**
-       * @description Areas of technical expertise
-       * @example [
-       *       "Security",
-       *       "Cloud Architecture"
-       *     ]
-       */
-      expertiseAreas?: string[];
-      /**
-       * @description Topics the speaker can present
-       * @example [
-       *       "Zero Trust",
-       *       "AWS Security"
-       *     ]
-       */
-      speakingTopics?: string[];
-      /**
-       * Format: uri
-       * @description LinkedIn profile URL
-       * @example https://linkedin.com/in/johndoe
-       */
-      linkedInUrl?: string;
-      /**
-       * @description Twitter/X handle
-       * @example @johndoe
-       */
-      twitterHandle?: string;
-      /**
-       * @description Professional certifications
-       * @example [
-       *       "CISSP",
-       *       "AWS Solutions Architect"
-       *     ]
-       */
-      certifications?: string[];
-      /**
-       * @description Languages speaker can present in (defaults to ['de', 'en'])
-       * @example [
-       *       "de",
-       *       "en"
-       *     ]
-       */
-      languages?: string[];
-    };
-    /**
-     * @description Update speaker-specific fields only.
-     *     To update email, name, bio, photo, company: Use User API (ADR-004).
-     */
-    UpdateSpeakerRequest: {
-      availability?: components['schemas']['SpeakerAvailability'];
-      expertiseAreas?: string[];
-      speakingTopics?: string[];
-      /** Format: uri */
-      linkedInUrl?: string;
-      twitterHandle?: string;
-      certifications?: string[];
-      languages?: string[];
-    };
-    /**
-     * @description Current availability status
-     * @enum {string}
-     */
-    SpeakerAvailability: 'available' | 'busy' | 'unavailable';
-    /**
-     * @description Speaker coordination workflow state (UPPER_CASE as per coding-standards.md):
-     *     - IDENTIFIED: Initial state, speaker identified but not yet contacted
-     *     - CONTACTED: Invitation sent to speaker
-     *     - READY: Speaker confirmed availability and interest
-     *     - DECLINED: Speaker declined invitation
-     *     - ACCEPTED: Speaker accepted invitation and confirmed participation
-     *     - CONTENT_SUBMITTED: Speaker submitted presentation content (title, abstract) [Story 5.5]
-     *     - QUALITY_REVIEWED: Speaker's content passed quality review [Story 5.5]
-     *     - CONFIRMED: Speaker has both quality-reviewed content and assigned slot [Story 5.5]
+     *     Derived flags (NOT persisted — computed at read time):
+     *     - isSlotAssigned := session.start_time IS NOT NULL
+     *     - isPublishable  := status == QUALITY_REVIEWED AND isSlotAssigned
      * @enum {string}
      */
     SpeakerWorkflowState:
       | 'IDENTIFIED'
       | 'CONTACTED'
       | 'READY'
-      | 'DECLINED'
+      | 'INVITED'
       | 'ACCEPTED'
       | 'CONTENT_SUBMITTED'
       | 'QUALITY_REVIEWED'
-      | 'CONFIRMED';
-    SpeakerSlotPreferences: {
-      /**
-       * @description Speaker username (ADR-003)
-       * @example john.doe
-       */
-      username?: string;
-      /**
-       * @description Event code (ADR-003)
-       * @example BATbern56
-       */
-      eventCode?: string;
-      preferredTimeSlots?: components['schemas']['TimeSlotPreference'][];
-      technicalRequirements?: components['schemas']['TechnicalRequirements'];
-      accessibilityNeeds?: components['schemas']['AccessibilityNeeds'];
-      dietaryRestrictions?: string;
-      /** Format: date-time */
-      submittedAt?: string;
-    };
-    SubmitPreferencesRequest: {
-      /**
-       * @description Event code (ADR-003)
-       * @example BATbern56
-       */
-      eventCode: string;
-      preferredTimeSlots: components['schemas']['TimeSlotPreference'][];
-      technicalRequirements?: components['schemas']['TechnicalRequirements'];
-      accessibilityNeeds?: components['schemas']['AccessibilityNeeds'];
-      dietaryRestrictions?: string;
-    };
-    TimeSlotPreference: {
-      /** Format: date-time */
-      startTime?: string;
-      /** Format: date-time */
-      endTime?: string;
-      /** @enum {string} */
-      preference?:
-        | 'strongly_preferred'
-        | 'preferred'
-        | 'acceptable'
-        | 'not_preferred'
-        | 'unavailable';
-    };
-    TechnicalRequirements: {
-      requiresProjector?: boolean;
-      requiresMicrophone?: boolean;
-      requiresInternetConnection?: boolean;
-      ownLaptopRequired?: boolean;
-      additionalNotes?: string;
-    };
-    AccessibilityNeeds: {
-      wheelchairAccessible?: boolean;
-      signLanguageInterpreter?: boolean;
-      otherNeeds?: string;
-    };
+      | 'DECLINED';
     Pagination: {
       /** @description Current page (0-indexed) */
       page?: number;
@@ -603,6 +321,17 @@ export interface components {
        * @description When the change occurred
        */
       changedAt?: string;
+      /**
+       * @description Derived flag (ADR-009 §0.1, Story 11.B.3 AC6): true when the speaker has a sessionId
+       *     assigned (sessionId != null). Uses sessionId-based fallback — see SpeakerPoolEntry for
+       *     the strict session.start_time definition.
+       */
+      isSlotAssigned?: boolean;
+      /**
+       * @description Derived flag (ADR-009 §0.1, Story 11.B.3 AC6): true when
+       *     currentStatus == QUALITY_REVIEWED AND isSlotAssigned.
+       */
+      isPublishable?: boolean;
     };
     /** @description Single status change record (Story 5.4 AC3-4) */
     StatusHistoryItem: {
@@ -780,8 +509,19 @@ export interface components {
       notes?: string;
     };
     /**
-     * @description Request to submit speaker content (Story 5.5 AC6-10).
-     *     Creates a session with the presentation details and links the speaker.
+     * @description Organizer-on-behalf request to submit speaker content (Story 5.5 AC6-10; refactored
+     *     by Story 11.C.2 to drop ad-hoc user-creation fields). Creates/updates a session with
+     *     the presentation details and transitions the speaker to CONTENT_SUBMITTED via the
+     *     consolidated ContentSubmissionService.
+     *
+     *     Story 11.C.2 changes:
+     *     - **Removed** legacy ad-hoc user-identity fields (`username`, `speakerName`, `email`,
+     *       `company`). The speaker's identity is established on `speaker_pool` at CONTACTED →
+     *       READY per ADR-009.
+     *     - **Added** optional `bio`, `profilePictureUrl`, `presentationUploadId` so the
+     *       organizer drawer can submit on-behalf content with CV/portrait/upload reference.
+     *     - `additionalProperties: false` enforces strict request validation — payloads with
+     *       unknown fields (including the removed legacy fields) yield 400.
      */
     SubmitContentRequest: {
       /**
@@ -795,31 +535,25 @@ export interface components {
        */
       presentationAbstract: string;
       /**
-       * @description Speaker username (if existing user selected, ADR-003)
-       * @example john.doe
-       */
-      username?: string;
-      /**
-       * @description Speaker name (if creating new user)
-       * @example John Doe
-       */
-      speakerName?: string;
-      /**
-       * Format: email
-       * @description Speaker email (if creating new user)
-       * @example john.doe@example.com
-       */
-      email?: string;
-      /**
-       * @description Speaker company (optional)
-       * @example Google Switzerland
-       */
-      company?: string;
-      /**
-       * @description Speaker bio (optional)
+       * @description Optional speaker bio. When present, patched onto `User.bio` for the resolved
+       *     speaker username via the User Management Service (Story 11.C.2 — AR14).
        * @example Experienced security architect with 15 years in the industry.
        */
       bio?: string;
+      /**
+       * Format: uri
+       * @description Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+       *     presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+       *     When present, the consolidated service links the uploaded file to the session via
+       *     the existing materials-confirm pathway.
+       * @example upload-abc-123
+       */
+      presentationUploadId?: string;
     };
     /**
      * @description Response for speaker content operations (Story 5.5 AC6-10).
@@ -890,6 +624,68 @@ export interface components {
        */
       materialFileName?: string;
     };
+    /**
+     * @description Speaker self-service content submission via the Cognito-authenticated speaker portal.
+     *     Story 11.C.2 added optional `bio`, `profilePictureUrl`, `presentationUploadId` so the
+     *     speaker can patch their User profile + attach an uploaded presentation in a single
+     *     submit. Story 11.E.3 removed the magic-link `token` field — auth is now the Cognito
+     *     Bearer JWT in the `Authorization` header.
+     */
+    ContentSubmitRequest: {
+      /**
+       * @description Presentation title.
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      title: string;
+      /**
+       * @description Presentation abstract.
+       * @example This talk explores Zero Trust principles...
+       */
+      contentAbstract: string;
+      /**
+       * @description Optional speaker bio. When present, patched onto `User.bio` for the resolved
+       *     speaker username via the User Management Service (Story 11.C.2 — AR14).
+       * @example Experienced security architect with 15 years in the industry.
+       */
+      bio?: string;
+      /**
+       * Format: uri
+       * @description Optional speaker portrait URL (typically a CloudFront URL produced by a separate
+       *     presigned-upload flow). When present, patched onto `User.profile_picture_url`.
+       * @example https://cdn.batbern.ch/users/jane.smith.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Optional upload ID from a separate presigned-URL upload (Story 6.3 materials flow).
+       *     When present, the consolidated service links the uploaded file to the session.
+       * @example upload-abc-123
+       */
+      presentationUploadId?: string;
+    };
+    /** @description Response after a successful speaker-portal content submission. */
+    ContentSubmitResponse: {
+      /**
+       * Format: uuid
+       * @description The content submission record ID.
+       */
+      submissionId: string;
+      /**
+       * Format: int32
+       * @description Submission version (1 for first, increments on resubmission).
+       * @example 1
+       */
+      version: number;
+      /**
+       * @description Submission status — always "SUBMITTED" after a successful submit.
+       * @example SUBMITTED
+       */
+      status: string;
+      /**
+       * @description Session title (for confirmation display).
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      sessionTitle: string;
+    };
     /** @description Request for quality review action (Story 5.5 AC13-14) */
     ReviewRequest: {
       action: components['schemas']['ReviewAction'];
@@ -930,6 +726,18 @@ export interface components {
       company?: string;
       status?: components['schemas']['SpeakerWorkflowState'];
       /**
+       * @description Derived flag (ADR-009 §0.1, Story 11.B.3): true when the speaker has an
+       *     assigned session whose start_time is non-null. NOT a persisted column —
+       *     computed at read time.
+       */
+      isSlotAssigned?: boolean;
+      /**
+       * @description Derived flag (ADR-009 §0.1, Story 11.B.3): true when
+       *     status == QUALITY_REVIEWED AND isSlotAssigned. Gates the AGENDA_PUBLISHED
+       *     event-workflow transition. NOT a persisted column.
+       */
+      isPublishable?: boolean;
+      /**
        * @description Content submission status
        * @enum {string}
        */
@@ -956,333 +764,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listSpeakers: {
-    parameters: {
-      query?: {
-        /** @description Filter by company name (ADR-003 meaningful ID) */
-        companyName?: string;
-        /** @description Filter by expertise area */
-        expertiseArea?: string;
-        /** @description Filter by availability status */
-        availability?: components['schemas']['SpeakerAvailability'];
-        /** @description Filter by workflow state */
-        workflowState?: components['schemas']['SpeakerWorkflowState'];
-        /** @description Page number (0-indexed) */
-        page?: number;
-        /** @description Number of items per page */
-        limit?: number;
-        /** @description Filter by expertise area (array contains filter) - AC4 */
-        expertiseAreas?: string;
-        /** @description Filter by languages (array contains filter) - AC4 */
-        languages?: string;
-        /** @description Filter by speaking topics (array contains filter) - AC4 */
-        speakingTopics?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description List of speakers retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            speakers?: components['schemas']['SpeakerResponse'][];
-            pagination?: components['schemas']['Pagination'];
-          };
-        };
-      };
-      /** @description Bad request - invalid parameters */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  createSpeaker: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateSpeakerRequest'];
-      };
-    };
-    responses: {
-      /** @description Speaker profile created successfully */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerResponse'];
-        };
-      };
-      /** @description Bad request - validation errors or duplicate speaker */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden - requires ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description User not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getSpeakerByUsername: {
-    parameters: {
-      query?: {
-        /**
-         * @description Resource expansion - comma-separated list of related resources to include (AC3).
-         *     Supported: speakingHistory, events, sessions
-         */
-        include?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Username (ADR-003 meaningful ID from User entity) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Speaker retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerResponse'];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Speaker not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  deleteSpeaker: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Username (ADR-003 meaningful ID from User entity) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Speaker profile deleted successfully */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden - requires ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Speaker not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  updateSpeaker: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Username (ADR-003 meaningful ID from User entity) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateSpeakerRequest'];
-      };
-    };
-    responses: {
-      /** @description Speaker updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerResponse'];
-        };
-      };
-      /** @description Bad request - validation errors */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Speaker not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getSpeakerPreferences: {
-    parameters: {
-      query: {
-        /** @description Event code (ADR-003 meaningful ID) */
-        eventCode: string;
-      };
-      header?: never;
-      path: {
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Preferences retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerSlotPreferences'];
-        };
-      };
-      /** @description Preferences not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  submitSpeakerPreferences: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SubmitPreferencesRequest'];
-      };
-    };
-    responses: {
-      /** @description Preferences submitted successfully */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerSlotPreferences'];
-        };
-      };
-      /** @description Bad request - validation errors */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   updateSpeakerStatus: {
     parameters: {
       query?: never;
@@ -1310,7 +791,12 @@ export interface operations {
           'application/json': components['schemas']['SpeakerStatusResponse'];
         };
       };
-      /** @description Validation error */
+      /**
+       * @description Bad request. Returned for:
+       *     - newStatus is one of the 5 removed legacy values (INVALID_SPEAKER_WORKFLOW_STATE).
+       *     - newStatus = READY (READY_REQUIRES_PROMOTE_ENDPOINT — use POST /promote).
+       *     - Reason field exceeds 2000 characters (validation error).
+       */
       400: {
         headers: {
           [name: string]: unknown;
@@ -1342,7 +828,13 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
-      /** @description Invalid state transition */
+      /**
+       * @description Invalid state transition or workflow validation failed. Returned for:
+       *     - Illegal state-machine transition (code INVALID_STATE_TRANSITION),
+       *       e.g. attempting QUALITY_REVIEWED → ACCEPTED.
+       *     - Business rule violation (code WORKFLOW_VALIDATION_FAILED),
+       *       e.g. no accepted speakers when publishing agenda.
+       */
       422: {
         headers: {
           [name: string]: unknown;
@@ -1779,6 +1271,89 @@ export interface operations {
       };
       /** @description Speaker not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  submitSpeakerPortalContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Meaningful event identifier (ADR-003) — e.g. `BATbern56`. Per code review
+         *     2026-05-18 (P20) the auth service caps length to avoid passing oversized
+         *     strings into the JPA JOIN.
+         * @example BATbern56
+         */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ContentSubmitRequest'];
+      };
+    };
+    responses: {
+      /** @description Content submitted successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContentSubmitResponse'];
+        };
+      };
+      /** @description Validation error (blank fields, unknown property, etc.) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unauthenticated — no Cognito Bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description Forbidden — caller lacks SPEAKER role, OR has SPEAKER role but no pool row for
+       *     the requested eventCode (SpeakerPortalAuthorizationService).
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description Conflict — event is in EVENT_COMPLETED state, or the resolved speaker_pool row
+       *     lacks a canonical username (provisioning invariant violation, code review D2/P1).
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state — speaker not in ACCEPTED or CONTENT_SUBMITTED */
+      422: {
         headers: {
           [name: string]: unknown;
         };

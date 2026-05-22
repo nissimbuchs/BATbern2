@@ -45,8 +45,10 @@ public class SpeakerPool {
     @Column(name = "event_id", nullable = false, columnDefinition = "UUID")
     private UUID eventId;
 
-    @Column(name = "username", length = 255)
-    private String username; // Username for authenticated speakers (Story BAT-11)
+    // Story 11.E.9 consolidation: username + email columns dropped (V103).
+    // The canonical post-READY identity lives on session_users.username + UserApiClient;
+    // pre-READY pool rows (IDENTIFIED/CONTACTED) have no User record yet. Use
+    // PrimarySpeakerResolver.resolve(pool) to fetch the live identity.
 
     @Column(name = "speaker_name", nullable = false, length = 255)
     private String speakerName;
@@ -67,20 +69,17 @@ public class SpeakerPool {
      * Database storage: lowercase_with_underscores (e.g., 'identified', 'contacted')
      * Java representation: UPPER_CASE (e.g., IDENTIFIED, CONTACTED)
      *
-     * Workflow states:
+     * Workflow states (ADR-009, 8-state model):
      * - IDENTIFIED (default) - potential speaker identified
      * - CONTACTED - speaker has been contacted
-     * - READY - speaker is ready to be invited
+     * - READY - speaker provisioned, ready to be invited
+     * - INVITED - invitation email sent
      * - ACCEPTED - speaker accepted invitation
-     * - DECLINED - speaker declined
-     * - CONTENT_SUBMITTED - speaker submitted content
+     * - DECLINED - speaker declined (terminal)
+     * - CONTENT_SUBMITTED - speaker submitted presentation content
      * - QUALITY_REVIEWED - content has been reviewed
-     * - SLOT_ASSIGNED - speaker assigned to time slot
-     * - CONFIRMED - speaker confirmed attendance
-     * - WITHDREW - speaker withdrew from event
-     * - OVERFLOW - speaker added to overflow list
      *
-     * Story 5.3: Updated to use SpeakerWorkflowState enum with converter
+     * Story 5.3 / 11.B.1: SpeakerWorkflowState enum with converter
      */
     @Column(name = "status", nullable = false, length = 50)
     @Convert(converter = SpeakerWorkflowStateConverter.class)
@@ -93,8 +92,7 @@ public class SpeakerPool {
     private String notes;
 
     // Story 6.1b: Speaker Invitation System fields
-    @Column(name = "email", length = 255)
-    private String email;
+    // Story 11.E.9: email column dropped (V103) — see note at top of class.
 
     @Column(name = "invited_at")
     private Instant invitedAt;
@@ -115,12 +113,6 @@ public class SpeakerPool {
     @Column(name = "decline_reason", columnDefinition = "TEXT")
     private String declineReason;
 
-    @Column(name = "is_tentative")
-    private Boolean isTentative = false;
-
-    @Column(name = "tentative_reason", columnDefinition = "TEXT")
-    private String tentativeReason;
-
     @Column(name = "preferred_time_slot", length = 100)
     private String preferredTimeSlot;
 
@@ -130,8 +122,12 @@ public class SpeakerPool {
     @Column(name = "technical_requirements", columnDefinition = "TEXT")
     private String technicalRequirements;
 
-    @Column(name = "initial_presentation_title", length = 500)
-    private String initialPresentationTitle;
+    // Story 11.E.8 consolidation: dropped fields
+    //   - initial_presentation_title (V102): legacy "working title" — sessions.title is canonical now
+    //   - content_status              (V102): denormalized projection — derived from
+    //                                          session_content_history.reviewer_feedback at read time
+    //   - content_submitted_at        (V102): denormalized projection — derived from
+    //                                          latest session_content_history.submitted_at at read time
 
     @Column(name = "preference_comments", columnDefinition = "TEXT")
     private String preferenceComments;
@@ -139,13 +135,6 @@ public class SpeakerPool {
     // Story 6.5: Automated Deadline Reminders
     @Column(name = "reminders_disabled")
     private Boolean remindersDisabled = false;
-
-    // Story 6.3: Speaker Content Submission Portal fields
-    @Column(name = "content_status", length = 50)
-    private String contentStatus = "PENDING"; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
-
-    @Column(name = "content_submitted_at")
-    private Instant contentSubmittedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

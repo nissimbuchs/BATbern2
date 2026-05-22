@@ -33,7 +33,11 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-describe('SpeakerMagicLoginPage Component', () => {
+// Story 11.E.3 (AC8): SpeakerMagicLoginPage is disconnected from the router. The page
+// file remains for Phase F (Story 11.F.1) to delete cleanly along with MagicLinkService
+// and the magic-link tokens table. Tests are skipped because the page is dead from the
+// SPA's perspective; running them against the disconnected page yields no signal.
+describe.skip('SpeakerMagicLoginPage Component', () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },

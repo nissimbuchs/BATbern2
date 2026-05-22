@@ -4,7 +4,6 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.BatchInviteRequest;
 import ch.batbern.events.dto.BatchInviteResponse;
 import ch.batbern.events.dto.InviteSpeakerRequest;
@@ -18,11 +17,10 @@ import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,12 +52,11 @@ public class SpeakerInvitationService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
-    private final MagicLinkService magicLinkService;
-    private final SpeakerInvitationEmailService emailService;
     private final SecurityContextHelper securityContextHelper;
     private final ApplicationEventPublisher eventPublisher;
     private final OutreachHistoryRepository outreachHistoryRepository;
-    private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final SpeakerWorkflowService speakerWorkflowService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     /**
      * Invite a speaker to an event.
@@ -79,25 +76,10 @@ public class SpeakerInvitationService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // 2. Check for existing speaker pool entry (AC7: idempotency)
-        Optional<SpeakerPool> existingSpeaker = speakerPoolRepository
-                .findByEventIdAndEmail(event.getId(), request.email());
-
-        if (existingSpeaker.isPresent()) {
-            SpeakerPool speaker = existingSpeaker.get();
-            log.info("Speaker {} already exists in pool for event {}",
-                    LoggingUtils.maskEmail(request.email()), eventCode);
-            return InviteSpeakerResponse.existing(
-                    speaker.getId(),
-                    speaker.getUsername(),
-                    speaker.getEmail(),
-                    speaker.getSpeakerName(),
-                    speaker.getStatus(),
-                    speaker.getCreatedAt()
-            );
-        }
-
-        // 3. Get or create user via User Management Service (AC2)
+        // 2. Get or create user via User Management Service (AC2). Story 11.E.9: the
+        // email-based idempotency check is gone — speaker_pool no longer stores email,
+        // and there's no session_users row yet at IDENTIFIED to dedupe against. Multiple
+        // pool rows per User for the same event are acceptable in the brainstorm UX.
         GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
         userRequest.setEmail(request.email());
         userRequest.setFirstName(request.firstName());
@@ -111,11 +93,12 @@ public class SpeakerInvitationService {
         log.debug("User {} for speaker {}, username: {}",
                 userCreated ? "created" : "found", request.email(), userResponse.getUsername());
 
-        // 4. Create SpeakerPool entry (AC1)
+        // 3. Create SpeakerPool entry (AC1) — initial status assignment on INSERT bypasses
+        // transition() by design (ADR-009: speakers enter the workflow at IDENTIFIED).
+        // Story 11.E.9: username/email are no longer columns on speaker_pool — they live
+        // in CUMS (just provisioned above) and on session_users (created at READY).
         SpeakerPool speakerPool = SpeakerPool.builder()
                 .eventId(event.getId())
-                .username(userResponse.getUsername())
-                .email(request.email())
                 .speakerName(request.getDisplayName())
                 .company(request.company())
                 .sessionId(request.sessionId())
@@ -128,10 +111,11 @@ public class SpeakerInvitationService {
         log.info("Created SpeakerPool entry {} for speaker {} in event {}",
                 saved.getId(), LoggingUtils.maskEmail(request.email()), eventCode);
 
+        // Response carries the just-provisioned CUMS identity for the FE to display.
         return InviteSpeakerResponse.created(
                 saved.getId(),
-                saved.getUsername(),
-                saved.getEmail(),
+                userResponse.getUsername(),
+                request.email(),
                 saved.getSpeakerName(),
                 userCreated,
                 saved.getCreatedAt()
@@ -163,10 +147,13 @@ public class SpeakerInvitationService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // 2. Find the speaker pool entry (try by username first, then by ID for brainstormed speakers)
+        // 2. Find the speaker pool entry. Story 11.E.9: the JOIN-based
+        // findByEventIdAndUsername navigates session_users → session → speaker_pool;
+        // brainstormed (pre-READY) speakers won't match the JOIN, so the ID fallback
+        // remains for the case where the FE has the pool ID and calls this endpoint
+        // with the UUID in the username slot.
         SpeakerPool speaker = speakerPoolRepository.findByEventIdAndUsername(event.getId(), username)
                 .or(() -> {
-                    // Brainstormed speakers may not have username, try finding by ID
                     try {
                         java.util.UUID speakerId = java.util.UUID.fromString(username);
                         return speakerPoolRepository.findById(speakerId)
@@ -177,82 +164,58 @@ public class SpeakerInvitationService {
                 })
                 .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
 
-        // 3. Handle email: use from request if provided (overrides stored email)
-        if (request.email() != null && !request.email().isBlank()) {
-            if (!request.email().equals(speaker.getEmail())) {
-                log.info("Updating speaker {} email from '{}' to '{}'",
-                        username,
-                        LoggingUtils.maskEmail(speaker.getEmail()),
-                        LoggingUtils.maskEmail(request.email()));
-                speaker.setEmail(request.email());
-            }
-        }
-
-        // Validate email exists
-        if (speaker.getEmail() == null) {
+        // 3. Resolve recipient email. Story 11.E.9: the canonical email is on the User
+        // (CUMS) record provisioned at CONTACTED → READY. The request.email() override
+        // lets the organizer send to a one-shot address (e.g. a forwarder) without
+        // changing CUMS; the override does NOT persist anywhere — it flows through the
+        // TransitionPayload to the INVITED hook's email service only.
+        String resolvedEmail = request.email() != null && !request.email().isBlank()
+                ? request.email()
+                : primarySpeakerResolver.resolveEmail(speaker).orElse(null);
+        if (resolvedEmail == null) {
             throw new IllegalArgumentException("Speaker email is required to send invitation");
         }
 
-        // 3. Generate magic link tokens
-        String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
-        String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
-
-        // 4. Capture previous status for history tracking
-        SpeakerWorkflowState previousStatus = speaker.getStatus();
-
-        // 5. Update speaker pool entry with invitation details
-        Instant invitedAt = Instant.now();
-        speaker.setInvitedAt(invitedAt);
+        // 4. Pre-mutate invitation params on the speaker (organizer-supplied; not state changes).
         speaker.setResponseDeadline(request.responseDeadline());
         speaker.setContentDeadline(request.contentDeadline());
-        speaker.setStatus(SpeakerWorkflowState.INVITED);
 
-        SpeakerPool updated = speakerPoolRepository.save(speaker);
-
-        // 5. Send invitation email asynchronously (AC3, AC4)
-        Locale locale = request.locale() != null
-                ? Locale.forLanguageTag(request.locale())
-                : Locale.GERMAN;
-
-        emailService.sendInvitationEmail(
-                updated,
-                event,
-                respondToken,
-                dashboardToken,
-                locale
-        );
-
-        // 6. Record outreach history for the automated email invitation
+        // 5. Delegate to SpeakerWorkflowService.transition() — sole writer per ADR-009.
+        //    The INVITED side-effect hook generates magic-link tokens, sends the invitation
+        //    email, sets invitedAt, and writes the speaker_status_history row.
+        //    The slot-capacity gate (READY → INVITED) is enforced inside transition()
+        //    and surfaces as SlotCapacityReachedException → HTTP 409 from GlobalExceptionHandler.
         String currentUser = securityContextHelper.getCurrentUsername();
+        String auditActor = currentUser != null ? currentUser : "system";
+        TransitionPayload payload = TransitionPayload.builder()
+                .email(resolvedEmail)
+                .reason("Invitation email sent")
+                .inviteContext(Map.of("locale", request.locale() != null ? request.locale() : "de"))
+                .build();
+
+        speakerWorkflowService.transition(speaker.getId(), SpeakerWorkflowState.INVITED, auditActor, payload);
+
+        // 5. Reload to pick up invitedAt (set by INVITED hook) for the response DTO.
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId())
+                .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
+
+        // 6. Record outreach history for the automated email invitation (audit, not state).
         OutreachHistory outreach = new OutreachHistory();
         outreach.setSpeakerPoolId(updated.getId());
-        outreach.setContactDate(invitedAt);
+        outreach.setContactDate(updated.getInvitedAt() != null ? updated.getInvitedAt() : Instant.now());
         outreach.setContactMethod("email");
         outreach.setNotes("Automated invitation email sent via speaker portal");
         outreach.setOrganizerUsername(currentUser != null ? currentUser : "system");
         outreachHistoryRepository.save(outreach);
         log.debug("Created outreach history for invitation to speaker {}", username);
 
-        // 7. Record status history for the transition to INVITED
-        if (previousStatus != SpeakerWorkflowState.INVITED) {
-            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
-            statusHistory.setSpeakerPoolId(updated.getId());
-            statusHistory.setEventId(event.getId());
-            statusHistory.setPreviousStatus(previousStatus != null ? previousStatus : SpeakerWorkflowState.IDENTIFIED);
-            statusHistory.setNewStatus(SpeakerWorkflowState.INVITED);
-            statusHistory.setChangedByUsername(currentUser != null ? currentUser : "system");
-            statusHistory.setChangeReason("Invitation email sent");
-            statusHistory.setChangedAt(invitedAt);
-            statusHistoryRepository.save(statusHistory);
-            log.debug("Created status history for speaker {} transition to INVITED", username);
-        }
-
-        // 8. Publish domain event (AC6)
+        // 7. Publish domain event (AC6). Story 11.E.9: email comes from the resolved
+        // address used above (may be the request override or CUMS-resolved).
         SpeakerInvitationSentEvent sentEvent = new SpeakerInvitationSentEvent(
                 updated.getId(),
                 eventCode,
                 username,
-                updated.getEmail(),
+                resolvedEmail,
                 currentUser
         );
         eventPublisher.publishEvent(sentEvent);
@@ -260,10 +223,15 @@ public class SpeakerInvitationService {
 
         log.info("Invitation sent to speaker {} for event {}", username, eventCode);
 
+        // Response identity: resolver fetches the current primary speaker
+        // (session_users + CUMS). Username comes from session_users; email may
+        // differ from resolvedEmail if the organizer used a one-shot override.
+        PrimarySpeakerResolver.PrimarySpeakerProfile profile =
+                primarySpeakerResolver.resolve(updated).orElse(null);
         return new SendInvitationResponse(
                 updated.getId(),
-                updated.getUsername(),
-                updated.getEmail(),
+                profile != null ? profile.username() : username,
+                profile != null && profile.email() != null ? profile.email() : resolvedEmail,
                 updated.getStatus(),
                 updated.getInvitedAt(),
                 updated.getResponseDeadline(),

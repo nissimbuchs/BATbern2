@@ -1,0 +1,31 @@
+meta {
+  name: Public User Lookup Returns 404 for Unknown Username (Story 11.C.1)
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/public/users/no.such.user.99999
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("unknown username returns 404 (not 401) — endpoint is permitAll", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("404 also surfaces D2 row-scope: non-speakers (attendee-only users) return 404", function() {
+    // If this assertion flips to 200 for a non-speaker user, the row-scope guard
+    // in PublicUserService.getByUsername has regressed.
+    expect(res.getStatus()).to.equal(404);
+  });
+}

@@ -62,8 +62,52 @@ tags:
     description: GDPR-compliant data export and deletion
   - name: Domain Integration
     description: Domain service integration endpoints
+  - name: Public
+    description: |
+      Anonymous (unauthenticated) endpoints. Strictly narrow public projection —
+      no email, no role list, no other PII. Mirrors the established
+      /api/v1/public/organizers pattern (Story 11.C.1).
 
 paths:
+  /public/users/{username}:
+    get:
+      operationId: getPublicUserByUsername
+      tags:
+        - Public
+      summary: Get public user by username (no authentication)
+      description: |
+        Anonymous lookup of a user's narrow public projection (Story 11.C.1, AC7).
+
+        Replaces the deleted GET /api/v1/speakers/{username} endpoint that the
+        public archive page used to call for speaker portraits. Mirrors the
+        narrow projection of /api/v1/public/organizers (firstName, lastName,
+        profilePictureUrl + username) — no email, no role list, no other PII.
+
+        Used by web-frontend's useUserPortrait hook on the public archive page.
+      security: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Public user identifier (ADR-003)
+          schema:
+            type: string
+            example: john.doe
+      responses:
+        '200':
+          description: Public user projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
   /users/{username}/watch-pairing:
     post:
       operationId: generateWatchPairingCode
@@ -1334,6 +1378,234 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/provision:
+    post:
+      tags:
+        - Domain Integration
+      summary: Provision a user with a role (Story 11.C.2 — AR13)
+      description: |
+        Idempotent endpoint for the canonical "create User + grant role" flow used by the
+        Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
+
+        **ADR-009**: Decision 3 — Cognito provisioning. Cognito wiring is split across two
+        endpoints per Story 11.E.2's Resolved Q#1 Variant B:
+
+        - **READY (this endpoint)**: `AdminCreateUser` (silent shell, `MessageAction=SUPPRESS`)
+          creates the Cognito user in `FORCE_CHANGE_PASSWORD` state. The temporary password
+          passed to Cognito is internal-only and is **NOT** returned in the response.
+        - **INVITED (sibling endpoint `/users/{username}/issue-invitation-credentials`)**:
+          `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` issues the
+          fresh temporary password embedded in the invitation email.
+
+        SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per ADR-001 —
+        NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1 Resolved Q#1).
+
+        **Behaviour**:
+        - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
+          grants the requested role if not already held; returns existing `username` and `created=false`.
+        - If User does not exist: creates User row, grants role, returns generated `username` and
+          `created=true`. The username is auto-generated from email per the existing
+          `getOrCreateUser` policy.
+        - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
+          the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
+          backs the idempotency guarantee at the DB layer.
+
+        **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
+        propagates the ORGANIZER JWT per `microservices-http-clients.md`).
+
+        **Performance**: <200ms (P95)
+
+      operationId: provisionUserWithRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionUserRequest'
+            examples:
+              speakerProvisioning:
+                summary: Provision a speaker at CONTACTED → READY
+                value:
+                  email: jane.smith@example.com
+                  firstName: Jane
+                  lastName: Smith
+                  role: SPEAKER
+      responses:
+        '200':
+          description: User provisioned (created or already existed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: |
+            Cognito upstream error. Story 11.E.2 wired `AdminCreateUser` (silent) at READY,
+            so a transient Cognito 5xx, throttle, or network failure during the call is
+            mapped to `CognitoOperationException` → 502 here. Caller should retry; the
+            provisioning is idempotent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/issue-invitation-credentials:
+    post:
+      tags:
+        - Domain Integration
+      summary: Issue (or skip) Cognito temp credentials at invitation time (Story 11.E.2 — AR15/FR9)
+      description: |
+        Service-to-service endpoint called by `SpeakerWorkflowService.runInvitedHook` at
+        READY → INVITED. Delegates to Cognito's `AdminGetUser` + conditional
+        `AdminSetUserPassword(Permanent=false)` to mint a fresh temporary password (when
+        the user is `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED`) or to
+        confirm that the existing password remains valid (when the user is `CONFIRMED`).
+
+        **Per Resolved Q#1 Variant B + Q#4** of Story 11.E.2: credential issuance is
+        deliberately decoupled from `/users/provision` (which only runs the silent
+        `AdminCreateUser` shell). The two-endpoint design avoids storing the temp password
+        anywhere between READY and INVITED.
+
+        **Idempotent**: repeated calls are safe. `FRESH_TEMP_PASSWORD` branch overwrites the
+        previous temp password (only the most recently issued one is valid). `USE_EXISTING_PASSWORD`
+        branch is a pure read.
+
+        **Authorization**: ORGANIZER or ADMIN (service-to-service call from
+        event-management-service propagates the ORGANIZER JWT).
+
+        **Performance**: <300ms (P95)
+
+      operationId: issueInvitationCredentials
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Target user's username (Story 1.16.2)
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: jane.smith
+      responses:
+        '200':
+          description: Credentials issued or confirmed existing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationCredentialsResponse'
+              examples:
+                freshTempPassword:
+                  summary: User is FORCE_CHANGE_PASSWORD — fresh temp password issued
+                  value:
+                    temporaryPassword: "Tk7!aB2@nx9pQ4#z"
+                    action: FRESH_TEMP_PASSWORD
+                useExistingPassword:
+                  summary: User is CONFIRMED — keep using current password
+                  value:
+                    temporaryPassword: null
+                    action: USE_EXISTING_PASSWORD
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: |
+            Cognito user is in a state that requires operator intervention (ARCHIVED,
+            COMPROMISED, UNKNOWN). EMS should NOT silently retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: |
+            Upstream Cognito Admin SDK call failed. EMS should treat this as a transient
+            upstream error (retry after a brief backoff) and abort the INVITED transition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/profile:
+    patch:
+      tags:
+        - User Management
+      summary: Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
+      description: |
+        Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
+        consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
+        (self) submits content that includes a CV blurb or a portrait.
+
+        **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
+        entity (single source of truth). This endpoint overwrites the global values — there
+        is no per-event snapshot.
+
+        **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
+        **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
+        and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
+
+        **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
+        fields are left unchanged.
+
+      operationId: patchUserProfile
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Target user's username (Story 1.16.2)
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: jane.smith
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserProfileRequest'
+            examples:
+              fullPatch:
+                summary: Update bio and profile picture
+                value:
+                  bio: "Experienced security architect with 15 years in the industry."
+                  profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
+              bioOnly:
+                summary: Update bio only
+                value:
+                  bio: "Updated bio for the next event."
+      responses:
+        '200':
+          description: Profile patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/get-or-create:
     post:
       tags:
@@ -1481,6 +1753,35 @@ paths:
 
 components:
   schemas:
+    # Story 11.C.1: Public user projection (anonymous lookup)
+    PublicUserResponse:
+      type: object
+      description: |
+        Narrow public projection of a user — exactly the fields the public
+        archive page needs for portrait display. No email, no role list,
+        no other PII. Mirrors PublicOrganizerResponse's projection.
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: Public identifier (ADR-003)
+          example: john.doe
+        firstName:
+          type: string
+          nullable: true
+          example: John
+        lastName:
+          type: string
+          nullable: true
+          example: Doe
+        profilePictureUrl:
+          type: string
+          nullable: true
+          format: uri
+          description: CloudFront URL of the user's portrait, when set.
+          example: https://cdn.batbern.ch/users/john.doe/profile.jpg
+
     # W2.2: Watch Authentication Schemas
     WatchPairingRequest:
       type: object
@@ -1766,6 +2067,120 @@ components:
           maxLength: 500
           description: User biography/description
           example: Software engineer passionate about cloud architecture
+
+    ProvisionUserRequest:
+      type: object
+      description: |
+        Request to provision a User with a role (Story 11.C.2 — AR13).
+        Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+      additionalProperties: false
+      required:
+        - email
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          description: Required. Lookup key for the existing-user path (case-insensitive).
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: |
+            Optional. If absent, defaults are derived from the email local-part
+            (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
+          example: Jane
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: |
+            Optional. If absent, defaults are derived from the email local-part.
+            See `firstName`.
+          example: Smith
+        role:
+          type: string
+          description: |
+            Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
+            ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
+            requests a non-SPEAKER role.
+          enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          example: SPEAKER
+
+    ProvisionUserResponse:
+      type: object
+      description: |
+        Response from the user-provisioning endpoint. Story 11.E.2 (Resolved Q#1 Variant B)
+        removed the `temporaryPassword` field — credential issuance is owned by the sibling
+        `/users/{username}/issue-invitation-credentials` endpoint, which is called at
+        READY → INVITED rather than at CONTACTED → READY.
+      required:
+        - username
+        - created
+      properties:
+        username:
+          type: string
+          description: |
+            Canonical username (existing or newly generated). No regex `pattern` constraint
+            on the response — the server may emit legacy usernames that predate the current
+            `firstname.lastname[.NN]` convention (e.g., hyphenated or apostrophed names).
+            Pattern is enforced on `ProvisionUserRequest.username` only.
+          example: jane.smith
+        created:
+          type: boolean
+          description: True if a new User row was created; false if the user already existed.
+          example: true
+
+    InvitationCredentialsResponse:
+      type: object
+      description: |
+        Response from `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
+        Determines whether the invitation email renders the "temporary password" block or the
+        "use your existing password" block.
+      required:
+        - action
+      properties:
+        temporaryPassword:
+          type: string
+          nullable: true
+          description: |
+            Fresh temporary password for the speaker's first login. Non-null when
+            `action = "FRESH_TEMP_PASSWORD"`; null when `action = "USE_EXISTING_PASSWORD"`.
+            Never persisted at rest in CUMS or EMS; the caller embeds it once in the
+            invitation email and discards it from memory.
+          example: "Tk7!aB2@nx9pQ4#z"
+        action:
+          type: string
+          enum: ["FRESH_TEMP_PASSWORD", "USE_EXISTING_PASSWORD"]
+          description: |
+            Discriminator for the calling email service. Determines whether the
+            invitation-email template renders the temp-password block or the
+            "use your existing password" block.
+          example: FRESH_TEMP_PASSWORD
+
+    PatchUserProfileRequest:
+      type: object
+      description: |
+        Patch the narrow profile fields owned by the consolidated ContentSubmissionService
+        (Story 11.C.2 — AR14). At least one of `bio` or `profilePictureUrl` must be present.
+        Null fields are left unchanged.
+      additionalProperties: false
+      properties:
+        bio:
+          type: string
+          maxLength: 5000
+          description: Updated user biography. Overwrites the global value per ADR-009 §6.7.
+          example: "Experienced security architect with 15 years in the industry."
+        profilePictureUrl:
+          type: string
+          maxLength: 2048
+          description: |
+            Updated profile picture URL (typically a CloudFront URL produced by an earlier
+            presigned-upload flow). Modelled as a plain string (not `format: uri`) so the
+            Bean Validation {@code @Size(max=2048)} constraint generated by the Spring
+            OpenAPI generator applies cleanly.
+          example: "https://cdn.batbern.ch/users/jane.smith.jpg"
 
     GetOrCreateUserRequest:
       type: object

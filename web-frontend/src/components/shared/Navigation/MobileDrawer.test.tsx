@@ -22,7 +22,12 @@ describe('MobileDrawer Component', () => {
   describe('Basic Rendering', () => {
     test('should_renderDrawer_when_open', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Should render Material-UI Drawer
@@ -32,7 +37,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_notRenderDrawer_when_closed', () => {
       renderWithRouter(
-        <MobileDrawer open={false} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={false}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Drawer should not be visible
@@ -42,7 +52,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_renderBATbernLogo_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Should display logo in drawer header
@@ -54,7 +69,12 @@ describe('MobileDrawer Component', () => {
   describe('Navigation Menu', () => {
     test('should_renderRoleBasedMenu_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Should render navigation menu based on role
@@ -64,7 +84,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_closeDrawer_when_menuItemClicked', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       const eventsLink = screen.getAllByText(/events/i)[0];
@@ -77,7 +102,12 @@ describe('MobileDrawer Component', () => {
   describe('Close Functionality', () => {
     test('should_renderCloseButton_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Should have close button (X icon)
@@ -87,7 +117,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_closeDrawer_when_closeButtonClicked', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       const closeButton = screen.getByLabelText(/close/i);
@@ -98,7 +133,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_closeDrawer_when_backdropClicked', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Click on backdrop (outside drawer)
@@ -114,7 +154,12 @@ describe('MobileDrawer Component', () => {
   describe('Slide Animation', () => {
     test('should_slideInFromLeft_when_opening', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Material-UI Drawer should render when open (slide animation handled by MUI)
@@ -130,6 +175,7 @@ describe('MobileDrawer Component', () => {
           open={true}
           onClose={mockOnClose}
           userRoles={['organizer']}
+          activeRole="organizer"
           userEmail="test@batbern.ch"
         />
       );
@@ -140,7 +186,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_renderLogoutButton_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Should have logout option in drawer
@@ -152,7 +203,12 @@ describe('MobileDrawer Component', () => {
   describe('Accessibility', () => {
     test('should_trapFocus_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Material-UI Drawer traps focus automatically
@@ -162,7 +218,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_supportEscapeKey_when_drawerOpen', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Material-UI Drawer handles Escape key automatically via onClose
@@ -173,7 +234,12 @@ describe('MobileDrawer Component', () => {
 
     test('should_haveProperAriaLabels_when_rendered', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Check that drawer has proper ARIA structure
@@ -185,7 +251,12 @@ describe('MobileDrawer Component', () => {
   describe('Width', () => {
     test('should_have280pxWidth_when_rendered', () => {
       renderWithRouter(
-        <MobileDrawer open={true} onClose={mockOnClose} userRoles={['organizer']} />
+        <MobileDrawer
+          open={true}
+          onClose={mockOnClose}
+          userRoles={['organizer']}
+          activeRole="organizer"
+        />
       );
 
       // Material-UI Drawer should render when open (width handled by sx prop)

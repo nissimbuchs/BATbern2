@@ -268,6 +268,15 @@ type(scope): description
 - Role updates take effect on the user's NEXT login (JWT is issued at login time).
 - JWT claim for roles is `custom:role` (Cognito) or `role` (Watch JWT) — `extractAuthorities`
   must check both.
+- **Empty `custom:role` → fall back to the DB** (Pattern 3b, Epic 11.E.7): every service's
+  `JwtAuthenticationConverter` uses `shared-kernel/.../security/JwtRolesConverter`, which
+  queries `user_profiles` ⨝ `role_assignments` by `cognito_user_id = jwt.sub` whenever the
+  claim is empty. The frontend mirrors this in `AuthContext.hydrateRolesIfMissing` via
+  `GET /users/me?include=roles`. Dormant in staging (the JWT always carries roles there) —
+  this exists for local-dev where CUMS-provisioned speakers have their Cognito user in
+  staging but their `user_profiles` row only in the local DB, so PreTokenGen finds nothing.
+  Do NOT remove either fallback when refactoring auth — it is the only thing that makes
+  the local kanban → speaker-portal flow testable end-to-end.
 - Never call `refreshJWT()` on 401 inside a sync/service loop — triggers infinite auth retry
   (401 → refresh → onChange → sync → 401 → …). JWT refresh is handled only by AuthManager timer.
 

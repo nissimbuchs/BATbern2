@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -68,6 +69,12 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
     @MockitoBean
     private UserApiClient userApiClient;
 
@@ -113,6 +120,49 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         // Mock EmailService (don't actually send emails)
         doNothing().when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+
+        // Story 11.E.9: sendInvitation resolves the recipient email via
+        // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email
+        // column is gone). Stub the lookup so the email-resolution step doesn't 500.
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                new ch.batbern.events.dto.generated.users.UserResponse();
+        userProfile.setId(testUsername);
+        userProfile.setEmail(testEmail);
+        userProfile.setFirstName("Test");
+        userProfile.setLastName("Speaker");
+        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(testUsername))
+                .thenReturn(userProfile);
+        // Filler speakers in slot-capacity tests get arbitrary usernames; stub any() as a
+        // safe default so the resolver doesn't 500 for them.
+        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(anyString()))
+                .thenReturn(userProfile);
+    }
+
+    /**
+     * Story 11.E.9 helper: provision a Session + PRIMARY_SPEAKER session_users row for
+     * a speaker pool entry that was seeded directly at READY+. Without this, the
+     * {@code findByEventIdAndUsername} JOIN query returns empty and {@code sendInvitation}
+     * 404s before reaching its business logic.
+     */
+    private void seedPrimarySessionUser(SpeakerPool speaker, String username) {
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(speaker.getEventId())
+                .eventCode(testEventCode)
+                .title("Seeded — " + username)
+                .sessionSlug("seeded-" + java.util.UUID.randomUUID().toString().substring(0, 8))
+                .sessionType("presentation")
+                .speakerPoolId(speaker.getId())
+                .build();
+        session = sessionRepository.save(session);
+        ch.batbern.events.domain.SessionUser su = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username(username)
+                .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(false)
+                .build();
+        sessionUserRepository.save(su);
+        speaker.setSessionId(session.getId());
+        speakerPoolRepository.save(speaker);
     }
 
     // ==================== AC1: Single Invitation Tests ====================
@@ -148,17 +198,19 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     /**
-     * Test 1.2: Should return 200 for existing speaker (idempotency)
-     * AC7: Returns existing entry if speaker already invited
+     * Test 1.2: inviteSpeaker is no longer idempotent at IDENTIFIED.
+     *
+     * <p>Story 11.E.9: the email-based idempotency check was removed when
+     * speaker_pool.email column was dropped. Multiple pool rows for the same
+     * email/user at the brainstorm stage are now acceptable per the documented
+     * brainstorm UX. Always creates a new pool row.
      */
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return200_when_speakerAlreadyInvited() throws Exception {
-        // Given - Create existing speaker pool entry
+    void should_alwaysCreateNewEntry_when_emailReinvited() throws Exception {
+        // Given - existing speaker pool entry with the same email
         SpeakerPool existingSpeaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Existing Speaker")
                 .status(SpeakerWorkflowState.CONTACTED)
                 .createdAt(Instant.now())
@@ -166,7 +218,13 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .build();
         speakerPoolRepository.save(existingSpeaker);
 
-        // When/Then - Invite same email again
+        // Story 11.E.9: re-inviting the same email creates another pool row.
+        ch.batbern.events.dto.generated.users.GetOrCreateUserResponse userResp =
+                new ch.batbern.events.dto.generated.users.GetOrCreateUserResponse();
+        userResp.setUsername(testUsername);
+        userResp.setCreated(false);
+        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class))).thenReturn(userResp);
+
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -176,13 +234,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                                 "lastName": "Speaker"
                             }
                             """.formatted(testEmail)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.speakerName", is("Existing Speaker")))
-                .andExpect(jsonPath("$.status", is("CONTACTED")))
-                .andExpect(jsonPath("$.created", is(false)));
-
-        // Verify UserApiClient was NOT called (idempotency)
-        verify(userApiClient, never()).getOrCreateUser(any(GetOrCreateUserRequest.class));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status", is("IDENTIFIED")));
     }
 
     /**
@@ -253,23 +306,41 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     // ==================== AC3: Send Invitation Tests ====================
 
     /**
-     * Test 3.1: Should send invitation and update status to INVITED
-     * AC3: Sends personalized email with magic links
+     * Test 3.1: Should send invitation and update status to INVITED.
+     *
+     * <p>Story 11.E.2 (AC7): magic-link token generation is removed from
+     * {@code runInvitedHook} — invitations now embed a Cognito login URL + temporary
+     * password (issued via the CUMS {@code /issue-invitation-credentials} sibling
+     * endpoint). Magic-link tokens are NO LONGER created at INVITED time. The original
+     * 6.1b assertion {@code tokenRepository.findBySpeakerPoolId(...).isNotEmpty()} no
+     * longer holds; the assertion is removed in line with the Phase E migration. Phase
+     * F (Story 11.F.1) will delete the {@code magic_link_tokens} table entirely.
      */
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
     void should_sendInvitation_when_validRequest() throws Exception {
-        // Given - Create speaker pool entry
+        // Given - Create speaker pool entry at READY (ADR-009: only READY -> INVITED is allowed,
+        // because provisioning runs at CONTACTED -> READY first).
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Test Speaker")
-                .status(SpeakerWorkflowState.IDENTIFIED)
+                .status(SpeakerWorkflowState.READY)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        speakerPoolRepository.save(speaker);
+        speaker = speakerPoolRepository.save(speaker);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users — provision a
+        // primary session_users row so the lookup resolves.
+        seedPrimarySessionUser(speaker, testUsername);
+
+        // Story 11.E.2 review patch (P8 / B10): stub the new sibling endpoint that the
+        // INVITED hook now calls. Without this stub the mock would return null and the
+        // email-rendering path would silently no-op the temp-password block.
+        InvitationCredentialsResponse credentialsResponse = new InvitationCredentialsResponse(
+                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+                .temporaryPassword("TestTemp123!abcde");
+        when(userApiClient.issueInvitationCredentials(testUsername))
+                .thenReturn(credentialsResponse);
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
@@ -288,10 +359,11 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.invitedAt").exists())
                 .andExpect(jsonPath("$.responseDeadline", is(responseDeadline.toString())));
 
-        // Verify token was created
-        org.assertj.core.api.Assertions.assertThat(
-                tokenRepository.findBySpeakerPoolId(speaker.getId())
-        ).isNotEmpty();
+        // Story 11.E.2 review patch (P8 / B10 / E12): the pre-11.E.2 magic-link token
+        // assertion is gone, but the test must still verify the new Cognito-flow wiring
+        // happened — verify the CUMS sibling endpoint was called exactly once with the
+        // expected username so a future no-op'd runInvitedHook fails this test.
+        verify(userApiClient).issueInvitationCredentials(testUsername);
     }
 
     /**
@@ -320,8 +392,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // Given - Create speaker pool entry
         SpeakerPool speaker = SpeakerPool.builder()
                 .eventId(testEvent.getId())
-                .username(testUsername)
-                .email(testEmail)
                 .speakerName("Test Speaker")
                 .status(SpeakerWorkflowState.IDENTIFIED)
                 .createdAt(Instant.now())
@@ -338,6 +408,116 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                             }
                             """.formatted(LocalDate.now().minusDays(1))))
                 .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Story 11.D.1 (AC4): {@code POST /send-invitation} returns 409 when the slot-capacity
+     * gate fires (count(ACCEPTED) + count(INVITED) >= maxSlots). Verifies the HTTP-layer
+     * surfaces {@code SLOT_CAPACITY_REACHED} with the documented {@code details} map and
+     * leaves the speaker in READY (no state change, no email sent).
+     */
+    @Test
+    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
+    void should_return409_when_sendInvitationCalledAndSlotCapacityReached() throws Exception {
+        // Saturate the event with ACCEPTED speakers up to the EVENING event-type maxSlots.
+        int saturate = 24; // safe upper bound for any event-type maxSlots
+        for (int i = 0; i < saturate; i++) {
+            SpeakerPool filler = SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .speakerName("Filler " + i)
+                    .status(SpeakerWorkflowState.ACCEPTED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+            speakerPoolRepository.save(filler);
+        }
+
+        SpeakerPool candidate = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .speakerName("Slot Capacity Candidate")
+                .status(SpeakerWorkflowState.READY)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        candidate = speakerPoolRepository.save(candidate);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users.
+        seedPrimarySessionUser(candidate, testUsername);
+
+        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
+                        testEventCode, testUsername)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "responseDeadline": "%s"
+                                }
+                                """.formatted(responseDeadline)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
+                .andExpect(jsonPath("$.details.eventId", is(testEvent.getId().toString())))
+                .andExpect(jsonPath("$.details.maxSlots").exists())
+                .andExpect(jsonPath("$.details.acceptedCount").exists())
+                .andExpect(jsonPath("$.details.invitedCount").exists());
+
+        SpeakerPool unchanged = speakerPoolRepository.findById(candidate.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(unchanged.getStatus())
+                .isEqualTo(SpeakerWorkflowState.READY);
+        org.assertj.core.api.Assertions.assertThat(
+                tokenRepository.findBySpeakerPoolId(unchanged.getId())).isEmpty();
+    }
+
+    /**
+     * Story 11.D.1 (AC4): {@code enforceSlotCapacity} counts {@code ACCEPTED + INVITED} —
+     * this case saturates with a 50/50 mix so a regression that drops the {@code INVITED}
+     * arm from the gate would surface here (the ACCEPTED-only test above would still pass).
+     */
+    @Test
+    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
+    void should_return409_when_sendInvitationCalledAndSlotCapacityReachedByMix() throws Exception {
+        int half = 12;
+        for (int i = 0; i < half; i++) {
+            speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .speakerName("Accepted " + i)
+                    .status(SpeakerWorkflowState.ACCEPTED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build());
+            speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .speakerName("Invited " + i)
+                    .status(SpeakerWorkflowState.INVITED)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build());
+        }
+
+        SpeakerPool candidate = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .speakerName("Mix Saturation Candidate")
+                .status(SpeakerWorkflowState.READY)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        candidate = speakerPoolRepository.save(candidate);
+        // Story 11.E.9: findByEventIdAndUsername joins via session_users.
+        seedPrimarySessionUser(candidate, testUsername);
+
+        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
+                        testEventCode, testUsername)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "responseDeadline": "%s"
+                                }
+                                """.formatted(responseDeadline)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
+                .andExpect(jsonPath("$.details.acceptedCount", is(half)))
+                .andExpect(jsonPath("$.details.invitedCount", is(half)));
     }
 
     // ==================== AC5: Batch Invitation Tests ====================

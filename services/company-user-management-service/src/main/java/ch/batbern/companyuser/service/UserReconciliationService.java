@@ -362,19 +362,19 @@ public class UserReconciliationService {
     private String[] extractNamesFromPreferences(UserType cognitoUser) {
         String raw = extractAttribute(cognitoUser, "custom:preferences");
         if (raw == null || raw.isEmpty()) {
-            return new String[] { null, null };
+            return new String[] {null, null};
         }
         try {
             JsonNode node = PREFERENCES_MAPPER.readTree(raw);
             String first = node.path("firstName").asText(null);
             String last  = node.path("lastName").asText(null);
             return new String[] {
-                    (first != null && !first.isEmpty()) ? first : null,
-                    (last  != null && !last.isEmpty())  ? last  : null
+                (first != null && !first.isEmpty()) ? first : null,
+                (last  != null && !last.isEmpty())  ? last  : null
             };
         } catch (Exception e) {
             log.warn("Failed to parse custom:preferences JSON during reconciliation: {}", e.getMessage());
-            return new String[] { null, null };
+            return new String[] {null, null};
         }
     }
 

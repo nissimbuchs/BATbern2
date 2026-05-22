@@ -68,6 +68,12 @@ class UserServiceTest {
     @Mock
     private CompanyService companyService;
 
+    @Mock
+    private RoleService roleService;
+
+    @Mock
+    private PasswordGenerator passwordGenerator;
+
     private UserService userService;
 
     @BeforeEach
@@ -80,7 +86,9 @@ class UserServiceTest {
             securityContext,
             slugService,
             responseMapper,
-            companyService
+            companyService,
+            roleService,
+            passwordGenerator
         );
     }
 

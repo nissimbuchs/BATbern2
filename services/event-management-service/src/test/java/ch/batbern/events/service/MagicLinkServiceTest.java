@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,6 +71,9 @@ class MagicLinkServiceTest {
     @Mock
     private JwtConfig jwtConfig;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private MagicLinkService magicLinkService;
 
     private UUID testSpeakerPoolId;
@@ -85,13 +89,20 @@ class MagicLinkServiceTest {
         when(jwtConfig.getExpiryDays()).thenReturn(30);
 
         magicLinkService = new MagicLinkService(
-                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository, jwtConfig);
+                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository,
+                jwtConfig, primarySpeakerResolver);
+
+        // Story 11.E.9: TokenValidationResult.valid() now sources username via the
+        // resolver (pool.username column is gone). Default to "john.speaker" — the
+        // assertion value many tests expect.
+        lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "john.speaker", "john@example.com", "John", "Speaker", null)));
 
         testSpeakerPoolId = UUID.randomUUID();
         testSpeakerPool = SpeakerPool.builder()
                 .id(testSpeakerPoolId)
                 .eventId(UUID.randomUUID())
-                .username("john.speaker")
                 .speakerName("John Speaker")
                 .company("Test Corp")
                 .status(SpeakerWorkflowState.CONTACTED)
@@ -616,7 +627,6 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
 
         // Act
@@ -634,8 +644,11 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
+        // Phase B: JWT email claim now derived from PrimarySpeakerResolver
+        // (session_users + UserApiClient), not the stale pool.email column.
+        when(primarySpeakerResolver.resolveEmail(speakerPool))
+                .thenReturn(Optional.of("jane@example.com"));
 
         // Act
         String jwt = magicLinkService.generateJwtToken(speakerPoolId);
@@ -657,7 +670,6 @@ class MagicLinkServiceTest {
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setId(speakerPoolId);
         speakerPool.setSpeakerName("Jane Doe");
-        speakerPool.setEmail("jane@example.com");
         when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
 
         Instant before = Instant.now();

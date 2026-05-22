@@ -2,14 +2,22 @@
  * Session Speaker React Query Hooks
  *
  * Custom hooks for assigning and removing speakers from sessions.
- * Speakers are stored in the session_speaker table, entirely separate from the speaker pool.
+ * Speakers are stored in the session_users table (entity SessionUser, exposed in the
+ * API as SessionSpeaker). speaker_pool owns the workflow state machine only; from the
+ * CONTACTED → READY transition onward, session_users is the canonical record for
+ * speaker meta (confirmation, role, presentation title).
  *
- * On success, both mutations invalidate ['event', eventCode] so session.speakers[]
- * is refreshed in the parent session list.
+ * On success, both mutations invalidate two query keys:
+ * - ['event', eventCode] — so session.speakers[] is refreshed in the parent session list
+ * - ['speakerPool', 'list', eventCode] — so the organizer drawer / kanban refetches
+ *   the pool list. The server-side response derives the speaker's identity from the
+ *   session-overlay (Phase A); without this invalidation the FE keeps showing the
+ *   pre-reassign identity even though the server has the new value.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sessionApiClient, type AssignSpeakerRequest } from '@/services/api/sessionApiClient';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 
 /**
  * Hook to assign a speaker to a session (ORGANIZER only)
@@ -33,6 +41,7 @@ export function useAssignSpeaker() {
     }) => sessionApiClient.assignSpeaker(eventCode, sessionSlug, request),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventCode] });
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(variables.eventCode) });
     },
   });
 }
@@ -59,6 +68,7 @@ export function useRemoveSpeaker() {
     }) => sessionApiClient.removeSpeaker(eventCode, sessionSlug, username),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventCode] });
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(variables.eventCode) });
     },
   });
 }

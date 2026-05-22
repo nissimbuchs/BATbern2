@@ -235,7 +235,6 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
                 .username("john.doe")
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(true)
-                .presentationTitle("Cloud Architecture Patterns")
                 .build();
         speaker1 = sessionUserRepository.save(speaker1);
 
@@ -244,7 +243,6 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
                 .username("jane.smith")
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(true)
-                .presentationTitle("Microservices at Scale")
                 .build();
         speaker2 = sessionUserRepository.save(speaker2);
 

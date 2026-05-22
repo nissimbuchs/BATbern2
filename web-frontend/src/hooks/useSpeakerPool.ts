@@ -13,6 +13,7 @@ import { speakerPoolService } from '@/services/speakerPoolService';
 import type {
   AddSpeakerToPoolRequest,
   PatchSpeakerPoolRequest,
+  PromoteSpeakerRequest,
   SendInvitationRequest,
   SendReminderRequest,
 } from '@/types/speakerPool.types';
@@ -101,6 +102,44 @@ export function usePatchSpeakerPool() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+    },
+  });
+}
+
+/**
+ * Hook to promote a CONTACTED speaker to READY (Story 11.D.1).
+ *
+ * Drives the workflow transition + User provisioning server-side. On success,
+ * invalidates the speaker pool list AND the speaker status summary so the kanban + the
+ * dashboard pick up the speaker's new state.
+ *
+ * @returns Mutation object with mutate function
+ */
+export function usePromoteSpeakerToReady() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      eventCode,
+      speakerId,
+      request,
+    }: {
+      eventCode: string;
+      speakerId: string;
+      request: PromoteSpeakerRequest;
+    }) => speakerPoolService.promoteToSpeaker(eventCode, speakerId, request),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['speakerStatusSummary', variables.eventCode],
+      });
+      // Epic 11 bug fix 2026-05-19 — promote writes a CONTACTED→READY status_history row
+      // server-side; invalidate the history feed so the drawer's History tab refreshes.
+      queryClient.invalidateQueries({
+        queryKey: ['speakerStatusHistory', variables.eventCode, variables.speakerId],
       });
     },
   });

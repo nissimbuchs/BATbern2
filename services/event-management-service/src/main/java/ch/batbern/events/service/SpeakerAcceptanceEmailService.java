@@ -45,6 +45,7 @@ public class SpeakerAcceptanceEmailService {
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
     private final EmailTemplateService emailTemplateService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -75,9 +76,24 @@ public class SpeakerAcceptanceEmailService {
             String viewToken,
             Locale locale
     ) {
+        // Phase B: route to the live primary speaker via PrimarySpeakerResolver.
+        Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary =
+                primarySpeakerResolver.resolve(speaker);
+        String recipientEmail = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::email)
+                .filter(e -> e != null && !e.isBlank())
+                .orElse(null);
+        if (recipientEmail == null) {
+            log.warn("Skipping acceptance confirmation: speaker pool {} has no resolvable "
+                    + "primary speaker email", speaker.getId());
+            return;
+        }
+        String recipientName = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                .filter(n -> !n.isEmpty())
+                .orElseGet(speaker::getSpeakerName);
+
         try {
             log.info("Sending acceptance confirmation email to: {} for event: {}",
-                    LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
+                    LoggingUtils.maskEmail(recipientEmail), event.getEventCode());
 
             // Default to German locale if not specified
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
@@ -91,22 +107,23 @@ public class SpeakerAcceptanceEmailService {
                     speaker,
                     event,
                     eventDateTime,
-                    viewToken
+                    viewToken,
+                    recipientName
             );
 
             // Send email
             emailService.sendHtmlEmail(
-                    speaker.getEmail(),
+                    recipientEmail,
                     content.subject(),
                     content.html()
             );
 
             log.info("Acceptance confirmation email sent successfully to: {}",
-                    LoggingUtils.maskEmail(speaker.getEmail()));
+                    LoggingUtils.maskEmail(recipientEmail));
 
         } catch (Exception e) {
             log.error("Failed to send acceptance confirmation email to: {}",
-                    LoggingUtils.maskEmail(speaker.getEmail()), e);
+                    LoggingUtils.maskEmail(recipientEmail), e);
             // Don't re-throw - email failure shouldn't block acceptance process
         }
     }
@@ -121,7 +138,8 @@ public class SpeakerAcceptanceEmailService {
             SpeakerPool speaker,
             Event event,
             ZonedDateTime eventDateTime,
-            String viewToken
+            String viewToken,
+            String speakerDisplayName
     ) {
         String localeStr = locale.getLanguage();
         String templateName = localeStr.equals("de")
@@ -131,10 +149,16 @@ public class SpeakerAcceptanceEmailService {
         // Story 10.2: DB-first template loading
         String template = loadHtmlContent("speaker-acceptance", localeStr, templateName);
 
-        // Build portal URLs with VIEW token
-        String profileUrl = baseUrl + "/speaker-portal/profile?token=" + viewToken;
-        String contentUrl = baseUrl + "/speaker-portal/content?token=" + viewToken;
-        String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + viewToken;
+        // Code review 2026-05-18 (D1): drop magic-link `?token=` URLs from acceptance email.
+        // Speaker now authenticates via Cognito; the SPA routes use eventCode in the path and
+        // pick up the Bearer from the session. The dedicated per-event profile route was
+        // removed (Story 11.C.1 consolidated profile editing into CUMS /users/me endpoints);
+        // the profileUrl link block is removed from the templates in the same commit.
+        // viewToken is retained on the method signature for now (Phase F drops it); it is
+        // intentionally NOT consumed by the URL builders below.
+        String profileUrl = "";
+        String contentUrl = baseUrl + "/speaker-portal/content/" + event.getEventCode();
+        String dashboardLink = baseUrl + "/speaker-portal/dashboard";
 
         // Get session details if assigned
         String sessionTitle = "";
@@ -147,7 +171,7 @@ public class SpeakerAcceptanceEmailService {
 
         // Prepare template variables
         Map<String, String> variables = Map.ofEntries(
-                Map.entry("speakerName", speaker.getSpeakerName()),
+                Map.entry("speakerName", speakerDisplayName != null ? speakerDisplayName : ""),
                 Map.entry("eventTitle", event.getTitle()),
                 Map.entry("eventCode", event.getEventCode()),
                 Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),

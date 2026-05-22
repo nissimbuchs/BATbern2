@@ -30,7 +30,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organizer",
+      "speaker": "Speaker",
+      "partner": "Partner",
+      "attendee": "Attendee"
+    }
   },
   "public": {
     "login": "Login",

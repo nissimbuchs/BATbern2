@@ -119,6 +119,37 @@ export const getUserById = async (id: string, includes?: string[]): Promise<User
 };
 
 /**
+ * Get a user by their meaningful username (ADR-003). The backend route at
+ * `/api/v1/users/{username}` accepts either UUID or username, so this is a
+ * thin alias that documents intent. Used by Content-tab speaker prefill
+ * (Epic 11 bug fix 2026-05-19) — `searchUsers` only matches name/email
+ * substrings and does NOT match by username, so the previous
+ * `searchUsers(speaker.username)` returned `[]` for promoted speakers.
+ *
+ * Returns null when the user does not exist (404 from the backend) so the
+ * caller can gracefully fall back to the legacy name-based search.
+ */
+export const getUserByUsername = async (
+  username: string,
+  includes?: string[]
+): Promise<User | null> => {
+  const params: Record<string, string> = {};
+  if (includes && includes.length > 0) {
+    params.include = includes.join(',');
+  }
+  try {
+    const response = await apiClient.get<User>(`${USER_API_PATH}/${username}`, { params });
+    return response.data;
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 404) {
+      return null;
+    }
+    throw err;
+  }
+};
+
+/**
  * Create new user
  * AC4: User Creation
  */

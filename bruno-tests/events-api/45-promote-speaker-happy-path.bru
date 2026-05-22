@@ -1,0 +1,54 @@
+meta {
+  name: Promote Speaker - Happy Path (Story 11.D.1 AC1)
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{promoteTestSpeakerId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "promote-e2e-{{$randomInt}}@batbern-test.ch",
+    "firstName": "Promote",
+    "lastName": "E2E"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq READY
+  res.body.username: isDefined
+  res.body.email: isDefined
+}
+
+tests {
+  test("returns 200 OK and the speaker is now in READY (Story 11.D.1 AC1)", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.status).to.equal('READY');
+  });
+
+  test("response carries the provisioned username + email (FR3, FR12)", function() {
+    const body = res.getBody();
+    expect(body.username).to.be.a('string');
+    expect(body.username.length).to.be.greaterThan(0);
+    expect(body.email).to.be.a('string');
+    expect(body.email).to.include('@');
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC1: POST /events/{code}/speakers/{id}/promote drives
+  CONTACTED → READY through SpeakerWorkflowService.transition() and provisions the User
+  via UserApiClient.provisionUserWithRole(email, firstName?, lastName?, role=SPEAKER).
+  After this test the speaker is in READY — sequel test 47 retries promote on the same
+  speaker to verify the same-state idempotent 200 branch.
+}

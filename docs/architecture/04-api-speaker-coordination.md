@@ -1,23 +1,24 @@
 # Speaker Coordination API
 
-**Last Updated**: 2025-11-02
+**Last Updated**: 2026-05-15
 **ADR References**:
 - [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
 - [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
+- [ADR-009: Unified Speaker Workflow](./ADR-009-unified-speaker-workflow.md)
 
-**Important**: Speaker entity references User entity (ADR-004). Speaker does NOT duplicate email, name, bio, photo, or company fields. API responses combine User + Speaker data via JPQL joins.
+**Important** (per ADR-009 + ADR-004): A "speaker" is a **User with the SPEAKER role** — there is no separate `Speaker` entity, no `speakers` table, no `SpeakerRepository`. API responses combine `user_profiles` data + `speaker_pool` (per-event) data via HTTP enrichment (`UserApiClient`) — never via JPQL joins across services. Authentication for every speaker-portal endpoint is **standard AWS Cognito Bearer** with `hasRole('SPEAKER')` — no `?token=` query auth, no magic-link login, no parallel JWT stack.
 
-This document outlines the Speaker Coordination Domain API, which handles speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
+This document describes the Speaker Coordination Domain API: per-event speaker pool management, content submission (organizer-on-behalf and speaker-self), quality review, and the 8-state workflow transitions defined in ADR-009.
 
 ## Overview
 
 The Speaker Coordination API provides endpoints for:
-- Enhanced speaker profile and expertise management
+- Per-event speaker pool management (`speaker_pool` rows, one per `{event, candidate}` pair)
+- The unified 8-state speaker workflow per ADR-009 (IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED; DECLINED from any non-terminal state)
+- Organizer-initiated `CONTACTED → READY` promotion (provisions User + Cognito + SPEAKER role)
 - Slot preferences and technical requirements collection
-- Content quality review workflow
-- Speaker invitation workflow with enhanced context
-- Speaker-session assignment with workflow states
-- Presentation material upload with quality validation
+- Content quality review workflow (organizer moderator)
+- Presentation material upload with quality validation (shared `ContentSubmissionService` used by organizer-on-behalf and speaker-self endpoints)
 
 ## API Endpoints
 
@@ -28,7 +29,13 @@ The Speaker Coordination API provides endpoints for:
 ```yaml
 GET /api/v1/speakers
 tags: [Speakers]
-summary: List speakers
+summary: List speakers (users with SPEAKER role)
+description: |
+  Per ADR-009 §0.3, the legacy `Speaker` and `SpeakerAvailability` schemas are deleted.
+  This endpoint is redesigned to return User+SPEAKER role projections, filterable by
+  company. Legacy filters (`expertiseArea`, `availability`) referenced fields on the
+  removed Speaker entity and are not available. The exact response shape is finalised
+  by Epic 11 stories 11.C.1 / 11.C.2 — until then, treat this signature as provisional.
 parameters:
   - name: companyName
     in: query
@@ -36,23 +43,34 @@ parameters:
       type: string
 
       description: Meaningful identifier (see ADR-003)
-  - name: expertiseArea
-    in: query
-    schema:
-      type: string
-  - name: availability
-    in: query
-    schema:
-      $ref: '#/components/schemas/SpeakerAvailability'
 responses:
   '200':
-    description: List of speakers
+    description: List of users with the SPEAKER role
     content:
       application/json:
         schema:
           type: array
           items:
-            $ref: '#/components/schemas/Speaker'
+            type: object
+            properties:
+              username:
+                type: string
+                description: Meaningful identifier (see ADR-003)
+              email:
+                type: string
+                format: email
+              firstName:
+                type: string
+              lastName:
+                type: string
+              companyName:
+                type: string
+              bio:
+                type: string
+                description: Short CV (per ADR-004 / ADR-009)
+              profilePictureUrl:
+                type: string
+                description: Portrait (per ADR-004 / ADR-009)
 ```
 
 ### Speaker Preferences & Requirements
@@ -147,6 +165,151 @@ responses:
         schema:
           $ref: '#/components/schemas/SpeakerSlotPreferences'
 ```
+
+### Speaker Workflow Transitions (per ADR-009)
+
+#### Promote Speaker (CONTACTED → READY)
+
+```yaml
+POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote
+tags: [Speaker Workflow]
+summary: |
+  Promote a brainstormed candidate from CONTACTED to READY. This is the
+  provisioning gate per ADR-009 §0.2 — it triggers User lookup-or-create,
+  Cognito AdminCreateUser (FORCE_CHANGE_PASSWORD), SPEAKER role grant in
+  role_assignments, and persisting username on speaker_pool.
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Meaningful identifier (e.g., BATbern57)
+  - name: speakerId
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+    description: speaker_pool.id
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [email]
+        properties:
+          email:
+            type: string
+            format: email
+            description: |
+              REQUIRED. The real speaker's email. Used as the Cognito username
+              and the recipient of the invitation email.
+          firstName:
+            type: string
+          lastName:
+            type: string
+responses:
+  '200':
+    description: |
+      Speaker promoted. speaker_pool.status is now READY. A PRIMARY_SPEAKER
+      session_users row exists with the canonical username (post Story 11.E.9 /
+      V103 — speaker_pool.username column was dropped, identity lives on
+      session_users). Cognito user exists with FORCE_CHANGE_PASSWORD. SPEAKER
+      role granted. Idempotent — re-calling for an already-promoted speaker
+      returns 200 with no side effects.
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/SpeakerPool'
+  '400':
+    description: |
+      Bad request. Returned when the email field is missing or blank. The
+      CONTACTED → READY transition requires an email per ADR-009 §0.2.
+  '404':
+    description: speaker_pool row not found for the given speakerId
+  '409':
+    description: |
+      Conflict — the speaker is already in a state at or past READY (READY,
+      INVITED, ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED). To re-attempt
+      provisioning for a DECLINED candidate, create a new speaker_pool row.
+```
+
+#### Update Speaker Status
+
+```yaml
+PUT /api/v1/events/{eventCode}/speakers/{speakerId}/status
+tags: [Speaker Workflow]
+summary: |
+  Transition speaker_pool.status. Routes through SpeakerWorkflowService.transition()
+  which is the sole writer of speaker_pool.status (ADR-009 §Decision 1). The
+  target value must be one of the 8 allowed states; the (current, target) pair
+  must be in the allow-list.
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: speakerId
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [targetStatus]
+        properties:
+          targetStatus:
+            $ref: '#/components/schemas/SpeakerWorkflowState'
+            description: |
+              MUST be one of: CONTACTED, INVITED, ACCEPTED,
+              CONTENT_SUBMITTED, QUALITY_REVIEWED, DECLINED.
+              IDENTIFIED is the initial state — speakers are never transitioned
+              back to IDENTIFIED, so it is not a valid `targetStatus`.
+              READY is NOT accepted here — use POST /promote instead.
+          reason:
+            type: string
+            description: Free text — recorded in status_history. Required for transitions to DECLINED from INVITED or later.
+responses:
+  '200':
+    description: Transition applied. New status and audit row written.
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/SpeakerPool'
+  '400':
+    description: |
+      Bad request. Returned for any of:
+      - `targetStatus` is one of the removed values (SLOT_ASSIGNED, CONFIRMED,
+        OVERFLOW, WITHDREW, TENTATIVE) — these states no longer exist per
+        ADR-009.
+      - `targetStatus` is READY — use POST /promote instead (READY requires the
+        provisioning side-effect hook).
+      - `(currentStatus, targetStatus)` is not in the allow-list.
+      - `targetStatus` is INVITED but the slot-capacity gate
+        (accepted + invited >= max_slots) is violated.
+      - `reason` is missing for a DECLINED transition from INVITED or later.
+  '404':
+    description: speaker_pool row not found
+  '409':
+    description: Concurrent transition — the current status changed between read and write.
+```
+
+> **Removed endpoints (per ADR-009 §3):**
+> - `POST /api/v1/auth/speaker-magic-login` — magic-link auth deleted.
+> - `POST /api/v1/speaker-portal/validate-token` — opaque-token validation deleted.
+> - Any `?token=` or `?jwt=` query auth on speaker-portal routes — replaced by Cognito Bearer.
 
 ### Quality Review Workflow
 
@@ -308,93 +471,91 @@ sequenceDiagram
 
 ## Schemas
 
-### Speaker
+### SpeakerPool
 
-**ADR-004 Note**: Speaker entity references User. API responses combine User fields + Speaker fields via JPQL join.
+**ADR-009 + ADR-004 Note**: There is no `Speaker` entity. The per-event speaker record is a `speaker_pool` row that references User via `username` (meaningful ID per ADR-003). API responses combine `speaker_pool` data with User profile data via **HTTP enrichment** (`UserApiClient.getUserByUsername(...)`) — never via JPQL joins across services.
 
 ```yaml
-Speaker:
+SpeakerPool:
   type: object
   description: |
-    Speaker response combines User entity fields with Speaker domain fields (ADR-004).
-    Internal: Speaker.userId (UUID FK) -> User.id
-    External: username is the public identifier
+    A speaker_pool row represents the participation of a candidate User in
+    a specific event's speaker workflow. One row per {event, candidate} pair.
+    Combines user_profiles data (via HTTP enrichment) with per-event state.
   properties:
-    # From User entity (via join):
+    id:
+      type: string
+      format: uuid
+      description: speaker_pool primary key
+    eventCode:
+      type: string
+      description: Meaningful identifier for the event (ADR-003)
+      example: BATbern57
+
+    # Cross-service reference to User (NULL before CONTACTED → READY provisioning)
     username:
       type: string
-      description: Public identifier from User (ADR-003)
+      nullable: true
+      description: |
+        Cross-service reference to users.username (ADR-003). NULL while
+        speaker_pool.status is IDENTIFIED or CONTACTED (before the
+        CONTACTED → READY provisioning gate). Populated from that point on.
       example: john.doe
+
+    # User-profile fields enriched via HTTP (only populated when username != null)
     email:
       type: string
       format: email
-      description: From User entity
+      description: From user_profiles (HTTP enrichment via UserApiClient)
     firstName:
       type: string
-      description: From User entity
+      description: From user_profiles (HTTP enrichment)
     lastName:
       type: string
-      description: From User entity
+      description: From user_profiles (HTTP enrichment)
     bio:
       type: string
-      description: From User entity (single source of truth, no detailedBio)
+      description: From user_profiles.bio (short CV, per ADR-004)
     profilePictureUrl:
       type: string
       format: uri
-      description: From User entity
+      description: From user_profiles.profile_picture_url (speaker portrait, per ADR-004)
     companyName:
       type: string
-      description: From User.companyId (company name, ADR-003)
-      example: GoogleZH
+      description: From user_profiles.company_id (company name, ADR-003)
 
-    # Speaker-specific fields:
-    availability:
-      $ref: '#/components/schemas/SpeakerAvailability'
-    workflowState:
+    # Per-event workflow state
+    status:
       $ref: '#/components/schemas/SpeakerWorkflowState'
-    expertiseAreas:
-      type: array
-      items:
-        type: string
-      description: Areas of technical expertise
-    speakingTopics:
-      type: array
-      items:
-        type: string
-      description: Topics the speaker can present
-    linkedInUrl:
+    sessionId:
       type: string
-      format: uri
-      description: LinkedIn profile (speaker-specific)
-    twitterHandle:
+      format: uuid
+      nullable: true
+      description: FK to sessions table (same service). Determines is_slot_assigned.
+
+    # Derived (read-time) flags — NOT persisted columns
+    isSlotAssigned:
+      type: boolean
+      readOnly: true
+      description: |
+        Derived predicate (per ADR-009 §0.1): session.start_time IS NOT NULL.
+        Computed at read time from the linked session.
+    isPublishable:
+      type: boolean
+      readOnly: true
+      description: |
+        Derived predicate (per ADR-009 §0.1): status = QUALITY_REVIEWED AND
+        isSlotAssigned. The gate for the AGENDA_PUBLISHED event-workflow transition.
+
+    createdAt:
       type: string
-      description: Twitter/X handle (speaker-specific)
-    certifications:
-      type: array
-      items:
-        type: string
-      description: Professional certifications
-    languages:
-      type: array
-      items:
-        type: string
-      description: Languages speaker can present in
-      example: ['de', 'en', 'fr']
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
 ```
 
-### Speaker Availability
-
-```yaml
-SpeakerAvailability:
-  type: string
-  enum:
-    - available
-    - busy
-    - unavailable
-    - invited
-    - confirmed
-    - declined
-```
+> **Removed fields (per ADR-009 §0.3):** `availability`, `expertiseAreas`, `speakingTopics`, `linkedInUrl`, `twitterHandle`, `certifications`, `languages`, `speakingHistory`, `communicationPreferences`. These previously lived on a separate `speakers` table that is deleted. They are not migrated to `user_profiles` and not retained anywhere — the platform does not use them in any production flow.
 
 ### Speaker Workflow State
 
@@ -402,23 +563,43 @@ SpeakerAvailability:
 SpeakerWorkflowState:
   type: string
   enum:
-    - open
-    - contacted
-    - ready
-    - declined
-    - accepted
-    - slot_assigned
-    - quality_reviewed
-    - final_agenda
+    - IDENTIFIED
+    - CONTACTED
+    - READY
+    - INVITED
+    - ACCEPTED
+    - CONTENT_SUBMITTED
+    - QUALITY_REVIEWED
+    - DECLINED
   description: |
-    - open: Initial state, speaker identified but not yet contacted
-    - contacted: Invitation sent to speaker
-    - ready: Speaker confirmed availability and interest
-    - declined: Speaker declined invitation
-    - accepted: Speaker accepted invitation and confirmed participation
-    - slot_assigned: Speaker assigned to specific time slot
-    - quality_reviewed: Speaker's content passed quality review
-    - final_agenda: Speaker finalized in published agenda
+    The 8-state speaker workflow per ADR-009 §0.1. **All eight values are valid as a
+    read/response state** (the `status` field returned by GET endpoints). When used as a
+    write `targetStatus` on `PUT /status`, the valid subset is narrower: IDENTIFIED is
+    the initial state and not a transition target, and READY uses the `POST /promote`
+    endpoint (which carries the provisioning side-effect hook). See the `PUT /status`
+    endpoint description for the exact write-allow-list and the slot-capacity gate that
+    applies at `READY → INVITED`.
+
+    - IDENTIFIED:        Name on the brainstorm list. No User, no email sent.
+    - CONTACTED:         Organizer is reaching out — still brainstorming. No User, no email sent.
+                          OutreachHistory rows log conversations.
+    - READY:             Real speaker chosen. User + Cognito user provisioned via the
+                          CONTACTED → READY provisioning hook. username populated.
+                          (Use POST /promote, not PUT /status, to reach this state.)
+    - INVITED:           Invitation email sent. Slot-capacity gate enforced at READY → INVITED.
+    - ACCEPTED:          Speaker committed via portal (or organizer-on-behalf).
+    - CONTENT_SUBMITTED: Title + abstract submitted (with optional bio/portrait/presentation).
+    - QUALITY_REVIEWED:  Moderator approved content. Terminal happy state. Combined
+                          with is_slot_assigned → is_publishable.
+    - DECLINED:          Terminal "not happening" state. Reachable from every
+                          non-terminal state. Reason recorded in status_history.
+
+    REMOVED states (per ADR-009 §0.7) — these values are rejected with HTTP 400:
+    - SLOT_ASSIGNED: replaced by derived isSlotAssigned predicate.
+    - CONFIRMED:     replaced by derived isPublishable predicate.
+    - OVERFLOW:      replaced by slot-capacity gate at READY → INVITED.
+    - WITHDREW:      collapsed into DECLINED with a reason.
+    - TENTATIVE:     removed; speakers respond ACCEPT or DECLINE only.
 ```
 
 ### Speaker Slot Preferences
@@ -735,30 +916,37 @@ UpdatePreferencesRequest:
 
 ## Speaker Workflow States
 
-The Speaker Coordination API manages an 8-state progression for speaker management:
+The Speaker Coordination API manages the unified 8-state speaker workflow per **ADR-009**:
 
-1. **Open** → Speaker identified but not yet contacted
-2. **Contacted** → Invitation sent to speaker
-3. **Ready** → Speaker confirmed availability and interest
-4. **Declined/Accepted** → Speaker responded to invitation
-5. **Slot Assigned** → Speaker assigned to specific time slot
-6. **Quality Reviewed** → Speaker's content passed quality review
-7. **Final Agenda** → Speaker finalized in published agenda
+1. **IDENTIFIED** → Name on the brainstorm list. No User row, no email sent yet.
+2. **CONTACTED** → Organizer is reaching out (still brainstorming). `OutreachHistory` rows track conversations. No User row, no email sent yet.
+3. **READY** → Real speaker chosen. The `CONTACTED → READY` transition provisions a User + Cognito user (`FORCE_CHANGE_PASSWORD`) and grants the SPEAKER role. Use `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` — not `PUT /status` — to reach this state.
+4. **INVITED** → Formal invitation email sent (login URL + temporary password). Slot-capacity gate enforced.
+5. **ACCEPTED** → Speaker committed (via speaker portal or organizer-on-behalf).
+6. **CONTENT_SUBMITTED** → Title + abstract submitted (optionally with bio/portrait/presentation).
+7. **QUALITY_REVIEWED** → Moderator approved content. Terminal happy state.
+8. **DECLINED** → Terminal "not happening" state. Reachable from every non-terminal state. Reason recorded in `status_history`.
 
-### State Transition Rules
+### State Transition Rules (allow-list)
 
-- **Open → Contacted**: When organizer sends invitation
-- **Contacted → Ready**: When speaker confirms interest
-- **Contacted → Declined**: When speaker declines invitation
-- **Ready → Accepted**: When speaker formally accepts participation
-- **Accepted → Slot Assigned**: When organizer assigns speaker to slot
-- **Slot Assigned → Quality Reviewed**: When speaker submits content and passes review
-- **Quality Reviewed → Final Agenda**: When event workflow reaches publication state
+| From | Allowed targets |
+|---|---|
+| IDENTIFIED | CONTACTED, DECLINED |
+| CONTACTED | READY (via `POST /promote`), DECLINED |
+| READY | INVITED (slot-capacity gate), DECLINED |
+| INVITED | ACCEPTED, DECLINED |
+| ACCEPTED | CONTENT_SUBMITTED, DECLINED |
+| CONTENT_SUBMITTED | QUALITY_REVIEWED, DECLINED |
+| QUALITY_REVIEWED | DECLINED |
+| DECLINED | (terminal — no transitions out) |
 
-### Overflow Handling
+**Critical preconditions:**
+- **`CONTACTED → READY`** REQUIRES an email payload. This is the provisioning gate (ADR-009 §0.2) — the transition creates the Cognito user and grants the SPEAKER role. Use `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote`, not `PUT /status` with `targetStatus=READY` (the latter returns 400).
+- **`READY → INVITED`** is blocked when `(count(ACCEPTED) + count(INVITED)) >= max_slots` for the event. Organizers cannot oversubscribe.
+- **Post-acceptance `DECLINED`** (from INVITED, ACCEPTED, CONTENT_SUBMITTED, or QUALITY_REVIEWED) REQUIRES a `reason` field. The audit trail (previous state + reason) replaces what a separate `WITHDREW` state used to encode.
 
-When accepted speakers exceed available slots:
-- Speakers remain in **Ready** state
-- Marked as overflow speakers
-- Subject to organizer voting
-- Automatically promoted on speaker dropouts
+### Capacity Handling (replaces legacy "Overflow Handling")
+
+Capacity is enforced at invitation time. There is **no overflow state, no parking lane, no voting flow**. The slot-capacity gate at `READY → INVITED` blocks further invitations once `(accepted + invited) >= max_slots`. If an invited speaker declines, the next speaker in `READY` becomes eligible for `INVITED`. If too many speakers accept (e.g., capacity is reduced after invitations went out), the organizer manually moves the excess to `DECLINED` with a clear reason.
+
+Per ADR-009 §0.7, `OverflowManagementService`, the `speaker_selection_votes` table, and all overflow voting UI have been removed.

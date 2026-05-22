@@ -182,7 +182,37 @@
     },
     "actions": {
       "skipForNow": "Saltar per ussa",
-      "continue": "Cuntinuar al contact"
+      "continue": "Cuntinuar al contact",
+      "promoteToSpeaker": "Promover a referent"
+    },
+    "promoteDialog": {
+      "title": "Promover a referent",
+      "description": "Il referent vegn spustà en la colonna READY ed in conto da utilisader vegn creà. Anc nagina e-mail d'invit vegn tramessa — trametta l'invit dapertut la colonna READY cura che ti es pront.",
+      "emailLabel": "E-mail",
+      "firstNameLabel": "Prenum",
+      "lastNameLabel": "Num da famiglia",
+      "cancelButton": "Interrumper",
+      "submitButton": "Promover",
+      "submitting": "Va a promover…",
+      "errorTitle": "Impussibel da promover il referent",
+      "errorEmailRequired": "E-mail è obligatoria",
+      "errorEmailInvalid": "E-mail sto esser valaivel",
+      "errorFirstNameRequired": "Il prenum è obligatoric",
+      "errorLastNameRequired": "Il num da famiglia è obligatoric",
+      "errorAlreadyPromoted": "Il referent è gia en {{currentState}}; il promover è mo valid dal stadi Contactà.",
+      "errorStillIdentified": "Il referent sto pli baud vegnir contactà — registra il contact avant da promover.",
+      "errorDeclined": "Il referent ha refusà — crea ina nova endataziun empè dal promover.",
+      "errorAlreadyReady": "Il referent è gia pront — trametta l'invit dapertut la colonna READY."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Identifitgà",
+      "CONTACTED": "Contactà",
+      "READY": "Pront",
+      "INVITED": "Envidà",
+      "ACCEPTED": "Acceptà",
+      "DECLINED": "Refusà",
+      "CONTENT_SUBMITTED": "Cuntegn tramess",
+      "QUALITY_REVIEWED": "Qualitad verifitgada"
     }
   },
   "speakerOutreach": {
@@ -261,8 +291,14 @@
       "titleRequired": "Il titel da presentaziun è necessari",
       "abstractRequired": "L'abstract da presentaziun è necessari",
       "abstractTooLong": "L'abstract sto avair maximalmain {{max}} caracters",
-      "submitFailed": "Trametter cuntegn ha fallì. Emprova anc ina giada."
-    }
+      "submitFailed": "Trametter cuntegn ha fallì. Emprova anc ina giada.",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "Revisiun da qualità",
@@ -308,7 +344,6 @@
     "invalidEmail": "Endatescha ina adressa e-mail valida",
     "saveEmail": "Salvar e-mail",
     "emailSaved": "E-mail salvada",
-    "tentative": "Provisoric",
     "responseDetails": "Detagls da resposta",
     "acceptedAt": "Acceptà ils",
     "preferredTimeSlot": "Urari preferì",
@@ -319,16 +354,12 @@
     "declineDetails": "Detagls dal refus",
     "declinedAt": "Refusà ils",
     "declineReason": "Motiv",
-    "tentativeDetails": "Detagls provisorics",
-    "tentativeReason": "Motiv",
     "sendReminder": "Trametter ramintur",
     "sendingReminder": "Trasmissiun...",
     "reminderSent": "Ramintur tramess a {{email}}",
     "reminderFailed": "Trametter ramintur ha fallì",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -480,5 +511,74 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Registrar contact",
+      "promoteToSpeaker": "Promover sco relatur",
+      "sendInvitation": "Trametter envit",
+      "viewResponseStatus": "Mussar status da resposta",
+      "enterContent": "Endatar cuntegn",
+      "reviewContent": "Controllar cuntegn",
+      "assignSessionSlot": "Attribuir plazza da sessiun",
+      "viewDetails": "Mussar detagls"
+    },
+    "publishable": "Publitgabel",
+    "publishableTooltip": "Il relatur è approvà ed ha ina plazza da sessiun",
+    "slotCapacityTooltip": "Capacitad da plazzas cuntanschida. {{invited}} envits pendents + {{accepted}} acceptaziuns per {{slots}} plazzas. Spetga ubain refusa in relatur acceptà per liberar ina plazza.",
+    "timeInStateTooltip": "Status actual dapi {{date}}",
+    "inviteSent": "Envit tramess",
+    "inviteFailed": "L'envit n'ha betg pudì vegnir tramess",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} obsolets (>14 dis)",
+      "readySlotCapacitySubline": "⚠ Capacitad da plazzas cuntanschida",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} termin sa proxima",
+        "past": "⏰ {{count}} termin trapassà",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} spetan cuntegn",
+      "contentSubmittedSubline": "👀 {{count}} spetan revisiun dal moderatur",
+      "qualityReviewedSubline": "🪑 {{count}} spetan ina plazza",
+      "sublineFilterAriaLabel": "Filtrar la colonna {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Filter da colonna stizzà",
+      "filterAppliedAnnouncement": "Colonna {{state}} filtrada, {{count}} cartas visiblas"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

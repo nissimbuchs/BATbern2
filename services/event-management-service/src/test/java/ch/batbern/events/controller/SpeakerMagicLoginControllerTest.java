@@ -90,7 +90,6 @@ class SpeakerMagicLoginControllerTest extends AbstractIntegrationTest {
                 .eventId(event.getId())
                 .speakerName("Jane Doe")
                 .company("Tech Corp AG")
-                .email("jane@example.com")
                 .status(SpeakerWorkflowState.INVITED)
                 .invitedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .createdAt(Instant.now())
@@ -103,7 +102,7 @@ class SpeakerMagicLoginControllerTest extends AbstractIntegrationTest {
     @DisplayName("should return 200, set HTTP-only cookie, and return sessionToken when valid JWT provided")
     void should_return200AndSetCookie_when_validJwtProvided() throws Exception {
         // Arrange - generate a valid JWT using the application's cached key pair
-        String jwt = jwtConfig.buildJwtForTest(speakerPool);
+        String jwt = jwtConfig.buildJwtForTest(speakerPool, "jane@example.com");
 
         // Act + Assert
         mockMvc.perform(post("/api/v1/auth/speaker-magic-login")

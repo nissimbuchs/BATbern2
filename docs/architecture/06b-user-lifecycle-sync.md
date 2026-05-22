@@ -173,6 +173,76 @@ function generateUsername(firstName: string, lastName: string): string {
 - `user_profiles`: Creates user record with Cognito ID
 - `role_assignments`: Creates default ATTENDEE role assignment
 
+## Pattern N: Speaker Provisioning at CONTACTED → READY (per ADR-009)
+
+**Purpose**: Provision a Cognito user, grant the SPEAKER role, and persist a `user_profiles` row at the `CONTACTED → READY` speaker-workflow transition (per ADR-009 §0.5). This is the **organizer-initiated** speaker onboarding flow — distinct from Pattern 1 (which is the self-registration / PostConfirmation flow for attendees).
+
+**Trigger**: `SpeakerWorkflowService.transition()` invoked with `targetState = READY` (typically via the organizer kanban's `POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote` endpoint).
+
+**Preconditions**:
+- The transition payload MUST contain a non-blank `email`. `transition()` rejects the call with `MissingProvisioningDataException` otherwise.
+- The current `speaker_pool.status` MUST be `CONTACTED`. The allow-list rejects any other origin.
+
+**Sequence**:
+
+```mermaid
+sequenceDiagram
+    participant Org as Organizer (browser)
+    participant EMS as event-management-service
+    participant CUMS as company-user-management-service
+    participant Cognito as AWS Cognito
+    participant DB as PostgreSQL
+
+    Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>{email, firstName?, lastName?}
+    EMS->>EMS: SpeakerWorkflowService.transition(CONTACTED → READY)
+    EMS->>CUMS: UserApiClient.provisionUserWithRole(<br/>username, email, firstName, lastName, SPEAKER)
+    CUMS->>CUMS: passwordGenerator.generate()<br/>(strong random, policy-compliant)
+    CUMS->>Cognito: AdminCreateUser(email, tempPassword,<br/>MessageAction=SUPPRESS, FORCE_CHANGE_PASSWORD)
+    Cognito-->>CUMS: cognitoSub
+    CUMS->>DB: INSERT INTO user_profiles<br/>(cognito_sub, username, email, ...)
+    CUMS->>DB: INSERT INTO role_assignments<br/>(username, role='SPEAKER')
+    CUMS-->>EMS: { username, temporaryPassword }
+    EMS->>DB: UPDATE speaker_pool<br/>SET username = ?, status = 'READY'<br/>WHERE id = ?
+    EMS-->>Org: 200 OK (SpeakerPool DTO)
+
+    Note over EMS,Org: On the next transition (READY → INVITED)<br/>the invitation email service uses the<br/>temporaryPassword from this step. The password<br/>is discarded from memory after dispatch.
+```
+
+**Steps performed by `UserApiClient.provisionUserWithRole(...)` in `company-user-management-service`** (in order):
+
+1. **Generate a strong random temporary password** that satisfies the configured Cognito password policy (min length, character classes). The password lives only in memory for the duration of this call + the subsequent invitation-email dispatch.
+2. **`cognito-idp:AdminCreateUser`** with:
+   - `MessageAction=SUPPRESS` (we send our own invitation email — Cognito's default invitation email is disabled).
+   - `TemporaryPassword=<generated>`.
+   - User created in status `FORCE_CHANGE_PASSWORD` — first login forces the speaker to set a new password.
+3. **Grant SPEAKER role** by inserting a row into `role_assignments` (database — NOT Cognito groups; see "No Cognito Groups" note at the top of this document and Pattern 2 below). The PreTokenGeneration Lambda will pick this up on the speaker's first login and add `SPEAKER` to the `custom:role` JWT claim.
+4. **`INSERT INTO user_profiles`** with the Cognito sub and other profile fields. Idempotent on existing user (the previous PostConfirmation Lambda or a prior speaker promotion may have already created the row — in that case we update `firstName`/`lastName` only if they are NULL and skip if already populated).
+5. **Return `{ username, temporaryPassword }`** to the caller. The caller (the `CONTACTED → READY` hook) passes the temp password to the invitation-email service on the subsequent `READY → INVITED` transition.
+
+**Idempotency contract**: re-calling `provisionUserWithRole` for an already-provisioned user is a **no-op** and returns `{ username, temporaryPassword: null }`. Callers detect "do not re-send a credential email" by checking for the `null` temporary password. This is the safety net for repeated `POST /promote` clicks and for retries after partial failures.
+
+**Failure modes**:
+- **Cognito throttling / 5xx**: the transition is aborted (`@Transactional` rollback). `speaker_pool.status` remains `CONTACTED`. The organizer sees an error and can retry — the next attempt is idempotent.
+- **`role_assignments` insert conflict**: detected by the unique constraint on `(username, role)`. Treated as a no-op (idempotency).
+- **`user_profiles` insert conflict**: detected by the unique constraint on `email` or `cognito_sub`. Treated as a no-op (idempotency) — the existing row's `cognito_sub` must match the Cognito user just created/looked-up.
+
+**The temporary password is never persisted**:
+- Not in `user_profiles`.
+- Not in `role_assignments`.
+- Not in any log line.
+- Not in any audit trail row (only "promoted by X at T" is recorded — not the credential).
+- The `provisionUserWithRole` HTTP response is the only place it appears, and only for the lifetime of the `READY → INVITED` invitation-email dispatch (same request lifecycle).
+
+**Database tables modified**:
+- `user_profiles`: Inserts a new user row (idempotent).
+- `role_assignments`: Inserts `(username, 'SPEAKER')` (idempotent).
+- `speaker_pool` (in event-management-service): Sets `username` and `status = 'READY'`.
+
+**Pattern relationship**:
+- **Pattern 1 (PostConfirmation Lambda)** remains the standard path for self-registered attendees (FR22, Story 1.2.3). When such an attendee is later promoted to SPEAKER via Pattern N, the User row already exists — `provisionUserWithRole` updates `role_assignments` only and returns `{ username, temporaryPassword: null }` (the existing Cognito password remains valid; no re-credentialing).
+- **Pattern 2 (PreTokenGeneration Lambda)** is unchanged: it reads `role_assignments` at login time and adds the roles list to the `custom:role` JWT claim.
+- **Pattern 3 (Spring Security role extraction)** is unchanged: it reads `custom:role` from the JWT and maps to Spring `GrantedAuthority`.
+
 ## Pattern 2: PreTokenGeneration Lambda - JWT Role Enrichment
 
 **Purpose**: Add user roles from database to JWT token as custom claims for API authorization.
@@ -390,8 +460,131 @@ public class EventController {
 **Key Characteristics**:
 - **Standard Spring Security**: Uses `@PreAuthorize` annotations
 - **Role Mapping**: JWT claim "ATTENDEE" → Authority "ROLE_ATTENDEE"
-- **Empty Roles Handling**: Returns empty list if claim missing (user has no access)
-- **NO Database Queries**: Roles cached in JWT for request duration
+- **Empty Roles Handling**: Falls back to the database lookup in Pattern 3b — only returns
+  empty authorities if the DB also has no roles for the user.
+- **NO Database Queries on the hot path**: in staging the JWT always carries `custom:role`,
+  so the converter never touches the DB. The fallback below activates only when the JWT
+  arrives without roles (local-dev case, or graceful degradation if PreTokenGen Lambda fails).
+
+## Pattern 3b: Database Fallback for Empty JWT Roles (local-dev path, Epic 11.E.7)
+
+**Purpose**: Resolve roles from the local PostgreSQL database when the JWT's `custom:role`
+claim is empty. This is purely a local-dev correctness fix — in staging the JWT always
+carries roles (Pattern 2 always succeeds), so this fallback never fires there. The path
+doubles as graceful-degradation insurance in production if PreTokenGeneration ever fails.
+
+**Why it exists**: in local development the frontend points at staging Cognito (`localhost:8100
+→ AWS Cognito`), but CUMS writes `user_profiles` / `role_assignments` rows into the local
+PostgreSQL (`localhost:5432/batbern_development`). The local DB is supposed to be a one-way
+mirror synced FROM staging, but local provisioning (e.g. `adminCreateUserSilently` during
+speaker invitation in Pattern N) creates Cognito users in staging while the matching DB rows
+land only locally. The PreTokenGeneration Lambda then queries the staging DB, finds nothing,
+and returns a JWT without `custom:role`. Without this fallback, every locally-promoted
+speaker lands on a blank dashboard because the frontend falls back to `attendee` and the
+backend's `@PreAuthorize("hasRole('SPEAKER')")` checks reject every speaker-portal call.
+
+**Backend implementation** (`shared-kernel/.../security/JwtRolesConverter.java`,
+wired into each service's `SecurityConfig.jwtAuthenticationConverter()` bean):
+
+```java
+// 1. Try the JWT claim first (staging path — always populated by PreTokenGen Lambda)
+String rolesString = jwt.getClaimAsString("custom:role");
+if (rolesString == null || rolesString.isEmpty()) {
+    rolesString = jwt.getClaimAsString("role"); // Watch JWT variant
+}
+
+if (rolesString != null && !rolesString.isEmpty()) {
+    return toAuthorities(rolesString.split(","));
+}
+
+// 2. JWT carries no roles — look the user up directly by sub == cognito_user_id
+//    against the local DB. Dormant in staging because branch 1 always succeeds there.
+try {
+    List<String> roles = jdbcTemplate.queryForList(
+        "SELECT ra.role FROM user_profiles u "
+      + "JOIN role_assignments ra ON ra.user_id = u.id "
+      + "WHERE u.cognito_user_id = ?",
+        String.class,
+        jwt.getSubject());
+    return toAuthorities(roles);
+} catch (Exception e) {
+    // Preserve pre-fallback behaviour: empty authorities on any DB error
+    return Collections.emptyList();
+}
+```
+
+**Frontend implementation** (`web-frontend/src/contexts/AuthContext.tsx`):
+after `authService.signIn` (and `initializeAuth`, and `confirmNewPassword`) return a
+`UserContext`, if `user.roles.length === 0` the provider calls
+`GET /users/me?include=roles` and merges `availableRoles` / `currentRole` into the
+context before dropping `isLoading: false`. This fixes UI gating — Dashboard redirect,
+`ProtectedRoute.canAccess`, RoleSelector — for local-dev users whose JWT lacks roles.
+On any failure the user is left as-is (Dashboard's defensive fallback handles the
+still-empty case).
+
+**Where this kicks in**:
+
+| Environment | JWT `custom:role` | Fallback fires? | Why |
+|---|---|---|---|
+| Staging (web)  | `"ORGANIZER,SPEAKER"` (or similar)            | No  | Pattern 2 Lambda populates the claim from the staging DB. |
+| Staging (web) — PreTokenGen Lambda outage | empty | Yes | Graceful degradation: services + frontend look up the user in the staging DB directly. |
+| Local dev — user provisioned via Pattern 1 (PostConfirmation, self-registration) | `"ATTENDEE"` | No | Cognito user + DB row both exist in staging; PreTokenGen finds the row. |
+| Local dev — speaker invited via Pattern N (organizer kanban) | empty | Yes | Cognito user is in staging, but `user_profiles` row is local only; PreTokenGen finds nothing in the staging DB. |
+
+**Caching and performance**: the converter does one indexed-lookup query
+(`user_profiles.cognito_user_id` is a primary-key style index) only when the
+JWT roles claim is empty. In staging this path is dormant — zero queries on
+the hot path. In local dev there is no caching at the converter level (each
+request validates the JWT independently), so the lookup runs once per
+authenticated request. This is acceptable for development; if hot in
+production (which would indicate the Lambda is failing) we would add a small
+Caffeine cache keyed by `sub` with TTL = JWT exp − now.
+
+**What this does NOT replace**: this is a fallback for the role-extraction
+step only. The PreTokenGen Lambda (Pattern 2) remains the canonical role-population
+mechanism. The fallback is invisible in staging by design — anyone debugging
+"why don't my roles work" should still start with Pattern 2 and the Lambda
+CloudWatch logs.
+
+### Pattern 3b twin: username fallback (Story 11.E.9, 2026-05-21)
+
+Same root cause as the role-extraction fallback above, applied to the `custom:username`
+claim. The PreTokenGen Lambda (Pattern 2) writes `custom:username` from
+`user_profiles.username` — for locally-provisioned speakers (Pattern N), the Lambda
+runs against the staging DB, finds no `user_profiles` row, and either omits the claim
+or returns an empty string. The pre-fix `getCurrentUsername()` check was
+`if (username == null)` only, so empty string passed through and downstream queries
+like `sessionUserRepository.findByUsername("")` matched nothing — locally-promoted
+speakers saw an empty dashboard.
+
+**Backend implementation** (`services/event-management-service/.../security/
+SecurityContextHelper.java`):
+
+```java
+String username = jwt.getClaim("custom:username");
+if (username != null && !username.isBlank()) {
+    return username;            // staging path — claim is populated
+}
+// Local-dev fallback: resolve by cognito_user_id (mirrors JwtRolesConverter)
+String resolved = jdbcTemplate.queryForObject(
+        "SELECT username FROM user_profiles WHERE cognito_user_id = ?",
+        String.class,
+        jwt.getSubject());
+return resolved != null ? resolved : jwt.getSubject();  // final fallback: UUID
+```
+
+**Symptom this fixes**: `GET /api/v1/speaker-portal/dashboard` returns
+`{ speakerName: "", upcomingEvents: [], pastEvents: [] }` for a locally-provisioned
+speaker whose `session_users` and `user_profiles` rows exist correctly. The log
+line `Dashboard request: username= ip=...` is the diagnostic giveaway —
+`SecurityContextHelper` emitted an empty username.
+
+**Where this kicks in**: identical to the role twin above — dormant in staging
+(JWT always carries a non-empty `custom:username`), fires only for the local-dev
+"speaker invited via Pattern N" case. The fallback is scoped to event-management-service
+today; if other services start reading `custom:username` in code paths that touch
+speaker identity, they need the same twin (the shared-kernel home would be a clean
+follow-up if reuse appears).
 
 ## What We DON'T Do
 

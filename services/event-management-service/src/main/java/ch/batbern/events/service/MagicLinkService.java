@@ -60,15 +60,13 @@ public class MagicLinkService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
-    // Workflow states indicating speaker has responded
+    // Workflow states indicating speaker has responded (per ADR-009 8-state model).
+    // DECLINED is terminal; ACCEPTED + content-lifecycle states represent committed speakers.
     private static final Set<SpeakerWorkflowState> RESPONDED_STATES = Set.of(
             SpeakerWorkflowState.ACCEPTED,
             SpeakerWorkflowState.DECLINED,
             SpeakerWorkflowState.CONTENT_SUBMITTED,
-            SpeakerWorkflowState.QUALITY_REVIEWED,
-            SpeakerWorkflowState.SLOT_ASSIGNED,
-            SpeakerWorkflowState.CONFIRMED,
-            SpeakerWorkflowState.WITHDREW
+            SpeakerWorkflowState.QUALITY_REVIEWED
     );
 
     private final SpeakerInvitationTokenRepository tokenRepository;
@@ -76,6 +74,7 @@ public class MagicLinkService {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final JwtConfig jwtConfig;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
     private final SecureRandom secureRandom;
 
     public MagicLinkService(
@@ -83,12 +82,14 @@ public class MagicLinkService {
             SpeakerPoolRepository speakerPoolRepository,
             EventRepository eventRepository,
             SessionRepository sessionRepository,
-            JwtConfig jwtConfig) {
+            JwtConfig jwtConfig,
+            PrimarySpeakerResolver primarySpeakerResolver) {
         this.tokenRepository = tokenRepository;
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
         this.jwtConfig = jwtConfig;
+        this.primarySpeakerResolver = primarySpeakerResolver;
         this.secureRandom = new SecureRandom();
     }
 
@@ -159,19 +160,26 @@ public class MagicLinkService {
         KeyPair keyPair = jwtConfig.getKeyPair();
         Instant now = Instant.now();
 
+        // Story 11.E.9 (post-pool-email drop): JWT email claim comes from the canonical
+        // primary speaker (session_users + CUMS). Pre-session rows have no resolvable
+        // email — the JWT is issued without a stable email claim. Magic-link tokens for
+        // pre-session speakers should not reach this code path in practice (only
+        // INVITED+ speakers receive magic links).
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speakerPool).orElse(null);
+
         String jwt = Jwts.builder()
                 .subject(speakerPoolId.toString())
                 .issuer(jwtConfig.getIssuer())
                 .issuedAt(java.util.Date.from(now))
                 .expiration(java.util.Date.from(now.plus(jwtConfig.getExpiryDays(), ChronoUnit.DAYS)))
-                .claim("email", speakerPool.getEmail())
+                .claim("email", resolvedEmail)
                 .claim("roles", List.of("SPEAKER"))
                 .claim("speakerPoolId", speakerPoolId.toString())
                 .signWith(keyPair.getPrivate(), Jwts.SIG.RS256)
                 .compact();
 
         String maskedEmail = LoggingUtils.maskEmail(
-                speakerPool.getEmail() != null ? speakerPool.getEmail() : "unknown");
+                resolvedEmail != null ? resolvedEmail : "unknown");
         LOG.info("Generated JWT token for speaker pool: {} (email: {})", speakerPoolId, maskedEmail);
         return jwt;
     }
@@ -257,24 +265,29 @@ public class MagicLinkService {
         Instant previousResponseDate = null;
 
         if (alreadyResponded) {
+            // Story 11.B.3 (ADR-009 §0.7): TENTATIVE branch removed — `is_tentative` /
+            // `tentative_reason` columns dropped by V93. Magic-link callers now only see
+            // ACCEPTED or DECLINED prior responses. The TENTATIVE response type itself is
+            // unreachable through the new state model.
             if (speakerPool.getAcceptedAt() != null) {
                 previousResponse = "ACCEPTED";
                 previousResponseDate = speakerPool.getAcceptedAt();
             } else if (speakerPool.getDeclinedAt() != null) {
                 previousResponse = "DECLINED";
                 previousResponseDate = speakerPool.getDeclinedAt();
-            } else if (Boolean.TRUE.equals(speakerPool.getIsTentative())) {
-                previousResponse = "TENTATIVE";
-                // No specific timestamp for tentative, use updated timestamp
-                previousResponseDate = speakerPool.getUpdatedAt();
             }
         }
 
-        // AC2: Return valid result with full context
+        // AC2: Return valid result with full context. Story 11.E.9: resolve username
+        // from session_users; pre-session rows return null (token holders past INVITED
+        // always have a session).
+        String resolvedUsername = primarySpeakerResolver.resolve(speakerPool)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElse(null);
         LOG.info("Token validated successfully for speaker pool: {}", token.getSpeakerPoolId());
         return TokenValidationResult.valid(
                 token.getSpeakerPoolId(),
-                speakerPool.getUsername(),
+                resolvedUsername,
                 speakerPool.getSpeakerName(),
                 eventCode,
                 eventTitle,

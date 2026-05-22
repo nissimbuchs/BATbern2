@@ -999,6 +999,10 @@ paths:
         - Company, expertise, and notes are optional
         - Organizer assignment is optional (can be assigned later)
         - Initial status is automatically set to 'identified'
+        - **Tightened by ADR-009 (Story 11.D.1):** `email` is not accepted on this endpoint;
+          speakers are only promoted to a real identity via
+          `POST /speakers/{speakerId}/promote` once they reach the READY state per ADR-009 §0.2.
+          Any client-supplied `email` (or other unknown) field returns 400 Bad Request.
 
         **Performance**: <150ms (P95)
 
@@ -1026,17 +1030,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
         '400':
-          description: Validation error (e.g., speaker name missing)
+          description: |
+            Validation error. Two paths to this status:
+            (a) speakerName missing/empty, or
+            (b) unknown field present in the body — notably `email`, which is rejected
+            per Story 11.D.1 (AR23): use `POST /speakers/{speakerId}/promote` to
+            attach an email when promoting a CONTACTED speaker to READY.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "Speaker name is required"
-                timestamp: "2025-12-13T10:00:00Z"
-                path: "/api/v1/events/BATbern56/speakers/pool"
-                status: 400
-                error: "Bad Request"
+              examples:
+                missingSpeakerName:
+                  summary: speakerName missing
+                  value:
+                    message: "Speaker name is required"
+                    timestamp: "2025-12-13T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool"
+                    status: 400
+                    error: "Bad Request"
+                unknownField:
+                  summary: Unknown field 'email' rejected (AR23)
+                  value:
+                    message: "Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to provision a speaker with an email"
+                    timestamp: "2025-12-13T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool"
+                    status: 400
+                    error: "Bad Request"
         '404':
           description: Event not found
           content:
@@ -1102,6 +1122,81 @@ paths:
         - BearerAuth: []
 
   /events/{eventCode}/speakers/pool/{speakerId}:
+    patch:
+      tags:
+        - Event Actions
+      summary: Patch a speaker pool entry (organizer assignment / notes)
+      description: |
+        Partial update of a speaker pool entry. Only fields named in
+        `PatchSpeakerPoolRequest` may be sent; any other field (notably `email`)
+        is rejected with HTTP 400 (`additionalProperties: false` +
+        `@JsonIgnoreProperties(ignoreUnknown = false)`).
+
+        **Story**: 11.D.1 (AR23) — `email` is captured exclusively by
+        `POST /speakers/{speakerId}/promote`. Sending `email` here is a
+        contract error.
+        **Authorization**: Requires ORGANIZER role.
+      operationId: patchSpeakerPoolEntry
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchSpeakerPoolRequest'
+      responses:
+        '200':
+          description: Speaker pool entry updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: |
+            Validation error — typically because the request body contains a
+            field outside `PatchSpeakerPoolRequest` (e.g. `email`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailRejected:
+                  summary: Email field rejected — use POST /promote instead
+                  value:
+                    message: "Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to attach an email"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000"
+                    status: 400
+                    error: "Bad Request"
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
     delete:
       tags:
         - Event Actions
@@ -1148,6 +1243,160 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{speakerId}/promote:
+    post:
+      tags:
+        - Event Actions
+      summary: Promote a CONTACTED speaker to READY (provisions User + SPEAKER role)
+      description: |
+        Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.
+
+        **Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D
+        **ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate
+        **Authorization**: Requires ORGANIZER role
+        **Same-state behaviour**: Re-promoting an already-READY speaker returns
+          `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and
+          `details.currentState = READY`. Promote is only valid from CONTACTED;
+          subsequent identity changes go through a dedicated organizer action
+          (not this endpoint).
+
+        **Side effects on success**:
+          - Workflow state transitions `CONTACTED → READY` via
+            `SpeakerWorkflowService.transition(...)` (the sole status writer).
+          - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if
+            none exists for the email; SPEAKER role is granted (idempotent).
+          - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the
+            canonical username (Story 11.E.8). The legacy `speaker_pool.username` and
+            `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the
+            response's `username` / `email` are now overlay-derived via
+            `PrimarySpeakerResolver.applyOverlay(...)`.
+          - `speaker_status_history` row is inserted (previous_status=contacted,
+            new_status=ready, changed_by_username=organizer).
+          - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.
+
+        **Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the
+        only path that attaches an email + provisions an identity is this endpoint.
+        `PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with
+        code `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.
+
+      operationId: promoteSpeakerToReady
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteSpeakerRequest'
+      responses:
+        '200':
+          description: |
+            Speaker promoted to READY. Response is the updated speaker pool entry
+            with status=ready, username populated, and email populated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: |
+            Validation error. Triggered by: missing/blank/malformed email, body fields
+            beyond the schema (`additionalProperties: false`), or invalid path parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingEmail:
+                  summary: Email missing
+                  value:
+                    message: "email: must not be blank"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 400
+                    error: "Bad Request"
+                unknownField:
+                  summary: Unknown field rejected
+                  value:
+                    message: "Invalid request format"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 400
+                    error: "Bad Request"
+        '401':
+          description: No authentication token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Speaker is in a state where promotion is invalid (any state other than
+            CONTACTED). Body contains `details.code = "INVALID_PROMOTION_STATE"` and
+            `details.currentState = "<state>"` so callers can render a tailored
+            message. Includes already-READY (re-promote is not idempotent — see
+            Same-state behaviour above).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyInvited:
+                  summary: Speaker already INVITED
+                  value:
+                    message: "speaker is already in INVITED; promote is only valid from CONTACTED"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "INVITED"
+                alreadyReady:
+                  summary: Speaker already READY (re-promote rejected)
+                  value:
+                    message: "speaker is already READY; promote is only valid from CONTACTED"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "READY"
+                stillIdentified:
+                  summary: Speaker still in IDENTIFIED — log outreach first
+                  value:
+                    message: "speaker must be in CONTACTED before promoting; log outreach first"
+                    timestamp: "2026-05-16T10:00:00Z"
+                    path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/promote"
+                    status: 409
+                    error: "Conflict"
+                    details:
+                      code: "INVALID_PROMOTION_STATE"
+                      currentState: "IDENTIFIED"
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -5383,433 +5632,8 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  # ── Admin Export/Import Endpoints (Story 10.20) ─────────────────────────────
-
-  /admin/export/legacy:
-    get:
-      tags: [Admin Export/Import]
-      summary: Export all data in legacy BAT JSON format
-      description: |
-        Exports all events, sessions, speakers, companies, and attendees in the legacy
-        BATspa JSON format for data migration or interoperability. Returns a downloadable
-        JSON file. Organizer role required.
-      operationId: exportLegacyData
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Legacy JSON file download
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LegacyExportEnvelope'
-          headers:
-            Content-Disposition:
-              schema:
-                type: string
-                example: 'attachment; filename=batbern-export-2026-03-02.json'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /admin/export/assets:
-    get:
-      tags: [Admin Export/Import]
-      summary: Export asset presigned-URL manifest
-      description: |
-        Returns a JSON manifest with presigned S3 URLs for all binary assets
-        (speaker portraits, company logos, session materials). Each URL is valid for 1 hour.
-        Organizer role required.
-      operationId: exportAssetManifest
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Asset manifest with presigned URLs
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssetManifestResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /admin/import/legacy:
-    post:
-      tags: [Admin Export/Import]
-      summary: Import data from legacy BAT JSON file
-      description: |
-        Accepts a multipart file upload of a legacy BAT JSON export. Upserts all entity
-        types (events, sessions, speakers, companies, attendees) idempotently — importing
-        the same file twice has no side effects. Returns import counts and error details.
-        Organizer role required.
-      operationId: importLegacyData
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Legacy BAT JSON export file
-      responses:
-        '200':
-          description: Import completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LegacyImportResult'
-        '400':
-          description: Invalid JSON file or schema mismatch
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /admin/import/assets:
-    post:
-      tags: [Admin Export/Import]
-      summary: Import assets from ZIP file
-      description: |
-        Accepts a multipart ZIP file. Unpacks asset files to S3 under
-        `imports/{timestamp}/` prefix and links them to entities by filename convention.
-        Organizer role required.
-      operationId: importAssets
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: ZIP archive containing asset files
-      responses:
-        '200':
-          description: Asset import completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssetImportResult'
-        '400':
-          description: Invalid ZIP file
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /admin/export/bundle:
-    get:
-      tags: [Admin Export/Import]
-      summary: Export full bundle (data + binary assets) as ZIP
-      description: |
-        Returns a single ZIP archive containing:
-        - `export.json` — full LegacyExportEnvelope (same as GET /admin/export/legacy)
-        - `manifest.json` — AssetManifestResponse with presigned URLs (for reference)
-        - `portraits/{speakerId}/{filename}` — speaker portrait images
-        - `logos/{logoId}/{filename}` — company/partner logos
-        - `materials/{materialId}/{filename}` — session materials
-        - `themes/{eventId}/{filename}` — event theme images
-
-        Symmetric counterpart to POST /admin/import/bundle.
-        S3 download failures are logged and skipped (partial bundle is still valid).
-        Organizer role required.
-      operationId: exportBundle
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Bundle ZIP file
-          content:
-            application/zip:
-              schema:
-                type: string
-                format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /admin/import/bundle:
-    post:
-      tags: [Admin Export/Import]
-      summary: Import bundle ZIP (data + binary assets)
-      description: |
-        Accepts a ZIP produced by GET /admin/export/bundle.
-        Restores data (upsert, idempotent) AND uploads binary assets to S3,
-        re-linking them to their entity records.
-        Organizer role required.
-      operationId: importBundle
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Bundle ZIP produced by GET /admin/export/bundle
-      responses:
-        '200':
-          description: Bundle import completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BundleImportResult'
-        '400':
-          description: Invalid or missing export.json in ZIP
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
 components:
   schemas:
-
-    # ── Admin Export/Import Schemas (Story 10.20) ─────────────────────────────
-
-    LegacyExportEnvelope:
-      type: object
-      description: Top-level envelope for a legacy BAT JSON export
-      required: [version, exportedAt, events, companies, speakers, attendees]
-      properties:
-        version:
-          type: string
-          example: "2.0"
-        exportedAt:
-          type: string
-          format: date-time
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegacyEventDto'
-        companies:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegacyCompanyDto'
-        speakers:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegacySpeakerDto'
-        attendees:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegacyAttendeeDto'
-
-    LegacyEventDto:
-      type: object
-      properties:
-        bat:
-          type: integer
-          description: Event number (legacy BAT number)
-        eventCode:
-          type: string
-          example: BATbern57
-        title:
-          type: string
-        date:
-          type: string
-          format: date-time
-        venueName:
-          type: string
-        venueAddress:
-          type: string
-        sessions:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegacySessionDto'
-
-    LegacySessionDto:
-      type: object
-      properties:
-        sessionSlug:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-        sessionType:
-          type: string
-        pdf:
-          type: string
-          description: Legacy PDF filename for session materials
-        referenten:
-          type: array
-          description: Session speakers (legacy field name)
-          items:
-            $ref: '#/components/schemas/LegacySpeakerDto'
-
-    LegacySpeakerDto:
-      type: object
-      properties:
-        speakerId:
-          type: string
-          description: Speaker username
-        name:
-          type: string
-          description: Full name (firstName + lastName)
-        bio:
-          type: string
-        company:
-          type: string
-        portrait:
-          type: string
-          description: Portrait filename or URL
-        linkedInUrl:
-          type: string
-        twitterHandle:
-          type: string
-
-    LegacyCompanyDto:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Company name/identifier
-        displayName:
-          type: string
-        logo:
-          type: string
-          description: Logo filename or URL
-        url:
-          type: string
-          description: Company website URL
-
-    LegacyAttendeeDto:
-      type: object
-      properties:
-        eventCode:
-          type: string
-        username:
-          type: string
-        status:
-          type: string
-        registeredAt:
-          type: string
-          format: date-time
-
-    LegacyImportResult:
-      type: object
-      required: [imported]
-      properties:
-        imported:
-          type: object
-          properties:
-            events:
-              type: integer
-            sessions:
-              type: integer
-            speakers:
-              type: integer
-            companies:
-              type: integer
-            attendees:
-              type: integer
-        skipped:
-          type: array
-          items:
-            type: string
-        errors:
-          type: array
-          items:
-            type: string
-
-    AssetManifestResponse:
-      type: object
-      required: [exportedAt, assetCount, assets]
-      properties:
-        exportedAt:
-          type: string
-          format: date-time
-        assetCount:
-          type: integer
-        assets:
-          type: array
-          items:
-            $ref: '#/components/schemas/AssetEntry'
-
-    AssetEntry:
-      type: object
-      required: [type, entityId, filename, presignedUrl]
-      properties:
-        type:
-          type: string
-          description: Asset type (portrait, logo, material)
-          example: portrait
-        entityId:
-          type: string
-          format: uuid
-        filename:
-          type: string
-        presignedUrl:
-          type: string
-          format: uri
-
-    AssetImportResult:
-      type: object
-      required: [importedAt, importedCount, s3Prefix]
-      properties:
-        importedAt:
-          type: string
-          format: date-time
-        importedCount:
-          type: integer
-        s3Prefix:
-          type: string
-          description: S3 key prefix where assets were uploaded
-          example: "imports/2026-03-03T10:00:00Z/"
-        errors:
-          type: array
-          items:
-            type: string
-
-    BundleImportResult:
-      type: object
-      description: Result of a bundle ZIP import that restores both data and binary assets
-      required: [dataResult, assetsImported, assetErrors]
-      properties:
-        dataResult:
-          $ref: '#/components/schemas/LegacyImportResult'
-          description: Result of the data (JSON) import phase
-        assetsImported:
-          type: integer
-          description: Number of binary assets successfully uploaded to S3 and linked to entities
-          example: 12
-        assetErrors:
-          type: array
-          description: Per-asset error messages for assets that could not be restored
-          items:
-            type: string
 
     # ── Event Photo Schemas (Story 10.21) ────────────────────────────────────
 
@@ -8547,7 +8371,11 @@ components:
       type: object
       description: |
         Request to add a potential speaker to the event speaker pool during brainstorming phase.
-        Story 5.2 - AC9-12: Speaker Pool Management
+        Story 5.2 - AC9-12: Speaker Pool Management.
+        Story 11.D.1 (AR23): `additionalProperties: false` — any client-supplied `email` (or
+        other unknown field) is rejected with HTTP 400. Use `POST /speakers/{speakerId}/promote`
+        to attach an email when promoting a CONTACTED speaker to READY.
+      additionalProperties: false
       required:
         - speakerName
       properties:
@@ -8574,6 +8402,100 @@ components:
           type: string
           description: Free-text notes about the speaker (optional)
           example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+
+    PatchSpeakerPoolRequest:
+      type: object
+      description: |
+        Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
+        (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
+        edits of the brainstorm-level metadata `speakerName` / `company` / `expertise`).
+        All fields are optional — only non-null fields are applied to the entry.
+        `additionalProperties: false` rejects stale fields, notably `email`, which is
+        captured exclusively by `POST /speakers/{speakerId}/promote`.
+      additionalProperties: false
+      properties:
+        speakerName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: |
+            Display name on the brainstorm/kanban (nullable not allowed — pass an existing
+            value to keep, omit to leave unchanged). For READY+ speakers the canonical name
+            lives on the linked User; this field updates the pool entry only.
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Speaker's company affiliation as known at brainstorm time (free text).
+          example: ACME GmbH
+        expertise:
+          type: string
+          maxLength: 1000
+          description: Comma-separated or free-text expertise tags shown on the kanban card.
+          example: Cloud Architecture, Kubernetes
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (nullable to clear).
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (nullable to clear).
+          example: Followed up via LinkedIn 2026-05-12 — interested but needs date confirmation.
+
+    PromoteSpeakerRequest:
+      type: object
+      description: |
+        Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1; tightened by
+        Story 11.E.4 AC4). Drives the `CONTACTED → READY` workflow transition and provisions
+        a User + SPEAKER role via `UserApiClient.provisionUserWithRole(...)`.
+
+        `firstName` and `lastName` are **required** (tightened from optional by Story 11.E.4
+        AC4, PM decision 2026-05-18). They populate the Cognito user's `given_name` /
+        `family_name` attributes; the previous fallback to splitting `speaker_pool.speakerName`
+        (with literal placeholders `"Speaker"` / `"Unknown"` when the name was blank) is
+        removed. Callers MUST collect these fields from the organizer.
+
+        `additionalProperties: false`: stale fields from pre-refactor frontends are rejected
+        with HTTP 400 rather than silently ignored.
+      additionalProperties: false
+      required:
+        - email
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: |
+            Required. Speaker email — becomes the User lookup key (case-insensitive) in
+            CUMS and the Cognito username on first provisioning. Post Story 11.E.9 (V103)
+            the email is not duplicated on `speaker_pool`; it lives only in CUMS and is
+            resolved via `PrimarySpeakerResolver.resolveEmail(pool)` at read time.
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '^.*\S.*$'
+          description: |
+            Required (Story 11.E.4 AC4). Populates the Cognito user's `given_name` attribute
+            and the User's `first_name` column. Must contain at least one non-whitespace
+            character — blank / whitespace-only values are rejected by both the spec
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
+          example: Jane
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '^.*\S.*$'
+          description: |
+            Required (Story 11.E.4 AC4). Populates the Cognito user's `family_name` attribute
+            and the User's `last_name` column. Must contain at least one non-whitespace
+            character — blank / whitespace-only values are rejected by both the spec
+            `pattern` and server-side `@NotBlank` validation → HTTP 400.
+          example: Smith
 
     SpeakerPoolResponse:
       type: object

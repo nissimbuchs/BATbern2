@@ -111,17 +111,15 @@ public class SlotAssignmentService {
                         + "- speaker remains in state {}",
                 speakerId, sessionId, session.getStartTime(), eventCode, organizerUsername, currentState);
 
-        // Note: If speaker is already in QUALITY_REVIEWED state, they should be manually
-        // transitioned to CONFIRMED by calling speakerWorkflowService.updateSpeakerWorkflowState()
-        // since we just assigned the final missing piece (the slot)
+        // Note (ADR-009): assignment is orthogonal to workflow state. Publishability is the derived
+        // predicate (QUALITY_REVIEWED AND session_id != null); see Story 11.B.3 for its persistence.
     }
 
     /**
      * Unassign a speaker from their current slot.
      *
-     * Note: This only clears the session assignment (speaker.sessionId = null).
-     * It does NOT change the speaker's workflow state.
-     * If speaker was CONFIRMED, they should be manually moved back to QUALITY_REVIEWED.
+     * Note (ADR-009): assignment is orthogonal to workflow state. Clearing the session does NOT
+     * change {@code speaker.status}; publishability simply becomes false again.
      *
      * @param eventCode Event code
      * @param speakerId Speaker pool ID
@@ -142,9 +140,6 @@ public class SlotAssignmentService {
 
         log.info("Unassigned speaker {} from session {} for event {} by organizer {} - speaker remains in state {}",
                 speakerId, previousSessionId, eventCode, organizerUsername, speaker.getStatus());
-
-        // Note: If speaker was CONFIRMED, organizer should manually revert them to QUALITY_REVIEWED
-        // since they no longer meet confirmation criteria (missing slot assignment)
     }
 
     /**
@@ -186,20 +181,22 @@ public class SlotAssignmentService {
     /**
      * Check if a speaker state is valid for slot assignment.
      *
-     * Slot can be assigned when speaker is:
-     * - ACCEPTED (early slot assignment before content submission)
-     * - CONTENT_SUBMITTED (slot assigned during review process)
-     * - QUALITY_REVIEWED (slot assigned after review complete)
-     * - CONFIRMED (re-assigning to different slot)
+     * <p>Per ADR-009 slot assignment is an orthogonal action (sets {@code session.start_time})
+     * — it does NOT change workflow state. Slot can be assigned at any post-ACCEPTED state
+     * along the content lifecycle:
+     * <ul>
+     *   <li>{@code ACCEPTED} — early slot assignment before content submission</li>
+     *   <li>{@code CONTENT_SUBMITTED} — slot assigned during review</li>
+     *   <li>{@code QUALITY_REVIEWED} — slot assigned after review complete</li>
+     * </ul>
      *
-     * @param state Current speaker workflow state
+     * @param state current speaker workflow state
      * @return true if speaker can be assigned to a slot
      */
     private boolean isValidForSlotAssignment(SpeakerWorkflowState state) {
         return state == SpeakerWorkflowState.ACCEPTED
                 || state == SpeakerWorkflowState.CONTENT_SUBMITTED
-                || state == SpeakerWorkflowState.QUALITY_REVIEWED
-                || state == SpeakerWorkflowState.CONFIRMED;
+                || state == SpeakerWorkflowState.QUALITY_REVIEWED;
     }
 
     /**

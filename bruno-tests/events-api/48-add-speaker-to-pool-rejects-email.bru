@@ -1,0 +1,40 @@
+meta {
+  name: Add Speaker to Pool - Rejects Email Field (Story 11.D.1 AC5 / AR23)
+  type: http
+  seq: 48
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "speakerName": "AR23 Rejection Test",
+    "email": "this-should-be-rejected@batbern-test.ch"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 Bad Request when 'email' is present on POST /speakers/pool (AR23)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Contract test for Story 11.D.1 AC5 / AR23: the speaker-pool endpoint rejects an
+  `email` field. The AddSpeakerToPoolRequest DTO is annotated with
+  @JsonIgnoreProperties(ignoreUnknown = false), so unknown fields fail at deserialization
+  with HTTP 400. Speakers gain an email only when promoted to READY via
+  POST /speakers/{speakerId}/promote — per ADR-009 §0.2.
+}

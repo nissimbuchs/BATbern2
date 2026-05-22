@@ -1,11 +1,16 @@
 /**
- * getDefaultTab unit tests (Story 10.30, AC2)
+ * getDefaultTab unit tests — Story 11.D.4 (AC7.5) + Epic 11 bug fixes.
  *
- * Coverage:
- * - All statuses that map to Activity tab (2): IDENTIFIED, CONTACTED
- * - All statuses that map to Details tab (1): DECLINED, CONTENT_SUBMITTED, QUALITY_REVIEWED
- * - All statuses that map to Overview tab (0): INVITED, ACCEPTED, CONFIRMED, READY
- * - Unknown/future statuses fall back to Overview tab (0)
+ * The drawer collapsed from 3 tabs (Overview/Details/Activity) to 2 tabs
+ * (Details/History) in Story 11.D.4; Epic 11 bug fix 2026-05-18 added a third
+ * `'content'` tab for READY+ states (conditional). Tab values are now string keys
+ * (`'details' | 'content' | 'history'`) so the drawer doesn't need to remap indices
+ * when the Content tab is hidden.
+ *
+ * 2026-05-20 (Q#B) — INVITED previously defaulted to `'history'` to surface the
+ * response-status timeline. Bug feedback: organizers expect the card click to open
+ * the speaker's *details*, not the audit log. Every state now defaults to
+ * `'details'`; the History tab is one click away.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -22,50 +27,25 @@ function makeSpeaker(status: SpeakerPoolEntry['status']): SpeakerPoolEntry {
   };
 }
 
-describe('getDefaultTab', () => {
-  describe('Activity tab (index 2)', () => {
-    it('should return 2 for IDENTIFIED', () => {
-      expect(getDefaultTab(makeSpeaker('IDENTIFIED'))).toBe(2);
+describe('getDefaultTab — Story 11.D.4 + Epic 11 bug fixes (3-tab drawer, string-keyed)', () => {
+  describe("Details tab ('details') for every state", () => {
+    it.each([
+      'IDENTIFIED',
+      'CONTACTED',
+      'READY',
+      'INVITED',
+      'ACCEPTED',
+      'CONTENT_SUBMITTED',
+      'QUALITY_REVIEWED',
+      'DECLINED',
+    ] as const)("should return 'details' for %s", (status) => {
+      expect(getDefaultTab(makeSpeaker(status))).toBe('details');
     });
 
-    it('should return 2 for CONTACTED', () => {
-      expect(getDefaultTab(makeSpeaker('CONTACTED'))).toBe(2);
-    });
-  });
-
-  describe('Details tab (index 1)', () => {
-    it('should return 1 for DECLINED', () => {
-      expect(getDefaultTab(makeSpeaker('DECLINED'))).toBe(1);
-    });
-
-    it('should return 1 for CONTENT_SUBMITTED', () => {
-      expect(getDefaultTab(makeSpeaker('CONTENT_SUBMITTED'))).toBe(1);
-    });
-
-    it('should return 1 for QUALITY_REVIEWED', () => {
-      expect(getDefaultTab(makeSpeaker('QUALITY_REVIEWED'))).toBe(1);
-    });
-  });
-
-  describe('Overview tab (index 0)', () => {
-    it('should return 0 for INVITED', () => {
-      expect(getDefaultTab(makeSpeaker('INVITED'))).toBe(0);
-    });
-
-    it('should return 0 for ACCEPTED', () => {
-      expect(getDefaultTab(makeSpeaker('ACCEPTED'))).toBe(0);
-    });
-
-    it('should return 0 for CONFIRMED', () => {
-      expect(getDefaultTab(makeSpeaker('CONFIRMED'))).toBe(0);
-    });
-
-    it('should return 0 for READY', () => {
-      expect(getDefaultTab(makeSpeaker('READY'))).toBe(0);
-    });
-
-    it('should return 0 for unknown/future statuses via default case', () => {
-      expect(getDefaultTab(makeSpeaker('FUTURE_STATUS' as SpeakerPoolEntry['status']))).toBe(0);
+    it("should return 'details' for unknown/future statuses", () => {
+      expect(getDefaultTab(makeSpeaker('FUTURE_STATUS' as SpeakerPoolEntry['status']))).toBe(
+        'details'
+      );
     });
   });
 });

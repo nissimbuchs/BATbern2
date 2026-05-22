@@ -1,6 +1,9 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.service.ContentStatusDeriver;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,6 +22,10 @@ public class SpeakerPoolResponse {
     private String assignedOrganizerId;
     private String status;
     private UUID sessionId;
+    // 2026-05-20 — sessionSlug surfaced alongside sessionId so the organizer drawer's
+    // content tab can call PATCH /events/{code}/sessions/{slug} directly for READY-state
+    // draft writes (the slug is the addressable identifier on that endpoint).
+    private String sessionSlug;
     private String notes;
     private Instant createdAt;
     private Instant updatedAt;
@@ -34,13 +41,17 @@ public class SpeakerPoolResponse {
     private Instant acceptedAt;
     private Instant declinedAt;
     private String declineReason;
-    private Boolean isTentative;
-    private String tentativeReason;
     private String preferredTimeSlot;
     private String travelRequirements;
     private String technicalRequirements;
     private String initialPresentationTitle;
     private String preferenceComments;
+
+    // Story 11.B.3: Derived flags per ADR-009 §0.1 (NOT stored on speaker_pool —
+    // computed at read time). Populated by the fromEntity(SpeakerPool, Session) factory;
+    // the SpeakerPool-only factory uses the weaker sessionId-based fallback.
+    private Boolean isSlotAssigned;
+    private Boolean isPublishable;
 
     // Story 6.5: Automated Deadline Reminders
     private Boolean remindersDisabled;
@@ -59,12 +70,39 @@ public class SpeakerPoolResponse {
     }
 
     /**
-     * Create response DTO from SpeakerPool entity.
+     * Create response DTO from SpeakerPool entity. Delegates to
+     * {@link #fromEntity(SpeakerPool, Session)} with {@code session = null}.
+     *
+     * <p>In the {@code session == null} fallback the derived {@code isSlotAssigned} flag
+     * is computed from {@code speakerPool.sessionId != null} only — a weaker predicate
+     * than the strict {@code session.start_time IS NOT NULL} check. This can over-report
+     * {@code isSlotAssigned} when a session is assigned but its {@code start_time} has
+     * not yet been set. Use the {@code (SpeakerPool, Session)} overload when the session
+     * is loadable (e.g., the caller has already fetched it for a batch lookup).
      *
      * @param speakerPool the speaker pool entity
      * @return the response DTO
      */
     public static SpeakerPoolResponse fromEntity(SpeakerPool speakerPool) {
+        return fromEntity(speakerPool, null);
+    }
+
+    /**
+     * Create response DTO from SpeakerPool entity with the speaker's assigned session for
+     * accurate derived-flag computation (ADR-009 §0.1).
+     *
+     * <p>When {@code session != null}, the derived {@code isSlotAssigned} flag is set to
+     * {@code session.startTime != null}. When {@code session == null} the flag falls back
+     * to {@code speakerPool.sessionId != null} — see the caveat on {@link #fromEntity(SpeakerPool)}.
+     *
+     * <p>{@code isPublishable = status == QUALITY_REVIEWED AND isSlotAssigned}.
+     *
+     * @param speakerPool the speaker pool entity
+     * @param session the speaker's assigned session (nullable); when non-null the strict
+     *                {@code session.startTime IS NOT NULL} predicate is used.
+     * @return the response DTO
+     */
+    public static SpeakerPoolResponse fromEntity(SpeakerPool speakerPool, Session session) {
         SpeakerPoolResponse response = new SpeakerPoolResponse();
         response.id = speakerPool.getId();
         response.eventId = speakerPool.getEventId();
@@ -78,9 +116,11 @@ public class SpeakerPoolResponse {
         response.createdAt = speakerPool.getCreatedAt();
         response.updatedAt = speakerPool.getUpdatedAt();
 
-        // Story 6.1b: Speaker Invitation System fields
-        response.username = speakerPool.getUsername();
-        response.email = speakerPool.getEmail();
+        // Story 11.E.9: username + email columns dropped from speaker_pool (V103).
+        // These response fields are now populated exclusively by
+        // PrimarySpeakerResolver.applyOverlay(response, pool) — call it after
+        // fromEntity() when the caller wants the live identity (any path past READY).
+        // Pre-READY pool rows have no User record; the fields stay null.
         response.invitedAt = speakerPool.getInvitedAt();
         response.responseDeadline = speakerPool.getResponseDeadline();
         response.contentDeadline = speakerPool.getContentDeadline();
@@ -89,39 +129,75 @@ public class SpeakerPoolResponse {
         response.acceptedAt = speakerPool.getAcceptedAt();
         response.declinedAt = speakerPool.getDeclinedAt();
         response.declineReason = speakerPool.getDeclineReason();
-        response.isTentative = speakerPool.getIsTentative();
-        response.tentativeReason = speakerPool.getTentativeReason();
         response.preferredTimeSlot = speakerPool.getPreferredTimeSlot();
         response.travelRequirements = speakerPool.getTravelRequirements();
         response.technicalRequirements = speakerPool.getTechnicalRequirements();
-        response.initialPresentationTitle = speakerPool.getInitialPresentationTitle();
+        // Story 11.E.8 consolidation: initialPresentationTitle column was dropped (V102).
+        // sessions.title is canonical now; FE's display fallback chain handles a null value.
         response.preferenceComments = speakerPool.getPreferenceComments();
 
         // Story 6.5: Automated Deadline Reminders
         response.remindersDisabled = speakerPool.getRemindersDisabled();
 
-        // Story 6.3: Speaker Content Submission Portal fields
-        response.contentStatus = speakerPool.getContentStatus();
-        response.contentSubmittedAt = speakerPool.getContentSubmittedAt();
+        // Story 11.E.8 consolidation: contentStatus and contentSubmittedAt are derived from
+        // session_content_history at read time. fromEntity() has no version context, so the
+        // defaults below (PENDING, null) are correct for the no-content case. Callers with
+        // access to a session and its latest history row should use fromEntityWithContent(...).
+        response.contentStatus = ContentStatusDeriver.derive(speakerPool.getStatus(), java.util.Optional.empty());
+        response.contentSubmittedAt = null;
+
+        // Story 11.B.3: derived flags per ADR-009 §0.1 (computed at read time, not stored).
+        boolean slotAssigned;
+        if (session != null) {
+            slotAssigned = session.getStartTime() != null;
+            response.sessionSlug = session.getSessionSlug();
+        } else {
+            slotAssigned = speakerPool.getSessionId() != null;
+        }
+        response.isSlotAssigned = slotAssigned;
+        response.isPublishable = speakerPool.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED
+                && slotAssigned;
 
         return response;
     }
 
     /**
-     * Create response DTO from SpeakerPool entity with content submission data.
+     * Create response DTO from SpeakerPool entity with the speaker's session AND the
+     * latest {@link ch.batbern.events.domain.SessionContentVersion}. Use when the caller
+     * has both available — derived flags + content fields + the derived {@code contentStatus}
+     * are populated in one shot.
+     *
+     * <p>Story 11.E.8 consolidation: this is the canonical "rich" factory. The latest
+     * version is the source for both {@code submittedTitle/submittedAbstract} (mirroring
+     * what's on {@code sessions.title}/{@code .description}) and the derived
+     * {@code contentStatus} + {@code contentSubmittedAt}.
      *
      * @param speakerPool the speaker pool entity
-     * @param submittedTitle the submitted presentation title (from ContentSubmission)
-     * @param submittedAbstract the submitted presentation abstract (from ContentSubmission)
+     * @param session the speaker's assigned session (nullable)
+     * @param latestVersion the latest content version for this session (nullable)
      * @return the response DTO
      */
     public static SpeakerPoolResponse fromEntityWithContent(
             SpeakerPool speakerPool,
-            String submittedTitle,
-            String submittedAbstract) {
-        SpeakerPoolResponse response = fromEntity(speakerPool);
-        response.submittedTitle = submittedTitle;
-        response.submittedAbstract = submittedAbstract;
+            Session session,
+            ch.batbern.events.domain.SessionContentVersion latestVersion) {
+        SpeakerPoolResponse response = fromEntity(speakerPool, session);
+        // Story 11.E.8 §2.9: sessions.title / sessions.description are the canonical
+        // "current" for every read surface (kanban card, public archive, speaker portal,
+        // speaker dashboard). The submittedTitle / submittedAbstract response fields
+        // therefore mirror the session row — not the latest history row — so that an
+        // organizer's session-edit modal propagates everywhere immediately. The latest
+        // history row still drives the derived contentStatus + contentSubmittedAt for
+        // the audit/timeline view.
+        if (session != null) {
+            response.submittedTitle = session.getTitle();
+            response.submittedAbstract = session.getDescription();
+        }
+        if (latestVersion != null) {
+            response.contentSubmittedAt = latestVersion.getSubmittedAt();
+            response.contentStatus = ContentStatusDeriver.derive(
+                    speakerPool.getStatus(), java.util.Optional.of(latestVersion));
+        }
         return response;
     }
 
@@ -189,6 +265,14 @@ public class SpeakerPoolResponse {
 
     public void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public String getSessionSlug() {
+        return sessionSlug;
+    }
+
+    public void setSessionSlug(String sessionSlug) {
+        this.sessionSlug = sessionSlug;
     }
 
     public String getNotes() {
@@ -281,22 +365,6 @@ public class SpeakerPoolResponse {
 
     public void setDeclineReason(String declineReason) {
         this.declineReason = declineReason;
-    }
-
-    public Boolean getIsTentative() {
-        return isTentative;
-    }
-
-    public void setIsTentative(Boolean isTentative) {
-        this.isTentative = isTentative;
-    }
-
-    public String getTentativeReason() {
-        return tentativeReason;
-    }
-
-    public void setTentativeReason(String tentativeReason) {
-        this.tentativeReason = tentativeReason;
     }
 
     public String getPreferredTimeSlot() {
@@ -397,5 +465,23 @@ public class SpeakerPoolResponse {
 
     public void setMaterialCloudFrontUrl(String materialCloudFrontUrl) {
         this.materialCloudFrontUrl = materialCloudFrontUrl;
+    }
+
+    // Story 11.B.3: Derived flags per ADR-009 §0.1.
+
+    public Boolean getIsSlotAssigned() {
+        return isSlotAssigned;
+    }
+
+    public void setIsSlotAssigned(Boolean isSlotAssigned) {
+        this.isSlotAssigned = isSlotAssigned;
+    }
+
+    public Boolean getIsPublishable() {
+        return isPublishable;
+    }
+
+    public void setIsPublishable(Boolean isPublishable) {
+        this.isPublishable = isPublishable;
     }
 }

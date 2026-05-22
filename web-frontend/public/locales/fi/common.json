@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Järjestäjä",
+      "speaker": "Puhuja",
+      "partner": "Kumppani",
+      "attendee": "Osallistuja"
+    }
   },
   "public": {
     "login": "Kirjaudu sisään",

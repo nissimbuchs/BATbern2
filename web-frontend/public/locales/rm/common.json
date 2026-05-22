@@ -29,7 +29,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisatur",
+      "speaker": "Relatur",
+      "partner": "Partenari",
+      "attendee": "Participant"
+    }
   },
   "public": {
     "login": "Annunziar",

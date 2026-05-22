@@ -1,7 +1,6 @@
 package ch.batbern.events.dto;
 
 import ch.batbern.shared.types.SpeakerResponseType;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +10,10 @@ import lombok.NoArgsConstructor;
 /**
  * Request DTO for speaker invitation response.
  * Story 6.2a: Invitation Response Portal
+ * Story 11.E.3 (ADR-009): Cognito Bearer auth replaces magic-link token; the eventCode now
+ * arrives as a path parameter on the controller, so it is not part of this body.
  *
- * Used with POST /api/v1/speaker-portal/respond endpoint.
- * Token-authenticated (no session auth required).
+ * <p>Used with {@code POST /api/v1/speaker-portal/events/{eventCode}/respond}.
  */
 @Data
 @Builder
@@ -22,15 +22,8 @@ import lombok.NoArgsConstructor;
 public class SpeakerResponseRequest {
 
     /**
-     * Magic link token from invitation email.
-     * Base64url encoded, validated against stored hash.
-     */
-    @NotBlank(message = "Token is required")
-    private String token;
-
-    /**
      * Speaker's response to the invitation.
-     * ACCEPT, DECLINE, or TENTATIVE
+     * ACCEPT or DECLINE (TENTATIVE was removed in Story 11.B.1).
      */
     @NotNull(message = "Response is required")
     private SpeakerResponseType response;

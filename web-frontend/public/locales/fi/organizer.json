@@ -182,7 +182,37 @@
     },
     "actions": {
       "skipForNow": "Ohita toistaiseksi",
-      "continue": "Jatka hankintaan"
+      "continue": "Jatka hankintaan",
+      "promoteToSpeaker": "Ylennä puhujaksi"
+    },
+    "promoteDialog": {
+      "title": "Ylennä puhujaksi",
+      "description": "Puhuja siirretään READY-väylälle ja hänelle luodaan käyttäjätili. Kutsusähköpostia ei lähetetä vielä — lähetä kutsu READY-väylältä, kun olet valmis.",
+      "emailLabel": "Sähköposti",
+      "firstNameLabel": "Etunimi",
+      "lastNameLabel": "Sukunimi",
+      "cancelButton": "Peruuta",
+      "submitButton": "Ylennä",
+      "submitting": "Ylennetään…",
+      "errorTitle": "Puhujan ylennys epäonnistui",
+      "errorEmailRequired": "Sähköposti vaaditaan",
+      "errorEmailInvalid": "Sähköpostin on oltava kelvollinen",
+      "errorFirstNameRequired": "Etunimi vaaditaan",
+      "errorLastNameRequired": "Sukunimi vaaditaan",
+      "errorAlreadyPromoted": "Puhuja on jo tilassa {{currentState}}; ylennys onnistuu vain tilasta Contacted.",
+      "errorStillIdentified": "Puhuja on ensin otettava yhteyttä — kirjaa yhteydenotto ennen ylennystä.",
+      "errorDeclined": "Puhuja on kieltäytynyt — luo uusi merkintä ylennyksen sijaan.",
+      "errorAlreadyReady": "Puhuja on jo valmis — lähetä kutsu READY-väylältä."
+    },
+    "workflowState": {
+      "IDENTIFIED": "Tunnistettu",
+      "CONTACTED": "Yhteydessä",
+      "READY": "Valmis",
+      "INVITED": "Kutsuttu",
+      "ACCEPTED": "Hyväksytty",
+      "DECLINED": "Kieltäytynyt",
+      "CONTENT_SUBMITTED": "Sisältö lähetetty",
+      "QUALITY_REVIEWED": "Laatu tarkistettu"
     }
   },
   "speakerOutreach": {
@@ -261,8 +291,14 @@
       "titleRequired": "Esityksen otsikko on pakollinen",
       "abstractRequired": "Esityksen tiivistelmä on pakollinen",
       "abstractTooLong": "Tiivistelmässä saa olla enintään {{max}} merkkiä",
-      "submitFailed": "Sisällön lähettäminen epäonnistui. Yritä uudelleen."
-    }
+      "submitFailed": "Sisällön lähettäminen epäonnistui. Yritä uudelleen.",
+      "bioTooLong": "Bio must be {{max}} characters or less"
+    },
+    "bioLabel": "Short CV / bio (optional)",
+    "portraitLabel": "Speaker portrait (optional)",
+    "portraitUploadInProgress": "Uploading portrait…",
+    "portraitUploadError": "Portrait upload failed. Please try again.",
+    "presentationUploadLabel": "Presentation upload (optional)"
   },
   "qualityReview": {
     "title": "Laaduntarkistus",
@@ -308,7 +344,6 @@
     "invalidEmail": "Anna kelvollinen sähköpostiosoite",
     "saveEmail": "Tallenna sähköposti",
     "emailSaved": "Sähköposti tallennettu",
-    "tentative": "Alustava",
     "responseDetails": "Vastauksen tiedot",
     "acceptedAt": "Hyväksytty",
     "preferredTimeSlot": "Toivottu aikaväli",
@@ -319,16 +354,12 @@
     "declineDetails": "Kieltäytymisen tiedot",
     "declinedAt": "Kieltäytynyt",
     "declineReason": "Syy",
-    "tentativeDetails": "Alustavat tiedot",
-    "tentativeReason": "Syy",
     "sendReminder": "Lähetä muistutus",
     "sendingReminder": "Lähetetään...",
     "reminderSent": "Muistutus lähetetty osoitteeseen {{email}}",
     "reminderFailed": "Muistutuksen lähettäminen epäonnistui",
     "tabs": {
-      "overview": "Overview",
-      "details": "Details",
-      "activity": "Activity"
+      "details": "Details"
     },
     "drawer": {
       "back": "Back"
@@ -480,5 +511,74 @@
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
     "copyShortened": "Gekürzten Abstract kopieren"
+  },
+  "speakerCard": {
+    "primaryAction": {
+      "logOutreach": "Kirjaa yhteydenotto",
+      "promoteToSpeaker": "Ylennä puhujaksi",
+      "sendInvitation": "Lähetä kutsu",
+      "viewResponseStatus": "Näytä vastauksen tila",
+      "enterContent": "Syötä sisältö",
+      "reviewContent": "Tarkista sisältö",
+      "assignSessionSlot": "Määritä istunnon paikka",
+      "viewDetails": "Näytä tiedot"
+    },
+    "publishable": "Julkaisukelpoinen",
+    "publishableTooltip": "Puhuja on hyväksytty ja hänellä on istuntopaikka",
+    "slotCapacityTooltip": "Paikkojen kapasiteetti saavutettu. {{invited}} odottavaa kutsua + {{accepted}} hyväksyntää {{slots}} paikalle. Odota tai hylkää hyväksytty puhuja vapauttaaksesi paikan.",
+    "timeInStateTooltip": "Nykyinen tila alkaen {{date}}",
+    "inviteSent": "Kutsu lähetetty",
+    "inviteFailed": "Kutsun lähettäminen epäonnistui",
+    "lanes": {
+      "contactedSubline": "⚠ {{count}} vanhentunutta (>14 päivää)",
+      "readySlotCapacitySubline": "⚠ Paikkakapasiteetti täynnä",
+      "invitedSubline": {
+        "approaching": "⏰ {{count}} määräaika lähestyy",
+        "past": "⏰ {{count}} määräaika ohitettu",
+        "joiner": " · "
+      },
+      "acceptedSubline": "📝 {{count}} odottaa sisältöä",
+      "contentSubmittedSubline": "👀 {{count}} odottaa moderaattorin tarkistusta",
+      "qualityReviewedSubline": "🪑 {{count}} odottaa paikkaa",
+      "sublineFilterAriaLabel": "Suodata sarake {{state}}: {{description}}",
+      "filterClearedAnnouncement": "Sarakesuodatin poistettu",
+      "filterAppliedAnnouncement": "Sarake {{state}} suodatettu, näkyvissä {{count}} korttia"
+    }
+  },
+  "kanbanDrag": {
+    "invalidDestinationTooltip": "{{from}} → {{to}} is not a legal transition. See ADR-009 §0.2.",
+    "rejection": {
+      "template": "{{from}} → {{to}} not allowed — {{explanation}}",
+      "mustPromoteFirst": "Promote to READY first to provision the speaker.",
+      "mustInviteFirst": "Send invitation first; speaker must accept before content is captured.",
+      "mustAcceptFirst": "Speaker must accept first.",
+      "mustSubmitContentFirst": "Submit content first; reviewer needs material to approve.",
+      "cannotMoveBackwards": "Approved content cannot move backwards. Decline if the speaker is dropping out."
+    },
+    "declineDialog": {
+      "title": "Decline {{speakerName}}?",
+      "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
+    }
+  },
+  "speakerDrawer": {
+    "secondaryActions": {
+      "decline": "Decline with reason",
+      "reassignOrganizer": "Reassign organizer",
+      "editDetails": "Edit details",
+      "overrideState": "Override state"
+    },
+    "tabs": {
+      "details": "Details",
+      "history": "History"
+    },
+    "subTabs": {
+      "content": "Content"
+    },
+    "history": {
+      "noEntries": "No history yet.",
+      "loadError": "Failed to load history.",
+      "statusEntry": "{{from}} → {{to}} by {{actor}}",
+      "outreachEntry": "Outreach by {{actor}}"
+    }
   }
 }

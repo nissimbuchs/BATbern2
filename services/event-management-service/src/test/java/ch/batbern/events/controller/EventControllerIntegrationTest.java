@@ -690,7 +690,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .eventId(savedEvent.getId())
                 .speakerName("Alice Johnson")
                 .company("BuildCorp")
-                .status(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED)
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
                 .build());
 
         // Request event with metrics
@@ -855,7 +855,17 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .room("Main Hall")
                 .capacity(200)
                 .build();
-        sessionRepository.save(session);
+        session = sessionRepository.save(session);
+
+        // Story 11.B.3 (ADR-009 §0.1): validateAllSpeakersConfirmed requires every
+        // accepted-or-beyond speaker to be publishable (QUALITY_REVIEWED + session.start_time
+        // set). Seed one QUALITY_REVIEWED speaker linked to the session above.
+        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
+                .eventId(draftEvent.getId())
+                .speakerName("Publishable Speaker")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
+                .sessionId(session.getId())
+                .build());
 
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))

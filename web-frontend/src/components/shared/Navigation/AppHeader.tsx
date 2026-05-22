@@ -18,9 +18,9 @@ import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
-import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getRolesWithNavEntries } from '@/config/navigationConfig';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
 import type { UserContext, UserRole } from '@/types/auth';
@@ -42,7 +42,7 @@ const AppHeader = React.memo(function AppHeader({
 
   // Use props if provided, otherwise fall back to stores/hooks
   const { user: storeUser, signOut } = useAuth();
-  const { setUserMenuOpen: setUserMenuOpenState } = useUIStore();
+  const { setUserMenuOpen: setUserMenuOpenState, activeNavRole, setActiveNavRole } = useUIStore();
   const navigate = useNavigate();
 
   const user = userProp || storeUser;
@@ -52,17 +52,35 @@ const AppHeader = React.memo(function AppHeader({
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
-  // Build the full roles array for multi-role nav support (e.g. organizer + partner)
-  const currentRoles: UserRole[] =
+  // 2026-05-20 (Q#1b) — only roles that have real nav entries (organizer, partner today)
+  // qualify for the RoleSelector + admin NavigationMenu. Speaker and attendee live in
+  // the public site, so they must not appear as chips here (clicking would render an
+  // empty menu). Filter the user's roles down to the set with entries; everything
+  // below — chip visibility, active-role fallback, mobile drawer — branches on the
+  // filtered list.
+  const rolesWithEntries = getRolesWithNavEntries();
+  const allUserRoles: UserRole[] =
     user && 'roles' in user && Array.isArray(user.roles) && user.roles.length > 0
       ? (user.roles as UserRole[])
       : currentRole
         ? [currentRole as UserRole]
         : [];
+  const currentRoles: UserRole[] = allUserRoles.filter((r) => rolesWithEntries.has(r));
 
-  // For multi-role users: which portal is currently active in the nav
-  const [activeRole, setActiveRole] = useActiveRole(currentRoles);
-  const navRoles = currentRoles.length > 1 ? [activeRole] : currentRoles;
+  // Multi-role: prefer the persisted active role; fall back to the first role if
+  // `activeNavRole` is unset or no longer matches any of the user's roles (e.g.
+  // after a role grant/revoke). No "self-heal" effect — the stored value can stay
+  // stale; it just gets ignored at render time until the user clicks a different
+  // chip, which writes a fresh value via `setActiveNavRole`.
+  // Single-role: always use that role (ignore stale `activeNavRole`).
+  const effectiveActiveRole: UserRole | null = (() => {
+    if (currentRoles.length === 0) return null;
+    if (currentRoles.length === 1) return currentRoles[0];
+    if (activeNavRole && currentRoles.includes(activeNavRole)) return activeNavRole;
+    return currentRoles[0];
+  })();
+
+  const navRoles: UserRole[] = effectiveActiveRole ? [effectiveActiveRole] : [];
 
   const handleNotificationClick = () => {
     navigate('/organizer/notifications');
@@ -139,14 +157,18 @@ const AppHeader = React.memo(function AppHeader({
             />
           </Box>
 
-          {/* Role selector chips — only for multi-role users, desktop/tablet only */}
-          {!isMobile && currentRoles.length > 1 && (
-            <RoleSelector roles={currentRoles} activeRole={activeRole} onChange={setActiveRole} />
-          )}
-
-          {/* Desktop/Tablet Navigation */}
-          {!isMobile && navRoles.length > 0 && (
-            <Box sx={{ flex: 1 }}>
+          {/* Desktop/Tablet Navigation — multi-role users see a RoleSelector chip
+              row, and the nav filters down to the selected role. Single-role users
+              see only their role's items, no chip. */}
+          {!isMobile && currentRoles.length > 0 && effectiveActiveRole && (
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              {currentRoles.length > 1 && (
+                <RoleSelector
+                  roles={currentRoles}
+                  activeRole={effectiveActiveRole}
+                  onChange={(role) => setActiveNavRole(role)}
+                />
+              )}
               <NavigationMenu userRoles={navRoles} showText={!isTablet} />
             </Box>
           )}
@@ -187,8 +209,8 @@ const AppHeader = React.memo(function AppHeader({
               )}
             </IconButton>
 
-            {/* Tasks - Only show for organizers */}
-            {currentRole === 'organizer' && (
+            {/* Tasks - shown when the active nav-role chip is "organizer". */}
+            {effectiveActiveRole === 'organizer' && (
               <Tooltip title={t('navigation.tasks')}>
                 <IconButton
                   color="inherit"
@@ -226,15 +248,14 @@ const AppHeader = React.memo(function AppHeader({
       </AppBar>
 
       {/* Mobile Drawer */}
-      {currentRoles.length > 0 && (
+      {currentRoles.length > 0 && effectiveActiveRole && (
         <MobileDrawer
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          userRoles={navRoles}
+          userRoles={currentRoles}
+          activeRole={effectiveActiveRole}
+          onActiveRoleChange={(role) => setActiveNavRole(role)}
           userEmail={user.email}
-          allRoles={currentRoles.length > 1 ? currentRoles : undefined}
-          activeRole={currentRoles.length > 1 ? activeRole : undefined}
-          onRoleChange={currentRoles.length > 1 ? setActiveRole : undefined}
         />
       )}
 

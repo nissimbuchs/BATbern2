@@ -10,6 +10,7 @@ import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,9 @@ public class SpeakerOutreachControllerIntegrationTest extends AbstractIntegratio
     private OutreachHistoryRepository outreachHistoryRepository;
 
     @Autowired
+    private SpeakerStatusHistoryRepository speakerStatusHistoryRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private Event testEvent;
@@ -70,6 +74,7 @@ public class SpeakerOutreachControllerIntegrationTest extends AbstractIntegratio
     @BeforeEach
     void setUp() {
         // Clean database
+        speakerStatusHistoryRepository.deleteAll();
         outreachHistoryRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
@@ -140,6 +145,12 @@ public class SpeakerOutreachControllerIntegrationTest extends AbstractIntegratio
         // Verify: Speaker state transitioned to CONTACTED
         SpeakerPool updated = speakerPoolRepository.findById(speakerId).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
+
+        // Verify: No redundant status_history row is written for the outreach-driven
+        // IDENTIFIED→CONTACTED transition. The OutreachHistory row is the audit entry;
+        // a second status_history row would duplicate the entry in the unified feed.
+        assertThat(speakerStatusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
+                .isEmpty();
     }
 
     /**

@@ -201,7 +201,7 @@ export class CognitoStack extends cdk.Stack {
         requireUppercase: true,
         requireDigits: true,
         requireSymbols: true,
-        tempPasswordValidity: cdk.Duration.days(7),
+        tempPasswordValidity: cdk.Duration.days(14),  // Story 11.E.1 / Resolved Q#4 — 14-day window for invitation→first-login (was 7)
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       mfa: cognito.Mfa.OPTIONAL,
@@ -238,6 +238,7 @@ export class CognitoStack extends cdk.Stack {
         userPassword: true,
         custom: true,
         userSrp: true, // Enable SRP authentication for secure password flow
+        adminUserPassword: true,  // Story 11.E.1 / AR29 / cherry-pick d5cf0fcc — enables AdminInitiateAuth for the temp-password flow used at speaker provisioning (Story 11.E.2)
       },
       generateSecret: false,
       refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens

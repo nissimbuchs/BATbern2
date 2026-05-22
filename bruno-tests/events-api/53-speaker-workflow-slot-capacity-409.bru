@@ -1,0 +1,64 @@
+meta {
+  name: Speaker Workflow - Slot Capacity 409
+  type: http
+  seq: 53
+}
+
+put {
+  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateSpeakerId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "INVITED",
+    "reason": "Story 11.B.2 - slot capacity gate contract test"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.error: eq Conflict
+  res.body.details.code: eq SLOT_CAPACITY_REACHED
+}
+
+tests {
+  test("returns HTTP 409 when slot capacity reached on READY -> INVITED", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("structured details surface acceptedCount, invitedCount, maxSlots (Story 11.B.2 AC4)", function() {
+    const body = res.getBody();
+    expect(body.details).to.be.an('object');
+    expect(body.details.code).to.equal("SLOT_CAPACITY_REACHED");
+    expect(body.details.acceptedCount).to.be.a('number');
+    expect(body.details.invitedCount).to.be.a('number');
+    expect(body.details.maxSlots).to.be.a('number');
+  });
+
+  test("includes a human-readable message", function() {
+    const body = res.getBody();
+    expect(body.message).to.include("Slot capacity reached");
+  });
+}
+
+docs {
+  Contract test for Story 11.B.2 AC4 + Task 8.4(c) (ADR-009 §0.7 slot-capacity gate replacing
+  removed OVERFLOW state).
+
+  Setup expectation: by the time this test runs, the event referenced by
+  `slotCapacityEventCode` has `count(ACCEPTED) + count(INVITED) >= max_slots`, and
+  `slotCapacityCandidateSpeakerId` is a speaker pool entry at READY. The seed for the
+  scenario lives in a dedicated setup `.bru` (or fixture script) that the CI runner invokes
+  before this test.
+
+  Frontend integration of the 409 surfacing UX is owned by Story 11.D.3 (kanban
+  column-header "slot capacity reached" tooltip). For 11.B.2 the 409 is just a clean error
+  code returned to the existing organizer Kanban flow — the UI shows whatever its current
+  4xx handler renders (a generic toast) until 11.D.3 lands.
+}

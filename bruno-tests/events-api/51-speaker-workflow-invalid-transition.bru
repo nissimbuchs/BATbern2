@@ -37,9 +37,12 @@ tests {
   });
 
   test("should not allow skipping workflow steps", function() {
-    // IDENTIFIED/CONTACTED -> CONFIRMED skips multiple steps
-    // Workflow requires: IDENTIFIED -> CONTACTED -> READY -> ACCEPTED ->
-    //                    CONTENT_SUBMITTED -> QUALITY_REVIEWED -> CONFIRMED
+    // Per ADR-009 §0.1, the 8-state workflow is:
+    //   IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED
+    //   (DECLINED is reachable from every non-terminal state.)
+    // CONFIRMED was removed by Story 11.B.1 (shared-kernel enum reduction); this test asserts
+    // the PUT /status API rejects the legacy value with 4xx (currently 422 via the workflow
+    // service's domain exception mapping).
     expect(res.getStatus()).to.not.equal(200);
   });
 }

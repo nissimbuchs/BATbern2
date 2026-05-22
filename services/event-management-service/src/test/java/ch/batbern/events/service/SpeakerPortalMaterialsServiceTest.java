@@ -5,10 +5,8 @@ import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerMaterialConfirmRequest;
 import ch.batbern.events.dto.SpeakerMaterialConfirmResponse;
-import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerPoolRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,17 +31,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for SpeakerPortalMaterialsService.
- * Regression tests for S3 copy-on-confirm fix.
+ * Unit tests for {@link SpeakerPortalMaterialsService}.
+ *
+ * <p>Story 11.E.3: caller (controller) now resolves the {@link SpeakerPool} via Cognito
+ * auth and hands it in directly; the service no longer talks to {@code MagicLinkService}.
+ * Tests cover the S3 copy-on-confirm regression behaviour.
  */
 @ExtendWith(MockitoExtension.class)
 class SpeakerPortalMaterialsServiceTest {
-
-    @Mock
-    private MagicLinkService magicLinkService;
-
-    @Mock
-    private SpeakerPoolRepository speakerPoolRepository;
 
     @Mock
     private SessionRepository sessionRepository;
@@ -57,6 +52,9 @@ class SpeakerPortalMaterialsServiceTest {
     @Mock
     private S3Client s3Client;
 
+    @Mock
+    private PrimarySpeakerResolver primarySpeakerResolver;
+
     private SpeakerPortalMaterialsService service;
 
     private UUID speakerPoolId;
@@ -64,21 +62,24 @@ class SpeakerPortalMaterialsServiceTest {
     private UUID eventId;
     private SpeakerPool testSpeaker;
     private Session testSession;
-    private String validToken;
 
     @BeforeEach
     void setUp() {
         service = new SpeakerPortalMaterialsService(
-                magicLinkService, speakerPoolRepository, sessionRepository,
-                sessionMaterialsRepository, s3Presigner, s3Client
+                sessionRepository, sessionMaterialsRepository, s3Presigner, s3Client,
+                primarySpeakerResolver
         );
         ReflectionTestUtils.setField(service, "bucketName", "test-bucket");
         ReflectionTestUtils.setField(service, "cloudFrontDomain", "https://cdn.test.ch");
+        // Story 11.E.9: confirmUpload reads uploadedBy via PrimarySpeakerResolver. Default
+        // stub returns a valid username so the S3-copy regression tests can run.
+        org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolve(any(SpeakerPool.class)))
+                .thenReturn(java.util.Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                        "speaker.user", "speaker@example.com", "Test", "Speaker", null)));
 
         speakerPoolId = UUID.randomUUID();
         sessionId = UUID.randomUUID();
         eventId = UUID.randomUUID();
-        validToken = "valid-token-123";
 
         testSpeaker = SpeakerPool.builder()
                 .id(speakerPoolId)
@@ -102,12 +103,6 @@ class SpeakerPortalMaterialsServiceTest {
         void shouldCopyS3Object_onConfirm() {
             // Given
             String uploadId = "abc-123";
-            when(magicLinkService.validateToken(validToken))
-                    .thenReturn(TokenValidationResult.valid(
-                            speakerPoolId, "test-user", "BATbern99",
-                            ch.batbern.shared.types.TokenAction.VIEW));
-            when(speakerPoolRepository.findById(speakerPoolId))
-                    .thenReturn(Optional.of(testSpeaker));
             when(sessionRepository.findById(sessionId))
                     .thenReturn(Optional.of(testSession));
             when(s3Client.copyObject(any(CopyObjectRequest.class)))
@@ -120,14 +115,14 @@ class SpeakerPortalMaterialsServiceTest {
                     });
 
             SpeakerMaterialConfirmRequest request = new SpeakerMaterialConfirmRequest(
-                    validToken, uploadId, "slides.pptx", "pptx",
+                    uploadId, "slides.pptx", "pptx",
                     5_000_000L,
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     "PRESENTATION"
             );
 
             // When
-            SpeakerMaterialConfirmResponse response = service.confirmUpload(request);
+            SpeakerMaterialConfirmResponse response = service.confirmUpload(testSpeaker, request);
 
             // Then - verify S3 copy was called with correct keys
             ArgumentCaptor<CopyObjectRequest> copyCaptor =
@@ -152,21 +147,14 @@ class SpeakerPortalMaterialsServiceTest {
         void shouldThrow_whenNoSessionAssigned() {
             testSpeaker.setSessionId(null);
 
-            when(magicLinkService.validateToken(validToken))
-                    .thenReturn(TokenValidationResult.valid(
-                            speakerPoolId, "test-user", "BATbern99",
-                            ch.batbern.shared.types.TokenAction.VIEW));
-            when(speakerPoolRepository.findById(speakerPoolId))
-                    .thenReturn(Optional.of(testSpeaker));
-
             SpeakerMaterialConfirmRequest request = new SpeakerMaterialConfirmRequest(
-                    validToken, "abc-123", "slides.pptx", "pptx",
+                    "abc-123", "slides.pptx", "pptx",
                     5_000_000L,
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     "PRESENTATION"
             );
 
-            assertThatThrownBy(() -> service.confirmUpload(request))
+            assertThatThrownBy(() -> service.confirmUpload(testSpeaker, request))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("No session assigned");
         }

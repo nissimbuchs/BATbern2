@@ -30,7 +30,13 @@
     "userMenu": "User menu",
     "mobileNav": "Mobile navigation",
     "mainNav": "Main navigation",
-    "activeRole": "Active role"
+    "activeRole": "Active role",
+    "section": {
+      "organizer": "Organisator",
+      "speaker": "Referent",
+      "partner": "Partner",
+      "attendee": "Teilnehmer"
+    }
   },
   "public": {
     "login": "Anmelden",

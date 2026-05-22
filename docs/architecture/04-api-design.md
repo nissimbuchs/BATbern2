@@ -38,7 +38,6 @@ Core event lifecycle management, organizer workflows, and comprehensive 9-state 
 **Core Workflows:**
 - Event creation with intelligent automation
 - Multi-speaker session assignment
-- Overflow management and voting
 - Topic backlog management with heat maps and duplicate detection
 
 **Use this for:** Event planning, workflow orchestration, slot management, topic backlog management, and role administration
@@ -47,18 +46,24 @@ Core event lifecycle management, organizer workflows, and comprehensive 9-state 
 
 ### 3. [Speaker Coordination API](04-api-speaker-coordination.md)
 
-Enhanced speaker management with complex workflow states, slot preferences, and quality control.
+Speaker coordination per the unified 8-state workflow defined in ADR-009. Speaker authentication is **standard AWS Cognito** with `FORCE_CHANGE_PASSWORD` on first login — every speaker-portal endpoint requires a Cognito Bearer token AND `hasRole('SPEAKER')`. There is no `?token=` query auth, no magic-link login, no parallel JWT stack.
 
 **Key Endpoints:**
-- `/api/v1/speakers` - Speaker profiles and expertise
-- `/api/v1/speakers/{id}/preferences` - Slot preferences and requirements
+- `/api/v1/events/{eventCode}/speakers` - Per-event speaker pool (organizer access)
+- `/api/v1/events/{eventCode}/speakers/{speakerId}/promote` - **NEW** organizer-initiated transition `CONTACTED → READY`. Payload `{ email, firstName?, lastName? }`. Side effects: User lookup-or-create + Cognito `AdminCreateUser` with `FORCE_CHANGE_PASSWORD` + SPEAKER role grant + persisting `username` on `speaker_pool`. Idempotent. Returns 200 OK on success, 409 Conflict if already promoted, 400 Bad Request if email is missing.
+- `/api/v1/events/{eventCode}/speakers/{speakerId}/status` - State transitions per the 8-state allow-list; rejects removed states (`SLOT_ASSIGNED`, `CONFIRMED`, `OVERFLOW`, `WITHDREW`, `TENTATIVE`) with 400.
 - `/api/v1/sessions/{id}/quality-review` - Content quality review workflow
-- `/api/v1/moderators/{id}/reviews` - Moderator review queue
+- `/api/v1/speaker-portal/**` - Speaker-self portal endpoints; all `@PreAuthorize("hasRole('SPEAKER')")`
+
+**Removed Endpoints (per ADR-009 §3):**
+- `POST /api/v1/auth/speaker-magic-login` — magic-link auth deleted.
+- `POST /api/v1/speaker-portal/validate-token` — opaque-token validation deleted.
+- All `?token=` and `?jwt=` query-string auth on speaker-portal routes.
 
 **Core Workflows:**
-- Speaker invitation and confirmation workflow
-- 8-state speaker workflow progression
+- Speaker invitation and acceptance workflow (8 states: `IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED`, plus `DECLINED` from any non-terminal state)
 - Quality review and content validation
+- Slot-capacity gate at `READY → INVITED` (replaces the legacy overflow / voting flow)
 
 **Use this for:** Speaker coordination, preference collection, material submission, and quality review
 

@@ -96,7 +96,6 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         speakerWithSession = new SpeakerPool();
         speakerWithSession.setEventId(testEvent.getId());
         speakerWithSession.setSpeakerName("Speaker With Session");
-        speakerWithSession.setEmail("with.session@test.com");
         speakerWithSession.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
         speakerWithSession.setSessionId(testSession.getId());
         speakerWithSession.setCreatedAt(Instant.now());
@@ -106,7 +105,6 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         speakerWithoutSession = new SpeakerPool();
         speakerWithoutSession.setEventId(testEvent.getId());
         speakerWithoutSession.setSpeakerName("Speaker Without Session");
-        speakerWithoutSession.setEmail("without.session@test.com");
         speakerWithoutSession.setStatus(SpeakerWorkflowState.ACCEPTED);
         speakerWithoutSession.setSessionId(null);
         speakerWithoutSession.setCreatedAt(Instant.now());
@@ -164,7 +162,7 @@ class E2ETestTokenControllerIntegrationTest extends AbstractIntegrationTest {
         @DisplayName("should find speaker with session in any workflow status")
         void should_findSpeakerWithSession_inAnyWorkflowStatus() throws Exception {
             // Update speaker to CONFIRMED status (another valid status for speakers with sessions)
-            speakerWithSession.setStatus(SpeakerWorkflowState.CONFIRMED);
+            speakerWithSession.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
             speakerPoolRepository.save(speakerWithSession);
 
             mockMvc.perform(post("/api/v1/e2e-test/tokens/generate-e2e-set")

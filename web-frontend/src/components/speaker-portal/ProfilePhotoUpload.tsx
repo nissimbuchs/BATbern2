@@ -17,17 +17,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { speakerPortalService } from '@/services/speakerPortalService';
+// Code review 2026-05-18 (D1): photo upload moved from the deleted speaker-portal endpoints
+// to the CUMS /api/v1/users/me/picture/* endpoints. The eventCode prop is gone — profile
+// photo lives on User, not per-event.
+import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (AC7.4)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // (AC7.3)
 
 interface ProfilePhotoUploadProps {
-  /** Magic link token for authentication */
-  token: string;
   /** Current profile photo URL (null if none) */
-  currentPhotoUrl: string | null;
+  currentPhotoUrl: string | null | undefined;
   /** Callback when photo is successfully uploaded */
   onPhotoUploaded: (url: string) => void;
   /** Callback when an error occurs */
@@ -36,10 +37,9 @@ interface ProfilePhotoUploadProps {
 
 /**
  * Profile photo upload component with drag-and-drop support.
- * Uses presigned URL pattern for direct S3 upload.
+ * Uses presigned URL pattern for direct S3 upload via the CUMS user-picture endpoints.
  */
 const ProfilePhotoUpload = ({
-  token,
   currentPhotoUrl,
   onPhotoUploaded,
   onError,
@@ -119,8 +119,9 @@ const ProfilePhotoUpload = ({
       setIsUploading(true);
 
       try {
-        // Upload using service (3-phase presigned URL flow)
-        const uploadedUrl = await speakerPortalService.uploadProfilePhoto(token, file, (progress) =>
+        // Upload using CUMS user-picture endpoints (3-phase presigned URL flow). Returns the
+        // CDN URL string directly.
+        const uploadedUrl = await uploadProfilePicture(file, (progress) =>
           setUploadProgress(progress)
         );
 
@@ -142,7 +143,7 @@ const ProfilePhotoUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [token, validateFile, onPhotoUploaded, onError]
+    [validateFile, onPhotoUploaded, onError]
   );
 
   /**

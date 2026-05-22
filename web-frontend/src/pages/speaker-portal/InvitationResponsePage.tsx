@@ -12,9 +12,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
@@ -48,8 +49,10 @@ interface ResponseFormData {
 
 const InvitationResponsePage = () => {
   const { t } = useTranslation();
+  // Story 11.E.3: eventCode is now a path parameter (Q#1). The page is mounted under
+  // `<SpeakerRoute>` so we know the user is Cognito-authenticated by the time we render.
+  const { eventCode } = useParams<{ eventCode: string }>();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
   const actionParam = searchParams.get('action'); // 'accept' or 'decline' from email link
 
   const [pageState, setPageState] = useState<PageState>('loading');
@@ -59,23 +62,84 @@ const InvitationResponsePage = () => {
   const [responseResult, setResponseResult] = useState<SpeakerResponseResult | null>(null);
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  // Validate token on load
+  // Story 11.E.3: the dashboard endpoint aggregates per-event invitation context, so we
+  // pull from there instead of the old `validateToken` endpoint. The "invitation" view
+  // for this page derives from the matching upcoming-event entry.
+  // Code review 2026-05-18 (P14): scope the queryKey to the authenticated user to avoid
+  // multi-tab cache leaks across logout-then-login as a different speaker.
+  const { user } = useAuth();
   const {
-    data: invitation,
+    data: dashboard,
     error: validationError,
     isLoading,
   } = useQuery({
-    queryKey: ['speaker-invitation', token],
-    queryFn: () => speakerPortalService.validateToken(token!),
-    enabled: !!token,
+    queryKey: ['speaker-dashboard', user?.username],
+    queryFn: () => speakerPortalService.getDashboard(),
+    enabled: !!user,
     retry: false,
   });
 
-  // Submit response mutation
+  // Code review 2026-05-18 (P7): also search pastEvents and surface a typed "not-found"
+  // marker so the state effect below can route to the error branch instead of leaving the
+  // page stuck on the loader.
+  const invitation = (() => {
+    if (!dashboard || !eventCode) return undefined;
+    const upcoming = dashboard.upcomingEvents.find((e) => e.eventCode === eventCode);
+    if (upcoming) {
+      const alreadyResponded =
+        upcoming.workflowState === 'ACCEPTED' || upcoming.workflowState === 'DECLINED';
+      return {
+        valid: true,
+        speakerName: dashboard.speakerName,
+        eventCode: upcoming.eventCode,
+        eventTitle: upcoming.eventTitle,
+        eventDate: upcoming.eventDate,
+        sessionTitle: upcoming.sessionTitle,
+        invitationMessage: undefined as string | undefined,
+        responseDeadline: upcoming.responseDeadline,
+        alreadyResponded,
+        previousResponse: alreadyResponded ? upcoming.workflowState : undefined,
+        previousResponseDate: undefined as string | undefined,
+        error: undefined as string | undefined,
+      };
+    }
+    const past = dashboard.pastEvents.find((e) => e.eventCode === eventCode);
+    if (past) {
+      return {
+        valid: false,
+        speakerName: dashboard.speakerName,
+        eventCode: past.eventCode,
+        eventTitle: past.eventTitle,
+        eventDate: past.eventDate,
+        sessionTitle: past.sessionTitle,
+        invitationMessage: undefined as string | undefined,
+        responseDeadline: undefined as string | undefined,
+        alreadyResponded: false,
+        previousResponse: undefined as string | undefined,
+        previousResponseDate: undefined as string | undefined,
+        error: 'event_is_past' as string | undefined,
+      };
+    }
+    // Dashboard loaded but eventCode is foreign — surface an explicit error.
+    return {
+      valid: false,
+      speakerName: dashboard.speakerName,
+      eventCode,
+      eventTitle: '',
+      eventDate: '',
+      sessionTitle: null,
+      invitationMessage: undefined as string | undefined,
+      responseDeadline: undefined as string | undefined,
+      alreadyResponded: false,
+      previousResponse: undefined as string | undefined,
+      previousResponseDate: undefined as string | undefined,
+      error: 'invitation_not_found' as string | undefined,
+    };
+  })();
+
   const respondMutation = useMutation({
     mutationFn: (data: ResponseFormData) =>
-      speakerPortalService.respond({
-        token: token!,
+      speakerPortalService.respond(eventCode!, {
         response: data.response,
         reason: data.reason,
         preferences: data.preferences,
@@ -83,13 +147,21 @@ const InvitationResponsePage = () => {
     onSuccess: (result) => {
       setResponseResult(result);
       setPageState('success');
-      // Clear token from URL for security
-      window.history.replaceState({}, '', '/speaker-portal/respond');
     },
   });
 
-  // Update page state based on validation result
+  // Update page state based on validation result.
+  //
+  // 2026-05-21: once `respondMutation` has succeeded, leave pageState alone —
+  // `respondMutation.onSuccess` owns the transition to 'success' and we must not
+  // overwrite it. The IIFE that builds `invitation` (lines ~85-138) returns a new
+  // object reference on every render, so this effect's `invitation` dep changes
+  // identity on every render even when nothing meaningful changed. Without the
+  // early return, the success view rendered for a single frame and was then
+  // overwritten back to the form on the next render — the bug reported as
+  // "response dialog doesn't close after Antwort senden."
   useEffect(() => {
+    if (respondMutation.isSuccess) return;
     if (isLoading) {
       setPageState('loading');
     } else if (validationError) {
@@ -101,7 +173,7 @@ const InvitationResponsePage = () => {
     } else if (invitation && !invitation.valid) {
       setPageState('error');
     }
-  }, [isLoading, validationError, invitation]);
+  }, [isLoading, validationError, invitation, respondMutation.isSuccess]);
 
   // Auto-select response based on action parameter from email link
   useEffect(() => {
@@ -115,8 +187,8 @@ const InvitationResponsePage = () => {
     }
   }, [pageState, actionParam, hasAutoSelected]);
 
-  // No token in URL
-  if (!token) {
+  // No eventCode in URL
+  if (!eventCode) {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -299,8 +371,8 @@ const InvitationResponsePage = () => {
                     t('speakerPortal.invitationResponse.accepted')}
                   {invitation.previousResponse === 'DECLINED' &&
                     t('speakerPortal.invitationResponse.declined')}
-                  {invitation.previousResponse === 'TENTATIVE' &&
-                    t('speakerPortal.invitationResponse.tentative')}
+                  {/* Code review 2026-05-18 (P6): TENTATIVE branch removed —
+                      SpeakerResponseType narrowed to ACCEPT|DECLINE per Resolved Q#6. */}
                 </span>
               </p>
               {invitation.previousResponse === 'ACCEPTED' && (
@@ -529,15 +601,17 @@ const InvitationResponsePage = () => {
             </Card>
 
             <div className="flex justify-center gap-4">
-              {responseResult.profileUrl && (
-                <Button asChild>
-                  <a href={responseResult.profileUrl}>
-                    {t('speakerPortal.invitationResponse.completeProfile')}
-                  </a>
-                </Button>
-              )}
+              {/* Code review 2026-05-18 (D1): replaced the per-event profileUrl button with
+                  a link to the consolidated user-level profile (CUMS-backed). Story 11.C.1
+                  removed the dedicated /speaker-portal/events/{eventCode}/profile endpoint;
+                  speaker bio/photo edits now flow through /api/v1/users/me. */}
+              <Button asChild>
+                <Link to="/speaker-portal/profile">
+                  {t('speakerPortal.invitationResponse.completeProfile')}
+                </Link>
+              </Button>
               <Button asChild variant="outline">
-                <Link to="/">
+                <Link to="/speaker-portal/dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   {t('speakerPortal.invitationResponse.backToHome')}
                 </Link>

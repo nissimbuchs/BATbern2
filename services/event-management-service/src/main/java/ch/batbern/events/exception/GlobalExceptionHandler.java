@@ -4,7 +4,9 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.util.CorrelationIdGenerator;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -20,7 +22,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -268,6 +272,62 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle jakarta.persistence.EntityNotFoundException.
+     * P2 (Story 11.C.2 review): ContentSubmissionService.submit throws this when speaker
+     * or event lookups miss; without a dedicated handler it falls through to the generic
+     * 500 handler. Map to 404 to match the javadoc contract on submit().
+     */
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
+            jakarta.persistence.EntityNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Entity not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle UserServiceException — cross-service HTTP failures from CUMS.
+     * P2 (Story 11.C.2 review): when CUMS returns 400 (e.g., bio too long, blank field),
+     * UserApiClientImpl re-throws as UserServiceException(status=400). Without a handler
+     * this fell through to 500; map back to the originating status code so the speaker
+     * sees the same 400 as the organizer endpoint would.
+     */
+    @ExceptionHandler(ch.batbern.events.exception.UserServiceException.class)
+    public ResponseEntity<ErrorResponse> handleUserServiceException(
+            ch.batbern.events.exception.UserServiceException ex,
+            HttpServletRequest request) {
+        Integer rawStatus = ex.getStatusCode();
+        int status = (rawStatus != null && rawStatus >= 400 && rawStatus < 600)
+                ? rawStatus
+                : HttpStatus.BAD_GATEWAY.value();
+        HttpStatus httpStatus = HttpStatus.valueOf(status);
+        log.warn("User Management Service error: status={} message={}", status, ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(status)
+                .error(httpStatus.getReasonPhrase())
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity(status >= 500 ? "HIGH" : "MEDIUM")
+                .build();
+
+        return ResponseEntity.status(httpStatus).body(error);
     }
 
     /**
@@ -606,6 +666,35 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SpeakerPortalAccessDeniedException — Story 11.E.3.
+     * Returns HTTP 403 Forbidden when a speaker tries to act on a pool row they don't own.
+     * The message is sanitised: the offending eventCode is logged but not echoed to the
+     * client (already in the path; no extra info exposure).
+     */
+    @ExceptionHandler(SpeakerPortalAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleSpeakerPortalAccessDenied(
+            SpeakerPortalAccessDeniedException ex,
+            HttpServletRequest request) {
+        // Code review 2026-05-18 (P21): generate correlation ID once so log + response share it,
+        // letting support tie the WARN line above to the 403 the user reported.
+        String correlationId = CorrelationIdGenerator.generate();
+        log.warn("Speaker portal access denied: path={} correlationId={} reason={}",
+                request.getRequestURI(), correlationId, ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message(ex.getMessage())
+                .correlationId(correlationId)
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
      * Handle AuthorizationDeniedException (access denied)
      * Returns HTTP 403 Forbidden
      * Story 5.1: Event Type Definition (AC8 - ORGANIZER role required)
@@ -732,7 +821,14 @@ public class GlobalExceptionHandler {
 
     /**
      * Handle HttpMessageNotReadableException (JSON parsing errors, including invalid UUID format in request body)
-     * Returns HTTP 400 Bad Request
+     * Returns HTTP 400 Bad Request.
+     *
+     * <p>Story 11.B.3 AC4: when the underlying cause is an {@link InvalidFormatException}
+     * whose target type is {@link SpeakerWorkflowState}, return a structured
+     * {@code INVALID_SPEAKER_WORKFLOW_STATE} body listing the 8 accepted enum values.
+     * Jackson rejects the 5 removed legacy values (SLOT_ASSIGNED, CONFIRMED, OVERFLOW,
+     * WITHDREW, TENTATIVE) at request-body binding time — before the controller method
+     * runs — so this handler is the only path that surfaces those rejections.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
@@ -740,10 +836,44 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         log.warn("Invalid request body: {}", ex.getMessage());
 
+        // Story 11.B.3 AC4: detect SpeakerWorkflowState enum rejection at the deserialization layer.
+        Throwable cause = ex.getCause();
+        if (cause instanceof InvalidFormatException ife
+                && ife.getTargetType() != null
+                && ife.getTargetType().equals(SpeakerWorkflowState.class)) {
+            String rejectedValue = ife.getValue() != null ? ife.getValue().toString() : "(null)";
+            List<String> acceptedValues = Arrays.stream(SpeakerWorkflowState.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("code", "INVALID_SPEAKER_WORKFLOW_STATE");
+            details.put("rejectedValue", rejectedValue);
+            details.put("acceptedValues", acceptedValues);
+
+            String message = "Invalid speaker workflow state '" + rejectedValue
+                    + "'. Accepted values: "
+                    + acceptedValues.stream().collect(Collectors.joining(", "))
+                    + ".";
+
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .error("Bad Request")
+                    .message(message)
+                    .correlationId(CorrelationIdGenerator.generate())
+                    .severity("MEDIUM")
+                    .details(details)
+                    .build();
+
+            return ResponseEntity.badRequest().body(error);
+        }
+
         String message = "Invalid request format";
         // Check if it's a UUID parsing error
-        if (ex.getCause() != null && ex.getCause().getMessage() != null) {
-            String causeMessage = ex.getCause().getMessage();
+        if (cause != null && cause.getMessage() != null) {
+            String causeMessage = cause.getMessage();
             if (causeMessage.contains("UUID")) {
                 message = "Invalid UUID format in request";
             }
@@ -757,6 +887,38 @@ public class GlobalExceptionHandler {
                 .message(message)
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle ReadyRequiresPromoteException — caller attempted to PUT /status with
+     * newStatus = READY, but READY requires an email payload (User provisioning) and is
+     * reachable only via POST /promote (Story 11.D.1).
+     * Returns HTTP 400 Bad Request with code READY_REQUIRES_PROMOTE_ENDPOINT.
+     * Story 11.B.3 AC5.
+     */
+    @ExceptionHandler(ReadyRequiresPromoteException.class)
+    public ResponseEntity<ErrorResponse> handleReadyRequiresPromoteException(
+            ReadyRequiresPromoteException ex,
+            HttpServletRequest request) {
+        log.warn("READY requires promote endpoint: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "READY_REQUIRES_PROMOTE_ENDPOINT");
+        details.put("rejectedValue", "READY");
+        details.put("alternativeEndpoint", "POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
                 .build();
 
         return ResponseEntity.badRequest().body(error);
@@ -816,6 +978,69 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle InvalidPromotionStateException (Story 11.D.1):
+     * {@code POST /speakers/{id}/promote} called on a speaker whose current state is not
+     * {@code CONTACTED} or {@code READY}. Returns HTTP 409 Conflict with
+     * {@code details.code = INVALID_PROMOTION_STATE} and {@code details.currentState =
+     * <state>} so the frontend can render a tailored message.
+     */
+    @ExceptionHandler(InvalidPromotionStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPromotionStateException(
+            InvalidPromotionStateException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid promotion state: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "INVALID_PROMOTION_STATE");
+        details.put("currentState", ex.getCurrentState().name());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
+     * Returns HTTP 409 Conflict.
+     * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).
+     */
+    @ExceptionHandler(SlotCapacityReachedException.class)
+    public ResponseEntity<ErrorResponse> handleSlotCapacityReachedException(
+            SlotCapacityReachedException ex,
+            HttpServletRequest request) {
+        log.warn("Slot capacity reached: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "SLOT_CAPACITY_REACHED");
+        details.put("eventId", ex.getEventId().toString());
+        details.put("acceptedCount", ex.getAcceptedCount());
+        details.put("invitedCount", ex.getInvitedCount());
+        details.put("maxSlots", ex.getMaxSlots());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
                 .build();
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);

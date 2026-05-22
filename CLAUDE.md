@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6 and 8 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 9 planned.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 11 (Unified Speaker Workflow Refactor) supersedes the prior Epic 9 plan.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
 - 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - IN PROGRESS (Story 9.1 JWT magic link done; 9.2-9.5 planned)
+- 🔨 **Epic 11**: Unified Speaker Workflow Refactor - IN PROGRESS (Phase A doc alignment landing; Phases B–F per `docs/plans/speaker-workflow-refactor.md` and ADR-009. Supersedes prior Epic 9 plan.)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -35,7 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 9 in progress (Story 9.1 done); Epic 7 deferred
+**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 11 (Unified Speaker Workflow Refactor) in progress per ADR-009; Epic 7 deferred
 
 ## Project Overview
 
@@ -61,7 +61,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
 - 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
 - ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
-- 🔨 **Epic 9**: Speaker Authentication & Account Integration - **IN PROGRESS** (Story 9.1 JWT magic link complete; 9.2-9.5 planned)
+- 🔨 **Epic 11**: Unified Speaker Workflow Refactor - **IN PROGRESS** (Phase A doc alignment landing; Phases B–F per `docs/plans/speaker-workflow-refactor.md` and ADR-009. Supersedes prior Epic 9 plan.)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -72,9 +72,9 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 **When Adding New Features:**
 - ✅ Platform through Epic 8 is feature-complete (except Epic 7)
-- Epic 9: Stories 9.2-9.5 next (Cognito account creation, dual auth, migration, multi-role nav)
+- Epic 11: Phases B–F (state-machine consolidation, entity simplification, organizer kanban UX, Cognito provisioning, magic-link teardown)
 - Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
-- Prioritize Epic 9 completion, production readiness, and Epic 3 data import
+- Prioritize Epic 11 completion (per ADR-009), production readiness, and Epic 3 data import
 
 ## Build System
 
@@ -225,7 +225,15 @@ make dev-native-up                                   # Start services natively (
 - ✅ PostgreSQL 15 runs in Docker (persistent volume)
 - ✅ All services run natively (Java processes + Vite dev server)
 - ✅ Uses staging Cognito for authentication (AWS)
-- ✅ Local database is read-only mirror synced from staging
+- ✅ Local database is read-only mirror synced from staging — **except** for CUMS-side
+  writes during speaker invitation (Pattern N): `adminCreateUserSilently` creates the
+  Cognito user in staging while `user_profiles` / `role_assignments` rows land in the
+  local DB only. The PreTokenGen Lambda runs against the staging DB and therefore
+  emits a JWT with no `custom:role` for these users. **Pattern 3b** (DB-fallback in
+  `shared-kernel/.../security/JwtRolesConverter` + `AuthContext.hydrateRolesIfMissing`)
+  resolves roles from the local DB so local-dev speakers can actually log in. The
+  fallback is dormant in staging because the JWT there always carries roles. See
+  `docs/architecture/06b-user-lifecycle-sync.md` §"Pattern 3b" for the full pattern.
 - ✅ **Zero AWS development environment costs** (saves $600-720/year)
 - ✅ 60-70% less resources than Docker Compose
 - See [Local Development Guide](docs/guides/local-development-setup.md) for details
@@ -721,6 +729,53 @@ This prevents the weekly doc-drift-auditor from flagging the commit and keeps do
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
 - whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one
+
+## Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales
+
+**Scope of the "DE + EN only" rule (narrowed 2026-05-17 per Story 11.E.3 PM Q#5):**
+the rule applies **only to backend email templates** (`*.html` / `*.txt` files
+under `services/*/src/main/resources/email-templates/`). It does NOT apply to
+frontend UI i18n keys.
+
+**Backend email templates — DE + EN only.** Speaker invitations, confirmations,
+reminders, acceptance notices, organizer notifications, partner meeting invites,
+and any future email content MUST be authored in `de` + `en` with first-class
+wording quality. The 8 other locales (`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`,
+`gsw-BE`) are NOT required for email templates. If a non-DE/EN locale is
+requested at render time and no template exists, fall back to English.
+
+**Frontend UI i18n — all 10 locales required.** New `web-frontend/public/locales/
+{locale}/*.json` keys MUST be populated in all 10 supported locales (`de`, `en`,
+`fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`). The frontend has a real
+multilingual audience (public website visitors browse the homepage, archive, and
+registration in their preferred locale); falling back to English here is a
+visible UX degradation. Hand-translate, source translations from a tool, or
+copy-from-an-existing-similar-key — but the keys land in all 10 locales when the
+story merges.
+
+**Why the asymmetry:** Email templates carry rich, prose-style copy (multi-
+paragraph; pricing/legal nuance; speaker-context detail) that does not survive
+machine translation and is expensive to keep aligned across 10 locales for an
+audience that is overwhelmingly Swiss-German/German + English. Frontend nav /
+button / label keys are short atomic strings that translate cheaply and serve a
+genuinely multilingual public.
+
+**Implications for stories and PRs:**
+- **Frontend UI story** with new i18n keys → populate all 10 locales before
+  moving to `review`. EN + DE first-class quality; the other 8 may use straight
+  translations and get hand-polished in a follow-up if a native speaker flags
+  something.
+- **Backend email template story** → ship `de` + `en` templates only. Other
+  locales fall back to EN via the email-rendering service's locale chain. The
+  8-locale fan-out for emails is a deliberate non-goal.
+- **Test resilience:** Tests should assert against EN values OR use the
+  namespace-stripped key (per `_bmad-output/project-context.md` testing rules),
+  never lock in a specific non-EN translation.
+- This rule **supersedes** the older "10-locale parity for everything" pattern
+  from Stories 10.7 and 10.9 in the email-template space, AND **supersedes** the
+  intermediate "DE + EN only for everything" framing from the 2026-05-17
+  pre-Q#5 wording — the narrowed rule (emails only) is the binding contract.
+
 ## Personal Data & Security Guidelines
 
 **CRITICAL**: Never commit files containing real personal data (PII) to version control.

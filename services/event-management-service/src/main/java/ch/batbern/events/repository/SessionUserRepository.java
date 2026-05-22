@@ -36,6 +36,33 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
     List<SessionUser> findBySessionIdAndIsConfirmedTrue(UUID sessionId);
 
     /**
+     * Find the (at most one) session_user with a given role for a session.
+     *
+     * <p>Phase A of the post-Epic-11 speaker_pool.username/email cleanup: the speaker
+     * pool list endpoint loads the PRIMARY_SPEAKER for each pool row that has a session,
+     * and uses it as the canonical identity source. There is never more than one
+     * PRIMARY_SPEAKER per session in BATbern's data model, so {@code Optional} fits
+     * better than {@code List}.
+     *
+     * @param sessionId the session UUID
+     * @param speakerRole the speaker role to filter by (typically PRIMARY_SPEAKER)
+     * @return optional SessionUser association
+     */
+    Optional<SessionUser> findBySessionIdAndSpeakerRole(
+            UUID sessionId, SessionUser.SpeakerRole speakerRole);
+
+    /**
+     * Batch variant of {@link #findBySessionIdAndSpeakerRole(UUID, SessionUser.SpeakerRole)}
+     * for loading primary speakers across many sessions in one query.
+     *
+     * @param sessionIds the session UUIDs
+     * @param speakerRole the speaker role to filter by
+     * @return list of SessionUser associations matching the filter
+     */
+    List<SessionUser> findBySessionIdInAndSpeakerRole(
+            java.util.Collection<UUID> sessionIds, SessionUser.SpeakerRole speakerRole);
+
+    /**
      * Find all session speakers for an event (for homepage display)
      *
      * @param eventId the event UUID

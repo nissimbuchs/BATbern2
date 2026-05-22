@@ -103,7 +103,7 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
         @DisplayName("should find speaker with session in CONFIRMED status")
         void should_findSpeaker_withSession_inConfirmedStatus() {
             // Given: Speaker with session in CONFIRMED status
-            SpeakerPool speaker = createSpeaker("Confirmed Speaker", SpeakerWorkflowState.CONFIRMED, testSession.getId());
+            SpeakerPool speaker = createSpeaker("Confirmed Speaker", SpeakerWorkflowState.QUALITY_REVIEWED, testSession.getId());
 
             // When
             List<SpeakerPool> result = speakerPoolRepository
@@ -111,7 +111,7 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
 
             // Then
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getStatus()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
+            assertThat(result.get(0).getStatus()).isEqualTo(SpeakerWorkflowState.QUALITY_REVIEWED);
         }
 
         @Test
@@ -158,7 +158,7 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
             session2.setSessionType("presentation");
             session2 = sessionRepository.save(session2);
 
-            SpeakerPool newerSpeaker = createSpeaker("Newer Speaker", SpeakerWorkflowState.CONFIRMED, session2.getId());
+            SpeakerPool newerSpeaker = createSpeaker("Newer Speaker", SpeakerWorkflowState.QUALITY_REVIEWED, session2.getId());
 
             // When
             List<SpeakerPool> result = speakerPoolRepository
@@ -183,7 +183,7 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
             session2.setSessionSlug("session-2-" + java.util.UUID.randomUUID().toString().substring(0, 8));
             session2.setSessionType("presentation");
             session2 = sessionRepository.save(session2);
-            createSpeaker("Speaker 2", SpeakerWorkflowState.CONFIRMED, session2.getId());
+            createSpeaker("Speaker 2", SpeakerWorkflowState.QUALITY_REVIEWED, session2.getId());
 
             // When: Limit to 1 result
             List<SpeakerPool> result = speakerPoolRepository
@@ -212,7 +212,6 @@ class SpeakerPoolRepositoryE2EMethodsTest extends AbstractIntegrationTest {
         SpeakerPool speaker = new SpeakerPool();
         speaker.setEventId(testEvent.getId());
         speaker.setSpeakerName(name);
-        speaker.setEmail(name.toLowerCase().replace(" ", ".") + "@test.com");
         speaker.setStatus(status);
         speaker.setSessionId(sessionId);
         speaker.setCreatedAt(Instant.now());

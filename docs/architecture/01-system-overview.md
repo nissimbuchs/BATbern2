@@ -332,9 +332,11 @@ graph TB
 
 ### Speaker Coordination Service
 
+> **⚠️ Superseded by ADR-009 (Unified Speaker Workflow) — see Epic 11 Phases B/C.** The 11-state workflow with parallel paths, overflow management, and a dedicated `Speaker` entity described below reflects the **pre-refactor** model. Per ADR-009 the target model is: a single 8-state machine (`IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED` + `DECLINED`); SPEAKER as a User role (no `Speaker` entity); slot-capacity gate at invitation (no overflow / parking-lane); standard Cognito with `FORCE_CHANGE_PASSWORD` on first login (no magic-link). The canonical workflow doc is `docs/architecture/06a-workflow-state-machines.md`; the canonical API doc is `docs/architecture/04-api-speaker-coordination.md`.
+
 **Responsibility:** Enhanced speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
 
-**Enhanced Speaker Workflow Features:**
+**Enhanced Speaker Workflow Features** _(pre-ADR-009 description retained as historical context)_:
 - **Workflow State Management** - 11-state progression with parallel paths: identified → contacted → ready → accepted/declined; then content_submitted → quality_reviewed ∥ slot_assigned → confirmed; plus overflow and withdrew states
 - **Slot Preferences Collection** - Time slot preferences, technical requirements, accessibility needs
 - **Quality Review Integration** - Abstract validation (1000 char limit), moderator review workflow

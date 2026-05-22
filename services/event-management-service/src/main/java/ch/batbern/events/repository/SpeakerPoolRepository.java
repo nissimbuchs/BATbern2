@@ -56,6 +56,51 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     long countByEventIdAndStatus(UUID eventId, SpeakerWorkflowState status);
 
     /**
+     * Count speaker pool entries for a specific event whose status is in the given set.
+     *
+     * Story 11.B.3: Used by EventWorkflowStateMachine.validateAllSpeakersConfirmed to
+     * compute the "accepted or beyond" cohort (ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED)
+     * for the AGENDA_PUBLISHED gate. Backed by JPQL (not derived-name) to avoid Spring
+     * Data's awkward IN-collection method names.
+     *
+     * @param eventId the event ID
+     * @param statuses the list of speaker workflow statuses to include
+     * @return count of speakers whose status is in the given set
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(sp)
+            FROM SpeakerPool sp
+            WHERE sp.eventId = :eventId
+              AND sp.status IN :statuses
+            """)
+    long countByEventIdAndStatusIn(
+            @org.springframework.data.repository.query.Param("eventId") UUID eventId,
+            @org.springframework.data.repository.query.Param("statuses") List<SpeakerWorkflowState> statuses);
+
+    /**
+     * Count speakers who are "publishable" per ADR-009 §0.1:
+     * {@code speaker_pool.status == 'quality_reviewed'} AND the assigned session has a
+     * non-null {@code start_time}.
+     *
+     * Story 11.B.3: Used by {@code EventWorkflowStateMachine.validateAllSpeakersConfirmed}
+     * to gate the AGENDA_PUBLISHED transition. The derived {@code is_publishable} predicate
+     * lives in the read layer (not stored on speaker_pool) — this query implements the
+     * predicate at the database level so it can be aggregated cheaply.
+     *
+     * @param eventId the event ID
+     * @return count of publishable speakers for the event
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(sp)
+            FROM SpeakerPool sp
+            JOIN Session s ON sp.sessionId = s.id
+            WHERE sp.eventId = :eventId
+              AND sp.status = ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
+              AND s.startTime IS NOT NULL
+            """)
+    long countPublishableByEventId(@org.springframework.data.repository.query.Param("eventId") UUID eventId);
+
+    /**
      * Find speakers assigned to a specific session.
      *
      * Story 5.7 (BAT-11): Speaker auto-confirmation when session timing assigned
@@ -67,46 +112,35 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     List<SpeakerPool> findBySessionId(UUID sessionId);
 
     // Story 6.1b: Speaker Invitation System
+    // Story 11.E.9: findByEventIdAndEmail, existsByEventIdAndEmail, and findByUsername
+    // were removed when the speaker_pool.username + speaker_pool.email columns were
+    // dropped (V103). The remaining lookup-by-username flow traverses
+    // session_users → session → speaker_pool.
 
     /**
-     * Find speaker pool entry by event and email.
-     * Used for idempotency check when inviting speakers.
+     * Find the speaker pool entry whose primary speaker has the given username.
+     *
+     * <p>Story 11.E.9: the post-Phase-A canonical "this username's pool row" lives on
+     * the {@link ch.batbern.events.domain.SessionUser} row joined to the session via
+     * {@code speaker_pool_id}. Pre-READY pool rows (IDENTIFIED/CONTACTED) have no
+     * session_users row yet and therefore do not match — callers handle that case (see
+     * {@code SpeakerInvitationService.sendInvitation}'s ID-fallback).
      *
      * @param eventId the event ID
-     * @param email the speaker email
+     * @param username the speaker username (matches {@code session_users.username})
      * @return optional speaker pool entry
      */
-    java.util.Optional<SpeakerPool> findByEventIdAndEmail(UUID eventId, String email);
-
-    /**
-     * Find speaker pool entry by event and username.
-     * Used for sending invitations to existing speakers.
-     *
-     * @param eventId the event ID
-     * @param username the speaker username
-     * @return optional speaker pool entry
-     */
-    java.util.Optional<SpeakerPool> findByEventIdAndUsername(UUID eventId, String username);
-
-    /**
-     * Check if a speaker already exists in the pool for this event with the given email.
-     *
-     * @param eventId the event ID
-     * @param email the speaker email
-     * @return true if speaker exists
-     */
-    boolean existsByEventIdAndEmail(UUID eventId, String email);
-
-    // Story 6.4: Speaker Dashboard - find all events for a speaker by username
-
-    /**
-     * Find all speaker pool entries for a given username across all events.
-     * Used by the speaker dashboard to show upcoming and past events.
-     *
-     * @param username the speaker's username
-     * @return list of speaker pool entries for this speaker
-     */
-    List<SpeakerPool> findByUsername(String username);
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT sp FROM SpeakerPool sp, Session s, SessionUser su
+            WHERE sp.eventId = :eventId
+              AND s.id = sp.sessionId
+              AND su.session = s
+              AND su.speakerRole = ch.batbern.events.domain.SessionUser$SpeakerRole.PRIMARY_SPEAKER
+              AND su.username = :username
+            """)
+    java.util.Optional<SpeakerPool> findByEventIdAndUsername(
+            @org.springframework.data.repository.query.Param("eventId") UUID eventId,
+            @org.springframework.data.repository.query.Param("username") String username);
 
     // E2E Test Support Methods (Story 6.3)
 
@@ -118,9 +152,15 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @param username the speaker username
      * @return optional speaker pool entry
      */
-    @org.springframework.data.jpa.repository.Query(
-            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
-                    + "WHERE e.eventCode = :eventCode AND s.username = :username")
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT sp FROM SpeakerPool sp, Event e, Session s, SessionUser su
+            WHERE e.eventCode = :eventCode
+              AND sp.eventId = e.id
+              AND s.id = sp.sessionId
+              AND su.session = s
+              AND su.speakerRole = ch.batbern.events.domain.SessionUser$SpeakerRole.PRIMARY_SPEAKER
+              AND su.username = :username
+            """)
     java.util.Optional<SpeakerPool> findByEventCodeAndUsername(
             @org.springframework.data.repository.query.Param("eventCode") String eventCode,
             @org.springframework.data.repository.query.Param("username") String username);

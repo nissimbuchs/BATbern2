@@ -63,6 +63,13 @@ export const useEvents = (
  * useEvent - Fetch single event with optional resource expansion
  * Cache: 15 minutes (full event with includes cached longer)
  *
+ * Story 11.E.8 follow-up: {@code refetchOnWindowFocus} is enabled so the organizer's
+ * Sessions sub-tab (and any other view that consumes this query) refreshes when the
+ * organizer switches back to the tab after a speaker has submitted new content in a
+ * different window. Without this, the 15-min staleTime served the prior payload until
+ * an organizer-side mutation (e.g. quality-review approval) invalidated the cache —
+ * which made it look like sessions.title only updates after review acceptance.
+ *
  * @param eventCode - Event code identifier (e.g., "BATbern56")
  * @param include - Resources to expand (workflow, speakers, sessions, venue, registrations)
  */
@@ -75,6 +82,7 @@ export const useEvent = (
     queryFn: () => eventApiClient.getEvent(eventCode!, include ? { expand: include } : undefined),
     enabled: !!eventCode, // Only fetch if eventCode is provided
     staleTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: true,
   });
 };
 

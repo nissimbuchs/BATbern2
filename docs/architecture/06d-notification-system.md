@@ -230,10 +230,10 @@ public enum NotificationType {
     QUALITY_REVIEW_PENDING,
     QUALITY_REVIEW_APPROVED,
     QUALITY_REVIEW_REQUIRES_CHANGES,
-    SLOT_ASSIGNED,
+    SLOT_ASSIGNED,          // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (no SLOT_ASSIGNED speaker state in the 8-state workflow; slot assignment is derived from session.start_time).
     DEADLINE_WARNING,       // Used by DeadlineReminderJob for registration deadline reminders
     DEADLINE_REMINDER,      // Used in NotificationControllerIntegrationTest (VARCHAR column allows this value)
-    OVERFLOW_DETECTED,
+    OVERFLOW_DETECTED,      // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (overflow is replaced by the slot-capacity gate at READY → INVITED; no overflow detection occurs).
     VOTING_REQUIRED,
     EVENT_PUBLISHED
     // Note: TASK_DEADLINE_WARNING is NOT written to the notifications table —

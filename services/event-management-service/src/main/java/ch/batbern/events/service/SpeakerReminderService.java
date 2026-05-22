@@ -9,6 +9,7 @@ import ch.batbern.events.notification.NotificationRequest;
 import ch.batbern.events.notification.NotificationService;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.OutreachHistoryRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -46,10 +47,12 @@ public class SpeakerReminderService {
     private final EventRepository eventRepository;
     private final SpeakerReminderLogRepository reminderLogRepository;
     private final OutreachHistoryRepository outreachHistoryRepository;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SpeakerReminderEmailService reminderEmailService;
     private final MagicLinkService magicLinkService;
     private final NotificationService notificationService;
     private final ReminderProperties reminderProperties;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     private static final String REMINDER_TYPE_RESPONSE = "RESPONSE";
     private static final String REMINDER_TYPE_CONTENT = "CONTENT";
@@ -99,9 +102,14 @@ public class SpeakerReminderService {
                         }
                     }
 
-                    // Process content deadline reminders (ACCEPTED speakers with PENDING content)
+                    // Process content deadline reminders (ACCEPTED speakers who haven't submitted
+                    // any content version yet). Story 11.E.8: derive "no content submitted" from
+                    // the absence of session_content_history rows rather than the dropped
+                    // speaker_pool.content_status column.
+                    boolean noContentYet = speaker.getSessionId() == null
+                            || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId());
                     if (speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
-                            && "PENDING".equals(speaker.getContentStatus())
+                            && noContentYet
                             && speaker.getContentDeadline() != null) {
                         String tier = findMatchingTier(today, speaker.getContentDeadline());
                         if (tier != null) {
@@ -178,7 +186,11 @@ public class SpeakerReminderService {
         // Send (bypass dedup for manual triggers)
         sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy);
 
-        return new ManualReminderResult(effectiveTier, speaker.getEmail());
+        // Phase B: recipient routing now flows through PrimarySpeakerResolver. For manual
+        // reminder result, surface whatever email was actually used (may be null if the
+        // sender path skipped due to no resolvable recipient).
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
+        return new ManualReminderResult(effectiveTier, resolvedEmail);
     }
 
     /**
@@ -221,9 +233,14 @@ public class SpeakerReminderService {
      * Check if a reminder should be sent (deduplication + smart skipping).
      */
     boolean shouldSendReminder(SpeakerPool speaker, String reminderType, String tier, LocalDate deadline) {
-        // Skip if no email
-        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
-            log.debug("Skipping reminder for speaker {} - no email", speaker.getId());
+        // Skip if no resolvable recipient. Phase B: the contactable predicate is now
+        // "has a session with a PRIMARY_SPEAKER session_user whose User profile carries
+        // an email" — i.e. PrimarySpeakerResolver.resolveEmail returns a value. The old
+        // speaker.getEmail() check missed the case where the organizer reassigned the
+        // session speaker and pool.email had not been kept in sync.
+        if (primarySpeakerResolver.resolveEmail(speaker).isEmpty()) {
+            log.debug("Skipping reminder for speaker {} - no resolvable primary speaker email",
+                    speaker.getId());
             return false;
         }
 
@@ -268,12 +285,15 @@ public class SpeakerReminderService {
         String portalToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
 
         // Persist reminder log BEFORE sending email (dedup safety)
+        // Phase B: log the recipient as resolved by PrimarySpeakerResolver — that's the
+        // address the email service will actually use.
+        String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
         SpeakerReminderLog reminderLog = SpeakerReminderLog.builder()
                 .speakerPoolId(speaker.getId())
                 .eventId(event.getId())
                 .reminderType(reminderType)
                 .tier(tier)
-                .emailAddress(speaker.getEmail())
+                .emailAddress(resolvedEmail)
                 .deadlineDate(deadline)
                 .triggeredBy(triggeredBy)
                 .build();
@@ -354,9 +374,13 @@ public class SpeakerReminderService {
                 throw new InvalidSpeakerStateException(
                         "Speaker is not in ACCEPTED state (current: " + speaker.getStatus() + ")");
             }
-            if (!"PENDING".equals(speaker.getContentStatus())) {
+            // Story 11.E.8: "content submitted" is now the presence of any
+            // session_content_history row for the speaker's session.
+            boolean noContentYet = speaker.getSessionId() == null
+                    || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId());
+            if (!noContentYet) {
                 throw new InvalidSpeakerStateException(
-                        "Content already submitted (status: " + speaker.getContentStatus() + ")");
+                        "Content already submitted for session " + speaker.getSessionId());
             }
         } else {
             throw new IllegalArgumentException("Invalid reminder type: " + reminderType);

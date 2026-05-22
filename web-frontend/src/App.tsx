@@ -122,10 +122,8 @@ const ContentSubmissionPage = React.lazy(
 // Story 6.4: Speaker Portal - Dashboard
 const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
 
-// Story 9.1: Speaker Portal - JWT Magic Login
-const SpeakerMagicLoginPage = React.lazy(
-  () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
-);
+// Story 11.E.3: SpeakerMagicLoginPage lazy import REMOVED (Phase F / Story 11.F.1 deletes
+// the page file). The Cognito session covers speaker portal authentication.
 
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
@@ -270,20 +268,59 @@ function App() {
                     {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme BATbern components) */}
                     <Route path="/archive/:eventCode" element={<HomePage />} />
 
-                    {/* Story 6.2a: Speaker Portal - Invitation Response */}
-                    <Route path="/speaker-portal/respond" element={<InvitationResponsePage />} />
-
-                    {/* Story 6.2b: Speaker Portal - Profile Update */}
-                    <Route path="/speaker-portal/profile" element={<ProfileUpdatePage />} />
-
-                    {/* Story 6.3: Speaker Portal - Content Submission */}
-                    <Route path="/speaker-portal/content" element={<ContentSubmissionPage />} />
-
-                    {/* Story 6.4: Speaker Portal - Dashboard */}
-                    <Route path="/speaker-portal/dashboard" element={<SpeakerDashboardPage />} />
-
-                    {/* Story 9.1: Speaker Portal - JWT Magic Login */}
-                    <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
+                    {/* Story 11.E.3: Speaker Portal routes — Cognito-authenticated.
+                        Wrapped in <SpeakerRoute> so unauthenticated callers redirect to /login.
+                        eventCode is a path parameter (Q#1 resolved 2026-05-17). */}
+                    <Route
+                      path="/speaker-portal/dashboard"
+                      element={
+                        <SpeakerRoute>
+                          <SpeakerDashboardPage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    <Route
+                      path="/speaker-portal/respond/:eventCode"
+                      element={
+                        <SpeakerRoute>
+                          <InvitationResponsePage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    <Route
+                      path="/speaker-portal/content/:eventCode"
+                      element={
+                        <SpeakerRoute>
+                          <ContentSubmissionPage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    {/* Code review 2026-05-18 (D1): profile is now user-level (CUMS), not
+                        per-event. The /:eventCode path-parameter form is preserved as a
+                        backward-compat redirect for bookmarks; ProfileUpdatePage itself no
+                        longer reads eventCode. */}
+                    <Route
+                      path="/speaker-portal/profile"
+                      element={
+                        <SpeakerRoute>
+                          <ProfileUpdatePage />
+                        </SpeakerRoute>
+                      }
+                    />
+                    <Route
+                      path="/speaker-portal/profile/:eventCode"
+                      element={<Navigate to="/speaker-portal/profile" replace />}
+                    />
+                    {/* Code review 2026-05-18 (P15): backward-compat redirect for old email
+                        deep-links (`/speaker-portal/respond?token=...`) that no longer match
+                        the new `/speaker-portal/respond/:eventCode` route. Sends the user to
+                        the dashboard, where they can pick their pending invitation. */}
+                    <Route
+                      path="/speaker-portal/respond"
+                      element={<Navigate to="/speaker-portal/dashboard" replace />}
+                    />
+                    {/* Story 11.E.3: /speaker-portal/magic-login route REMOVED (Phase F deletes
+                        the page file). The Cognito session covers speaker portal authentication. */}
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />

@@ -25,22 +25,24 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { format } from 'date-fns';
+import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
 
 export interface StatusHistoryTimelineProps {
   speakerId: string;
   eventCode: string;
 }
 
-// Status color mapping
-const STATUS_COLORS: Record<string, string> = {
+// Status color mapping — keyed to the 8 ADR-009 §0.1 states. Partial Record so a
+// future state-enum addition surfaces as a missing-key compile error.
+const STATUS_COLORS: Partial<Record<SpeakerWorkflowState, string>> = {
   IDENTIFIED: '#9e9e9e',
   CONTACTED: '#ffc107',
   READY: '#ff9800',
+  INVITED: '#03a9f4',
   ACCEPTED: '#4caf50',
-  DECLINED: '#f44336',
-  SLOT_ASSIGNED: '#2196f3',
+  CONTENT_SUBMITTED: '#2196f3',
   QUALITY_REVIEWED: '#00bcd4',
-  FINAL_AGENDA: '#9c27b0',
+  DECLINED: '#f44336',
 };
 
 export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({

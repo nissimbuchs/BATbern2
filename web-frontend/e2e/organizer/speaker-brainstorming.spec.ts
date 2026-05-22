@@ -324,6 +324,132 @@ test.describe('Speaker Brainstorming Panel (Story 5.2)', () => {
   });
 });
 
+// ─── Story 11.D.1: Promote-to-speaker UI + slot-capacity surfacing ─────────────
+
+test.describe('Promote to speaker (Story 11.D.1)', () => {
+  test('should promote a CONTACTED speaker to READY via the brainstorming-panel modal', async ({
+    page,
+    request,
+  }) => {
+    const eventCode = await createTestEvent(page);
+
+    // Seed: add a speaker via UI, then transition to CONTACTED via API to bypass the
+    // outreach modal flow (covered separately by speaker-outreach.spec.ts).
+    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/speakers/brainstorm`);
+    await page.fill('input[name="speakerName"]', 'Promote E2E Speaker');
+    await page.click('button:has-text("Add to Pool")');
+
+    // Capture the speaker UUID via the same GET the panel uses.
+    const poolResp = await request.get(`${API_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+      headers: { Authorization: `Bearer ${process.env.E2E_TEST_TOKEN}` },
+    });
+    const pool: SpeakerPoolResponse[] = await poolResp.json();
+    const seeded = pool.find((s) => s.speakerName === 'Promote E2E Speaker');
+    expect(seeded).toBeDefined();
+    const speakerId = seeded!.id;
+
+    // Promote to CONTACTED via API (outreach UI is owned by speaker-outreach.spec.ts).
+    const putResp = await request.put(
+      `${API_URL}/api/v1/events/${eventCode}/speakers/${speakerId}/status`,
+      {
+        data: { newStatus: 'CONTACTED', reason: 'E2E setup' },
+        headers: { Authorization: `Bearer ${process.env.E2E_TEST_TOKEN}` },
+      }
+    );
+    expect(putResp.status()).toBe(200);
+
+    // Reload to pick up the new status, then click the promote button.
+    await page.reload();
+    await page.click(`[data-testid="promote-button-${speakerId}"]`);
+
+    // Modal opens — fill in email and submit.
+    await page.fill('[data-testid="promote-email-field"]', 'promote-e2e@batbern-test.ch');
+    await page.click('[data-testid="promote-submit-button"]');
+
+    // Speaker's chip should transition to READY without a manual reload (TanStack
+    // Query invalidation in usePromoteSpeakerToReady). Scope to the speaker's row
+    // so we don't false-match a column header or sibling chip with "READY" text.
+    await expect(page.locator(`[data-testid="promote-button-${speakerId}"]`)).not.toBeVisible();
+    const speakerRow = page.locator(`[data-testid="speaker-pool-card"]`, {
+      has: page.locator(`text=Promote E2E Speaker`),
+    });
+    await expect(speakerRow.locator('[data-testid="status-badge"]')).toContainText(/ready/i);
+  });
+
+  test('should surface slot-capacity error when sending invitation past capacity', async ({
+    page,
+    request,
+  }) => {
+    // AC9 Playwright case for Story 11.D.1. Seed an event with the SLOT_CAPACITY_REACHED
+    // gate pre-tripped (1 ACCEPTED + 1 READY against maxSlots=1), then click "Send
+    // invitation" on the READY speaker and assert the localized toast surfaces while the
+    // speaker remains in READY.
+    const eventCode = await createTestEvent(page);
+    const authHeaders = { Authorization: `Bearer ${process.env.E2E_TEST_TOKEN}` };
+
+    const seedAccepted = await request.post(`${API_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+      data: { speakerName: 'Slot Filler Accepted' },
+      headers: authHeaders,
+    });
+    expect(seedAccepted.status()).toBe(201);
+    const acceptedId = (await seedAccepted.json()).id as string;
+
+    // Walk the speaker through IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED
+    // using PUT /status. /status rejects READY so we route through /promote there.
+    for (const step of ['CONTACTED'] as const) {
+      const resp = await request.put(
+        `${API_URL}/api/v1/events/${eventCode}/speakers/${acceptedId}/status`,
+        { data: { newStatus: step, reason: 'E2E setup' }, headers: authHeaders }
+      );
+      expect(resp.status()).toBe(200);
+    }
+    const promoteAccepted = await request.post(
+      `${API_URL}/api/v1/events/${eventCode}/speakers/${acceptedId}/promote`,
+      { data: { email: 'slot-accepted@batbern-test.ch' }, headers: authHeaders }
+    );
+    expect(promoteAccepted.status()).toBe(200);
+    for (const step of ['INVITED', 'ACCEPTED'] as const) {
+      const resp = await request.put(
+        `${API_URL}/api/v1/events/${eventCode}/speakers/${acceptedId}/status`,
+        { data: { newStatus: step, reason: 'E2E setup' }, headers: authHeaders }
+      );
+      expect(resp.status()).toBe(200);
+    }
+
+    // Seed a second speaker, promote to READY. Capacity is already saturated.
+    const seedReady = await request.post(`${API_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+      data: { speakerName: 'Slot Candidate Ready' },
+      headers: authHeaders,
+    });
+    expect(seedReady.status()).toBe(201);
+    const readyId = (await seedReady.json()).id as string;
+    const ctxResp = await request.put(
+      `${API_URL}/api/v1/events/${eventCode}/speakers/${readyId}/status`,
+      { data: { newStatus: 'CONTACTED', reason: 'E2E setup' }, headers: authHeaders }
+    );
+    expect(ctxResp.status()).toBe(200);
+    const promoteCandidate = await request.post(
+      `${API_URL}/api/v1/events/${eventCode}/speakers/${readyId}/promote`,
+      { data: { email: 'slot-ready@batbern-test.ch' }, headers: authHeaders }
+    );
+    expect(promoteCandidate.status()).toBe(200);
+
+    // Navigate and click Send Invitation on the candidate — should surface 409 toast.
+    await page.goto(`${BASE_URL}/organizer/events/${eventCode}/speakers/brainstorm`);
+    await page.click(`[data-testid="send-invitation-${readyId}"]`);
+
+    await expect(page.getByRole('alert')).toContainText(/slot[\s-]capacity/i);
+
+    // Candidate stays in READY (no state change).
+    const finalPool = await request.get(`${API_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+      headers: authHeaders,
+    });
+    const finalList = await finalPool.json();
+    const stillReady = finalList.find((s: SpeakerPoolResponse) => s.id === readyId);
+    expect(stillReady?.status?.toLowerCase()).toBe('ready');
+  });
+});
+
 test.describe('Speaker Pool API Contract Tests (Story 5.2)', () => {
   test.describe('POST /api/v1/events/{eventCode}/speakers/pool', () => {
     test('should add speaker to pool with IDENTIFIED status', async ({ request }) => {

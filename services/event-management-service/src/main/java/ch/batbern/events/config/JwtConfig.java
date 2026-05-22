@@ -87,17 +87,19 @@ public class JwtConfig {
     }
 
     /**
-     * Test helper - builds a valid JWT for the given speaker pool using this bean's cached key pair.
-     * This guarantees the JWT can be verified by any component that uses this same JwtConfig bean.
+     * Test helper — builds a valid JWT for the given speaker pool using this bean's
+     * cached key pair, with an explicit email claim. Story 11.E.9: signature gained
+     * the {@code email} parameter when the column was dropped from speaker_pool;
+     * tests now pass the email value they want stamped on the JWT directly.
      */
-    public String buildJwtForTest(ch.batbern.events.domain.SpeakerPool speakerPool) {
+    public String buildJwtForTest(ch.batbern.events.domain.SpeakerPool speakerPool, String email) {
         java.time.Instant now = java.time.Instant.now();
         return io.jsonwebtoken.Jwts.builder()
                 .subject(speakerPool.getId().toString())
                 .issuer(getIssuer())
                 .issuedAt(java.util.Date.from(now))
                 .expiration(java.util.Date.from(now.plus(getExpiryDays(), java.time.temporal.ChronoUnit.DAYS)))
-                .claim("email", speakerPool.getEmail())
+                .claim("email", email)
                 .claim("roles", java.util.List.of("SPEAKER"))
                 .claim("speakerPoolId", speakerPool.getId().toString())
                 .signWith(getKeyPair().getPrivate(), io.jsonwebtoken.Jwts.SIG.RS256)

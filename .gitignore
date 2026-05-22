@@ -122,6 +122,7 @@ web-frontend/.nuxt/
 web-frontend/coverage/
 web-frontend/.vite/
 web-frontend/.storybook-out/
+*.tsbuildinfo
 
 # Frontend test artifacts
 web-frontend/test-results/
@@ -161,6 +162,13 @@ credentials.yml
 *secret*
 *password*
 *passwd*
+
+# Whitelist legitimate source files matching the secret/password patterns
+# above (those patterns are defensive — they guard against accidental commits
+# of credential files like passwords.csv / *.password / secrets.yaml — and
+# must not swallow real source code).
+!**/PasswordGenerator.java
+!**/PasswordGeneratorTest.java
 *.keystore
 *.jks
 *.truststore
@@ -192,4 +200,11 @@ apps/BATspa-old/src/api/anmeldungen.csv
 
 # Auto Claude data directory
 .auto-claude/
+
+# Python bytecode (story-automator skill)
+__pycache__/
+*.pyc
+
+# Story-automator runtime artifacts (per-run logs)
+_bmad-output/story-automator/
 apps/BATbern-watch/BATbern-watch.xcodeproj/project.xcworkspace/xcuserdata/nissim.xcuserdatad/UserInterfaceState.xcuserstate

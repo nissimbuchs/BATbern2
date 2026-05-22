@@ -99,7 +99,12 @@ public class RateLimiter {
             }
         }
 
-        int currentCount = rateLimitStorage.getCurrentRequestCount("anonymous", endpoint, "anonymous");
+        // Story 11.C.1 / D3: bucket per client IP so one attacker cannot exhaust the
+        // shared "anonymous" quota for every other anonymous visitor. The previous
+        // implementation used a single global "anonymous" bucket, which made the
+        // configured 50/min limit effectively a global throttle, not a per-client one.
+        String bucketKey = "anonymous:" + clientIp;
+        int currentCount = rateLimitStorage.getCurrentRequestCount(bucketKey, endpoint, "anonymous");
         int rateLimit = getRateLimitForRole("anonymous", endpoint);
 
         if (currentCount >= rateLimit) {
@@ -108,7 +113,7 @@ public class RateLimiter {
             return false;
         }
 
-        rateLimitStorage.incrementRequestCount("anonymous", endpoint, "anonymous");
+        rateLimitStorage.incrementRequestCount(bucketKey, endpoint, "anonymous");
         return true;
     }
 

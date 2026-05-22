@@ -48,7 +48,6 @@ public class SessionTimingService {
     private final SessionRepository sessionRepository;
     private final SessionTimingHistoryRepository sessionTimingHistoryRepository;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
-    private final ch.batbern.events.service.SpeakerWorkflowService speakerWorkflowService;
     private final EventRepository eventRepository;
     private final TimetableService timetableService;
     private final ApplicationEventPublisher eventPublisher;
@@ -103,8 +102,9 @@ public class SessionTimingService {
 
         sessionTimingHistoryRepository.save(history);
 
-        // Story BAT-11 Task 6: Auto-confirm speaker if quality reviewed
-        checkAndAutoConfirmSpeaker(session, changedBy);
+        // ADR-009 §0.1: slot assignment is orthogonal — no workflow state change required.
+        // The is_publishable predicate (QUALITY_REVIEWED AND slot_assigned) is derived at
+        // read time (exposed in Story 11.B.3); auto-confirm path removed.
 
         // Publish SessionTimingAssignedEvent to trigger workflow transition to AGENDA_PUBLISHED
         publishSessionTimingAssignedEvent(session, changedBy);
@@ -286,43 +286,6 @@ public class SessionTimingService {
                 .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
 
         return sessionTimingHistoryRepository.findBySessionIdOrderByChangedAtDesc(session.getId());
-    }
-
-    /**
-     * Check if speaker for this session needs auto-confirmation.
-     *
-     * Story BAT-11 Task 6: Workflow State Machine Integration
-     *
-     * When a session gets timing assigned, check if its speaker is in
-     * QUALITY_REVIEWED state. If so, auto-confirm them by triggering
-     * SpeakerWorkflowService state transition to CONFIRMED.
-     *
-     * @param session The session that just got timing assigned
-     * @param organizer Username of organizer making the change
-     */
-    private void checkAndAutoConfirmSpeaker(Session session, String organizer) {
-        // Find speakers assigned to this session (can be multiple for panels/co-presentations)
-        List<SpeakerPool> speakers = speakerPoolRepository.findBySessionId(session.getId());
-
-        for (SpeakerPool speaker : speakers) {
-            log.debug("Found speaker {} for session {}", speaker.getId(), session.getId());
-
-            // Check if speaker is in QUALITY_REVIEWED state
-            if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED) {
-                log.info("Speaker {} is quality reviewed and now has timing - auto-confirming",
-                        speaker.getId());
-
-                // Trigger state transition to CONFIRMED
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                        speaker.getId(),
-                        ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
-                        organizer
-                );
-            } else {
-                log.debug("Speaker {} not ready for auto-confirmation (state: {})",
-                        speaker.getId(), speaker.getStatus());
-            }
-        }
     }
 
     /**

@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -45,6 +45,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * UserApiClient is mocked via TestUserApiClientConfig.
  */
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3 (ADR-009 §Decision 3): magic-link flow replaced by Cognito Bearer + "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"). GET /api/v1/speaker-portal/dashboard "
+                + "now takes no token query parameter and reads the username from the Cognito "
+                + "JWT. Cognito-side coverage lives in SpeakerPortalAuthIntegrationTest "
+                + "(Task 10). Phase F (Story 11.F.1) deletes this file.")
 class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -63,10 +69,13 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
     private SessionRepository sessionRepository;
 
     @Autowired
+    private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
+
+    @Autowired
     private EventRepository eventRepository;
 
     @Autowired
-    private ContentSubmissionRepository contentSubmissionRepository;
+    private SessionContentHistoryRepository sessionContentHistoryRepository;
 
     @Autowired
     private SessionMaterialsRepository sessionMaterialsRepository;
@@ -80,9 +89,10 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
     @BeforeEach
     void setUp() {
         // Clean up in FK dependency order
-        contentSubmissionRepository.deleteAll();
+        sessionContentHistoryRepository.deleteAll();
         sessionMaterialsRepository.deleteAll();
         tokenRepository.deleteAll();
+        sessionUserRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         sessionRepository.deleteAll();
         eventRepository.deleteAll();
@@ -123,16 +133,28 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                 .eventId(testEventId)
                 .sessionId(testSessionId)
                 .speakerName("Dashboard Speaker")
-                .username(testUsername)
-                .email("dashboard.speaker@test.com")
                 .company("Test Corp")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentStatus("PENDING")
                 .responseDeadline(LocalDate.now().plusDays(7))
                 .contentDeadline(LocalDate.now().plusDays(20))
                 .build();
         speaker = speakerPoolRepository.save(speaker);
         testSpeakerPoolId = speaker.getId();
+
+        // 2026-05-21 (BATbern75 follow-up) — dashboard's canonical data source is now
+        // session_users (not speaker_pool.username). Mirror the production fixture
+        // shape from Story 11.E.8 provisionSessionAndPrimarySpeaker: session.speakerPoolId
+        // back-reference + a PRIMARY_SPEAKER session_users row.
+        session.setSpeakerPoolId(testSpeakerPoolId);
+        sessionRepository.save(session);
+        ch.batbern.events.domain.SessionUser membership =
+                ch.batbern.events.domain.SessionUser.builder()
+                        .session(session)
+                        .username(testUsername)
+                        .speakerRole(ch.batbern.events.domain.SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                        .isConfirmed(true)
+                        .build();
+        sessionUserRepository.save(membership);
 
         // Generate VIEW token for dashboard
         validToken = magicLinkService.generateToken(testSpeakerPoolId, TokenAction.VIEW);
@@ -193,8 +215,11 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .andExpect(jsonPath("$.upcomingEvents[0].sessionTitle", is("Cloud Architecture Best Practices")))
                     .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("ACCEPTED")))
                     .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Accepted")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatus", is("PENDING")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatusLabel", is("Not Submitted")));
+                    // 2026-05-20 (Q#D) — contentStatus / contentStatusLabel removed from
+                    // the dashboard DTO end-to-end. The fields are no longer serialised
+                    // (JsonInclude.NON_NULL on the record + record fields absent).
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatus").doesNotExist())
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentStatusLabel").doesNotExist());
         }
 
         @Test
@@ -215,18 +240,18 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         }
 
         @Test
-        @DisplayName("should include CONFIRMED speakers in upcoming events")
-        void should_includeConfirmedSpeakers() throws Exception {
+        @DisplayName("should include QUALITY_REVIEWED speakers in upcoming events")
+        void should_includeQualityReviewedSpeakers() throws Exception {
             SpeakerPool speaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
-            speaker.setStatus(SpeakerWorkflowState.CONFIRMED);
+            speaker.setStatus(SpeakerWorkflowState.QUALITY_REVIEWED);
             speakerPoolRepository.save(speaker);
 
             mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
                             .param("token", validToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.upcomingEvents", hasSize(1)))
-                    .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("CONFIRMED")))
-                    .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Confirmed")));
+                    .andExpect(jsonPath("$.upcomingEvents[0].workflowState", is("QUALITY_REVIEWED")))
+                    .andExpect(jsonPath("$.upcomingEvents[0].workflowStateLabel", is("Quality Reviewed")));
         }
 
         @Test
@@ -283,14 +308,14 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         }
 
         @Test
-        @DisplayName("should NOT show contentUrl for WITHDREW speaker")
-        void should_notShowContentUrl_forWithdrewSpeaker() throws Exception {
+        @DisplayName("should NOT show upcoming events for DECLINED speaker")
+        void should_notShowUpcomingEvents_forDeclinedSpeaker() throws Exception {
             SpeakerPool speaker = speakerPoolRepository
                     .findById(testSpeakerPoolId).orElseThrow();
-            speaker.setStatus(SpeakerWorkflowState.WITHDREW);
+            speaker.setStatus(SpeakerWorkflowState.DECLINED);
             speakerPoolRepository.save(speaker);
 
-            // WITHDREW is not in UPCOMING_STATES, so no upcoming events
+            // DECLINED is not in UPCOMING_STATES, so no upcoming events
             mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
                             .param("token", validToken))
                     .andExpect(status().isOk())
@@ -321,10 +346,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool soonerSpeaker = SpeakerPool.builder()
                     .eventId(soonerEvent.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
-                    .status(SpeakerWorkflowState.CONFIRMED)
-                    .contentStatus("PENDING")
+                    .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .build();
             speakerPoolRepository.save(soonerSpeaker);
 
@@ -376,10 +398,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
                     .eventId(pastEvent.getId())
                     .sessionId(pastSession.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
-                    .status(SpeakerWorkflowState.CONFIRMED)
-                    .contentStatus("APPROVED")
+                    .status(SpeakerWorkflowState.QUALITY_REVIEWED)
                     .build();
             speakerPoolRepository.save(pastSpeaker);
 
@@ -415,10 +434,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool pastInvitedSpeaker = SpeakerPool.builder()
                     .eventId(pastEvent.getId())
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.INVITED)
-                    .contentStatus("PENDING")
                     .build();
             speakerPoolRepository.save(pastInvitedSpeaker);
 
@@ -459,10 +475,7 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
             SpeakerPool declinedSpeaker = SpeakerPool.builder()
                     .eventId(testEventId)
                     .speakerName("Dashboard Speaker")
-                    .username(testUsername)
-                    .email("dashboard.speaker@test.com")
                     .status(SpeakerWorkflowState.DECLINED)
-                    .contentStatus("PENDING")
                     .build();
             declinedSpeaker = speakerPoolRepository.save(declinedSpeaker);
 

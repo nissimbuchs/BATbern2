@@ -1,20 +1,20 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.HtmlUtils;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,18 +23,11 @@ import java.util.List;
 /**
  * Service for quality review workflow (Story 5.5 AC11-15).
  *
- * Handles:
- * - Review queue for speakers with status='content_submitted'
- * - Content approval (quality_reviewed) with timestamp
- * - Content rejection with feedback (status remains content_submitted)
- * - Re-review workflow after rejection
- * - Automatic update to 'confirmed' when both quality_reviewed AND slot_assigned (AC16-17)
- *
- * Quality Review Criteria (AC12):
- * - Abstract length <= 1000 characters
- * - "Lessons learned" detected (auto-flag if missing)
- * - No product promotion detected (auto-flag if found)
- * - Professional tone check
+ * <p>Story 11.B.2 (ADR-009): the state mutation to {@code QUALITY_REVIEWED} delegates to
+ * {@link SpeakerWorkflowService#transition}. The legacy auto-confirm path is gone —
+ * {@code CONFIRMED} no longer exists; the derived {@code is_publishable} predicate
+ * ({@code QUALITY_REVIEWED AND slot_assigned}) is computed at read time (exposure lands
+ * in 11.B.3).
  */
 @Slf4j
 @Service
@@ -44,11 +37,11 @@ public class QualityReviewService {
     private final EventRepository eventRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
-    private final SessionUserRepository sessionUserRepository;
-    private final ContentSubmissionRepository contentSubmissionRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final EmailService emailService;
     private final MagicLinkService magicLinkService;
+    private final SpeakerWorkflowService speakerWorkflowService;
+    private final PrimarySpeakerResolver primarySpeakerResolver;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -75,45 +68,46 @@ public class QualityReviewService {
     }
 
     /**
-     * Approve speaker content.
+     * Approve speaker content — delegates the state transition to
+     * {@link SpeakerWorkflowService#transition} (sole writer per ADR-009).
      *
-     * Updates status to 'quality_reviewed' and checks if speaker should auto-update to 'confirmed'
-     * (if slot also assigned). Uses optimistic locking to handle concurrent updates (AC35).
+     * <p>The target state is {@code QUALITY_REVIEWED}; {@code CONFIRMED} is gone. The
+     * "ready for agenda" predicate ({@code is_publishable = QUALITY_REVIEWED && slot_assigned})
+     * is computed at read time (exposed in 11.B.3).
      *
      * @param poolId the speaker pool ID
      * @param moderatorUsername the moderator approving the content
-     * @throws jakarta.persistence.OptimisticLockException if concurrent update detected
      */
     @Transactional
     public void approveContent(String poolId, String moderatorUsername) {
         log.info("Approving content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
-        SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker pool entry not found: " + poolId));
+        java.util.UUID speakerId = java.util.UUID.fromString(poolId);
+        if (!speakerPoolRepository.existsById(speakerId)) {
+            throw new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId);
+        }
 
-        ch.batbern.shared.types.SpeakerWorkflowState previousState = speaker.getStatus();
-        speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
-        speakerPoolRepository.save(speaker);
+        TransitionPayload payload = TransitionPayload.builder()
+                .reason("Content approved by moderator")
+                .build();
 
-        // Publish state change event
-        eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
-                speaker.getId(),
-                speaker.getEventId(),
-                previousState,
-                ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED,
-                moderatorUsername
-        ));
-
-        // Check if speaker should auto-update to confirmed (AC17)
-        checkAndUpdateToConfirmed(speaker);
+        speakerWorkflowService.transition(
+                speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, moderatorUsername, payload);
     }
 
     /**
      * Reject speaker content with feedback.
      *
-     * Updates contentStatus to REVISION_NEEDED and notifies speaker via email.
-     * Speaker can revise and resubmit via portal (AC15).
+     * <p>Story 11.E.8 consolidation: the legacy {@code speaker_pool.content_status =
+     * "REVISION_NEEDED"} write is gone — the column was dropped in V100. Reviewer
+     * feedback is written onto the latest {@code session_content_history} row (the
+     * version that's being rejected); {@link ContentStatusDeriver} now produces
+     * {@code "REVISION_NEEDED"} at read time whenever the latest history row carries
+     * non-empty {@code reviewerFeedback}.
+     *
+     * <p>Workflow state remains {@code CONTENT_SUBMITTED} (AC14) — the speaker has not
+     * left "submitted" territory; they just need to revise. Resubmission creates a new
+     * version row with no feedback, flipping the derived status back to {@code SUBMITTED}.
      *
      * @param poolId the speaker pool ID
      * @param feedback the rejection feedback (required)
@@ -132,52 +126,55 @@ public class QualityReviewService {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Speaker pool entry not found: " + poolId));
 
-        // Store rejection feedback with timestamp
+        // Audit trail — keep the human-readable note on speaker_pool.notes so the rejection
+        // history is browsable independently of the version table.
         String timestamp = java.time.Instant.now().toString();
-        String rejectionNote = String.format("[%s] REVISION REQUESTED by %s:\n%s",
+        String rejectionNote = String.format("[%s] REVISION REQUESTED by %s:%n%s",
                 timestamp, moderatorUsername, feedback);
         String existingNotes = speaker.getNotes() != null ? speaker.getNotes() + "\n\n" : "";
         speaker.setNotes(existingNotes + rejectionNote);
-
-        // Set contentStatus to REVISION_NEEDED so speaker knows to revise
-        speaker.setContentStatus("REVISION_NEEDED");
-
-        // Status remains CONTENT_SUBMITTED (AC14) - workflow state unchanged
         speakerPoolRepository.save(speaker);
 
-        // Update latest ContentSubmission with reviewer feedback for portal display
-        // If no ContentSubmission exists (organizer-path content), create one from session data
-        // so the speaker portal can display the feedback and pre-populate the revision form
-        java.util.Optional<ch.batbern.events.domain.ContentSubmission> latestSubmission =
-                contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
-        if (latestSubmission.isPresent()) {
-            ch.batbern.events.domain.ContentSubmission submission = latestSubmission.get();
-            submission.setReviewerFeedback(feedback);
-            submission.setReviewedAt(java.time.Instant.now());
-            submission.setReviewedBy(moderatorUsername);
-            contentSubmissionRepository.save(submission);
-        } else if (speaker.getSessionId() != null) {
-            // Create ContentSubmission from session data for organizer-path content
-            sessionRepository.findById(speaker.getSessionId())
-                    .ifPresent(session -> {
-                        var submission = ch.batbern.events.domain.ContentSubmission
-                                .builder()
-                                .speakerPool(speaker)
-                                .session(session)
-                                .title(session.getTitle())
-                                .contentAbstract(session.getDescription())
-                                .abstractCharCount(session.getDescription() != null
-                                        ? session.getDescription().length() : 0)
-                                .submissionVersion(1)
-                                .submittedAt(java.time.Instant.now())
-                                .reviewerFeedback(feedback)
-                                .reviewedAt(java.time.Instant.now())
-                                .reviewedBy(moderatorUsername)
-                                .build();
-                        contentSubmissionRepository.save(submission);
-                        log.info("Created ContentSubmission from session for speaker: {}",
-                                speaker.getId());
-                    });
+        // Write reviewer feedback onto the latest history row. If no version exists yet
+        // (organizer-path content where sessions.title was set directly), synthesize a
+        // v1 row from the session data so the speaker portal can display the feedback
+        // and pre-populate the revision form.
+        if (speaker.getSessionId() == null) {
+            log.warn("Cannot record rejection feedback for speaker {} — no session linked",
+                    speaker.getId());
+        } else {
+            java.util.UUID sessionId = speaker.getSessionId();
+            java.util.Optional<SessionContentVersion> latestSubmission =
+                    sessionContentHistoryRepository.findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId);
+            if (latestSubmission.isPresent()) {
+                SessionContentVersion submission = latestSubmission.get();
+                submission.setReviewerFeedback(feedback);
+                submission.setReviewedAt(java.time.Instant.now());
+                submission.setReviewedBy(moderatorUsername);
+                sessionContentHistoryRepository.save(submission);
+            } else {
+                sessionRepository.findById(sessionId).ifPresent(session -> {
+                    SessionContentVersion submission = SessionContentVersion.builder()
+                            .session(session)
+                            .title(session.getTitle())
+                            .contentAbstract(session.getDescription())
+                            .abstractCharCount(session.getDescription() != null
+                                    ? session.getDescription().length() : 0)
+                            .submissionVersion(1)
+                            .submittedByUsername(primarySpeakerResolver.resolve(speaker)
+                                    .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                                    .filter(u -> u != null && !u.isBlank())
+                                    .orElse(speaker.getSpeakerName()))
+                            .submittedAt(java.time.Instant.now())
+                            .reviewerFeedback(feedback)
+                            .reviewedAt(java.time.Instant.now())
+                            .reviewedBy(moderatorUsername)
+                            .build();
+                    sessionContentHistoryRepository.save(submission);
+                    log.info("Created v1 session_content_history row from session for speaker: {}",
+                            speaker.getId());
+                });
+            }
         }
 
         // Notify speaker via email about required revisions
@@ -191,8 +188,13 @@ public class QualityReviewService {
      * Sends email with feedback and magic link to the speaker portal.
      */
     private void notifySpeakerOfRejection(SpeakerPool speaker, String feedback) {
-        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
-            log.warn("Cannot notify speaker {} - no email address", speaker.getId());
+        // Story 11.E.9 (post-pool-email drop): recipient routing flows through
+        // PrimarySpeakerResolver (session_users + UserApiClient); rejected content
+        // always belongs to a speaker with a session (status CONTENT_SUBMITTED+),
+        // so resolveEmail is expected non-empty.
+        String recipientEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            log.warn("Cannot notify speaker {} - no resolvable primary speaker email", speaker.getId());
             return;
         }
 
@@ -200,7 +202,10 @@ public class QualityReviewService {
             Event event = eventRepository.findById(speaker.getEventId())
                     .orElse(null);
             String eventName = event != null ? event.getTitle() : "BATbern Event";
-            String speakerName = speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker";
+            String speakerName = primarySpeakerResolver.resolve(speaker)
+                    .map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                    .filter(n -> !n.isEmpty())
+                    .orElseGet(() -> speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker");
 
             // Generate a new magic link token for the speaker portal
             // 14-day validity aligns with typical revision deadline and reduces security exposure
@@ -210,7 +215,7 @@ public class QualityReviewService {
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
 
-            emailService.sendHtmlEmail(speaker.getEmail(), subject, body);
+            emailService.sendHtmlEmail(recipientEmail, subject, body);
             // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
             log.info("Revision notification sent to speaker pool entry: {} with portal link", speaker.getId());
         } catch (Exception e) {
@@ -259,67 +264,4 @@ public class QualityReviewService {
             """, safeSpeakerName, safeEventName, safeFeedback, portalUrl, portalUrl, portalUrl);
     }
 
-    /**
-     * Check if speaker should be auto-updated to 'confirmed' status.
-     *
-     * A speaker is confirmed when BOTH conditions are met (AC17):
-     * - Status is 'quality_reviewed' (content approved)
-     * - Session has start_time set (slot assigned)
-     *
-     * Order doesn't matter - quality review and slot assignment can happen in any order (AC16).
-     *
-     * Uses optimistic locking to prevent race conditions when multiple organizers work concurrently (AC35).
-     *
-     * @param speaker the speaker pool entry
-     * @throws jakarta.persistence.OptimisticLockException if concurrent update detected (retry with fresh data)
-     */
-    void checkAndUpdateToConfirmed(SpeakerPool speaker) {
-        log.debug("Checking if speaker {} should be updated to confirmed", speaker.getId());
-
-        // Reload speaker to get fresh data (handles optimistic locking)
-        SpeakerPool freshSpeaker = speakerPoolRepository.findById(speaker.getId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker pool entry not found: " + speaker.getId()));
-
-        // Check condition 1: Status is quality_reviewed
-        boolean isQualityReviewed =
-                freshSpeaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED;
-
-        // Check condition 2: Session has start_time (slot assigned)
-        boolean hasSlotAssigned = false;
-        if (freshSpeaker.getSessionId() != null) {
-            java.util.Optional<Session> sessionOpt = sessionRepository.findById(freshSpeaker.getSessionId());
-            if (sessionOpt.isPresent() && sessionOpt.get().getStartTime() != null) {
-                hasSlotAssigned = true;
-            }
-        }
-
-        // Auto-update to confirmed when BOTH conditions met (AC17)
-        if (isQualityReviewed && hasSlotAssigned) {
-            log.info("Speaker {} meets confirmation criteria, updating status to CONFIRMED", freshSpeaker.getId());
-
-            ch.batbern.shared.types.SpeakerWorkflowState previousState = freshSpeaker.getStatus();
-            freshSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
-            speakerPoolRepository.save(freshSpeaker);
-
-            // Update session_users.is_confirmed
-            java.util.List<ch.batbern.events.domain.SessionUser> sessionUsers =
-                    sessionUserRepository.findBySessionId(freshSpeaker.getSessionId());
-            for (ch.batbern.events.domain.SessionUser sessionUser : sessionUsers) {
-                sessionUser.confirm();
-                sessionUserRepository.save(sessionUser);
-            }
-
-            // Publish state change event
-            eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
-                    freshSpeaker.getId(),
-                    freshSpeaker.getEventId(),
-                    previousState,
-                    ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
-                    null  // System auto-update, not triggered by specific user
-            ));
-
-            log.info("Speaker {} successfully confirmed", freshSpeaker.getId());
-        }
-    }
 }

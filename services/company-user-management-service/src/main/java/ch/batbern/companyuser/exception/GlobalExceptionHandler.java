@@ -413,6 +413,51 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    /**
+     * Story 11.E.2 (AC3/AC5): Cognito Admin SDK call failed — surface as 502 Bad Gateway
+     * so cross-service callers (event-management-service) see a clean upstream-failure signal.
+     */
+    @ExceptionHandler(CognitoOperationException.class)
+    public ResponseEntity<ErrorResponse> handleCognitoOperationException(
+            CognitoOperationException ex,
+            HttpServletRequest request) {
+        log.error("Cognito operation failed (action={}, user={}): {}",
+                ex.getAction(), ex.getMaskedEmail(), ex.getMessage(), ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_GATEWAY.value())
+                .error("Bad Gateway")
+                .message("Identity provider unavailable; please retry shortly")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("ERROR")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    /**
+     * Story 11.E.2 (AC2 item 6): {@code issueInvitationCredentials} hit a Cognito user
+     * status that requires operator intervention (ARCHIVED/COMPROMISED/UNKNOWN). Map to
+     * 422 instead of the generic IllegalStateException → 400 path so the calling service
+     * (EMS) can distinguish "input bad" (400) from "state unprocessable" (422).
+     */
+    @ExceptionHandler(UnprocessableInvitationStateException.class)
+    public ResponseEntity<ErrorResponse> handleUnprocessableInvitationState(
+            UnprocessableInvitationStateException ex,
+            HttpServletRequest request) {
+        log.warn("Unprocessable invitation state: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("HIGH")
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

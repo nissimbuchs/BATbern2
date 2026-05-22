@@ -12,6 +12,7 @@ import {
   signUp as amplifySignUp,
   signOut as amplifySignOut,
   getCurrentUser as amplifyGetCurrentUser,
+  confirmSignIn as amplifyConfirmSignIn,
   fetchAuthSession,
 } from 'aws-amplify/auth';
 import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
@@ -33,6 +34,14 @@ interface SignInResult {
   accessToken?: string;
   error?: AuthError;
   mfaChallenge?: MfaChallenge;
+  /**
+   * Set when Cognito returns a next-step that the user can complete inline (no
+   * separate MFA channel). Today only `CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED`
+   * — emitted when a user signs in for the first time with the temporary password
+   * issued by `issueInvitationCredentials`. The caller (AuthContext / LoginForm)
+   * switches to a "set new password" panel and calls `confirmNewPassword(...)`.
+   */
+  pendingChallenge?: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED';
 }
 
 interface SignUpResult {
@@ -82,11 +91,23 @@ class AuthService {
       console.log('[authService] amplifySignIn result:', { nextStep: result.nextStep?.signInStep });
 
       if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
-        console.log('[authService] MFA challenge required:', result.nextStep.signInStep);
+        const step = result.nextStep.signInStep;
+        console.log('[authService] Sign-in next step:', step);
+        // Epic 11 bug fix 2026-05-19 — surface the FORCE_CHANGE_PASSWORD challenge
+        // distinctly so LoginForm can render an inline "set new password" panel.
+        // Previously this was bucketed as "mfaChallenge" + success=false, which
+        // looked identical to a generic auth failure to the caller and dropped the
+        // user with no path forward.
+        if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+          return {
+            success: false,
+            pendingChallenge: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED',
+          };
+        }
         return {
           success: false,
           mfaChallenge: {
-            challengeName: result.nextStep.signInStep,
+            challengeName: step,
             challengeParameters: {},
             session: '',
           },
@@ -141,10 +162,17 @@ class AuthService {
           });
 
           if (retryResult.nextStep && retryResult.nextStep.signInStep !== 'DONE') {
+            const step = retryResult.nextStep.signInStep;
+            if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+              return {
+                success: false,
+                pendingChallenge: 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED',
+              };
+            }
             return {
               success: false,
               mfaChallenge: {
-                challengeName: retryResult.nextStep.signInStep,
+                challengeName: step,
                 challengeParameters: {},
                 session: '',
               },
@@ -185,6 +213,58 @@ class AuthService {
 
       const mappedError = this.mapCognitoError(error);
       console.log('[authService] Mapped error:', mappedError);
+      return {
+        success: false,
+        error: mappedError,
+      };
+    }
+  }
+
+  /**
+   * Complete the `CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED` challenge.
+   *
+   * Called when a user signs in for the first time with the temporary password
+   * issued by `issueInvitationCredentials` (CUMS, Story 11.E.2). Submits the
+   * organizer-chosen new password to Cognito; on success, Cognito flips the user
+   * to CONFIRMED + a permanent password, and we proceed exactly as a normal
+   * successful sign-in (fetch session, extract user context).
+   *
+   * Epic 11 bug fix 2026-05-19. Mirrors the post-success branch of `signIn`.
+   */
+  async confirmNewPassword(newPassword: string): Promise<SignInResult> {
+    try {
+      console.log('[authService] confirmNewPassword called');
+      const result = await amplifyConfirmSignIn({ challengeResponse: newPassword });
+      console.log('[authService] confirmSignIn result:', { nextStep: result.nextStep?.signInStep });
+
+      if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
+        // Unexpected — confirming the FORCE_CHANGE_PASSWORD challenge should land at DONE.
+        // Surface as a generic error rather than silently dropping the user.
+        return {
+          success: false,
+          error: {
+            code: 'UNEXPECTED_NEXT_STEP',
+            message: `Unexpected next step after confirmNewPassword: ${result.nextStep.signInStep}`,
+          },
+        };
+      }
+
+      const session = await fetchAuthSession();
+      const tokens = session.tokens;
+      if (!tokens?.idToken) {
+        throw new Error('No ID token found in session');
+      }
+      const userContext = this.extractUserContextFromToken(
+        tokens.idToken.payload as unknown as CognitoTokenClaims
+      );
+      return {
+        success: true,
+        user: userContext,
+        accessToken: tokens.accessToken?.toString() || '',
+      };
+    } catch (error: unknown) {
+      console.error('[authService] Error during confirmNewPassword:', error);
+      const mappedError = this.mapCognitoError(error);
       return {
         success: false,
         error: mappedError,

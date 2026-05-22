@@ -34,9 +34,6 @@ vi.mock('@/components/organizer/Admin/PresentationSettingsTab', () => ({
     <div data-testid="presentation-settings-tab-content">PresentationSettings</div>
   ),
 }));
-vi.mock('@/components/organizer/Admin/ExportImportTab', () => ({
-  ExportImportTab: () => <div data-testid="export-import-tab-content">ExportImport</div>,
-}));
 vi.mock('@/components/organizer/Admin/AiPromptsTab', () => ({
   AiPromptsTab: () => <div data-testid="ai-prompts-tab-content">AiPrompts</div>,
 }));

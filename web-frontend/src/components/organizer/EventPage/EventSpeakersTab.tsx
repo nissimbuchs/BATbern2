@@ -2,14 +2,14 @@
  * EventSpeakersTab Component (Story 5.6)
  *
  * Unified speaker management tab with three views:
- * - Kanban: Drag-drop status lanes (from SpeakerStatusDashboard)
+ * - Kanban: Drag-drop status lanes (SpeakerStatusLanes)
  * - Table: List with outreach tracking (from SpeakerOutreachDashboard)
  * - Sessions: Slot-based assignment (from SpeakersSessionsTable)
  *
  * URL params: ?tab=speakers&view=kanban|table|sessions
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -24,6 +24,7 @@ import {
   IconButton,
   Divider,
   Drawer,
+  Snackbar,
 } from '@mui/material';
 import {
   ViewKanban as KanbanIcon,
@@ -39,13 +40,15 @@ import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
-import { useSpeakerPool } from '@/hooks/useSpeakerPool';
+import { speakerPoolKeys, useSendInvitation, useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
 import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
+import { computeSlotCapacity } from '@/components/organizer/SpeakerStatus/getPrimaryAction';
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { SpeakerDetailDrawer } from '@/components/organizer/SpeakerDrawer';
+import MarkContactedModal from '@/components/organizer/SpeakerOutreach/MarkContactedModal';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
@@ -68,10 +71,37 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Local state
   const [addSpeakerDrawerOpen, setAddSpeakerDrawerOpen] = useState(false);
-  const [selectedSpeaker, setSelectedSpeaker] = useState<SpeakerPoolEntry | null>(null);
+  // Track the SELECTED speaker by id, not by snapshot — Epic 11 bug fix 2026-05-19.
+  // Storing the full SpeakerPoolEntry object captured the value at click-time and went
+  // stale after edits/promotions invalidated the speakerPool query; the live entry
+  // (drawer header, Details tab, Content tab) silently rendered the pre-mutation
+  // snapshot. The drawer now reads `selectedSpeaker` derived from the live `speakers`
+  // list, so cache invalidations propagate automatically.
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
+  // Story 11.D.4 — when the kanban dispatches `legal-input` for ACCEPTED→CONTENT_SUBMITTED
+  // or CONTENT_SUBMITTED→QUALITY_REVIEWED, the drawer must open pre-positioned at the
+  // matching sub-view. The drawer reads this prop on each `speakerKey` change.
+  // Epic 11 bug fix 2026-05-18 — `'promote'` added (replaces the legacy PromoteSpeakerDialog);
+  // `'content-submission'` now opens the drawer at the Content TAB (not a takeover view).
+  const [initialDrawerView, setInitialDrawerView] = useState<
+    null | 'content-submission' | 'quality-review' | 'promote'
+  >(null);
   const [autoAssignLoading, setAutoAssignLoading] = useState(false);
   const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
+  // Story 11.D.2 — hoist modal state so kanban primary-action buttons can drive it.
+  const [outreachModalState, setOutreachModalState] = useState<{
+    open: boolean;
+    speaker: SpeakerPoolEntry | null;
+  }>({ open: false, speaker: null });
+  // Story 11.D.4 — send-invitation feedback snackbar lifted to the parent.
+  const [inviteSnackbar, setInviteSnackbar] = useState<{
+    open: boolean;
+    severity: 'success' | 'error';
+    message: string;
+  }>({ open: false, severity: 'success', message: '' });
+
+  const sendInvitationMutation = useSendInvitation(eventCode);
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -84,8 +114,38 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Fetch speaker pool (using hook for proper cache invalidation)
   const { data: speakers, isLoading: speakersLoading } = useSpeakerPool(eventCode);
 
+  // Derive the live drawer-selected speaker from the speakerPool query (Epic 11 bug fix
+  // 2026-05-19). Looking up by id at every render means cache invalidations from
+  // patchSpeakerPool / promoteSpeakerToReady / updateStatus propagate into the drawer's
+  // header chip + Details + Content tabs immediately — no manual refresh after edits.
+  const selectedSpeaker = useMemo(
+    () => (selectedSpeakerId ? (speakers?.find((s) => s.id === selectedSpeakerId) ?? null) : null),
+    [speakers, selectedSpeakerId]
+  );
+
   // Fetch event data for sessions view
   const { data: event } = useEvent(eventCode, ['sessions']);
+
+  // Story 11.E.8 follow-up — invalidate the event query whenever the speaker detail
+  // drawer opens. The drawer's primary use is "I'm about to act on this speaker"
+  // (review content, enter on behalf, send invitation), so the organizer expects to
+  // see the latest data. Without this, the Sessions sub-tab kept showing pre-submit
+  // titles until a quality-review approval invalidated the cache. Pairs with
+  // refetchOnWindowFocus on useEvent.
+  useEffect(() => {
+    if (detailsDrawerOpen) {
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+    }
+  }, [detailsDrawerOpen, eventCode, queryClient]);
+
+  // Story 11.D.4 review patch — compute slot-capacity once at the parent so both the
+  // kanban (SpeakerStatusLanes) and the drawer (SpeakerDetailDrawer) honor the same
+  // gate. Prevents the drawer's READY "Send invitation" button from being enabled
+  // while the kanban gate is reached.
+  const slotCapacity = useMemo(
+    () => computeSlotCapacity(speakers ?? [], summary?.maxSlotsAllowed),
+    [speakers, summary?.maxSlotsAllowed]
+  );
 
   // Transform sessions for SpeakersSessionsTable
   const sessions: SessionUI[] = useMemo(() => {
@@ -126,16 +186,84 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     }
   };
 
-  // Handle speaker card click (open drawer)
+  // Handle speaker card click (open drawer — default view, no sub-view).
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+    setSelectedSpeakerId(speaker.id);
+    setInitialDrawerView(null);
     setDetailsDrawerOpen(true);
   };
 
-  // Handle IDENTIFIED → CONTACTED transition (auto-open drawer with form)
-  const handleIdentifiedToContacted = (speaker: SpeakerPoolEntry) => {
-    setSelectedSpeaker(speaker);
+  // Story 11.D.2 — IDENTIFIED card primary-action button.
+  const handleLogOutreach = (speaker: SpeakerPoolEntry) => {
+    setOutreachModalState({ open: true, speaker });
+  };
+
+  // Epic 11 bug fix 2026-05-18 — CONTACTED card primary-action button now opens the
+  // drawer at the in-drawer Promote sub-view (with UserAutocomplete + Create-New-Speaker)
+  // instead of the legacy PromoteSpeakerDialog modal.
+  const handlePromoteSpeaker = (speaker: SpeakerPoolEntry) => {
+    setSelectedSpeakerId(speaker.id);
+    setInitialDrawerView('promote');
     setDetailsDrawerOpen(true);
+  };
+
+  // Story 11.D.4 — READY card primary-action button + READY→INVITED drag target.
+  // Lifted from SpeakerCard so the kanban-drop dispatcher, card button, and the
+  // drawer's PrimaryActionSurface share the same handler.
+  const handleSendInvitation = async (speaker: SpeakerPoolEntry) => {
+    const defaultDeadline = new Date();
+    defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+    const responseDeadline = defaultDeadline.toISOString().split('T')[0];
+
+    try {
+      const result = await sendInvitationMutation.mutateAsync({
+        username: speaker.id,
+        options: { responseDeadline },
+      });
+      setInviteSnackbar({
+        open: true,
+        severity: 'success',
+        // Review patch — include {{email}} in the fallback so the address survives a
+        // missing translation key (otherwise the snackbar showed the generic string
+        // and silently dropped the address).
+        message: t('organizer:speakers.invitationSent', {
+          email: result.email,
+          defaultValue: 'Invitation sent to {{email}}',
+        }),
+      });
+    } catch {
+      setInviteSnackbar({
+        open: true,
+        severity: 'error',
+        message: t('organizer:speakers.invitationFailed', {
+          defaultValue: 'Failed to send invitation',
+        }),
+      });
+    }
+  };
+
+  // Story 11.D.4 — ACCEPTED card primary-action button + ACCEPTED→CONTENT_SUBMITTED drag target.
+  // Opens the drawer pre-positioned at the on-behalf Content sub-tab.
+  const handleEnterContent = (speaker: SpeakerPoolEntry) => {
+    setSelectedSpeakerId(speaker.id);
+    setInitialDrawerView('content-submission');
+    setDetailsDrawerOpen(true);
+  };
+
+  // Story 11.D.4 — CONTENT_SUBMITTED card primary-action button + drag target.
+  // Opens the drawer pre-positioned at the Quality Review sub-view.
+  const handleReviewContent = (speaker: SpeakerPoolEntry) => {
+    setSelectedSpeakerId(speaker.id);
+    setInitialDrawerView('quality-review');
+    setDetailsDrawerOpen(true);
+  };
+
+  // Story 11.D.2 — QUALITY_REVIEWED-no-slot card primary-action button.
+  // Speaker context is forwarded via `?speakerId=` so the slot-assignment page can
+  // optionally focus/highlight the originating speaker. The page is non-breaking if the
+  // query param is unread.
+  const handleAssignSessionSlotForSpeaker = (speaker: SpeakerPoolEntry) => {
+    navigate(`/organizer/events/${eventCode}/slot-assignment?speakerId=${speaker.id}`);
   };
 
   // Session handlers
@@ -166,7 +294,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const handleSessionDelete = async (sessionSlug: string) => {
     await sessionApiClient.deleteSession(eventCode, sessionSlug);
     queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
-    queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+    queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
   };
 
   const handleViewMaterials = (sessionId: string) => {
@@ -334,9 +462,16 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             eventCode={eventCode}
             speakers={speakers}
             sessions={sessions}
+            maxSlots={summary?.maxSlotsAllowed}
+            eventDate={event?.date}
             onStatusChange={() => {}}
-            onIdentifiedToContacted={handleIdentifiedToContacted}
             onSpeakerClick={handleSpeakerClick}
+            onLogOutreach={handleLogOutreach}
+            onPromoteSpeaker={handlePromoteSpeaker}
+            onSendInvitation={handleSendInvitation}
+            onEnterContent={handleEnterContent}
+            onReviewContent={handleReviewContent}
+            onAssignSessionSlot={handleAssignSessionSlotForSpeaker}
           />
         )}
 
@@ -385,13 +520,57 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         </Paper>
       )}
 
-      {/* Speaker Detail Drawer (tabbed: Overview, Details, Activity + sub-views) */}
+      {/* Speaker Detail Drawer — Story 11.D.4 redesigned: 2 tabs (Details + History) +
+          primary-action header strip + secondary-actions list + Content sub-tab chip.
+          Review patch (Resolved Q#1): rich-modal callbacks + slotCapacity threaded down
+          so the drawer's override-state popover and PrimaryActionSurface honor the same
+          modals + gate the kanban surfaces. */}
       <SpeakerDetailDrawer
         open={detailsDrawerOpen}
         onClose={() => setDetailsDrawerOpen(false)}
         speaker={selectedSpeaker}
         eventCode={eventCode}
+        initialDrawerView={initialDrawerView}
+        slotCapacity={slotCapacity}
+        onLogOutreach={handleLogOutreach}
+        onPromoteSpeaker={handlePromoteSpeaker}
+        onSendInvitation={handleSendInvitation}
+        onEnterContent={handleEnterContent}
+        onReviewContent={handleReviewContent}
+        onAssignSessionSlot={handleAssignSessionSlotForSpeaker}
       />
+
+      {/* Story 11.D.4 — invitation feedback (lifted from SpeakerCard so drag + click share). */}
+      <Snackbar
+        open={inviteSnackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setInviteSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setInviteSnackbar((s) => ({ ...s, open: false }))}
+          severity={inviteSnackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {inviteSnackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Story 11.D.2 — Hoisted modal: MarkContactedModal driven by IDENTIFIED card button */}
+      {outreachModalState.speaker && (
+        <MarkContactedModal
+          open={outreachModalState.open}
+          onClose={() => setOutreachModalState({ open: false, speaker: null })}
+          onSuccess={() => {
+            setOutreachModalState({ open: false, speaker: null });
+            queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+            queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
+          }}
+          eventCode={eventCode}
+          speakerId={outreachModalState.speaker.id}
+          speakerName={outreachModalState.speaker.speakerName}
+        />
+      )}
     </Stack>
   );
 };

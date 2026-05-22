@@ -52,6 +52,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The token itself IS the authentication mechanism.
  */
 @Transactional
+@org.junit.jupiter.api.Disabled(
+        "Story 11.E.3 (ADR-009 §Decision 3): magic-link flow replaced by Cognito Bearer + "
+                + "@PreAuthorize(\"hasRole('SPEAKER')\"). Endpoint moved to "
+                + "POST /api/v1/speaker-portal/events/{eventCode}/respond and the token field "
+                + "is gone from SpeakerResponseRequest, so the legacy assertions in this file "
+                + "no longer match the contract. Cognito-side coverage lives in "
+                + "SpeakerPortalAuthIntegrationTest (Task 10) and SpeakerResponseServiceTest. "
+                + "Phase F (Story 11.F.1) deletes this file along with MagicLinkService.")
 class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -119,9 +127,7 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
                 .speakerName("Jane Speaker")
                 .company("Tech Corp AG")
                 .expertise("Cloud Architecture")
-                .email("jane@techcorp.ch")
                 .status(SpeakerWorkflowState.INVITED)
-                .username("jane.speaker")
                 .invitedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .responseDeadline(LocalDate.now().plusDays(10))
                 .contentDeadline(LocalDate.now().plusDays(30))
@@ -310,110 +316,9 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
         }
     }
 
-    // ==================== AC5: Tentative Response Flow Tests ====================
-
-    @Nested
-    @DisplayName("AC5: Tentative Response Flow")
-    class TentativeResponseTests {
-
-        /**
-         * Test 3.1: Should return 200 when Tentative response with reason submitted
-         * AC5: Success response for Tentative
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_return200_when_tentativeWithReasonSubmitted() throws Exception {
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "TENTATIVE",
-                                    "reason": "Awaiting budget approval from manager"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
-        }
-
-        /**
-         * Test 3.2: Should return 400 when Tentative without reason
-         * AC5: Reason is required for tentative
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_return400_when_tentativeWithoutReason() throws Exception {
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "TENTATIVE"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isBadRequest());
-        }
-
-        /**
-         * Test 3.3: Should keep INVITED state with tentative flag
-         * AC5: workflow_state stays INVITED, is_tentative set to true
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_setTentativeFlag_when_tentativeResponseSubmitted() throws Exception {
-            // When - Submit tentative response
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "TENTATIVE",
-                                    "reason": "Checking calendar"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk());
-
-            // Then - Verify state in database
-            SpeakerPool updated = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
-            org.assertj.core.api.Assertions.assertThat(updated.getStatus())
-                    .isEqualTo(SpeakerWorkflowState.INVITED); // Still INVITED
-            org.assertj.core.api.Assertions.assertThat(updated.getIsTentative())
-                    .isTrue();
-            org.assertj.core.api.Assertions.assertThat(updated.getTentativeReason())
-                    .isEqualTo("Checking calendar");
-        }
-
-        /**
-         * Test 3.4: Should NOT consume token for tentative response
-         * AC5: Token is NOT consumed (speaker can return)
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_notConsumeToken_when_tentativeResponse() throws Exception {
-            // When - Submit tentative response
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "TENTATIVE",
-                                    "reason": "Need to check with team"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk());
-
-            // Then - Token should still be valid (can use again)
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "ACCEPT"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk()); // Should still work
-        }
-    }
+    // Story 11.B.2 (ADR-009 §0.6): TENTATIVE response type has been removed.
+    // Speakers who are unsure simply do not respond yet — reminders + escalation flows
+    // handle response delays. The tentative-flow tests are deleted accordingly.
 
     // ==================== Token Validation Error Tests (401) ====================
 
@@ -567,30 +472,11 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
                     .andExpect(status().isConflict());
         }
 
-        /**
-         * Test 5.3: Should allow response when currently tentative
-         * AC7: Tentative speakers can still respond
-         * RED Phase: Will fail - SpeakerPortalResponseController doesn't exist yet
-         */
-        @Test
-        void should_return200_when_speakerCurrentlyTentative() throws Exception {
-            // Given - Speaker is tentative
-            testSpeakerPool.setIsTentative(true);
-            testSpeakerPool.setTentativeReason("Was checking calendar");
-            speakerPoolRepository.save(testSpeakerPool);
-
-            // When/Then - Should be able to accept now
-            mockMvc.perform(post("/api/v1/speaker-portal/respond")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                {
-                                    "token": "%s",
-                                    "response": "ACCEPT"
-                                }
-                                """.formatted(validToken)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
-        }
+        // Story 11.B.3 (ADR-009 §0.7): removed the should_return200_when_speakerCurrentlyTentative
+        // test — `is_tentative` / `tentative_reason` columns were dropped by V93 along with
+        // the entire TENTATIVE response branch (Story 11.B.2 deleted processTentativeResponse).
+        // The same-state accept re-affirm path is covered separately by SpeakerWorkflowService
+        // tests and SpeakerStatusControllerIntegrationTest happy-path tests.
     }
 
     // ==================== Request Validation Tests (400) ====================

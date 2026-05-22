@@ -27,8 +27,9 @@ import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useSpeakerPool, useAddSpeakerToPool } from '@/hooks/useSpeakerPool';
-import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
+import type { AddSpeakerToPoolRequest, SpeakerPoolEntry } from '@/types/speakerPool.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
+import { PromoteSpeakerDialog } from './PromoteSpeakerDialog';
 
 export interface SpeakerBrainstormingPanelProps {
   eventCode: string;
@@ -53,6 +54,9 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
   const [expertise, setExpertise] = useState('');
   const [assignedOrganizerId, setAssignedOrganizerId] = useState<string>('');
   const [notes, setNotes] = useState('');
+
+  // Story 11.D.1 — Promote modal state
+  const [promoteSpeaker, setPromoteSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Fetch speaker pool
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
@@ -215,69 +219,100 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
 
           {speakerPool && speakerPool.length > 0 && (
             <List>
-              {speakerPool.map((speaker) => (
-                <ListItem
-                  key={speaker.id}
-                  sx={{
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    mb: 1,
-                  }}
-                >
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle2">{speaker.speakerName}</Typography>
-                        {speaker.status && (
-                          <Chip
-                            label={speaker.status}
-                            size="small"
-                            color={speaker.status === 'IDENTIFIED' ? 'default' : 'primary'}
-                          />
-                        )}
-                      </Box>
+              {speakerPool.map((speaker) => {
+                // Story 11.D.1: status values flow through unchanged from the API
+                // (UPPER_CASE on the wire, normalised here). Promote button shows on
+                // CONTACTED only — IDENTIFIED still needs outreach; READY+ is past
+                // this gate.
+                const statusUpper = (speaker.status ?? '').toString().toUpperCase();
+                const isContacted = statusUpper === 'CONTACTED';
+                return (
+                  <ListItem
+                    key={speaker.id}
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                    secondaryAction={
+                      isContacted ? (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => setPromoteSpeaker(speaker)}
+                          data-testid={`promote-button-${speaker.id}`}
+                        >
+                          {t('speakerBrainstorm.actions.promoteToSpeaker', 'Promote to speaker')}
+                        </Button>
+                      ) : null
                     }
-                    secondary={
-                      <>
-                        {speaker.company && (
-                          <Typography component="span" variant="body2" color="text.secondary">
-                            {speaker.company}
-                          </Typography>
-                        )}
-                        {speaker.expertise && (
-                          <>
-                            <br />
+                  >
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+                          {speaker.status && (
+                            <Chip
+                              label={speaker.status}
+                              size="small"
+                              color={statusUpper === 'IDENTIFIED' ? 'default' : 'primary'}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <>
+                          {speaker.company && (
                             <Typography component="span" variant="body2" color="text.secondary">
-                              {t('speakerBrainstorm.pool.expertise', 'Expertise')}:{' '}
-                              {speaker.expertise}
+                              {speaker.company}
                             </Typography>
-                          </>
-                        )}
-                        {speaker.assignedOrganizerId && (
-                          <>
-                            <br />
-                            <Typography component="span" variant="body2" color="text.secondary">
-                              {t('speakerBrainstorm.pool.assigned', 'Assigned to')}:{' '}
-                              {organizers.find((o) => o.id === speaker.assignedOrganizerId)?.name ||
-                                speaker.assignedOrganizerId}
-                            </Typography>
-                          </>
-                        )}
-                        {speaker.notes && (
-                          <>
-                            <br />
-                            <Typography component="span" variant="body2" color="text.secondary">
-                              {t('common:labels.notes')}: {speaker.notes}
-                            </Typography>
-                          </>
-                        )}
-                      </>
-                    }
-                  />
-                </ListItem>
-              ))}
+                          )}
+                          {speaker.expertise && (
+                            <>
+                              <br />
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                {t('speakerBrainstorm.pool.expertise', 'Expertise')}:{' '}
+                                {speaker.expertise}
+                              </Typography>
+                            </>
+                          )}
+                          {speaker.assignedOrganizerId && (
+                            <>
+                              <br />
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                {t('speakerBrainstorm.pool.assigned', 'Assigned to')}:{' '}
+                                {organizers.find((o) => o.id === speaker.assignedOrganizerId)
+                                  ?.name || speaker.assignedOrganizerId}
+                              </Typography>
+                            </>
+                          )}
+                          {speaker.notes && (
+                            <>
+                              <br />
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                {t('common:labels.notes')}: {speaker.notes}
+                              </Typography>
+                            </>
+                          )}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                );
+              })}
             </List>
+          )}
+
+          {promoteSpeaker && (
+            <PromoteSpeakerDialog
+              key={promoteSpeaker.id}
+              open={true}
+              eventCode={eventCode}
+              speaker={promoteSpeaker}
+              onClose={() => setPromoteSpeaker(null)}
+            />
           )}
         </>
       )}

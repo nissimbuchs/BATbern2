@@ -76,7 +76,12 @@ public class ConflictDetectionService {
     }
 
     /**
-     * Detect speaker double-booking by session slug
+     * Detect speaker double-booking by session slug.
+     *
+     * <p>The session being edited (identified by {@code sessionSlug}) is excluded from
+     * the conflict check — otherwise editing a session's start/end time without changing
+     * the speaker would falsely flag a "double-booked with itself" conflict
+     * (2026-05-21 bug fix).
      */
     public Optional<SchedulingConflict> detectSpeakerDoubleBooking(String sessionSlug,
                                                                    Instant startTime,
@@ -89,37 +94,60 @@ public class ConflictDetectionService {
             return Optional.empty();
         }
 
-        // Delegate to the UUID version
-        return detectSpeakerDoubleBooking(session.getSpeakerPoolId(), startTime, endTime);
+        // Delegate to the UUID version, excluding THIS session from the conflict check.
+        return detectSpeakerDoubleBooking(
+                session.getSpeakerPoolId(), startTime, endTime, sessionSlug);
     }
 
     /**
-     * Detect speaker double-booking by speaker ID
+     * Detect speaker double-booking by speaker ID. Back-compat shape — does NOT exclude
+     * any session. Prefer the overload that takes {@code excludeSessionSlug} when the
+     * caller is editing a specific session (which always conflicts with itself otherwise).
      */
     public Optional<SchedulingConflict> detectSpeakerDoubleBooking(UUID speakerId,
                                                                    Instant startTime,
                                                                    Instant endTime) {
-        log.debug("Checking speaker double-booking for speaker {} at {}-{}", speakerId, startTime, endTime);
+        return detectSpeakerDoubleBooking(speakerId, startTime, endTime, null);
+    }
+
+    /**
+     * Detect speaker double-booking by speaker ID, excluding a specific session by slug.
+     * The slug parameter is required when an editing flow is calling this (otherwise the
+     * session being edited will always match itself).
+     */
+    public Optional<SchedulingConflict> detectSpeakerDoubleBooking(UUID speakerId,
+                                                                   Instant startTime,
+                                                                   Instant endTime,
+                                                                   String excludeSessionSlug) {
+        log.debug("Checking speaker double-booking for speaker {} at {}-{} (excluding: {})",
+                speakerId, startTime, endTime, excludeSessionSlug);
 
         SpeakerPool speaker = speakerPoolRepository.findById(speakerId).orElse(null);
         if (speaker == null) {
             return Optional.empty();
         }
 
-        // Find all sessions for this speaker with overlapping time
+        // Find all sessions for this speaker with overlapping time, excluding the session
+        // being edited (if any).
         List<Session> allSessions = sessionRepository.findByEventId(speaker.getEventId());
+        java.util.function.Predicate<Session> notExcluded = s ->
+                excludeSessionSlug == null
+                        || s.getSessionSlug() == null
+                        || !s.getSessionSlug().equals(excludeSessionSlug);
         List<UUID> conflictingSessionIds = allSessions.stream()
                 .filter(s -> s.getSpeakerPoolId() != null && s.getSpeakerPoolId().equals(speakerId))
+                .filter(notExcluded)
                 .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
                 .filter(s -> timesOverlap(s.getStartTime(), s.getEndTime(), startTime, endTime))
                 .map(Session::getId)
                 .toList();
 
         if (!conflictingSessionIds.isEmpty()) {
-            String speakerName = speaker.getUsername() != null ? speaker.getUsername() : speaker.getSpeakerName();
+            String speakerName = speaker.getSpeakerName();
             // Get the conflicting session slug for the error response
             String conflictingSlug = allSessions.stream()
                     .filter(s -> s.getSpeakerPoolId() != null && s.getSpeakerPoolId().equals(speakerId))
+                    .filter(notExcluded)
                     .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
                     .filter(s -> timesOverlap(s.getStartTime(), s.getEndTime(), startTime, endTime))
                     .findFirst()
@@ -177,7 +205,7 @@ public class ConflictDetectionService {
         };
 
         if (!matchesPreference) {
-            String speakerName = speaker.getUsername() != null ? speaker.getUsername() : speaker.getSpeakerName();
+            String speakerName = speaker.getSpeakerName();
             return Optional.of(SchedulingConflict.builder()
                     .conflictType(ConflictType.PREFERENCE_MISMATCH)
                     .severity(ConflictSeverity.WARNING)
