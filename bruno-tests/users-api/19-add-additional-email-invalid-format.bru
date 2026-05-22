@@ -1,0 +1,42 @@
+meta {
+  name: Add Additional Email - Invalid Format (10.32 — P1-3, P3-12)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/users/me/additional-emails
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+# Story 10.32 (P1-3 from 2026-05-22 review): exercise the 400 path.
+# An email with no `@` fails the OpenAPI `format: email` constraint and
+# Jakarta `@Email` validation; the backend must return 400, not crash at
+# the DB layer with a DataIntegrityViolationException → 500.
+body:json {
+  {
+    "email": "not-an-email",
+    "label": "format smoke"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 Bad Request for invalid email format", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

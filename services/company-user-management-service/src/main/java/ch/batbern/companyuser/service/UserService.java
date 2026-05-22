@@ -43,8 +43,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -1353,8 +1351,15 @@ public class UserService {
      */
     public AdditionalEmail addAdditionalEmail(@Valid AddAdditionalEmailRequest request) {
         String username = securityContext.getCurrentUsername();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+        // P0-1 race-condition fix (review 2026-05-22): pessimistic lock on the
+        // user_profiles row serialises concurrent POSTs so the cap check + insert
+        // observe each other. Without this, two parallel adds at count=4 both
+        // pass the gate and the user ends up with 6 rows.
+        // P2-7: do NOT echo the JWT-derived username in the 404 body — the
+        // /me path means the principal is the request author; a missing row
+        // is an internal data state issue.
+        User user = userRepository.findByUsernameForUpdate(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
 
         String emailNormalized = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
@@ -1375,15 +1380,17 @@ public class UserService {
         userRepository.save(user);
 
         // Audit: persistent audit table is reserved infra (activity_history has
-        // no JPA entity yet — see Story 10.32 Dev Notes). Until that lands we
-        // emit a structured INFO line which is ingested by CloudWatch and
-        // satisfies the incident-debugging intent of AC19. The created_at
-        // timestamp on the entity is the user-visible audit trail.
+        // no JPA entity yet — see Story 10.32 Dev Notes; AC19 deferred per the
+        // 2026-05-22 code review). Until that lands we emit a structured INFO
+        // line ingested by CloudWatch. Emails are masked because the log is
+        // operator-facing only (no user-visible timeline yet — OQ#6 downgraded
+        // in the same review). The created_at timestamp on the entity remains
+        // the row-level audit trail.
         log.info("ADDITIONAL_EMAIL_ADDED user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
                 LoggingUtils.maskEmail(emailNormalized));
 
-        return mapAdditionalEmailToDto(entity);
+        return UserResponseMapper.mapAdditionalEmailToDto(entity);
     }
 
     /**
@@ -1391,37 +1398,27 @@ public class UserService {
      */
     public void deleteAdditionalEmail(String email) {
         String username = securityContext.getCurrentUsername();
+        // P2-7: see note above.
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
 
         String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
         UserAdditionalEmail row = additionalEmailRepository
                 .findByUserAndEmailIgnoreCase(user, emailNormalized)
                 .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
 
+        // P2-9 fix: delete the row directly via the repository rather than
+        // routing through the aggregate's orphanRemoval collection. The User
+        // entity's additionalEmails list is LAZY and may not be initialised
+        // here, in which case user.removeAdditionalEmail(row).remove(...) is
+        // a no-op and orphanRemoval never fires. Direct delete is unambiguous
+        // and avoids relying on session-state of an unloaded collection.
         user.removeAdditionalEmail(row);
-        userRepository.save(user);
+        additionalEmailRepository.delete(row);
 
         log.info("ADDITIONAL_EMAIL_REMOVED user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
                 LoggingUtils.maskEmail(emailNormalized));
-    }
-
-    /**
-     * Story 10.32 — internal mapper exposed to {@link UserResponseMapper}
-     * so it can render the {@code additionalEmails} array on UserResponse.
-     */
-    public static AdditionalEmail mapAdditionalEmailToDto(UserAdditionalEmail row) {
-        AdditionalEmail dto = new AdditionalEmail();
-        dto.setEmail(row.getEmail());
-        dto.setLabel(row.getLabel());
-        dto.setCreatedAt(row.getCreatedAt() != null
-                ? OffsetDateTime.ofInstant(row.getCreatedAt(), ZoneOffset.UTC)
-                : null);
-        dto.setVerifiedAt(row.getVerifiedAt() != null
-                ? OffsetDateTime.ofInstant(row.getVerifiedAt(), ZoneOffset.UTC)
-                : null);
-        return dto;
     }
 
 }

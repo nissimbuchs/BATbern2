@@ -1,6 +1,7 @@
 package ch.batbern.shared.service;
 
 import ch.batbern.shared.util.ReservedEmailDomain;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import jakarta.mail.Message;
@@ -129,29 +131,25 @@ public class EmailService {
      * duplicate delivery (same rule as {@link #sendHtmlEmailWithAttachments}).
      */
     public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody, String configurationSetName) {
+        Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
 
-        List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
-                : cc.stream()
-                    .filter(java.util.Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .filter(s -> !s.equalsIgnoreCase(to))
-                    .toList();
+        List<String> ccClean = normaliseCc(cc, to);
 
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
                 localEmailCapture.capture(to, ccClean, subject, htmlBody, fromEmail, fromName, List.of());
             } else {
-                log.info("Would send email to: {}, cc: {}, subject: {}", to, ccClean, subject);
+                log.info("Would send email to: {}, ccCount: {}, subject: {}",
+                        LoggingUtils.maskEmail(to), ccClean.size(), subject);
             }
             return;
         }
 
         try {
-            log.debug("Sending HTML email (sync) to: {}, cc: {}, subject: {}, configSet: {}",
-                    to, ccClean, subject, configurationSetName);
+            log.debug("Sending HTML email (sync) to: {}, ccCount: {}, subject: {}, configSet: {}",
+                    LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName);
 
             Destination.Builder destBuilder = Destination.builder().toAddresses(to);
             if (!ccClean.isEmpty()) {
@@ -175,11 +173,12 @@ public class EmailService {
 
             SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
             log.info("Email sent (sync) to: {}, ccCount: {}, MessageId: {}",
-                    to, ccClean.size(), response.messageId());
+                    LoggingUtils.maskEmail(to), ccClean.size(), response.messageId());
 
         } catch (SesException e) {
-            log.error("Failed to send email (sync) to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
-            throw new EmailSendException("Failed to send email to: " + to, e);
+            log.error("Failed to send email (sync) to: {}, Error: {}",
+                    LoggingUtils.maskEmail(to), e.awsErrorDetails().errorMessage(), e);
+            throw new EmailSendException("Failed to send email to: " + LoggingUtils.maskEmail(to), e);
         }
     }
 
@@ -218,16 +217,11 @@ public class EmailService {
             String htmlBody,
             List<EmailAttachment> attachments
     ) {
+        Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
         // Story 10.32: normalise CC list the same way the SES MIME path below does,
         // so the local /dev/emails inbox shows exactly what staging/prod would deliver.
-        List<String> ccClean = (cc == null) ? java.util.Collections.emptyList()
-                : cc.stream()
-                    .filter(java.util.Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .filter(s -> !s.equalsIgnoreCase(to))
-                    .toList();
+        List<String> ccClean = normaliseCc(cc, to);
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -241,14 +235,15 @@ public class EmailService {
                     localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
                 }
             } else {
-                log.info("Would send email with {} attachment(s) to: {}, cc: {}, subject: {}",
-                        attachments.size(), to, ccClean, subject);
+                log.info("Would send email with {} attachment(s) to: {}, ccCount: {}, subject: {}",
+                        attachments.size(), LoggingUtils.maskEmail(to), ccClean.size(), subject);
             }
             return;
         }
 
         try {
-            log.debug("Sending HTML email with {} attachment(s) to: {}", attachments.size(), to);
+            log.debug("Sending HTML email with {} attachment(s) to: {}",
+                    attachments.size(), LoggingUtils.maskEmail(to));
 
             // Build raw MIME message using JavaMail API
             Session session = Session.getInstance(new Properties());
@@ -483,9 +478,45 @@ public class EmailService {
      */
     private static void assertSendable(String recipient) {
         if (ReservedEmailDomain.isReserved(recipient)) {
-            log.warn("Refusing SES send to reserved-domain recipient: {}", recipient);
+            log.warn("Refusing SES send to reserved-domain recipient: {}",
+                    LoggingUtils.maskEmail(recipient));
             throw new ReservedEmailRecipientException(recipient);
         }
+    }
+
+    /**
+     * Story 10.32 — central CC normalisation used by every CC-aware overload.
+     * Applies, in order:
+     * <ol>
+     *   <li>Null-coerce the input list to empty.</li>
+     *   <li>Drop null / blank entries; trim whitespace.</li>
+     *   <li>Drop entries that match {@code to} case-insensitively (avoids the
+     *       primary recipient being CC'd to themselves).</li>
+     *   <li>Drop entries whose domain is reserved (example.com, *.test,
+     *       *.invalid) — same protection {@link #assertSendable} gives the
+     *       {@code to} address. Without this, a user who registers
+     *       {@code me@example.com} as an additional email causes every
+     *       outbound email to ship a CC to SES → quota + reputation hit.
+     *       Found in review 2026-05-22 finding P1-6.</li>
+     * </ol>
+     */
+    private static List<String> normaliseCc(List<String> cc, String to) {
+        if (cc == null || cc.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return cc.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .filter(s -> !s.equalsIgnoreCase(to))
+                .filter(s -> {
+                    if (ReservedEmailDomain.isReserved(s)) {
+                        log.warn("Dropping reserved-domain CC entry: {}", LoggingUtils.maskEmail(s));
+                        return false;
+                    }
+                    return true;
+                })
+                .toList();
     }
 
     /**

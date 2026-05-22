@@ -219,9 +219,20 @@ public class PartnerMeetingService {
         emails.addAll(fetchEmailsByRole("PARTNER"));
         emails.addAll(fetchEmailsByRole("ORGANIZER"));
 
-        List<String> deduplicated = emails.stream()
-                .distinct()
-                .collect(Collectors.toList());
+        // Story 10.32 (P2-5 from 2026-05-22 review): case-insensitive dedup. CUMS
+        // returns emails in whatever case the user typed (e.g. "John.Doe@Example.com"
+        // for the primary vs lowercase-normalised additional emails), so .distinct()
+        // would keep both and the calendar invite would land twice. We preserve the
+        // first-seen casing (rendered nicer in MIME headers) but key dedup off the
+        // lowercased form.
+        java.util.Set<String> seenLowercased = new java.util.LinkedHashSet<>();
+        List<String> deduplicated = new ArrayList<>();
+        for (String email : emails) {
+            String key = email.toLowerCase(java.util.Locale.ROOT);
+            if (seenLowercased.add(key)) {
+                deduplicated.add(email);
+            }
+        }
 
         log.debug("Collected {} invite recipient emails (partners + organizers)", deduplicated.size());
         return deduplicated;

@@ -126,7 +126,13 @@ async function fetchUsersByRole(role: string): Promise<string[]> {
         const key = c.toLowerCase();
         if (!seen.has(key)) {
           seen.add(key);
-          emails.push(c);
+          // P3-7 (review 2026-05-22): push the lowercased key, not the original
+          // first-seen casing. SES is case-insensitive on recipients, downstream
+          // MIME headers are nicer with consistent casing, and this defends
+          // against any (rare) CUMS data drift where the same address differs in
+          // case across users — keeping the lookup map and outgoing recipients
+          // canonically lowercased keeps both halves in sync.
+          emails.push(key);
         }
       }
     }

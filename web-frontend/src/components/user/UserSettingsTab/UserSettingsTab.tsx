@@ -3,7 +3,7 @@
  * Story 2.6: User Account Management Frontend
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Tabs,
@@ -27,6 +27,11 @@ import {
   ListItem,
   ListItemText,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { isAxiosError } from 'axios';
@@ -41,7 +46,7 @@ import { useTranslation } from 'react-i18next';
 import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 const ADDITIONAL_EMAILS_LIMIT = 5;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TOAST_AUTO_DISMISS_MS = 5000;
 
 interface UserSettingsTabProps {
   email?: string;
@@ -88,8 +93,23 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' } | null>(
     null
   );
+  // Story 10.32 (P3-1, P3-8 from 2026-05-22 review): the confirm prompt is a
+  // MUI Dialog rather than `window.confirm()` so it inherits the design system,
+  // is screen-reader friendly, and identifies which email is being removed.
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const atLimit = additionalEmails.length >= ADDITIONAL_EMAILS_LIMIT;
+
+  // P3-2: auto-dismiss the toast after 5s so stale success messages don't
+  // linger on top of subsequent attempts. The user can also still close it
+  // manually via the Alert's onClose.
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setToast(null), TOAST_AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   function readErrorCode(err: unknown): string | undefined {
     if (isAxiosError(err)) {
@@ -102,7 +122,12 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   async function handleAdd() {
     setInlineError(null);
     const email = emailInput.trim();
-    if (!EMAIL_REGEX.test(email)) {
+    // P3-3: client-side regex dropped. The `type="email"` input provides
+    // basic format hints; authoritative validation is the backend's
+    // jakarta `@Email` + OpenAPI `format: email`, which returns 400 with
+    // `errorCode = ADDITIONAL_EMAIL_INVALID` for malformed input. The
+    // round-trip is fine here — this is a single-field, low-frequency form.
+    if (!email) {
       setInlineError(t('settings.account.additionalEmailErrorInvalid'));
       return;
     }
@@ -129,8 +154,18 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
     }
   }
 
-  async function handleDelete(email: string) {
-    if (!window.confirm(t('settings.account.additionalEmailRemoveConfirm'))) {
+  function requestDelete(email: string) {
+    setPendingDelete(email);
+  }
+
+  function cancelDelete() {
+    setPendingDelete(null);
+  }
+
+  async function confirmDelete() {
+    const email = pendingDelete;
+    setPendingDelete(null);
+    if (!email) {
       return;
     }
     try {
@@ -139,11 +174,22 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
         message: t('settings.account.additionalEmailRemoved'),
         severity: 'success',
       });
-    } catch {
-      setToast({
-        message: t('settings.account.additionalEmailErrorInvalid'),
-        severity: 'error',
-      });
+    } catch (err) {
+      // P2-4: map backend error codes so the toast tells the user the actual
+      // failure mode instead of the misleading "invalid email" message used
+      // for every error pre-review.
+      const code = readErrorCode(err);
+      if (code === 'ADDITIONAL_EMAIL_NOT_FOUND') {
+        setToast({
+          message: t('settings.account.additionalEmailDeleteNotFound'),
+          severity: 'error',
+        });
+      } else {
+        setToast({
+          message: t('settings.account.additionalEmailDeleteFailed'),
+          severity: 'error',
+        });
+      }
     }
   }
 
@@ -170,8 +216,8 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                   aria-label={t('settings.account.additionalEmailDeleteAriaLabel', {
                     email: entry.email,
                   })}
-                  onClick={() => handleDelete(entry.email)}
-                  disabled={deleteMutation.isPending}
+                  onClick={() => requestDelete(entry.email)}
+                  disabled={deleteMutation.isPending || pendingDelete !== null}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -249,6 +295,36 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
           {toast.message}
         </Alert>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={cancelDelete}
+        aria-labelledby="additional-email-delete-confirm-title"
+        aria-describedby="additional-email-delete-confirm-description"
+        data-testid="additional-email-delete-confirm-dialog"
+      >
+        <DialogTitle id="additional-email-delete-confirm-title">
+          {t('settings.account.additionalEmailRemoveConfirmTitle')}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="additional-email-delete-confirm-description">
+            {t('settings.account.additionalEmailRemoveConfirm', { email: pendingDelete ?? '' })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} data-testid="additional-email-delete-cancel">
+            {t('settings.account.additionalEmailRemoveConfirmCancel')}
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            variant="contained"
+            data-testid="additional-email-delete-confirm"
+          >
+            {t('settings.account.additionalEmailRemoveConfirmYes')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

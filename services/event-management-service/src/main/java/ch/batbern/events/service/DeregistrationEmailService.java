@@ -1,9 +1,13 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -14,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,6 +39,7 @@ public class DeregistrationEmailService {
 
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final UserApiClient userApiClient;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
@@ -56,7 +62,7 @@ public class DeregistrationEmailService {
             String template = loadHtmlContent(templateKey, locale, classpathFallback);
             if (template.isBlank()) {
                 log.warn("No deregistration-link template found for locale '{}', skipping email to {}",
-                        locale, registration.getAttendeeEmail());
+                        locale, LoggingUtils.maskEmail(registration.getAttendeeEmail()));
                 return;
             }
 
@@ -75,12 +81,49 @@ public class DeregistrationEmailService {
                     .map(s -> emailService.replaceVariables(s, variables))
                     .orElse("Ihre Abmeldung / Your Cancellation Request");
 
-            emailService.sendHtmlEmail(registration.getAttendeeEmail(), subject, html);
-            log.info("Deregistration link email sent to {} for event {}", registration.getAttendeeEmail(),
-                    event.getEventCode());
+            // Story 10.32 (P1-9 from 2026-05-22 review): CC attendee's additional emails so the
+            // deregistration link reaches every address they declared. Anonymous registrants
+            // (no attendeeUsername) and CUMS lookup failures degrade to primary-only.
+            List<String> cc = additionalEmailsFor(registration.getAttendeeUsername());
+            emailService.sendHtmlEmail(registration.getAttendeeEmail(), cc, subject, html);
+            log.info("Deregistration link email sent to {} for event {} (ccCount={})",
+                    LoggingUtils.maskEmail(registration.getAttendeeEmail()),
+                    event.getEventCode(),
+                    cc.size());
         } catch (Exception e) {
             log.error("Failed to send deregistration link email to {}: {}",
-                    registration.getAttendeeEmail(), e.getMessage(), e);
+                    LoggingUtils.maskEmail(registration.getAttendeeEmail()), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Story 10.32 (P1-9) — flatten the attendee's additional emails into a CC list.
+     * Returns an empty list for anonymous registrants (no username on file) and
+     * for any CUMS lookup failure — the deregistration link still reaches the
+     * primary attendee email so this is fail-soft by design.
+     */
+    private List<String> additionalEmailsFor(String username) {
+        if (username == null || username.isBlank()) {
+            return List.of();
+        }
+        try {
+            UserResponse attendee = userApiClient.getUserByUsername(username);
+            if (attendee == null || attendee.getAdditionalEmails() == null
+                    || attendee.getAdditionalEmails().isEmpty()) {
+                return List.of();
+            }
+            return attendee.getAdditionalEmails().stream()
+                    .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
+                    .filter(java.util.Objects::nonNull)
+                    .filter(s -> !s.isBlank())
+                    .toList();
+        } catch (UserNotFoundException e) {
+            log.warn("Cannot enrich deregistration CC — user not found: {}", username);
+            return List.of();
+        } catch (Exception e) {
+            log.warn("Failed to fetch additional emails for user {} ({}); sending primary only",
+                    username, e.getMessage());
+            return List.of();
         }
     }
 

@@ -556,8 +556,18 @@ public class UserController {
 
     /**
      * Story 10.32 — Remove an additional email from the caller's profile.
+     *
+     * <p>The {@code {email:.+}} path-variable regex is critical: Spring's
+     * default path matcher historically strips file-style extensions from
+     * path variables, so {@code /additional-emails/foo@example.com} would
+     * leave {@code email = "foo@example"} (with {@code .com} dropped). The
+     * regex tells Spring to greedy-match the remainder of the URL. Found in
+     * review 2026-05-22 finding P1-7.
+     *
+     * <p>Frontend callers MUST {@code encodeURIComponent} the email before
+     * embedding it in the URL — see {@code userAccountApi.ts}.
      */
-    @DeleteMapping("/me/additional-emails/{email}")
+    @DeleteMapping("/me/additional-emails/{email:.+}")
     @Timed(value = "users.additionalEmails.delete",
             description = "Time to remove an additional email from the current user",
             percentiles = {0.5, 0.95, 0.99})

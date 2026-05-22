@@ -5,6 +5,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -107,11 +108,69 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
+                .errorCode("ADDITIONAL_EMAIL_NOT_FOUND")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Story 10.32 (P1-1 from 2026-05-22 review) — translate Spring's
+     * {@link DataIntegrityViolationException} into the same 409 envelope as
+     * {@link AdditionalEmailDuplicateException} when the underlying SQLState
+     * is {@code 23505} (unique violation) or the message references the
+     * additional-emails unique index / trigger. This covers two races the
+     * service-level pre-check cannot:
+     * <ul>
+     *   <li>Concurrent POSTs that both pass {@code existsByEmailIgnoreCase}
+     *       and then collide on the {@code uq_user_additional_emails_email_lower}
+     *       index.</li>
+     *   <li>Direct DB writes that bypass the service entirely and trip the
+     *       {@code enforce_additional_email_not_primary} trigger.</li>
+     * </ul>
+     * Anything that is not a recognised unique-violation falls through to the
+     * generic 500 handler so unrelated DB failures are not silently masked.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+        String causeMessage = ex.getMostSpecificCause() != null
+                ? String.valueOf(ex.getMostSpecificCause().getMessage()).toLowerCase()
+                : "";
+        boolean isAdditionalEmailDuplicate =
+                causeMessage.contains("uq_user_additional_emails_email_lower")
+                || causeMessage.contains("enforce_additional_email_not_primary")
+                || (causeMessage.contains("user_additional_emails") && causeMessage.contains("duplicate"));
+
+        if (isAdditionalEmailDuplicate) {
+            log.warn("Additional email duplicate (DB-level): {}", ex.getMessage());
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.CONFLICT.value())
+                    .error("Conflict")
+                    .errorCode("ADDITIONAL_EMAIL_DUPLICATE")
+                    .message("Email is already registered as a primary or additional email")
+                    .correlationId(CorrelationIdGenerator.generate())
+                    .severity("LOW")
+                    .build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
+        log.error("Data integrity violation: ", ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Internal Server Error")
+                .message("A data integrity error occurred")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("ERROR")
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(UserValidationException.class)

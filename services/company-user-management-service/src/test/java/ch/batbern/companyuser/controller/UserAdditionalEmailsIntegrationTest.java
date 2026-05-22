@@ -62,9 +62,9 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        additionalEmailRepository.deleteAll();
-        userRepository.deleteAll();
-
+        // Test class is @Transactional — each method rolls back. The explicit
+        // deleteAll() calls were redundant (and wasteful) for that reason.
+        // Removed in review 2026-05-22 finding P2-3.
         caller = userRepository.save(User.builder()
                 .username("john.doe")
                 .email("john.doe@example.com")
@@ -291,5 +291,41 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(mary.getAdditionalEmails())
                 .extracting(UserAdditionalEmail::getEmail)
                 .containsExactly("shared@example.com");
+    }
+
+    @Test
+    @DisplayName("should_cascadeDeleteAdditionalEmails_when_userDeleted")
+    void should_cascadeDeleteAdditionalEmails_when_userDeleted() throws Exception {
+        // Story 10.32 (P3-10 from 2026-05-22 review): V16 declares
+        // `ON DELETE CASCADE` on the FK from user_additional_emails →
+        // user_profiles. This test pins the invariant: if a future migration
+        // accidentally drops the FK or changes it to NO ACTION, additional
+        // emails become orphaned rows that still satisfy the global LOWER(email)
+        // unique index, permanently blocking other users from registering the
+        // same address.
+        UserAdditionalEmail row1 = UserAdditionalEmail.builder()
+                .email("cascade-1@example.com")
+                .build();
+        UserAdditionalEmail row2 = UserAdditionalEmail.builder()
+                .email("cascade-2@example.com")
+                .build();
+        caller.addAdditionalEmail(row1);
+        caller.addAdditionalEmail(row2);
+        userRepository.save(caller);
+        userRepository.flush();
+
+        org.assertj.core.api.Assertions.assertThat(
+                additionalEmailRepository.findAll())
+                .extracting(UserAdditionalEmail::getEmail)
+                .contains("cascade-1@example.com", "cascade-2@example.com");
+
+        userRepository.delete(caller);
+        userRepository.flush();
+
+        // The additional-emails rows for the deleted user must be gone.
+        org.assertj.core.api.Assertions.assertThat(
+                additionalEmailRepository.findAll())
+                .extracting(UserAdditionalEmail::getEmail)
+                .doesNotContain("cascade-1@example.com", "cascade-2@example.com");
     }
 }

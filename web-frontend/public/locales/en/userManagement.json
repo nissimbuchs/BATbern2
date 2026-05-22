@@ -186,7 +186,7 @@
       "timezone": "Timezone",
       "save": "Save Account Settings",
       "additionalEmailsTitle": "Additional email addresses",
-      "additionalEmailsHelp": "Mail BATbern sends or forwards to you (organizer fan-out, event confirmations) also reaches these addresses, and you can send to ok@/partner@/batbern{N}@ from any of them. Newsletter copies go to your primary email only — subscribe each address separately if needed.",
+      "additionalEmailsHelp": "Mail BATbern sends or forwards to you (organizer fan-out, event confirmations) also reaches these addresses, and you can send to ok@/partner@/batbern{N}@ from any of them. Newsletter copies go to your primary email only — subscribe each address separately if needed. Changes may take up to 5 minutes to take effect for inbound email forwarding.",
       "additionalEmailLabel": "Label (optional)",
       "additionalEmailAddButton": "Add email",
       "additionalEmailAtLimit": "You have reached the maximum number of additional emails. Remove one to add another.",
@@ -196,7 +196,12 @@
       "additionalEmailErrorLimit": "You already have the maximum number of additional emails.",
       "additionalEmailErrorInvalid": "Please enter a valid email address.",
       "additionalEmailUnverifiedPill": "Unverified",
-      "additionalEmailRemoveConfirm": "Remove this additional email from your profile?",
+      "additionalEmailRemoveConfirm": "Remove {{email}} from your profile?",
+      "additionalEmailRemoveConfirmTitle": "Remove additional email?",
+      "additionalEmailRemoveConfirmYes": "Remove",
+      "additionalEmailRemoveConfirmCancel": "Cancel",
+      "additionalEmailDeleteFailed": "Failed to remove this additional email. Please try again.",
+      "additionalEmailDeleteNotFound": "This additional email is no longer on your profile.",
       "additionalEmailDeleteAriaLabel": "Remove additional email {{email}}"
     },
     "notifications": {

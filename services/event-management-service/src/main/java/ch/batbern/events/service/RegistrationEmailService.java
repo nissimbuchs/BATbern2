@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,7 +87,7 @@ public class RegistrationEmailService {
     ) {
         try {
             log.info("Sending registration confirmation email to: {} for event: {}",
-                    userProfile.getEmail(), event.getEventCode());
+                    LoggingUtils.maskEmail(userProfile.getEmail()), event.getEventCode());
 
             // Default to German locale if not specified
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
@@ -129,14 +130,16 @@ public class RegistrationEmailService {
             if (!cc.isEmpty()) {
                 log.info(
                         "Registration confirmation email sent to: {} with {} CC additional email(s)",
-                        userProfile.getEmail(),
+                        LoggingUtils.maskEmail(userProfile.getEmail()),
                         cc.size());
             } else {
-                log.info("Registration confirmation email sent successfully to: {}", userProfile.getEmail());
+                log.info("Registration confirmation email sent successfully to: {}",
+                        LoggingUtils.maskEmail(userProfile.getEmail()));
             }
 
         } catch (Exception e) {
-            log.error("Failed to send registration confirmation email to: {}", userProfile.getEmail(), e);
+            log.error("Failed to send registration confirmation email to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), e);
             // Don't re-throw - email failure shouldn't block registration
         }
     }

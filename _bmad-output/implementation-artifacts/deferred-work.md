@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of 10-32-additional-user-emails (2026-05-22)
+
+- **AC19 — persistent `user_activity` row for `ADDITIONAL_EMAIL_ADDED` / `ADDITIONAL_EMAIL_REMOVED`** [`services/company-user-management-service/.../service/UserService.java:1382-1407`] — `ActivityHistoryEntity` does not exist in this service yet; landing it mid-review was scope creep. Story 10.32 ships with CloudWatch-only audit logging (masked via `LoggingUtils.maskEmail`). Follow-up story: add a minimal `activity_history` table + JPA entity, then revisit OQ#6 (currently downgraded — masking is intentional because there is no user-visible timeline). [Auditor]
+
 ## Deferred from: code review of 11-e-4-epic-11-trailing-cleanup (2026-05-18)
 
 - **Sprint-status YAML comment field has become unmaintainable** [`_bmad-output/implementation-artifacts/sprint-status.yaml:540`] — Multiple multi-paragraph `# ...` trailing comments per story value; `last_updated:` carries narratives from 11.E.4 prepended to 11.E.3 prepended to earlier stories. Reduce to one short sentence per story; truncate `last_updated:` to current update only. Hygiene; longstanding branch pattern. [Blind]

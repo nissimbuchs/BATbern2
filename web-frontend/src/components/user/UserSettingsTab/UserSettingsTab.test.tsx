@@ -58,8 +58,6 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
   beforeEach(() => {
     mockAddMutate.mockReset();
     mockDeleteMutate.mockReset();
-    // Default: confirm() returns true so delete tests proceed.
-    vi.spyOn(window, 'confirm').mockImplementation(() => true);
   });
 
   test('should render the additional-emails section heading', () => {
@@ -111,17 +109,19 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
     });
   });
 
-  test('should show invalid-format inline error when email is malformed', async () => {
+  test('should short-circuit on empty input without calling the mutation', async () => {
+    // Post-review (2026-05-22, P3-3): client-side EMAIL_REGEX was dropped in
+    // favour of HTML5 type="email" + authoritative backend validation. The
+    // remaining client-side gate is just the empty-string check.
     renderWithProviders([]);
 
+    // Empty input — Add button is disabled in this state, but assert the
+    // gate even if the button is clicked programmatically (defence-in-depth).
     fireEvent.change(screen.getByTestId('additional-email-input').querySelector('input')!, {
-      target: { value: 'not-an-email' },
+      target: { value: '   ' },
     });
     fireEvent.click(screen.getByTestId('additional-email-add-button'));
 
-    await waitFor(() => {
-      expect(screen.getByText('settings.account.additionalEmailErrorInvalid')).toBeInTheDocument();
-    });
     expect(mockAddMutate).not.toHaveBeenCalled();
   });
 
@@ -146,7 +146,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
     });
   });
 
-  test('should call deleteAdditionalEmail when delete icon clicked and confirmed', async () => {
+  test('should call deleteAdditionalEmail when delete icon clicked and Remove confirmed in dialog', async () => {
     mockDeleteMutate.mockResolvedValueOnce(undefined);
     renderWithProviders([
       {
@@ -158,14 +158,16 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
     ]);
 
     fireEvent.click(screen.getByTestId('additional-email-delete-box@example.com'));
+    // P3-1 (post-2026-05-22 review): confirmation is now a MUI Dialog rather
+    // than window.confirm. Click the dialog's primary action to proceed.
+    fireEvent.click(screen.getByTestId('additional-email-delete-confirm'));
 
     await waitFor(() => {
       expect(mockDeleteMutate).toHaveBeenCalledWith('box@example.com');
     });
   });
 
-  test('should NOT delete when confirm is cancelled', () => {
-    (window.confirm as ReturnType<typeof vi.fn>).mockReturnValueOnce(false);
+  test('should NOT delete when Cancel is clicked in the confirmation dialog', () => {
     renderWithProviders([
       {
         email: 'box@example.com',
@@ -176,6 +178,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
     ]);
 
     fireEvent.click(screen.getByTestId('additional-email-delete-box@example.com'));
+    fireEvent.click(screen.getByTestId('additional-email-delete-cancel'));
     expect(mockDeleteMutate).not.toHaveBeenCalled();
   });
 
