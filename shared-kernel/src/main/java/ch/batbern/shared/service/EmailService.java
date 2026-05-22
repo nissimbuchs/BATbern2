@@ -130,7 +130,8 @@ public class EmailService {
      * CC entries that match {@code to} case-insensitively are dropped to avoid
      * duplicate delivery (same rule as {@link #sendHtmlEmailWithAttachments}).
      */
-    public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody, String configurationSetName) {
+    public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody,
+            String configurationSetName) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
 
