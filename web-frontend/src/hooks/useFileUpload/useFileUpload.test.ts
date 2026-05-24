@@ -294,13 +294,16 @@ describe('useFileUpload Hook', () => {
       uploadPromise = result.current.uploadFile(file);
     });
 
-    // Assert
+    // Assert — Phase 1 failure is now tagged BACKEND_PRESIGN_FAILED and the
+    // message prefixes with "Could not request upload URL:" so the user knows
+    // it's the backend (not S3) that failed.
     await waitFor(() => {
+      expect(result.current.error).toContain('Could not request upload URL');
       expect(result.current.error).toContain('Backend error');
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
-        type: 'UPLOAD_FAILED',
-        message: 'Backend error',
+        type: 'BACKEND_PRESIGN_FAILED',
+        message: expect.stringContaining('Backend error'),
       });
     });
 
@@ -308,8 +311,11 @@ describe('useFileUpload Hook', () => {
     expect(uploadId).toBeNull();
   });
 
-  it('should_handleS3UploadError_when_uploadFails', async () => {
-    // Arrange
+  it('should_handleS3NetworkError_when_putNeverReachesS3', async () => {
+    // Arrange — this models Vanessa's failure case: the XHR PUT fires the
+    // 'error' event before any bytes reach S3 (CORS / network / blocker /
+    // VPN / offline). The new hook surfaces the upload ID and actionable
+    // hints (DevTools Network tab, common causes).
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
     const mockPresignedResponse = {
       data: {
@@ -341,7 +347,7 @@ describe('useFileUpload Hook', () => {
       expect(result.current.isUploading).toBe(true);
     });
 
-    // Simulate S3 error
+    // Simulate the XHR 'error' event (no response from S3)
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const errorListener = mockFn.mock.calls.find(
@@ -354,11 +360,120 @@ describe('useFileUpload Hook', () => {
 
     // Assert
     await waitFor(() => {
-      expect(result.current.error).toContain('S3 upload failed');
+      expect(result.current.error).toContain('could not reach S3');
+      expect(result.current.error).toContain('upload-789'); // upload ID surfaced for support
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
-        type: 'UPLOAD_FAILED',
-        message: 'S3 upload failed',
+        type: 'S3_NETWORK_ERROR',
+        message: expect.stringContaining('could not reach S3'),
+      });
+    });
+  });
+
+  it('should_handleS3Rejected_when_putReturnsNon2xx', async () => {
+    // Arrange — S3 itself responds with a non-2xx status (e.g., 403 AccessDenied,
+    // 400 EntityTooLarge, signature mismatch). New hook now extracts the response
+    // body so the actual S3 reason makes it to the user.
+    const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
+    const mockPresignedResponse = {
+      data: {
+        uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
+        fileId: 'upload-403',
+        s3Key: 'logos/test.png',
+        fileExtension: 'png',
+        expiresInMinutes: 15,
+        requiredHeaders: {},
+      },
+    };
+
+    mockApiClient.post.mockResolvedValueOnce(mockPresignedResponse);
+
+    // The XHR constructor in the test harness copies mockXHR's props onto the
+    // new instance once, at construction time — so we need the 403 state set
+    // BEFORE the hook calls new XMLHttpRequest(), not after.
+    Object.assign(mockXHR, {
+      status: 403,
+      statusText: 'Forbidden',
+      responseText:
+        '<?xml version="1.0"?><Error><Code>AccessDenied</Code><Message>Request has expired</Message></Error>',
+    });
+
+    const onUploadError = vi.fn();
+    const { result } = renderHook(() =>
+      useFileUpload({
+        onUploadError,
+      })
+    );
+
+    act(() => {
+      result.current.uploadFile(file);
+    });
+    await waitFor(() => {
+      expect(result.current.isUploading).toBe(true);
+    });
+
+    // Fire 'load' — handler will see status=403 and pull responseText.
+    await act(async () => {
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        | (() => void)
+        | undefined;
+      if (loadListener) {
+        loadListener();
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toContain('HTTP 403 Forbidden');
+      expect(result.current.error).toContain('AccessDenied');
+      expect(result.current.error).toContain('upload-403');
+      expect(onUploadError).toHaveBeenCalledWith({
+        type: 'S3_REJECTED',
+        message: expect.stringContaining('HTTP 403'),
+      });
+    });
+  });
+
+  it('should_handleS3Timeout_when_putTimesOut', async () => {
+    // Arrange — XHR fires its 'timeout' event after xhr.timeout ms.
+    const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
+    mockApiClient.post.mockResolvedValueOnce({
+      data: {
+        uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
+        fileId: 'upload-timeout',
+        s3Key: 'logos/test.png',
+        fileExtension: 'png',
+        expiresInMinutes: 15,
+        requiredHeaders: {},
+      },
+    });
+
+    const onUploadError = vi.fn();
+    const { result } = renderHook(() => useFileUpload({ onUploadError }));
+
+    act(() => {
+      result.current.uploadFile(file);
+    });
+    await waitFor(() => {
+      expect(result.current.isUploading).toBe(true);
+    });
+
+    await act(async () => {
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const timeoutListener = mockFn.mock.calls.find(
+        (call: unknown[]) => call[0] === 'timeout'
+      )?.[1] as (() => void) | undefined;
+      if (timeoutListener) {
+        timeoutListener();
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toContain('timed out');
+      expect(result.current.error).toContain('upload-timeout');
+      expect(onUploadError).toHaveBeenCalledWith({
+        type: 'S3_TIMEOUT',
+        message: expect.stringContaining('timed out'),
       });
     });
   });
@@ -408,13 +523,17 @@ describe('useFileUpload Hook', () => {
       }
     });
 
-    // Assert
+    // Assert — Phase 3 (confirm) now tagged BACKEND_CONFIRM_FAILED and the
+    // message explicitly tells the user the file IS in S3 (only the confirm
+    // step failed) — important so they don't re-upload duplicates.
     await waitFor(() => {
+      expect(result.current.error).toContain('reached S3 but');
       expect(result.current.error).toContain('Confirm failed');
+      expect(result.current.error).toContain('upload-999'); // upload ID
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
-        type: 'UPLOAD_FAILED',
-        message: 'Confirm failed',
+        type: 'BACKEND_CONFIRM_FAILED',
+        message: expect.stringContaining('Confirm failed'),
       });
     });
   });
