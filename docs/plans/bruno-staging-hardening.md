@@ -2,7 +2,7 @@
 
 ## Current status
 
-> **Where we are:** Plan approved 2026-05-24. Pre-PR-1 DB audit in progress on `test-enhancement/bruno-staging-hardening`. Next: open PR 1 from `test-enhancement/bruno-staging-hardening-infra`.
+> **Where we are:** Plan approved 2026-05-24. Parent branch pushed (`test-enhancement/bruno-staging-hardening`). Pre-PR-1 audit complete — 17 disposable rows identified, dispositions confirmed with user. Next: open PR 1 from `test-enhancement/bruno-staging-hardening-infra`.
 
 Update this one line on every PR merge so anyone (including a fresh Claude session) can pick up the work without re-reading the whole plan.
 
@@ -12,7 +12,7 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 
 | PR # | Branch | Scope | Status | Merged | Findings / bugs discovered |
 |------|--------|-------|--------|--------|---------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job. Plan doc lands here. | ⬜ not started | — | — |
+| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job, one-time legacy-junk cleanup script (17 rows), companies `@Pattern` validation fix. Plan doc lands here. | ⬜ not started | — | — |
 | 2 | `test-enhancement/bruno-events-api-split` | Section C: decompose events-api into 6 collections | ⬜ not started | — | — |
 | 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ⬜ not started | — | — |
 | 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ⬜ not started | — | — |
@@ -46,7 +46,7 @@ Query executed against staging RDS (`batbern-staging-postgres.c7qauya0ie7a.eu-ce
 | `companies` | `name` | 6 | `E2E Test Company 1768749259021` … (Jan–Feb 2026) | Disposable — Playwright E2E residue |
 | `companies` | `name` | 3 | `testag`, `testcompanya`, `testdeclinea` (Jan–Mar 2026) | Disposable — automated fixture residue |
 | `partners` | `company_name` | 7 | `brtest117`, `brtest150`, `brtest288`, `brtest424`, `brtest675`, `brtest861`, `brtest899` | Disposable — current Bruno partner test residue (44% of partners table!) |
-| `user_profiles` | `username` | 1 | `user.eetest@batbern-test.ch` | Likely disposable — synthetic test user predating reserved domain convention. **User to confirm.** |
+| `user_profiles` | `username` | 1 | `user.eetest@batbern-test.ch` | **KEEP — still in use** (user confirmed 2026-05-24). Exclude from cleanup script and from cleanup-endpoint regex match list. |
 | `events` | `event_code` | 0 | — | Clean |
 | `sessions` | `session_slug` | 0 | (1 real session about Test Automation at SBB matches `%test%` — KEEP) | Clean |
 | `topics` | `topic_code` | 0 | — | Clean |
@@ -56,20 +56,23 @@ Query executed against staging RDS (`batbern-staging-postgres.c7qauya0ie7a.eu-ce
 | `speaker_pool` | (joined via `events`) | 0 | — | Clean |
 | `user_profiles` (`email='%@e2e.batbern.invalid'`) | reserved test domain | 0 | — | Clean — reservation works |
 
-**Total disposable rows discovered: ~18** (10 companies + 7 partners + 1 user, pending user confirmation on the last). Partner cascade likely brings additional rows in `partner_meeting_*`, `topic_votes`, `partner_notes` etc. for the 7 `brtest*` partners — to be counted before cleanup runs.
+**Total disposable rows: 17** (10 companies + 7 partners; `user.eetest` excluded — still in use). Partner cascade likely brings additional rows in `partner_meeting_*`, `topic_votes`, `partner_notes` etc. for the 7 `brtest*` partners — to be counted by the PR 1 cleanup script as a SELECT-then-DELETE before any destructive operation.
 
-### Bugs confirmed by audit
+### Bugs confirmed by audit — dispositions
 
-- **`companies.name` server-side validation is NOT enforcing the OpenAPI pattern `^[A-Za-z0-9]+$`.** Audit found 7+ rows with spaces (e.g. `bruno test company 1761143046`, `E2E Test Company 1768749879358`). Either the OpenAPI spec is wrong or the controller doesn't validate. **File as bug.** Affects how PR 1's canonical pattern is documented — should not use spaces or non-alphanumeric chars for new test data even though existing tests get away with it.
-- **`partners.company_name VARCHAR(12)` constraint confirmed enforced** — all 7 `brtest*` entries are ≤12 chars. This is still the known mismatch with `companies.name VARCHAR(255)` from risk #7.1.
+- **`companies.name` server-side validation NOT enforcing the OpenAPI pattern `^[A-Za-z0-9]+$`.** Audit found 7+ rows with spaces (e.g. `bruno test company 1761143046`, `E2E Test Company 1768749879358`). Either the OpenAPI spec is wrong or the controller doesn't validate. **Decision (user, 2026-05-24): fix in PR 1.** Add server-side `@Pattern(regexp="^[A-Za-z0-9]+$")` validation on the company-create/update DTO in `services/company-user-management-service/src/main/java/.../dto/CompanyDto.java` (or the equivalent generated DTO + controller validation). Verify with a unit test that `"bruno test company 123"` is rejected with 400.
+- **`partners.company_name VARCHAR(12)` constraint confirmed enforced** — all 7 `brtest*` entries are ≤12 chars. Still the known mismatch with `companies.name VARCHAR(255)` from risk #7.1. **Decision (user, 2026-05-24): separate Linear ticket, not in PR 1.** Requires a migration to widen the column; out of scope for test infrastructure work.
 
-### Cleanup approach for the historical junk
+### Cleanup approach for the historical junk — decided
 
-The cleanup endpoint's canonical regexes (B1) **will not match** most of the existing junk (e.g. `bruno test company 1761143046` has spaces and lowercase; `E2E Test Company ...` doesn't start with `BRUNO`). Two options:
-1. **One-time SQL cleanup script** committed in PR 1, runs once against staging RDS before the cleanup endpoint ships. Targets the specific 18 rows above by exact-match list, not regex. Audit-logged. Reviewed with user before execution.
-2. **Broaden the cleanup endpoint's pattern list** to also match the legacy patterns (`^bruno test company [0-9]+$`, `^E2E Test Company [0-9]+$`, `^testag$|^testcompanya$|^testdeclinea$`). Adds complexity but reuses the audit-logged path.
+**Decision (user, 2026-05-24): one-time SQL cleanup script in PR 1.** Targets the 17 specific rows by exact-match list (10 companies + 7 partners), not by regex. The cleanup endpoint's canonical regexes (B1) won't match these legacy patterns (`bruno test company 1761143046` has spaces; `E2E Test Company` is mixed case with spaces; `testag/testcompanya/testdeclinea` follow no canonical), and that's fine — historical patterns aren't worth supporting in the long-running endpoint.
 
-**Recommended: option 1.** The legacy patterns are historical leftovers, not patterns we want to continue supporting. The one-time script is safer (exact-match), simpler, and one-shot. PR 1 ships both the cleanup endpoint (for ongoing canonical patterns) AND the one-time script (for historical residue). Run the one-time script in PR 1, then never again.
+PR 1 ships:
+1. The cleanup endpoint (for ongoing canonical patterns going forward).
+2. A one-shot SQL migration `V<n>__bruno_staging_pre_cleanup.sql` (or a dedicated `scripts/db/bruno-staging-pre-cleanup.sql`) that exact-match deletes the 17 rows + their cascade dependents (partner_meeting_*, topic_votes, partner_notes for the 7 partners). SELECT-then-DELETE pattern: SELECT first to log counts, then DELETE inside a transaction with a final COUNT verification.
+3. Audit log entries in CloudWatch for each deletion.
+
+The script runs exactly once when PR 1 deploys. Never re-runs.
 
 ## Context
 
@@ -103,7 +106,7 @@ Parent branch: `test-enhancement/bruno-staging-hardening` off `develop`.
 
 | # | Branch | Scope | Bruno gate state after merge |
 |---|--------|-------|------------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | A + B below. Cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job wired (still `continue-on-error: true`). Plan doc lands here. | warning |
+| 1 | `test-enhancement/bruno-staging-hardening-infra` | A + B below. Cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job wired (still `continue-on-error: true`). One-time SQL pre-cleanup script for the 17 legacy rows. Server-side `@Pattern` validation fix on `companies.name`. Plan doc lands here. | warning |
 | 2 | `test-enhancement/bruno-events-api-split` | C: decompose events-api into 6 collections | warning |
 | 3-13 | `test-enhancement/bruno-audit-{entity}` | D: light audit pass on each collection in dependency order. One PR per collection. | warning |
 | 14 | `test-enhancement/bruno-gate-flip` | E: remove `continue-on-error`. Prove rollback works with deliberate-fail test. | **blocking + auto-rollback** |
@@ -300,6 +303,8 @@ Add as a new `bruno-tests/admin-cleanup-api/` collection that runs FIRST in `run
 | `.github/workflows/deploy-production.yml:362-429` | Fix dead account-422940799530 reference |
 | `infrastructure/lib/constructs/domain-service-construct.ts:299` | Add `deploymentAlarms` with statically-named alarms |
 | `services/*/src/main/java/.../controller/TestFixtureCleanupController.java` (new, ×5) | Per-service cleanup endpoint |
+| `scripts/db/bruno-staging-pre-cleanup.sql` (new) | One-time exact-match deletion of 17 legacy test rows (10 companies + 7 partners, with cascade dependents). Runs once when PR 1 deploys. |
+| `services/company-user-management-service/src/main/java/.../dto/CompanyDto.java` (or equivalent) | Add server-side `@Pattern(regexp="^[A-Za-z0-9]+$")` on company name field; verify with unit test rejecting `"bruno test company 123"` |
 | `docs/plans/bruno-staging-hardening.md` (this file) | Checked-in plan artifact |
 
 ## Reuse — existing functions/utilities
