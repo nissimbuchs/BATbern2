@@ -278,7 +278,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 20000, // Increase timeout to 20s for complex component tests with async operations
+    // 30s testTimeout + 30s hookTimeout absorb CPU-contention spikes when the full
+    // 5000+-test suite runs in parallel; isolated runs of these files complete in <7s.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

@@ -752,7 +752,10 @@ describe('CompanyForm Component - Character Limits', () => {
     const nameField = screen.getByLabelText(/company name/i);
     const longName = 'A'.repeat(201);
 
-    await user.type(nameField, longName);
+    // Use paste for large input (typing 201 chars one-by-one is too slow under load
+    // and hits testTimeout when the full suite contends for CPU).
+    await user.click(nameField);
+    await user.paste(longName);
     await user.tab();
 
     await waitFor(() => {
