@@ -2,7 +2,7 @@
 
 ## Current status
 
-> **Where we are:** Plan approved 2026-05-24. Parent branch pushed (`test-enhancement/bruno-staging-hardening`). Pre-PR-1 audit complete — 17 disposable rows identified, dispositions confirmed with user. Next: open PR 1 from `test-enhancement/bruno-staging-hardening-infra`.
+> **Where we are:** PR 1 in progress on `test-enhancement/bruno-staging-hardening-infra` — 5 commits pushed (A1 URL fix, A2 runner flags, B1 README + plan, CUMS cleanup endpoint + SQL pre-cleanup). CUMS reference pattern established with 13 passing integration tests including the production-safety guarantee that real users named "Bruno" survive cleanup. **Remaining for PR 1:** EMS cleanup endpoint, PCS cleanup endpoint, F2 admin-cleanup-api Bruno auth tests, A3 ECS deployment alarms, A4+A5 workflow refactor (split deploy-staging.yml + Bruno-failure rollback). EMS+PCS follow the CUMS pattern mechanically.
 
 Update this one line on every PR merge so anyone (including a fresh Claude session) can pick up the work without re-reading the whole plan.
 
