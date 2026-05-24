@@ -108,7 +108,7 @@ export interface paths {
      *     **Validation Rules**:
      *     - Email must be valid and unique
      *     - Names: 2-100 characters
-     *     - Bio: max 2000 characters
+     *     - Bio: max 5000 characters
      *
      *     **Cognito Sync**: Updates synchronize with AWS Cognito
      *
