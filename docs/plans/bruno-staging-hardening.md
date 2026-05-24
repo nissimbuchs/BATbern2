@@ -12,7 +12,7 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 
 | PR # | Branch | Scope | Status | Merged | Findings / bugs discovered |
 |------|--------|-------|--------|--------|---------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job, one-time legacy-junk cleanup script (17 rows), companies `@Pattern` validation fix. Plan doc lands here. | ⬜ not started | — | — |
+| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job, one-time legacy-junk cleanup script (17 rows). | 🟡 in progress | — | A1+A2 commits landed; companies `@Pattern` validation deferred — see audit-bugs section. Service ownership mapped: only 3 services (CUMS, EMS, PCS) own entity tables. |
 | 2 | `test-enhancement/bruno-events-api-split` | Section C: decompose events-api into 6 collections | ⬜ not started | — | — |
 | 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ⬜ not started | — | — |
 | 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ⬜ not started | — | — |
@@ -60,7 +60,7 @@ Query executed against staging RDS (`batbern-staging-postgres.c7qauya0ie7a.eu-ce
 
 ### Bugs confirmed by audit — dispositions
 
-- **`companies.name` server-side validation NOT enforcing the OpenAPI pattern `^[A-Za-z0-9]+$`.** Audit found 7+ rows with spaces (e.g. `bruno test company 1761143046`, `E2E Test Company 1768749879358`). Either the OpenAPI spec is wrong or the controller doesn't validate. **Decision (user, 2026-05-24): fix in PR 1.** Add server-side `@Pattern(regexp="^[A-Za-z0-9]+$")` validation on the company-create/update DTO in `services/company-user-management-service/src/main/java/.../dto/CompanyDto.java` (or the equivalent generated DTO + controller validation). Verify with a unit test that `"bruno test company 123"` is rejected with 400.
+- **`companies.name` server-side validation NOT enforcing the OpenAPI pattern `^[A-Za-z0-9]+$`** — **but the deeper finding is that the OpenAPI spec is wrong, not the validation.** Initial reading suggested adding `@Pattern` enforcement to the DTO. Closer look at `services/company-user-management-service/src/test/java/.../integration/CompanyControllerIntegrationTest.java:62,84` reveals the existing integration test fixture uses `"Test Company"` and `"New Company"` **with spaces** and the tests pass. `CreateCompanyRequest.java` DTO has only `@Size(min=2, max=255)`. The DTO documentation example value is `"Swisscom AG"` (also with space). Production data shows 7+ rows with spaces are clearly real test/E2E residue but the broader pattern of "company name with space" is the documented intent of the code. **Conclusion: the OpenAPI spec's `^[A-Za-z0-9]+$` pattern was aspirational and doesn't reflect reality.** Adding `@Pattern` enforcement would break the existing test suite plus reject most legitimate Swiss company names. **Revised decision (2026-05-24): defer to a separate follow-up ticket.** That ticket needs a product/architecture call: either (a) relax the OpenAPI spec to match code reality, allowing spaces/periods/hyphens/ampersands, OR (b) tighten code + tests + data to enforce strict alphanumeric per the spec, which is a much bigger change. Neither belongs in PR 1.
 - **`partners.company_name VARCHAR(12)` constraint confirmed enforced** — all 7 `brtest*` entries are ≤12 chars. Still the known mismatch with `companies.name VARCHAR(255)` from risk #7.1. **Decision (user, 2026-05-24): separate Linear ticket, not in PR 1.** Requires a migration to widen the column; out of scope for test infrastructure work.
 
 ### Cleanup approach for the historical junk — decided
@@ -106,7 +106,7 @@ Parent branch: `test-enhancement/bruno-staging-hardening` off `develop`.
 
 | # | Branch | Scope | Bruno gate state after merge |
 |---|--------|-------|------------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | A + B below. Cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job wired (still `continue-on-error: true`). One-time SQL pre-cleanup script for the 17 legacy rows. Server-side `@Pattern` validation fix on `companies.name`. Plan doc lands here. | warning |
+| 1 | `test-enhancement/bruno-staging-hardening-infra` | A + B below. Cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job wired (still `continue-on-error: true`). One-time SQL pre-cleanup script for the 17 legacy rows. ~~Server-side `@Pattern` validation fix on `companies.name`~~ — deferred, see "Bugs confirmed by audit". Plan doc lands here. | warning |
 | 2 | `test-enhancement/bruno-events-api-split` | C: decompose events-api into 6 collections | warning |
 | 3-13 | `test-enhancement/bruno-audit-{entity}` | D: light audit pass on each collection in dependency order. One PR per collection. | warning |
 | 14 | `test-enhancement/bruno-gate-flip` | E: remove `continue-on-error`. Prove rollback works with deliberate-fail test. | **blocking + auto-rollback** |
@@ -304,8 +304,24 @@ Add as a new `bruno-tests/admin-cleanup-api/` collection that runs FIRST in `run
 | `infrastructure/lib/constructs/domain-service-construct.ts:299` | Add `deploymentAlarms` with statically-named alarms |
 | `services/*/src/main/java/.../controller/TestFixtureCleanupController.java` (new, ×5) | Per-service cleanup endpoint |
 | `scripts/db/bruno-staging-pre-cleanup.sql` (new) | One-time exact-match deletion of 17 legacy test rows (10 companies + 7 partners, with cascade dependents). Runs once when PR 1 deploys. |
-| `services/company-user-management-service/src/main/java/.../dto/CompanyDto.java` (or equivalent) | Add server-side `@Pattern(regexp="^[A-Za-z0-9]+$")` on company name field; verify with unit test rejecting `"bruno test company 123"` |
 | `docs/plans/bruno-staging-hardening.md` (this file) | Checked-in plan artifact |
+
+### Service ownership mapping (discovered 2026-05-24)
+
+All 5 microservices share the `public` schema. Only **3 services** own entity tables:
+
+| Service | Owns tables |
+|---------|-------------|
+| **CUMS** (company-user-management-service) | companies, user_profiles, role_assignments, user_additional_emails, logos |
+| **EMS** (event-management-service) | events, event_types, event_tasks, event_photos, event_teaser_images, topics, topic_usage_history, sessions, session_users, session_materials, session_content_history, session_timing_history, registrations, speaker_pool, speaker_invitation_tokens, speaker_outreach_history, speaker_arrivals, speaker_slot_preferences, speaker_reminder_log, speaker_status_history |
+| **PCS** (partner-coordination-service) | partners, partner_meetings, partner_meeting_attendance, partner_meeting_rsvps, partner_notes, topic_suggestions, topic_votes |
+
+Speaker-coordination-service and attendee-experience-service own NO tables (still foundation phase) — no `TestFixtureCleanupController` needed there. PR 1 ships 3 cleanup controllers, not 5.
+
+Cross-service cleanup order (Bruno cleanup .bru files orchestrate):
+1. PCS (deletes partner-side rows first — they reference companies + users by name)
+2. EMS (deletes events + cascades — they reference users by name)
+3. CUMS (foundation — last to delete, deletes companies + users + logos)
 
 ## Reuse — existing functions/utilities
 
