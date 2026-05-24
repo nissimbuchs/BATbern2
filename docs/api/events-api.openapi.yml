@@ -7148,7 +7148,7 @@ components:
         bio:
           type: string
           description: Speaker's biography (from User entity)
-          maxLength: 2000
+          maxLength: 5000
           example: Software engineer passionate about cloud architecture and security
         speakerRole:
           type: string

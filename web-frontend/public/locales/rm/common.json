@@ -499,7 +499,7 @@
       "emailReadOnly": "E-mail (mo da legger)",
       "bio": "Biografia",
       "bioPlaceholder": "Cuntar nos da vus...",
-      "bioExceeds": "La biografia na sto betg surpassar 500 segns",
+      "bioExceeds": "La biografia na sto betg surpassar 5000 segns",
       "maxExpertiseAreas": "Maximalmain 10 domenis da cumpetenza permess",
       "maxSpeakingTopics": "Maximalmain 10 temas da presentaziun permess",
       "socialLinks": "Links sozials",

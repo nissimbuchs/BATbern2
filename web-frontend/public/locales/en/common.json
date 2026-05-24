@@ -536,7 +536,7 @@
       "emailReadOnly": "Email (read-only)",
       "bio": "Bio",
       "bioPlaceholder": "Tell us about yourself...",
-      "bioExceeds": "Bio must not exceed 500 characters",
+      "bioExceeds": "Bio must not exceed 5000 characters",
       "maxExpertiseAreas": "Maximum 10 expertise areas allowed",
       "maxSpeakingTopics": "Maximum 10 speaking topics allowed",
       "socialLinks": "Social Links",

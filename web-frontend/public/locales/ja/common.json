@@ -499,7 +499,7 @@
       "emailReadOnly": "メールアドレス（読み取り専用）",
       "bio": "自己紹介",
       "bioPlaceholder": "自己紹介を入力してください...",
-      "bioExceeds": "自己紹介は500文字以内にしてください",
+      "bioExceeds": "自己紹介は5000文字以内にしてください",
       "maxExpertiseAreas": "専門分野は最大10件まで",
       "maxSpeakingTopics": "発表トピックは最大10件まで",
       "socialLinks": "ソーシャルメディアリンク",

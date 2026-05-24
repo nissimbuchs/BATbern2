@@ -499,7 +499,7 @@
       "emailReadOnly": "Correo electrónico (solo lectura)",
       "bio": "Biografía",
       "bioPlaceholder": "Cuéntanos sobre ti...",
-      "bioExceeds": "La biografía no debe superar 500 caracteres",
+      "bioExceeds": "La biografía no debe superar 5000 caracteres",
       "maxExpertiseAreas": "Máximo 10 áreas de especialización permitidas",
       "maxSpeakingTopics": "Máximo 10 temas de ponencia permitidos",
       "socialLinks": "Redes sociales",

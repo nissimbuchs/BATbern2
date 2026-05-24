@@ -39,6 +39,7 @@ import { useCreateUser, useUpdateUser } from '../../../hooks/useUserManagement';
 import { CompanyAutocomplete } from '../PartnerManagement/CompanyAutocomplete';
 import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
 import apiClient from '@/services/api/apiClient';
+import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
 import type { Role, User } from '../../../types/user.types';
 import type { components } from '@/types/generated/company-api.types';
 
@@ -163,8 +164,11 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
     }
 
     // Bio validation (optional, but check max length if provided)
-    if (formData.bio && formData.bio.length > 2000) {
-      newErrors.bio = t('error.bioTooLong', 'Bio must be less than 2000 characters');
+    if (formData.bio && formData.bio.length > 5000) {
+      newErrors.bio = t('error.bioTooLong', {
+        defaultValue: 'Bio must be less than {{max}} characters',
+        max: 5000,
+      });
     }
 
     setErrors(newErrors);
@@ -471,7 +475,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
             value={formData.bio}
             onChange={handleInputChange('bio')}
             error={!!errors.bio}
-            helperText={errors.bio || t('modal.createUser.bioHelper', 'Max 2000 characters')}
+            helperText={errors.bio || t('modal.createUser.bioHelper', 'Max 5000 characters')}
             multiline
             rows={4}
             fullWidth
@@ -507,10 +511,13 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
             </Box>
           )}
 
-          {/* Mutation Error */}
+          {/* Mutation Error — show the server's actual validation/error message
+              instead of the generic "Failed to create user" so users see WHY it failed
+              (e.g. "bio - Size must be between 0 and 5000"). */}
           {mutation.isError && (
             <Alert severity="error">
-              {isEditMode ? t('error.updateFailed') : t('error.createFailed')}
+              {formatErrorForDisplay(mutation.error).message ||
+                (isEditMode ? t('error.updateFailed') : t('error.createFailed'))}
             </Alert>
           )}
         </Box>
