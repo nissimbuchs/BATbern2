@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -568,6 +569,29 @@ public class GlobalExceptionHandler {
                 .severity("HIGH")
                 .build();
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
+     * Handle Spring's {@link ResponseStatusException} explicitly so it isn't swallowed by the
+     * generic {@code @ExceptionHandler(Exception.class)} below (which would otherwise turn
+     * an intentional 400 into a 500). Same class of gotcha called out in
+     * {@code _bmad-output/project-context.md} for {@code MethodArgumentNotValidException}.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            ResponseStatusException ex,
+            HttpServletRequest request) {
+        log.warn("Response status exception: {} - {}", ex.getStatusCode(), ex.getReason());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(ex.getStatusCode().value())
+                .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
+                .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("WARNING")
+                .build();
+        return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
 
     @ExceptionHandler(Exception.class)
