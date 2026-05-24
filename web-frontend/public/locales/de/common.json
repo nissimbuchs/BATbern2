@@ -501,7 +501,7 @@
       "emailReadOnly": "E-Mail (schreibgeschützt)",
       "bio": "Biografie",
       "bioPlaceholder": "Erzählen Sie uns über sich...",
-      "bioExceeds": "Biografie darf 500 Zeichen nicht überschreiten",
+      "bioExceeds": "Biografie darf 5000 Zeichen nicht überschreiten",
       "maxExpertiseAreas": "Maximal 10 Fachgebiete erlaubt",
       "maxSpeakingTopics": "Maximal 10 Vortragsthemen erlaubt",
       "socialLinks": "Social-Media-Links",

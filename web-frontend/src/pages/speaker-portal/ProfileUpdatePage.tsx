@@ -122,7 +122,7 @@ const ProfileUpdatePage = () => {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (bio.length > 500) {
+    if (bio.length > 5000) {
       newErrors.bio = t('speakerPortal.profile.bioExceeds');
     }
     setErrors(newErrors);
@@ -319,7 +319,7 @@ const ProfileUpdatePage = () => {
                 <div>
                   <label htmlFor="bio" className="block text-sm text-zinc-400 mb-2">
                     {t('speakerPortal.profile.bio')}
-                    <span className="ml-2 text-zinc-500">({bio.length}/500)</span>
+                    <span className="ml-2 text-zinc-500">({bio.length}/5000)</span>
                   </label>
                   <textarea
                     id="bio"
@@ -331,7 +331,7 @@ const ProfileUpdatePage = () => {
                       setBio(e.target.value);
                       markDirty();
                     }}
-                    maxLength={500}
+                    maxLength={5000}
                     placeholder={t('speakerPortal.profile.bioPlaceholder')}
                   />
                   {errors.bio && <p className="text-sm text-red-400 mt-1">{errors.bio}</p>}

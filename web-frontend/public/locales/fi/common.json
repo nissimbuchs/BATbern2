@@ -499,7 +499,7 @@
       "emailReadOnly": "Sähköposti (vain luku)",
       "bio": "Bio",
       "bioPlaceholder": "Kerro meille itsestäsi...",
-      "bioExceeds": "Bio ei saa ylittää 500 merkkiä",
+      "bioExceeds": "Bio ei saa ylittää 5000 merkkiä",
       "maxExpertiseAreas": "Enintään 10 osaamis aluetta sallittu",
       "maxSpeakingTopics": "Enintään 10 puheenaihetta sallittu",
       "socialLinks": "Sosiaalisen median linkit",

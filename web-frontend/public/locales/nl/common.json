@@ -499,7 +499,7 @@
       "emailReadOnly": "E-mail (alleen-lezen)",
       "bio": "Bio",
       "bioPlaceholder": "Vertel ons over uzelf...",
-      "bioExceeds": "Bio mag niet meer dan 500 tekens bevatten",
+      "bioExceeds": "Bio mag niet meer dan 5000 tekens bevatten",
       "maxExpertiseAreas": "Maximaal 10 expertisegebieden toegestaan",
       "maxSpeakingTopics": "Maximaal 10 spreekonderwerpen toegestaan",
       "socialLinks": "Sociale media links",

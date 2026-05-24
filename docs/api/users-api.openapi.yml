@@ -289,7 +289,7 @@ paths:
         **Validation Rules**:
         - Email must be valid and unique
         - Names: 2-100 characters
-        - Bio: max 2000 characters
+        - Bio: max 5000 characters
 
         **Cognito Sync**: Updates synchronize with AWS Cognito
 
@@ -2130,7 +2130,7 @@ components:
           format: email
         bio:
           type: string
-          maxLength: 2000
+          maxLength: 5000
         companyId:
           type: string
           description: Company name (unique identifier, alphanumeric only)
@@ -2210,7 +2210,7 @@ components:
           example: [ATTENDEE]
         bio:
           type: string
-          maxLength: 500
+          maxLength: 5000
           description: User biography/description
           example: Software engineer passionate about cloud architecture
 
