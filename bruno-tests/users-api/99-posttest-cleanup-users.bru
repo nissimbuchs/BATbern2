@@ -4,13 +4,6 @@ meta {
   seq: 98
 }
 
-# Audit-pass addition (PR 5, plan §B3): unconditional posttest cleanup, users.
-# Runs LATE in the collection. Catches the disposable user created by
-# 04-create-user if test 14 was unable to delete it (e.g. F2's precondition
-# fail branch). Cascades clear additional_emails + role_assignments.
-#
-# Runs before 99a (additional_emails) so the cascade chain finishes first.
-
 post {
   url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
   body: json
@@ -37,4 +30,13 @@ tests {
   test("posttest user cleanup accepted (200) or gracefully missing (404)", function() {
     expect([200, 204, 404]).to.include(res.getStatus());
   });
+}
+
+docs {
+  Audit-pass addition (PR 5, plan §B3): unconditional posttest cleanup, users.
+  Runs LATE in the collection. Catches the disposable user created by
+  04-create-user if test 14 was unable to delete it (e.g. F2's precondition
+  fail branch). Cascades clear additional_emails + role_assignments.
+
+  Runs before 99a (additional_emails) so the cascade chain finishes first.
 }

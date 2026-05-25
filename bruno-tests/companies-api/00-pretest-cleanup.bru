@@ -4,12 +4,6 @@ meta {
   seq: 0
 }
 
-# Audit-pass addition (PR 4, plan §B3): unconditional pretest cleanup.
-# Runs BEFORE every other test in this collection to ensure a clean slate.
-# Status assertion is `oneOf([200, 204, 404])` so this never fails the run —
-# if the cleanup endpoint isn't deployed yet (e.g. against pre-PR-1 staging),
-# the 404 is fine and the rest of the collection still runs.
-
 post {
   url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
   body: json
@@ -44,4 +38,12 @@ tests {
       expect(body.deletionCounts.companies).to.be.a("number");
     }
   });
+}
+
+docs {
+  Audit-pass addition (PR 4, plan §B3): unconditional pretest cleanup.
+  Runs BEFORE every other test in this collection to ensure a clean slate.
+  Status assertion is `oneOf([200, 204, 404])` so this never fails the run —
+  if the cleanup endpoint isn't deployed yet (e.g. against pre-PR-1 staging),
+  the 404 is fine and the rest of the collection still runs.
 }

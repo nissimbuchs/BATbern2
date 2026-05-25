@@ -4,15 +4,6 @@ meta {
   seq: 99
 }
 
-# Audit-pass addition (PR 4, plan §B3): unconditional posttest cleanup.
-# Runs AFTER every other test in this collection regardless of pass/fail —
-# the 12-delete-company test should already have removed the one row created
-# in this run, but if any test between 01 and 12 crashed without cleanup,
-# this sweep catches the leftover.
-#
-# Status assertion is `oneOf([200, 204, 404])` so a missing cleanup endpoint
-# never fails the collection.
-
 post {
   url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
   body: json
@@ -47,4 +38,15 @@ tests {
       expect(body.deletionCounts.companies).to.be.a("number");
     }
   });
+}
+
+docs {
+  Audit-pass addition (PR 4, plan §B3): unconditional posttest cleanup.
+  Runs AFTER every other test in this collection regardless of pass/fail —
+  the 12-delete-company test should already have removed the one row created
+  in this run, but if any test between 01 and 12 crashed without cleanup,
+  this sweep catches the leftover.
+
+  Status assertion is `oneOf([200, 204, 404])` so a missing cleanup endpoint
+  never fails the collection.
 }
