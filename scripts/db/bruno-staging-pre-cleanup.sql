@@ -3,11 +3,23 @@
 -- Source of truth: pre-PR-1 audit recorded in
 -- docs/plans/bruno-staging-hardening.md (2026-05-24).
 --
--- 17 disposable rows total: 10 companies + 7 partners. All identified by
--- exact-match name. The cleanup endpoint's regex (^BRUNOTESTCO[0-9]+$ etc.)
--- intentionally does NOT match these legacy patterns — we don't want to
--- keep supporting "company name with spaces" or "testag" as legitimate
--- test-data patterns going forward.
+-- Two cleanup buckets:
+--
+-- 1. 17 disposable rows from the original audit: 10 companies + 7 partners.
+--    All identified by exact-match name. The cleanup endpoint's regex
+--    (^BRUNOTESTCO[0-9]+$ etc.) intentionally does NOT match these legacy
+--    patterns — we don't want to keep supporting "company name with spaces"
+--    or "testag" as legitimate test-data patterns going forward.
+--
+-- 2. F4 unblock (added 2026-05-25, see plan §"F4 — 15-add-additional-email
+--    accumulates rows"): bruno-additional-NNN@example.com rows leaked into
+--    user_additional_emails by the auth user. The 5-per-user cap blocks all
+--    future test 15 runs once 5 leaks accumulate. PR 5 ships the structural
+--    fix (ADDITIONAL_EMAILS cleanup-endpoint entityType + 00/99 hooks +
+--    canonical prefix); PR 1 sweeps the existing leakage so Bruno-on-staging
+--    is clean from day one. Matched by LIKE pattern, not exact list, because
+--    the {{$randomInt}} suffix means we don't know which numeric IDs will be
+--    present at deploy time.
 --
 -- Runs exactly once when PR 1 deploys. Idempotent: re-running deletes 0 rows.
 -- Wrapped in a single transaction with explicit COMMIT at the end so any
@@ -173,6 +185,27 @@ SELECT COUNT(*) AS real_bruno_users_remaining
 FROM user_profiles
 WHERE username LIKE 'bruno.%'
   AND username !~ '^bruno\.test\.[0-9]+$';
+
+\echo ''
+\echo '=== F4 unblock: sweep leaked bruno-additional-%@example.com rows ==='
+\echo '(plan §"F4 — 15-add-additional-email accumulates rows"; structural fix in PR 5)'
+
+\echo ''
+\echo '--- BEFORE: leaked user_additional_emails rows ---'
+SELECT COUNT(*) AS leaked_additional_emails
+FROM user_additional_emails
+WHERE email LIKE 'bruno-additional-%@example.com';
+
+\echo ''
+\echo '--- DELETE leaked user_additional_emails ---'
+DELETE FROM user_additional_emails
+ WHERE email LIKE 'bruno-additional-%@example.com';
+
+\echo ''
+\echo '--- AFTER: must report 0 leaked additional emails ---'
+SELECT COUNT(*) AS leaked_additional_emails_remaining
+FROM user_additional_emails
+WHERE email LIKE 'bruno-additional-%@example.com';
 
 \echo ''
 \echo '=== Pre-cleanup complete. Committing... ==='
