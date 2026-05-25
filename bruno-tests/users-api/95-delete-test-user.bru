@@ -1,7 +1,7 @@
 meta {
   name: Delete Test User (GDPR)
   type: http
-  seq: 14
+  seq: 95
 }
 
 delete {
@@ -28,8 +28,12 @@ script:pre-request {
   if (!disposable) {
     throw new Error("Precondition: env var `disposableUsername` is unset — test 04 (create-user) must succeed first. Refusing to issue DELETE against fallback username (which would target the auth user).");
   }
-  if (!disposable.match(/^bruno\.test\./)) {
-    throw new Error("Sanity: `disposableUsername`='" + disposable + "' does not match `bruno.test.*`. Refusing to delete.");
+  // Accept `bruno.test` (first run, no collision) AND `bruno.test.N` (subsequent
+  // runs, where the username service appends a numeric suffix). REJECT
+  // `bruno.testuser`, `bruno.testing`, etc. — and crucially the auth user
+  // `batbern.organizer`.
+  if (!disposable.match(/^bruno\.test(\.[0-9]+)?$/)) {
+    throw new Error("Sanity: `disposableUsername`='" + disposable + "' does not match `bruno.test` or `bruno.test.N`. Refusing to delete.");
   }
 }
 

@@ -24,7 +24,7 @@ body:json {
   {
     "email": "bruno-test-{{$timestamp}}@e2e.batbern.invalid",
     "firstName": "Bruno",
-    "lastName": "TestUser",
+    "lastName": "Test",
     "initialRoles": ["ATTENDEE"],
     "bio": "Test user created via Bruno API tests"
   }
@@ -66,7 +66,11 @@ tests {
       const body = res.getBody();
       expect(body.id).to.exist;
       expect(body.id).to.be.a('string');
-      expect(body.id).to.match(/^[a-z]+\.[a-z]+(\.[0-9]+)?$/); // username format: bruno.testuser or bruno.testuser.1
+      // Username derived from firstName.lastName, with optional .N suffix on
+      // collision. Plan §F2: must start with `bruno.test` so the safety guard
+      // in 14-delete-test-user accepts it (and never matches the auth user
+      // `batbern.organizer`).
+      expect(body.id).to.match(/^bruno\.test(\.[0-9]+)?$/);
     }
   });
 
@@ -75,7 +79,7 @@ tests {
       const body = res.getBody();
       expect(body.email).to.exist;
       expect(body.firstName).to.equal("Bruno");
-      expect(body.lastName).to.equal("TestUser");
+      expect(body.lastName).to.equal("Test");
       expect(body.roles).to.be.an('array');
       expect(body.roles).to.include('ATTENDEE');
     }
