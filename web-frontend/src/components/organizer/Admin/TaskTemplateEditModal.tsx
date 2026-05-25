@@ -17,6 +17,8 @@ import {
   MenuItem,
   Select,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +55,8 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const [name, setName] = useState(template.name);
   const [triggerState, setTriggerState] = useState(template.triggerState);
@@ -92,7 +96,7 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isFullScreen}>
       <DialogTitle>{t('admin.taskTemplates.editTitle', 'Edit Task Template')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
         <TextField

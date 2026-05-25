@@ -117,6 +117,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
   const [logoUploadId, setLogoUploadId] = useState<string | undefined>();
+  // True when the user explicitly removed an existing server-side logo in edit
+  // mode. We can't rely on logoUrl===undefined alone because the FileUpload
+  // useEffect re-syncs from `currentFileUrl` on every render. On submit, this
+  // flag tells the backend to clear the logo via `logoUploadId: ""` (the
+  // empty-string contract documented in companies-api.openapi.yml).
+  const [logoRemoved, setLogoRemoved] = useState(false);
 
   // Check role-based access control (Story 1.16.2: uses company name as identifier)
   const hasEditPermission =
@@ -164,6 +170,8 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         description: initialData.description || '',
       });
       setLogoUrl(initialData.logo?.url);
+      setLogoUploadId(undefined);
+      setLogoRemoved(false);
     }
   }, [initialData, reset]);
 
@@ -180,12 +188,15 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       });
       setLogoUrl(undefined);
       setLogoUploadId(undefined);
+      setLogoRemoved(false);
       setApiError(null);
     }
   }, [open, mode, initialData, reset]);
 
   const handleClose = () => {
-    if (isDirty) {
+    // react-hook-form's `isDirty` only tracks form fields; logo upload/remove
+    // is local state, so include those signals in the unsaved-changes check.
+    if (isDirty || logoUploadId || logoRemoved) {
       const confirmed = window.confirm(t('company.form.unsavedChanges'));
       if (!confirmed) return;
     }
@@ -224,10 +235,14 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             cleanedData[field as keyof typeof cleanedData];
         });
 
-        // Story 1.16.3: Include logoUploadId if a new logo was uploaded during edit
+        // Story 1.16.3: Include logoUploadId if a new logo was uploaded during edit.
+        // Logo-removal fix (2026-05-25): empty string explicitly clears the server-
+        // side logo (contract: companies-api.openapi.yml UpdateCompanyRequest.logoUploadId).
         if (logoUploadId) {
           (partialUpdate as CreateCompanyRequest & { logoUploadId?: string }).logoUploadId =
             logoUploadId;
+        } else if (logoRemoved) {
+          (partialUpdate as CreateCompanyRequest & { logoUploadId?: string }).logoUploadId = '';
         }
 
         await onSubmit(partialUpdate as UpdateCompanyRequest, {
@@ -300,10 +315,21 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
   const handleLogoUploadSuccess = (data: { uploadId: string; tempFileUrl?: string }) => {
     setLogoUploadId(data.uploadId); // Store uploadId for company creation
+    setLogoRemoved(false); // New upload supersedes any prior remove
     if (data.tempFileUrl) {
       setLogoUrl(data.tempFileUrl); // Show preview
     }
     console.log('[CompanyForm] Logo uploaded successfully. UploadId:', data.uploadId);
+  };
+
+  const handleLogoRemove = () => {
+    setLogoUrl(undefined);
+    setLogoUploadId(undefined);
+    // Only meaningful in edit mode when there was a server-side logo to remove.
+    // In create mode, clearing local state is enough (no logo exists on the server yet).
+    if (mode === 'edit' && initialData?.logo?.url) {
+      setLogoRemoved(true);
+    }
   };
 
   const handleLogoUploadError = (error: { type: string; message: string }) => {
@@ -493,6 +519,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
               currentFileUrl={logoUrl}
               onUploadSuccess={handleLogoUploadSuccess}
               onUploadError={handleLogoUploadError}
+              onFileRemove={handleLogoRemove}
             />
           </Box>
         </Box>

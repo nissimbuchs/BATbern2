@@ -117,9 +117,25 @@ if [ -z "$AUTH_TOKEN" ]; then
 fi
 
 # Load per-role tokens (for Epic 8+ multi-role testing)
-# Exports ORGANIZER_AUTH_TOKEN, SPEAKER_AUTH_TOKEN, PARTNER_AUTH_TOKEN
+# Exports ORGANIZER_AUTH_TOKEN, SPEAKER_AUTH_TOKEN, PARTNER_AUTH_TOKEN.
+#
+# Resolution order:
+#   1. If the role's *_AUTH_TOKEN env var is already set (CI path — workflow
+#      authenticated each role via aws cognito-idp initiate-auth and exported
+#      the ID token into the step env), keep that value.
+#   2. Otherwise, look at ~/.batbern/${env}-${role}.json (local-dev path —
+#      written by scripts/auth/get-token.sh).
 load_role_token() {
     local role="$1"
+    local role_upper
+    role_upper=$(echo "$role" | tr '[:lower:]' '[:upper:]')
+    local env_var_name="${role_upper}_AUTH_TOKEN"
+    local existing="${!env_var_name:-}"
+    if [ -n "$existing" ]; then
+        echo "$existing"
+        return 0
+    fi
+
     local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
     if [ -f "$role_config" ]; then
         ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" >/dev/null 2>&1 || true

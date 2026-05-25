@@ -14,8 +14,6 @@ import org.springframework.stereotype.Component;
  *
  * Runs daily at 8 AM to send reminders for upcoming speaker deadlines.
  * Uses ShedLock to prevent duplicate execution in multi-instance ECS deployments.
- *
- * Follows same pattern as {@link TokenCleanupScheduler}.
  */
 @Component
 @RequiredArgsConstructor

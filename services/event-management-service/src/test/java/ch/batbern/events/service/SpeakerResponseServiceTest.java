@@ -40,9 +40,8 @@ import static org.mockito.Mockito.when;
  *
  * <p>Verifies that ACCEPT and DECLINE responses delegate to
  * {@link SpeakerWorkflowService#transition} (the sole writer) and that already-responded
- * speakers are blocked. Story 11.E.3 swaps the magic-link path for Cognito-derived
- * String usernames injected by the controller; the service no longer consults
- * {@code MagicLinkService}.
+ * speakers are blocked. Story 11.E.3 uses Cognito-derived String usernames injected
+ * by the controller (no token bridge).
  *
  * <p>Provisioning (User + SPEAKER role grant) is upstream at {@code CONTACTED → READY}
  * and is verified in {@link SpeakerWorkflowServiceTest}, not here.

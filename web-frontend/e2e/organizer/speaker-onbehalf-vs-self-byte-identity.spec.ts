@@ -5,19 +5,22 @@
  * Goal: prove that submitting presentation content through the organizer's on-behalf
  * drawer form (`POST /api/v1/events/{code}/speakers/{id}/content` with organizer
  * Cognito auth) produces the same persisted content payload as submitting via the
- * speaker-portal endpoint (`POST /api/v1/speaker-portal/content/submit` with a
- * magic-link token in the body). Per Resolved Q#5 in the story, the diff happens at
- * the response-payload level (not direct DB queries) — we fetch the read-paths
- * organizers actually use and assert the controlled fields match byte-for-byte.
+ * speaker-portal endpoint with the speaker's own Cognito Bearer (post-Story-11.E.3
+ * contract: `POST /api/v1/speaker-portal/events/{eventCode}/content/submit`, no body
+ * token — the eventCode in the path + the SPEAKER-role JWT identifies the speaker
+ * pool entry server-side via SpeakerPortalAuthorizationService.resolveSpeakerPool).
  *
- * Auth model:
+ * Per Resolved Q#5 in the parent story, the diff happens at the response-payload
+ * level (not direct DB queries) — we fetch the read-paths organizers actually use
+ * and assert the controlled fields match byte-for-byte.
+ *
+ * Auth model (post-Story-11.F.1):
  * - Organizer side: `process.env.E2E_TEST_TOKEN` (Cognito Bearer) — matches the
  *   pattern in `speaker-kanban-guided-drag.spec.ts` and `speaker-card-primary-action.spec.ts`.
- * - Speaker side: until Phase E (Story 11.E.3) swaps to Cognito Bearer, the
- *   speaker-portal content endpoint authenticates via a magic-link `token` in the
- *   request body. We use `process.env.SPEAKER_AUTH_TOKEN` (gate) + an optional
- *   `process.env.E2E_SPEAKER_MAGIC_LINK_TOKEN` (or `E2E_SPEAKER_VALID_TOKEN`, the
- *   same env var `speaker-portal-response.spec.ts` consumes) for the body field.
+ * - Speaker side: `process.env.SPEAKER_AUTH_TOKEN` (Cognito Bearer for the
+ *   SPEAKER-role JWT, written by `global-setup.ts` when the staging Cognito
+ *   test-speaker fixture is provisioned). The deleted magic-link `token` body
+ *   field and the `E2E_SPEAKER_MAGIC_LINK_TOKEN` env var have been removed.
  *
  * Fallback: if the speaker-portal auth fixture isn't wired up in the current test
  * environment, the test skips at runtime with a clear message — the spec file must
@@ -28,8 +31,6 @@ import { API_URL } from '../../playwright.config';
 
 const ORGANIZER_BEARER = process.env.E2E_TEST_TOKEN ?? process.env.AUTH_TOKEN ?? '';
 const SPEAKER_BEARER = process.env.SPEAKER_AUTH_TOKEN ?? '';
-const SPEAKER_MAGIC_LINK_TOKEN =
-  process.env.E2E_SPEAKER_MAGIC_LINK_TOKEN ?? process.env.E2E_SPEAKER_VALID_TOKEN ?? '';
 
 interface ControlledContentFields {
   presentationTitle: string;
@@ -67,15 +68,9 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
   );
   test.skip(
     !SPEAKER_BEARER,
-    'SPEAKER_AUTH_TOKEN not available — speaker-portal auth fixture not wired up in this env. ' +
-      'Story 11.D.4 §"AC10 cross-auth byte-identity e2e (case 51)" PATCH item — the spec exists ' +
-      'but skips cleanly until the speaker-portal token issuance helper lands.'
-  );
-  test.skip(
-    !SPEAKER_MAGIC_LINK_TOKEN,
-    'E2E_SPEAKER_MAGIC_LINK_TOKEN (or E2E_SPEAKER_VALID_TOKEN) not set — the speaker-portal ' +
-      'content endpoint currently authenticates via a magic-link token in the body until Phase E ' +
-      '(Story 11.E.3). Provide the env var, or wait for Phase E to swap the endpoint to Cognito Bearer.'
+    'SPEAKER_AUTH_TOKEN not available — speaker-portal Cognito Bearer fixture not wired up ' +
+      'in this env. Story 11.D.4 §"AC10 cross-auth byte-identity e2e (case 51)" PATCH item — ' +
+      'the spec exists but skips cleanly until the staging Cognito test-speaker seed ticket lands.'
   );
 
   test('content payload is byte-identical for fields controlled by both flows', async (_, testInfo) => {
@@ -87,10 +82,9 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
     });
     const speakerCtx = await playwrightRequest.newContext({
       baseURL: API_URL,
-      // The speaker-portal /content/submit endpoint takes auth via the body `token`
-      // (magic-link). We still attach the speaker Cognito Bearer for future-proofing
-      // (Phase E swap) — the backend ignores Authorization on this endpoint today
-      // because `security: []` is declared in the OpenAPI spec.
+      // Story 11.E.3 + 11.F.1: speaker-portal endpoints are Cognito-secured via
+      // @PreAuthorize("hasRole('SPEAKER')"); the JWT identifies the speaker pool
+      // entry server-side. No body `token` field, no magic-link contract.
       extraHTTPHeaders: { Authorization: `Bearer ${SPEAKER_BEARER}` },
     });
 
@@ -120,15 +114,11 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
         throw new Error('failed to read eventCode from create-event response');
       }
 
-      // Seed two speakers (Speaker A = on-behalf via organizer, Speaker B = self via portal).
-      // The speaker-portal `token` must resolve to a specific speaker pool entry — we
-      // cannot guarantee that mapping from a generic seed call. So for Speaker B we
-      // assume the magic-link token in the env was issued for a real ACCEPTED speaker
-      // in this environment; we discover its eventCode + speakerId by introspecting
-      // the token (`GET /api/v1/speaker-portal/invitation/{token}`-style lookup) via
-      // the speaker-portal validate endpoint, if exposed. As a pragmatic minimum, we
-      // seed Speaker A and assert byte-identity against whatever the speaker token
-      // already submitted (or submits in this test).
+      // Seed Speaker A (on-behalf via organizer). For Speaker B we rely on env-provided
+      // pointers (E2E_SPEAKER_EVENT_CODE / E2E_SPEAKER_POOL_ID / E2E_SPEAKER_USERNAME)
+      // that name a real ACCEPTED speaker in this environment whose Cognito JWT is the
+      // one in SPEAKER_AUTH_TOKEN. The speaker-portal eventCode in the path resolves
+      // the speaker pool entry server-side via SpeakerPortalAuthorizationService.
       const seedA = await organizerCtx.post(`/api/v1/events/${eventCode}/speakers/pool`, {
         data: { speakerName: 'Byte Identity Speaker A' },
       });
@@ -178,51 +168,48 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       );
       expect(submitA.ok(), `organizer submit: ${submitA.status()}`).toBeTruthy();
 
-      // ── 3. Speaker submits via the speaker-portal endpoint ───────────────────
-      // The portal endpoint resolves the speaker from the magic-link token in the
-      // body — we don't pass eventCode / speakerId. We submit the SAME controlled
-      // values so the byte-identity assertion is meaningful.
-      const submitB = await speakerCtx.post(`/api/v1/speaker-portal/content/submit`, {
-        data: {
-          token: SPEAKER_MAGIC_LINK_TOKEN,
-          title: controlledA.presentationTitle,
-          contentAbstract: controlledA.presentationAbstract,
-          bio: controlledA.bio,
-          profilePictureUrl: controlledA.profilePictureUrl,
-        },
-      });
-      // If the speaker token's speaker isn't ACCEPTED/CONTENT_SUBMITTED, this 422s —
-      // we treat that as a setup-data problem and skip rather than fail the test.
-      if (submitB.status() === 422) {
-        testInfo.annotations.push({
-          type: 'skip-reason',
-          description:
-            'Speaker-portal token resolved to a speaker not in ACCEPTED/CONTENT_SUBMITTED — ' +
-            'cross-auth byte-identity check requires a primed speaker fixture. See Story 11.D.4 ' +
-            'AC10 case 51 deferred-work entry.',
-        });
-        test.skip();
-        return;
-      }
-      expect(submitB.ok(), `speaker portal submit: ${submitB.status()}`).toBeTruthy();
-      const submitBBody = (await submitB.json()) as {
-        submissionId?: string;
-        speakerId?: string;
-        eventCode?: string;
-        username?: string;
-      };
-
-      // ── 4. Resolve Speaker B's identifiers from the submit response ──────────
-      // The ContentSubmitResponse schema is `{ submissionId, version, status, sessionTitle }` —
-      // it does NOT include speakerId/eventCode/username. So we look up the speaker
-      // pool entry by `submissionId` via the organizer search endpoint, or we fall
-      // back to introspecting the magic-link via `GET /speaker-portal/invitation/{token}`
-      // if that's exposed. As a pragmatic minimum we use the env-provided pointers
-      // (E2E_SPEAKER_EVENT_CODE + E2E_SPEAKER_POOL_ID) if available; otherwise we
-      // skip the cross-speaker GET-side diff and only verify Speaker A's response.
+      // ── 3. Resolve Speaker B's identifiers from env pointers ─────────────────
+      // The speaker-portal POST requires the eventCode in the path; the SPEAKER JWT
+      // resolves the speaker pool entry. The cross-speaker organizer-GET diff (step
+      // 5) also needs the speakerPoolId; both come from environment pointers seeded
+      // by the staging Cognito test-speaker fixture.
       const speakerBEventCode = process.env.E2E_SPEAKER_EVENT_CODE;
       const speakerBPoolId = process.env.E2E_SPEAKER_POOL_ID;
       const speakerBUsername = process.env.E2E_SPEAKER_USERNAME;
+
+      // ── 4. Speaker submits via the speaker-portal endpoint (Cognito Bearer) ──
+      // Post-Story-11.E.3: eventCode is in the path, no body token. Skip the
+      // speaker-side flow if the env pointer isn't provided — Speaker A's
+      // assertions (step 5) still run.
+      let submittedSpeakerB = false;
+      if (speakerBEventCode) {
+        const submitB = await speakerCtx.post(
+          `/api/v1/speaker-portal/events/${speakerBEventCode}/content/submit`,
+          {
+            data: {
+              title: controlledA.presentationTitle,
+              contentAbstract: controlledA.presentationAbstract,
+              bio: controlledA.bio,
+              profilePictureUrl: controlledA.profilePictureUrl,
+            },
+          }
+        );
+        // If the speaker JWT's speaker isn't ACCEPTED/CONTENT_SUBMITTED, this 422s —
+        // we treat that as a setup-data problem and skip rather than fail the test.
+        if (submitB.status() === 422) {
+          testInfo.annotations.push({
+            type: 'skip-reason',
+            description:
+              'Speaker-portal Cognito JWT resolved to a speaker not in ACCEPTED/CONTENT_SUBMITTED — ' +
+              'cross-auth byte-identity check requires a primed speaker fixture. See Story 11.D.4 ' +
+              'AC10 case 51 deferred-work entry.',
+          });
+          test.skip();
+          return;
+        }
+        expect(submitB.ok(), `speaker portal submit: ${submitB.status()}`).toBeTruthy();
+        submittedSpeakerB = true;
+      }
 
       // ── 5. Read both speakers' content via the organizer GET (the canonical
       //     read path organizers actually use — per Resolved Q#5). ──────────────
@@ -259,8 +246,9 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
         expect(projectedA.profilePictureUrl).toBe(controlledA.profilePictureUrl);
       }
 
-      // Speaker B — only diff if we have the identifiers wired up.
-      if (speakerBEventCode && speakerBPoolId) {
+      // Speaker B — only diff if we actually submitted via the speaker portal AND
+      // we have the organizer-GET pointers (event + pool id).
+      if (submittedSpeakerB && speakerBEventCode && speakerBPoolId) {
         const getB = await organizerCtx.get(
           `/api/v1/events/${speakerBEventCode}/speakers/${speakerBPoolId}/content`
         );
@@ -309,20 +297,18 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
         expect(historyAItems.some((row) => row.newStatus === 'CONTENT_SUBMITTED')).toBe(true);
 
         // Record a soft annotation so the test report makes the partial-coverage
-        // posture explicit (we still ran the speaker-portal POST, but didn't diff
-        // against organizer-side GET for Speaker B for lack of pointers).
+        // posture explicit (we didn't submit via speaker portal OR didn't have the
+        // organizer-GET pointers to diff against).
         testInfo.annotations.push({
           type: 'partial-coverage',
-          description:
-            'Speaker-portal POST succeeded, but no E2E_SPEAKER_EVENT_CODE + E2E_SPEAKER_POOL_ID ' +
-            'env pointers were provided — byte-identity diff was performed only on Speaker A. ' +
-            'See Story 11.D.4 AC10 case 51 deferred-work entry for the full fixture roadmap.',
+          description: submittedSpeakerB
+            ? 'Speaker-portal POST succeeded, but no E2E_SPEAKER_POOL_ID env pointer was provided — ' +
+              'byte-identity diff was performed only on Speaker A.'
+            : 'Speaker-portal POST was skipped (E2E_SPEAKER_EVENT_CODE env pointer not provided) — ' +
+              'byte-identity diff was performed only on Speaker A. See Story 11.D.4 AC10 case 51 ' +
+              'deferred-work entry for the full fixture roadmap.',
         });
       }
-
-      // Reference the submit response so unused-var lints stay quiet and the
-      // assertion record makes the cross-auth path visible in test traces.
-      expect(submitBBody).toBeDefined();
     } finally {
       await organizerCtx.dispose();
       await speakerCtx.dispose();

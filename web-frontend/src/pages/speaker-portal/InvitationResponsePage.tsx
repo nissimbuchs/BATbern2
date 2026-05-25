@@ -379,8 +379,6 @@ const InvitationResponsePage = () => {
                     t('speakerPortal.invitationResponse.accepted')}
                   {invitation.previousResponse === 'DECLINED' &&
                     t('speakerPortal.invitationResponse.declined')}
-                  {/* Code review 2026-05-18 (P6): TENTATIVE branch removed —
-                      SpeakerResponseType narrowed to ACCEPT|DECLINE per Resolved Q#6. */}
                 </span>
               </p>
               {invitation.previousResponse === 'ACCEPTED' && (

@@ -86,8 +86,6 @@ class SpeakerWorkflowServiceTest {
     @Mock
     private OrganizerNotificationService organizerNotificationService;
     @Mock
-    private MagicLinkService magicLinkService;
-    @Mock
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
     private DomainEventPublisher domainEventPublisher;
@@ -114,7 +112,6 @@ class SpeakerWorkflowServiceTest {
                 invitationEmailService,
                 acceptanceEmailService,
                 organizerNotificationService,
-                magicLinkService,
                 applicationEventPublisher,
                 domainEventPublisher,
                 primarySpeakerResolver
@@ -180,8 +177,6 @@ class SpeakerWorkflowServiceTest {
         lenient().when(eventTypeService.getEventType(any())).thenReturn(slotConfig(8));
         lenient().when(speakerPoolRepository.countByEventIdAndStatus(any(), any())).thenReturn(0L);
         lenient().when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
-        lenient().when(magicLinkService.generateToken(any(), any())).thenReturn("respond-token");
-        lenient().when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
         // Story 11.E.8: READY hook provisions Session + SessionUser. Stub save() to populate
         // ids so downstream code (speaker.setSessionId(session.getId())) doesn't NPE on mocks.
         lenient().when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> {
@@ -469,7 +464,6 @@ class SpeakerWorkflowServiceTest {
         when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
-        when(magicLinkService.generateToken(eq(SPEAKER_ID), any(), anyLong())).thenReturn("view-token");
         lenient().when(sessionUserRepository.findBySessionIdAndUsername(any(), any()))
                 .thenReturn(Optional.empty());
 
@@ -616,7 +610,6 @@ class SpeakerWorkflowServiceTest {
         when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
-        when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
         // Story 11.E.9: confirmSessionUserIfPresent now looks up by sessionId + role.
         when(sessionUserRepository.findBySessionIdAndSpeakerRole(sessionId,
                 SessionUser.SpeakerRole.PRIMARY_SPEAKER))
@@ -643,7 +636,6 @@ class SpeakerWorkflowServiceTest {
         when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
-        when(magicLinkService.generateToken(any(), any(), anyLong())).thenReturn("view-token");
         // Story 11.E.9: confirmSessionUserIfPresent now looks up by sessionId+role.
         when(sessionUserRepository.findBySessionIdAndSpeakerRole(sessionId,
                 SessionUser.SpeakerRole.PRIMARY_SPEAKER))
@@ -763,9 +755,5 @@ class SpeakerWorkflowServiceTest {
     private ProvisionUserResponse stubUser() {
         ProvisionUserResponse resp = new ProvisionUserResponse("speaker.user", true);
         return resp;
-    }
-
-    private static long anyLong() {
-        return org.mockito.ArgumentMatchers.anyLong();
     }
 }

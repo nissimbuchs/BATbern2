@@ -13,6 +13,8 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +33,8 @@ interface EditMeetingDialogProps {
 const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ open, meeting, onClose }) => {
   const { t } = useTranslation('partners');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const [form, setForm] = useState<UpdateMeetingRequest>({});
 
@@ -83,6 +87,7 @@ const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ open, meeting, on
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isFullScreen}
       data-testid="edit-meeting-dialog"
     >
       <DialogTitle>{t('meetings.edit')}</DialogTitle>

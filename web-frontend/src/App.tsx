@@ -122,9 +122,6 @@ const ContentSubmissionPage = React.lazy(
 // Story 6.4: Speaker Portal - Dashboard
 const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
 
-// Story 11.E.3: SpeakerMagicLoginPage lazy import REMOVED (Phase F / Story 11.F.1 deletes
-// the page file). The Cognito session covers speaker portal authentication.
-
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
@@ -319,8 +316,6 @@ function App() {
                       path="/speaker-portal/respond"
                       element={<Navigate to="/speaker-portal/dashboard" replace />}
                     />
-                    {/* Story 11.E.3: /speaker-portal/magic-login route REMOVED (Phase F deletes
-                        the page file). The Cognito session covers speaker portal authentication. */}
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />

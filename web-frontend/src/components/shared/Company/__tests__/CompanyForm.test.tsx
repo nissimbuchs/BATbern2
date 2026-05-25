@@ -872,6 +872,104 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
       expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
+
+    // Bug fix 2026-05-25: clicking the remove button in edit mode used to do
+    // nothing — CompanyForm didn't pass `onFileRemove` to FileUpload, so the
+    // click flipped FileUpload's internal state but a sync useEffect immediately
+    // snapped the old URL back. Then submit omitted logoUploadId entirely, so
+    // the backend kept the logo. Fix: wire onFileRemove + send logoUploadId:''
+    // (the documented empty-string remove signal in companies-api.openapi.yml).
+    it('should_sendEmptyLogoUploadId_when_removingExistingLogo', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      // mockCompany.name has a space (fails alphanumeric regex). Use an
+      // already-valid name so the form passes validation when we submit
+      // without touching any text fields.
+      const companyWithLogo: Company = {
+        ...mockCompany,
+        name: 'AcmeCorporation',
+        logo: {
+          url: 'https://example.com/logo.png',
+          s3Key: 'logos/company-123.png',
+          fileId: 'file-123',
+        },
+      };
+
+      render(
+        <CompanyForm
+          open={true}
+          mode="edit"
+          initialData={companyWithLogo}
+          onClose={vi.fn()}
+          onSubmit={onSubmit}
+        />
+      );
+
+      // Logo preview is visible — remove button is the only IconButton inside
+      // the FileUpload preview (single-file mode renders one IconButton with
+      // DeleteIcon for the remove action).
+      expect(screen.getByRole('img')).toHaveAttribute('src', 'https://example.com/logo.png');
+      const removeButton = screen.getByLabelText(/remove file/i);
+      await user.click(removeButton);
+
+      // After remove, dropzone should reappear (the previous bug had the image
+      // re-snap into view because of FileUpload's currentFileUrl sync useEffect).
+      await waitFor(() => {
+        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+        expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      });
+
+      // Submit the form. Since no fields changed and no new logo was uploaded,
+      // only the empty-string logoUploadId should be sent.
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledTimes(1);
+      });
+      const submittedPayload = onSubmit.mock.calls[0][0] as { logoUploadId?: string };
+      expect(submittedPayload.logoUploadId).toBe('');
+    });
+
+    it('should_notSendLogoUploadId_when_noLogoChangesInEditMode', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const companyWithLogo: Company = {
+        ...mockCompany,
+        name: 'AcmeCorporation', // alphanumeric to satisfy companySchema regex
+        logo: {
+          url: 'https://example.com/logo.png',
+          s3Key: 'logos/company-123.png',
+          fileId: 'file-123',
+        },
+      };
+
+      render(
+        <CompanyForm
+          open={true}
+          mode="edit"
+          initialData={companyWithLogo}
+          onClose={vi.fn()}
+          onSubmit={onSubmit}
+        />
+      );
+
+      // Change a non-logo field only.
+      const displayNameInput = screen.getByLabelText(/display name/i);
+      await user.clear(displayNameInput);
+      await user.type(displayNameInput, 'New Display Name');
+
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledTimes(1);
+      });
+      const submittedPayload = onSubmit.mock.calls[0][0] as { logoUploadId?: string };
+      // No logo change → payload should NOT have logoUploadId at all (the
+      // backend treats `null` / absent as "keep existing").
+      expect(submittedPayload.logoUploadId).toBeUndefined();
+    });
   });
 
   describe('Logo Upload Label and Instructions', () => {

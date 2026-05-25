@@ -27,7 +27,6 @@ import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -109,7 +108,6 @@ public class SpeakerWorkflowService {
     private final SpeakerInvitationEmailService invitationEmailService;
     private final SpeakerAcceptanceEmailService acceptanceEmailService;
     private final OrganizerNotificationService organizerNotificationService;
-    private final MagicLinkService magicLinkService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final DomainEventPublisher domainEventPublisher;
     private final PrimarySpeakerResolver primarySpeakerResolver;
@@ -562,9 +560,8 @@ public class SpeakerWorkflowService {
         }
 
         try {
-            String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.GERMAN);
+                    speaker, event, Locale.GERMAN);
         } catch (Exception ex) {
             log.warn("Failed to send acceptance confirmation email for speaker {}: {}",
                     speaker.getId(), ex.getMessage());

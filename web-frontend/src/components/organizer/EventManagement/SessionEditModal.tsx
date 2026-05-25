@@ -32,6 +32,8 @@ import {
   ListItemSecondaryAction,
   IconButton,
   Link,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -163,6 +165,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  // Phones / small tablets get a full-screen dialog; otherwise centered md width.
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
@@ -468,7 +473,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isFullScreen}>
       <DialogTitle>{t('sessionEdit.title', 'Edit Session')}</DialogTitle>
 
       {/* Story 5.9: Tabs for Details and Materials */}

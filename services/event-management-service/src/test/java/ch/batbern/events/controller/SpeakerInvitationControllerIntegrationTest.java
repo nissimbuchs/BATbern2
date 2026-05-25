@@ -8,7 +8,6 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -61,9 +60,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     private SpeakerPoolRepository speakerPoolRepository;
 
     @Autowired
-    private SpeakerInvitationTokenRepository tokenRepository;
-
-    @Autowired
     private EventRepository eventRepository;
 
     @Autowired
@@ -89,7 +85,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @BeforeEach
     void setUp() {
         // Clean up in correct order (FK constraints)
-        tokenRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
 
@@ -308,13 +303,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     /**
      * Test 3.1: Should send invitation and update status to INVITED.
      *
-     * <p>Story 11.E.2 (AC7): magic-link token generation is removed from
-     * {@code runInvitedHook} — invitations now embed a Cognito login URL + temporary
-     * password (issued via the CUMS {@code /issue-invitation-credentials} sibling
-     * endpoint). Magic-link tokens are NO LONGER created at INVITED time. The original
-     * 6.1b assertion {@code tokenRepository.findBySpeakerPoolId(...).isNotEmpty()} no
-     * longer holds; the assertion is removed in line with the Phase E migration. Phase
-     * F (Story 11.F.1) will delete the {@code magic_link_tokens} table entirely.
+     * <p>Story 11.E.2 (AC7): invitations embed a Cognito login URL + temporary password
+     * (issued via the CUMS {@code /issue-invitation-credentials} sibling endpoint).
      */
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
@@ -463,8 +453,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         SpeakerPool unchanged = speakerPoolRepository.findById(candidate.getId()).orElseThrow();
         org.assertj.core.api.Assertions.assertThat(unchanged.getStatus())
                 .isEqualTo(SpeakerWorkflowState.READY);
-        org.assertj.core.api.Assertions.assertThat(
-                tokenRepository.findBySpeakerPoolId(unchanged.getId())).isEmpty();
     }
 
     /**

@@ -1538,19 +1538,21 @@ paths:
         - Speaker Invitation
       summary: Send invitation email to a speaker
       description: |
-        Send or resend a personalized invitation email with magic links for
-        accept/decline and a dashboard access link.
+        Send or resend a personalized Cognito-flow invitation email containing a login URL
+        and (for first-time speakers) a temporary password. Story 11.F.1 retired magic-link
+        tokens; speakers now sign in via Cognito and the portal is gated by
+        @PreAuthorize("hasRole('SPEAKER')").
 
-        **Story**: 6.1b - Speaker Invitation System
+        **Story**: 6.1b - Speaker Invitation System (updated by 11.E.2 / 11.F.1)
         **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
         **Authorization**: Requires ORGANIZER role
 
         **Business Rules**:
         - Speaker must exist in the pool for this event
         - Transitions speaker status to INVITED
-        - Generates two magic link tokens:
-          - RESPOND token (single-use) for accept/decline
-          - VIEW token (reusable, 30-day expiry) for dashboard access
+        - CUMS sibling endpoint `POST /users/{username}/issue-invitation-credentials`
+          mints a Cognito temporary password when needed (FRESH_TEMP_PASSWORD action),
+          otherwise the email signals the speaker to reuse their existing password.
         - Publishes SpeakerInvitationSentEvent domain event
         - Records outreach history and status transition history
         - Email sent asynchronously; failure does not block the response
@@ -8848,11 +8850,11 @@ components:
       type: object
       description: |
         Request to send/resend an invitation email to a speaker.
-        Story 6.1b - AC3: Invitation Email
+        Story 6.1b - AC3 (updated by 11.E.2 / 11.F.1): Invitation Email
 
         The email includes:
-        - Accept/decline magic links (single-use RESPOND token)
-        - Dashboard access link (reusable VIEW token)
+        - Cognito login URL + temporary password (FRESH_TEMP_PASSWORD)
+          OR existing-password reminder (USE_EXISTING_PASSWORD)
         - Event details, deadlines, and session info
       required:
         - responseDeadline

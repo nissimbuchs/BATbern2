@@ -25,6 +25,8 @@ import {
   Box,
   IconButton,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +75,8 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
 }) => {
   const { t } = useTranslation('organizer');
   const recordOutreachMutation = useRecordOutreach();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const initialFormData: FormData = {
     contactMethod: '',
@@ -157,6 +161,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isFullScreen}
       data-testid="mark-contacted-modal"
     >
       <DialogTitle>

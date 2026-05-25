@@ -230,7 +230,13 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
           {/* Screen reader announcement for unread count */}
           <Box
             role="status"
-            sx={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}
+            sx={{
+              position: 'absolute',
+              left: '-9999px',
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden',
+            }}
           >
             {t('notifications.unreadCount', { count: unreadCount })}
           </Box>

@@ -768,7 +768,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        sx={{ position: 'absolute', left: -10000, width: 1, height: 1, overflow: 'hidden' }}
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
       >
         {assignedCount > 0 &&
           t('slotAssignment.quickActions.sessionsAssignedAnnouncement', { count: assignedCount })}

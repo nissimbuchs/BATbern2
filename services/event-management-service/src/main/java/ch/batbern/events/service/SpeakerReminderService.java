@@ -13,7 +13,6 @@ import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,7 +48,6 @@ public class SpeakerReminderService {
     private final OutreachHistoryRepository outreachHistoryRepository;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final SpeakerReminderEmailService reminderEmailService;
-    private final MagicLinkService magicLinkService;
     private final NotificationService notificationService;
     private final ReminderProperties reminderProperties;
     private final PrimarySpeakerResolver primarySpeakerResolver;
@@ -281,9 +279,6 @@ public class SpeakerReminderService {
             LocalDate deadline,
             String triggeredBy
     ) {
-        // Generate VIEW token for portal link
-        String portalToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
-
         // Persist reminder log BEFORE sending email (dedup safety)
         // Phase B: log the recipient as resolved by PrimarySpeakerResolver — that's the
         // address the email service will actually use.
@@ -318,7 +313,7 @@ public class SpeakerReminderService {
         // TODO: Use speaker language preference when SpeakerPool gets a locale field
         try {
             reminderEmailService.sendReminderEmail(
-                    speaker, event, reminderType, tier, deadline, portalToken, Locale.GERMAN);
+                    speaker, event, reminderType, tier, deadline, Locale.GERMAN);
         } catch (Exception e) {
             log.error("Failed to send reminder email for speaker {}: type={}, tier={}",
                     speaker.getId(), reminderType, tier, e);

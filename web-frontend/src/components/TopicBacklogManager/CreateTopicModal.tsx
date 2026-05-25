@@ -29,6 +29,8 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +52,8 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEditMode = !!topic;
 
   const [formData, setFormData] = useState<CreateTopicRequest>({
@@ -147,6 +151,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isFullScreen}
       data-testid="create-topic-modal"
     >
       <DialogTitle>
