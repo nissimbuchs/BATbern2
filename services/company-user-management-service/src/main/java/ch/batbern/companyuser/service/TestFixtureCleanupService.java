@@ -52,7 +52,24 @@ public class TestFixtureCleanupService {
      */
     public enum CleanupEntityType {
         COMPANIES(Pattern.compile("^BRUNOTESTCO$")),
-        USERS(Pattern.compile("^bruno\\.test\\.$"));
+        USERS(Pattern.compile("^bruno\\.test\\.$")),
+        /**
+         * Sweeps the {@code user_additional_emails} table — the failure-mode target
+         * for plan §F4 (the {@code 15-add-additional-email} test that accumulates
+         * rows for the auth user every time {@code 17-delete-additional-email}
+         * fails).
+         *
+         * <p>Accepts TWO prefix values via the same regex:
+         * <ul>
+         *   <li>{@code bruno-test-} for the canonical pattern
+         *       {@code bruno-test-<ts>@e2e.batbern.invalid} (per B1).</li>
+         *   <li>{@code bruno-additional-} for the legacy leak prefix
+         *       {@code bruno-additional-NNN@example.com} that PR 5 is migrating
+         *       away from. Once the migration is done this branch can be removed,
+         *       but keep it for now to sweep historical leakage.</li>
+         * </ul>
+         */
+        ADDITIONAL_EMAILS(Pattern.compile("^bruno-test-$|^bruno-additional-$"));
 
         private final Pattern allowedPrefix;
 
@@ -77,7 +94,7 @@ public class TestFixtureCleanupService {
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Unknown entityType: '" + value + "'. Allowed: companies, users"
+                        "Unknown entityType: '" + value + "'. Allowed: companies, users, additional_emails"
                 );
             }
         }
@@ -130,6 +147,15 @@ public class TestFixtureCleanupService {
                 // ON DELETE CASCADE; their counts are not tracked separately here (see
                 // TestFixtureCleanupResponse Javadoc). Omit the keys entirely rather than
                 // emitting a -1 sentinel so the API shape stays clean.
+                break;
+            case ADDITIONAL_EMAILS:
+                // Plan §F4: sweeps the user_additional_emails table directly. Used by
+                // the users-api collection's 00/99 hooks to prevent the per-auth-user
+                // 5-row cap from blocking test 15 when test 17 fails to clean up.
+                // Case-insensitive LIKE so a stored "Bruno-Test-..." mixed case still
+                // matches (defensive — current canonical is lowercase).
+                int additionalEmails = repository.deleteAdditionalEmailsByEmailLike(likePattern);
+                counts.put("user_additional_emails", additionalEmails);
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);
