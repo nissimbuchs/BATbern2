@@ -1,7 +1,7 @@
 meta {
   name: Request Presigned URL - Invalid File Type
   type: http
-  seq: 6
+  seq: 7
 }
 
 post {
@@ -23,7 +23,7 @@ headers {
 
 body:json {
   {
-    "fileName": "document.pdf",
+    "fileName": "bruno-test-{{$timestamp}}.pdf",
     "fileSize": 1024,
     "mimeType": "application/pdf"
   }

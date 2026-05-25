@@ -1,0 +1,42 @@
+meta {
+  name: Verify Logo Deletion (re-DELETE returns 404)
+  type: http
+  seq: 4
+}
+
+# Audit-pass addition (PR 3, plan §D.4): tighten DELETE assertions.
+# There is no GET /logos/{id} endpoint, so the standard "DELETE-then-GET-404"
+# pattern from the D template doesn't apply. The next-best assertion is
+# idempotency: re-DELETE-ing the same uploadId should return 404, because the
+# row was already removed by test 03. If the DELETE in 03 was a no-op (e.g.
+# 204 returned without actually wiping the row), this test catches it.
+
+delete {
+  url: {{baseUrl}}/logos/{{testUploadId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 — logo already deleted by test 03", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should NOT return 204 (would mean delete in 03 was a no-op)", function() {
+    expect(res.getStatus()).to.not.equal(204);
+  });
+}
