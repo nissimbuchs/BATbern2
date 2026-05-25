@@ -287,6 +287,49 @@ Add as a new `bruno-tests/admin-cleanup-api/` collection that runs FIRST in `run
 4. Trigger a deliberate-fail again on a branch → confirm rollback runs and Slack notification arrives.
 5. Cleanup audit logs in CloudWatch show no anomalies.
 
+## G. Local pre-flight (every PR)
+
+`bruno-tests/environments/development.bru` already targets `http://localhost:8000/api/v1`, and `scripts/ci/run-bruno-tests.sh` accepts `development` as its env arg. **Every PR in this plan should run its Bruno tests against local dev once before pushing.** Same code, same Spring Boot config, same Postgres, same staging Cognito for JWT — local catches regex / route / config drift that Java integration tests miss (because they bypass the gateway and call the service directly), and surfaces wiring issues seconds after a save instead of minutes after a CI run.
+
+### Coverage matrix — what local dev validates ahead of staging
+
+| PR scope | Local-dev coverage |
+|----------|--------------------|
+| **B2 cleanup endpoints** (CUMS done; EMS + PCS upcoming) | ✅ Full — regex map, ROLE_ORGANIZER gate, cascade order, audit logging |
+| **B3 per-collection `00-`/`99-` cleanup hooks** | ✅ Full — HTTP-level, env-agnostic |
+| **F2 `admin-cleanup-api` auth matrix** | ✅ Full — develop the 8 cases locally first; same collection then runs against staging |
+| **C events-api decomposition + 6 new collections** | ✅ Full — Bruno collection structure is env-agnostic |
+| **D per-collection audit pass** (PRs 3-13) | ✅ Full — every D.5 "run twice" step runs locally first |
+| **Cross-service cleanup order** (PCS → EMS → CUMS) | ✅ Full — end-to-end via Bruno |
+| **A2 runner flags** (`--collection`, `--cleanup-only`, `--no-bail`) | ✅ Full — already exercised against `development` |
+| **A5 `rollback-deployment.sh`** | 🟡 Partial — `--dry-run` verifies arg parsing + ECR tag-lookup; AWS calls skipped |
+| **A3 ECS deployment alarms** | ❌ Staging-only — CloudWatch + ECS deployment controller has no local analogue |
+| **A4 ECR `staging-stable` tag promotion** | ❌ Staging-only — ECR is AWS |
+| **A5 `rollback-on-bruno-failure` workflow job** | ❌ Staging-only — fires only in GitHub Actions |
+| **One-time `bruno-staging-pre-cleanup.sql`** | ❌ Staging-only — the 17 target rows only exist in the staging DB |
+| **Real auto-rollback ECS task-def swap** | ❌ Staging-only — deferred to F1's deliberate-fail exercise |
+
+### Prerequisite: Pattern 3b user mirroring
+
+Staging-issued JWTs (from `~/.batbern/staging-organizer.json`) work locally because `shared-kernel/.../security/JwtRolesConverter` falls back to the local DB when `custom:role` is empty (Epic 11.E.7 Pattern 3b). **The `user_profiles` row must exist in the local DB.** If cleanup-endpoint calls return `403 Forbidden` locally but pass in staging:
+
+```bash
+./scripts/dev/sync-users-from-cognito.sh   # mirror staging users → local DB
+./scripts/ci/run-bruno-tests.sh development --collection admin-cleanup-api
+```
+
+See `docs/architecture/06b-user-lifecycle-sync.md` §"Pattern 3b" for the full pattern.
+
+### Per-PR workflow
+
+1. Code + Java unit/integration tests green (TDD red-green-refactor).
+2. **Local pre-flight**: `make dev-native-up` + the relevant `./scripts/ci/run-bruno-tests.sh development --collection <name>` run.
+3. Commit + push.
+4. Staging CI re-runs the same Bruno tests (still `continue-on-error: true` until PR 14).
+5. After PR 14: staging Bruno is the deploy gate; local pre-flight remains the first signal.
+
+For PR 1 specifically, the EMS and PCS cleanup-endpoint work is fully exercisable locally (Section B is ~90% of remaining PR 1 scope by line count) — only the workflow / alarm / ECR pieces of Section A fall through to staging-only verification.
+
 ## Critical files
 
 | Path | Change |
