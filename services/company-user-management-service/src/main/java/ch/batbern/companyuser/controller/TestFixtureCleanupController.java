@@ -64,11 +64,11 @@ public class TestFixtureCleanupController {
                 responseCode = "200",
                 description = "Cleanup completed (may have deleted 0 rows if nothing matched)",
                 content = @Content(schema = @Schema(implementation = TestFixtureCleanupResponse.class))
-        ),
+            ),
         @ApiResponse(
                 responseCode = "400",
                 description = "Invalid entityType, missing prefix, or prefix doesn't match the bound regex"
-        ),
+            ),
         @ApiResponse(responseCode = "401", description = "Missing or invalid JWT"),
         @ApiResponse(responseCode = "403", description = "Caller lacks ORGANIZER role")
     })
