@@ -22,6 +22,23 @@
 --   PGPASSWORD=<from-secrets-manager> psql \
 --     -h localhost -p 5433 -U postgres -d batbern \
 --     -f scripts/db/bruno-staging-pre-cleanup.sql
+--
+-- ─── Schema reality check (verified 2026-05-25) ──────────────────────────────
+-- partners FK ON DELETE CASCADE chain (current schema after V4/V6/V7/V9):
+--   partners → partner_meeting_attendance  ✓ (V2 partner_id FK; cascades)
+--   partners → partner_notes               ✓ (V7 partner_id FK; cascades)
+--   partners → topic_votes                 ✗ (V4 rebuilt — links by company_name string, no FK)
+--   partners → topic_suggestions           ✗ (V4 rebuilt — links by company_name string, no FK)
+--   partners → partner_meetings            ✗ (V5 schema — meetings are standalone, no partner FK)
+--   partners → partner_meeting_rsvps       ✗ (V9 schema — links to partner_meetings via meeting_id, no partner FK)
+--
+-- That means:
+--   - DELETE FROM partners cascades to attendance + notes automatically.
+--   - topic_votes and topic_suggestions need EXPLICIT cleanup by company_name.
+--   - partner_meetings and partner_meeting_rsvps are not linked to specific
+--     partners — the audit found 0 stray rows there for our targets; we leave
+--     them alone. (See "Deferred — partner_meetings cleanup coverage" in the
+--     plan; that's a separate follow-up.)
 
 BEGIN;
 
@@ -51,45 +68,53 @@ WHERE company_name IN (
 );
 
 \echo ''
-\echo '--- Partner cascade preview (rows that will be deleted via FK CASCADE) ---'
-SELECT 'partner_meetings'           AS table_name, COUNT(*) AS cascade_count
-FROM partner_meetings WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
+\echo '--- Partner cleanup preview (cascade + explicit) ---'
+-- Cascade dependents (cleared automatically when the partner row is deleted).
+SELECT 'partner_meeting_attendance (cascade)' AS table_name, COUNT(*) AS count
+FROM partner_meeting_attendance
+WHERE partner_id IN (
+    SELECT id FROM partners WHERE company_name IN (
+        'brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899'
+    )
+)
 UNION ALL
-SELECT 'partner_meeting_attendance', COUNT(*) FROM partner_meeting_attendance WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
+SELECT 'partner_notes (cascade)', COUNT(*)
+FROM partner_notes
+WHERE partner_id IN (
+    SELECT id FROM partners WHERE company_name IN (
+        'brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899'
+    )
+)
 UNION ALL
-SELECT 'partner_meeting_rsvps',      COUNT(*) FROM partner_meeting_rsvps      WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
+-- Explicit dependents (no FK; ADR-003 string link by company_name).
+SELECT 'topic_votes (explicit)', COUNT(*)
+FROM topic_votes
+WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
 UNION ALL
-SELECT 'partner_notes',              COUNT(*) FROM partner_notes              WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
-UNION ALL
-SELECT 'topic_votes',                COUNT(*) FROM topic_votes                WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899')
-UNION ALL
-SELECT 'topic_suggestions',          COUNT(*) FROM topic_suggestions          WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
+SELECT 'topic_suggestions (explicit)', COUNT(*)
+FROM topic_suggestions
+WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
 
 \echo ''
-\echo '--- Delete partner-side rows (cascade or explicit) ---'
--- These tables FK-reference partners by company_name (a meaningful ID, not UUID).
--- Some have ON DELETE CASCADE; explicit deletes here are belt-and-suspenders.
+\echo '--- Delete topic_votes + topic_suggestions (no FK; explicit by company_name) ---'
+-- V4 rebuilt these tables to link by string company_name (ADR-003), so the
+-- partner DELETE below does NOT cascade to them.
 DELETE FROM topic_votes
  WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
 DELETE FROM topic_suggestions
  WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
-DELETE FROM partner_notes
- WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
-DELETE FROM partner_meeting_attendance
- WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
-DELETE FROM partner_meeting_rsvps
- WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
-DELETE FROM partner_meetings
- WHERE company_name IN ('brtest117','brtest150','brtest288','brtest424','brtest675','brtest861','brtest899');
 
 \echo ''
-\echo '--- Delete partners (the 7 brtest* rows) ---'
+\echo '--- Delete partners (cascades to partner_meeting_attendance + partner_notes) ---'
 DELETE FROM partners
- WHERE company_name IN ('brtest117', 'brtest150', 'brtest288', 'brtest424', 'brtest675', 'brtest861', 'brtest899');
+ WHERE company_name IN (
+     'brtest117', 'brtest150', 'brtest288', 'brtest424',
+     'brtest675', 'brtest861', 'brtest899'
+ );
 
 \echo ''
 \echo '--- Delete logos referencing about-to-be-deleted test companies (soft FK) ---'
--- logos.associated_entity_id is a string reference (not a real FK constraint).
+-- logos.associated_entity_id is a VARCHAR string reference, not a real FK.
 -- Wipe any logo associated with the 10 legacy test company names.
 DELETE FROM logos
  WHERE associated_entity_type = 'COMPANY'
@@ -123,7 +148,7 @@ DELETE FROM companies
  );
 
 \echo ''
-\echo '--- AFTER: verify the rows are gone ---'
+\echo '--- AFTER: verify the rows are gone (both buckets must report 0) ---'
 SELECT 'companies-remaining-matching' AS bucket, COUNT(*) AS count
 FROM companies
 WHERE name IN (
