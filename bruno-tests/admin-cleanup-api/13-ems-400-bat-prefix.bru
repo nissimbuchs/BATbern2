@@ -1,0 +1,40 @@
+meta {
+  name: EMS cleanup — prefix=BAT (would match real BATbern events) rejected
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BAT"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("returns 400 when prefix would match real BATbern* events", function() {
+    // The production-safety guarantee — BAT% matches BATbern56, BATbern57, etc.
+    // Server-side regex enforcement is the only thing that stands between Bruno
+    // and 100+ real events on staging.
+    expect(res.getStatus()).to.equal(400);
+  });
+}

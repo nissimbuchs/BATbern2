@@ -172,9 +172,14 @@ failed=0
 skipped=0
 
 # Test collection directories
+# admin-cleanup-api MUST run first — verifies the cleanup endpoint's authorization +
+# routing + 400-validation chain through the gateway. Plan F2 mandates "runs FIRST in
+# run-bruno-tests.sh so authorization regressions are caught before any test creates
+# state to clean."
 # speaker-portal-api requires the E2E token helper endpoint (@Profile dev/local/test only)
-# and is therefore excluded on staging/production
+# and is therefore excluded on staging/production.
 collections=(
+    "admin-cleanup-api"
     "file-upload-api"
     "companies-api"
     "users-api"
