@@ -73,7 +73,7 @@ BATbern runs in multiple environments:
 |-------------|-----|---------|----------------|
 | **Local** | http://localhost:3000 | Development | Staging Cognito |
 | **Development** | https://dev.batbern.ch | Testing | Dev Cognito |
-| **Staging** | https://staging.batbern.ch | Pre-production | Staging Cognito |
+| **Staging** | https://www.batbern.ch | Pre-production | Staging Cognito |
 | **Production** | https://www.batbern.ch | Live conferences | Production Cognito |
 
 **Note**: Local development uses staging Cognito for authentication, avoiding AWS infrastructure costs.

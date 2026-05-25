@@ -97,7 +97,7 @@ public class ConfigController {
     private String getApiBaseUrl() {
         return switch (environment.toLowerCase()) {
             case "development" -> String.format("http://localhost:%d/api/v1", serverPort);
-            case "staging" -> "https://api.staging.batbern.ch/api/v1";
+            case "staging" -> "https://api.batbern.ch/api/v1";
             case "production" -> "https://api.batbern.ch/api/v1";
             default -> {
                 log.warn("Unknown environment '{}', defaulting to development", environment);

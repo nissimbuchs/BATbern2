@@ -5,7 +5,7 @@
 # Note: We don't use 'set -e' here because we want to run all tests
 # and report a summary at the end, not exit on first failure
 
-API_URL=${1:-"https://api.staging.batbern.ch"}
+API_URL=${1:-"https://api.batbern.ch"}
 TEST_TOKEN=${2:-""}
 
 # Color output

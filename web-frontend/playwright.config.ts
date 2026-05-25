@@ -33,8 +33,8 @@ const envConfig = {
     apiURL: 'http://localhost:8000',
   },
   staging: {
-    baseURL: 'https://staging.batbern.ch',
-    apiURL: 'https://api.staging.batbern.ch',
+    baseURL: 'https://www.batbern.ch',
+    apiURL: 'https://api.batbern.ch',
   },
   production: {
     baseURL: 'https://batbern.ch',

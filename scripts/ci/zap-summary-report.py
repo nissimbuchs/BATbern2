@@ -249,7 +249,7 @@ def generate_report(log_dir, output_path=None):
     lines = []
     lines.append("# OWASP ZAP Security Report — BATbern Staging")
     lines.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}*")
-    lines.append(f"*Target: https://api.staging.batbern.ch / https://staging.batbern.ch*")
+    lines.append(f"*Target: https://api.batbern.ch / https://www.batbern.ch*")
     lines.append("")
 
     # ── Summary table ──────────────────────────────────────────────────────────

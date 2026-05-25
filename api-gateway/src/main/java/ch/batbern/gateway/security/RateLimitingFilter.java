@@ -152,7 +152,7 @@ public class RateLimitingFilter implements Filter {
             return true;
         }
         // Allow staging and production
-        return origin.equals("https://staging.batbern.ch") || origin.equals("https://www.batbern.ch");
+        return origin.equals("https://www.batbern.ch") || origin.equals("https://www.batbern.ch");
     }
 
     /**

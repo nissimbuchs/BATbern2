@@ -4,8 +4,8 @@
 # Note: We don't use 'set -e' here because we want to run all tests
 # and report a summary at the end, not exit on first failure
 
-API_URL=${1:-"https://api.staging.batbern.ch"}
-FRONTEND_ORIGIN=${2:-"https://staging.batbern.ch"}
+API_URL=${1:-"https://api.batbern.ch"}
+FRONTEND_ORIGIN=${2:-"https://www.batbern.ch"}
 
 # Color output
 RED='\033[0;31m'

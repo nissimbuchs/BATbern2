@@ -207,7 +207,7 @@ vim web-frontend/public/release-notes.txt
 # Push to staging
 ./scripts/staging/push-release-notes.sh
 
-# Changes visible within 1-2 minutes at https://staging.batbern.ch
+# Changes visible within 1-2 minutes at https://www.batbern.ch
 ```
 
 ---

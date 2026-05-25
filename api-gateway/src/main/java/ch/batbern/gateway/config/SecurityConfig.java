@@ -93,8 +93,8 @@ public class SecurityConfig {
 
     /**
      * CORS configuration bean
-     * Allows frontend (different origin: localhost:3000, staging.batbern.ch, etc.)
-     * to access API (localhost:8080, api.staging.batbern.ch)
+     * Allows frontend (different origin: localhost:3000, www.batbern.ch, etc.)
+     * to access API (localhost:8080, api.batbern.ch).
      */
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
@@ -107,7 +107,6 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
             "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
             "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
-            "https://staging.batbern.ch",
             "https://www.batbern.ch",
             "https://batbern.ch"
         ));

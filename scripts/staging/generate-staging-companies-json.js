@@ -14,7 +14,7 @@
  *
  * For each company with logoFilePath:
  *   - Extracts filename from path
- *   - Sets logoUrl to https://cdn.staging.batbern.ch/import-data/company-logos/<filename>
+ *   - Sets logoUrl to https://cdn.batbern.ch/import-data/company-logos/<filename>
  *   - Preserves logoFilePath for reference
  *
  * Companies with existing logoUrl (external URLs) are kept unchanged.
@@ -26,7 +26,7 @@ const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const INPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies.json');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies-with-staging-urls.json');
-const CDN_BASE_URL = 'https://cdn.staging.batbern.ch/import-data/company-logos';
+const CDN_BASE_URL = 'https://cdn.batbern.ch/import-data/company-logos';
 
 /**
  * Extract filename from logoFilePath
@@ -183,7 +183,7 @@ function generateStagingCompaniesJson() {
   // Next steps
   console.log('Next steps:');
   console.log('  1. Verify logos are accessible via CDN');
-  console.log('  2. Open https://staging.batbern.ch');
+  console.log('  2. Open https://www.batbern.ch');
   console.log('  3. Navigate to Companies → Batch Import');
   console.log(`  4. Upload: ${path.basename(OUTPUT_FILE)}`);
   console.log('');

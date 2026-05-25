@@ -86,7 +86,7 @@ export class StorageStack extends cdk.Stack {
           // CORS for direct uploads (presigned URLs)
           allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
           allowedOrigins: [
-            'https://staging.batbern.ch',
+            'https://www.batbern.ch',
             'https://batbern.ch',
             'http://localhost:3000', // For local development
           ],

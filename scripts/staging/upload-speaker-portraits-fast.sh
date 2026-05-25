@@ -22,7 +22,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 AWS_PROFILE="batbern-staging"
 S3_BUCKET="batbern-content-staging"
 S3_PREFIX="import-data/speaker-portraits"
-CDN_BASE="https://cdn.staging.batbern.ch"
+CDN_BASE="https://cdn.batbern.ch"
 
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}BATbern - Fast Upload Speaker Portraits to Staging S3${NC}"

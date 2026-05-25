@@ -196,7 +196,7 @@ public class TurnstileVerificationFilter implements Filter {
         if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) {
             return true;
         }
-        return origin.equals("https://staging.batbern.ch") || origin.equals("https://www.batbern.ch");
+        return origin.equals("https://www.batbern.ch") || origin.equals("https://www.batbern.ch");
     }
 
     @Override

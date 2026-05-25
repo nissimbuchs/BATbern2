@@ -2,7 +2,7 @@
 --
 -- Root cause: event-management-stack.ts passed distributionDomainName (e.g.
 --   https://dhndjchovz1zp.cloudfront.net) instead of cdnDomain alias
---   (e.g. https://cdn.staging.batbern.ch / https://cdn.batbern.ch).
+--   (e.g. https://cdn.batbern.ch / https://cdn.batbern.ch).
 --   company-user-management-stack already used the alias — only EMS was affected.
 --
 -- Affected tables:
@@ -12,7 +12,7 @@
 --
 -- Strategy:
 --   1. Infer the correct CDN alias from any existing correct URL on this DB instance.
---   2. Fall back to https://cdn.staging.batbern.ch (the environment where this bug was observed).
+--   2. Fall back to https://cdn.batbern.ch (the environment where this bug was observed).
 --   3. All three tables are updated only where the URL contains '.cloudfront.net'.
 --   4. This migration is a no-op when no .cloudfront.net URLs exist (e.g. production with no bad data).
 
@@ -50,7 +50,7 @@ BEGIN
 
     -- Final fallback: staging alias (where this bug was introduced and observed)
     IF v_cdn_domain IS NULL THEN
-        v_cdn_domain := 'https://cdn.staging.batbern.ch';
+        v_cdn_domain := 'https://cdn.batbern.ch';
     END IF;
 
     -- Fix event_photos: reconstruct display_url from s3_key + correct domain

@@ -82,8 +82,8 @@ echo ""
 # Set environment-specific URLs
 if [ "$ENVIRONMENT" = "staging" ]; then
     export TEST_ENV="staging"
-    export E2E_BASE_URL="https://staging.batbern.ch"
-    export E2E_API_URL="https://api.staging.batbern.ch"
+    export E2E_BASE_URL="https://www.batbern.ch"
+    export E2E_API_URL="https://api.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 elif [ "$ENVIRONMENT" = "production" ]; then
     export TEST_ENV="production"

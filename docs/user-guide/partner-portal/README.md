@@ -21,7 +21,7 @@ Partners access the portal at the same URL as other users, but see a partner-spe
 | Environment | URL |
 |-------------|-----|
 | Production | https://www.batbern.ch |
-| Staging | https://staging.batbern.ch |
+| Staging | https://www.batbern.ch |
 
 After login, partners are routed to their company dashboard showing all three portal sections.
 
