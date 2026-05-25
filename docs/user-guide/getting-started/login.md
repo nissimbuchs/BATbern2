@@ -27,7 +27,7 @@ All Cognito flows (login, password reset, email verification) are fully implemen
 
 Visit the BATbern application:
 - **Local**: http://localhost:3000
-- **Staging**: https://staging.batbern.ch
+- **Staging**: https://www.batbern.ch
 - **Production**: https://www.batbern.ch
 
 The login screen will appear automatically if you're not authenticated.

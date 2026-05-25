@@ -13,7 +13,7 @@
  * Writes: apps/BATspa-old/src/api/sessions-with-staging-urls.json
  *
  * For each session with pdf field:
- *   - Sets materialUrl to https://cdn.staging.batbern.ch/import-data/session-materials/<filename>
+ *   - Sets materialUrl to https://cdn.batbern.ch/import-data/session-materials/<filename>
  *   - Preserves pdf field for reference
  *
  * Sessions without pdf field are kept unchanged.
@@ -25,7 +25,7 @@ const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const INPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/sessions.json');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/sessions-with-staging-urls.json');
-const CDN_BASE_URL = 'https://cdn.staging.batbern.ch/import-data/session-materials';
+const CDN_BASE_URL = 'https://cdn.batbern.ch/import-data/session-materials';
 
 /**
  * Main processing function
@@ -142,7 +142,7 @@ function generateStagingSessionsJson() {
   console.log('Next steps:');
   console.log('  1. Run: ./scripts/staging/upload-session-materials-fast.sh');
   console.log('  2. Verify materials are accessible via CDN');
-  console.log('  3. Open https://staging.batbern.ch');
+  console.log('  3. Open https://www.batbern.ch');
   console.log('  4. Navigate to Sessions → Batch Import');
   console.log(`  5. Upload: ${path.basename(OUTPUT_FILE)}`);
   console.log('');

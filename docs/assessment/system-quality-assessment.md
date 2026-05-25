@@ -125,7 +125,7 @@ HTTP traffic, not source code. Six scan profiles cover every API surface:
 
 | Scan | Target | Report |
 |------|--------|--------|
-| Frontend | `https://staging.batbern.ch` | `security-reports/zap-frontend.json` |
+| Frontend | `https://www.batbern.ch` | `security-reports/zap-frontend.json` |
 | Companies API | `/api/v1/companies/**` | `security-reports/zap-companies.json` |
 | Events API | `/api/v1/events/**` | `security-reports/zap-events.json` |
 | Speakers API | `/api/v1/speakers/**` | `security-reports/zap-speakers.json` |

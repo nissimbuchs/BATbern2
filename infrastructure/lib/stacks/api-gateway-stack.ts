@@ -70,7 +70,7 @@ export class ApiGatewayStack extends cdk.Stack {
           `https://${props.config.domain?.zoneName ?? 'batbern.ch'}`,
         ]
       : envName === 'staging'
-      ? ['https://staging.batbern.ch']
+      ? ['https://www.batbern.ch']
       : ['http://localhost:3000'];
 
     // Create HTTP API Gateway (v2)

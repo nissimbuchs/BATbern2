@@ -98,7 +98,7 @@ public class SecurityHeadersFilter implements Filter {
         csp.append("font-src 'self' data:; ");
 
         // Connect sources (for API calls) - self, AWS Cognito, CloudFront CDN, and Cloudflare Turnstile
-        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://cdn.staging.batbern.ch https://challenges.cloudflare.com; ");
+        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://challenges.cloudflare.com; ");
 
         // Frame sources - allow Google Maps embeds and Cloudflare Turnstile
         csp.append("frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com; ");

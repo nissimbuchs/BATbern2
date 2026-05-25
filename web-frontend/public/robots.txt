@@ -36,4 +36,4 @@ Disallow: /api/
 
 # Sitemap location
 Sitemap: https://batbern.ch/sitemap.xml
-Sitemap: https://staging.batbern.ch/sitemap.xml
+Sitemap: https://www.batbern.ch/sitemap.xml

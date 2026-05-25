@@ -34,7 +34,7 @@ S3_BUCKET="batbern-content-staging"
 S3_PREFIX="import-data/company-logos"
 ARCHIV_BASE="$PROJECT_ROOT/apps/BATspa-old/src/archiv"
 PARTNERS_DIR="$PROJECT_ROOT/apps/BATspa-old/src/assets/partners"
-CDN_BASE="https://cdn.staging.batbern.ch"
+CDN_BASE="https://cdn.batbern.ch"
 
 # Parse command line arguments
 DRY_RUN=false

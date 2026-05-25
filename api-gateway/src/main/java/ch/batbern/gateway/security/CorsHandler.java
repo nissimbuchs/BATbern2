@@ -13,7 +13,7 @@ public class CorsHandler {
 
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
         "https://www.batbern.ch",
-        "https://staging.batbern.ch",
+        "https://batbern.ch",
         "http://localhost:3000",
         "http://localhost:3001"
     );

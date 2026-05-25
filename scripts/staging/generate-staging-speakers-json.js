@@ -14,7 +14,7 @@
  *
  * For each speaker with portrait:
  *   - Extracts filename from portrait path
- *   - Sets portraitUrl to https://cdn.staging.batbern.ch/import-data/speaker-portraits/<filename>
+ *   - Sets portraitUrl to https://cdn.batbern.ch/import-data/speaker-portraits/<filename>
  *   - Preserves portrait field for reference
  *
  * Speakers with existing portraitUrl (external URLs) are kept unchanged.
@@ -26,7 +26,7 @@ const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const INPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/speakers.json');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/speakers-with-staging-urls.json');
-const CDN_BASE_URL = 'https://cdn.staging.batbern.ch/import-data/speaker-portraits';
+const CDN_BASE_URL = 'https://cdn.batbern.ch/import-data/speaker-portraits';
 
 /**
  * Extract filename from portrait field
@@ -184,7 +184,7 @@ function generateStagingSpeakersJson() {
   console.log('Next steps:');
   console.log('  1. Upload portraits to S3: ./scripts/staging/upload-speaker-portraits-fast.sh');
   console.log('  2. Verify portraits are accessible via CDN');
-  console.log('  3. Open https://staging.batbern.ch');
+  console.log('  3. Open https://www.batbern.ch');
   console.log('  4. Navigate to Users → Batch Import Speakers');
   console.log(`  5. Upload: ${path.basename(OUTPUT_FILE)}`);
   console.log('');

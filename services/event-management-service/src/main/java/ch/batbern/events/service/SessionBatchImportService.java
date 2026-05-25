@@ -323,7 +323,7 @@ public class SessionBatchImportService {
 
     /**
      * Extract filename from URL
-     * Example: https://cdn.staging.batbern.ch/import-data/session-materials/BAT01_RTC.pdf → BAT01_RTC.pdf
+     * Example: https://cdn.batbern.ch/import-data/session-materials/BAT01_RTC.pdf → BAT01_RTC.pdf
      *
      * @param url URL to extract filename from
      * @return Extracted filename

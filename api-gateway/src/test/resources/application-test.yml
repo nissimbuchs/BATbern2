@@ -90,7 +90,7 @@ security:
   cors:
     allowed-origins:
       - http://localhost:3000
-      - https://staging.batbern.ch
+      - https://www.batbern.ch
       - https://www.batbern.ch
     allowed-methods:
       - GET

@@ -69,7 +69,7 @@ class OpenApiConfigTest {
         assertThat(servers).hasSizeGreaterThanOrEqualTo(3);
         assertThat(servers.stream().map(s -> s.getUrl()))
                 .contains("http://localhost:8080")
-                .contains("https://api.staging.batbern.ch")
+                .contains("https://api.batbern.ch")
                 .contains("https://api.batbern.ch");
     }
 

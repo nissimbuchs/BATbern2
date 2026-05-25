@@ -55,7 +55,7 @@ npm run deploy:staging
 
 ```bru
 vars {
-  baseUrl: https://api.staging.batbern.ch/api/v1
+  baseUrl: https://api.batbern.ch/api/v1
   authToken: {{process.env.AUTH_TOKEN}}
 
   # Partner API test data
@@ -70,7 +70,7 @@ vars {
 ```bash
 # 1. Create test company (if not exists)
 # Via Company Service API or seed script from Story 2.1
-curl -X POST https://api.staging.batbern.ch/api/v1/companies \
+curl -X POST https://api.batbern.ch/api/v1/companies \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,7 +81,7 @@ curl -X POST https://api.staging.batbern.ch/api/v1/companies \
 
 # 2. Create test users (if not exist)
 # Via User Service API or seed script from Story 2.1b
-curl -X POST https://api.staging.batbern.ch/api/v1/users \
+curl -X POST https://api.batbern.ch/api/v1/users \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,7 +92,7 @@ curl -X POST https://api.staging.batbern.ch/api/v1/users \
   }'
 
 # 3. Create test partner for GoogleZH
-curl -X POST https://api.staging.batbern.ch/api/v1/partners \
+curl -X POST https://api.batbern.ch/api/v1/partners \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

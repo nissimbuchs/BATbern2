@@ -10,8 +10,8 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('CORS Validation', () => {
-  const apiBaseUrl = process.env.E2E_API_URL || 'https://api.staging.batbern.ch';
-  const frontendOrigin = process.env.E2E_BASE_URL || 'https://staging.batbern.ch';
+  const apiBaseUrl = process.env.E2E_API_URL || 'https://api.batbern.ch';
+  const frontendOrigin = process.env.E2E_BASE_URL || 'https://www.batbern.ch';
 
   test.beforeEach(async ({ page }) => {
     // Intercept and log network requests to validate CORS
@@ -173,13 +173,13 @@ test.describe('CORS Validation', () => {
 });
 
 test.describe('Header Propagation Validation', () => {
-  const apiBaseUrl = process.env.E2E_API_URL || 'https://api.staging.batbern.ch';
+  const apiBaseUrl = process.env.E2E_API_URL || 'https://api.batbern.ch';
 
   test('should propagate correlation ID through request flow', async ({ page }) => {
     const correlationId = 'e2e-test-' + Date.now();
 
     // Navigate to app
-    await page.goto(process.env.E2E_BASE_URL || 'https://staging.batbern.ch');
+    await page.goto(process.env.E2E_BASE_URL || 'https://www.batbern.ch');
 
     // Make API request with correlation ID
     await page.evaluate(

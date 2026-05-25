@@ -46,13 +46,13 @@ class CorsConfigurationTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        request.addHeader("Origin", "https://staging.batbern.ch");
+        request.addHeader("Origin", "https://www.batbern.ch");
 
         // When
         corsHandler.handleCorsRequest(request, response);
 
         // Then
-        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://staging.batbern.ch");
+        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://www.batbern.ch");
         assertThat(response.getHeader("Access-Control-Allow-Credentials")).isEqualTo("true");
     }
 
@@ -192,7 +192,7 @@ class CorsConfigurationTest {
         // Given
         String[] validOrigins = {
             "https://www.batbern.ch",
-            "https://staging.batbern.ch",
+            "https://batbern.ch",
             "http://localhost:3000",
             "http://localhost:3001"
         };

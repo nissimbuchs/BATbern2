@@ -110,7 +110,7 @@ export class CognitoStack extends cdk.Stack {
     const frontendDomain = isProdTraffic
       ? `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`
       : envName === 'staging'
-      ? 'https://staging.batbern.ch'
+      ? 'https://www.batbern.ch'
       : 'http://localhost:3000';
 
     // FROM address must use a domain verified in SES for the environment
@@ -221,13 +221,13 @@ export class CognitoStack extends cdk.Stack {
     const callbackUrls = isProdTraffic
       ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/auth/callback`]
       : envName === 'staging'
-      ? ['https://staging.batbern.ch/auth/callback']
+      ? ['https://www.batbern.ch/auth/callback']
       : ['http://localhost:3000/auth/callback'];
 
     const logoutUrls = isProdTraffic
       ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/logout`]
       : envName === 'staging'
-      ? ['https://staging.batbern.ch/logout']
+      ? ['https://www.batbern.ch/logout']
       : ['http://localhost:3000/logout'];
 
     // Create User Pool Client
