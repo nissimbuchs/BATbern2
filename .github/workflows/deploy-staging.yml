@@ -1375,10 +1375,22 @@ jobs:
     name: Bruno API contract tests
     needs: deploy-to-staging
     runs-on: ubuntu-latest
-    continue-on-error: true  # ← REMOVE in PR 14 to flip the gate
+    # NOTE: continue-on-error sits at the STEP level (on the "Run Bruno" step)
+    # rather than the job level. Job-level continue-on-error overrides the
+    # workflow-failure semantics but the exact effect on `needs.<job>.result`
+    # is not authoritatively documented and behaved inconsistently across
+    # tests. Capturing the raw outcome as a job output via `steps.<id>.outcome`
+    # is unambiguous: downstream jobs gate on
+    # `needs.bruno-tests.outputs.outcome` and the wiring works regardless of
+    # the job-level `result` value.
+    #
+    # PR 14 (gate flip): delete the `continue-on-error: true` line on the
+    # "Run Bruno" step. The job-output wiring stays in place.
     permissions:
       id-token: write
       contents: read
+    outputs:
+      outcome: ${{ steps.run-bruno.outcome }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -1468,6 +1480,8 @@ jobs:
           echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
 
       - name: Run Bruno API contract tests
+        id: run-bruno
+        continue-on-error: true  # ← REMOVE in PR 14 to flip the gate
         env:
           AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
           ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
@@ -1485,6 +1499,14 @@ jobs:
           # script's positional arg.
           ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"
 
+      - name: Report Bruno outcome
+        if: always()
+        run: |
+          echo "Bruno step outcome: ${{ steps.run-bruno.outcome }}"
+          if [ "${{ steps.run-bruno.outcome }}" = "failure" ]; then
+            echo "::warning::Bruno tests failed — downstream rollback job will fire if enable_bruno_rollback=true"
+          fi
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Bruno green ⇒ promote staging-current → staging-stable across all 5 service
   # ECR repos + api-gateway. `staging-stable` is the rollback target read by
@@ -1493,7 +1515,11 @@ jobs:
   tag-stable-on-success:
     name: Promote staging-current → staging-stable
     needs: [deploy-to-staging, bruno-tests]
-    if: needs.bruno-tests.result == 'success'
+    # Gate on the explicit Bruno-step outcome captured as a job output.
+    # Avoids ambiguity with `needs.bruno-tests.result` when `continue-on-error: true`
+    # is on the Bruno step (the job's `result` could be `success` even though
+    # the step itself failed).
+    if: needs.bruno-tests.outputs.outcome == 'success'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1528,8 +1554,13 @@ jobs:
   rollback-on-bruno-failure:
     name: Auto-rollback after Bruno failure
     needs: [deploy-to-staging, bruno-tests]
+    # Gate on the explicit Bruno-step outcome captured as a job output.
+    # Using `needs.bruno-tests.outputs.outcome` (raw step outcome) rather than
+    # `needs.bruno-tests.result` (job conclusion), because `continue-on-error: true`
+    # on the Bruno step can leave the job's `result` as 'success' even though
+    # the step itself failed.
     if: >-
-      needs.bruno-tests.result == 'failure' &&
+      needs.bruno-tests.outputs.outcome == 'failure' &&
       inputs.enable_bruno_rollback == true
     runs-on: ubuntu-latest
     permissions:

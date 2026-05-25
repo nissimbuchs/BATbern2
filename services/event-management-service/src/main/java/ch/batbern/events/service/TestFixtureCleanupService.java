@@ -111,6 +111,12 @@ public class TestFixtureCleanupService {
         Map<String, Integer> counts = new LinkedHashMap<>();
         String likePattern = request.getPrefix() + "%";
 
+        // Cascade-deleted tables (via FK ON DELETE CASCADE) are documented in the
+        // TestFixtureCleanupResponse Javadoc and the per-case comments below. Their counts
+        // are intentionally NOT emitted in the response — the previous -1 sentinel leaked
+        // implementation detail through the API. The Bruno tests assert only on the
+        // top-level deletion counts (events / sessions / topics), so omitting the cascade
+        // keys is a no-op for callers.
         switch (entityType) {
             case EVENTS:
                 int events = repository.deleteEventsByEventCodeLike(likePattern);
@@ -118,21 +124,16 @@ public class TestFixtureCleanupService {
                 // FK ON DELETE CASCADE removes: event_tasks, speaker_pool (+ its dependents),
                 // event_photos, event_teaser_images, registrations, sessions (+ session_users,
                 // session_materials), speaker_status_history, speaker_reminder_log.
-                counts.put("event_tasks_cascade", -1);
-                counts.put("speaker_pool_cascade", -1);
-                counts.put("registrations_cascade", -1);
-                counts.put("sessions_cascade", -1);
                 break;
             case SESSIONS:
                 int sessions = repository.deleteSessionsBySessionSlugLike(likePattern);
                 counts.put("sessions", sessions);
-                counts.put("session_users_cascade", -1);
-                counts.put("session_materials_cascade", -1);
+                // Cascades: session_users, session_materials.
                 break;
             case TOPICS:
                 int topics = repository.deleteTopicsByTopicCodeLike(likePattern);
                 counts.put("topics", topics);
-                counts.put("topic_usage_history_cascade", -1);
+                // Cascades: topic_usage_history.
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);

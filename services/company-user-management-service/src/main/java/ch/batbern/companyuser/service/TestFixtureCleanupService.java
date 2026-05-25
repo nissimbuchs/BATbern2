@@ -108,12 +108,16 @@ public class TestFixtureCleanupService {
 
         switch (entityType) {
             case COMPANIES:
-                // Wipe logos referencing companies-about-to-be-deleted first (soft FK).
-                // The %/ prefix in keyPattern matches s3_key paths like logos/temp/{uploadId}/file.png
-                // where the upload was for a test company. associated_entity_id is the company name.
-                int logosForCompanies = repository.deleteLogosByKeyOrEntityIdLike(
-                        "%/" + request.getPrefix() + "%",  // s3_key containing test prefix
-                        request.getPrefix() + "%"          // associated_entity_id starting with prefix
+                // Wipe logos associated with companies-about-to-be-deleted (soft FK by name).
+                // Anchored on `associated_entity_id LIKE <prefix>%` only — the previous
+                // `s3_key LIKE %/<prefix>%` wildcard was a fragile second path that broke
+                // any time the S3 key layout changed (and risked matching unrelated keys
+                // where the prefix appeared after any path separator). ASSOCIATED-state
+                // logos are the only ones tied to a specific company; PENDING/CONFIRMED
+                // logos for failed Bruno uploads are swept by the lifecycle expiry, not by
+                // this endpoint.
+                int logosForCompanies = repository.deleteLogosByAssociatedEntityIdLike(
+                        request.getPrefix() + "%"  // associated_entity_id starting with prefix
                 );
                 int companies = repository.deleteCompaniesByNameLike(likePattern);
                 counts.put("logos", logosForCompanies);
@@ -121,10 +125,11 @@ public class TestFixtureCleanupService {
                 break;
             case USERS:
                 int users = repository.deleteUserProfilesByUsernameLike(likePattern);
-                // role_assignments + user_additional_emails cascade-delete via FK ON DELETE CASCADE
                 counts.put("user_profiles", users);
-                counts.put("role_assignments_cascade", -1);  // -1 = "cascade, count not measured"
-                counts.put("user_additional_emails_cascade", -1);
+                // role_assignments + user_additional_emails are cascade-deleted via FK
+                // ON DELETE CASCADE; their counts are not tracked separately here (see
+                // TestFixtureCleanupResponse Javadoc). Omit the keys entirely rather than
+                // emitting a -1 sentinel so the API shape stays clean.
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);

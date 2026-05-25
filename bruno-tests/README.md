@@ -54,20 +54,31 @@ test data leaks and accumulates.
 
 These regexes are constants in each service's `TestFixtureCleanupService`
 (see `services/*/src/main/java/.../service/TestFixtureCleanupService.java`).
-The cleanup endpoint validates the incoming prefix against the entity-specific
-regex below and rejects anything that doesn't match. The request body cannot
-supply the regex — only the literal prefix value to match.
+The cleanup endpoint validates the incoming **`prefix` request field** against
+the entity-specific regex below and rejects anything that doesn't match. The
+service then appends `%` to the validated prefix and uses `LIKE prefix%` to
+match every row whose identifier starts with that exact prefix.
 
-| Entity type | Regex |
-|-------------|-------|
-| `companies` | `^BRUNOTESTCO[0-9]+$` |
-| `users` | `^bruno\.test\.[0-9]+$` |
-| `events` | `^BRUNO-TEST-[0-9]+$` |
-| `sessions` | `^bruno-test-session-[0-9]+$` |
-| `topics` | `^bruno-test-topic-[0-9]+$` |
-| `partners` | `^brtest[0-9]+$` |
-| `registrations` | `^BRUNO-[0-9]+-[A-Z0-9]+$` |
-| `uploads` (filename) | `^bruno-test-[0-9]+\.[a-z]+$` |
+**The regex matches the `prefix` VALUE you send, not the stored data.** A
+request with `prefix=BRUNOTESTCO1779647142000` is **rejected** with 400 because
+the regex `^BRUNOTESTCO$` doesn't match the timestamped string. Send
+`prefix=BRUNOTESTCO` (the literal prefix) — the server appends `%` and sweeps
+every row whose `name` starts with `BRUNOTESTCO`, including the timestamped
+ones above.
+
+| Entity type | Send `prefix=` | Regex (request validation) | Server LIKE | Sweeps data shaped like |
+|-------------|----------------|----------------------------|-------------|--------------------------|
+| `companies` | `BRUNOTESTCO` | `^BRUNOTESTCO$` | `BRUNOTESTCO%` | `BRUNOTESTCO1779647142000` |
+| `users` | `bruno.test.` | `^bruno\.test\.$` | `bruno.test.%` | `bruno.test.1779647142000` |
+| `events` | `BRUNO-TEST-` | `^BRUNO-TEST-$` | `BRUNO-TEST-%` | `BRUNO-TEST-1779647142000` |
+| `sessions` | `bruno-test-session-` | `^bruno-test-session-$` | `bruno-test-session-%` | `bruno-test-session-1779647142000` |
+| `topics` | `bruno-test-topic-` | `^bruno-test-topic-$` | `bruno-test-topic-%` | `bruno-test-topic-1779647142000` |
+| `partners` | `brtest` | `^brtest$` | `brtest%` | `brtest142000` |
+
+> `registrations` and `uploads` (filename) appear in the data-naming table
+> above for test-data discipline but are not yet wired into the cleanup
+> endpoint. Adding them is a follow-up; the structural F4 PR-5 fix for
+> `ADDITIONAL_EMAILS` is the canonical template (see plan §F4).
 
 ### Why per-entity patterns (not a single BRUNO_TEST_ prefix)?
 

@@ -37,32 +37,30 @@ import java.util.UUID;
 public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUID> {
 
     /**
-     * Delete logos whose {@code s3_key} or {@code associated_entity_id} starts with the prefix.
-     * Targets two failure modes:
-     * <ol>
-     *   <li>Test uploads in PENDING/CONFIRMED with prefix in the filename ({@code s3_key}).</li>
-     *   <li>Logos associated with a test company by name (about to be deleted in the same
-     *       transaction — soft FK).</li>
-     * </ol>
+     * Delete logos whose {@code associated_entity_id} starts with the prefix
+     * (i.e. logos linked to test companies/users by ADR-003 soft FK).
      *
-     * @param keyPattern   {@code LIKE} pattern for the s3_key column (e.g., {@code "%/bruno-test-%"})
+     * <p>Anchored on the soft-FK column ONLY. An earlier version also matched
+     * {@code s3_key LIKE '%/<prefix>%'} but that pattern was fragile against S3 key
+     * layout changes and risked matching unrelated keys where the prefix appeared
+     * after any path separator. PENDING / CONFIRMED logos for failed Bruno uploads
+     * are swept by the {@code expires_at} lifecycle column, not by this endpoint.
+     *
      * @param entityIdPattern {@code LIKE} pattern for the associated_entity_id column
+     *                        (e.g. {@code "BRUNOTESTCO%"})
      * @return number of logo rows deleted
      */
     @Modifying
     @Query(
-            value = "DELETE FROM logos WHERE s3_key LIKE :keyPattern OR associated_entity_id LIKE :entityIdPattern",
+            value = "DELETE FROM logos WHERE associated_entity_id LIKE :entityIdPattern",
             nativeQuery = true
     )
-    int deleteLogosByKeyOrEntityIdLike(
-            @Param("keyPattern") String keyPattern,
-            @Param("entityIdPattern") String entityIdPattern
-    );
+    int deleteLogosByAssociatedEntityIdLike(@Param("entityIdPattern") String entityIdPattern);
 
     /**
      * Delete companies whose {@code name} starts with the prefix.
      * Caller must have already wiped soft-FK references in {@code logos.associated_entity_id}
-     * (handled by {@link #deleteLogosByKeyOrEntityIdLike(String, String)}).
+     * (handled by {@link #deleteLogosByAssociatedEntityIdLike(String)}).
      *
      * @param namePattern {@code LIKE} pattern for the name column
      * @return number of company rows deleted

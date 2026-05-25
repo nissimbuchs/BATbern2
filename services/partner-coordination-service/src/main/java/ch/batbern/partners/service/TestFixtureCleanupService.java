@@ -109,13 +109,13 @@ public class TestFixtureCleanupService {
             case PARTNERS:
                 int partners = repository.deletePartnersByCompanyNameLike(likePattern);
                 counts.put("partners", partners);
-                // FK ON DELETE CASCADE removes: partner_meeting_attendance, partner_meeting_rsvps,
-                // partner_notes, topic_suggestions (and transitively topic_votes).
-                counts.put("partner_meeting_attendance_cascade", -1);
-                counts.put("partner_meeting_rsvps_cascade", -1);
-                counts.put("partner_notes_cascade", -1);
-                counts.put("topic_suggestions_cascade", -1);
-                counts.put("topic_votes_cascade", -1);
+                // FK ON DELETE CASCADE handles partner_meeting_attendance + partner_notes
+                // automatically. topic_votes / topic_suggestions are NOT linked by FK after
+                // the V4 rebuild (they reference company_name as a string per ADR-003) and
+                // are NOT cleaned up here — Bruno tests that create those rows must clean
+                // them up explicitly, or scripts/db/bruno-staging-pre-cleanup.sql handles
+                // them in one-shot for legacy junk. Counts are omitted rather than
+                // -1-sentinelled to keep the API shape clean.
                 break;
             default:
                 throw new IllegalStateException("Unhandled entity type: " + entityType);

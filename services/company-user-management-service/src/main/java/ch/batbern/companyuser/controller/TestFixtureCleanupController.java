@@ -39,6 +39,15 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>Prefix must match a server-side regex bound to the entity type</li>
  *   <li>Every invocation is logged at WARN level with caller + entityType + prefix + counts</li>
  * </ul>
+ *
+ * <p><b>Why this controller is intentionally NOT {@code @Profile}-gated:</b>
+ * BATbern's consolidated AWS layout (staging account 188701360969 serves
+ * production traffic at api.batbern.ch) means a {@code @Profile("!production")}
+ * guard would block exactly the environment Bruno needs to clean up after.
+ * The safety properties come from the layered checks above (JWT + ORGANIZER
+ * role + server-side regex prefix validation + audit log), not from a profile
+ * switch. If a future change adds a separate prod-only environment, revisit
+ * whether to add the profile gate at that point.
  */
 @RestController
 @RequestMapping("/api/v1/admin/test-fixtures/cums")
