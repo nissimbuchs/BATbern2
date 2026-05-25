@@ -20,10 +20,6 @@ headers {
   Content-Type: application/json
 }
 
-# Story 10.32 (P1-3 from 2026-05-22 review): exercise the 400 path.
-# An email with no `@` fails the OpenAPI `format: email` constraint and
-# Jakarta `@Email` validation; the backend must return 400, not crash at
-# the DB layer with a DataIntegrityViolationException → 500.
 body:json {
   {
     "email": "not-an-email",
@@ -39,4 +35,11 @@ tests {
   test("should return 400 Bad Request for invalid email format", function() {
     expect(res.getStatus()).to.equal(400);
   });
+}
+
+docs {
+  Story 10.32 (P1-3 from 2026-05-22 review): exercise the 400 path.
+  An email with no `@` fails the OpenAPI `format: email` constraint and
+  Jakarta `@Email` validation; the backend must return 400, not crash at
+  the DB layer with a DataIntegrityViolationException → 500.
 }
