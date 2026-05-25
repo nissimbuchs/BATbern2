@@ -3,8 +3,26 @@ name: Deploy to Staging
 on:
   workflow_call:
     # Allow this workflow to be called from other workflows (like build.yml)
+    inputs:
+      enable_bruno_rollback:
+        description: >-
+          When true, auto-rollback ECS services if Bruno API tests fail.
+          Default false until the PR 14 gate flip — see
+          docs/plans/bruno-staging-hardening.md §A5b for the gating rationale.
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     # Allow manual triggering from GitHub Actions UI
+    inputs:
+      enable_bruno_rollback:
+        description: >-
+          Auto-rollback on Bruno failure. Used by F1 deliberate-fail exercise to
+          prove the rollback path on a feature branch before the PR 14 gate flip.
+          Leave false for normal runs.
+        type: boolean
+        required: false
+        default: false
 
 env:
   AWS_REGION: eu-central-1
@@ -1123,6 +1141,19 @@ jobs:
             echo "::error::CORS validation tests script not found"
           fi
 
+      # Promote the just-deployed IMAGE_TAG to the mutable `staging-current` tag in every
+      # service ECR repo. This runs AFTER smoke + CORS gates pass — so a deploy that
+      # didn't actually come up healthy never advances `staging-current`. The bruno-tests
+      # job (added later in this plan, §A5b) reads `staging-current` to know what was
+      # just deployed; the `tag-stable-on-success` job then promotes it to
+      # `staging-stable` if Bruno passes. Refs: docs/plans/bruno-staging-hardening.md §A4.
+      - name: Promote ECR images to staging-current
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+        run: |
+          chmod +x scripts/ci/promote-ecr-tag.sh
+          ./scripts/ci/promote-ecr-tag.sh staging "$IMAGE_TAG" staging-current
+
       - name: Run header propagation tests
         continue-on-error: true
         run: |
@@ -1222,27 +1253,13 @@ jobs:
           echo "  speaker:   $([ -n "$SPK_TOKEN" ] && echo 'yes' || echo 'no')"
           echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
 
-      - name: Run Bruno API contract tests
-        continue-on-error: true
-        env:
-          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
-          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
-          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
-          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
-        run: |
-          if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
-            chmod +x scripts/ci/run-bruno-tests.sh
-            echo "Running Bruno API contract tests..."
-            # Pass organizer token as second argument for backward compat
-            if ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"; then
-              echo "✅ Bruno API contract tests completed"
-            else
-              echo "::warning::Bruno API contract tests failed - see details above"
-              echo "::warning::This is a non-blocking test failure"
-            fi
-          else
-            echo "::warning::Bruno test script not found"
-          fi
+      # Bruno API contract tests moved to a dedicated `bruno-tests` job below
+      # (docs/plans/bruno-staging-hardening.md §A5b). The split is what lets
+      # `tag-stable-on-success` and `rollback-on-bruno-failure` react to a clean
+      # job-level outcome instead of swallowing failure with `continue-on-error: true`
+      # mid-job. The Cognito-token step above is kept in this job because the
+      # currently-disabled Playwright step further down still references it; the
+      # new bruno-tests job re-fetches its own tokens.
 
       # E2E infrastructure tests temporarily disabled - require additional setup:
       # - Missing AWS SDK dependencies (@aws-sdk/client-ecs, @aws-sdk/client-cloudformation, @aws-sdk/client-apigatewayv2)
@@ -1341,4 +1358,203 @@ jobs:
         run: |
           echo "❌ Staging deployment failed"
           echo "Database backup available: ${{ env.SNAPSHOT_ID }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno API contract tests run as a separate job so that downstream jobs
+  # (tag-stable-on-success / rollback-on-bruno-failure) can react to a clean
+  # job-level outcome instead of an inline `continue-on-error: true` step.
+  #
+  # `continue-on-error: true` is kept at the JOB level until PR 14's gate flip
+  # so a Bruno failure does not fail the workflow during the audit-pass weeks
+  # (PRs 2-13 in docs/plans/bruno-staging-hardening.md). Downstream jobs still
+  # see the actual `needs.bruno-tests.result` value, so the rollback-on-failure
+  # job can fire when explicitly enabled.
+  # ─────────────────────────────────────────────────────────────────────────────
+  bruno-tests:
+    name: Bruno API contract tests
+    needs: deploy-to-staging
+    runs-on: ubuntu-latest
+    continue-on-error: true  # ← REMOVE in PR 14 to flip the gate
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate test users with Cognito (all roles)
+        id: get-test-tokens
+        run: |
+          # Re-fetch tokens here (rather than inheriting from deploy-to-staging) so
+          # they are fresh when Bruno runs — Cognito ID tokens have a 60-min TTL and
+          # the deploy job can take 20-30 min before this point. Also avoids passing
+          # JWTs as job outputs (GitHub Actions masking is per-job).
+
+          REGION="eu-central-1"
+          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+
+          get_cognito_token() {
+            local email="$1"
+            local password="$2"
+            local label="$3"
+
+            if [ -z "$email" ] || [ -z "$password" ]; then
+              echo "::warning::No credentials configured for $label — skipping" >&2
+              echo ""
+              return 0
+            fi
+
+            local auth_response
+            auth_response=$(aws cognito-idp initiate-auth \
+              --region "$REGION" \
+              --auth-flow USER_PASSWORD_AUTH \
+              --client-id "$CLIENT_ID" \
+              --auth-parameters USERNAME="$email",PASSWORD="$password" \
+              --output json 2>&1)
+
+            if [ $? -ne 0 ]; then
+              echo "::warning::Cognito auth failed for $label" >&2
+              echo ""
+              return 0
+            fi
+
+            local token
+            token=$(echo "$auth_response" | jq -r '.AuthenticationResult.IdToken // empty')
+            if [ -z "$token" ]; then
+              echo "::warning::Failed to extract ID token for $label" >&2
+              echo ""
+              return 0
+            fi
+
+            echo "✅ Token obtained for $label" >&2
+            echo "$token"
+          }
+
+          ORG_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
+            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
+            "organizer")
+
+          SPK_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_SPEAKER_EMAIL }}" \
+            "${{ secrets.STAGING_SPEAKER_PASSWORD }}" \
+            "speaker")
+
+          PTR_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_PARTNER_EMAIL }}" \
+            "${{ secrets.STAGING_PARTNER_PASSWORD }}" \
+            "partner")
+
+          [ -n "$ORG_TOKEN" ] && echo "::add-mask::$ORG_TOKEN"
+          [ -n "$SPK_TOKEN" ] && echo "::add-mask::$SPK_TOKEN"
+          [ -n "$PTR_TOKEN" ] && echo "::add-mask::$PTR_TOKEN"
+
+          echo "AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
+          echo "ORGANIZER_AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
+          echo "SPEAKER_AUTH_TOKEN=$SPK_TOKEN" >> $GITHUB_OUTPUT
+          echo "PARTNER_AUTH_TOKEN=$PTR_TOKEN" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "Token summary:"
+          echo "  organizer: $([ -n "$ORG_TOKEN" ] && echo 'yes' || echo 'no')"
+          echo "  speaker:   $([ -n "$SPK_TOKEN" ] && echo 'yes' || echo 'no')"
+          echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
+
+      - name: Run Bruno API contract tests
+        env:
+          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
+          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
+          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
+          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
+        run: |
+          if [ ! -f "scripts/ci/run-bruno-tests.sh" ]; then
+            echo "::error::Bruno test script not found"
+            exit 1
+          fi
+
+          chmod +x scripts/ci/run-bruno-tests.sh
+          echo "Running Bruno API contract tests..."
+          # Pass organizer token as second argument for backward compat with the
+          # script's positional arg.
+          ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno green ⇒ promote staging-current → staging-stable across all 5 service
+  # ECR repos + api-gateway. `staging-stable` is the rollback target read by
+  # scripts/ci/rollback-deployment.sh.
+  # ─────────────────────────────────────────────────────────────────────────────
+  tag-stable-on-success:
+    name: Promote staging-current → staging-stable
+    needs: [deploy-to-staging, bruno-tests]
+    if: needs.bruno-tests.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Promote ECR tag
+        run: |
+          chmod +x scripts/ci/promote-ecr-tag.sh
+          ./scripts/ci/promote-ecr-tag.sh staging staging-current staging-stable
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bruno red ⇒ auto-rollback to staging-stable.
+  #
+  # IMPORTANT: gated behind `inputs.enable_bruno_rollback` until the PR 14 gate
+  # flip. This means develop's normal Bruno failures during the audit-pass weeks
+  # (PRs 2-13) do NOT auto-roll-back production. F1's deliberate-fail exercise
+  # sets `enable_bruno_rollback: true` via `workflow_dispatch` on a feature
+  # branch to prove the rollback path end-to-end before flipping the gate.
+  #
+  # PR 14 simplifies the `if:` to just `needs.bruno-tests.result == 'failure'`
+  # (and also removes `continue-on-error: true` on the bruno-tests job).
+  # ─────────────────────────────────────────────────────────────────────────────
+  rollback-on-bruno-failure:
+    name: Auto-rollback after Bruno failure
+    needs: [deploy-to-staging, bruno-tests]
+    if: >-
+      needs.bruno-tests.result == 'failure' &&
+      inputs.enable_bruno_rollback == true
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Roll back to staging-stable
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          chmod +x scripts/ci/rollback-deployment.sh
+          echo "🚨 Bruno failed — rolling back to staging-stable"
+          ./scripts/ci/rollback-deployment.sh staging --yes
+
+      - name: Notify rollback
+        if: always()
+        run: |
+          echo "🚨 Auto-rollback triggered after Bruno failure"
           echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
