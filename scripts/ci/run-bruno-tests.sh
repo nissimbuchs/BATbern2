@@ -246,7 +246,13 @@ for collection in "${collections[@]}"; do
 
     if [ ! -d "$collection_path" ]; then
         echo -e "${YELLOW}⚠ Skipping:${NC} $collection (directory not found)"
-        ((skipped++))
+        # Use $((...)) form rather than ((var++)). With `set -e` (line 20),
+        # `((var++))` returns the PRE-increment value as the arithmetic
+        # result — if that value is 0 (first success/fail/skip in the run),
+        # bash treats it as a falsy command and aborts the script BEFORE the
+        # summary block prints. We hit this on the first all-green Bruno CI
+        # run after 11.F.1 fixed the role-token plumbing.
+        skipped=$((skipped + 1))
         continue
     fi
 
@@ -268,7 +274,7 @@ for collection in "${collections[@]}"; do
     # Use -r for recursive execution of all tests in the folder
     if (cd bruno-tests && bru run "$collection" -r --env "$ENVIRONMENT" --output "../results-${collection}.json" 2>&1); then
         echo -e "${GREEN}✓ PASS${NC}: $collection tests passed"
-        ((passed++))
+        passed=$((passed + 1))
 
         # Display summary if results file exists
         results_file="results-${collection}.json"
@@ -289,7 +295,7 @@ for collection in "${collections[@]}"; do
         fi
     else
         echo -e "${RED}✗ FAIL${NC}: $collection tests failed"
-        ((failed++))
+        failed=$((failed + 1))
 
         # Try to show error details
         results_file="results-${collection}.json"
