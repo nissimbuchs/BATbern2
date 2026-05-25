@@ -16,7 +16,7 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 | 2 | `test-enhancement/bruno-events-api-split` | Section C: decompose events-api into 6 collections | ⬜ not started | — | — |
 | 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ⬜ not started | — | — |
 | 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ⬜ not started | — | — |
-| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit | ⬜ not started | — | — |
+| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit | ⬜ not started | — | 3 latent failures in `users-api` against `development` discovered 2026-05-25 — see "Local pre-flight findings — 2026-05-25 (users-api)" below. Test ordering bug (14 deletes the auth user), undefined `{{authUserEmail}}` var, public-user-by-username 404 cascading from #1. |
 | 6 | `test-enhancement/bruno-audit-tasks-api` | D.4: light audit | ⬜ not started | — | — |
 | 7 | `test-enhancement/bruno-audit-event-types-api` | D.5: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 8 | `test-enhancement/bruno-audit-event-topics-api` | D.6: light audit (new collection from PR 2) | ⬜ not started | — | — |
@@ -24,7 +24,7 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 | 10 | `test-enhancement/bruno-audit-sessions-api` | D.8: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 11 | `test-enhancement/bruno-audit-speaker-pool-api` | D.9: light audit (new collection from PR 2, cross-service cleanup) | ⬜ not started | — | — |
 | 12 | `test-enhancement/bruno-audit-event-full-workflow-api` | D.10: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 13 | `test-enhancement/bruno-audit-partners-api` | D.11: light audit | ⬜ not started | — | — |
+| 13 | `test-enhancement/bruno-audit-partners-api` | D.11: light audit | ⬜ not started | — | **TODO**: extend PCS cleanup endpoint with a `partner_meetings` entityType — discovered 2026-05-25 during PCS cleanup endpoint impl. `partner_meetings` is a standalone table (no FK to partners), so today's `partners` entityType doesn't reach it via cascade. Bruno's `partner-meetings-api` collection currently leaves meetings behind on every run. See "Deferred — partner_meetings cleanup coverage" below. |
 | 14 | `test-enhancement/bruno-gate-flip` | Section E: remove `continue-on-error`, prove rollback path | ⬜ not started | — | — |
 
 **Status legend:** ⬜ not started · 🟡 in progress · 🔵 in review · ✅ merged · 🔴 blocked
@@ -73,6 +73,54 @@ PR 1 ships:
 3. Audit log entries in CloudWatch for each deletion.
 
 The script runs exactly once when PR 1 deploys. Never re-runs.
+
+## Local pre-flight findings — 2026-05-25 (users-api)
+
+Ran `./scripts/ci/run-bruno-tests.sh development --collection users-api` after fix-commit `74b8cd8a` (which moved 3 `#`-prefixed comment blocks into `docs { ... }` blocks so Bruno's parser would stop skipping the files). Parser warnings are gone — but the now-parseable files surfaced 3 genuine test failures, plus the run surfaced 2 other pre-existing failures that the previously-skipped files were masking. **Result: 31 requests, 28 passed, 3 failed.** Full log: `/tmp/bruno-users-api.log` (locally — not committed).
+
+These belong to PR 5 (`test-enhancement/bruno-audit-users-api`, D.3) and the auditor for that PR should fix them as part of the light audit pass.
+
+### F1 — `users-api/18-add-additional-email-duplicate.bru` returns 400 instead of 409 (exposed by `74b8cd8a`)
+
+Request body sent literally as `{"email": "{{authUserEmail}}", ...}` — Bruno is not interpolating `authUserEmail` because it's never defined. `bruno-tests/environments/development.bru:1-16` has no `authUserEmail` var; `grep -rn "authUserEmail" bruno-tests/` returns only the consumer site. The server rejects the literal `{{...}}` string with `Validation failed: email - must be a well-formed email address` → 400, instead of exercising the 409 duplicate-error branch the test intends.
+
+**Why new:** before `74b8cd8a`, the parser skipped this file entirely. The docs-block fix made it parseable, which exposed the latent var gap. The test was effectively dead code.
+
+**Fix options for the auditor (cheapest first):**
+- Capture email from `01-get-current-user` via a `script:post-response { bru.setEnvVar("authUserEmail", res.getBody().email); }` and let `18-` consume it. Lines added: 1 in `01-`, 0 in `18-`.
+- OR inline a known organizer email directly in the body (couples test to env's auth user — brittle but simplest).
+- OR add `authUserEmail: {{process.env.AUTH_USER_EMAIL}}` to all three env files plus the corresponding GitHub secret (heaviest).
+
+Recommended: the post-response capture in `01-`. Same pattern is already used elsewhere in the collection (`01-` stores `firstName`/`lastName`/`bio` to env vars for `03b-restore-current-user`).
+
+### F2 — `users-api/17-delete-additional-email.bru` returns 401 instead of 204 (pre-existing)
+
+DELETE `/users/me/additional-emails/{{encodedAdditionalEmail}}` returns 401. The pre-request precondition check passed (so `additionalEmail` env var was set by test 15). The request is unauthenticated at the server.
+
+**Root cause:** test-ordering bug. Bruno runs files alphanumerically. `14-delete-test-user.bru` (`bruno-tests/users-api/14-delete-test-user.bru:8`) DELETEs `{{testUsername}}` which `development.bru:8` defines as `batbern.organizer` — the **current auth user**. `14` returns 204 (assertion `res.status: in [204, 403, 404]` accepts all three). Tests 15/16 still pass because PreTokenGen + Pattern 3b silently re-hydrate the user on the next authed call (see `docs/architecture/06b-user-lifecycle-sync.md` §"Pattern 3b"). But by the time `17-` (DELETE on encoded-email path) runs, the user's `user_additional_emails` row is gone (cascade from the user delete in `14-`), or auth-state is inconsistent enough that the gateway returns 401.
+
+**Independent of PR 1's docs-block fix.** This test has been broken for a while; nobody noticed because runs against staging silently no-op'd (A1's broken baseUrl).
+
+**Fix options for the auditor:**
+- Point `14-delete-test-user.bru:8` at a disposable username (e.g. `bruno.test.<ts>` created by `04-create-user.bru` earlier in the run) instead of `{{testUsername}} = batbern.organizer`. **This is the right fix** — `14-` is clearly meant to exercise GDPR-delete, not to nuke the auth user.
+- OR rename `14-` to `99-delete-test-user.bru` so it runs after every other test in the collection. Quick but doesn't fix the underlying "tests should not destroy their own auth user" problem.
+
+This also implies updating `B1`'s canonical-naming rules to make explicit that `testUsername` in `development.bru` must NEVER be the same user whose JWT is in `AUTH_TOKEN` — a footgun worth pinning down before PR 1 ships its 3 cleanup endpoints.
+
+### F3 — `users-api/20-public-user-by-username.bru` returns 404 instead of 200 (pre-existing, cascades from F2)
+
+Anonymous `GET /public/users/batbern.organizer` returns 404 from CUMS. Same root cause: `14-delete-test-user.bru` deleted `batbern.organizer` earlier in the run, and the public projection endpoint legitimately can't find them. The 404 is correct given the state — the test is wrong about the precondition.
+
+**Fix:** falls out automatically once F2 is fixed (auth user no longer being deleted mid-run). No separate change needed.
+
+### Cross-cutting note for the PR 5 auditor
+
+These three failures together demonstrate a class of test-design bug this plan should explicitly track: **implicit dependencies on test order + shared mutable state in dev DB**. Section D.5 already mandates "run twice" — but that catches *idempotency* bugs, not *self-destruction* bugs like `14-` deleting its own auth user. Two adjustments worth considering for the D template:
+
+1. **Add a `00-` pre-flight that asserts the auth user exists** — fail-fast if a previous run left the user deleted, instead of cascading into 5 confusing failures.
+2. **Forbid tests that mutate `{{testUsername}}` when it equals the auth user.** Either route them through a disposable `bruno.test.<ts>` created earlier in the run, OR move them to the final 99-block.
+
+Neither is mandatory for PR 5 — they're nice-to-have hardening for D. Captured here so the PR 5 auditor (or whoever later notices similar patterns in another collection) doesn't have to re-derive it.
 
 ## Context
 
@@ -194,6 +242,21 @@ Most existing collections already use compatible prefixes (e.g. companies-api us
 **Event state machine:** dedicated `TestFixtureRepository.hardDeleteByPrefix(...)` issues raw `DELETE FROM events WHERE event_code LIKE 'BRUNO-TEST-%'` with cascade. Bypasses state guards, only reachable from this endpoint.
 
 **Startup invariant check:** at boot, count real entities matching the canonical patterns. Log `WARN` if > 0 — don't fail-fast (might be junk from a previous failed run that this cleanup will sweep), but operators should see it.
+
+**Deferred — partner_meetings cleanup coverage** (discovered 2026-05-25, address in PR 13 or earlier):
+
+PCS owns `partner_meetings` but the table has no FK to `partners` — meetings are standalone events that link to partners only via `partner_meeting_attendance` / `partner_meeting_rsvps` (which cascade from `partners`, not from the meeting itself). The PR 1 PCS cleanup endpoint only handles `entityType=partners`, so:
+
+- Deleting a `brtest*` partner removes its attendance + RSVP rows but **leaves the underlying `partner_meetings` rows in place**.
+- Bruno's `partner-meetings-api` collection creates ad-hoc meetings (`meeting_type='ad_hoc'`, `scheduled_date=…`) with no Bruno-identifying column — there's no `bruno-test-` prefix on a meeting row to match against.
+
+Options for PR 13 (partners-api audit) or a sibling PR (partner-meetings-api audit, currently not in the rollout — would need to be added):
+
+1. **Add a `meeting_id` allowlist parameter** to the cleanup endpoint — Bruno collects IDs from create-meeting tests via `bru.setVar` and posts them back to cleanup. Tighter than a prefix; safe even though meetings lack a Bruno-prefix column. Recommended.
+2. **Add a marker column** to `partner_meetings` (e.g. `created_by_test_fixture BOOLEAN`) — schema change, larger blast radius, only do this if the allowlist proves too clunky.
+3. **Constrain by `created_at` window** — Bruno cleanup deletes meetings created in the last N minutes by the cleanup caller. Risky on a shared staging account (could nuke a concurrent organizer's meeting).
+
+Recommendation: option 1, scoped to a new `meetings` entityType on the PCS cleanup endpoint. Not blocking PR 1 because the staging audit (2026-05-24) found 0 stray partner_meetings rows — Bruno meetings-api isn't run in CI today against staging (deferred to its first audit).
 
 ### B3. Per-collection cleanup `.bru` files
 Each collection gets:
