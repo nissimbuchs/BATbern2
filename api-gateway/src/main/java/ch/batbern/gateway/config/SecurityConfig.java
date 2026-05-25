@@ -253,19 +253,11 @@ public class SecurityConfig {
                         // Story 6.4: Speaker dashboard endpoint (token-protected, no JWT auth)
                         .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()
 
-                        // Story 6.3: Speaker content submission endpoints (token-protected, no JWT auth)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/v1/speaker-portal/materials/presigned-url").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
-
-                        // Story 9.1: Speaker JWT magic link authentication endpoint (JWT-protected, no Cognito auth)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()
-
-                        // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
-                        .requestMatchers("/api/v1/e2e-test/**").permitAll()
+                        // Story 11.E.3 / 11.F.1: /api/v1/speaker-portal/** is Cognito-secured
+                        // via @PreAuthorize("hasRole('SPEAKER')") in EMS. The previous permitAll
+                        // matchers (content GET/draft/submit + materials presigned-url/confirm) and
+                        // the magic-link surface (/api/v1/auth/speaker-magic-login + /api/v1/e2e-test/**)
+                        // were removed in Story 11.F.1.
 
                         // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()

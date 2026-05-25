@@ -202,9 +202,13 @@ public class QualityReviewService {
         }
 
         try {
-            Event event = eventRepository.findById(speaker.getEventId())
-                    .orElse(null);
-            String eventName = event != null ? event.getTitle() : "BATbern Event";
+            Event event = eventRepository.findById(speaker.getEventId()).orElse(null);
+            if (event == null) {
+                log.warn("Cannot send revision notification for speaker {} - event {} not found; skipping email",
+                        speaker.getId(), speaker.getEventId());
+                return;
+            }
+            String eventName = event.getTitle();
             String speakerName = primary
                     .map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
                     .filter(n -> !n.isEmpty())
@@ -213,7 +217,7 @@ public class QualityReviewService {
             // Story 11.F.1 (Phase F): speakers now authenticate via Cognito — the
             // revision link points at the speaker-portal content route which is
             // SPEAKER-role-guarded server-side and picks up the Bearer from the session.
-            String portalUrl = baseUrl + "/speaker-portal/content/" + (event != null ? event.getEventCode() : "");
+            String portalUrl = baseUrl + "/speaker-portal/content/" + event.getEventCode();
 
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
