@@ -79,10 +79,74 @@ aws ecs update-service \
 
 echo "⏳ Waiting for service to stabilize..."
 
-# Wait for service stability (with timeout)
-aws ecs wait services-stable \
-  --cluster $CLUSTER \
-  --services $SERVICE \
-  --region $REGION
+# Manual stability poll instead of `aws ecs wait services-stable`.
+#
+# The CLI waiter is hard-coded to 40 attempts × 15s = 10 min, with no flag
+# to extend. The api-gateway service routinely takes 10–12 min to fully
+# settle Service Connect endpoints during a deploy (see the inline comment
+# in infrastructure/lib/constructs/domain-service-construct.ts:230-235 —
+# minHealthyPercent=50 was lowered specifically because this hangs).
+#
+# Real-world example: run 26404227760 had the api-gateway service reach
+# `rolloutState: COMPLETED` at 15:08:49 UTC — 10 seconds AFTER the
+# default waiter timed out at 15:08:39 UTC. The deploy was successful but
+# the workflow reported failure.
+#
+# This loop polls `describe-services` for `rolloutState == COMPLETED`,
+# with a configurable timeout (default 20 min) and 10s polling interval.
+# Override via STABILITY_TIMEOUT_SECS env var.
+
+STABILITY_TIMEOUT_SECS="${STABILITY_TIMEOUT_SECS:-1200}"
+STABILITY_POLL_INTERVAL_SECS=10
+elapsed=0
+
+while [ "$elapsed" -lt "$STABILITY_TIMEOUT_SECS" ]; do
+  ROLLOUT_STATE=$(aws ecs describe-services \
+    --cluster "$CLUSTER" \
+    --services "$SERVICE" \
+    --region "$REGION" \
+    --query 'services[0].deployments[?status==`PRIMARY`].rolloutState | [0]' \
+    --output text 2>/dev/null)
+
+  case "$ROLLOUT_STATE" in
+    COMPLETED)
+      echo "🎉 Service $SERVICE reached COMPLETED rolloutState (elapsed ${elapsed}s)"
+      break
+      ;;
+    FAILED)
+      echo "::error::Service $SERVICE rolloutState is FAILED — deployment did not succeed"
+      aws ecs describe-services \
+        --cluster "$CLUSTER" \
+        --services "$SERVICE" \
+        --region "$REGION" \
+        --query 'services[0].events[0:5].{at:createdAt,msg:message}'
+      exit 1
+      ;;
+    IN_PROGRESS|"")
+      # IN_PROGRESS is the normal mid-deploy state; "" can briefly appear
+      # between the describe call and the deployment object being created.
+      printf "  rolloutState=%s elapsed=%ds (timeout %ds)\n" \
+        "${ROLLOUT_STATE:-PENDING}" "$elapsed" "$STABILITY_TIMEOUT_SECS"
+      ;;
+    *)
+      printf "  unexpected rolloutState=%s elapsed=%ds — continuing to poll\n" \
+        "$ROLLOUT_STATE" "$elapsed"
+      ;;
+  esac
+
+  sleep "$STABILITY_POLL_INTERVAL_SECS"
+  elapsed=$((elapsed + STABILITY_POLL_INTERVAL_SECS))
+done
+
+if [ "$elapsed" -ge "$STABILITY_TIMEOUT_SECS" ]; then
+  echo "::error::Service $SERVICE did not reach COMPLETED within ${STABILITY_TIMEOUT_SECS}s — final rolloutState=${ROLLOUT_STATE}"
+  echo "::error::Last ECS events:"
+  aws ecs describe-services \
+    --cluster "$CLUSTER" \
+    --services "$SERVICE" \
+    --region "$REGION" \
+    --query 'services[0].events[0:5].{at:createdAt,msg:message}'
+  exit 1
+fi
 
 echo "🎉 Service $SERVICE updated successfully!"

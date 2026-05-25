@@ -1,0 +1,44 @@
+meta {
+  name: EMS cleanup — events happy path
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq events
+  res.body.prefix: eq BRUNO-TEST-
+}
+
+tests {
+  test("returns 200 and routes to EMS", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("events");
+    expect(body.prefix).to.equal("BRUNO-TEST-");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.events).to.be.a("number");
+  });
+}

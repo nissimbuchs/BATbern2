@@ -100,6 +100,15 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/cums")) {
+            // Bruno test-fixture cleanup endpoint per service (PR 1 staging-hardening).
+            // Per-service paths because /api/v1/admin generically falls through to EMS below
+            // and cleanup needs blast-radius isolation per docs/plans/bruno-staging-hardening.md §B2.
+            return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/ems")) {
+            return "event-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/pcs")) {
+            return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/admin")) { // Admin endpoints (e.g. AdminSettingsController)
             return "event-management-service";
         } else {

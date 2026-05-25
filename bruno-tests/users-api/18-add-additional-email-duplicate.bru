@@ -20,11 +20,6 @@ headers {
   Content-Type: application/json
 }
 
-# Story 10.32 (review 2026-05-22 P3-12): exercise the 409 duplicate-error
-# branch. We POST the user's own PRIMARY email — uniqueness is enforced
-# across both `user_profiles.email` AND existing `user_additional_emails`,
-# so this always conflicts with the caller's own primary row regardless of
-# prior test state.
 body:json {
   {
     "email": "{{authUserEmail}}",
@@ -46,4 +41,12 @@ tests {
     const body = res.getBody();
     expect(body.errorCode).to.equal("ADDITIONAL_EMAIL_DUPLICATE");
   });
+}
+
+docs {
+  Story 10.32 (review 2026-05-22 P3-12): exercise the 409 duplicate-error
+  branch. We POST the user's own PRIMARY email — uniqueness is enforced
+  across both `user_profiles.email` AND existing `user_additional_emails`,
+  so this always conflicts with the caller's own primary row regardless of
+  prior test state.
 }

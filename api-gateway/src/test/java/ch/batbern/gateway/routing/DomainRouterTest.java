@@ -209,6 +209,35 @@ class DomainRouterTest {
     }
 
     @Test
+    @DisplayName("should_routeToCums_when_cleanupCumsPathCalled")
+    void should_routeToCums_when_cleanupCumsPathCalled() {
+        // Bruno test-fixture cleanup paths (PR 1 staging-hardening) — per-service routing
+        // must take precedence over the generic /api/v1/admin → EMS fallback below.
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/cums/cleanup");
+
+        assertThat(targetService).isEqualTo("company-user-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEms_when_cleanupEmsPathCalled")
+    void should_routeToEms_when_cleanupEmsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/ems/cleanup");
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToPcs_when_cleanupPcsPathCalled")
+    void should_routeToPcs_when_cleanupPcsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/pcs/cleanup");
+
+        assertThat(targetService).isEqualTo("partner-coordination-service");
+    }
+
+    @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
         // Given

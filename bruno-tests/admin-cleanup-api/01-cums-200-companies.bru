@@ -1,0 +1,45 @@
+meta {
+  name: CUMS cleanup — companies happy path
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "companies",
+    "prefix": "BRUNOTESTCO"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq companies
+  res.body.prefix: eq BRUNOTESTCO
+}
+
+tests {
+  test("returns 200 and routes to CUMS", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("companies");
+    expect(body.prefix).to.equal("BRUNOTESTCO");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.companies).to.be.a("number");
+    expect(body.executedAt).to.be.a("string");
+  });
+}

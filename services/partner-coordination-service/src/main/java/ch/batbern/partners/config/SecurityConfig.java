@@ -25,8 +25,13 @@ import javax.sql.DataSource;
  * Added JwtAuthenticationConverter to extract roles from custom:role claim.
  *
  * Method Security Strategy:
- * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
- * - Local Development: Method security disabled (trusted localhost environment)
+ * - All profiles (local, test, staging, production): @EnableMethodSecurity enforces @PreAuthorize.
+ *   Pattern 3b (Epic 11.E.7) makes this safe locally even for CUMS-provisioned speakers whose
+ *   Cognito user lives in staging while their user_profiles row lives in the local DB — the
+ *   JwtRolesConverter DB fallback populates ROLE_<X> from the local row. Before Pattern 3b
+ *   existed, local profile relaxed method security to a "trusted localhost" model; that
+ *   shortcut is no longer needed and masked role-config drift between dev and staging.
+ *   Removed 2026-05-25 during Bruno F2 admin-cleanup-api hardening.
  */
 @Configuration
 @EnableWebSecurity
@@ -36,13 +41,12 @@ public class SecurityConfig {
     private String jwkSetUri;
 
     /**
-     * Enable method-level security for non-local environments.
+     * Enable method-level security in every profile (local, test, staging, production).
      * Enforces @PreAuthorize annotations on controller methods (AC6).
      */
     @Configuration
     @EnableMethodSecurity(prePostEnabled = true)
-    @Profile("!local")
-    static class ProductionMethodSecurityConfig {
+    static class MethodSecurityConfig {
     }
 
     /**
