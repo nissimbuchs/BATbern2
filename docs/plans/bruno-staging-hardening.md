@@ -16,7 +16,7 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 | 2 | `test-enhancement/bruno-events-api-split` | Section C: decompose events-api into 6 collections | ⬜ not started | — | — |
 | 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ⬜ not started | — | — |
 | 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ⬜ not started | — | — |
-| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit | ⬜ not started | — | 3 latent failures in `users-api` against `development` discovered 2026-05-25 — see "Local pre-flight findings — 2026-05-25 (users-api)" below. Test ordering bug (14 deletes the auth user), undefined `{{authUserEmail}}` var, public-user-by-username 404 cascading from #1. |
+| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit | ⬜ not started | — | 4 latent failures in `users-api` against `development` discovered 2026-05-25 — see "Local pre-flight findings — 2026-05-25 (users-api)" below. (1) Test-ordering bug — `14-delete-test-user` deletes the auth user. (2) Undefined `{{authUserEmail}}` var in `18-`. (3) `20-public-user-by-username` 404 cascading from #1. (4) **`15-add-additional-email` accumulates rows in `user_additional_emails` because the 15→17 add/delete pairing isn't idempotent — once test 17 fails, rows leak, and after 5 leaks the 5-per-user cap (`ADDITIONAL_EMAIL_LIMIT_REACHED`) blocks every future test 15.** Requires (a) `ADDITIONAL_EMAILS` entityType in the CUMS cleanup endpoint (same shape as the deferred PR 13 `partner_meetings` extension), (b) unconditional `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` per B3 calling that entityType, (c) normalizing the test prefix to canonical `bruno-test-<ts>@e2e.batbern.invalid` per B1. One-time local-DB unblock before PR 5 can run green: `DELETE FROM user_additional_emails WHERE email LIKE 'bruno-additional-%@example.com';` |
 | 6 | `test-enhancement/bruno-audit-tasks-api` | D.4: light audit | ⬜ not started | — | — |
 | 7 | `test-enhancement/bruno-audit-event-types-api` | D.5: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 8 | `test-enhancement/bruno-audit-event-topics-api` | D.6: light audit (new collection from PR 2) | ⬜ not started | — | — |
@@ -113,14 +113,49 @@ Anonymous `GET /public/users/batbern.organizer` returns 404 from CUMS. Same root
 
 **Fix:** falls out automatically once F2 is fixed (auth user no longer being deleted mid-run). No separate change needed.
 
+### F4 — `users-api/15-add-additional-email.bru` accumulates rows; 6th run+ blocks at 422 (discovered 2026-05-25, second run)
+
+Re-running the collection after the first round of findings surfaced a new failure mode on test 15:
+
+```
+status: 422
+errorCode: ADDITIONAL_EMAIL_LIMIT_REACHED
+message: "Additional email limit reached: maximum 5 per user"
+```
+
+Local DB snapshot confirms: `batbern.organizer` (the auth user, since `development.bru:3 authToken: {{process.env.AUTH_TOKEN}}` resolves to that identity) has 5 leftover rows in `user_additional_emails` matching `bruno-additional-%@example.com`, dating from earlier today's runs.
+
+**Root cause is a pairing-without-isolation bug**, not a state-cleanup miss in the cleanup endpoint:
+- `15-add-additional-email.bru` POSTs `bruno-additional-{{$randomInt}}@example.com` to `/users/me/additional-emails` (against the *auth* user, not a disposable test user).
+- `17-delete-additional-email.bru` is supposed to delete it, but has been failing for the F2 reasons (auth user deleted mid-run by test 14, encoded-URL 401, precondition-trip when 15 itself fails).
+- Each leaked row stays forever. After 5 leaks the cap is hit and every future test 15 immediately 422s before it can even try to write — making the leak permanent until a manual `DELETE`.
+
+**No single commit caused this.** It's an accumulation pattern: Story 10.32 (`9c35bf11`) introduced both the cap and the test, but the test "worked" as long as 15→17 always paired up cleanly. Recent PR-1 changes that exposed the previously-skipped tests (my docs-block fix at `74b8cd8a`) and changes that altered the auth user's behavior (`46c5dc75` flipping method security on in local; the staging ORGANIZER role re-grant earlier this session making test 14 actually destructive) all *raised the failure rate* on test 17, accelerating the leak — but the leak vector existed already.
+
+**Fix for the PR 5 auditor — three pieces, do all three:**
+
+1. **Extend the CUMS `TestFixtureCleanupController` with an `ADDITIONAL_EMAILS` entityType.** Same shape as the partner_meetings TODO in PR 13. Prefix regex along the lines of `^bruno-(test|additional)-[0-9]+@example\.com$` (or normalize to canonical `^bruno-test-[0-9]+@e2e\.batbern\.invalid$` and migrate the test). Single DELETE on `user_additional_emails` by `LOWER(email) LIKE LOWER(?) || '%'`. Add the regex to the controller's bound `Map<CleanupEntityType, Pattern>` per B2's controller-layer enforcement. ~50 lines + 1 integration test.
+2. **Normalize the test prefix to a canonical pattern per B1.** Today's `bruno-additional-{{$randomInt}}@example.com` doesn't match any canonical regex from B1's table — it's a one-off prefix invented inside this test file. Either (a) widen B1 to recognize `bruno-additional-` as a second canonical prefix for additional-email fixtures, OR (b) change the test to `bruno-test-{{$timestamp}}@e2e.batbern.invalid` and reuse the existing email canonical. (b) is preferable — it consolidates one less regex.
+3. **Add `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` to `users-api/`** per B3. Both POST to the cleanup endpoint with `entityType=ADDITIONAL_EMAILS` + the canonical prefix. Status assertion `oneOf([200, 204, 404])` so they never fail the run. This breaks the create/delete coupling entirely — even if test 17 fails, the next run starts clean.
+
+**One-time local-DB unblock before PR 5 can run green locally:**
+
+```sql
+DELETE FROM user_additional_emails
+WHERE email LIKE 'bruno-additional-%@example.com';
+```
+
+**Same shape as PR 13's TODO.** The two share a structural pattern: an entity that lives on a *real* parent (additional_emails on real users; partner_meetings as a standalone table) and that the existing cleanup entityTypes can't sweep because they only delete the parent or only follow FK cascades from a test-prefixed parent. Worth pulling out as a B2 framing note: **"cleanup endpoint entityTypes must enumerate every table that tests write to, not just the entity owners."**
+
 ### Cross-cutting note for the PR 5 auditor
 
-These three failures together demonstrate a class of test-design bug this plan should explicitly track: **implicit dependencies on test order + shared mutable state in dev DB**. Section D.5 already mandates "run twice" — but that catches *idempotency* bugs, not *self-destruction* bugs like `14-` deleting its own auth user. Two adjustments worth considering for the D template:
+The four failures together demonstrate a class of test-design bug this plan should explicitly track: **implicit dependencies on test order + shared mutable state in dev DB**. Section D.5 already mandates "run twice" — but that catches *idempotency* bugs, not *self-destruction* bugs like `14-` deleting its own auth user, or *accumulation* bugs like `15-` leaking rows to a real user every time `17-` fails. Three adjustments worth considering for the D template:
 
 1. **Add a `00-` pre-flight that asserts the auth user exists** — fail-fast if a previous run left the user deleted, instead of cascading into 5 confusing failures.
 2. **Forbid tests that mutate `{{testUsername}}` when it equals the auth user.** Either route them through a disposable `bruno.test.<ts>` created earlier in the run, OR move them to the final 99-block.
+3. **Forbid tests that write rows to a *real* user's tables (e.g. additional emails, profile pictures) without an unconditional posttest cleanup.** Pair every such create with a `99-` posttest sweep OR rewrite to use a disposable test user.
 
-Neither is mandatory for PR 5 — they're nice-to-have hardening for D. Captured here so the PR 5 auditor (or whoever later notices similar patterns in another collection) doesn't have to re-derive it.
+Neither (1) nor (2) is mandatory for PR 5 — they're nice-to-have hardening for D. (3) is now binding for PR 5 specifically because F4 demonstrates the exact failure mode it would have prevented. Captured here so the PR 5 auditor (or whoever later notices similar patterns in another collection) doesn't have to re-derive it.
 
 ## Context
 
