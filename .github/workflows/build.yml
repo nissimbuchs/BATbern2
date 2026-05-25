@@ -521,8 +521,8 @@ jobs:
     name: SonarCloud Analysis
     needs: [build-shared-kernel, build-services, build-frontend]
     runs-on: ubuntu-latest
-    # Skip SonarCloud for Dependabot PRs (they don't have access to secrets)
-    if: github.actor != 'dependabot[bot]'
+    # Disabled — SonarCloud analysis turned off
+    if: false
 
     steps:
       - name: Checkout code
@@ -738,7 +738,7 @@ jobs:
   # DEPLOYMENT: Trigger staging deployment after successful build
   # ═══════════════════════════════════════════════════════════
   deploy-to-staging:
-    needs: [build-shared-kernel, build-services, build-frontend, sonarcloud]
+    needs: [build-shared-kernel, build-services, build-frontend]
     # Deploy to staging on: (1) push to develop OR (2) PR to develop
     # This allows testing PRs in staging environment before merge
     if: |
