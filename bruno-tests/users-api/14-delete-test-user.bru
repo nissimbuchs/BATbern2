@@ -5,7 +5,7 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/users/{{testUsername}}
+  url: {{baseUrl}}/users/{{disposableUsername}}
   body: none
   auth: bearer
 }
@@ -17,6 +17,20 @@ auth:bearer {
 headers {
   X-Correlation-ID: {{$guid}}
   Accept: application/json
+}
+
+script:pre-request {
+  // Plan §F2 fix: forbid this test from ever deleting the auth user.
+  // `disposableUsername` is set ONLY by `04-create-user` post-response —
+  // if test 04 failed (e.g. 403 on non-organizer envs), bail out here
+  // instead of fall-back-deleting whatever shape `testUsername` has.
+  const disposable = bru.getEnvVar("disposableUsername");
+  if (!disposable) {
+    throw new Error("Precondition: env var `disposableUsername` is unset — test 04 (create-user) must succeed first. Refusing to issue DELETE against fallback username (which would target the auth user).");
+  }
+  if (!disposable.match(/^bruno\.test\./)) {
+    throw new Error("Sanity: `disposableUsername`='" + disposable + "' does not match `bruno.test.*`. Refusing to delete.");
+  }
 }
 
 assert {

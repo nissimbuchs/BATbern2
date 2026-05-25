@@ -31,6 +31,11 @@ script:post-response {
     const user = res.getBody();
     bru.setEnvVar("currentUsername", user.id);
     bru.setEnvVar("currentUserEmail", user.email);
+    // Plan §F1 fix: 18-add-additional-email-duplicate reads {{authUserEmail}};
+    // earlier this env var was never defined so the body sent the literal
+    // string "{{authUserEmail}}" and the server rejected it with 400. Setting
+    // the alias here keeps test 18 self-contained without altering its body.
+    bru.setEnvVar("authUserEmail", user.email);
 
     // Store original profile data for restoration after update tests
     bru.setEnvVar("originalFirstName", user.firstName || "");

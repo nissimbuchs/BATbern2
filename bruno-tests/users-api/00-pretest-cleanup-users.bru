@@ -1,0 +1,40 @@
+meta {
+  name: Pretest cleanup — sweep leftover bruno.test.* users
+  type: http
+  seq: 0
+}
+
+# Audit-pass addition (PR 5, plan §B3): unconditional pretest cleanup, users.
+# Runs FIRST in the collection. Sweeps any `bruno.test.*` user_profile rows
+# left over from a previous crashed run — cascade clears their
+# role_assignments + user_additional_emails too.
+#
+# Status assertion is `oneOf([200, 204, 404])` so this never fails the run.
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "users",
+    "prefix": "bruno.test."
+  }
+}
+
+tests {
+  test("pretest user cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+}
