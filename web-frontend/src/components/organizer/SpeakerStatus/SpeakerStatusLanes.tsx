@@ -763,17 +763,22 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
             </Grid>
           </Stack>
 
-          {/* Story 11.D.3 — visually-hidden aria-live region for filter-toggle SR feedback */}
+          {/* Story 11.D.3 — visually-hidden aria-live region for filter-toggle SR feedback.
+              MUI sx treats numeric `width: 1` as a fraction (= 100% of containing block),
+              not as `1px`. The previous version of this block used `width: 1, height: 1,
+              margin: -1` which expanded to a viewport-sized div with -8px margin on all
+              sides, causing the kanban subtab to scroll horizontally by 8px. Use explicit
+              pixel strings (the standard visually-hidden SR-only pattern). */}
           <Box
             aria-live="polite"
             aria-atomic="true"
             data-testid="speaker-lanes-filter-announcement"
             sx={{
               position: 'absolute',
-              width: 1,
-              height: 1,
+              width: '1px',
+              height: '1px',
               padding: 0,
-              margin: -1,
+              margin: '-1px',
               overflow: 'hidden',
               clip: 'rect(0, 0, 0, 0)',
               whiteSpace: 'nowrap',
