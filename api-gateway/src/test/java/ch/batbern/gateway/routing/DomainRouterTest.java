@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -206,6 +207,35 @@ class DomainRouterTest {
 
         // Then
         assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToCums_when_cleanupCumsPathCalled")
+    void should_routeToCums_when_cleanupCumsPathCalled() {
+        // Bruno test-fixture cleanup paths (PR 1 staging-hardening) — per-service routing
+        // must take precedence over the generic /api/v1/admin → EMS fallback below.
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/cums/cleanup");
+
+        assertThat(targetService).isEqualTo("company-user-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEms_when_cleanupEmsPathCalled")
+    void should_routeToEms_when_cleanupEmsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/ems/cleanup");
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToPcs_when_cleanupPcsPathCalled")
+    void should_routeToPcs_when_cleanupPcsPathCalled() {
+        String targetService = domainRouter
+                .determineTargetService("/api/v1/admin/test-fixtures/pcs/cleanup");
+
+        assertThat(targetService).isEqualTo("partner-coordination-service");
     }
 
     @Test
@@ -452,5 +482,71 @@ class DomainRouterTest {
 
         // Then: root path "/" is preserved as-is (length == 1, not stripped)
         assertThat(uriCaptor.getValue().getPath()).isEqualTo("/");
+    }
+
+    // Regression test for the double-encoding bug caught by Bruno
+    // users-api/17-delete-additional-email. The DELETE path embeds a URL-encoded
+    // email (`bruno-test-<ts>%40e2e.batbern.invalid`); a previous build() default
+    // re-encoded the `%` as `%25`, producing `%2540` upstream which Spring
+    // Security's StrictHttpFirewall rejects ("potentially malicious String '%25'").
+    @Test
+    @DisplayName("should_preservePathEncoding_when_pathContainsPercentEncodedAtSign")
+    void should_preservePathEncoding_when_pathContainsPercentEncodedAtSign() {
+        // Given
+        String targetService = "company-user-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+        request.setMethod("DELETE");
+
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.noContent().build());
+
+        // When
+        domainRouter.routeRequest(targetService, request).join();
+
+        // Then: the gateway must forward `%40` verbatim, not double-encode to `%2540`
+        String rawPath = uriCaptor.getValue().getRawPath();
+        assertThat(rawPath).contains("%40");
+        assertThat(rawPath).doesNotContain("%2540");
+        assertThat(uriCaptor.getValue().toString())
+                .isEqualTo("http://localhost:8085/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+    }
+
+    // Regression test for the Cache-Control stripping bug caught by Bruno
+    // users-api/20-public-user-by-username. The gateway previously stripped
+    // upstream Cache-Control headers referencing a `SecurityHeadersFilter` that
+    // doesn't exist; PublicUserController's `cachePublic + 24h` directive was
+    // dropped and replaced by Spring Security's `no-cache, no-store, ...` default.
+    @Test
+    @DisplayName("should_preserveUpstreamCacheControl_when_responseCarriesPublicCachingHeader")
+    void should_preserveUpstreamCacheControl_when_responseCarriesPublicCachingHeader() {
+        // Given
+        String targetService = "company-user-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/public/users/jane.smith");
+        request.setMethod("GET");
+
+        HttpHeaders upstreamHeaders = new HttpHeaders();
+        upstreamHeaders.set("Cache-Control", "public, max-age=86400");
+        when(restTemplate.exchange(
+            any(URI.class),
+            any(),
+            any(),
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok()
+                .headers(upstreamHeaders)
+                .body("{\"username\":\"jane.smith\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        // When
+        ResponseEntity<byte[]> response = domainRouter.routeRequest(targetService, request).join();
+
+        // Then: gateway must forward the upstream Cache-Control unchanged.
+        assertThat(response.getHeaders().getFirst("Cache-Control"))
+                .isEqualTo("public, max-age=86400");
     }
 }

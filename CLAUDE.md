@@ -358,6 +358,46 @@ make setup-test-users ENV=development     # development
 
 **CI/CD:** `deploy-staging.yml` gets tokens for all roles from GitHub secrets (`STAGING_ORGANIZER_*`, `STAGING_SPEAKER_*`, `STAGING_PARTNER_*`). Falls back to `STAGING_TEST_USER_*` for organizer.
 
+### Bruno `.bru` File Syntax — Comments Go in `docs { }`, NOT `#`
+
+**CRITICAL — common Claude mistake.** Bruno's `.bru` grammar does NOT support free-floating `#` comments at the top level (between blocks). When the parser sees a `#` line outside a recognised block, it prints `Warning: Skipping invalid file ...` and **silently skips the entire file** — the request never runs, but `bru run` exits 0 if every other file passed. This makes the failure invisible in CI: a "PASS" summary can hide cleanup hooks that never executed.
+
+```bruno
+# ❌ Wrong — parser skips this file with a Warning
+meta {
+  name: Pretest cleanup
+  type: http
+  seq: 0
+}
+
+# Audit-pass addition: unconditional pretest cleanup.
+# Runs BEFORE every other test in this collection.
+
+post { ... }
+```
+
+```bruno
+# ✅ Correct — prose lives in a docs { } block at the end of the file
+meta {
+  name: Pretest cleanup
+  type: http
+  seq: 0
+}
+
+post { ... }
+
+tests { ... }
+
+docs {
+  Audit-pass addition: unconditional pretest cleanup.
+  Runs BEFORE every other test in this collection.
+}
+```
+
+The only blocks Bruno's parser accepts at file scope are: `meta`, `docs`, `settings`, `headers`, `body:*`, `auth:*`, `params:*`, `query`, `tests`, `assert`, `script:pre-request`, `script:post-response`, `vars:*`, `metadata`, and the HTTP verb blocks (`get`, `post`, `put`, etc.). Anything else — including `#`-prefixed comments — fails the parse.
+
+**Detection:** grep CI output for `Skipping invalid file` after any Bruno run. A clean run should have zero such warnings.
+
 ## Critical Development Standards
 
 ### Type Sharing

@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -99,6 +100,15 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/public")
                 || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/cums")) {
+            // Bruno test-fixture cleanup endpoint per service (PR 1 staging-hardening).
+            // Per-service paths because /api/v1/admin generically falls through to EMS below
+            // and cleanup needs blast-radius isolation per docs/plans/bruno-staging-hardening.md §B2.
+            return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/ems")) {
+            return "event-management-service";
+        } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/pcs")) {
+            return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/admin")) { // Admin endpoints (e.g. AdminSettingsController)
             return "event-management-service";
         } else {
@@ -141,10 +151,16 @@ public class DomainRouter {
         cleaned.remove("Referrer-Policy");
         cleaned.remove("Permissions-Policy");
 
-        // Remove cache control headers that will be added by SecurityHeadersFilter
-        cleaned.remove("Cache-Control");
-        cleaned.remove("Pragma");
-        cleaned.remove("Expires");
+        // NOTE: Cache-Control/Pragma/Expires intentionally NOT stripped here.
+        // The previous "will be added by SecurityHeadersFilter" comment was wrong —
+        // SecurityHeadersHandler exists but is never wired in as an interceptor, so
+        // stripping these headers caused Spring Security's default
+        // `no-cache, no-store, max-age=0, must-revalidate` to apply to every response,
+        // overriding the controller's explicit `cachePublic + 24h` directive on
+        // `/api/v1/public/users/*` (caught by Bruno test users-api/20). Controllers
+        // (e.g. PublicUserController) set Cache-Control explicitly when they want
+        // a caching directive; when they don't, Spring Security's default still
+        // applies — which is the correct behaviour for authenticated endpoints.
 
         // Remove transfer-encoding to prevent chunked encoding issues
         // Spring will set Content-Length automatically
@@ -192,21 +208,33 @@ public class DomainRouter {
                 // Get target service URL
                 String serviceUrl = getServiceUrl(targetService);
 
-                // Build URI using UriComponentsBuilder to properly handle query parameters
-                // This prevents double-encoding and URI template variable expansion issues
-                UriComponentsBuilder uriBuilder = UriComponentsBuilder
-                        .fromUriString(serviceUrl + requestUri);
-
-                // Add query parameters from request (already decoded by servlet container)
-                // UriComponentsBuilder will encode them properly
-                request.getParameterMap().forEach((key, values) -> {
-                    for (String value : values) {
-                        uriBuilder.queryParam(key, value);
-                    }
-                });
-
-                // build() encodes the parameters, toUri() creates the URI object
-                URI targetUri = uriBuilder.build().toUri();
+                // Construct target URI preserving the path's original wire encoding.
+                // getRequestURI() returns the URL-encoded path (e.g. `%40` for `@`);
+                // UriComponentsBuilder.fromUriString(...).build() defaults to encoded=false
+                // and re-encodes percent signs (`%40` → `%2540`), which Spring Security's
+                // StrictHttpFirewall on the downstream service then rejects as
+                // "potentially malicious String '%25'" (caught by Bruno test
+                // users-api/17-delete-additional-email).
+                //
+                // Path: keep getRequestURI() bytes verbatim.
+                // Query params: getParameterMap() returns DECODED values, so we still need
+                // UriComponentsBuilder's RFC 3986 query encoding (verified by the JSON-in-
+                // query-string test below).
+                Map<String, String[]> params = request.getParameterMap();
+                String encodedQuery = null;
+                if (!params.isEmpty()) {
+                    UriComponentsBuilder queryBuilder = UriComponentsBuilder.newInstance();
+                    params.forEach((key, values) -> {
+                        for (String value : values) {
+                            queryBuilder.queryParam(key, value);
+                        }
+                    });
+                    // .encode() converts decoded queryParam values into their RFC 3986
+                    // wire form ({ → %7B, " → %22, etc.) so the assembled URI parses.
+                    encodedQuery = queryBuilder.build().encode().getQuery();
+                }
+                URI targetUri = URI.create(serviceUrl + requestUri
+                        + (encodedQuery != null ? "?" + encodedQuery : ""));
 
                 // Copy headers from original request (excluding Host header)
                 HttpHeaders headers = new HttpHeaders();

@@ -359,70 +359,9 @@ jobs:
 
           echo "✅ GitHub Release created: ${TAG}"
 
-  rollback-on-failure:
-    needs: [blue-green-deployment, smoke-tests]
-    if: failure()
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # Required for OIDC authentication
-      contents: read   # Required for checkout
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Rollback deployment
-        run: |
-          echo "🚨 Deployment failed, initiating rollback..."
-
-          if aws ecs describe-clusters --clusters batbern-prod --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            services=(
-              "event-management-service"
-              "speaker-coordination-service"
-              "partner-coordination-service"
-              "attendee-experience-service"
-              "company-user-management-service"
-            )
-
-            # Get previous task definition for each service
-            for service in "${services[@]}"; do
-              if aws ecs describe-services --cluster batbern-prod --services ${service} --region ${{ env.AWS_REGION }} 2>/dev/null | grep -q "ACTIVE"; then
-                echo "Rolling back $service..."
-
-                previous_task=$(aws ecs describe-services \
-                  --cluster batbern-prod \
-                  --services ${service} \
-                  --region ${{ env.AWS_REGION }} \
-                  --query 'services[0].deployments[1].taskDefinition' \
-                  --output text 2>/dev/null || echo "")
-
-                if [ -n "$previous_task" ] && [ "$previous_task" != "None" ]; then
-                  aws ecs update-service \
-                    --cluster batbern-prod \
-                    --service ${service} \
-                    --task-definition $previous_task \
-                    --force-new-deployment \
-                    --region ${{ env.AWS_REGION }}
-                  echo "✅ Rolled back $service to $previous_task"
-                else
-                  echo "⚠️  Could not find previous task definition for $service"
-                fi
-              fi
-            done
-          else
-            echo "::warning::ECS cluster batbern-prod not found"
-          fi
-
-      - name: Notify team
-        if: always()
-        run: |
-          echo "🚨 Production deployment FAILED and rolled back"
-          echo "Version: ${{ github.event.inputs.version }}"
-          echo "Database backup: ${{ needs.backup-database.outputs.snapshot_id }}"
-          echo "Action required: Review logs and investigate failure"
+  # The former `rollback-on-failure` job was removed 2026-05-25: it referenced the
+  # decommissioned production account (422940799530) and the non-existent
+  # `batbern-prod` ECS cluster, so it could never actually roll anything back. Production
+  # rollback now lives in deploy-staging.yml's `rollback-on-bruno-failure` job
+  # (Bruno-gated) and `scripts/ci/rollback-deployment.sh` (manual one-click).
+  # See docs/plans/bruno-staging-hardening.md §A5c.

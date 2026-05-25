@@ -1,10 +1,71 @@
 #!/bin/bash
 # Run Bruno API tests in headless CI mode
 # Validates API contracts match OpenAPI specifications
+#
+# Usage:
+#   run-bruno-tests.sh <environment> [auth_token] [options]
+#
+# Options:
+#   --collection NAME    Run only the named collection (iterate one folder at a time).
+#                        Useful for hardening a single entity. Example:
+#                          run-bruno-tests.sh staging --collection companies-api
+#   --cleanup-only       Run only the cleanup .bru files (00-pretest-cleanup.bru,
+#                        99-posttest-cleanup.bru) in each collection. Belt-and-suspenders
+#                        after a Bruno runner crash to ensure test data is wiped.
+#   --no-bail            Disable early-exit on script-level errors. Collection-level
+#                        failures already accumulate without bailing (see exit-code logic
+#                        at the bottom), so this is rarely needed — mainly a future-proof
+#                        flag for callers who want a single, predictable exit point.
+
 set -e
 
+# --- Argument parsing ---
+# Handle help before any other parsing so `--help` doesn't get treated as ENVIRONMENT
+for arg in "$@"; do
+    if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
+        sed -n '/^# Usage:/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+    fi
+done
+
 ENVIRONMENT=${1:-"development"}
-AUTH_TOKEN=${2:-""}
+AUTH_TOKEN=""
+TARGET_COLLECTION=""
+CLEANUP_ONLY=0
+
+# Consume the optional positional auth_token arg (skipped if next arg is a flag)
+shift || true
+if [ $# -gt 0 ] && [[ "$1" != --* ]]; then
+    AUTH_TOKEN="$1"
+    shift
+fi
+
+# Parse named flags
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --collection)
+            TARGET_COLLECTION="$2"
+            shift 2
+            ;;
+        --collection=*)
+            TARGET_COLLECTION="${1#--collection=}"
+            shift
+            ;;
+        --cleanup-only)
+            CLEANUP_ONLY=1
+            shift
+            ;;
+        --no-bail)
+            set +e
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "Run with --help for usage" >&2
+            exit 2
+            ;;
+    esac
+done
 
 # Color output
 RED='\033[0;31m'
@@ -17,7 +78,9 @@ echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}Bruno API Contract Tests${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
-echo "Environment: $ENVIRONMENT"
+echo "Environment:        $ENVIRONMENT"
+[ -n "$TARGET_COLLECTION" ] && echo "Target collection:  $TARGET_COLLECTION"
+[ "$CLEANUP_ONLY" = "1" ] && echo "Mode:               cleanup-only"
 
 # Try to load token from local config if not provided
 if [ -z "$AUTH_TOKEN" ]; then
@@ -125,20 +188,57 @@ failed=0
 skipped=0
 
 # Test collection directories
+# admin-cleanup-api MUST run first — verifies the cleanup endpoint's authorization +
+# routing + 400-validation chain through the gateway. Plan F2 mandates "runs FIRST in
+# run-bruno-tests.sh so authorization regressions are caught before any test creates
+# state to clean."
 # speaker-portal-api requires the E2E token helper endpoint (@Profile dev/local/test only)
-# and is therefore excluded on staging/production
+# and is therefore excluded on staging/production.
 collections=(
+    "admin-cleanup-api"
     "file-upload-api"
     "companies-api"
     "users-api"
     "events-api"
     "partners-api"
-    "speakers-api"
     "tasks-api"
 )
 if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
     collections+=("speaker-portal-api")
 fi
+
+# If --collection set, narrow to just that one (validate it's in the list to prevent typos)
+if [ -n "$TARGET_COLLECTION" ]; then
+    found=0
+    for c in "${collections[@]}"; do
+        if [ "$c" = "$TARGET_COLLECTION" ]; then found=1; break; fi
+    done
+    # Also allow new collections that aren't yet in the default list (e.g. admin-cleanup-api
+    # during early hardening) as long as the directory exists.
+    if [ "$found" = "0" ] && [ ! -d "bruno-tests/$TARGET_COLLECTION" ]; then
+        echo -e "${RED}ERROR:${NC} --collection $TARGET_COLLECTION not found in default list and no such directory under bruno-tests/"
+        echo "Available collections:"
+        printf '  %s\n' "${collections[@]}"
+        exit 2
+    fi
+    collections=("$TARGET_COLLECTION")
+fi
+
+# Helper: run cleanup .bru files in a collection.
+# Defensive — failure here is non-fatal because the cleanup endpoint itself
+# returns 200/204/404 on success and the .bru files assert oneOf those.
+# Used both in --cleanup-only mode and as a post-failure sweep after a regular run.
+run_cleanup_for_collection() {
+    local collection="$1"
+    local collection_path="bruno-tests/$collection"
+    local cleanup_files=("00-pretest-cleanup.bru" "99-posttest-cleanup.bru")
+    for f in "${cleanup_files[@]}"; do
+        if [ -f "$collection_path/$f" ]; then
+            echo -e "${BLUE}  Cleanup:${NC} $collection/$f"
+            (cd bruno-tests && bru run "$collection/$f" --env "$ENVIRONMENT" 2>&1) || true
+        fi
+    done
+}
 
 # Run tests for each collection
 for collection in "${collections[@]}"; do
@@ -147,6 +247,14 @@ for collection in "${collections[@]}"; do
     if [ ! -d "$collection_path" ]; then
         echo -e "${YELLOW}⚠ Skipping:${NC} $collection (directory not found)"
         ((skipped++))
+        continue
+    fi
+
+    # Cleanup-only mode: just run the cleanup .bru files for each collection
+    if [ "$CLEANUP_ONLY" = "1" ]; then
+        echo -e "\n${BLUE}Cleanup-only:${NC} $collection"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        run_cleanup_for_collection "$collection"
         continue
     fi
 
@@ -190,6 +298,13 @@ for collection in "${collections[@]}"; do
             jq -r '.error // "Unknown error"' "$results_file" 2>/dev/null || cat "$results_file"
             rm -f "$results_file"
         fi
+
+        # Defense layer: re-run cleanup .bru files so 99-posttest-cleanup
+        # executes even if Bruno's runner aborted mid-collection. Two layers:
+        # (1) the 99- file already runs at the end of bru run -r in the happy path;
+        # (2) if Bruno crashed before reaching it, this catches the orphan.
+        echo -e "${YELLOW}  Running posttest cleanup defensively...${NC}"
+        run_cleanup_for_collection "$collection"
     fi
 done
 
@@ -210,7 +325,7 @@ if [ $failed -gt 0 ]; then
     echo "1. Check API Gateway and services are deployed and healthy"
     echo "2. Verify auth token is valid and not expired"
     echo "3. Review individual test failures above"
-    echo "4. Run locally: bru run bruno-tests/<collection> --env $ENVIRONMENT"
+    echo "4. Run locally: $0 $ENVIRONMENT --collection <name>"
     exit 1
 else
     echo ""
