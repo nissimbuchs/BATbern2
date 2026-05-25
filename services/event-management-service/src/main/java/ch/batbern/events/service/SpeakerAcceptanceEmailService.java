@@ -62,18 +62,21 @@ public class SpeakerAcceptanceEmailService {
 
     /**
      * Send acceptance confirmation email asynchronously.
-     * AC9: Confirmation email with portal links
+     * AC9: Confirmation email with portal links.
      *
-     * @param speaker   the speaker pool entry
-     * @param event     the event
-     * @param viewToken VIEW token for portal access (30-day expiry)
-     * @param locale    preferred language (defaults to German)
+     * <p>Story 11.F.1: dropped the residual {@code viewToken} parameter — the magic-link
+     * portal URL was deleted in Story 11.E.3 review (D1) and the parameter was retained
+     * on the signature pending Phase F. Portal links now point at Cognito-secured routes
+     * (eventCode in the path, Bearer from the session).
+     *
+     * @param speaker the speaker pool entry
+     * @param event   the event
+     * @param locale  preferred language (defaults to German)
      */
     @Async
     public void sendAcceptanceConfirmationEmail(
             SpeakerPool speaker,
             Event event,
-            String viewToken,
             Locale locale
     ) {
         // Phase B: route to the live primary speaker via PrimarySpeakerResolver.
@@ -107,7 +110,6 @@ public class SpeakerAcceptanceEmailService {
                     speaker,
                     event,
                     eventDateTime,
-                    viewToken,
                     recipientName
             );
 
@@ -141,7 +143,6 @@ public class SpeakerAcceptanceEmailService {
             SpeakerPool speaker,
             Event event,
             ZonedDateTime eventDateTime,
-            String viewToken,
             String speakerDisplayName
     ) {
         String localeStr = locale.getLanguage();
@@ -152,13 +153,11 @@ public class SpeakerAcceptanceEmailService {
         // Story 10.2: DB-first template loading
         String template = loadHtmlContent("speaker-acceptance", localeStr, templateName);
 
-        // Code review 2026-05-18 (D1): drop magic-link `?token=` URLs from acceptance email.
-        // Speaker now authenticates via Cognito; the SPA routes use eventCode in the path and
-        // pick up the Bearer from the session. The dedicated per-event profile route was
-        // removed (Story 11.C.1 consolidated profile editing into CUMS /users/me endpoints);
-        // the profileUrl link block is removed from the templates in the same commit.
-        // viewToken is retained on the method signature for now (Phase F drops it); it is
-        // intentionally NOT consumed by the URL builders below.
+        // Story 11.E.3 D1 / 11.F.1 Phase F: speakers now authenticate via Cognito; the
+        // SPA routes use eventCode in the path and pick up the Bearer from the session.
+        // The dedicated per-event profile route was removed (Story 11.C.1 consolidated
+        // profile editing into CUMS /users/me endpoints); the profile link block is gone
+        // from the templates.
         String profileUrl = "";
         String contentUrl = baseUrl + "/speaker-portal/content/" + event.getEventCode();
         String dashboardLink = baseUrl + "/speaker-portal/dashboard";

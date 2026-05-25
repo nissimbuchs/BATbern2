@@ -10,7 +10,6 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +38,6 @@ public class QualityReviewService {
     private final SessionRepository sessionRepository;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final EmailService emailService;
-    private final MagicLinkService magicLinkService;
     private final SpeakerWorkflowService speakerWorkflowService;
     private final PrimarySpeakerResolver primarySpeakerResolver;
 
@@ -212,10 +210,10 @@ public class QualityReviewService {
                     .filter(n -> !n.isEmpty())
                     .orElseGet(() -> speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker");
 
-            // Generate a new magic link token for the speaker portal
-            // 14-day validity aligns with typical revision deadline and reduces security exposure
-            String token = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 14);
-            String portalUrl = baseUrl + "/speaker-portal/content?token=" + token;
+            // Story 11.F.1 (Phase F): speakers now authenticate via Cognito — the
+            // revision link points at the speaker-portal content route which is
+            // SPEAKER-role-guarded server-side and picks up the Bearer from the session.
+            String portalUrl = baseUrl + "/speaker-portal/content/" + (event != null ? event.getEventCode() : "");
 
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);

@@ -161,7 +161,8 @@ export interface paths {
      *     Story 5.5: Speaker Content Submission (AC13-14, AC17)
      *
      *     - APPROVE: Updates speaker status to QUALITY_REVIEWED
-     *     - REJECT: Requires feedback, sends notification to speaker with magic link
+     *     - REJECT: Requires feedback, sends notification to speaker linking to the
+     *       Cognito-secured speaker portal for revisions
      *
      *     Auto-updates to CONFIRMED when both QUALITY_REVIEWED AND slot is assigned.
      */
@@ -698,7 +699,8 @@ export interface components {
     /**
      * @description Quality review action:
      *     - APPROVE: Accept the content, update status to QUALITY_REVIEWED
-     *     - REJECT: Reject the content, requires feedback, sends notification with magic link
+     *     - REJECT: Reject the content, requires feedback, sends notification linking to
+     *       the Cognito-secured speaker portal for revisions
      * @enum {string}
      */
     ReviewAction: 'APPROVE' | 'REJECT';

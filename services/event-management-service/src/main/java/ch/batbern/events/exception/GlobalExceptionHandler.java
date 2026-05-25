@@ -63,34 +63,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle InvalidTokenException (magic link token invalid/expired/used)
-     * Returns HTTP 401 Unauthorized
-     * Story 6.2a: Invitation Response Portal
-     */
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidTokenException(
-            InvalidTokenException ex,
-            HttpServletRequest request) {
-        log.warn("Invalid token: {} - {}", ex.getErrorCode(), ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("errorCode", ex.getErrorCode());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Unauthorized")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.generate())
-                .severity("MEDIUM")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-    /**
      * Handle AlreadyRespondedException (speaker already responded to invitation)
      * Returns HTTP 409 Conflict
      * Story 6.2a: Invitation Response Portal - AC7
@@ -1114,6 +1086,37 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Spring MVC raises {@code NoHandlerFoundException} / {@code NoResourceFoundException}
+     * when no controller method matches the inbound request. Without this explicit handler
+     * the catch-all {@code Exception} branch below would translate either into a 500 (same
+     * trap as the project-context.md {@code MethodArgumentNotValidException} gotcha).
+     * Story 11.F.1 added this handler so the post-teardown speaker-magic-login /
+     * validate-token endpoints return a clean 404.
+     */
+    @ExceptionHandler({
+        org.springframework.web.servlet.NoHandlerFoundException.class,
+        org.springframework.web.servlet.resource.NoResourceFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNoHandlerFoundException(
+            Exception ex,
+            HttpServletRequest request) {
+        log.debug("No handler for {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message("No endpoint " + request.getMethod() + " " + request.getRequestURI())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(Exception.class)

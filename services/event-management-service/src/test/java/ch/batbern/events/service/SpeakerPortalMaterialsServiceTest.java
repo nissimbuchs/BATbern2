@@ -33,9 +33,8 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link SpeakerPortalMaterialsService}.
  *
- * <p>Story 11.E.3: caller (controller) now resolves the {@link SpeakerPool} via Cognito
- * auth and hands it in directly; the service no longer talks to {@code MagicLinkService}.
- * Tests cover the S3 copy-on-confirm regression behaviour.
+ * <p>Story 11.E.3: caller (controller) resolves the {@link SpeakerPool} via Cognito
+ * auth and hands it in directly. Tests cover the S3 copy-on-confirm regression behaviour.
  */
 @ExtendWith(MockitoExtension.class)
 class SpeakerPortalMaterialsServiceTest {

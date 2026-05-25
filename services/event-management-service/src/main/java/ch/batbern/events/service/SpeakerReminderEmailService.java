@@ -52,12 +52,15 @@ public class SpeakerReminderEmailService {
     /**
      * Send a reminder email to a speaker.
      *
+     * <p>Story 11.F.1: dropped the {@code portalToken} parameter — speakers now
+     * authenticate via Cognito; the dashboard link no longer carries a
+     * {@code ?token=} magic-link query parameter.
+     *
      * @param speaker the speaker pool entry
      * @param event the event
      * @param reminderType RESPONSE or CONTENT
      * @param tier TIER_1, TIER_2, or TIER_3
      * @param deadline the deadline date
-     * @param portalToken VIEW token for dashboard link
      * @param locale email language (defaults to German)
      */
     public void sendReminderEmail(
@@ -66,7 +69,6 @@ public class SpeakerReminderEmailService {
             String reminderType,
             String tier,
             LocalDate deadline,
-            String portalToken,
             Locale locale
     ) {
         // Phase B of the post-Epic-11 cleanup: recipient routing now resolves through
@@ -93,7 +95,7 @@ public class SpeakerReminderEmailService {
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
 
             EmailContent content = loadReminderTemplate(
-                    emailLocale, recipientName, event, reminderType, tier, deadline, portalToken);
+                    emailLocale, recipientName, event, reminderType, tier, deadline);
 
             // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
@@ -146,8 +148,7 @@ public class SpeakerReminderEmailService {
             Event event,
             String reminderType,
             String tier,
-            LocalDate deadline,
-            String portalToken
+            LocalDate deadline
     ) {
         String lang = locale.getLanguage().equals("de") ? "de" : "en";
         String type = reminderType.toLowerCase();
@@ -164,7 +165,8 @@ public class SpeakerReminderEmailService {
 
         ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
         long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
-        String portalLink = baseUrl + "/speaker-portal/dashboard?token=" + portalToken;
+        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
+        String portalLink = baseUrl + "/speaker-portal/dashboard";
 
         Map<String, String> variables = Map.ofEntries(
                 Map.entry("speakerName", speakerName != null ? speakerName : ""),

@@ -12,7 +12,6 @@ import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -67,9 +66,6 @@ class SpeakerReminderServiceTest {
     private SpeakerReminderEmailService reminderEmailService;
 
     @Mock
-    private MagicLinkService magicLinkService;
-
-    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -104,7 +100,7 @@ class SpeakerReminderServiceTest {
         speakerReminderService = new SpeakerReminderService(
                 speakerPoolRepository, eventRepository, reminderLogRepository,
                 outreachHistoryRepository, sessionContentHistoryRepository,
-                reminderEmailService, magicLinkService,
+                reminderEmailService,
                 notificationService, reminderProperties,
                 primarySpeakerResolver
         );
@@ -288,7 +284,6 @@ class SpeakerReminderServiceTest {
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));
             when(reminderLogRepository.existsBySpeakerPoolIdAndReminderTypeAndTierAndDeadlineDateAndTriggeredBy(
                     any(), any(), any(), any(), any())).thenReturn(false);
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class))).thenReturn("test-token");
 
             var result = speakerReminderService.processReminders();
 
@@ -296,7 +291,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.contentReminders()).isZero();
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    eq(testSpeaker.getResponseDeadline()), eq("test-token"), eq(Locale.GERMAN));
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN));
             verify(reminderLogRepository).save(any(SpeakerReminderLog.class));
             verify(outreachHistoryRepository).save(any(OutreachHistory.class));
         }
@@ -312,7 +307,6 @@ class SpeakerReminderServiceTest {
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));
             when(reminderLogRepository.existsBySpeakerPoolIdAndReminderTypeAndTierAndDeadlineDateAndTriggeredBy(
                     any(), any(), any(), any(), any())).thenReturn(false);
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class))).thenReturn("test-token");
 
             var result = speakerReminderService.processReminders();
 
@@ -320,7 +314,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.contentReminders()).isEqualTo(1);
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_2"),
-                    eq(testSpeaker.getContentDeadline()), eq("test-token"), eq(Locale.GERMAN));
+                    eq(testSpeaker.getContentDeadline()), eq(Locale.GERMAN));
         }
 
         @Test
@@ -336,7 +330,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.responseReminders()).isZero();
             assertThat(result.skipped()).isZero();
             verify(reminderEmailService, never()).sendReminderEmail(
-                    any(), any(), any(), any(), any(), any(), any());
+                    any(), any(), any(), any(), any(), any());
         }
     }
 
@@ -349,7 +343,6 @@ class SpeakerReminderServiceTest {
         void shouldSendManualReminder() {
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class))).thenReturn("test-token");
 
             var result = speakerReminderService.sendManualReminder(
                     speakerPoolId, "RESPONSE", "TIER_2", "organizer1");
@@ -359,7 +352,7 @@ class SpeakerReminderServiceTest {
 
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_2"),
-                    eq(testSpeaker.getResponseDeadline()), eq("test-token"), eq(Locale.GERMAN));
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN));
 
             // Verify outreach logged with organizer username
             ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
@@ -375,7 +368,6 @@ class SpeakerReminderServiceTest {
 
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class))).thenReturn("test-token");
 
             var result = speakerReminderService.sendManualReminder(
                     speakerPoolId, "RESPONSE", null, "organizer1");
@@ -454,8 +446,6 @@ class SpeakerReminderServiceTest {
 
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
-                    .thenReturn("test-token");
 
             var result = speakerReminderService.sendManualReminder(
                     speakerPoolId, "CONTENT", "TIER_1", "organizer1");
@@ -466,7 +456,7 @@ class SpeakerReminderServiceTest {
             // Verify email was sent (not thrown)
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_1"),
-                    any(LocalDate.class), eq("test-token"), eq(Locale.GERMAN));
+                    any(LocalDate.class), eq(Locale.GERMAN));
         }
 
         @Test
@@ -476,8 +466,6 @@ class SpeakerReminderServiceTest {
 
             when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
-                    .thenReturn("test-token");
 
             var result = speakerReminderService.sendManualReminder(
                     speakerPoolId, "RESPONSE", "TIER_1", "organizer1");
@@ -485,7 +473,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.tier()).isEqualTo("TIER_1");
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    any(LocalDate.class), eq("test-token"), eq(Locale.GERMAN));
+                    any(LocalDate.class), eq(Locale.GERMAN));
         }
     }
 }

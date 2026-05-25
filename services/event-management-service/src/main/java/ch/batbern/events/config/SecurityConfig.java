@@ -107,14 +107,10 @@ public class SecurityConfig {
                 // Email cancellation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
-                // Story 11.E.3 (ADR-009 §Decision 3): /api/v1/speaker-portal/** is now Cognito-secured
-                // via @PreAuthorize("hasRole('SPEAKER')") on each controller; no permitAll matchers.
-                // Resolved Q#3 (2026-05-17): /api/v1/auth/speaker-magic-login also drops permitAll —
-                // the endpoint is dead from the frontend after AC8; the controller class stays for
-                // Phase F (Story 11.F.1) to delete cleanly.
-
-                // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
-                .requestMatchers("/api/v1/e2e-test/**").permitAll()
+                // Story 11.E.3 / 11.F.1: /api/v1/speaker-portal/** is Cognito-secured via
+                // @PreAuthorize("hasRole('SPEAKER')") on each controller. The magic-link auth
+                // surface (/auth/speaker-magic-login + /speaker-portal/validate-token +
+                // /api/v1/e2e-test/**) was removed in Story 11.F.1.
 
                 // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()

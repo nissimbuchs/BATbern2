@@ -46,8 +46,6 @@ public class SpeakerInvitationEmailService {
 
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
-    // Story 11.E.2: MagicLinkService dependency removed — the Cognito flow does not
-    // generate magic-link tokens for the invitation email.
     private final EmailTemplateService emailTemplateService;
     // Phase B of the post-Epic-11 cleanup (2026-05-21): the linked User's identity is
     // now resolved through session_users + UserApiClient (PrimarySpeakerResolver) so

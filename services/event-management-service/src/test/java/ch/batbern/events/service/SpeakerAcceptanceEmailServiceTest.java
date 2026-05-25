@@ -67,7 +67,6 @@ class SpeakerAcceptanceEmailServiceTest {
     private SpeakerPool speaker;
     private Event event;
     private Session session;
-    private String viewToken;
 
     @BeforeEach
     void setUp() {
@@ -110,8 +109,6 @@ class SpeakerAcceptanceEmailServiceTest {
                 .thenReturn(Optional.of(new PrimarySpeakerResolver.PrimarySpeakerProfile(
                         "john.doe", "john.doe@example.com", "John", "Doe", "TestCo")));
 
-        viewToken = "test-view-token-12345";
-
         // Default: no DB template — use classpath fallback
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
 
@@ -139,7 +136,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(
@@ -160,7 +157,7 @@ class SpeakerAcceptanceEmailServiceTest {
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
@@ -174,7 +171,7 @@ class SpeakerAcceptanceEmailServiceTest {
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
@@ -190,7 +187,7 @@ class SpeakerAcceptanceEmailServiceTest {
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
 
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
@@ -207,7 +204,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.GERMAN);
+                    speaker, event, Locale.GERMAN);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
@@ -224,7 +221,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
@@ -241,7 +238,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
@@ -259,7 +256,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
@@ -276,7 +273,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
@@ -294,7 +291,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When/Then - should not throw
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
         }
 
         @Test
@@ -310,7 +307,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
@@ -332,7 +329,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
             // When
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
-                    speaker, event, viewToken, Locale.ENGLISH);
+                    speaker, event, Locale.ENGLISH);
 
             // Then
             verify(emailTemplateService).mergeWithLayout("<p>Content block</p>", "batbern-default", "en");

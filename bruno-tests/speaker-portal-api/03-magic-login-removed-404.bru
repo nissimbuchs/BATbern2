@@ -1,0 +1,26 @@
+meta {
+  name: Magic-login endpoint removed → 404 (Story 11.F.1 AC2 / AC7)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/speaker-magic-login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "any-value-should-not-reach-a-handler"
+  }
+}
+
+tests {
+  test("should return 404 (handler deleted by Story 11.F.1 AC1)", function() {
+    // SpeakerMagicLoginController + MagicLinkService were deleted in Phase F. Spring MVC
+    // no longer has a RequestMapping for /auth/speaker-magic-login, so the dispatcher
+    // returns 404 via the GlobalExceptionHandler.handleNoHandlerFoundException branch.
+    expect(res.getStatus()).to.equal(404);
+  });
+}

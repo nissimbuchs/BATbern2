@@ -7,12 +7,10 @@ import ch.batbern.events.domain.SpeakerReminderLog;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
-import ch.batbern.events.service.MagicLinkService;
 import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.shared.types.TokenAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -62,9 +59,6 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private SpeakerReminderEmailService reminderEmailService;
-
-    @MockitoBean
-    private MagicLinkService magicLinkService;
 
     // Phase B: PrimarySpeakerResolver is the canonical recipient-routing seam. The
     // legacy fixture seeds only SpeakerPool rows (no Session / session_users), so a real
@@ -118,11 +112,9 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
         acceptedSpeaker = speakerPoolRepository.save(acceptedSpeaker);
 
-        // Mock email service and magic link
+        // Story 11.F.1: portalToken parameter dropped from sendReminderEmail (6 args).
         doNothing().when(reminderEmailService).sendReminderEmail(
-                any(), any(), any(), any(), any(), any(), any());
-        when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
-                .thenReturn("test-magic-token");
+                any(), any(), any(), any(), any(), any());
 
         // Story 11.E.9: the pool.email column is gone. The resolver returns the email
         // from the seeded session_users / UserApiClient pair, but the existing reminder
