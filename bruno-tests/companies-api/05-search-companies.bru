@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/companies/search?query=bruno&limit=10
+  url: {{baseUrl}}/companies/search?query=BRUNOTESTCO&limit=10
   body: none
   auth: bearer
 }
 
 params:query {
-  query: bruno
+  query: BRUNOTESTCO
   limit: 10
 }
 
@@ -47,7 +47,7 @@ tests {
     if (testCompanyName) {
       const foundCompany = body.find(c => c.name === testCompanyName);
       if (foundCompany) {
-        expect(foundCompany.name).to.include('bruno');
+        expect(foundCompany.name).to.include('BRUNOTESTCO');
       } else {
         // Test company might have been deleted already, that's acceptable
         console.log('Test company not found in search results (may have been deleted)');
