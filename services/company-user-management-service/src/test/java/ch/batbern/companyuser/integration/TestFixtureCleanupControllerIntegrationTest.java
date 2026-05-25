@@ -3,8 +3,10 @@ package ch.batbern.companyuser.integration;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.dto.TestFixtureCleanupRequest;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,9 +67,13 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserAdditionalEmailRepository additionalEmailRepository;
+
     @BeforeEach
     void cleanState() {
         // Tests start from a known-empty slate so deletion counts are deterministic.
+        additionalEmailRepository.deleteAll();
         userRepository.deleteAll();
         companyRepository.deleteAll();
     }
@@ -305,6 +311,78 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("deletes bruno-test-* additional emails but leaves real ones alone (F4)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesTestAdditionalEmails_preservesRealOnes() throws Exception {
+            // Given: an auth-shaped user (e.g. batbern.organizer in prod) with both
+            //        leaked test additional emails AND a real one
+            User authUser = userRepository.save(buildUser("batbern.organizer", "batbern.organizer@example.ch"));
+            additionalEmailRepository.save(buildAdditionalEmail(authUser, "bruno-test-1779647142000@e2e.batbern.invalid"));
+            additionalEmailRepository.save(buildAdditionalEmail(authUser, "bruno-test-1779647142001@e2e.batbern.invalid"));
+            additionalEmailRepository.save(buildAdditionalEmail(authUser, "personal-second-address@batbern.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("additional_emails")
+                    .prefix("bruno-test-")
+                    .build();
+
+            // When
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_additional_emails").value(2))
+                    .andExpect(jsonPath("$.entityType").value("additional_emails"))
+                    .andExpect(jsonPath("$.prefix").value("bruno-test-"));
+
+            // Then: the real second-address survives; the auth user itself is untouched
+            assertThat(additionalEmailRepository.findAll()).hasSize(1);
+            assertThat(additionalEmailRepository.findAll().get(0).getEmail())
+                    .isEqualTo("personal-second-address@batbern.ch");
+            assertThat(userRepository.findByUsername("batbern.organizer")).isPresent();
+        }
+
+        @Test
+        @DisplayName("sweeps legacy bruno-additional-NNN@example.com via the alternative prefix")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesLegacyAdditionalEmailPrefix() throws Exception {
+            // F4 has a SECOND prefix branch for the historical leak shape;
+            // this verifies it sweeps in addition to the canonical bruno-test- prefix.
+            User authUser = userRepository.save(buildUser("batbern.organizer", "batbern.organizer@example.ch"));
+            additionalEmailRepository.save(buildAdditionalEmail(authUser, "bruno-additional-139@example.com"));
+            additionalEmailRepository.save(buildAdditionalEmail(authUser, "bruno-additional-845@example.com"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("additional_emails")
+                    .prefix("bruno-additional-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_additional_emails").value(2));
+
+            assertThat(additionalEmailRepository.findAll()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("rejects an additional-emails prefix that is neither canonical nor legacy")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void rejectsNonMatchingAdditionalEmailPrefix() throws Exception {
+            // Defensive: prefix="bruno-" would otherwise sweep too broadly.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("additional_emails")
+                    .prefix("bruno-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
         @DisplayName("is idempotent — re-running with nothing to delete returns 0 counts")
         @WithMockUser(roles = {"ORGANIZER"})
         void isIdempotent_whenNothingMatches() throws Exception {
@@ -349,6 +427,14 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                 .lastName("User")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
+                .build();
+    }
+
+    private UserAdditionalEmail buildAdditionalEmail(User user, String email) {
+        return UserAdditionalEmail.builder()
+                .user(user)
+                .email(email)
+                .createdAt(Instant.now())
                 .build();
     }
 }

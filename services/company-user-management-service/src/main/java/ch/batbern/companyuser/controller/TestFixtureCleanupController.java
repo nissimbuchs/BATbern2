@@ -63,10 +63,13 @@ public class TestFixtureCleanupController {
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Delete Bruno test fixture rows matching a canonical prefix",
-            description = "Removes rows from CUMS-owned tables (companies, user_profiles, "
-                    + "logos) whose identifier column starts with the canonical Bruno test "
-                    + "prefix for the given entity type. Cascade-deletes via FK constraints "
-                    + "for role_assignments and user_additional_emails. ORGANIZER role required."
+            description = "Removes rows from CUMS-owned tables whose identifier column starts "
+                    + "with the canonical Bruno test prefix for the given entity type. "
+                    + "Supported entity types: 'companies' (sweeps companies + associated logos), "
+                    + "'users' (sweeps user_profiles; role_assignments + user_additional_emails "
+                    + "cascade), 'additional_emails' (sweeps user_additional_emails directly — "
+                    + "needed when the row owner is a non-test auth user, per plan §F4). "
+                    + "ORGANIZER role required."
     )
     @ApiResponses(value = {
         @ApiResponse(

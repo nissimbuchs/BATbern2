@@ -85,4 +85,27 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUI
             nativeQuery = true
     )
     int deleteUserProfilesByUsernameLike(@Param("usernamePattern") String usernamePattern);
+
+    /**
+     * Delete additional-email rows whose {@code email} starts with the prefix.
+     *
+     * <p>Plan §F4: targets the {@code bruno-test-…@e2e.batbern.invalid} canonical
+     * and the legacy {@code bruno-additional-NNN@example.com} prefix. Bypasses the
+     * user-delete cascade so the {@code 00-pretest-cleanup} hook can sweep stale
+     * additional emails without removing the test users that own them — useful
+     * when the leakage is on a real-named auth user (e.g. batbern.organizer)
+     * rather than a {@code bruno.test.*} disposable.
+     *
+     * <p>Match is case-insensitive ({@code LOWER(email) LIKE LOWER(:pattern)})
+     * for defensive normalization.
+     *
+     * @param emailPattern {@code LIKE} pattern for the email column
+     * @return number of additional-email rows deleted
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM user_additional_emails WHERE LOWER(email) LIKE LOWER(:emailPattern)",
+            nativeQuery = true
+    )
+    int deleteAdditionalEmailsByEmailLike(@Param("emailPattern") String emailPattern);
 }

@@ -39,7 +39,9 @@ tests {
   test("should return updated user on 200", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
-      expect(body).to.have.property('username');
+      // UserResponse schema (users-api.openapi.yml#1926, Story 1.16.2):
+      // `id` is the meaningful identifier (the username string), not `username`.
+      expect(body).to.have.property('id');
       expect(body).to.have.property('bio');
     }
   });

@@ -1,0 +1,40 @@
+meta {
+  name: Posttest cleanup — final sweep of bruno-test-* additional emails (F4)
+  type: http
+  seq: 99
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "additional_emails",
+    "prefix": "bruno-test-"
+  }
+}
+
+tests {
+  test("posttest additional-emails cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Audit-pass addition (PR 5, plan §F4): final cleanup of leaked additional
+  emails. Runs LAST in the collection. Catches any
+  bruno-test-<ts>@e2e.batbern.invalid row that test 17 didn't delete
+  (e.g. because of an auth issue mid-run, or because test 15 leaked).
+}
