@@ -622,6 +622,51 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       // Component implements responsive design with Material-UI breakpoints
       // Desktop: Table view | Mobile: Card view
     });
+
+    // Story 11.F.1 code-review follow-up (2026-05-25): on mobile, the component
+    // previously did an early `return` with only the cards — the SessionEditModal
+    // + delete-confirm Dialog were declared further down inside the desktop-only
+    // branch, so tapping a card flipped state but mounted nothing. This test
+    // mocks window.matchMedia to force MUI's useMediaQuery(down('md')) → true and
+    // asserts that a card-tap opens the modal.
+    it('should_openEditModal_when_cardTapped_onMobile', async () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: true, // Force ALL useMediaQuery hooks (down('md')) to report mobile
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia;
+
+      try {
+        const user = userEvent.setup();
+        renderWithProviders(
+          <SpeakersSessionsTable
+            sessions={mockSessions}
+            eventCode="BAT54"
+            eventDate="2024-12-15"
+            onViewMaterials={mockOnViewMaterials}
+            onSessionUpdate={vi.fn()}
+          />
+        );
+
+        // Mobile branch renders Cards instead of TableRows.
+        const card = await screen.findByTestId('session-card-session-1');
+        await user.click(card);
+
+        // The modal title proves the dialog mounted and is visible.
+        await waitFor(() => {
+          expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+        expect(screen.getByText(/edit session/i)).toBeInTheDocument();
+      } finally {
+        window.matchMedia = originalMatchMedia;
+      }
+    });
   });
 });
 

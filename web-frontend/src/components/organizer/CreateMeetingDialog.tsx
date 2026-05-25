@@ -19,6 +19,8 @@ import {
   MenuItem,
   Select,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +43,8 @@ const EMPTY_FORM: CreateMeetingRequest = {
 const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ open, onClose }) => {
   const { t } = useTranslation('partners');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const [form, setForm] = useState<CreateMeetingRequest>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateMeetingRequest, string>>>({});
 
@@ -93,6 +97,7 @@ const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ open, onClose
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isFullScreen}
       data-testid="create-meeting-dialog"
     >
       <DialogTitle>{t('meetings.create')}</DialogTitle>

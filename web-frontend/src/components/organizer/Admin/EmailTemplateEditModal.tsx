@@ -29,6 +29,8 @@ import {
   Select,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
@@ -67,6 +69,8 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(template);
 
   // Create-mode fields
@@ -196,7 +200,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
       : t('emailTemplates.createTitle', 'New Template');
 
   return (
-    <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="lg" fullWidth fullScreen={isFullScreen}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent dividers>
         {/* Metadata chips (edit mode) */}
