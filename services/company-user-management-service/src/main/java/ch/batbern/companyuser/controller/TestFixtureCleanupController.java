@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/v1/admin/test-fixtures")
+@RequestMapping("/api/v1/admin/test-fixtures/cums")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Test Fixture Cleanup", description = "Bruno test-data cleanup — organizer-only")

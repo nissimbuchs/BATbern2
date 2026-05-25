@@ -51,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("TestFixtureCleanup REST API Integration Tests")
 class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ENDPOINT = "/api/v1/admin/test-fixtures/cleanup";
+    private static final String ENDPOINT = "/api/v1/admin/test-fixtures/cums/cleanup";
 
     @Autowired
     private MockMvc mockMvc;

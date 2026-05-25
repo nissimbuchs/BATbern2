@@ -64,7 +64,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("TestFixtureCleanup REST API Integration Tests (EMS)")
 class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ENDPOINT = "/api/v1/admin/test-fixtures/cleanup";
+    private static final String ENDPOINT = "/api/v1/admin/test-fixtures/ems/cleanup";
 
     /** Source of unique event_number values across the whole class (table has UNIQUE constraint). */
     private static final AtomicInteger EVENT_NUMBER_SEQ = new AtomicInteger(900_000);

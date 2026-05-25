@@ -229,7 +229,12 @@ Most existing collections already use compatible prefixes (e.g. companies-api us
 
 ### B2. Per-service cleanup endpoint
 **Gating (per decision: ROLE_ORGANIZER + regex prefix):**
-- `POST /api/v1/admin/test-fixtures/cleanup` per service.
+- `POST /api/v1/admin/test-fixtures/{cums|ems|pcs}/cleanup` — one path per owning service.
+  The per-service path discriminator is required because `api-gateway`'s `DomainRouter` falls
+  through `/api/v1/admin/*` → EMS by default (line ~103); a single shared path would make
+  CUMS and PCS cleanup endpoints unreachable via the gateway. Each path prefix is matched
+  explicitly in `DomainRouter.determineTargetService` BEFORE the generic `/admin` fallback.
+  Discovered 2026-05-25 during F2 (admin-cleanup-api Bruno collection) authoring.
 - `@PreAuthorize("hasRole('ORGANIZER')")`.
 - Body specifies `entityType` (companies | users | events | sessions | topics | tasks | partners | registrations | speaker_pool | uploads) and `prefix`.
 - **Server-side constant `Map<EntityType, Pattern>`** validates the prefix against the entity-specific regex from B1 — request body cannot supply the pattern, only the literal prefix value to match. Reject anything that doesn't match the bound pattern for the given entity type. This prevents `prefix=*` / `prefix=BAT` / SQL-injection-shaped inputs at the controller layer.
