@@ -44,13 +44,16 @@ public class TurnstileVerificationFilter implements Filter {
 
     private final TurnstileProperties turnstileProperties;
     private final RestTemplate restTemplate;
+    private final CorsHandler corsHandler;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public TurnstileVerificationFilter(
             TurnstileProperties turnstileProperties,
-            @Qualifier("turnstileRestTemplate") RestTemplate restTemplate) {
+            @Qualifier("turnstileRestTemplate") RestTemplate restTemplate,
+            CorsHandler corsHandler) {
         this.turnstileProperties = turnstileProperties;
         this.restTemplate = restTemplate;
+        this.corsHandler = corsHandler;
     }
 
     @Override
@@ -190,13 +193,7 @@ public class TurnstileVerificationFilter implements Filter {
     }
 
     private boolean isOriginAllowed(String origin) {
-        if (origin == null) {
-            return false;
-        }
-        if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) {
-            return true;
-        }
-        return origin.equals("https://www.batbern.ch") || origin.equals("https://www.batbern.ch");
+        return corsHandler.isOriginAllowed(origin);
     }
 
     @Override

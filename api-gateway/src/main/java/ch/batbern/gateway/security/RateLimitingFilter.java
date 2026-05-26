@@ -38,6 +38,7 @@ public class RateLimitingFilter implements Filter {
 
     private final RateLimiter rateLimiter;
     private final RateLimitStorage rateLimitStorage;
+    private final CorsHandler corsHandler;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -140,19 +141,8 @@ public class RateLimitingFilter implements Filter {
         }
     }
 
-    /**
-     * Checks if the origin is allowed for CORS
-     */
     private boolean isOriginAllowed(String origin) {
-        if (origin == null) {
-            return false;
-        }
-        // Allow localhost for development
-        if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) {
-            return true;
-        }
-        // Allow staging and production
-        return origin.equals("https://www.batbern.ch") || origin.equals("https://www.batbern.ch");
+        return corsHandler.isOriginAllowed(origin);
     }
 
     /**

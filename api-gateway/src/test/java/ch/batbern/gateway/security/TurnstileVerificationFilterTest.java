@@ -36,6 +36,7 @@ class TurnstileVerificationFilterTest {
 
     private TurnstileProperties properties;
     private TurnstileVerificationFilter filter;
+    private CorsHandler corsHandler;
 
     @BeforeEach
     void setUp() {
@@ -47,7 +48,8 @@ class TurnstileVerificationFilterTest {
             "POST:/api/v1/newsletter/subscribe",
             "POST:/api/v1/events/*/registrations"
         ));
-        filter = new TurnstileVerificationFilter(properties, restTemplate);
+        corsHandler = new CorsHandler();
+        filter = new TurnstileVerificationFilter(properties, restTemplate, corsHandler);
     }
 
     // ------------------------------------------------------------------ AC5
@@ -139,6 +141,64 @@ class TurnstileVerificationFilterTest {
         assertThat(response.getStatus()).isEqualTo(403);
         assertThat(response.getContentAsString()).contains("turnstile_failed");
         assertThat(chain.getRequest()).isNull();
+    }
+
+    // ------------------------------------------------------------------ apex-domain CORS regression (#669 fallout)
+    @Test
+    @SuppressWarnings("unchecked")
+    void invalidToken_addsCorsHeaders_forApexOrigin() throws Exception {
+        properties.setEnabled(true);
+
+        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
+            .thenReturn(Map.of("success", false));
+
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        request.addHeader("X-Turnstile-Token", "invalid-token");
+        request.addHeader("Origin", "https://batbern.ch");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://batbern.ch");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void invalidToken_addsCorsHeaders_forWwwOrigin() throws Exception {
+        properties.setEnabled(true);
+
+        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
+            .thenReturn(Map.of("success", false));
+
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        request.addHeader("X-Turnstile-Token", "invalid-token");
+        request.addHeader("Origin", "https://www.batbern.ch");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://www.batbern.ch");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void invalidToken_omitsCorsHeaders_forDisallowedOrigin() throws Exception {
+        properties.setEnabled(true);
+
+        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
+            .thenReturn(Map.of("success", false));
+
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        request.addHeader("X-Turnstile-Token", "invalid-token");
+        request.addHeader("Origin", "https://evil.com");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getHeader("Access-Control-Allow-Origin")).isNull();
     }
 
     // ------------------------------------------------------------------ AC4 (fail-open)

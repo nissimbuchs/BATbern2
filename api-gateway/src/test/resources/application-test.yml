@@ -91,7 +91,7 @@ security:
     allowed-origins:
       - http://localhost:3000
       - https://www.batbern.ch
-      - https://www.batbern.ch
+      - https://batbern.ch
     allowed-methods:
       - GET
       - POST
