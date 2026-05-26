@@ -54,4 +54,18 @@ docs {
   path (200) with the idempotency path (409) AND silently masked auth failures (403/401),
   making seed-or-auth regressions look like "already responded". Each branch now asserts a
   body field that proves the right code path ran.
+
+  ---
+  PR 11 audit (disabled 2026-05-26): the seed `{{speakerPortalEventCode}}` + INVITED pool
+  row for the speakerAuthToken user was never wired up. Building it inside Bruno requires:
+    (1) Decoding the speakerAuthToken JWT to extract the speaker's username (atob + JSON)
+    (2) Inviting that username to the test event (POST /speakers/invite with the speaker's
+        email — also unknown without a CUMS lookup-by-username call)
+    (3) Threading the IDENTIFIED → CONTACTED → READY (POST /promote) → INVITED chain
+    (4) Setting speakerPortalEventCode = speakerPortalTestEventCode
+  ~5 setup .bru files for one test. Canonical coverage is
+  SpeakerResponseControllerIntegrationTest#should_acceptResponse_when_validSpeakerInvited
+  (full DB-level fixtures); the Bruno contract layer can be re-enabled with a dedicated
+  fixture endpoint (e.g. `/admin/test-fixtures/ems/seed-invited-speaker?username=X&eventCode=Y`)
+  that returns the seeded eventCode in one call.
 }

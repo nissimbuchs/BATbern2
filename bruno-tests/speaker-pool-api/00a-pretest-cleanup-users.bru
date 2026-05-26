@@ -1,0 +1,53 @@
+meta {
+  name: Pretest cleanup — sweep CUMS users provisioned by promote tests
+  type: http
+  seq: 0.1
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "users",
+    "prefix": "bruno.test"
+  }
+}
+
+tests {
+  test("pretest CUMS user cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.user_profiles).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  PR 11 (plan §C "speaker-pool cleanup is cross-service"): sweeps CUMS users
+  provisioned by the promote tests (38, 45–47). Both `bruno.test` (bare, first
+  run) and `bruno.test.N` (collision suffix) are caught by the broader-prefix
+  sweep — see TestFixtureCleanupService.USERS enum Javadoc for the widening
+  rationale.
+
+  Paired with 99a-posttest-cleanup-users.bru. The EMS sweep (00-pretest-cleanup
+  with entityType=events) doesn't reach CUMS — `speaker_pool` cascades from
+  events but the User rows live in a different service's DB.
+}

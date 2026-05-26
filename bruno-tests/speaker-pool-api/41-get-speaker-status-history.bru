@@ -42,15 +42,21 @@ tests {
     expect(latestTransition.changedAt).to.be.a('string');
   });
 
-  test("should track all transitions - Story 5.4 AC15", function() {
+  test("should track all transitions - Story 5.4 AC15 (Epic 11 sequence)", function() {
     const history = res.getBody();
-    // Should have at least 3 transitions: IDENTIFIED→CONTACTED, CONTACTED→READY, READY→ACCEPTED
-    expect(history.length).to.be.greaterThanOrEqual(3);
+    // PR 11 (ADR-009 §0.1): expected sequence is now 4 transitions —
+    //   IDENTIFIED → CONTACTED (test 37)
+    //   CONTACTED → READY     (test 38 via POST /promote)
+    //   READY → INVITED       (test 38a)
+    //   INVITED → ACCEPTED    (test 39)
+    // (was 3 transitions pre-Epic-11; INVITED is the new intermediate state.)
+    expect(history.length).to.be.greaterThanOrEqual(4);
 
-    // Verify transition sequence (newest first)
-    const transitions = history.reverse(); // Oldest first for verification
+    // Verify transition sequence (history is newest-first; reverse for oldest-first)
+    const transitions = history.slice().reverse();
     expect(transitions[0].newStatus).to.equal('CONTACTED');
     expect(transitions[1].newStatus).to.equal('READY');
-    expect(transitions[2].newStatus).to.equal('ACCEPTED');
+    expect(transitions[2].newStatus).to.equal('INVITED');
+    expect(transitions[3].newStatus).to.equal('ACCEPTED');
   });
 }

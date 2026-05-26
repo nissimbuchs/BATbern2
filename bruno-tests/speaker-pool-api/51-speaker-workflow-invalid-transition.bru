@@ -16,13 +16,14 @@ auth:bearer {
 
 body:json {
   {
-    "newStatus": "CONFIRMED",
-    "reason": "Attempting invalid transition - should fail"
+    "newStatus": "QUALITY_REVIEWED",
+    "reason": "Attempting invalid skip-ahead transition — should fail"
   }
 }
 
 assert {
   res.status: eq 422
+  res.body.error: eq InvalidStateTransitionException
 }
 
 tests {
@@ -30,19 +31,26 @@ tests {
     expect(res.getStatus()).to.equal(422);
   });
 
-  test("should include error message about invalid transition", function() {
-    const response = res.getBody();
-    // Response should indicate the transition is invalid
-    expect(response).to.have.property('message');
+  test("should bind to InvalidStateTransitionException error code", function() {
+    const body = res.getBody();
+    expect(body.error).to.equal('InvalidStateTransitionException');
+    expect(body.message).to.be.a('string').that.is.not.empty;
   });
 
   test("should not allow skipping workflow steps", function() {
-    // Per ADR-009 §0.1, the 8-state workflow is:
-    //   IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED
-    //   (DECLINED is reachable from every non-terminal state.)
-    // CONFIRMED was removed by Story 11.B.1 (shared-kernel enum reduction); this test asserts
-    // the PUT /status API rejects the legacy value with 4xx (currently 422 via the workflow
-    // service's domain exception mapping).
     expect(res.getStatus()).to.not.equal(200);
   });
+}
+
+docs {
+  PR 11 audit (Epic 11 / ADR-009 §0.1): the pre-Epic-11 version sent `newStatus: CONFIRMED`,
+  which is no longer in the SpeakerWorkflowState enum (Story 11.B.1 removed it). Jackson
+  rejects unknown enum values with a deserialisation error → 400, not 422 — masking the
+  test's intent (verify the workflow service rejects invalid transitions, not that Jackson
+  rejects bogus enum strings).
+
+  PR 11 swaps to `QUALITY_REVIEWED`, a VALID enum value but an INVALID transition from the
+  speaker's current state (IDENTIFIED — set by test 49). The workflow service's allow-list
+  rejects it as InvalidStateTransitionException → 422. Now the test exercises what the
+  comment always claimed it did.
 }

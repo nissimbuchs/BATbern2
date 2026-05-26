@@ -1,0 +1,40 @@
+meta {
+  name: Promote Decline Speaker to READY (PR 11 — bridge before /send-invitation)
+  type: http
+  seq: 8.7
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{declineSpeakerPoolId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "{{declineSpeakerEmail}}",
+    "firstName": "Bruno",
+    "lastName": "Test"
+  }
+}
+
+tests {
+  test("promotes decline speaker to READY via POST /promote", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal('READY');
+  });
+
+  test("refresh declineSpeakerUsername from live response", function() {
+    bru.setVar("declineSpeakerUsername", res.getBody().username);
+  });
+}
+
+docs {
+  PR 11 cascade fix paired with 08a. Provisions the PRIMARY_SPEAKER session_users
+  row that test 09 needs to look the decline speaker up by username when calling
+  /send-invitation.
+}

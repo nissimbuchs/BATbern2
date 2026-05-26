@@ -52,7 +52,33 @@ public class TestFixtureCleanupService {
      */
     public enum CleanupEntityType {
         COMPANIES(Pattern.compile("^BRUNOTESTCO$")),
-        USERS(Pattern.compile("^bruno\\.test\\.$")),
+        /**
+         * Sweeps {@code user_profiles} by username prefix.
+         *
+         * <p>Two prefix values are accepted (PR 11, plan §C "speaker-pool cleanup is
+         * cross-service"):
+         * <ul>
+         *   <li>{@code bruno.test.} — original canonical; LIKE {@code bruno.test.%}
+         *       catches users with a collision suffix (e.g. {@code bruno.test.2},
+         *       {@code bruno.test.3}). Created when a previous test already claimed the
+         *       bare {@code bruno.test} username.</li>
+         *   <li>{@code bruno.test} — broader sweep; LIKE {@code bruno.test%} catches
+         *       both the bare {@code bruno.test} AND every suffixed variant. Created
+         *       when the speaker-pool-api promote tests run first (firstName=Bruno,
+         *       lastName=Test ⇒ {@code SlugGenerationService} produces bare
+         *       {@code bruno.test} on the no-collision branch — see
+         *       {@code shared-kernel/.../SlugGenerationService.ensureUniqueUsername}).
+         *       <strong>Safety:</strong> the DB CHECK constraint
+         *       {@code chk_username_format = ^[a-z]+\.[a-z]+(\.[0-9]+)?$} limits real
+         *       usernames to {@code bruno.<lastname>} or {@code bruno.<lastname>.N}
+         *       form. The staging audit (2026-05-24) found no users matching
+         *       {@code bruno.test*} other than the test residue this endpoint targets;
+         *       a future user named "Bruno Tester" would also be swept here, which is
+         *       an accepted-by-design risk for the cleanup endpoint (callers are gated
+         *       by {@code ROLE_ORGANIZER} + audit log).</li>
+         * </ul>
+         */
+        USERS(Pattern.compile("^bruno\\.test\\.?$")),
         /**
          * Sweeps the {@code user_additional_emails} table — the failure-mode target
          * for plan §F4 (the {@code 15-add-additional-email} test that accumulates

@@ -1,0 +1,49 @@
+meta {
+  name: Promote Invited Speaker to READY (PR 11 — bridge before /send-invitation)
+  type: http
+  seq: 1.7
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{invitedSpeakerPoolId}}/promote
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "{{inviteSpeakerEmail}}",
+    "firstName": "Bruno",
+    "lastName": "Test"
+  }
+}
+
+tests {
+  test("promotes speaker to READY via POST /promote (ADR-009 §0.2)", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.status).to.equal('READY');
+  });
+
+  test("response carries provisioned username (canonical identity post-11.E.9)", function() {
+    const body = res.getBody();
+    expect(body.username).to.be.a('string').that.is.not.empty;
+    // Refresh invitedSpeakerUsername from the live response — the controller's overlay
+    // may resolve a collision-suffixed form (bruno.test.N) that the invite endpoint
+    // didn't surface earlier.
+    bru.setVar("invitedSpeakerUsername", body.username);
+  });
+}
+
+docs {
+  PR 11 cascade fix paired with 01a. The email here is the SAME email test 01 sent —
+  CUMS' UserApiClient.provisionUserWithRole is idempotent on email, so this either
+  re-uses the User created by 01's getOrCreateUser call (most common path) or creates
+  it if 01's CUMS call landed on a different code path. The PRIMARY_SPEAKER session_users
+  row is provisioned here (Story 11.E.8), unblocking the /send-invitation lookup-by-username
+  that test 02 invokes next.
+}

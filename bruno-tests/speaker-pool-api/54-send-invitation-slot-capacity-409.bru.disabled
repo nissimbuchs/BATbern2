@@ -60,4 +60,9 @@ docs {
   SpeakerInvitationControllerIntegrationTest#should_return409_when_sendInvitationCalledAndSlotCapacityReached
   also covers this contract with full DB-level setup — that test is the canonical
   in-tree coverage; this Bruno test layers contract verification on top.
+
+  ---
+  PR 11 audit (disabled 2026-05-26): paired with 53-.disabled — same 5-speaker setup
+  gap. The canonical integration test cited above is the authoritative coverage. Bruno
+  re-enablement waits on a fixture endpoint that can stage the scenario in one call.
 }

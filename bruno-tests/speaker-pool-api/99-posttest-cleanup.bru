@@ -43,18 +43,9 @@ tests {
 docs {
   PR 2 split (plan §B3): final sweep of BRUNO-TEST-* events.
 
-  TODO (PR 11 — D.9 speaker-pool-api audit): the 45–47 promote tests
-  provision real CUMS users via UserApiClient with firstName=Promote,
-  lastName=E2E, yielding usernames like `promote.e2e.<n>`. The CUMS cleanup
-  endpoint's USERS entityType only accepts prefix `bruno.test.` today, so
-  these users accumulate per run. Two fix paths for PR 11:
-    (a) widen CUMS USERS regex to also accept `promote.e2e.` (~5 LOC in
-        TestFixtureCleanupService.java + 1 integration test), then add a
-        00a-/99a- CUMS pretest+posttest hook here, OR
-    (b) change tests 45–47 to use firstName=Bruno, lastName=Test (so the
-        auto-generated username matches `bruno.test.*`), then add 00a-/99a-
-        with the existing `bruno.test.` prefix.
-  (a) is least intrusive to test semantics; (b) consolidates one fewer
-  regex. Plan §C "speaker-pool cleanup is cross-service" already flagged
-  this dependency. Not blocking PR 2 (mechanical split only).
+  PR 11 closed the cross-service cleanup gap: tests 38 + 45–47 now use
+  firstName=Bruno, lastName=Test (yielding `bruno.test` bare or `bruno.test.N`
+  suffixed via SlugGenerationService collision resolution), and the CUMS
+  USERS regex was widened to accept the bare prefix (LIKE `bruno.test%`).
+  CUMS sweep runs from 00a-/99a-pretest/posttest-cleanup-users.bru.
 }
