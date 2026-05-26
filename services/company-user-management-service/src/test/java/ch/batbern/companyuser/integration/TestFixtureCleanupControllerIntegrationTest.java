@@ -311,6 +311,38 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("PR 11: bare 'bruno.test' prefix sweeps both bare + suffixed promote-derived users")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void barePrefix_sweepsPromoteDerivedUsers() throws Exception {
+            // Given: speaker-pool-api promote tests create a bare `bruno.test` on first run
+            // and `bruno.test.2`, `bruno.test.3`, etc. on collision (SlugGenerationService).
+            // The pretest hook in speaker-pool-api sends prefix="bruno.test" (no trailing
+            // dot) so a single sweep catches both forms.
+            userRepository.save(buildUser("bruno.test", "bruno-test-bare@e2e.batbern.invalid"));
+            userRepository.save(buildUser("bruno.test.2", "bruno-test-2@e2e.batbern.invalid"));
+            userRepository.save(buildUser("bruno.test.3", "bruno-test-3@e2e.batbern.invalid"));
+            userRepository.save(buildUser("bruno.linder", "bruno.linder@sbb.ch"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("users")
+                    .prefix("bruno.test")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.user_profiles").value(3));
+
+            assertThat(userRepository.findByUsername("bruno.test")).isEmpty();
+            assertThat(userRepository.findByUsername("bruno.test.2")).isEmpty();
+            assertThat(userRepository.findByUsername("bruno.test.3")).isEmpty();
+            // Real Bruno user survives — DB chk_username_format prevents any prod username
+            // from starting with literal `bruno.test*` other than the test residue above.
+            assertThat(userRepository.findByUsername("bruno.linder")).isPresent();
+        }
+
+        @Test
         @DisplayName("deletes bruno-test-* additional emails but leaves real ones alone (F4)")
         @WithMockUser(roles = {"ORGANIZER"})
         void deletesTestAdditionalEmails_preservesRealOnes() throws Exception {

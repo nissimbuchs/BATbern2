@@ -1,5 +1,5 @@
 meta {
-  name: Posttest cleanup — final sweep of BRUNO-TEST-* events (cascades speaker_pool)
+  name: Posttest cleanup — final sweep of BRUNO-TEST-* events (cascades event_tasks)
   type: http
   seq: 99
 }
@@ -41,11 +41,8 @@ tests {
 }
 
 docs {
-  PR 2 split (plan §B3): final sweep of BRUNO-TEST-* events.
-
-  PR 11 closed the cross-service cleanup gap: tests 38 + 45–47 now use
-  firstName=Bruno, lastName=Test (yielding `bruno.test` bare or `bruno.test.N`
-  suffixed via SlugGenerationService collision resolution), and the CUMS
-  USERS regex was widened to accept the bare prefix (LIKE `bruno.test%`).
-  CUMS sweep runs from 00a-/99a-pretest/posttest-cleanup-users.bru.
+  PR 6 (plan §B3): final sweep of BRUNO-TEST-* events. 98-delete-fixture-event
+  already DELETEs the per-run BATbern{N} fixture event explicitly; this hook
+  is the safety net for any future BRUNO-TEST-* prefix-normalized events
+  (see plan §"Risks to track" — eventCode is server-generated today).
 }

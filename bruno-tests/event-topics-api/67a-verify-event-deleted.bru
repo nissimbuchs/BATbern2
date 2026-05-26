@@ -1,0 +1,34 @@
+meta {
+  name: Verify topic test event deleted (DELETE-then-GET-404)
+  type: http
+  seq: 67.5
+}
+
+get {
+  url: {{baseUrl}}/events/{{topicDeletedEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 404 after delete (regardless of 67's 204/404)", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("cleanup: clear topic-event vars", function() {
+    bru.setVar("createdEventCode", null);
+    bru.setVar("topicDeletedEventCode", null);
+    bru.setVar("topicDeleteStatus", null);
+  });
+}
+
+docs {
+  PR 6 (plan §D step 4 — "Audit DELETE assertions"). Pairs with
+  67-cleanup-topic-test-event.bru. Whether 67 returned 204 (deleted now)
+  or 404 (already gone from a prior failed run), the GET must return
+  404 — anything else means the cleanup didn't actually take effect.
+}

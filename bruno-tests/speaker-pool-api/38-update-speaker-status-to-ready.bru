@@ -1,11 +1,11 @@
 meta {
-  name: Update Speaker Status To Ready
+  name: Promote Speaker to READY (CONTACTED → READY via POST /promote)
   type: http
   seq: 38
 }
 
-put {
-  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/promote
   body: json
   auth: bearer
 }
@@ -14,34 +14,55 @@ auth:bearer {
   token: {{authToken}}
 }
 
+script:pre-request {
+  // Timestamped email keeps each run unique while CUMS' getOrCreateUser dedupes by
+  // address. firstName=Bruno, lastName=Test makes SlugGenerationService produce
+  // `bruno.test` (or `bruno.test.N` on collision) — both caught by the CUMS USERS
+  // pretest/posttest sweep with prefix `bruno.test` (PR 11 regex widening).
+  bru.setVar("promoteEmail", "bruno-test-" + Date.now() + "@e2e.batbern.invalid");
+}
+
 body:json {
   {
-    "newStatus": "READY",
-    "reason": "Speaker confirmed availability and submitted initial content outline"
+    "email": "{{promoteEmail}}",
+    "firstName": "Bruno",
+    "lastName": "Test"
   }
 }
 
 assert {
   res.status: eq 200
-  res.body.currentStatus: eq READY
-  res.body.previousStatus: eq CONTACTED
+  res.body.status: eq READY
+  res.body.username: isDefined
+  res.body.email: isDefined
 }
 
 tests {
-  test("should return 200 status - Story 5.4 AC1", function() {
+  test("should promote speaker to READY via /promote (ADR-009 §0.2 + Story 11.D.1)", function() {
     expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.status).to.equal('READY');
   });
 
-  test("should update speaker status to READY - Story 5.4 AC1, AC12", function() {
-    const response = res.getBody();
-    expect(response.currentStatus).to.equal('READY');
-    expect(response.previousStatus).to.equal('CONTACTED');
-    expect(response.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
+  test("response carries the provisioned username + email (FR3, FR12)", function() {
+    const body = res.getBody();
+    expect(body.username).to.be.a('string').that.is.not.empty;
+    expect(body.email).to.be.a('string').that.includes('@');
   });
+}
 
-  test("should validate transition CONTACTED → READY - Story 5.4 AC12", function() {
-    const response = res.getBody();
-    // Valid transition per workflow: CONTACTED → READY
-    expect(response.currentStatus).to.equal('READY');
-  });
+docs {
+  PR 11 (Epic 11 redesign per ADR-009 §0.1): the legacy `PUT /status` path to READY
+  was removed (Story 11.B.3 → ReadyRequiresPromoteException 400). The only entry into
+  READY is `POST /promote` with an email payload, which provisions a User in CUMS
+  (firstName+lastName required since Story 11.E.4 AC4) and creates the PRIMARY_SPEAKER
+  session_users row (Story 11.E.8).
+
+  After this transition the speaker has:
+    - `speaker_pool.status = READY`
+    - `session_users` row at PRIMARY_SPEAKER (canonical identity carrier post-11.E.9)
+    - CUMS user `bruno.test` (or `bruno.test.N` on collision) with role=SPEAKER
+
+  The next legal transitions are INVITED (test 38a), ACCEPTED (on-behalf — not exercised
+  in this chain), or DECLINED. Test 38a takes the INVITED path.
 }

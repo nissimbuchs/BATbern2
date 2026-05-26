@@ -1,0 +1,35 @@
+meta {
+  name: Bridge — INVITED → ACCEPTED for content-review flow (PR 11)
+  type: http
+  seq: 26.5
+}
+
+put {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{invitedSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "ACCEPTED",
+    "reason": "PR 11 — bridge to CONTENT_SUBMITTED so test 27 /review approve has a target"
+  }
+}
+
+tests {
+  test("advances invited speaker INVITED → ACCEPTED", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().currentStatus).to.equal('ACCEPTED');
+  });
+}
+
+docs {
+  PR 11 cascade fix: test 27 (approve-content) drives CONTENT_SUBMITTED → QUALITY_REVIEWED.
+  After test 02 the speaker is at INVITED — two transitions short. This bridge advances
+  to ACCEPTED, paired with 26c-submit-content advancing to CONTENT_SUBMITTED.
+}

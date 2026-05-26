@@ -25,7 +25,11 @@ tests {
     expect([204, 404]).to.include(status);
   });
 
-  test("cleanup: clear event code", function() {
-    bru.setVar("createdEventCode", null);
+  test("publish topicDeletedEventCode + status for 67a-verify-event-deleted", function() {
+    // PR 6 (plan §D step 4): hand the eventCode + DELETE status to 67a.
+    // Status discriminates: 204 → assert 404 in GET; 404 → already gone,
+    // still assert 404; no other branches expected.
+    bru.setVar("topicDeletedEventCode", bru.getVar("createdEventCode"));
+    bru.setVar("topicDeleteStatus", res.getStatus());
   });
 }

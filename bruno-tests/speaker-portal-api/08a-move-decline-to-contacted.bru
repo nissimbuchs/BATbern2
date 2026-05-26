@@ -1,0 +1,35 @@
+meta {
+  name: Move Decline Speaker to CONTACTED (PR 11 — bridge to /promote)
+  type: http
+  seq: 8.3
+}
+
+put {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{declineSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTACTED",
+    "reason": "PR 11 — bridge transition before promote-to-READY (decline flow)"
+  }
+}
+
+tests {
+  test("transitions decline speaker IDENTIFIED → CONTACTED for promote bridge", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().currentStatus).to.equal('CONTACTED');
+  });
+}
+
+docs {
+  PR 11 cascade fix (decline flow): mirrors 01a for the decline-test speaker.
+  Required because the /send-invitation lookup-by-username requires session_users
+  (post-11.E.9), which is only provisioned at the READY transition.
+}

@@ -1,0 +1,34 @@
+meta {
+  name: Verify session deleted (DELETE-then-GET-404)
+  type: http
+  seq: 11.5
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 404 after delete", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  PR 6 (plan §D step 4 — "Audit DELETE assertions"). Pairs with
+  11-delete-session.bru. The pre-PR-6 collection trusted the 204 alone;
+  this hop confirms the session is genuinely gone from the API surface
+  (not just soft-deleted with the DELETE returning 204).
+
+  Does NOT clear createdSessionSlug — 20-create-session-for-speakers
+  overwrites it for the tests 21-28 chain, so leaving the stale value
+  is harmless. Audit-step 2 (sessionSlug normalization) deferred —
+  CreateSessionRequest has no sessionSlug field (verified against
+  docs/api/events-api.openapi.yml). Filed in plan §"Risks to track".
+}

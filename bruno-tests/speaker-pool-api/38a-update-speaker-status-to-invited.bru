@@ -1,0 +1,57 @@
+meta {
+  name: Update Speaker Status to INVITED (READY → INVITED)
+  type: http
+  seq: 38.5
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "INVITED",
+    "reason": "Formal invitation sent — Story 11.B.2 INVITED state"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq INVITED
+  res.body.previousStatus: eq READY
+}
+
+tests {
+  test("should return 200 for READY → INVITED transition", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update speaker status to INVITED (ADR-009 §0.1)", function() {
+    const body = res.getBody();
+    expect(body.currentStatus).to.equal('INVITED');
+    expect(body.previousStatus).to.equal('READY');
+    expect(body.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
+  });
+}
+
+docs {
+  PR 11 (Epic 11 redesign per ADR-009 §0.1): INVITED is a new state inserted between
+  READY and ACCEPTED by Story 11.B.2. Replaces the legacy "READY → ACCEPTED direct"
+  path. The send-invitation email side-effect fires inside the workflow service's
+  INVITED hook (Story 11.E.2 Cognito-flow credentials).
+
+  Slot-capacity gate: this transition can return 409 SLOT_CAPACITY_REACHED when
+  count(ACCEPTED) + count(INVITED) >= max_slots on the event. For the BATbern{N}
+  fixture event from 00b-fixture-event the gate has plenty of headroom (max_slots=4
+  for EVENING with this single speaker), so the happy path is exercised here. The
+  409-blocked-path contract test lives in
+  SpeakerWorkflowControllerIntegrationTest#should_return409_when_invitedAtSlotCapacity
+  (Java canonical). The Bruno layered version is deferred to a follow-up
+  (53/54.disabled) — see plan §"Local pre-flight findings (speaker-pool-api)" category C.
+}

@@ -61,4 +61,18 @@ docs {
   column-header "slot capacity reached" tooltip). For 11.B.2 the 409 is just a clean error
   code returned to the existing organizer Kanban flow — the UI shows whatever its current
   4xx handler renders (a generic toast) until 11.D.3 lands.
+
+  ---
+  PR 11 audit (disabled 2026-05-26): seed for this test never landed. To trigger the gate
+  at the new READY → INVITED transition for an EVENING event (max_slots=4), the run would
+  need: create dedicated event + add 5 speakers to pool + transition each to CONTACTED +
+  promote each to READY (5 × POST /promote provisioning 5 CUMS users) + transition 4 of
+  them to INVITED. ~25 setup requests / ~200 LOC of Bruno glue — blows PR 11's ~230 LOC
+  budget by itself.
+
+  Canonical coverage already exists at the integration test layer:
+  SpeakerInvitationControllerIntegrationTest#should_return409_when_sendInvitationCalledAndSlotCapacityReached
+  + SpeakerWorkflowServiceTest#enforceSlotCapacity_throws_when_acceptedPlusInvitedEqualsMax.
+  Re-enabling this Bruno layer is a follow-up if/when the seed becomes affordable
+  (e.g., a dedicated `/admin/test-fixtures/ems/seed-slot-capacity` fixture endpoint).
 }
