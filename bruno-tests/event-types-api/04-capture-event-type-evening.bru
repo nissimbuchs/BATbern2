@@ -1,0 +1,41 @@
+meta {
+  name: Capture EVENING baseline config for idempotent PUT
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/events/types/EVENING
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("save EVENING baseline for the next two PUT tests", function() {
+    const body = res.getBody();
+    bru.setVar("eveningMinSlots", body.minSlots);
+    bru.setVar("eveningMaxSlots", body.maxSlots);
+    bru.setVar("eveningSlotDuration", body.slotDuration);
+    bru.setVar("eveningTheoreticalSlotsAM", body.theoreticalSlotsAM);
+    bru.setVar("eveningBreakSlots", body.breakSlots);
+    bru.setVar("eveningLunchSlots", body.lunchSlots);
+    bru.setVar("eveningDefaultCapacity", body.defaultCapacity);
+  });
+}
+
+docs {
+  PR 2a: capture step for the idempotent-PUT pattern. The next two
+  tests (05, 06) replay this exact config via PUT — first call asserts
+  the round-trip preserves all fields, second call asserts idempotency
+  (re-PUTting the same body yields the same response and the same
+  observable state). This pattern avoids drifting the seeded EVENING
+  defaults: every PUT writes back exactly what GET returned.
+}

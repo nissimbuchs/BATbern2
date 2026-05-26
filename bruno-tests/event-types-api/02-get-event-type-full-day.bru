@@ -1,0 +1,40 @@
+meta {
+  name: Get Event Type — FULL_DAY
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/events/types/FULL_DAY
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("returned config has type=FULL_DAY", function() {
+    const body = res.getBody();
+    expect(body.type).to.equal("FULL_DAY");
+  });
+
+  test("returned config satisfies field constraints (minSlots >= 1, maxSlots >= minSlots, slotDuration >= 15)", function() {
+    const body = res.getBody();
+    expect(body.minSlots).to.be.at.least(1);
+    expect(body.maxSlots).to.be.at.least(body.minSlots);
+    expect(body.slotDuration).to.be.at.least(15);
+    expect(body.defaultCapacity).to.be.at.least(1);
+  });
+}
+
+docs {
+  PR 2a: single-type fetch smoke test. Confirms the parameterized
+  /events/types/{type} route resolves FULL_DAY and returns a config
+  that passes the OpenAPI-documented validation invariants.
+}

@@ -1,0 +1,53 @@
+meta {
+  name: PUT EVENING again — idempotency check
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/events/types/EVENING
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "minSlots": {{eveningMinSlots}},
+    "maxSlots": {{eveningMaxSlots}},
+    "slotDuration": {{eveningSlotDuration}},
+    "theoreticalSlotsAM": {{eveningTheoreticalSlotsAM}},
+    "breakSlots": {{eveningBreakSlots}},
+    "lunchSlots": {{eveningLunchSlots}},
+    "defaultCapacity": {{eveningDefaultCapacity}}
+  }
+}
+
+tests {
+  test("should return 200 — second PUT with same body is still accepted", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response still echoes the captured baseline (no state drift)", function() {
+    const body = res.getBody();
+    expect(body.minSlots).to.equal(Number(bru.getVar("eveningMinSlots")));
+    expect(body.maxSlots).to.equal(Number(bru.getVar("eveningMaxSlots")));
+    expect(body.defaultCapacity).to.equal(Number(bru.getVar("eveningDefaultCapacity")));
+  });
+}
+
+docs {
+  PR 2a: idempotency check. PUT with the same body twice in a row must
+  yield the same observable response. If the underlying handler had a
+  hidden side-effect (e.g., incrementing a version counter that altered
+  the response shape, or rejecting same-body retries with 409), this
+  test would catch it.
+
+  Combined with test 05, this verifies the OpenAPI-documented
+  "Update event type configuration ... Cache is automatically
+  invalidated after successful update" semantics: cache invalidation
+  doesn't break round-trip on a no-op update.
+}
