@@ -1,0 +1,34 @@
+meta {
+  name: Cleanup — delete workflow fixture event
+  type: http
+  seq: 98
+}
+
+delete {
+  url: {{baseUrl}}/events/{{createdEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("fixture event deleted (cascades registrations + sessions if any)", function() {
+    expect([204, 404, 409]).to.include(res.getStatus());
+  });
+
+  test("clear createdEventCode for next run", function() {
+    bru.setVar("createdEventCode", null);
+  });
+}
+
+docs {
+  PR 2 split (paired with 00b-fixture-event.bru): DELETE cascade removes
+  registrations created by 13-create-registration. Accepts 204 (deleted),
+  404 (already deleted), or 409 (state machine refuses DELETE because the
+  event is in a published state where 16-publish-event succeeded). The
+  409 path becomes impossible once PR 2b adds the full state-advancement
+  flow because the workflow ends in ARCHIVED, which is deletable.
+}

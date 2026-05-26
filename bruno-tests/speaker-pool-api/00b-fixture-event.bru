@@ -1,0 +1,64 @@
+meta {
+  name: Fixture — create parent event for speaker pool tests
+  type: http
+  seq: 0.5
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  const eventNumber = (now % 1000000) + 900000;
+
+  bru.setVar("testTimestamp", now);
+  bru.setVar("eventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Bruno Speaker Pool Fixture Event {{testTimestamp}}",
+    "eventNumber": {{eventNumber}},
+    "date": "2026-04-15T09:00:00Z",
+    "registrationDeadline": "2026-04-01T23:59:59Z",
+    "venueName": "Speaker Pool Test Venue",
+    "venueAddress": "Test Address 4, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for speaker-pool-api tests (PR 2 split)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("fixture event created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("createdEventCode + createdEventNumber published for downstream tests", function() {
+    const event = res.getBody();
+    bru.setVar("createdEventCode", event.eventCode);
+    bru.setVar("createdEventNumber", event.eventNumber);
+  });
+}
+
+docs {
+  PR 2 split (plan §C): owns the parent event that tests 35-66 attach
+  speaker_pool entries (and speaker workflow / reminder dependents) to.
+  Replaces the cross-collection dependency on events-crud-api/03 that
+  used to set `createdEventCode` in the monolithic events-api collection.
+  98-delete-fixture-event.bru cascade-cleans speaker_pool + dependents.
+}
