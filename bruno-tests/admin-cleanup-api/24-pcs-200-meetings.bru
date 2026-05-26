@@ -1,0 +1,50 @@
+meta {
+  name: PCS cleanup — meetings id-allowlist happy path
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "meetings",
+    "meetingIds": ["00000000-0000-4000-8000-0000000000aa"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.entityType: eq meetings
+}
+
+tests {
+  test("returns 200 and routes to PCS meetings cleanup", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.entityType).to.equal("meetings");
+    expect(body.deletionCounts).to.be.an("object");
+    expect(body.deletionCounts.meetings).to.be.a("number");
+  });
+}
+
+docs {
+  PR 13: gateway-level happy path for the new entityType=meetings (id allowlist).
+  Uses a well-formed but nonexistent UUID, so it deletes 0 rows (count 0) without
+  needing any seeded meeting — the point is to prove auth + routing + the
+  meetings branch through the API Gateway, not deletion volume (the
+  partner-meetings-api collection exercises real deletion end-to-end).
+}

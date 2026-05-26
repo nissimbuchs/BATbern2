@@ -2,7 +2,23 @@
 
 **Story**: 2.7 Partner Coordination Service Foundation
 **API Spec**: `docs/api/partners-api.openapi.yml`
-**Status**: Tests created, awaiting deployment + seed data
+**Status**: Active — green against local dev + staging.
+
+---
+
+## PR 13 light-audit pass (plan §D.11, 2026-05-26)
+
+- **Verbs vs OpenAPI**: GET (list / by-company / 404), PATCH (update), POST/DELETE
+  (partner + company), topic suggestions/votes/contacts all covered. No gaps.
+- **Prefix (step 2)**: fixtures use `brtest{{$randomInt}}` — already the canonical
+  PCS partner prefix (`^brtest$` match for the cleanup endpoint). No normalization needed.
+- **Cleanup hooks (step 3)**: added `99b-posttest-cleanup.bru` (canonical PCS `brtest`
+  sweep, final defense per §B3). A `00-pretest` sweep is intentionally omitted — the
+  random `brtest{N}` fixture name is collision-free across runs, so a dirty start never
+  interferes; the posttest sweep + explicit `99`/`99a` deletes suffice.
+- **DELETE-then-404 (step 4)**: added `99-verify-partner-deleted.bru`.
+- Sibling collection `partner-meetings-api/` (new in PR 13) covers the meeting
+  endpoints + the PCS `entityType=meetings` id-allowlist cleanup.
 
 ---
 

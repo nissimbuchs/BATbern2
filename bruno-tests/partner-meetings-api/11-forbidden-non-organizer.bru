@@ -1,0 +1,47 @@
+meta {
+  name: Create partner meeting — 403 for non-organizer
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/partner-meetings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{speakerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "eventCode": "{{meetingEventCode}}",
+    "meetingType": "SPRING",
+    "startTime": "12:00",
+    "endTime": "14:00"
+  }
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("returns 403 when caller lacks ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  @PreAuthorize("hasRole('ORGANIZER')") blocks at controller entry, so no meeting
+  is created — no leak. Uses {{speakerAuthToken}} (a valid non-organizer JWT),
+  mirroring admin-cleanup-api/22-pcs-403-non-organizer.bru. The run-bruno-tests.sh
+  runner loads SPEAKER_AUTH_TOKEN; if it is absent the request would be
+  unauthenticated (401) rather than 403 — see plan PR 1 finding #5.
+}

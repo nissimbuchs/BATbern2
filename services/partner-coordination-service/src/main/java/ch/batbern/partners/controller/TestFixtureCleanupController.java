@@ -30,9 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
  * 2026-05-24 found 7 {@code brtest*} partners — 44% of the partners table —
  * accumulated from runs that silently failed against the broken staging URL.
  *
- * <p>Cleanup matches a single canonical prefix ({@code brtest}) for the partners
- * entity type — the request body cannot supply arbitrary patterns. See
- * {@code bruno-tests/README.md} for the canonical naming convention.
+ * <p>Two strategies, by {@code entityType}: {@code partners} matches a single canonical
+ * prefix ({@code brtest}); {@code meetings} deletes {@code partner_meetings} by an explicit
+ * id allowlist (those rows carry no Bruno prefix). In both cases the request body cannot
+ * supply arbitrary patterns. See {@code bruno-tests/README.md} for the canonical convention.
  *
  * <p>Security:
  * <ul>
@@ -63,13 +64,14 @@ public class TestFixtureCleanupController {
     @PostMapping("/cleanup")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
-            summary = "Delete Bruno test fixture rows matching a canonical prefix",
-            description = "Removes rows from the PCS-owned partners table whose company_name "
-                    + "starts with the canonical Bruno test prefix. Cascade-deletes via FK "
-                    + "constraints handle dependent rows in partner_meeting_attendance, "
-                    + "partner_meeting_rsvps, partner_notes, topic_suggestions (and "
-                    + "transitively topic_votes). Does NOT touch partner_meetings (those are "
-                    + "standalone, not linked to a specific partner by FK). ORGANIZER role required."
+            summary = "Delete Bruno test fixture rows by canonical prefix (partners) or id allowlist (meetings)",
+            description = "entityType=partners: removes rows from the PCS-owned partners table whose "
+                    + "company_name starts with the canonical Bruno test prefix; FK cascade handles "
+                    + "partner_meeting_attendance, partner_meeting_rsvps, partner_notes, topic_suggestions "
+                    + "(and transitively topic_votes). entityType=meetings: removes partner_meetings rows "
+                    + "by an explicit meetingIds allowlist (those rows are standalone with no Bruno prefix); "
+                    + "partner_meeting_attendance + partner_meeting_rsvps cascade from partner_meetings(id). "
+                    + "ORGANIZER role required."
     )
     @ApiResponses(value = {
         @ApiResponse(

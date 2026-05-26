@@ -1,0 +1,48 @@
+meta {
+  name: Pretest cleanup — sweep leftover BRUNO-TEST-* fixture events (EMS)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+tests {
+  test("pretest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  PR 13 (plan §D.11 + §B3): pretest hook sweeping leftover fixture events.
+  Today's fixture event uses a server-generated BATbern{N} code (see
+  01-create-fixture-event.bru), so this prefix sweep is a no-op for the current
+  fixture — 99-delete-fixture-event.bru owns the per-run event teardown. The
+  hook is in place for the day eventCode becomes client-suppliable (plan
+  §"Risks to track" item 7).
+
+  NOTE — there is deliberately NO pretest meetings sweep. partner_meetings has
+  no Bruno-identifying column, so the cleanup endpoint targets them by an
+  explicit id allowlist (entityType=meetings), which can only reach IDs created
+  in the current run. Prior-run leftovers cannot be pre-swept; teardown is the
+  explicit DELETE (09) + the posttest allowlist sweep (98). See README.md.
+}

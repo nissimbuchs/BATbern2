@@ -1,0 +1,39 @@
+meta {
+  name: Cleanup — delete partner-meetings fixture event (EMS)
+  type: http
+  seq: 99
+}
+
+delete {
+  url: {{baseUrl}}/events/{{meetingEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+tests {
+  test("fixture event deleted", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+
+  test("clear meetingEventCode for next run", function() {
+    bru.setVar("meetingEventCode", null);
+  });
+}
+
+docs {
+  PR 13: explicitly DELETEs the parent EMS event created by 01-create-fixture-event.
+  Server-generated BATbern{N} code doesn't match the BRUNO-TEST- canonical prefix,
+  so the 00-pretest EMS sweep is a no-op for it — this explicit DELETE owns the
+  per-run event teardown. Accepts 204 (deleted) or 404 (already gone). Meetings
+  reference the event by string code (ADR-003, no FK), so deleting the event does
+  not cascade to meetings — those are swept by 98 first.
+}

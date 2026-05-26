@@ -1,0 +1,35 @@
+meta {
+  name: Verify deleted meeting returns 404
+  type: http
+  seq: 9.5
+}
+
+get {
+  url: {{baseUrl}}/partner-meetings/{{createdMeetingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("GET on the deleted meeting now returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Audit-step 4 (plan §D): every DELETE is followed by a GET asserting 404, rather
+  than trusting the 204 alone.
+}

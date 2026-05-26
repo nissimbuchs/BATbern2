@@ -1,0 +1,69 @@
+meta {
+  name: Fixture — create parent event for partner-meetings tests
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  // Keep eventNumber in the same disposable band the other collections use.
+  const eventNumber = (now % 1000000) + 940000;
+  bru.setVar("meetingTestTimestamp", now);
+  bru.setVar("meetingEventNumber", eventNumber);
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Partner Meetings API Test Event {{meetingTestTimestamp}}",
+    "eventNumber": {{meetingEventNumber}},
+    "date": "2026-03-15T09:00:00Z",
+    "registrationDeadline": "2026-03-01T23:59:59Z",
+    "venueName": "Partner Meeting Test Venue",
+    "venueAddress": "Test Address 1, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for partner-meetings-api tests (PR 13)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("fixture event created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("publish meetingEventCode for downstream meeting tests", function() {
+    const event = res.getBody();
+    bru.setVar("meetingEventCode", event.eventCode);
+  });
+}
+
+docs {
+  PR 13: partner meetings are linked to a BATbern event by eventCode (ADR-003);
+  PartnerMeetingService.createMeeting calls EMS getEventSummary(eventCode) to
+  auto-fill the meeting date. This fixture creates that parent event. Server
+  auto-generates the code as BATbern{eventNumber} — not the BRUNO-TEST- canonical
+  prefix — so 99-delete-fixture-event.bru explicitly DELETEs it by code at the end
+  of the run (same finding as tasks-api / events-crud-api; plan §"Risks to track").
+}

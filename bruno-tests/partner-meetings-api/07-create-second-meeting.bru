@@ -1,0 +1,55 @@
+meta {
+  name: Create a second partner meeting (AUTUMN)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/partner-meetings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "eventCode": "{{meetingEventCode}}",
+    "meetingType": "AUTUMN",
+    "startTime": "12:30",
+    "endTime": "14:30",
+    "location": "Bruno Test Venue 2, Bern"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("secondMeetingId", res.getBody().id);
+  }
+}
+
+tests {
+  test("returns 201 with a second meeting id", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().meetingType).to.equal("AUTUMN");
+  });
+}
+
+docs {
+  This meeting is intentionally NOT deleted by an explicit DELETE test — it is
+  left for 98-posttest-cleanup-meetings.bru to sweep via the id allowlist, which
+  proves the new PCS entityType=meetings cleanup path actually removes rows
+  (deletionCounts.meetings >= 1 on a run where this meeting still exists).
+}

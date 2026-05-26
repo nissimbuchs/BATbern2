@@ -207,6 +207,7 @@ collections=(
     "speaker-pool-api"
     "event-full-workflow-api"
     "partners-api"
+    "partner-meetings-api"
 )
 if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
     collections+=("speaker-portal-api")

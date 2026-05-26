@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -25,9 +26,10 @@ import java.util.UUID;
  * </ul>
  *
  * <p>Note: {@code partner_meetings} is a standalone table not linked to a specific partner
- * via FK — meetings are top-level events. Bruno tests creating ad-hoc partner meetings
- * leave them in place after this cleanup; that cleanup belongs to a separate entityType
- * or to the partner-meetings-api collection audit, deferred to a follow-up.
+ * via FK — meetings are top-level events, so {@link #deletePartnersByCompanyNameLike} does NOT
+ * reach them. They are cleaned via {@link #deleteMeetingsByIdIn} using an explicit id allowlist
+ * (PR 13 / plan §B2 option 1); {@code partner_meeting_attendance} and {@code partner_meeting_rsvps}
+ * cascade-delete from {@code partner_meetings(id)} via ON DELETE CASCADE (V2 + V9).
  *
  * <p>Bound to {@code Partner} as the parameterized type purely so Spring Data picks it up as a
  * repository bean; none of the methods here use the JpaRepository<Partner, UUID> interface.
@@ -49,4 +51,20 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Partner, UUI
             nativeQuery = true
     )
     int deletePartnersByCompanyNameLike(@Param("companyNamePattern") String companyNamePattern);
+
+    /**
+     * Delete partner_meetings by an explicit id allowlist.
+     * partner_meeting_attendance + partner_meeting_rsvps cascade-delete via FK ON DELETE CASCADE
+     * (V2:152 + V9:9). Used by the {@code meetings} cleanup entityType — meetings carry no
+     * Bruno-identifying prefix, so Bruno posts back the exact IDs it created.
+     *
+     * @param ids meeting UUIDs to delete (validated non-empty + bounded at the service layer)
+     * @return number of partner_meetings rows deleted (cascade dependents not counted)
+     */
+    @Modifying
+    @Query(
+            value = "DELETE FROM partner_meetings WHERE id IN (:ids)",
+            nativeQuery = true
+    )
+    int deleteMeetingsByIdIn(@Param("ids") List<UUID> ids);
 }

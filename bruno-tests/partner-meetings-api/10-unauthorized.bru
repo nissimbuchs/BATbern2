@@ -1,0 +1,33 @@
+meta {
+  name: List partner meetings — 401 without auth
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/partner-meetings
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: https://www.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("returns 401 when unauthenticated", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
+
+docs {
+  Unlike GET /partners (public homepage showcase), the partner-meetings
+  endpoints are all organizer-only, so an unauthenticated request is rejected
+  with 401 before @PreAuthorize runs.
+}
