@@ -1,0 +1,38 @@
+meta {
+  name: Delete partner meeting
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/partner-meetings/{{createdMeetingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("returns 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Because 08-send-invite flipped invite_sent_at, this DELETE exercises the
+  METHOD:CANCEL ICS branch of PartnerMeetingService.deleteMeeting (dispatched
+  @Async, so it does not affect the 204). RSVPs cascade-delete (V9). 09a verifies
+  the row is gone; 98 is the belt-and-suspenders allowlist sweep for any meeting
+  whose explicit DELETE did not run (e.g. the AUTUMN meeting from test 07).
+}

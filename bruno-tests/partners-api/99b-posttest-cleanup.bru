@@ -1,0 +1,55 @@
+meta {
+  name: Posttest cleanup — final sweep of brtest* partners (PCS)
+  type: http
+  seq: 99.7
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "partners",
+    "prefix": "brtest"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, partners deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.entityType).to.equal("partners");
+      expect(body.deletionCounts.partners).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  PR 13 audit-step 3 / plan §B3: canonical posttest sweep, the final defense after
+  the explicit 99-delete-test-partner + 99a-delete-test-company. Catches any brtest*
+  partner left behind by a prior run whose explicit delete did not execute (cascades
+  partner_meeting_attendance, partner_meeting_rsvps, partner_notes, topic_suggestions).
+  Status assertion oneOf([200, 204, 404]) so it never fails the run.
+
+  No matching 00-pretest sweep is added here: partners-api creates its fixture as
+  brtest{{$randomInt}} (collision-free across runs), so a "dirty start" never
+  interferes with a fresh run — this posttest sweep plus the explicit deletes are
+  sufficient. (Contrast companies-api, whose 00-pretest sweep guards a fixed
+  BRUNOTESTCO prefix.)
+}

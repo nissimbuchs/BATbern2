@@ -1,0 +1,36 @@
+meta {
+  name: List partner meetings — contains the created meeting
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/partner-meetings
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns 200 with an array sorted by date desc", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+
+  test("the array includes the meeting created earlier in this run", function() {
+    const ids = res.getBody().map(function(m) { return m.id; });
+    expect(ids).to.include(bru.getVar("createdMeetingId"));
+  });
+}

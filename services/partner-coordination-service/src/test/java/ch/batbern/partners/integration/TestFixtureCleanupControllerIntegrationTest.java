@@ -2,9 +2,15 @@ package ch.batbern.partners.integration;
 
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
+import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.Partner;
+import ch.batbern.partners.domain.PartnerMeeting;
+import ch.batbern.partners.domain.PartnerMeetingRsvp;
 import ch.batbern.partners.domain.PartnershipLevel;
+import ch.batbern.partners.domain.RsvpStatus;
 import ch.batbern.partners.dto.TestFixtureCleanupRequest;
+import ch.batbern.partners.repository.PartnerMeetingRepository;
+import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -70,11 +79,20 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private PartnerRepository partnerRepository;
 
+    @Autowired
+    private PartnerMeetingRepository meetingRepository;
+
+    @Autowired
+    private PartnerMeetingRsvpRepository rsvpRepository;
+
     @BeforeEach
     void cleanState() {
         // Tests start from a known-empty slate so deletion counts are deterministic.
         // Cascade deletes remove partner_meeting_attendance, partner_meeting_rsvps,
-        // partner_notes, topic_suggestions (+ topic_votes).
+        // partner_notes, topic_suggestions (+ topic_votes). partner_meetings are standalone
+        // (no FK from partners), so clear them explicitly — rsvps first (FK to meetings).
+        rsvpRepository.deleteAll();
+        meetingRepository.deleteAll();
         partnerRepository.deleteAll();
     }
 
@@ -280,6 +298,111 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
     }
 
+    // ---------- Meeting cleanup (id allowlist) ----------
+
+    @Nested
+    @DisplayName("Meeting cleanup (id allowlist)")
+    class MeetingCleanup {
+
+        @Test
+        @DisplayName("deletes only the allow-listed meetings; non-listed meetings survive")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesAllowlistedMeetings_preservesOthers() throws Exception {
+            // Given: three meetings — two will be allow-listed for deletion, one left out.
+            PartnerMeeting toDelete1 = meetingRepository.save(buildMeeting("BATbern90"));
+            PartnerMeeting toDelete2 = meetingRepository.save(buildMeeting("BATbern91"));
+            PartnerMeeting survivor = meetingRepository.save(buildMeeting("BATbern92"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(toDelete1.getId(), toDelete2.getId()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(2))
+                    .andExpect(jsonPath("$.entityType").value("meetings"));
+
+            // count() issues a fresh SQL COUNT (bypasses the L1 cache after the native delete).
+            assertThat(meetingRepository.count()).isEqualTo(1);
+            assertThat(meetingRepository.findById(survivor.getId())).isPresent();
+        }
+
+        @Test
+        @DisplayName("cascade-deletes RSVPs when their meeting is removed")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void cascadeDeletesRsvps() throws Exception {
+            PartnerMeeting meeting = meetingRepository.save(buildMeeting("BATbern93"));
+            rsvpRepository.save(buildRsvp(meeting.getId(), "partner@e2e.batbern.invalid"));
+            assertThat(rsvpRepository.findByMeetingId(meeting.getId())).hasSize(1);
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(meeting.getId()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(1));
+
+            // ON DELETE CASCADE (V9) removed the dependent RSVP row.
+            assertThat(rsvpRepository.findByMeetingId(meeting.getId())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("is idempotent — unknown meeting ids delete nothing and return 0")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void isIdempotent_whenIdsUnknown() throws Exception {
+            PartnerMeeting survivor = meetingRepository.save(buildMeeting("BATbern94"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of(UUID.randomUUID()))
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.meetings").value(0));
+
+            assertThat(meetingRepository.findById(survivor.getId())).isPresent();
+        }
+
+        @Test
+        @DisplayName("returns 400 when meetingIds is empty")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenMeetingIdsEmpty() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .meetingIds(List.of())
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 400 when meetingIds is missing (null)")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void returns400_whenMeetingIdsMissing() throws Exception {
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("meetings")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
     // ---------- Test data builders ----------
 
     private Partner buildPartner(String companyName) {
@@ -290,6 +413,27 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                 .partnershipStartDate(LocalDate.of(2024, 1, 1))
                 .createdAt(now)
                 .updatedAt(now)
+                .build();
+    }
+
+    private PartnerMeeting buildMeeting(String eventCode) {
+        return PartnerMeeting.builder()
+                .eventCode(eventCode)
+                .meetingType(MeetingType.SPRING)
+                .meetingDate(LocalDate.of(2026, 3, 15))
+                .startTime(LocalTime.of(12, 0))
+                .endTime(LocalTime.of(14, 0))
+                .location("Test Venue, Bern")
+                .createdBy("batbern.organizer")
+                .build();
+    }
+
+    private PartnerMeetingRsvp buildRsvp(UUID meetingId, String attendeeEmail) {
+        return PartnerMeetingRsvp.builder()
+                .meetingId(meetingId)
+                .attendeeEmail(attendeeEmail)
+                .status(RsvpStatus.ACCEPTED)
+                .respondedAt(Instant.now())
                 .build();
     }
 }

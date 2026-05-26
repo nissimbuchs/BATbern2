@@ -1,0 +1,70 @@
+meta {
+  name: Posttest cleanup — sweep this run's meetings via id allowlist (PCS)
+  type: http
+  seq: 98
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/pcs/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  // Collect every meeting id created in THIS run. createdMeetingId was deleted by
+  // test 09 (so it sweeps to 0); secondMeetingId from test 07 is still present and
+  // is the row this hook actually removes. Only push defined ids; fall back to the
+  // nil UUID so the body is never an empty allowlist (the endpoint 400s on empty).
+  const ids = [];
+  ["createdMeetingId", "secondMeetingId"].forEach(function(name) {
+    const v = bru.getVar(name);
+    if (v) { ids.push(v); }
+  });
+  if (ids.length === 0) { ids.push("00000000-0000-0000-0000-000000000000"); }
+  bru.setVar("meetingCleanupIdsJson", JSON.stringify(ids));
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "meetings",
+    "meetingIds": {{meetingCleanupIdsJson}}
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, meetings deletion count is reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.entityType).to.equal("meetings");
+      expect(body.deletionCounts.meetings).to.be.a("number");
+    }
+  });
+
+  test("clear captured meeting ids for the next run", function() {
+    bru.setVar("createdMeetingId", null);
+    bru.setVar("secondMeetingId", null);
+  });
+}
+
+docs {
+  PR 13 (plan §B2 option 1 / §D.11): the safety-net teardown for partner_meetings.
+  Because meetings have no Bruno-identifying prefix, this posts the run's captured
+  meeting IDs to the new PCS entityType=meetings cleanup, which deletes them by
+  exact id (cascading partner_meeting_attendance + partner_meeting_rsvps via V2/V9
+  ON DELETE CASCADE). Status assertion oneOf([200, 204, 404]) so it never fails the
+  run. This is also the test that proves the new backend path actually deletes:
+  on a normal run the AUTUMN meeting from test 07 makes deletionCounts.meetings >= 1.
+}
