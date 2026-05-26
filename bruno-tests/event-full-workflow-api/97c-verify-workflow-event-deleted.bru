@@ -1,0 +1,48 @@
+meta {
+  name: Verify workflow event deleted (conditional DELETE-then-GET-404)
+  type: http
+  seq: 97.15
+}
+
+get {
+  url: {{baseUrl}}/events/{{workflowDeletedEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("when prior DELETE was 204 or 404, GET must return 404", function() {
+    const priorStatus = parseInt(bru.getVar("workflowDeleteStatus"), 10);
+    if (priorStatus === 204 || priorStatus === 404) {
+      expect(res.getStatus()).to.equal(404);
+    } else if (priorStatus === 409) {
+      // State machine forbade hard-delete from ARCHIVED — event still exists by design.
+      // Accept 200 (event still queryable) without asserting; the leftover is owned
+      // by Story 10.18 eventArchivalCleanupService on its scheduled sweep.
+      expect([200, 404]).to.include(res.getStatus());
+    } else {
+      throw new Error("Unexpected prior DELETE status: " + priorStatus);
+    }
+  });
+
+  test("cleanup: clear workflow-event vars", function() {
+    bru.setVar("workflowDeletedEventCode", null);
+    bru.setVar("workflowDeleteStatus", null);
+  });
+}
+
+docs {
+  PR 6 (plan §D step 4): conditional GET-then-404 hop paired with
+  97a-delete-workflow-fixture-event.bru.
+
+  97a accepts [204, 404, 409] because the state machine may forbid
+  hard-delete from ARCHIVED (the terminal state the 8-step walk reaches).
+  This verify is therefore conditional:
+    - 204/404 → GET must return 404 (proves teardown took effect)
+    - 409     → GET may return 200 (event still exists by design),
+                eventArchivalCleanupService (Story 10.18) sweeps later
+}

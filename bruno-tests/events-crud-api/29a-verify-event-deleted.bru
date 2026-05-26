@@ -1,0 +1,33 @@
+meta {
+  name: Verify event deleted (DELETE-then-GET-404)
+  type: http
+  seq: 29.5
+}
+
+get {
+  url: {{baseUrl}}/events/{{deletedEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 404 after delete", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("cleanup: clear event-code vars (Story 1.16.2)", function() {
+    bru.setVar("createdEventCode", null);
+    bru.setVar("deletedEventCode", null);
+  });
+}
+
+docs {
+  PR 6 (plan §D step 4 — "Audit DELETE assertions: every DELETE test
+  followed by a GET that asserts 404"). Pairs with 29-delete-event.bru
+  which captures the eventCode into `deletedEventCode` before this step
+  nullifies it. The pre-PR-6 collection trusted the 204 alone.
+}

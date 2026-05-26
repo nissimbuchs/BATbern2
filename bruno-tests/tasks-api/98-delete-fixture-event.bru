@@ -1,0 +1,36 @@
+meta {
+  name: Cleanup — delete tasks-api fixture event
+  type: http
+  seq: 98
+}
+
+delete {
+  url: {{baseUrl}}/events/{{testEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("fixture event deleted (cascades event_tasks)", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+
+  test("clear testEventCode for next run", function() {
+    bru.setVar("testEventCode", null);
+  });
+}
+
+docs {
+  PR 6 (paired with 00b-fixture-event.bru): explicitly DELETEs the parent
+  event created by the fixture step. Accepts 204 (deleted) or 404 (already
+  deleted). Runs before 99-posttest-cleanup (seq 99) so the cascade
+  clears any event_tasks still attached.
+
+  Replaces legacy 99-cleanup-test-event.bru which mixed the explicit
+  DELETE with no canonical posttest sweep — the new 98 + 99 pairing
+  matches the sessions-api pattern established in PR 670.
+}

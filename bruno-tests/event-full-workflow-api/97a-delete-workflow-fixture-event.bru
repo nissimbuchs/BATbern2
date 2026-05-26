@@ -19,7 +19,12 @@ tests {
     expect([204, 404, 409]).to.include(res.getStatus());
   });
 
-  test("clear workflowEventCode for next run", function() {
+  test("publish workflowDeletedEventCode + status for 97c-verify-workflow-event-deleted", function() {
+    // PR 6 (plan §D step 4): hand the eventCode + DELETE status to 97c.
+    // 97c asserts 404 ONLY when status was 204 or 404; skips when 409
+    // (state-machine forbade delete → event still exists by design).
+    bru.setVar("workflowDeletedEventCode", bru.getVar("workflowEventCode"));
+    bru.setVar("workflowDeleteStatus", res.getStatus());
     bru.setVar("workflowEventCode", null);
   });
 }
