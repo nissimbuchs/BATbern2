@@ -1,0 +1,31 @@
+meta {
+  name: DELETE /events/types/EVENING — no delete endpoint by design
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/events/types/EVENING
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should reject with 404 (no route) or 405 (method not allowed)", function() {
+    expect([404, 405]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  PR 2a (plan §C): documents the API gap. EVENING (and FULL_DAY, AFTERNOON)
+  is a seeded event type — deleting it would silently break every event
+  that references it via foreign key. There is no DELETE endpoint by
+  design.
+
+  Same gap-documenting role as 08-no-create-endpoint-by-design.
+  Accepts 404 or 405.
+}

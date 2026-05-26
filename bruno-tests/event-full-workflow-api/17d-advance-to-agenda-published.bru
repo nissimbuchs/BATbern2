@@ -1,0 +1,42 @@
+meta {
+  name: Advance workflow event SLOT_ASSIGNMENT → AGENDA_PUBLISHED
+  type: http
+  seq: 17.4
+}
+
+put {
+  url: {{baseUrl}}/events/{{workflowEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "AGENDA_PUBLISHED",
+    "overrideValidation": true,
+    "overrideReason": "PR 2b state-machine walk"
+  }
+}
+
+tests {
+  test("transition succeeds with 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response reflects target state", function() {
+    expect(res.getBody().workflowState).to.equal("AGENDA_PUBLISHED");
+  });
+}
+
+docs {
+  Step 4/7 of the 8-state walk. AGENDA_PUBLISHED is the trigger state
+  for auto-publishing (per CLAUDE.md "Auto-publishing & lifecycle
+  automation delivered via BAT-16"). With override:true the publish
+  side-effects (CDN, registration opening) may still fire depending
+  on event-driven listeners; that's intentional — verifying the state
+  transition propagates downstream is part of the integration.
+}

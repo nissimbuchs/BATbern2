@@ -1,0 +1,42 @@
+meta {
+  name: Advance workflow event EVENT_COMPLETED → ARCHIVED
+  type: http
+  seq: 17.7
+}
+
+put {
+  url: {{baseUrl}}/events/{{workflowEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "ARCHIVED",
+    "overrideValidation": true,
+    "overrideReason": "PR 2b state-machine walk"
+  }
+}
+
+tests {
+  test("transition succeeds with 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response reflects target state", function() {
+    expect(res.getBody().workflowState).to.equal("ARCHIVED");
+  });
+}
+
+docs {
+  Step 7/7 of the 8-state walk. ARCHIVED is the terminal state.
+  Per EventWorkflowStateMachine: "Run archival cleanup when
+  transitioning to ARCHIVED (Story 10.18)" — eventArchivalCleanupService
+  fires here. This test asserts the transition response only; the
+  archival side-effects are owned by Story 10.18's own integration
+  tests.
+}

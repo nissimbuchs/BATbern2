@@ -1,0 +1,34 @@
+meta {
+  name: Cleanup — delete sessions fixture event
+  type: http
+  seq: 98
+}
+
+delete {
+  url: {{baseUrl}}/events/{{createdEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("fixture event deleted (cascades sessions + session_users + session_materials)", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+
+  test("clear createdEventCode for next run", function() {
+    bru.setVar("createdEventCode", null);
+  });
+}
+
+docs {
+  PR 2 split (paired with 00b-fixture-event.bru): explicitly DELETEs the
+  parent event created by the fixture step. Accepts 204 (deleted) or 404
+  (already deleted — e.g. if an earlier test 11-delete-session cascaded
+  upward by mistake, or a previous run left it in an inconsistent state).
+  Runs before 99-posttest-cleanup (seq 99) so the cascade clears any
+  sessions still attached.
+}

@@ -1,0 +1,54 @@
+meta {
+  name: PUT EVENING with invalid body — rejects with 400
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/events/types/EVENING
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "minSlots": 0,
+    "maxSlots": 8,
+    "slotDuration": 45,
+    "theoreticalSlotsAM": true,
+    "breakSlots": 2,
+    "lunchSlots": 1,
+    "defaultCapacity": 200
+  }
+}
+
+tests {
+  test("should reject minSlots=0 with 400 (Story 5.1 AC3 guard: minSlots > 0)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("error body is JSON", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("object");
+  });
+}
+
+docs {
+  PR 2a: PUT validation smoke. The OpenAPI spec documents four guards:
+    - minSlots must be > 0
+    - maxSlots must be >= minSlots
+    - slotDuration must be >= 15 minutes
+    - defaultCapacity must be > 0
+
+  This test exercises the first guard. Beyond catching the obvious
+  validation regression, it confirms the `GlobalExceptionHandler`'s
+  explicit MethodArgumentNotValidException handler (per
+  project-context.md "GlobalExceptionHandler MUST have an explicit
+  @ExceptionHandler(MethodArgumentNotValidException.class)") is wired —
+  without it, the catch-all `Exception.class` handler shadows the 400
+  and returns 500.
+}

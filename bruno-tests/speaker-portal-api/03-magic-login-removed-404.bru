@@ -17,10 +17,14 @@ body:json {
 }
 
 tests {
-  test("should return 404 (handler deleted by Story 11.F.1 AC1)", function() {
-    // SpeakerMagicLoginController + MagicLinkService were deleted in Phase F. Spring MVC
-    // no longer has a RequestMapping for /auth/speaker-magic-login, so the dispatcher
-    // returns 404 via the GlobalExceptionHandler.handleNoHandlerFoundException branch.
-    expect(res.getStatus()).to.equal(404);
+  test("should reject (401 or 404) since handler was deleted by Story 11.F.1 AC1", function() {
+    // SpeakerMagicLoginController + MagicLinkService were deleted in Phase F. The
+    // permitAll matcher in api-gateway SecurityConfig for /api/v1/auth/speaker-magic-login
+    // was also removed in 11.F.1. So an unauthenticated POST now hits Spring Security
+    // first (no token → 401) before ever reaching the dispatcher's NoHandlerFound
+    // branch (which would emit 404). Either status confirms the endpoint is no longer
+    // functional — 401 is what the deployed gateway returns to unauthenticated callers
+    // post-11.F.1.
+    expect([401, 404]).to.include(res.getStatus());
   });
 }

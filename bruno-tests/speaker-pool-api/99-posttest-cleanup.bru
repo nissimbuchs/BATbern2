@@ -1,0 +1,60 @@
+meta {
+  name: Posttest cleanup — final sweep of BRUNO-TEST-* events (cascades speaker_pool)
+  type: http
+  seq: 99
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.events).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  PR 2 split (plan §B3): final sweep of BRUNO-TEST-* events.
+
+  TODO (PR 11 — D.9 speaker-pool-api audit): the 45–47 promote tests
+  provision real CUMS users via UserApiClient with firstName=Promote,
+  lastName=E2E, yielding usernames like `promote.e2e.<n>`. The CUMS cleanup
+  endpoint's USERS entityType only accepts prefix `bruno.test.` today, so
+  these users accumulate per run. Two fix paths for PR 11:
+    (a) widen CUMS USERS regex to also accept `promote.e2e.` (~5 LOC in
+        TestFixtureCleanupService.java + 1 integration test), then add a
+        00a-/99a- CUMS pretest+posttest hook here, OR
+    (b) change tests 45–47 to use firstName=Bruno, lastName=Test (so the
+        auto-generated username matches `bruno.test.*`), then add 00a-/99a-
+        with the existing `bruno.test.` prefix.
+  (a) is least intrusive to test semantics; (b) consolidates one fewer
+  regex. Plan §C "speaker-pool cleanup is cross-service" already flagged
+  this dependency. Not blocking PR 2 (mechanical split only).
+}

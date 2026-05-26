@@ -1,0 +1,40 @@
+meta {
+  name: Advance workflow event CREATED → TOPIC_SELECTION
+  type: http
+  seq: 17.1
+}
+
+put {
+  url: {{baseUrl}}/events/{{workflowEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "TOPIC_SELECTION",
+    "overrideValidation": true,
+    "overrideReason": "PR 2b state-machine walk — business rules covered by sessions-api / speaker-pool-api"
+  }
+}
+
+tests {
+  test("transition succeeds with 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response reflects target state", function() {
+    expect(res.getBody().workflowState).to.equal("TOPIC_SELECTION");
+  });
+}
+
+docs {
+  Step 1/7 of the 8-state walk. overrideValidation:true bypasses the
+  business rules (validity rules + minimum-content thresholds) so a
+  bare event can advance the state machine end-to-end. The override
+  itself is audit-logged at WARN level by EventWorkflowStateMachine.
+}

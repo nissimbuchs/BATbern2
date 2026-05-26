@@ -1,0 +1,49 @@
+meta {
+  name: Pretest cleanup — sweep leftover BRUNO-TEST-* events
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/ems/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "events",
+    "prefix": "BRUNO-TEST-"
+  }
+}
+
+tests {
+  test("pretest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+
+  test("if 200, deletion counts are reported", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.deletionCounts).to.be.an("object");
+      expect(body.deletionCounts.events).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  PR 2 split (plan §B3): pretest sweep of BRUNO-TEST-* events.
+  30a-create-event-for-topic-tests creates a BRUNO-TEST-TOPIC-EVENT-{{ts}}
+  fixture event used by 33-select-topic-for-event; this cleanup guarantees
+  no stale fixture survives across runs. Paired with 00a- which sweeps
+  bruno-test-topic-* topics.
+}

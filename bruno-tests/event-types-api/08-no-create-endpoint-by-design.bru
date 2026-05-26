@@ -1,0 +1,49 @@
+meta {
+  name: POST /events/types — no create endpoint by design
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/events/types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "type": "BRUNO_TEST_TYPE",
+    "minSlots": 1,
+    "maxSlots": 2,
+    "slotDuration": 15,
+    "theoreticalSlotsAM": false,
+    "breakSlots": 0,
+    "lunchSlots": 0,
+    "defaultCapacity": 1
+  }
+}
+
+tests {
+  test("should reject with 404 (no route) or 405 (method not allowed)", function() {
+    expect([404, 405]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  PR 2a (plan §C): documents the API gap. Event types are a closed enum
+  (FULL_DAY | AFTERNOON | EVENING) seeded by Flyway migration, not a
+  CRUD entity. There is no POST /events/types endpoint by design.
+
+  This test is a contract assertion: if a future controller change
+  inadvertently adds a POST handler, this fails and someone has to make
+  an explicit decision about widening the enum.
+
+  Accepts both 404 (Spring returns this if no @PostMapping matches) and
+  405 (returned by some routing configurations when the resource exists
+  but the verb doesn't). The gateway may collapse to one or the other —
+  either is correct for documenting the gap.
+}

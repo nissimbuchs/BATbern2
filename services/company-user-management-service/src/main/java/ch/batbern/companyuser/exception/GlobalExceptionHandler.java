@@ -594,6 +594,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
 
+    /**
+     * Returns 405 Method Not Allowed when a URI matches a registered route but the HTTP verb
+     * doesn't (e.g. POST against a GET-only endpoint). Without this explicit handler Spring
+     * raises {@code HttpRequestMethodNotSupportedException}, which falls through to the
+     * catch-all {@code @ExceptionHandler(Exception.class)} below and gets translated into a 500 —
+     * the same class of gotcha as the {@code MethodArgumentNotValidException} rule in
+     * {@code _bmad-output/project-context.md}. Discovered via PR 2a's event-types-api tests
+     * 08/09 (in EMS) which exposed that all four services share this gap.
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        log.debug("Method not supported for {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.METHOD_NOT_ALLOWED.value())
+                .error("Method Not Allowed")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

@@ -1,0 +1,37 @@
+meta {
+  name: Advance workflow event EVENT_LIVE → EVENT_COMPLETED
+  type: http
+  seq: 17.6
+}
+
+put {
+  url: {{baseUrl}}/events/{{workflowEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "EVENT_COMPLETED",
+    "overrideValidation": true,
+    "overrideReason": "PR 2b state-machine walk"
+  }
+}
+
+tests {
+  test("transition succeeds with 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response reflects target state", function() {
+    expect(res.getBody().workflowState).to.equal("EVENT_COMPLETED");
+  });
+}
+
+docs {
+  Step 6/7 of the 8-state walk.
+}

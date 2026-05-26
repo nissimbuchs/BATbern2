@@ -1,0 +1,54 @@
+meta {
+  name: List Event Types
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/events/types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return an array of event types", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("array");
+    expect(body.length).to.be.greaterThan(0);
+  });
+
+  test("should include FULL_DAY, AFTERNOON, EVENING", function() {
+    const body = res.getBody();
+    const types = body.map(c => c.type);
+    expect(types).to.include.members(["FULL_DAY", "AFTERNOON", "EVENING"]);
+  });
+
+  test("every config has the required fields per OpenAPI schema", function() {
+    const body = res.getBody();
+    const required = [
+      "type", "minSlots", "maxSlots", "slotDuration",
+      "theoreticalSlotsAM", "breakSlots", "lunchSlots",
+      "defaultCapacity", "typicalStartTime", "typicalEndTime"
+    ];
+    body.forEach(config => {
+      required.forEach(field => {
+        expect(config[field], `config[${config.type}].${field}`).to.not.be.undefined;
+      });
+    });
+  });
+}
+
+docs {
+  PR 2a (Section §C event-types-api): list endpoint smoke test.
+  /events/types returns cached configurations (Caffeine 1h TTL per spec).
+  Three event types are seeded (FULL_DAY, AFTERNOON, EVENING) per
+  ArchitectureRefs §03-data-architecture.md:547-551.
+}

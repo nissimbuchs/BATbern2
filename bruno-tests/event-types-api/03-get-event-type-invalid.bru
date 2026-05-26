@@ -1,0 +1,36 @@
+meta {
+  name: Get Event Type — invalid identifier
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/events/types/INVALID_TYPE
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should reject INVALID_TYPE with 400 or 404", function() {
+    expect([400, 404]).to.include(res.getStatus());
+  });
+
+  test("error body is JSON with message field when 400", function() {
+    if (res.getStatus() === 400) {
+      const body = res.getBody();
+      expect(body).to.be.an("object");
+    }
+  });
+}
+
+docs {
+  PR 2a: enum-validation smoke. The path parameter is bound to the
+  EventType enum (FULL_DAY | AFTERNOON | EVENING). Spring's enum
+  converter rejects unknown values — depending on the OpenAPI
+  generator and the validation chain, this returns 400 (most likely)
+  or 404 (if the route doesn't match at all).
+}

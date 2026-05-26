@@ -2,7 +2,7 @@
 
 ## Current status
 
-> **Where we are:** PR 1 is open as [#664](https://github.com/nissimbuchs/BATbern2/pull/664) against `develop` (branch `test-enhancement/bruno-staging-hardening-infra`); CI build in progress (last update 2026-05-25). Done: A1 URL fix, A2 runner flags, A4 admin-cleanup-api wired first in runner, B1 README + plan, B2 cleanup endpoints on all 3 owning services (CUMS 13 tests, EMS 14 tests, PCS 11 tests — all green), one-time SQL pre-cleanup, gateway per-service routing for `/admin/test-fixtures/{cums,ems,pcs}/cleanup`, method-security flipped on in local profile (removes the trusted-localhost shortcut now that Pattern 3b makes it redundant), F2 admin-cleanup-api Bruno collection (9 tests passing locally), **A4 ECR `staging-current`/`staging-stable` tag promotion** (`scripts/ci/promote-ecr-tag.sh` + new step in deploy-to-staging promoting IMAGE_TAG → `staging-current` after smoke+CORS pass), **A5a `rollback-deployment.sh` updates** (`--yes`/`--dry-run` flags; primary lookup now `staging-stable` ECR resolution via image-digest → register-new-task-def + update-service; falls back to `deployments[1]` if `staging-stable` missing), **A5b deploy-staging.yml split into 4 jobs** (`deploy-to-staging`, `bruno-tests` with step-level `continue-on-error: true` + `outputs.outcome` job output, `tag-stable-on-success` and `rollback-on-bruno-failure` gating on `needs.bruno-tests.outputs.outcome` — the latter further gated behind `inputs.enable_bruno_rollback` until PR 14 gate flip), **A5c dead-code removal** in `deploy-production.yml`, and **claude-review fixes** landed in commit `942f3758` (step-level continue-on-error, README regex table match-code, `-1` cascade-sentinel removal, logo LIKE pattern tightening, controller Javadoc on intentional non-profile-gating). Side-fixes landed in the process: ResponseStatusException → 500 swallowing bug in EMS + PCS GlobalExceptionHandlers, Section G local pre-flight doc, partner_meetings cleanup-coverage TODO (deferred to PR 13), users-api 3-test latent failures captured for PR 5. **A3 ECS deployment alarms deferred** (2026-05-25, user decision) — false-positive-rollback risk on prod (treatMissingData: BREACHING + occasional CI metric gaps) outweighs marginal value over the existing circuit breaker; A5's Bruno-driven rollback is the higher-value safety net. Revisit as a follow-up PR after empirical Container Insights stability data from A5 ramp. **Remaining for PR 1 to merge:** CI green on the post-review-fix push (~1h for current build + ~1h for the new push triggered by `942f3758`); then user code review + approval. The one-time `scripts/db/bruno-staging-pre-cleanup.sql` is ✅ **executed**: dev (3 companies + 5 F4 leaked additional-emails deleted, 2026-05-25), staging via SSM tunnel (10 companies + 7 partners deleted exactly per audit, 0 F4 leaks present, all 12 real bruno.* users untouched, 2026-05-25). Script history: original `806e0481`, schema-mismatch fix `0987c5ce`, F4 unblock `c221ad80`. After PR 1 merges: F1 deliberate-fail rollback exercise on a feature branch (workflow_dispatch with `enable_bruno_rollback: true`) before the PR 14 gate flip.
+> **Where we are (2026-05-26 ~19:00 CET):** Sections A + B + D-partial are merged on `develop`. Six PRs landed; **PR 670 is OPEN with 10 commits awaiting GitHub Actions recovery** (Actions in major outage / critical impact since 2026-05-26 ~11:00 UTC). PR 670 bundles PR 2 (events-api mechanical split) + PR 2a (event-types-api tests) + PR 2b (event-full-workflow state-machine walk + invalid transitions) + apex-domain CORS hotfix + cross-service 405 handler + dev-DB cleanup SQL + 4 per-test fixes from a full-suite local audit + plan-doc PR 11 redesign scope. **Stacked because Actions is down**; will split via cherry-pick post-merge if reviewers prefer. **Local Bruno baseline (2026-05-26 post-DB-cleanup): 11/13 collections green, 245/247 tests = 99.2%.** Only red: speaker-pool-api (17 Epic 11 redesign failures — PR 11 territory) + speaker-portal-api (4 cascade failures from same root, also PR 11-class). **Next: PR 6 batched audit-pass closeout** (see §"Next: batched audit-pass closeout (PR 6)" below) — covers steps 2 + 4 of §D across tasks-api + the 5 new collections from PR 2. Then PR 11 (~12 files, ~230 LOC redesign per ADR-009), PR 13 (PCS `partner_meetings` entityType + staging re-verify), and PR 14 (gate flip + F1 deliberate-fail exercise). All four are scoped and ready for a fresh session to pick up without re-deriving context. Out-of-band: **#669** retired the dead `staging.batbern.ch` domain (merged 2026-05-25, commit `1a6e2ce2`); **#665/#667/#668** fixed gateway URI double-encoding, CI role-token plumbing, and the Bruno runner `((var++))` set -e trap respectively. Tag-stable promotion correctly remained SKIPPED on #669 — Bruno still red, gate legitimately closed; #668's counter fix is verified-working on a red-Bruno run.
 
 Update this one line on every PR merge so anyone (including a fresh Claude session) can pick up the work without re-reading the whole plan.
 
@@ -12,20 +12,33 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 
 | PR # | Branch | Scope | Status | Merged | Findings / bugs discovered |
 |------|--------|-------|--------|--------|---------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job, one-time legacy-junk cleanup script (17 rows). | 🟡 in progress | — | A1+A2 commits landed; companies `@Pattern` validation deferred — see audit-bugs section. Service ownership mapped: only 3 services (CUMS, EMS, PCS) own entity tables. **Discovered during impl** (2026-05-25): (1) **ResponseStatusException → 500 swallowing bug** in EMS + PCS GlobalExceptionHandlers — fixed in 5aaff459 (events) + 3a398e80 (partners) by adding explicit `@ExceptionHandler(ResponseStatusException.class)` before the catch-all `Exception.class` handler. Same gotcha class as the MethodArgumentNotValidException rule in `_bmad-output/project-context.md` — CUMS already had this handler; EMS/PCS didn't. (2) **API Gateway `/api/v1/admin/*` route fell through to EMS unconditionally** — made CUMS + PCS cleanup endpoints unreachable. Fixed in c36bc744 with per-service path discriminator: paths are now `/api/v1/admin/test-fixtures/{cums,ems,pcs}/cleanup` and `DomainRouter` matches each before the generic fallback. (3) **`@EnableMethodSecurity` was `@Profile("!local")`** — disabling method-level role checks in local dev. Flipped in 46c5dc75 across all 4 SecurityConfigs (CUMS, EMS, PCS, SCS); class renamed `ProductionMethodSecurityConfig` → `MethodSecurityConfig`. Safe now that Pattern 3b (Epic 11.E.7) DB-fallback handles locally-provisioned speakers; aligns dev with staging. (4) **CUMS Checkstyle indent** on `@ApiResponses` array closing parens — fixed in 7799b2ec (pre-commit hook only checks changed files so it slipped through in 806e0481). |
-| 2 | `test-enhancement/bruno-events-api-split` | Section C: decompose events-api into 6 collections | ⬜ not started | — | — |
-| 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ⬜ not started | — | — |
-| 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ⬜ not started | — | — |
-| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit | ⬜ not started | — | 4 latent failures in `users-api` against `development` discovered 2026-05-25 — see "Local pre-flight findings — 2026-05-25 (users-api)" below. (1) Test-ordering bug — `14-delete-test-user` deletes the auth user. (2) Undefined `{{authUserEmail}}` var in `18-`. (3) `20-public-user-by-username` 404 cascading from #1. (4) **`15-add-additional-email` accumulates rows in `user_additional_emails` because the 15→17 add/delete pairing isn't idempotent — once test 17 fails, rows leak, and after 5 leaks the 5-per-user cap (`ADDITIONAL_EMAIL_LIMIT_REACHED`) blocks every future test 15.** Requires (a) `ADDITIONAL_EMAILS` entityType in the CUMS cleanup endpoint (same shape as the deferred PR 13 `partner_meetings` extension), (b) unconditional `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` per B3 calling that entityType, (c) normalizing the test prefix to canonical `bruno-test-<ts>@e2e.batbern.invalid` per B1. One-time local-DB unblock before PR 5 can run green: `DELETE FROM user_additional_emails WHERE email LIKE 'bruno-additional-%@example.com';` |
-| 6 | `test-enhancement/bruno-audit-tasks-api` | D.4: light audit | ⬜ not started | — | — |
-| 7 | `test-enhancement/bruno-audit-event-types-api` | D.5: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 8 | `test-enhancement/bruno-audit-event-topics-api` | D.6: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 9 | `test-enhancement/bruno-audit-events-crud-api` | D.7: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 10 | `test-enhancement/bruno-audit-sessions-api` | D.8: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 11 | `test-enhancement/bruno-audit-speaker-pool-api` | D.9: light audit (new collection from PR 2, cross-service cleanup) | ⬜ not started | — | — |
-| 12 | `test-enhancement/bruno-audit-event-full-workflow-api` | D.10: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 13 | `test-enhancement/bruno-audit-partners-api` | D.11: light audit | ⬜ not started | — | **TODO**: extend PCS cleanup endpoint with a `partner_meetings` entityType — discovered 2026-05-25 during PCS cleanup endpoint impl. `partner_meetings` is a standalone table (no FK to partners), so today's `partners` entityType doesn't reach it via cascade. Bruno's `partner-meetings-api` collection currently leaves meetings behind on every run. See "Deferred — partner_meetings cleanup coverage" below. |
-| 14 | `test-enhancement/bruno-gate-flip` | Section E: remove `continue-on-error`, prove rollback path | ⬜ not started | — | — |
+| 1 | `test-enhancement/bruno-staging-hardening-infra` | Sections A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job, one-time legacy-junk cleanup script (17 rows). | ✅ merged | 2026-05-25 (#664, `5265f61a`) | A3 deployment alarms deferred (false-positive rollback risk vs marginal value over circuit breaker — revisit after empirical Container Insights data). Companies `@Pattern` validation deferred — see audit-bugs section. **Discovered during impl**: (1) ResponseStatusException → 500 swallowing in EMS + PCS GlobalExceptionHandlers (fixed in 5aaff459 + 3a398e80). (2) Gateway `/api/v1/admin/*` route fell through to EMS — fixed in c36bc744 with per-service path discriminator (`/api/v1/admin/test-fixtures/{cums,ems,pcs}/cleanup`). (3) `@EnableMethodSecurity` was `@Profile("!local")` — flipped in 46c5dc75. (4) CUMS Checkstyle indent on `@ApiResponses` — fixed in 7799b2ec. (5) Bruno CI step failed `expected 401 to equal 403` on admin-cleanup-api auth-matrix tests — root cause was missing `SPEAKER_AUTH_TOKEN` / `PARTNER_AUTH_TOKEN` env vars in CI; resolved by out-of-band #667 (11.F.1 commit `bce55b12` honoring pre-set role env vars). (6) **Bruno runner aborted on first all-green run** under `set -e` due to `((passed++))` returning 0 (PRE-increment value) — resolved by out-of-band #668. |
+| 2 | `test-enhancement/bruno-events-api-split` (= PR 670, 10 commits) | Section C mechanical-only: file moves + cleanup hooks for 4 active collections + 2 stubs (event-types-api, event-full-workflow-api gets seeded with tests 12/13/16). Net-new tests deferred to PR 2a + PR 2b. **+ bundled apex-domain hotfix from #669 fallout** | 🔵 in review (PR 670) — awaiting GitHub Actions recovery | — | events-api was 49/60 on staging pre-split — splitting is the unlock for PRs 6 (batched audit) + 11 + 12. **Bundled hotfix (claude-review on #669, unfixed at merge):** `RateLimitingFilter.java:155` + `TurnstileVerificationFilter.java:199` both ended up with `origin.equals("https://www.batbern.ch") \|\| origin.equals("https://www.batbern.ch")` (apex `https://batbern.ch` dropped from the OR). Fix: both filters now delegate via `corsHandler.isOriginAllowed(origin)`. |
+| 2a | `test-enhancement/bruno-events-api-split` (stacked on PR 2 — Actions outage) | Net-new event-types-api tests: 9 Bruno tests (GET list + GET specific + GET invalid + idempotent PUT capture-then-replay + PUT validation 400 + POST/DELETE 404/405). **+ bundled backend hygiene fix**: `HttpRequestMethodNotSupportedException` handler in all 4 services' `GlobalExceptionHandler` (EMS, CUMS, PCS, SCS) — without it, POST/DELETE on a GET-only route returned 500 (same gotcha class as the `MethodArgumentNotValidException` rule in project-context.md). | 🔵 in review (in PR 670) | — | 19/19 tests green ×2 locally. |
+| 2b | `test-enhancement/bruno-events-api-split` (stacked on PR 2/2a — Actions outage) | Net-new event-full-workflow-api tests: 7-step state-machine walk CREATED → ARCHIVED via PUT `/events/{code}/workflow/transition` with `overrideValidation:true` + 2 invalid-transition rejection tests + 3 fixture events + 2 cleanup hooks. Registrations CRUD against `REGISTRATION_OPEN` deferred to potential PR 2c — not blocking. | 🔵 in review (in PR 670) | — | 44/44 tests green ×2 locally. |
+| 2c | also stacked in PR 670 — DB cleanup + 4 local-dev test fixes | `scripts/db/bruno-dev-pre-cleanup-2026-05-26.sql` one-shot: deleted 88 user_profiles + 14 companies + 3 test events (cascading 14 sessions, 12 speaker_pool, 30 registrations, 18 session_content_history, 1 newsletter_send) + 1 partner. Preserved 11 real Bruno-named people + 2 real partner_meetings. Plus 4 test fixes: users-api/15 timestamp-collision subprefix, sessions-api/21 stale presentationTitle assertion (Story 11.E.8 V100 dropped the column), speaker-portal-api/03+04 magic-login deleted endpoints now accept 401-or-404. | 🔵 in review (in PR 670) | — | Local Bruno: 11/13 collections green, 245/247 tests (99.2%). |
+| 3 | `test-enhancement/bruno-audit-file-upload-api` | D.1: light audit | ✅ merged | 2026-05-25 (bundled into #666, `a05dce90`) | — |
+| 4 | `test-enhancement/bruno-audit-companies-api` | D.2: light audit | ✅ merged | 2026-05-25 (bundled into #666, `a05dce90`) | — |
+| 5 | `test-enhancement/bruno-audit-users-api` | D.3: light audit + F1/F2/F3/F4 fixes (see below) | ✅ merged | 2026-05-25 (bundled into #666, `a05dce90`) | F1 (var capture) + F2 (test 14 → 95-delete-test-user, regex tightened, lastName `Test`) + F3 (resolved via F2 + ordering) + F4 (CUMS `ADDITIONAL_EMAILS` entityType + 00/00a/99/99a cleanup hooks) all landed. **Surprise dependency:** F2's encoded-email DELETE returning 401 turned out to be a gateway URI double-encoding bug (`%40` → `%2540` tripping Spring's `StrictHttpFirewall`) — fixed in out-of-band #665, not strictly in PR 5 scope but blocked users-api from going green. Also: 7 `.bru` cleanup files added by PR 3/4/5 had `#` comments between `meta { }` and the next block; Bruno's parser silently drops such files. Caught + fixed in #666's `38fcbcea`; CLAUDE.md guardrail in #665. |
+| 6 | `test-enhancement/bruno-audit-batched-closeout` | **Batched audit-pass closeout** — Section D steps 2 (canonical prefix normalization) + 4 (DELETE-then-GET-404) across **tasks-api + 5 collections from PR 2** (events-crud-api, event-topics-api, sessions-api, event-full-workflow-api; speaker-pool-api excluded — covered by PR 11 redesign). Scope expanded from original "tasks-api light audit" because PR 670 already shipped step 3 (00/99 hooks) for all 5 new collections, leaving steps 2 + 4 as the only audit-checklist items still owed. tasks-api also gets canonical-hook migration (its 00-create-test-event / 99-cleanup-test-event style predates PR-1 cleanup endpoint pattern). | ⬜ not started — **NEXT after PR 670 merges** | — | See "Next: batched audit-pass closeout (PR 6)" section below for concrete deliverables + per-collection action list. Estimated ~2 hours; one PR, six collections. |
+| 7 | _absorbed into PR 6 (batched)_ | ~~D.5: event-types-api~~ | 🟢 absorbed | — | Step 3 (00/99 hooks) N/A — no mutable test data (capture-then-replay PUT). Step 2 + step 4 inapplicable (no DELETE endpoint exists by design). Effectively complete after PR 670 / PR 2a; row kept as historical numbering anchor. |
+| 8 | _absorbed into PR 6 (batched)_ | ~~D.6: event-topics-api~~ | 🟢 absorbed | — | Step 3 shipped in PR 670. Step 2 already canonical (`bruno-test-topic-{ts}`). Step 4 will be applied for test 67 (DELETE event used by topic tests) in the batched PR. |
+| 9 | _absorbed into PR 6 (batched)_ | ~~D.7: events-crud-api~~ | 🟢 absorbed | — | Step 3 shipped in PR 670. Step 2 + step 4 in the batched PR. Event prefix normalization needs investigation — current tests rely on server-generated `BATbern{N}` codes; if the create-event endpoint accepts a client-supplied `eventCode`, normalize to `BRUNO-TEST-{ts}` so the cleanup-endpoint prefix sweep is no longer a no-op. |
+| 10 | _absorbed into PR 6 (batched)_ | ~~D.8: sessions-api~~ | 🟢 absorbed | — | Step 3 shipped in PR 670. The 1 pre-existing failure (`21-assign-speaker-to-session.bru` `presentationTitle` assertion) was fixed in PR 670's commit `753c1315` — Story 11.E.8 V100 dropped `session_users.presentation_title`. Step 2 + step 4 in the batched PR. |
+| 11 | `test-enhancement/bruno-audit-speaker-pool-api` | D.9: ~~light audit~~ **workflow-aware redesign** (new collection from PR 2, cross-service cleanup) | ⬜ not started — **scope upgrade** | — | **Not a light audit — ~12 files touched, ~230 LOC.** Pre-Epic-11 tests in this collection use `PUT /status` to reach `READY`, which is now blocked by design per ADR-009 (READY is a provisioning gate, only reachable via `POST /promote` — Story 11.D.1). 17 failing assertions categorised in 4 buckets — see "Local pre-flight findings — 2026-05-26 (speaker-pool-api)" above. Also includes the deferred CUMS `bruno.test.` / `promote.e2e.` regex widening for cross-service user cleanup. **Also fixes speaker-portal-api's 4 cascade failures** (tests 02 send-invitation, 09 send-decline, 27 approve-content, 33 respond-cognito — same Epic 11 contract drift; same fix shape: thread tests through `POST /promote` to reach READY before invoking endpoints that require it). |
+| 12 | _absorbed into PR 6 (batched)_ | ~~D.10: event-full-workflow-api~~ | 🟢 absorbed | — | Step 3 + state-machine walk + invalid-transition tests shipped in PR 670 / PR 2b. Step 2 + step 4 in the batched PR. Deferred "registrations CRUD against AGENDA_PUBLISHED" stays out of scope until a dedicated PR 2c if pursued at all (not blocking PR 14). |
+| 13 | `test-enhancement/bruno-audit-partners-api` | D.11: light audit + PCS `partner_meetings` entityType extension | ⬜ not started | — | **Local Bruno: 18/18 ✓** (verified 2026-05-26 post-#669). Plan's earlier "3/18 staging" figure was pre-#669 — staging needs re-verification once PR 670 merges. **Main outstanding deliverable: extend PCS cleanup endpoint with a `partner_meetings` entityType.** `partner_meetings` is a standalone table (no FK to partners), so today's `partners` entityType doesn't reach it via cascade. Bruno's `partner-meetings-api` collection currently leaves meetings behind on every run. Local DB audit (2026-05-26) found 2 real partner_meetings rows — explicitly preserved by the dev cleanup SQL. Implementation: option 1 from plan §B2 — `meeting_id` allowlist parameter on PCS cleanup endpoint. ~50 LOC + 1 integration test. |
+| 14 | `test-enhancement/bruno-gate-flip` | Section E: remove `continue-on-error`, prove rollback path | ⬜ not started — gated on **PR 670 merged + PR 6 (batched) + PR 11 + PR 13 all green ×2 on staging** | — | F1 deliberate-fail rollback exercise (workflow_dispatch with `enable_bruno_rollback: true` on a throwaway branch) is owed before the gate flip — should fire once PR 11 + PR 13 land and all collections go green on staging twice. |
+
+**Out-of-band PRs landed during this session** (not in the original 1-14 enumeration but tightly coupled to the staging-hardening work — Bruno failures surfaced them):
+
+| PR # | Branch | Scope | Status | Merged | Why it was needed |
+|------|--------|-------|--------|--------|------------------|
+| 665 | `fix/gateway-path-encoding-and-cache-control` | Gateway URI verbatim forwarding (no double-encode of `%40`) + upstream Cache-Control passthrough + CLAUDE.md Bruno `docs { }` guardrail. | ✅ merged | 2026-05-25 (`82ee9734` → `3d637915`) | Found by users-api/17 returning 401 on encoded-email DELETE (StrictHttpFirewall rejecting `%2540`) and users-api/20 failing Cache-Control assertion (gateway stripping upstream `public, max-age=86400`). Both blocked PR 5 from going green. |
+| 668 | `fix/bruno-runner-counter-set-e-trap` | Replace `((var++))` with `var=$((var+1))` in Bruno runner counters. | ✅ merged | 2026-05-25 (`62e77a13`) | After 11.F.1 fixed the role-token plumbing and admin-cleanup-api went 9/9 green for the first time, the runner aborted on `((passed++))` returning 0 under `set -e` BEFORE the summary block. GitHub recorded `outcome=failure`, `tag-stable-on-success` skipped, staging-stable never promoted. Invisible while admin-cleanup-api had real failures. |
+| 669 | `fix/remove-dead-staging-batbern-ch-domain` | Retire dead `staging.batbern.ch` / `api.staging.batbern.ch` / `cdn.staging.batbern.ch` domains from test scaffolding (73 files). | ✅ merged | 2026-05-25 (`1a6e2ce2`) | Bruno's `collection.bru:10` set `Origin: https://staging.batbern.ch` for every request; the deployed gateway correctly rejected the defunct origin → 14 `should have CORS headers` assertions failed on staging (7 file-upload + 7 companies). Substitutes to `www.batbern.ch` / `api.batbern.ch` / `cdn.batbern.ch`; dedupes the resulting duplicate entries in gateway CORS allow-lists and CSP. **Two apex-domain regressions slipped past auto-merge** (claude-review flagged them; auto-merge fired anyway because PR-review-count is 0): `RateLimitingFilter.java:155` + `TurnstileVerificationFilter.java:199` ended up with `origin.equals("https://www.batbern.ch") \|\| origin.equals("https://www.batbern.ch")` instead of `... \|\| origin.equals("https://batbern.ch")`. Browsers hitting the apex pass CORS (CorsHandler is correct) but get rejected by rate-limit + Turnstile filters. Hotfix bundled into PR 2. Minor: duplicate Swagger UI server entry (staging label points to same URL as production) not fixed — acceptable wording-stale post-consolidation. |
+
+Plus PR **#667** (`feature/11-f-1-magic-link-teardown`, Epic 11.F.1) merged 2026-05-25 (`27a990ca`) — separate epic but contained commit `bce55b12 fix(ci): honor pre-set role env vars in run-bruno-tests.sh` which unblocked the role-token plumbing in CI.
 
 **Status legend:** ⬜ not started · 🟡 in progress · 🔵 in review · ✅ merged · 🔴 blocked
 
@@ -75,6 +88,8 @@ PR 1 ships:
 The script runs exactly once when PR 1 deploys. Never re-runs.
 
 ## Local pre-flight findings — 2026-05-25 (users-api)
+
+> **Status (2026-05-25 end-of-session): ✅ ALL FOUR FINDINGS RESOLVED.** F1, F2, F3, F4 fixes shipped in PR #666 (`a05dce90`) — see PR 5 row in the progress table. F2's encoded-URL 401 sub-cause turned out to be a separate gateway bug (URI double-encoding) and was fixed in out-of-band #665. users-api now reports 35/35 ✓ on staging post-#666 merge (verified). The detailed analysis below is retained as historical context for anyone debugging similar patterns in PR 2's split events-api collections or PR 13's partners-api.
 
 Ran `./scripts/ci/run-bruno-tests.sh development --collection users-api` after fix-commit `74b8cd8a` (which moved 3 `#`-prefixed comment blocks into `docs { ... }` blocks so Bruno's parser would stop skipping the files). Parser warnings are gone — but the now-parseable files surfaced 3 genuine test failures, plus the run surfaced 2 other pre-existing failures that the previously-skipped files were masking. **Result: 31 requests, 28 passed, 3 failed.** Full log: `/tmp/bruno-users-api.log` (locally — not committed).
 
@@ -157,6 +172,137 @@ The four failures together demonstrate a class of test-design bug this plan shou
 
 Neither (1) nor (2) is mandatory for PR 5 — they're nice-to-have hardening for D. (3) is now binding for PR 5 specifically because F4 demonstrates the exact failure mode it would have prevented. Captured here so the PR 5 auditor (or whoever later notices similar patterns in another collection) doesn't have to re-derive it.
 
+## Local pre-flight findings — 2026-05-26 (speaker-pool-api) — PR 11 redesign scope
+
+> **Status (2026-05-26):** Discovered during PR 2 local verification — `speaker-pool-api` lands at **61/78 tests** locally (17 failing). The failures are not test-infrastructure bugs; they're the consequence of the **Unified Speaker Workflow refactor (Epic 11 / ADR-009)** that landed across PRs 11.B.1 → 11.F.1 and changed the API contract underneath these tests. The tests were written against the old Story 5.4 + 6.0a contract and have been silently red on staging since Epic 11 merged. PR 11's "light audit" framing in §D is therefore **insufficient for speaker-pool-api specifically** — it needs a workflow-aware redesign of the 35–66 test chain. Estimated effort: 2–3× a normal audit-pass PR.
+
+### Root cause — the new state machine (ADR-009 §0.1)
+
+The legacy workflow accessed via `PUT /events/{code}/speakers/{id}/status` looked like:
+
+```
+IDENTIFIED → CONTACTED → READY → ACCEPTED → (CONTENT_SUBMITTED → QUALITY_REVIEWED)
+                                 ↘ OVERFLOW (excess speakers)
+                                 ↘ WITHDREW (dropouts)
+```
+
+ADR-009 replaces it with:
+
+```
+IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED
+                       ↑                                                              ↓
+                       │                                                              ↓
+            POST /promote                                              (any state) → DECLINED
+            (User provisioning gate)
+```
+
+Key changes that break the existing tests:
+
+1. **`READY` is now a provisioning gate.** Transition INTO `READY` is unreachable via `PUT /status` — only via `POST /api/v1/events/{code}/speakers/{speakerId}/promote` (Story 11.D.1). The PUT endpoint explicitly throws `ReadyRequiresPromoteException` → 400 with code `READY_REQUIRES_PROMOTE_ENDPOINT`. See `services/event-management-service/src/main/java/ch/batbern/events/exception/ReadyRequiresPromoteException.java`.
+2. **`INVITED` is a new state between `READY` and `ACCEPTED`.** Formal invitation step. `READY → ACCEPTED` directly is no longer a valid transition.
+3. **`OVERFLOW` is removed.** Slot capacity is enforced at the `READY → INVITED` gate (ADR-009 §0.7) — `count(ACCEPTED) + count(INVITED) >= max_slots` blocks the transition. Excess speakers stay in `READY` indefinitely.
+4. **`WITHDREW` is removed.** Replaced by `DECLINED`, the single terminal state, reachable from any non-terminal state.
+
+### Failure categorisation
+
+The 17 failing assertions in `speaker-pool-api` fall into four categories:
+
+| # | Category | Example test(s) | Why it fails post-Epic-11 | Fix for PR 11 |
+|---|----------|-----------------|--------------------------|---------------|
+| A | PUT /status → READY blocked by design | `38-update-speaker-status-to-ready.bru` | Returns 400 with `READY_REQUIRES_PROMOTE_ENDPOINT` instead of the old 200. Test asserts `currentStatus: READY`, gets `undefined`. | Delete the test OR rewrite to assert the 400 + error code (documents the design constraint). The promote path is already covered by tests 45–47. |
+| B | Chained tests assume sequential PUT advancement | `39-update-speaker-status-to-accepted` (and 41 / 42 which read history) | Speaker is stuck at CONTACTED because test 38 failed. PUT CONTACTED → ACCEPTED is invalid (must traverse READY → INVITED → ACCEPTED). | Restructure the 35–42 chain to use the modern path: PUT to CONTACTED, then `POST /promote` to READY, then PUT INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED. |
+| C | Slot capacity tests assume OVERFLOW | `53-speaker-workflow-slot-capacity-409`, `54-send-invitation-slot-capacity-409` | OVERFLOW state was removed. The new gate fires at READY → INVITED. Tests may be asserting the wrong transition point or the wrong exception class. | Verify the test exercises the capacity check at READY → INVITED and that the error code matches the current `SlotCapacityReachedException` shape. |
+| D | Workflow exception messages drifted | Tests asserting `'Invalid state transition for speaker …' to include 'ACCEPTED'` | The state machine emits different messages now. Asserting on text is brittle. | Switch assertions to error codes (machine-readable) rather than message text. |
+
+### Estimated rework
+
+| Action | Test files | LOC |
+|--------|------------|-----|
+| Delete or rewrite category-A test (PUT → READY) | 1 (`38-`) | ~20 |
+| Restructure 35–42 to thread through `POST /promote` | 8 (`35-` through `42-`) | ~150 |
+| Verify slot-capacity tests against new gate | 2 (`53-`, `54-`) | ~30 |
+| Update message-based assertions to code-based | 2–3 (across category D) | ~30 |
+| **Total redesign** | **~12 files touched** | **~230 LOC** |
+
+This is 2–3× a normal audit-pass PR. PR 11 should be planned with that in mind — and a heads-up to whoever picks it up that this is a redesign, not a tune-up.
+
+### Recommended PR 11 sequencing
+
+1. **Fix the fixture chain first** — currently 35 (add to pool) → 36 (list) → 37 (PUT CONTACTED) is solid. 38 is the breakage point. Build forward from 37 by inserting a new `38-promote-speaker-to-ready.bru` that calls `POST /promote` (replacing the broken PUT /status pattern).
+2. **Renumber from there** — old 38 becomes 38a (deleted) or 38b (rewritten as a negative test asserting the 400).
+3. **Insert new invitation step** — between READY and ACCEPTED add `39-invite-speaker.bru` that calls the appropriate state-transition endpoint. Old test 39 (PUT to ACCEPTED) becomes 40, asserting INVITED → ACCEPTED instead of READY → ACCEPTED.
+4. **Verify slot capacity at the new gate** — old tests 53 / 54 already point at slot capacity but may exercise the wrong transition; verify and adjust.
+5. **Run locally green ×2** per Section D.5, then PR.
+
+The 11.D.1 + 11.B.2 references in the test names indicate parts of this work were already started during Epic 11 — but only the `POST /promote` happy-path tests (45–47) were added; the legacy `PUT /status` chain wasn't pruned. PR 11 closes that loop.
+
+## Next: batched audit-pass closeout (PR 6) — for the fresh-session pickup
+
+> **Status (2026-05-26):** scoped, ready to start. Estimated ~2 hours. Six collections in one PR. Branch name: `test-enhancement/bruno-audit-batched-closeout`. Off `develop` AFTER PR 670 merges (do not stack on PR 670 — wait for clean baseline). All file paths and Story IDs in this section are post-PR-670 layout.
+
+### Why one batched PR instead of 5 separate ones
+
+The original §D rollout had one audit-pass PR per collection (PRs 6, 7, 8, 9, 10, 12). PR 670 ended up shipping the heaviest item from each (step 3: canonical `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` hooks) plus fixture-event setup where needed. That left only steps 2 + 4 from the §D checklist as actual audit work — and those are 1–5-line edits per collection. Six tiny PRs would be ceremony; one batched PR is cleaner.
+
+speaker-pool-api is NOT in this batch — it's PR 11's redesign. speaker-portal-api isn't in the original §D rollout (dev-only) and its 4 cascade failures are the same Epic 11 root cause as PR 11, so PR 11 fixes them too.
+
+### Per-collection action list
+
+**tasks-api** (was PR 6; this is the only collection that genuinely needs new hook files):
+1. Replace `00-create-test-event.bru` + `99-cleanup-test-event.bru` with canonical `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` calling `POST {{baseUrl}}/admin/test-fixtures/ems/cleanup` with `entityType=events, prefix=BRUNO-TEST-` (status assertion `oneOf([200, 204, 404])` per §B3).
+2. Add `00b-fixture-event.bru` + `98-delete-fixture-event.bru` mirroring PR 670's sessions-api pattern.
+3. **Audit-step 2** — normalize fixture event_code to `BRUNO-TEST-{ts}` if the create-event endpoint accepts a client-supplied `eventCode` field (investigate; if not, document the gap and leave server-generated `BATbern{N}`).
+4. **Audit-step 4** — for any DELETE-tests, add an immediate GET that asserts 404.
+
+**events-crud-api** (was PR 9):
+1. **Audit-step 2** — same investigation as tasks-api above. Today `03-create-event.bru` sends `eventNumber` only; server generates `BATbern{N}`. Determine whether the API accepts `eventCode` in the body; if yes, normalize to `BRUNO-TEST-{ts}` so the §B3 cleanup-prefix sweep stops being a no-op. If no, file as plan §"Risks to track" item and skip the normalization for events.
+2. **Audit-step 4** — `29-delete-event.bru` asserts 204. Append `29a-verify-event-deleted.bru` doing `GET /events/{{createdEventCode}}` → 404.
+
+**event-topics-api** (was PR 8):
+1. **Audit-step 2** — topics already canonical (`bruno-test-topic-{ts}`) ✓. Event fixture (`30a-`) uses the same `BATbern{N}` shape — see the events-crud item above.
+2. **Audit-step 4** — `67-cleanup-topic-test-event.bru` does DELETE. Append `67a-verify-event-deleted.bru` → 404. Topics aren't currently deleted-then-verified — consider adding `34a-verify-topic-still-attached.bru` if the topic-selection flow leaves residue worth checking.
+
+**sessions-api** (was PR 10):
+1. **Audit-step 2** — `session_slug` is server-generated from session title? Verify in `01-create-session.bru` (search for any `slug` field in request vs response). If client can supply, normalize to `bruno-test-session-{ts}`.
+2. **Audit-step 4** — `11-delete-session.bru` asserts 204. Append `11a-verify-session-deleted.bru` → 404. (Already-fixed by PR 670: test 21 `presentationTitle` stale assertion.)
+
+**event-full-workflow-api** (was PR 12):
+1. **Audit-step 2** — fixture events use `BATbern{N}` — same as events-crud item.
+2. **Audit-step 4** — `97a-delete-workflow-fixture-event.bru` accepts `[204, 404, 409]`. Append `97c-verify-workflow-event-deleted.bru` → 404 (only when previous DELETE returned 204; skip when 409 because the event still exists by design).
+3. **Optional out-of-scope**: registrations CRUD against an event in `REGISTRATION_OPEN` state — keep deferred to a hypothetical PR 2c. Not blocking PR 14.
+
+### Verification
+
+Run each collection twice locally per §D.5:
+
+```bash
+make dev-native-up  # ensure all services running (EMS may need flywayRepair on V86)
+for c in tasks-api events-crud-api event-topics-api sessions-api event-full-workflow-api; do
+  ./scripts/ci/run-bruno-tests.sh development --collection "$c"
+  ./scripts/ci/run-bruno-tests.sh development --collection "$c"   # second run = idempotency check
+done
+```
+
+Expected: all five green ×2 (pre-existing local-dev baseline post-PR-670: events-crud 28/28, event-topics 24/24, sessions 57/57, event-full-workflow 44/44; tasks-api 25/25). Don't open the PR if any drift.
+
+### What's NOT in PR 6 scope (explicit non-goals)
+
+- **speaker-pool-api** — PR 11 redesign (see §"Local pre-flight findings — 2026-05-26 (speaker-pool-api)" addendum).
+- **speaker-portal-api** — fixes ride with PR 11 (same Epic 11 root cause).
+- **partners-api** — PR 13 (PCS `partner_meetings` entityType extension).
+- **The Section D step 1 "verbs vs OpenAPI" gap-documentation** — already covered by the PR 2a tests 08/09 + the existing per-collection inline comments. No separate sweep needed.
+- **Cross-collection prefix normalization on event_code** — IF the API doesn't accept client-supplied eventCode, this entire item drops to a "plan §Risks to track" entry (not a PR 6 blocker).
+
+### Definition of done for PR 6
+
+1. ~10 small `.bru` files added (~7 verify-deleted-404 stubs + tasks-api hook rewrite).
+2. Each of the 5 collections green ×2 locally.
+3. Plan-doc rows for PRs 6, 7, 8, 9, 10, 12 updated to ✅ merged with this PR's SHA.
+4. Section §D step 2 "Normalize prefix" item gets a finding-summary line noting which collections could and couldn't normalize event_code.
+5. Open PR with `Refs: docs/plans/bruno-staging-hardening.md PR #6` per convention.
+
+After PR 6 merges, only **PR 11 (speaker-pool redesign) + PR 13 (partner_meetings entityType) + PR 14 (gate flip + F1 deliberate-fail exercise)** remain before tag-stable-on-success can fire.
+
 ## Context
 
 Staging deploys at `https://api.batbern.ch` (production account 188701360969 — "staging" is a CDK envName, not a separate environment) keep breaking after Epic 11 despite all CI tests being green. Root cause: the Bruno API contract tests in `bruno-tests/` are wired into `.github/workflows/deploy-staging.yml` as **post-deploy warnings only** (`continue-on-error: true` at line 1226). They don't gate the deploy, they don't trigger rollback, and `bruno-tests/environments/staging.bru` even points to a nonexistent host (`api.staging.batbern.ch` instead of `api.batbern.ch`) so most of them haven't actually executed against real staging in months.
@@ -189,10 +335,14 @@ Parent branch: `test-enhancement/bruno-staging-hardening` off `develop`.
 
 | # | Branch | Scope | Bruno gate state after merge |
 |---|--------|-------|------------------------------|
-| 1 | `test-enhancement/bruno-staging-hardening-infra` | A + B below. Cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms, Bruno-failure rollback job wired (still `continue-on-error: true`). One-time SQL pre-cleanup script for the 17 legacy rows. ~~Server-side `@Pattern` validation fix on `companies.name`~~ — deferred, see "Bugs confirmed by audit". Plan doc lands here. | warning |
-| 2 | `test-enhancement/bruno-events-api-split` | C: decompose events-api into 6 collections | warning |
-| 3-13 | `test-enhancement/bruno-audit-{entity}` | D: light audit pass on each collection in dependency order. One PR per collection. | warning |
-| 14 | `test-enhancement/bruno-gate-flip` | E: remove `continue-on-error`. Prove rollback works with deliberate-fail test. | **blocking + auto-rollback** |
+| 1 ✅ | `test-enhancement/bruno-staging-hardening-infra` | A + B: cleanup endpoints, runner flags, ECR `staging-stable` tag, deployment alarms (deferred), Bruno-failure rollback job (still `continue-on-error: true`). One-time SQL pre-cleanup script. Plan doc lands here. | warning |
+| 2 + 2a + 2b + 2c 🔵 | `test-enhancement/bruno-events-api-split` (PR 670, 10 commits) | C mechanical-only + event-types-api tests + event-full-workflow state-machine walk + apex-domain CORS hotfix + 405 cross-service handler + dev-DB cleanup SQL + 4 local-dev test fixes. **Awaiting GitHub Actions recovery (major outage as of 2026-05-26).** | warning |
+| 3 + 4 + 5 ✅ | `test-enhancement/bruno-audit-{file-upload,companies,users}-api` | D.1 + D.2 + D.3 bundled into #666 with F4 fixes. | warning |
+| 6 ⬜ NEXT | `test-enhancement/bruno-audit-batched-closeout` | **Batched §D steps 2 + 4 across tasks-api + 5 new collections from PR 2** (events-crud, event-topics, sessions, event-full-workflow; speaker-pool excluded — PR 11). See §"Next: batched audit-pass closeout (PR 6)" for action list. | warning |
+| 7-10 + 12 | _absorbed into PR 6 (batched)_ — see those rows in the Progress log table | | warning |
+| 11 ⬜ | `test-enhancement/bruno-audit-speaker-pool-api` | D.9 **redesign** per ADR-009 — ~12 files, ~230 LOC. Includes the cascade fix for speaker-portal-api's 4 Epic 11 failures. | warning |
+| 13 ⬜ | `test-enhancement/bruno-audit-partners-api` | D.11 + PCS `partner_meetings` entityType extension (~50 LOC + 1 integration test). | warning |
+| 14 ⬜ | `test-enhancement/bruno-gate-flip` | E: remove `continue-on-error`. F1 deliberate-fail exercise on a throwaway branch. Gated on PR 6 + 11 + 13 all green ×2 on staging. | **blocking + auto-rollback** |
 
 ## A. Infrastructure foundation (PR 1)
 
@@ -307,7 +457,7 @@ Bruno orders by filename → `00-` first, `99-` last. Two-layer defense: `run-br
 
 ## C. events-api decomposition proposal (PR 2)
 
-The only collection that genuinely needs splitting. Today `bruno-tests/events-api/` is 67 sequential tests covering 6 conceptually-distinct entity domains. Proposed split:
+The only collection that genuinely needs splitting. The pre-PR-2 `bruno-tests/events-api/` was 60 active tests (+ 3 disabled) covering 6 conceptually-distinct entity domains. Proposed split:
 
 | New collection | Source tests | New tests needed | Auth |
 |----------------|--------------|------------------|------|
@@ -320,7 +470,19 @@ The only collection that genuinely needs splitting. Today `bruno-tests/events-ap
 
 `speaker-portal-api` stays unchanged and dev-only. After the split, `bruno-tests/events-api/` directory ceases to exist (no overlap with the new collections).
 
-The `speaker-pool-api` collection is the hairy one — its cleanup spans events service (pool entries) + CUMS (provisioned Users). Make sure CUMS cleanup endpoint from PR 1 supports the cross-service prefix wipe before merging PR 2.
+### PR 2 actual scope — mechanical-only (decided 2026-05-26)
+
+PR 2 ships **only the mechanical move + cleanup hooks**, not the net-new tests for `event-types-api` and `event-full-workflow-api`. Two follow-up PRs land the net-new content:
+
+| Sub-PR | Scope | Status |
+|--------|-------|--------|
+| PR 2 (this one) | Move all 60 active `.bru` files + 3 `.disabled` files into 4 real collections (events-crud, event-topics, sessions, speaker-pool). Seed event-full-workflow-api with tests 12/13/16 (+ 13a.disabled). Add `00-pretest-cleanup.bru` + `99-posttest-cleanup.bru` (plus `00a-`/`99a-` topic sweeps for event-topics-api) for all 5 active collections. Create empty `event-types-api/` (README only — no .bru files yet). Update runner's `collections=()` array. Remove `bruno-tests/events-api/`. | 🟡 in progress |
+| PR 2a | event-types-api net-new tests: GET /event-types + idempotent PUT + documenting the absent POST/DELETE as 405 or contract-absent. ~3–5 tests. | ⬜ not started |
+| PR 2b | event-full-workflow-api net-new tests: advance through all 8 workflow states + registrations CRUD against a published event. ~10+ tests, longest collection. | ⬜ not started |
+
+**Why the split:** writing the 8-state advancement test set is its own design problem (state-machine ordering, valid-transition matrix, invalid-transition rejections, post-publish-only registration windows) — pulling it out of PR 2 lets the mechanical move land fast and unblock PRs 7–12 audit work on the 4 collections that did get full content.
+
+The `speaker-pool-api` collection is the hairy one — its cleanup spans events service (pool entries) + CUMS (provisioned Users). PR 2 ships only the events-side hook (BRUNO-TEST-* cascade clears speaker_pool); the CUMS side is gated on a small backend extension that's now a documented TODO in `speaker-pool-api/99-posttest-cleanup.bru`'s docs block. Two paths for PR 11 (D.9 speaker-pool audit) — widen CUMS USERS regex to accept `promote.e2e.`, OR change tests 45–47 to use `firstName=Bruno, lastName=Test` so the auto-generated username matches the existing `bruno.test.` prefix. Either is ~5–10 LOC.
 
 ## D. Light audit pass on each collection (PRs 3–13)
 
