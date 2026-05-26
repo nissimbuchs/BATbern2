@@ -1363,34 +1363,24 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Bruno API contract tests run as a separate job so that downstream jobs
   # (tag-stable-on-success / rollback-on-bruno-failure) can react to a clean
-  # job-level outcome instead of an inline `continue-on-error: true` step.
+  # job-level result.
   #
-  # `continue-on-error: true` is kept at the JOB level until PR 14's gate flip
-  # so a Bruno failure does not fail the workflow during the audit-pass weeks
-  # (PRs 2-13 in docs/plans/bruno-staging-hardening.md). Downstream jobs still
-  # see the actual `needs.bruno-tests.result` value, so the rollback-on-failure
-  # job can fire when explicitly enabled.
+  # GATE FLIPPED in PR 14 (plan §E): the "Run Bruno" step no longer carries
+  # `continue-on-error: true`, so a Bruno failure now fails THIS job and the
+  # deploy workflow. Downstream jobs gate on `needs.bruno-tests.result`:
+  #   • tag-stable-on-success promotes staging-stable only when result == 'success';
+  #   • rollback-on-bruno-failure (with `always()`) rolls back when result == 'failure'.
+  # The `always()` on the rollback job is required: once Bruno can fail the
+  # bruno-tests job, a dependent job without `always()` would be SKIPPED rather
+  # than run on that failure.
   # ─────────────────────────────────────────────────────────────────────────────
   bruno-tests:
     name: Bruno API contract tests
     needs: deploy-to-staging
     runs-on: ubuntu-latest
-    # NOTE: continue-on-error sits at the STEP level (on the "Run Bruno" step)
-    # rather than the job level. Job-level continue-on-error overrides the
-    # workflow-failure semantics but the exact effect on `needs.<job>.result`
-    # is not authoritatively documented and behaved inconsistently across
-    # tests. Capturing the raw outcome as a job output via `steps.<id>.outcome`
-    # is unambiguous: downstream jobs gate on
-    # `needs.bruno-tests.outputs.outcome` and the wiring works regardless of
-    # the job-level `result` value.
-    #
-    # PR 14 (gate flip): delete the `continue-on-error: true` line on the
-    # "Run Bruno" step. The job-output wiring stays in place.
     permissions:
       id-token: write
       contents: read
-    outputs:
-      outcome: ${{ steps.run-bruno.outcome }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -1481,7 +1471,8 @@ jobs:
 
       - name: Run Bruno API contract tests
         id: run-bruno
-        continue-on-error: true  # ← REMOVE in PR 14 to flip the gate
+        # GATE FLIPPED (PR 14): no `continue-on-error` — a Bruno failure now fails
+        # this job, fails the deploy workflow, and triggers rollback-on-bruno-failure.
         env:
           AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
           ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
@@ -1504,7 +1495,7 @@ jobs:
         run: |
           echo "Bruno step outcome: ${{ steps.run-bruno.outcome }}"
           if [ "${{ steps.run-bruno.outcome }}" = "failure" ]; then
-            echo "::warning::Bruno tests failed — downstream rollback job will fire if enable_bruno_rollback=true"
+            echo "::error::Bruno tests failed — this job fails the deploy and rollback-on-bruno-failure will auto-roll-back to staging-stable"
           fi
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -1515,11 +1506,11 @@ jobs:
   tag-stable-on-success:
     name: Promote staging-current → staging-stable
     needs: [deploy-to-staging, bruno-tests]
-    # Gate on the explicit Bruno-step outcome captured as a job output.
-    # Avoids ambiguity with `needs.bruno-tests.result` when `continue-on-error: true`
-    # is on the Bruno step (the job's `result` could be `success` even though
-    # the step itself failed).
-    if: needs.bruno-tests.outputs.outcome == 'success'
+    # Gate flipped (PR 14): `continue-on-error` is gone from the Bruno step, so the
+    # bruno-tests job `result` now authoritatively reflects Bruno. Promote only on
+    # success; a Bruno failure fails bruno-tests and (with no `always()` here) skips
+    # this promotion, leaving staging-stable pointed at the last known-good deploy.
+    if: needs.bruno-tests.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1542,26 +1533,19 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Bruno red ⇒ auto-rollback to staging-stable.
   #
-  # IMPORTANT: gated behind `inputs.enable_bruno_rollback` until the PR 14 gate
-  # flip. This means develop's normal Bruno failures during the audit-pass weeks
-  # (PRs 2-13) do NOT auto-roll-back production. F1's deliberate-fail exercise
-  # sets `enable_bruno_rollback: true` via `workflow_dispatch` on a feature
-  # branch to prove the rollback path end-to-end before flipping the gate.
+  # GATE FLIPPED (PR 14): rollback now fires on EVERY Bruno failure — the
+  # `inputs.enable_bruno_rollback` gate that protected the audit-pass weeks
+  # (PRs 2-13) is removed. `always()` is required so this job still evaluates
+  # when its `bruno-tests` dependency fails (a failed `needs` would otherwise
+  # skip the job before the `if:` is checked).
   #
-  # PR 14 simplifies the `if:` to just `needs.bruno-tests.result == 'failure'`
-  # (and also removes `continue-on-error: true` on the bruno-tests job).
+  # The `enable_bruno_rollback` workflow input is retained only for the F1
+  # deliberate-fail exercise's `workflow_dispatch` runs on throwaway branches.
   # ─────────────────────────────────────────────────────────────────────────────
   rollback-on-bruno-failure:
     name: Auto-rollback after Bruno failure
     needs: [deploy-to-staging, bruno-tests]
-    # Gate on the explicit Bruno-step outcome captured as a job output.
-    # Using `needs.bruno-tests.outputs.outcome` (raw step outcome) rather than
-    # `needs.bruno-tests.result` (job conclusion), because `continue-on-error: true`
-    # on the Bruno step can leave the job's `result` as 'success' even though
-    # the step itself failed.
-    if: >-
-      needs.bruno-tests.outputs.outcome == 'failure' &&
-      inputs.enable_bruno_rollback == true
+    if: ${{ always() && needs.bruno-tests.result == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
