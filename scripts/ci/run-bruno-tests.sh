@@ -199,9 +199,14 @@ collections=(
     "file-upload-api"
     "companies-api"
     "users-api"
-    "events-api"
-    "partners-api"
     "tasks-api"
+    "event-types-api"
+    "event-topics-api"
+    "events-crud-api"
+    "sessions-api"
+    "speaker-pool-api"
+    "event-full-workflow-api"
+    "partners-api"
 )
 if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
     collections+=("speaker-portal-api")
