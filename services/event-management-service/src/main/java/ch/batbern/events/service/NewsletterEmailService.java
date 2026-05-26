@@ -972,7 +972,12 @@ public class NewsletterEmailService {
     }
 
     private String formatEventTime(Event event, boolean isDe) {
-        return isDe ? "ab 16:00 Uhr" : "from 4:00 PM";
+        // Resolve the real start time (sessions → event-type config → fallback) via the
+        // shared EventTimeResolver — the same source as the registration email and the
+        // .ics attachment. Previously hardcoded to 16:00, which mis-stated every event
+        // whose actual start differs (e.g. afternoon events at 13:00 — BATbern59 incident).
+        String startTime = eventTimeResolver.formatStartTime(event);
+        return isDe ? "ab " + startTime + " Uhr" : "from " + startTime;
     }
 
     private String computeFinalStatus(int sentCount, int failedCount) {

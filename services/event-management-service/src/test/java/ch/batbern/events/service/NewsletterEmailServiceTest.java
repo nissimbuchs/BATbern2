@@ -199,6 +199,43 @@ class NewsletterEmailServiceTest {
         assertThat(vars.get("registrationLink")).isEqualTo("https://batbern.ch/register/BATbern58");
     }
 
+    // ── buildVariables: eventTime ─────────────────────────────────────────────
+    // Regression for the BATbern59 incident: the newsletter showed a hardcoded
+    // "16:00" instead of the event's real start time (13:00, resolved from the
+    // published agenda / afternoon event-type config). eventTime MUST come from
+    // EventTimeResolver — the same source used by the registration email and the
+    // .ics attachment — never a literal.
+
+    @Test
+    @DisplayName("buildVariables: eventTime is resolved from EventTimeResolver, not hardcoded (DE)")
+    void buildVariables_eventTime_de_usesResolverStartTime() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
+
+        assertThat(vars.get("eventTime")).isEqualTo("ab 13:00 Uhr");
+    }
+
+    @Test
+    @DisplayName("buildVariables: eventTime is resolved from EventTimeResolver, not hardcoded (EN)")
+    void buildVariables_eventTime_en_usesResolverStartTime() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "en", false, "");
+
+        assertThat(vars.get("eventTime")).isEqualTo("from 13:00");
+    }
+
+    @Test
+    @DisplayName("buildVariables: eventTime never falls back to the old hardcoded 16:00")
+    void buildVariables_eventTime_doesNotHardcodeSixteenHundred() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
+
+        assertThat(vars.get("eventTime")).doesNotContain("16:00").doesNotContain("4:00 PM");
+    }
+
     // ── buildVariables: currentYear ───────────────────────────────────────────
 
     @Test
