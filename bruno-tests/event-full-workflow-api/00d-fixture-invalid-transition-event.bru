@@ -1,0 +1,63 @@
+meta {
+  name: Fixture — third event held in CREATED for invalid-transition rejection tests
+  type: http
+  seq: 0.7
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now() + 2;
+  const eventNumber = ((now + 2) % 1000000) + 500000;
+
+  bru.setVar("invalidTransitionTestTimestamp", now);
+  bru.setVar("invalidTransitionEventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Bruno Invalid Transition Holdout Event {{invalidTransitionTestTimestamp}}",
+    "eventNumber": {{invalidTransitionEventNumber}},
+    "date": "2026-07-15T09:00:00Z",
+    "registrationDeadline": "2026-07-01T23:59:59Z",
+    "venueName": "Invalid Transition Test Venue",
+    "venueAddress": "Test Address 7, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Event held in CREATED state to validate invalid-transition rejection (PR 2b)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("invalid-transition holdout event created", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().workflowState).to.equal("CREATED");
+  });
+
+  test("save invalidTransitionEventCode for skip-state tests", function() {
+    bru.setVar("invalidTransitionEventCode", res.getBody().eventCode);
+  });
+}
+
+docs {
+  PR 2b: held in CREATED state so tests 18a, 18b can verify the state
+  machine rejects illegal forward jumps (e.g. CREATED → ARCHIVED). A
+  dedicated holdout event is needed because both the seed 00b event and
+  the workflow 00c event get mutated during the run (00b via the publish
+  test, 00c via the override walk to ARCHIVED).
+}

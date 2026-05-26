@@ -1,0 +1,41 @@
+meta {
+  name: Advance workflow event AGENDA_PUBLISHED → EVENT_LIVE
+  type: http
+  seq: 17.5
+}
+
+put {
+  url: {{baseUrl}}/events/{{workflowEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "EVENT_LIVE",
+    "overrideValidation": true,
+    "overrideReason": "PR 2b state-machine walk"
+  }
+}
+
+tests {
+  test("transition succeeds with 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response reflects target state", function() {
+    expect(res.getBody().workflowState).to.equal("EVENT_LIVE");
+  });
+}
+
+docs {
+  Step 5/7 of the 8-state walk. Per the EventWorkflowState description
+  in the OpenAPI spec: "The scheduler transitions AGENDA_PUBLISHED
+  directly to EVENT_LIVE on event day." This test verifies the manual
+  transition (override path) works regardless of the scheduler's
+  automatic path.
+}

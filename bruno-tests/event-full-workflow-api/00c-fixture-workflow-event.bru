@@ -1,0 +1,68 @@
+meta {
+  name: Fixture — second event for state-machine walk
+  type: http
+  seq: 0.6
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now() + 1;
+  const eventNumber = ((now + 1) % 1000000) + 700000;
+
+  bru.setVar("workflowTestTimestamp", now);
+  bru.setVar("workflowEventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Bruno Workflow State Machine Event {{workflowTestTimestamp}}",
+    "eventNumber": {{workflowEventNumber}},
+    "date": "2026-06-15T09:00:00Z",
+    "registrationDeadline": "2026-06-01T23:59:59Z",
+    "venueName": "Workflow Walk Venue",
+    "venueAddress": "Test Address 6, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Event walked through all 8 workflow states (PR 2b)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("workflow fixture event created", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().workflowState).to.equal("CREATED");
+  });
+
+  test("save workflowEventCode for state-machine tests", function() {
+    bru.setVar("workflowEventCode", res.getBody().eventCode);
+  });
+}
+
+docs {
+  PR 2b (plan §C event-full-workflow-api): second fixture event used by
+  the state-machine walk (17a-17g). Distinct from the 00b fixture event
+  that the seed tests 12/13/16 attach to — keeps the two test paths
+  isolated so 16-publish-event can run independently from the override
+  walk to ARCHIVED.
+
+  The 7 transition tests use overrideValidation:true to bypass the
+  business rules (e.g. "needs minimum speakers" for SLOT_ASSIGNMENT,
+  "needs accepted speakers" for AGENDA_PUBLISHED). Those rules are
+  owned by sessions-api and speaker-pool-api collections.
+}

@@ -1,0 +1,40 @@
+meta {
+  name: Invalid skip — CREATED → EVENT_LIVE rejected without override
+  type: http
+  seq: 18.2
+}
+
+put {
+  url: {{baseUrl}}/events/{{invalidTransitionEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "EVENT_LIVE"
+  }
+}
+
+tests {
+  test("state machine rejects the illegal jump with 400 or 422", function() {
+    expect([400, 422]).to.include(res.getStatus());
+  });
+
+  test("error body identifies the failure", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("object");
+    expect(body.message || body.error).to.be.a("string");
+  });
+}
+
+docs {
+  PR 2b: a different illegal jump (skips 4 states instead of 6) — both
+  should reject the same way. Pairs with 18a to verify the rejection
+  isn't accidentally specific to ARCHIVED (e.g. ARCHIVED triggers the
+  archival cleanup branch, which has its own guards).
+}
