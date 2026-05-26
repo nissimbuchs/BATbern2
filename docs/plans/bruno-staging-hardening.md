@@ -23,8 +23,8 @@ This plan is **not** tracked as BMad stories — it's test infrastructure work +
 | 7 | `test-enhancement/bruno-audit-event-types-api` | D.5: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 8 | `test-enhancement/bruno-audit-event-topics-api` | D.6: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 9 | `test-enhancement/bruno-audit-events-crud-api` | D.7: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 10 | `test-enhancement/bruno-audit-sessions-api` | D.8: light audit (new collection from PR 2) | ⬜ not started | — | — |
-| 11 | `test-enhancement/bruno-audit-speaker-pool-api` | D.9: light audit (new collection from PR 2, cross-service cleanup) | ⬜ not started | — | — |
+| 10 | `test-enhancement/bruno-audit-sessions-api` | D.8: light audit (new collection from PR 2) | ⬜ not started | — | 1 pre-existing failure (2026-05-26 local): `21-assign-speaker-to-session.bru` expects `presentationTitle` in the response body but gets `null`. Request body sends `"presentationTitle": "Test Presentation on Modern Architecture"` but the server response omits or nulls it. Likely a contract drift — either the field was deprecated/moved post-Epic-11, the DTO mapper drops it, or the test was written against an aspirational shape. Investigate at audit time. |
+| 11 | `test-enhancement/bruno-audit-speaker-pool-api` | D.9: ~~light audit~~ **workflow-aware redesign** (new collection from PR 2, cross-service cleanup) | ⬜ not started — **scope upgrade** | — | **Not a light audit — ~12 files touched, ~230 LOC.** Pre-Epic-11 tests in this collection use `PUT /status` to reach `READY`, which is now blocked by design per ADR-009 (READY is a provisioning gate, only reachable via `POST /promote` — Story 11.D.1). 17 failing assertions categorised in 4 buckets — see "Local pre-flight findings — 2026-05-26 (speaker-pool-api)" above. Also includes the deferred CUMS `bruno.test.` / `promote.e2e.` regex widening for cross-service user cleanup. |
 | 12 | `test-enhancement/bruno-audit-event-full-workflow-api` | D.10: light audit (new collection from PR 2) | ⬜ not started | — | — |
 | 13 | `test-enhancement/bruno-audit-partners-api` | D.11: light audit | ⬜ not started | — | **TODO**: extend PCS cleanup endpoint with a `partner_meetings` entityType — discovered 2026-05-25 during PCS cleanup endpoint impl. `partner_meetings` is a standalone table (no FK to partners), so today's `partners` entityType doesn't reach it via cascade. Bruno's `partner-meetings-api` collection currently leaves meetings behind on every run. See "Deferred — partner_meetings cleanup coverage" below. partners-api currently 3/18 on staging. |
 | 14 | `test-enhancement/bruno-gate-flip` | Section E: remove `continue-on-error`, prove rollback path | ⬜ not started — gated on events-api + partners-api going green (PRs 2, 7-13). | — | — |
@@ -170,6 +170,70 @@ The four failures together demonstrate a class of test-design bug this plan shou
 3. **Forbid tests that write rows to a *real* user's tables (e.g. additional emails, profile pictures) without an unconditional posttest cleanup.** Pair every such create with a `99-` posttest sweep OR rewrite to use a disposable test user.
 
 Neither (1) nor (2) is mandatory for PR 5 — they're nice-to-have hardening for D. (3) is now binding for PR 5 specifically because F4 demonstrates the exact failure mode it would have prevented. Captured here so the PR 5 auditor (or whoever later notices similar patterns in another collection) doesn't have to re-derive it.
+
+## Local pre-flight findings — 2026-05-26 (speaker-pool-api) — PR 11 redesign scope
+
+> **Status (2026-05-26):** Discovered during PR 2 local verification — `speaker-pool-api` lands at **61/78 tests** locally (17 failing). The failures are not test-infrastructure bugs; they're the consequence of the **Unified Speaker Workflow refactor (Epic 11 / ADR-009)** that landed across PRs 11.B.1 → 11.F.1 and changed the API contract underneath these tests. The tests were written against the old Story 5.4 + 6.0a contract and have been silently red on staging since Epic 11 merged. PR 11's "light audit" framing in §D is therefore **insufficient for speaker-pool-api specifically** — it needs a workflow-aware redesign of the 35–66 test chain. Estimated effort: 2–3× a normal audit-pass PR.
+
+### Root cause — the new state machine (ADR-009 §0.1)
+
+The legacy workflow accessed via `PUT /events/{code}/speakers/{id}/status` looked like:
+
+```
+IDENTIFIED → CONTACTED → READY → ACCEPTED → (CONTENT_SUBMITTED → QUALITY_REVIEWED)
+                                 ↘ OVERFLOW (excess speakers)
+                                 ↘ WITHDREW (dropouts)
+```
+
+ADR-009 replaces it with:
+
+```
+IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED
+                       ↑                                                              ↓
+                       │                                                              ↓
+            POST /promote                                              (any state) → DECLINED
+            (User provisioning gate)
+```
+
+Key changes that break the existing tests:
+
+1. **`READY` is now a provisioning gate.** Transition INTO `READY` is unreachable via `PUT /status` — only via `POST /api/v1/events/{code}/speakers/{speakerId}/promote` (Story 11.D.1). The PUT endpoint explicitly throws `ReadyRequiresPromoteException` → 400 with code `READY_REQUIRES_PROMOTE_ENDPOINT`. See `services/event-management-service/src/main/java/ch/batbern/events/exception/ReadyRequiresPromoteException.java`.
+2. **`INVITED` is a new state between `READY` and `ACCEPTED`.** Formal invitation step. `READY → ACCEPTED` directly is no longer a valid transition.
+3. **`OVERFLOW` is removed.** Slot capacity is enforced at the `READY → INVITED` gate (ADR-009 §0.7) — `count(ACCEPTED) + count(INVITED) >= max_slots` blocks the transition. Excess speakers stay in `READY` indefinitely.
+4. **`WITHDREW` is removed.** Replaced by `DECLINED`, the single terminal state, reachable from any non-terminal state.
+
+### Failure categorisation
+
+The 17 failing assertions in `speaker-pool-api` fall into four categories:
+
+| # | Category | Example test(s) | Why it fails post-Epic-11 | Fix for PR 11 |
+|---|----------|-----------------|--------------------------|---------------|
+| A | PUT /status → READY blocked by design | `38-update-speaker-status-to-ready.bru` | Returns 400 with `READY_REQUIRES_PROMOTE_ENDPOINT` instead of the old 200. Test asserts `currentStatus: READY`, gets `undefined`. | Delete the test OR rewrite to assert the 400 + error code (documents the design constraint). The promote path is already covered by tests 45–47. |
+| B | Chained tests assume sequential PUT advancement | `39-update-speaker-status-to-accepted` (and 41 / 42 which read history) | Speaker is stuck at CONTACTED because test 38 failed. PUT CONTACTED → ACCEPTED is invalid (must traverse READY → INVITED → ACCEPTED). | Restructure the 35–42 chain to use the modern path: PUT to CONTACTED, then `POST /promote` to READY, then PUT INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED. |
+| C | Slot capacity tests assume OVERFLOW | `53-speaker-workflow-slot-capacity-409`, `54-send-invitation-slot-capacity-409` | OVERFLOW state was removed. The new gate fires at READY → INVITED. Tests may be asserting the wrong transition point or the wrong exception class. | Verify the test exercises the capacity check at READY → INVITED and that the error code matches the current `SlotCapacityReachedException` shape. |
+| D | Workflow exception messages drifted | Tests asserting `'Invalid state transition for speaker …' to include 'ACCEPTED'` | The state machine emits different messages now. Asserting on text is brittle. | Switch assertions to error codes (machine-readable) rather than message text. |
+
+### Estimated rework
+
+| Action | Test files | LOC |
+|--------|------------|-----|
+| Delete or rewrite category-A test (PUT → READY) | 1 (`38-`) | ~20 |
+| Restructure 35–42 to thread through `POST /promote` | 8 (`35-` through `42-`) | ~150 |
+| Verify slot-capacity tests against new gate | 2 (`53-`, `54-`) | ~30 |
+| Update message-based assertions to code-based | 2–3 (across category D) | ~30 |
+| **Total redesign** | **~12 files touched** | **~230 LOC** |
+
+This is 2–3× a normal audit-pass PR. PR 11 should be planned with that in mind — and a heads-up to whoever picks it up that this is a redesign, not a tune-up.
+
+### Recommended PR 11 sequencing
+
+1. **Fix the fixture chain first** — currently 35 (add to pool) → 36 (list) → 37 (PUT CONTACTED) is solid. 38 is the breakage point. Build forward from 37 by inserting a new `38-promote-speaker-to-ready.bru` that calls `POST /promote` (replacing the broken PUT /status pattern).
+2. **Renumber from there** — old 38 becomes 38a (deleted) or 38b (rewritten as a negative test asserting the 400).
+3. **Insert new invitation step** — between READY and ACCEPTED add `39-invite-speaker.bru` that calls the appropriate state-transition endpoint. Old test 39 (PUT to ACCEPTED) becomes 40, asserting INVITED → ACCEPTED instead of READY → ACCEPTED.
+4. **Verify slot capacity at the new gate** — old tests 53 / 54 already point at slot capacity but may exercise the wrong transition; verify and adjust.
+5. **Run locally green ×2** per Section D.5, then PR.
+
+The 11.D.1 + 11.B.2 references in the test names indicate parts of this work were already started during Epic 11 — but only the `POST /promote` happy-path tests (45–47) were added; the legacy `PUT /status` chain wasn't pruned. PR 11 closes that loop.
 
 ## Context
 
