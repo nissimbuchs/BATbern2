@@ -1,0 +1,32 @@
+meta {
+  name: F1 rollback drill — deliberate fail (DO NOT MERGE)
+  type: http
+  seq: 999
+}
+
+get {
+  url: {{baseUrl}}/companies
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 999
+}
+
+tests {
+  test("F1 drill: deliberately asserts 999 to fail Bruno and trigger auto-rollback", function() {
+    expect(res.getStatus()).to.equal(999);
+  });
+}
+
+docs {
+  THROWAWAY — never merge to develop. Part of the F1 deliberate-fail rollback
+  exercise (plan §F1): makes the staging Bruno gate go red on a throwaway branch to
+  prove rollback-on-bruno-failure actually rolls ECS back to staging-stable.
+  Delete the branch after the drill.
+}
