@@ -93,6 +93,18 @@ app:
     # on Accept/Decline, which would otherwise fan out to every organizer.
     calendar-organizer-email: ${EMAIL_CALENDAR_ORGANIZER:calendar@batbern.ch}
     reply-to: ${EMAIL_REPLY_TO:replies@batbern.ch}
+  # Registration confirmation lifecycle (link validity + cleanup + auto-resend).
+  # INVARIANT: cleanup-after-hours > confirmation-token-validity-hours, so a still-valid
+  # confirmation link always has a registration row to confirm (a longer link is useless
+  # if the row was already deleted). Enforced by RegistrationCleanupService at startup.
+  registration:
+    confirmation-token-validity-hours: ${REG_CONFIRMATION_TOKEN_VALIDITY_HOURS:96}   # 4 days
+    cleanup-after-hours: ${REG_CLEANUP_AFTER_HOURS:120}                               # 5 days
+    resend:
+      enabled: ${REG_RESEND_ENABLED:true}
+      cron: "0 30 8 * * *"                       # daily 08:30 (after speaker reminders, before deadline reminders)
+      after-hours: ${REG_RESEND_AFTER_HOURS:48}  # resend once a registration is >2 days unconfirmed
+      max-attempts: ${REG_RESEND_MAX_ATTEMPTS:2} # at most this many auto-resends per registration
 
 # Story 10.29: Newsletter send tuning (canary mode)
 newsletter:

@@ -695,6 +695,34 @@ The platform provides multi-channel notifications (email, WebSocket) with intell
 
 **See [Notification System](./06d-notification-system.md) for complete implementation details.**
 
+## Registration & Sign-up Confirmation Lifecycle
+
+Two distinct confirmation flows exist, with **different** token mechanics — a frequent source of confusion:
+
+| Flow | Token | Validity | Configurable? |
+| --- | --- | --- | --- |
+| **Event registration** confirmation (status `registered` → `confirmed`) | Our own signed JWT (`ConfirmationTokenService`) | **4 days** (`app.registration.confirmation-token-validity-hours`, default 96h) | ✅ yes — we issue it |
+| **Cognito account** confirmation (sign-up email verification) | Cognito's native sign-up code | **24h, fixed** | ❌ no — Cognito limitation |
+
+**Coupling invariant (registration):** `RegistrationCleanupService` deletes still-`registered` rows
+after `app.registration.cleanup-after-hours` (default 120h / 5 days). This window **must exceed** the
+confirmation-token validity, otherwise a still-valid 4-day link could point at an already-deleted row.
+The service enforces this defensively (`effectiveCleanupHours() = max(configured, tokenValidity + 24h)`)
+and warns at startup if misconfigured.
+
+**Daily auto-resend jobs** (both Spring `@Scheduled` + `@SchedulerLock`/ShedLock):
+
+- `RegistrationResendService` (event-management-service, 08:30) re-sends the registration-confirmation
+  email — with **fresh** JWTs — to attendees unconfirmed for `> after-hours` (default 48h), capped at
+  `max-attempts` (default 2) via `confirmation_resend_count` / `confirmation_resent_at` on `registrations`.
+- `CognitoConfirmationResendJob` (company-user-management-service, 08:15) re-sends a fresh Cognito
+  sign-up code to accounts unconfirmed within a bounded age window (stateless anti-spam, since
+  UNCONFIRMED users have no DB row) — see [06b §Unconfirmed Sign-up Resend Job](./06b-user-lifecycle-sync.md).
+  Requires `cognito-idp:ListUsers` + `cognito-idp:ResendConfirmationCode` on the CUMS task role.
+
+Together these close the "first confirmation email missed/expired → recovery dead-end → locked out"
+failure mode without manual admin intervention.
+
 ## Testing Strategy
 
 The BATbern backend uses Testcontainers PostgreSQL for all integration tests to ensure production parity. This approach catches PostgreSQL-specific issues (JSONB, functions, constraints) that would be missed with H2.

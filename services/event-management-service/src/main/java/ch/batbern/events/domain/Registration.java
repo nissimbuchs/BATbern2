@@ -175,11 +175,27 @@ public class Registration {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    /**
+     * Unconfirmed-resend job (link-validity hardening): timestamp of the most recent automated
+     * confirmation-email resend, and how many automated resends have been sent so far. Used by
+     * {@link ch.batbern.events.service.RegistrationResendService} to cap resends and enforce a gap
+     * between them. Null / 0 for registrations that were never auto-resent.
+     */
+    @Column(name = "confirmation_resent_at")
+    private Instant confirmationResentAt;
+
+    @Column(name = "confirmation_resend_count", nullable = false)
+    @Builder.Default
+    private Integer confirmationResendCount = 0;
+
     @PrePersist
     protected void onCreate() {
         // Story 10.12: auto-generate deregistration token if not set (covers test builders and legacy paths)
         if (deregistrationToken == null) {
             deregistrationToken = UUID.randomUUID();
+        }
+        if (confirmationResendCount == null) {
+            confirmationResendCount = 0;
         }
         createdAt = Instant.now();
         updatedAt = Instant.now();
