@@ -1,0 +1,31 @@
+meta {
+  name: F1 rollback drill #2 — deliberate fail (DO NOT MERGE)
+  type: http
+  seq: 999
+}
+
+get {
+  url: {{baseUrl}}/companies
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 999
+}
+
+tests {
+  test("F1 drill #2: deliberately asserts 999 to fail Bruno and trigger auto-rollback", function() {
+    expect(res.getStatus()).to.equal(999);
+  });
+}
+
+docs {
+  THROWAWAY — never merge. F1 re-run (plan §F1) after the rollback register fix (#679):
+  validates the FULL auto-rollback path now completes (register from temp file →
+  update-service → services cycle to staging-stable). Delete the branch after.
+}
