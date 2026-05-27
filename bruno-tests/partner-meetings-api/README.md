@@ -17,13 +17,26 @@ exist before.
 | 5 | `05-list-meetings.bru` | `GET /partner-meetings` → 200, list contains the created meeting. |
 | 6 | `06-update-meeting.bru` | `PATCH /partner-meetings/{id}` agenda + notes → 200. |
 | 7 | `07-create-second-meeting.bru` | `POST` (AUTUMN) → 201; capture `secondMeetingId` (left undeleted to prove the posttest allowlist sweep). |
-| 8 | `08-send-invite.bru` | `POST /partner-meetings/{id}/send-invite` → 202 (async ICS dispatch). |
 | 9 | `09-delete-meeting.bru` | `DELETE /partner-meetings/{id}` → 204. |
 | 9.5 | `09a-verify-meeting-deleted.bru` | `GET` the deleted meeting → 404 (audit-step 4). |
 | 10 | `10-unauthorized.bru` | `GET` with no auth → 401. |
 | 11 | `11-forbidden-non-organizer.bru` | `POST` with a speaker JWT → 403. |
 | 98 | `98-posttest-cleanup-meetings.bru` | PCS `meetings` cleanup with the captured id allowlist. |
 | 99 | `99-delete-fixture-event.bru` | `DELETE` the EMS fixture event → 204/404. |
+
+## ⚠️ Safety — never send real partner communications
+
+`POST /partner-meetings/{id}/send-invite` is **deliberately NOT exercised** by this
+collection. It generates an ICS and dispatches **real calendar invitations via SES to
+every partner contact + organizer**, and deleting a meeting whose invite was sent fires
+a **real METHOD:CANCEL cancellation** to the same recipients. Bruno runs against staging
+— which **is** the production account (`api.batbern.ch`) — so exercising send-invite
+would email real partners on every CI run. That must never happen.
+
+send-invite (and the cancellation branch of delete) are covered at the unit/integration
+layer instead, where the email service is mocked
+(`PartnerMeetingService` tests, Story 8.3 / 10.27). **Rule: no Bruno/E2E test may trigger
+real outbound email, invitations, or notifications against staging/production.**
 
 ## Cleanup model — id allowlist, not prefix (plan §B2 option 1)
 
