@@ -202,11 +202,18 @@ for entry in "${SERVICES[@]}"; do
         if [ -z "$NEW_TASK_DEF_JSON" ] || [ "$NEW_TASK_DEF_JSON" = "null" ]; then
             echo "⚠️  Failed to build rollback task definition JSON — falling back to deployments[1]"
         else
-            NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF_JSON" \
-                | aws ecs register-task-definition \
-                    --cli-input-json file:///dev/stdin \
+            # NOTE: `--cli-input-json file:///dev/stdin` (piping the JSON in) fails
+            # silently in the CI runner — the AWS CLI needs a seekable file. Write to a
+            # real temp file and pass file://<path>. (Proven via the F1 drill 2026-05-27:
+            # the /dev/stdin form produced an empty-error register failure; the temp-file
+            # form registers successfully.)
+            REGISTER_INPUT=$(mktemp)
+            printf '%s' "$NEW_TASK_DEF_JSON" > "$REGISTER_INPUT"
+            NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+                    --cli-input-json "file://$REGISTER_INPUT" \
                     --query 'taskDefinition.taskDefinitionArn' \
                     --output text 2>&1) || NEW_TASK_DEF_ARN=""
+            rm -f "$REGISTER_INPUT"
 
             if [ -n "$NEW_TASK_DEF_ARN" ] && [[ "$NEW_TASK_DEF_ARN" == arn:aws:ecs:* ]]; then
                 TARGET_TASK_DEF="$NEW_TASK_DEF_ARN"
