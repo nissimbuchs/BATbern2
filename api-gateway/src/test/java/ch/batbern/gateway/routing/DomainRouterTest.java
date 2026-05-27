@@ -58,6 +58,20 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
+    // Regression: /api/v1/event-types must route to EMS. There was NO route for it
+    // (it doesn't match the /api/v1/events prefix — the hyphen breaks it), so the
+    // gateway threw RoutingException → 500. The event-types-api Bruno suite had been
+    // failing on staging since PR 2a, masked by the warning-only continue-on-error gate
+    // until PR 14 flipped it. EventTypeController lives in event-management-service.
+    @Test
+    @DisplayName("should_routeToEventService_when_eventTypesEndpointCalled")
+    void should_routeToEventService_when_eventTypesEndpointCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/event-types"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/event-types/EVENING"))
+                .isEqualTo("event-management-service");
+    }
+
     // Test 5.2: standalone /api/v1/speakers/* routes no longer exist.
     // Speaker-coordination became a thin shell in Story 11.C.1 (ADR-009 §6.2); all
     // speaker actions are now scoped under the owning event:
