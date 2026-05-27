@@ -52,15 +52,30 @@ echo "=========================================="
 
 CLUSTER="batbern-${ENVIRONMENT}"
 
-# (service-name, ecs-pattern-prefix) pairs. The ECS-side service name has a stack-
-# generated suffix; we use a list-and-filter approach to find the real name at runtime.
+# "logical-service-name:CDK-construct-fragment" pairs. The ECS service name is
+# BATbern-<env>-<Fragment>-Service<hash>, where <Fragment> is the PascalCase CDK
+# construct id — it does NOT equal the lowercase-hyphen logical name (e.g.
+# event-management-service → EventManagement, and company-user-management-service →
+# CompanyManagement). The earlier `contains(@, 'event-management')` filter never
+# matched the PascalCase ARN, so rollback always logged "Could not locate ECS service"
+# and skipped every service. Fragments verified against `aws ecs list-services` 2026-05-27.
 SERVICES=(
-    "event-management-service"
-    "speaker-coordination-service"
-    "partner-coordination-service"
-    "attendee-experience-service"
-    "company-user-management-service"
+    "event-management-service:EventManagement"
+    "speaker-coordination-service:SpeakerCoordination"
+    "partner-coordination-service:PartnerCoordination"
+    "attendee-experience-service:AttendeeExperience"
+    "company-user-management-service:CompanyManagement"
 )
+
+# Resolve the real (stack-suffixed) ECS service ARN for a CDK construct fragment.
+# Matches BATbern-<env>-<Fragment>-Service<hash>. Empty string if not found.
+resolve_ecs_service_arn() {
+    local fragment="$1"
+    aws ecs list-services \
+        --cluster "$CLUSTER" \
+        --query "serviceArns[?contains(@, '${fragment}-Service')] | [0]" \
+        --output text 2>/dev/null || echo ""
+}
 
 if [ "$SKIP_GRACE" = "true" ]; then
     echo "--yes supplied; skipping interactive grace period."
@@ -138,21 +153,17 @@ build_rollback_task_def_json() {
 
 # ─── main loop ───────────────────────────────────────────────────────────────
 
-for service in "${SERVICES[@]}"; do
+for entry in "${SERVICES[@]}"; do
+    service="${entry%%:*}"
+    fragment="${entry##*:}"
     echo "=========================================="
     echo "Rolling back: $service"
     echo "=========================================="
 
     REPO="batbern/${ENVIRONMENT}/${service}"
 
-    # Find the ACTUAL ECS service name in the cluster — it has a CloudFormation-
-    # generated suffix (e.g. BATbern-staging-EventManagement-ServiceD69D759B-xxx).
-    # `describe-services --services <bare-name>` does not work for stack-suffixed
-    # services. List + filter instead.
-    ECS_SERVICE_ARN=$(aws ecs list-services \
-        --cluster "$CLUSTER" \
-        --query "serviceArns[?contains(@, '${service%-service}') || contains(@, '$service')] | [0]" \
-        --output text 2>/dev/null || echo "")
+    # Resolve the ACTUAL ECS service name (stack-suffixed PascalCase fragment).
+    ECS_SERVICE_ARN=$(resolve_ecs_service_arn "$fragment")
 
     if [ -z "$ECS_SERVICE_ARN" ] || [ "$ECS_SERVICE_ARN" = "None" ]; then
         echo "⚠️  Could not locate ECS service for $service in cluster $CLUSTER — skipping"
@@ -276,11 +287,10 @@ if [ "$DRY_RUN" != "true" ] && [ $ROLLBACK_SUCCESS -gt 0 ]; then
     echo "=========================================="
     echo ""
 
-    for service in "${SERVICES[@]}"; do
-        ECS_SERVICE_ARN=$(aws ecs list-services \
-            --cluster "$CLUSTER" \
-            --query "serviceArns[?contains(@, '${service%-service}') || contains(@, '$service')] | [0]" \
-            --output text 2>/dev/null || echo "")
+    for entry in "${SERVICES[@]}"; do
+        service="${entry%%:*}"
+        fragment="${entry##*:}"
+        ECS_SERVICE_ARN=$(resolve_ecs_service_arn "$fragment")
         [ -z "$ECS_SERVICE_ARN" ] || [ "$ECS_SERVICE_ARN" = "None" ] && continue
 
         ECS_SERVICE_NAME=$(basename "$ECS_SERVICE_ARN")
@@ -304,11 +314,10 @@ if [ "$DRY_RUN" != "true" ]; then
     echo "Verifying rollback..."
     echo "=========================================="
 
-    for service in "${SERVICES[@]}"; do
-        ECS_SERVICE_ARN=$(aws ecs list-services \
-            --cluster "$CLUSTER" \
-            --query "serviceArns[?contains(@, '${service%-service}') || contains(@, '$service')] | [0]" \
-            --output text 2>/dev/null || echo "")
+    for entry in "${SERVICES[@]}"; do
+        service="${entry%%:*}"
+        fragment="${entry##*:}"
+        ECS_SERVICE_ARN=$(resolve_ecs_service_arn "$fragment")
         [ -z "$ECS_SERVICE_ARN" ] || [ "$ECS_SERVICE_ARN" = "None" ] && continue
 
         ECS_SERVICE_NAME=$(basename "$ECS_SERVICE_ARN")

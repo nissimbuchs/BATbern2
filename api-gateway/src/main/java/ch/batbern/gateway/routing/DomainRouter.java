@@ -75,7 +75,9 @@ public class DomainRouter {
         } else if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
             return "event-management-service";
-        } else if (cleanPath.startsWith("/api/v1/events")
+        // EventTypeController (EMS). Distinct from /events — the hyphen breaks the /events prefix.
+        } else if (cleanPath.startsWith("/api/v1/event-types")
+                || cleanPath.startsWith("/api/v1/events")
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")
                 || cleanPath.startsWith("/api/v1/tasks")
