@@ -167,7 +167,7 @@ for entry in "${SERVICES[@]}"; do
 
     if [ -z "$ECS_SERVICE_ARN" ] || [ "$ECS_SERVICE_ARN" = "None" ]; then
         echo "⚠️  Could not locate ECS service for $service in cluster $CLUSTER — skipping"
-        ((ROLLBACK_SKIPPED++))
+        ROLLBACK_SKIPPED=$((ROLLBACK_SKIPPED + 1))
         echo ""
         continue
     fi
@@ -192,7 +192,7 @@ for entry in "${SERVICES[@]}"; do
         if [ "$DRY_RUN" = "true" ]; then
             echo "🟡 DRY RUN: would register new task def with image tag '$STABLE_TAG'"
             echo "🟡 DRY RUN: would update-service '$ECS_SERVICE_NAME' to use it"
-            ((ROLLBACK_SUCCESS++))
+            ROLLBACK_SUCCESS=$((ROLLBACK_SUCCESS + 1))
             echo ""
             continue
         fi
@@ -245,14 +245,14 @@ for entry in "${SERVICES[@]}"; do
             echo "⚠️  ERROR: no previous task definition tracked for $service"
             echo "   This may be the first deployment, or ECS has dropped the old"
             echo "   deployment. Cannot rollback without staging-stable either."
-            ((ROLLBACK_FAILED++))
+            ROLLBACK_FAILED=$((ROLLBACK_FAILED + 1))
             echo ""
             continue
         fi
 
         if [ "$CURRENT_TASK" = "$PREVIOUS_TASK" ]; then
             echo "ℹ️  Service is already running the previous task definition; nothing to do"
-            ((ROLLBACK_SUCCESS++))
+            ROLLBACK_SUCCESS=$((ROLLBACK_SUCCESS + 1))
             echo ""
             continue
         fi
@@ -263,7 +263,7 @@ for entry in "${SERVICES[@]}"; do
     # ─── 3. Apply the rollback ───────────────────────────────────────────────
     if [ "$DRY_RUN" = "true" ]; then
         echo "🟡 DRY RUN: would update-service '$ECS_SERVICE_NAME' → $TARGET_TASK_DEF"
-        ((ROLLBACK_SUCCESS++))
+        ROLLBACK_SUCCESS=$((ROLLBACK_SUCCESS + 1))
         echo ""
         continue
     fi
@@ -278,10 +278,10 @@ for entry in "${SERVICES[@]}"; do
         --no-cli-pager > /dev/null 2>&1; then
 
         echo "✓ Rollback initiated for $service"
-        ((ROLLBACK_SUCCESS++))
+        ROLLBACK_SUCCESS=$((ROLLBACK_SUCCESS + 1))
     else
         echo "❌ Failed to initiate rollback for $service"
-        ((ROLLBACK_FAILED++))
+        ROLLBACK_FAILED=$((ROLLBACK_FAILED + 1))
     fi
 
     echo ""
