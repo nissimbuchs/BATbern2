@@ -490,6 +490,47 @@ await axios.put(uploadUrl, file);
 await axios.post('/api/upload', formData);  // Wastes backend resources
 ```
 
+### Database Migrations (Flyway) — NEVER modify an already-applied migration
+
+**CRITICAL.** Once a Flyway migration (`V{n}__*.sql`) has been applied to ANY shared
+environment (staging/production — and remember the staging account at 188701360969 **is**
+production), its file content is **frozen forever**. Flyway records each applied
+migration's checksum in `flyway_schema_history`; changing even one character (or one line
+of a `DO $$ … $$` block) changes the checksum, so on the next boot Flyway's validation
+fails with `Migration checksum mismatch for migration version {n}` → the JPA
+`entityManagerFactory` bean fails → **the service crashes on startup**. ECS then
+circuit-breaker-rolls-back to the last image whose checksums matched, so the service
+silently stays on stale code (a green deploy that never actually advances).
+
+```sql
+-- ❌ WRONG — editing an applied migration (changes its checksum, breaks startup)
+-- V86__fix_cloudfront_domain_in_media_urls.sql  (already deployed)
+-   v_cdn_domain := 'https://cdn.staging.batbern.ch';
++   v_cdn_domain := 'https://cdn.batbern.ch';
+
+-- ✅ RIGHT — leave V86 untouched; fix the data/schema in a NEW forward migration
+-- V{next}__fix_cdn_domain_in_media_urls.sql
+UPDATE event_photos SET display_url =
+  REPLACE(display_url, 'https://cdn.staging.batbern.ch', 'https://cdn.batbern.ch')
+WHERE display_url LIKE '%cdn.staging.batbern.ch%';
+```
+
+**Rules:**
+- Never edit, rename, renumber, or delete a migration that has shipped. To change its
+  effect, add a new higher-numbered migration.
+- **Bulk find-and-replace across the repo is the classic footgun** — `*.sql` migration
+  files get swept up in domain/string substitutions. Always exclude
+  `**/db/migration/**` from repo-wide substitutions, then review any migration that a
+  bulk edit touched. (This exact mistake — #669's `cdn.staging.batbern.ch → cdn.batbern.ch`
+  sweep editing the applied `V86`, 2026-05-26 — silently froze event-management on a stale
+  image for ~16 builds; root-caused 2026-05-27. See `docs/plans/bruno-staging-hardening.md`.)
+- If a mismatch has already shipped: prefer reverting the migration file byte-exact to its
+  applied content (so the checksum matches again) + a new forward migration for the intended
+  change. `flywayRepair` only re-aligns checksums (it does NOT re-run the migration), so it
+  still needs a follow-up migration for any data change.
+- Diagnose a stuck service by comparing its deployed ECS image tag to develop HEAD and
+  grepping its CloudWatch log for `checksum mismatch` / `FlywayValidateException`.
+
 ## OpenAPI Type Generation
 
 Frontend types are generated from OpenAPI specifications:
