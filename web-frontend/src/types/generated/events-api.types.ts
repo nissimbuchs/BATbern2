@@ -3467,10 +3467,17 @@ export interface components {
        */
       lastName: string;
       /**
-       * @description Speaker's company name (from User.companyId)
+       * @description Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
        * @example GoogleZH
        */
       company?: string;
+      /**
+       * @description Human-readable company name (companies.display_name, falling back to
+       *     companies.name, then the company slug). Prefer this over `company` for
+       *     display. Null when the speaker has no associated company.
+       * @example Google Zürich
+       */
+      companyDisplayName?: string;
       /**
        * Format: uri
        * @description Speaker's profile picture URL (from User entity)
@@ -4574,10 +4581,16 @@ export interface components {
        */
       speakerName: string;
       /**
-       * @description Company or organization of the speaker
-       * @example Tech Corp AG
+       * @description Company identifier/slug of the speaker (from User.companyId). Stable key — NOT for display.
+       * @example TechCorpAG
        */
       company?: string | null;
+      /**
+       * @description Human-readable company name (companies.display_name, falling back to
+       *     companies.name, then the slug). Prefer this over `company` for display.
+       * @example Tech Corp AG
+       */
+      companyDisplayName?: string | null;
       /**
        * @description Areas of expertise
        * @example Cloud Architecture, Kubernetes, DevOps

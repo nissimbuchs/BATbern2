@@ -199,6 +199,43 @@ class NewsletterEmailServiceTest {
         assertThat(vars.get("registrationLink")).isEqualTo("https://batbern.ch/register/BATbern58");
     }
 
+    // ── buildVariables: eventTime ─────────────────────────────────────────────
+    // Regression for the BATbern59 incident: the newsletter showed a hardcoded
+    // "16:00" instead of the event's real start time (13:00, resolved from the
+    // published agenda / afternoon event-type config). eventTime MUST come from
+    // EventTimeResolver — the same source used by the registration email and the
+    // .ics attachment — never a literal.
+
+    @Test
+    @DisplayName("buildVariables: eventTime is resolved from EventTimeResolver, not hardcoded (DE)")
+    void buildVariables_eventTime_de_usesResolverStartTime() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
+
+        assertThat(vars.get("eventTime")).isEqualTo("ab 13:00 Uhr");
+    }
+
+    @Test
+    @DisplayName("buildVariables: eventTime is resolved from EventTimeResolver, not hardcoded (EN)")
+    void buildVariables_eventTime_en_usesResolverStartTime() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "en", false, "");
+
+        assertThat(vars.get("eventTime")).isEqualTo("from 13:00");
+    }
+
+    @Test
+    @DisplayName("buildVariables: eventTime never falls back to the old hardcoded 16:00")
+    void buildVariables_eventTime_doesNotHardcodeSixteenHundred() {
+        when(eventTimeResolver.formatStartTime(testEvent)).thenReturn("13:00");
+
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
+
+        assertThat(vars.get("eventTime")).doesNotContain("16:00").doesNotContain("4:00 PM");
+    }
+
     // ── buildVariables: currentYear ───────────────────────────────────────────
 
     @Test
@@ -263,6 +300,58 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("Mustapha Bouaaoud, postfinance; Philippe Halbeisen, postfinance");
         // Only one data row in tbody (one session → one row)
         assertThat(result).containsOnlyOnce("</tr></tbody>");
+    }
+
+    @Test
+    @DisplayName("buildSpeakersSection: renders companyDisplayName, not the slug, when present")
+    void buildSpeakersSection_prefersCompanyDisplayName() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Agentic AI in Swisscom");
+
+        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+                .username("anna.meier")
+                .firstName("Anna")
+                .lastName("Meier")
+                .company("swisscomZH")                 // slug — must NOT be shown
+                .companyDisplayName("Swisscom (Schweiz) AG") // display name — must be shown
+                .build();
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserService.getSessionSpeakers(any())).thenReturn(List.of(sp));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("Anna Meier, Swisscom (Schweiz) AG");
+        assertThat(result).doesNotContain("swisscomZH");
+    }
+
+    @Test
+    @DisplayName("buildSpeakersSection: falls back to slug when companyDisplayName is absent")
+    void buildSpeakersSection_fallsBackToSlugWhenNoDisplayName() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Zero Trust");
+
+        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+                .username("bob.huber")
+                .firstName("Bob")
+                .lastName("Huber")
+                .company("postfinance")
+                .build(); // no companyDisplayName
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserService.getSessionSpeakers(any())).thenReturn(List.of(sp));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("Bob Huber, postfinance");
     }
 
     // ── templateKey: custom key routing ──────────────────────────────────────

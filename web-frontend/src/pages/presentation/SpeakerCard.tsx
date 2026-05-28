@@ -88,7 +88,7 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         {logoUrl && (
           <img
             src={logoUrl}
-            alt={speaker.company ?? ''}
+            alt={speaker.companyDisplayName ?? speaker.company ?? ''}
             style={{
               height: '2.5vw',
               maxWidth: '9.375vw',

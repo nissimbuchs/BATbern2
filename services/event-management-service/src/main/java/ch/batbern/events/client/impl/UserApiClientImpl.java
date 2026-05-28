@@ -856,6 +856,27 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
+     * Resolve company slug → display name, cached for 15 min in {@code userApiCache}.
+     * Mirrors {@code COALESCE(display_name, name, company_id)}: prefer displayName, then
+     * the company name, then (at the call site, via {@code getOrDefault}) the slug itself.
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "'companyDisplayNames'")
+    public java.util.Map<String, String> getCompanyDisplayNames() {
+        java.util.Map<String, String> bySlug = new java.util.HashMap<>();
+        for (CompanyBasicDto company : getAllCompanies()) {
+            if (company.getName() == null) {
+                continue;
+            }
+            String display = (company.getDisplayName() != null && !company.getDisplayName().isBlank())
+                    ? company.getDisplayName()
+                    : company.getName();
+            bySlug.put(company.getName(), display);
+        }
+        return bySlug;
+    }
+
+    /**
      * Create HTTP headers with JWT token propagated from SecurityContext.
      *
      * Extracts the JWT token from the current security context and adds it

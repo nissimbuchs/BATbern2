@@ -256,7 +256,8 @@ public class SessionUserService {
                 .username(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .company(user.getCompanyId()) // companyId is the company name per Story 1.16.2
+                .company(user.getCompanyId()) // companyId is the company name (slug) per Story 1.16.2
+                .companyDisplayName(resolveCompanyDisplayName(user.getCompanyId()))
                 .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
                 .bio(user.getBio())
                 .speakerRole(sessionUser.getSpeakerRole())
@@ -264,6 +265,17 @@ public class SessionUserService {
                 .presentationTitle(null)
                 .isConfirmed(sessionUser.isConfirmed())
                 .build();
+    }
+
+    /**
+     * Resolve a company slug to its human-readable display name (displayName ?? name ?? slug)
+     * via the cached company map. Returns {@code null} when the speaker has no company.
+     */
+    private String resolveCompanyDisplayName(String companySlug) {
+        if (companySlug == null || companySlug.isBlank()) {
+            return null;
+        }
+        return userApiClient.getCompanyDisplayNames().getOrDefault(companySlug, companySlug);
     }
 
 }

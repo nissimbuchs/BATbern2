@@ -859,7 +859,11 @@ public class NewsletterEmailService {
                         if (name.isBlank()) {
                             name = sp.getUsername();
                         }
-                        String company = sp.getCompany() != null ? sp.getCompany().trim() : "";
+                        // Prefer the human-readable display name; fall back to the slug.
+                        String company = sp.getCompanyDisplayName() != null
+                                && !sp.getCompanyDisplayName().isBlank()
+                                ? sp.getCompanyDisplayName().trim()
+                                : (sp.getCompany() != null ? sp.getCompany().trim() : "");
                         return company.isBlank() ? name : name + ", " + company;
                     })
                     .collect(Collectors.joining("; "));
@@ -972,7 +976,12 @@ public class NewsletterEmailService {
     }
 
     private String formatEventTime(Event event, boolean isDe) {
-        return isDe ? "ab 16:00 Uhr" : "from 4:00 PM";
+        // Resolve the real start time (sessions → event-type config → fallback) via the
+        // shared EventTimeResolver — the same source as the registration email and the
+        // .ics attachment. Previously hardcoded to 16:00, which mis-stated every event
+        // whose actual start differs (e.g. afternoon events at 13:00 — BATbern59 incident).
+        String startTime = eventTimeResolver.formatStartTime(event);
+        return isDe ? "ab " + startTime + " Uhr" : "from " + startTime;
     }
 
     private String computeFinalStatus(int sentCount, int failedCount) {

@@ -125,6 +125,39 @@ class SessionUserServiceTest {
     }
 
     @Test
+    void should_resolveCompanyDisplayName_when_companyHasDisplayName() {
+        // Given: the company slug resolves to a human-readable display name
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
+        when(userApiClient.getCompanyDisplayNames())
+                .thenReturn(java.util.Map.of("GoogleZH", "Google Zürich"));
+        when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
+        when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+                sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
+
+        // Then: slug retained as the stable key, display name resolved for the UI
+        assertThat(response.getCompany()).isEqualTo("GoogleZH");
+        assertThat(response.getCompanyDisplayName()).isEqualTo("Google Zürich");
+    }
+
+    @Test
+    void should_fallBackToSlug_when_companyHasNoDisplayName() {
+        // Given: the company slug is absent from the display-name map
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
+        when(userApiClient.getCompanyDisplayNames()).thenReturn(java.util.Map.of());
+        when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
+        when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SessionSpeakerResponse response = sessionUserService.assignSpeakerToSession(
+                sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null);
+
+        assertThat(response.getCompanyDisplayName()).isEqualTo("GoogleZH");
+    }
+
+    @Test
     void should_throwException_when_sessionNotFound() {
         // Given: Session does not exist
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.empty());

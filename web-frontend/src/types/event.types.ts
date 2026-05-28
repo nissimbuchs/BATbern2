@@ -41,7 +41,8 @@ export interface SpeakerUI extends Speaker {
   // Archive browsing fields (Story 4.2)
   speakerId?: string; // UUID identifier for speaker
   fullName?: string; // Computed full name (firstName + lastName)
-  companyName?: string; // Speaker's company name
+  companyName?: string; // Speaker's company name (legacy frontend-only field; prefer companyDisplayName)
+  companyDisplayName?: string; // Human-readable company name (displayName ?? name); prefer over `company` slug
   photoUrl?: string; // Speaker's photo URL (alias for profilePictureUrl)
 }
 

@@ -15,6 +15,7 @@ interface SpeakerWithSession {
   firstName: string;
   lastName: string;
   company?: string;
+  companyDisplayName?: string;
   profilePictureUrl?: string;
   sessionTitle: string;
   sessionDescription?: string;
@@ -46,6 +47,7 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
               firstName: speaker.firstName,
               lastName: speaker.lastName,
               company: speaker.company,
+              companyDisplayName: speaker.companyDisplayName,
               profilePictureUrl: speaker.profilePictureUrl,
               sessionTitle: speaker.presentationTitle || session.title,
               sessionDescription: session.description,
@@ -80,6 +82,7 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
                   firstName: speaker.firstName,
                   lastName: speaker.lastName,
                   company: speaker.company,
+                  companyDisplayName: speaker.companyDisplayName,
                   profilePictureUrl: speaker.profilePictureUrl,
                   bio: speaker.bio,
                   speakerRole:

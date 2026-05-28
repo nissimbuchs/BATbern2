@@ -25,7 +25,8 @@ public class SessionSpeakerResponse {
     private String username;
     private String firstName;
     private String lastName;
-    private String company;
+    private String company; // company identifier/slug (User.companyId) — stable key, not for display
+    private String companyDisplayName; // human-readable name (displayName ?? name ?? slug); prefer for display
     private String profilePictureUrl;
     private String bio;
 
