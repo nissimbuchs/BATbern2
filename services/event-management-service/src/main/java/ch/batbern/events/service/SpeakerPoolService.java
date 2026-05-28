@@ -204,6 +204,9 @@ public class SpeakerPoolService {
             }
         }
 
+        // Cached (15 min) slug → display-name map; one lookup serves every row in this page.
+        final Map<String, String> companyDisplayNames = userApiClient.getCompanyDisplayNames();
+
         return speakers.stream()
                 .map(speaker -> {
                     Session session = speaker.getSessionId() != null
@@ -224,6 +227,11 @@ public class SpeakerPoolService {
                             UserResponse user = userByUsername.get(primary.getUsername());
                             applySessionIdentityOverlay(response, primary, user);
                         }
+                    }
+                    // Resolve the company slug to its human-readable display name for the UI.
+                    if (response.getCompany() != null && !response.getCompany().isBlank()) {
+                        response.setCompanyDisplayName(companyDisplayNames
+                                .getOrDefault(response.getCompany(), response.getCompany()));
                     }
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {

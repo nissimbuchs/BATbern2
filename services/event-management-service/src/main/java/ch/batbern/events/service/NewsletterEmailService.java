@@ -859,7 +859,11 @@ public class NewsletterEmailService {
                         if (name.isBlank()) {
                             name = sp.getUsername();
                         }
-                        String company = sp.getCompany() != null ? sp.getCompany().trim() : "";
+                        // Prefer the human-readable display name; fall back to the slug.
+                        String company = sp.getCompanyDisplayName() != null
+                                && !sp.getCompanyDisplayName().isBlank()
+                                ? sp.getCompanyDisplayName().trim()
+                                : (sp.getCompany() != null ? sp.getCompany().trim() : "");
                         return company.isBlank() ? name : name + ", " + company;
                     })
                     .collect(Collectors.joining("; "));

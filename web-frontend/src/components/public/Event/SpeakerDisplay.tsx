@@ -55,6 +55,10 @@ export const SpeakerDisplay = ({
 
   const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 
+  // Prefer the human-readable display name; fall back to the slug. `speaker.company`
+  // (the slug) stays the stable key for logo lookup above — only the label changes.
+  const companyLabel = speaker.companyDisplayName ?? speaker.company;
+
   // Size mappings
   const sizeClasses = {
     small: {
@@ -118,7 +122,7 @@ export const SpeakerDisplay = ({
         {speaker.company && (
           <div className={`${sizes.company} text-zinc-400 flex items-center gap-1.5`}>
             <Building2 className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{speaker.company}</span>
+            <span className="truncate">{companyLabel}</span>
           </div>
         )}
       </div>
@@ -131,7 +135,7 @@ export const SpeakerDisplay = ({
           {logoUrl ? (
             <img
               src={logoUrl}
-              alt={`${speaker.company} logo`}
+              alt={`${companyLabel} logo`}
               className={`${sizes.logoImage} object-contain`}
               width={128}
               height={64}

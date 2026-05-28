@@ -302,6 +302,58 @@ class NewsletterEmailServiceTest {
         assertThat(result).containsOnlyOnce("</tr></tbody>");
     }
 
+    @Test
+    @DisplayName("buildSpeakersSection: renders companyDisplayName, not the slug, when present")
+    void buildSpeakersSection_prefersCompanyDisplayName() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Agentic AI in Swisscom");
+
+        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+                .username("anna.meier")
+                .firstName("Anna")
+                .lastName("Meier")
+                .company("swisscomZH")                 // slug — must NOT be shown
+                .companyDisplayName("Swisscom (Schweiz) AG") // display name — must be shown
+                .build();
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserService.getSessionSpeakers(any())).thenReturn(List.of(sp));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("Anna Meier, Swisscom (Schweiz) AG");
+        assertThat(result).doesNotContain("swisscomZH");
+    }
+
+    @Test
+    @DisplayName("buildSpeakersSection: falls back to slug when companyDisplayName is absent")
+    void buildSpeakersSection_fallsBackToSlugWhenNoDisplayName() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Zero Trust");
+
+        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+                .username("bob.huber")
+                .firstName("Bob")
+                .lastName("Huber")
+                .company("postfinance")
+                .build(); // no companyDisplayName
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserService.getSessionSpeakers(any())).thenReturn(List.of(sp));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("Bob Huber, postfinance");
+    }
+
     // ── templateKey: custom key routing ──────────────────────────────────────
 
     @Test

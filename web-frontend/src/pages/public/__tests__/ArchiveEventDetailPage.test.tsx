@@ -86,10 +86,12 @@ describe('ArchiveEventDetailPage Component', () => {
         endTime: '18:30',
         speakers: [
           {
-            speakerId: 'sp1',
-            fullName: 'John Doe',
-            companyName: 'TechCorp',
-            photoUrl: 'https://cdn.batbern.ch/speakers/john.jpg',
+            username: 'john.doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            company: 'tcorp-zh', // slug — must NOT be shown
+            companyDisplayName: 'TechCorp', // display name — must be shown
+            profilePictureUrl: 'https://cdn.batbern.ch/speakers/john.jpg',
           },
         ],
         presentationUrl: 'https://cdn.batbern.ch/2024/presentations/serverless.pdf',
@@ -103,15 +105,19 @@ describe('ArchiveEventDetailPage Component', () => {
         endTime: '19:05',
         speakers: [
           {
-            speakerId: 'sp2',
-            fullName: 'Jane Smith',
-            companyName: 'CloudInc',
-            photoUrl: 'https://cdn.batbern.ch/speakers/jane.jpg',
+            username: 'jane.smith',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            company: 'cloud-zh',
+            companyDisplayName: 'CloudInc',
+            profilePictureUrl: 'https://cdn.batbern.ch/speakers/jane.jpg',
           },
           {
-            speakerId: 'sp3',
-            fullName: 'Bob Wilson',
-            companyName: 'StartupXYZ',
+            username: 'bob.wilson',
+            firstName: 'Bob',
+            lastName: 'Wilson',
+            company: 'startup-zh',
+            companyDisplayName: 'StartupXYZ',
           },
         ],
         presentationUrl: 'https://cdn.batbern.ch/2024/presentations/kubernetes.pdf',
@@ -125,10 +131,12 @@ describe('ArchiveEventDetailPage Component', () => {
         endTime: '19:40',
         speakers: [
           {
-            speakerId: 'sp4',
-            fullName: 'Alice Johnson',
-            companyName: 'DevCo',
-            photoUrl: 'https://cdn.batbern.ch/speakers/alice.jpg',
+            username: 'alice.johnson',
+            firstName: 'Alice',
+            lastName: 'Johnson',
+            company: 'devco-zh',
+            companyDisplayName: 'DevCo',
+            profilePictureUrl: 'https://cdn.batbern.ch/speakers/alice.jpg',
           },
         ],
       },
@@ -140,9 +148,11 @@ describe('ArchiveEventDetailPage Component', () => {
         endTime: '20:15',
         speakers: [
           {
-            speakerId: 'sp5',
-            fullName: 'Charlie Brown',
-            companyName: 'FinTech Solutions',
+            username: 'charlie.brown',
+            firstName: 'Charlie',
+            lastName: 'Brown',
+            company: 'fintech-zh',
+            companyDisplayName: 'FinTech Solutions',
           },
         ],
         presentationUrl: 'https://cdn.batbern.ch/2024/presentations/api-gateway.pdf',
@@ -357,6 +367,9 @@ describe('ArchiveEventDetailPage Component', () => {
         expect(screen.getAllByText(/DevCo/i).length).toBeGreaterThanOrEqual(1);
         expect(screen.getAllByText(/FinTech Solutions/i).length).toBeGreaterThanOrEqual(1);
       });
+      // The displayName is shown, never the raw company slug.
+      expect(screen.queryByText(/tcorp-zh/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/cloud-zh/i)).not.toBeInTheDocument();
     });
 
     test('should_displaySessionTime_when_provided', async () => {

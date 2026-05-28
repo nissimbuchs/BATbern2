@@ -242,4 +242,77 @@ class PrimarySpeakerResolverTest {
             assertThat(resolver.resolveEmail(pool)).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("applyOverlay(SpeakerPoolResponse, SpeakerPool)")
+    class ApplyOverlay {
+
+        @Test
+        @DisplayName("sets both the company slug and the resolved companyDisplayName")
+        void shouldSetCompanyAndDisplayName() {
+            UUID sessionId = UUID.randomUUID();
+            SpeakerPool pool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .sessionId(sessionId)
+                    .build();
+            SessionUser primary = SessionUser.builder()
+                    .id(UUID.randomUUID())
+                    .session(Session.builder().id(sessionId).build())
+                    .username("nissim.buchs.3")
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .build();
+            UserResponse user = new UserResponse();
+            user.setId("nissim.buchs.3");
+            user.setFirstName("Nissim");
+            user.setLastName("Buchs");
+            user.setCompanyId("ELCA");
+
+            when(sessionUserRepository.findBySessionIdAndSpeakerRole(
+                    sessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER))
+                    .thenReturn(Optional.of(primary));
+            when(userApiClient.getUserByUsername("nissim.buchs.3")).thenReturn(user);
+            when(userApiClient.getCompanyDisplayNames())
+                    .thenReturn(java.util.Map.of("ELCA", "ELCA Informatique SA"));
+
+            ch.batbern.events.dto.SpeakerPoolResponse response =
+                    new ch.batbern.events.dto.SpeakerPoolResponse();
+            resolver.applyOverlay(response, pool);
+
+            assertThat(response.getCompany()).isEqualTo("ELCA");
+            assertThat(response.getCompanyDisplayName()).isEqualTo("ELCA Informatique SA");
+        }
+
+        @Test
+        @DisplayName("falls back to the slug as displayName when the slug is unknown")
+        void shouldFallBackToSlug_whenUnknown() {
+            UUID sessionId = UUID.randomUUID();
+            SpeakerPool pool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .sessionId(sessionId)
+                    .build();
+            SessionUser primary = SessionUser.builder()
+                    .id(UUID.randomUUID())
+                    .session(Session.builder().id(sessionId).build())
+                    .username("jane.doe")
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .build();
+            UserResponse user = new UserResponse();
+            user.setId("jane.doe");
+            user.setFirstName("Jane");
+            user.setLastName("Doe");
+            user.setCompanyId("UnknownCo");
+
+            when(sessionUserRepository.findBySessionIdAndSpeakerRole(
+                    sessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER))
+                    .thenReturn(Optional.of(primary));
+            when(userApiClient.getUserByUsername("jane.doe")).thenReturn(user);
+            when(userApiClient.getCompanyDisplayNames()).thenReturn(java.util.Map.of());
+
+            ch.batbern.events.dto.SpeakerPoolResponse response =
+                    new ch.batbern.events.dto.SpeakerPoolResponse();
+            resolver.applyOverlay(response, pool);
+
+            assertThat(response.getCompanyDisplayName()).isEqualTo("UnknownCo");
+        }
+    }
 }

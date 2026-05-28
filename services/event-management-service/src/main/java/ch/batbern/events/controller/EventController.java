@@ -485,8 +485,9 @@ public class EventController {
                     sm.put("presentationTitle", null);
                     sm.put("isConfirmed", su.isConfirmed());
                     sm.put("profilePictureUrl", portrait != null ? portrait.getProfilePictureUrl() : null);
-                    sm.put("company",          portrait != null ? portrait.getCompanyId() : null);
-                    sm.put("companyLogoUrl",   portrait != null ? portrait.getCompanyLogoUrl() : null);
+                    sm.put("company",            portrait != null ? portrait.getCompanyId() : null);
+                    sm.put("companyDisplayName", portrait != null ? portrait.getCompanyDisplayName() : null);
+                    sm.put("companyLogoUrl",     portrait != null ? portrait.getCompanyLogoUrl() : null);
                     sm.put("bio", null); // Only needed on detail page
                     return sm;
                 })

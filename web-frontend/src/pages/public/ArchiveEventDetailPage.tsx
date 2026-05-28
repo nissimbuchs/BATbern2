@@ -15,7 +15,7 @@ import { EventDescriptionSection } from '@/components/public/Event/EventDescript
 import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
-import type { EventDetailUI, SessionUI, SpeakerUI } from '@/types/event.types';
+import type { EventDetailUI, SessionUI, SessionSpeaker } from '@/types/event.types';
 
 export default function ArchiveEventDetailPage() {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -79,16 +79,19 @@ export default function ArchiveEventDetailPage() {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
 
-  // Collect all unique speakers (cast to SpeakerUI for extended properties)
-  const allSpeakers =
+  // Derive the speaker's display name from the API fields (firstName/lastName),
+  // falling back to the username. The API does not send a `fullName` field.
+  const speakerFullName = (s: SessionSpeaker) =>
+    [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.username || 'Unknown';
+
+  // Collect all unique speakers across sessions, de-duplicated by username
+  // (the public event API returns SessionSpeaker objects keyed by username).
+  const allSpeakers: SessionSpeaker[] =
     (event?.sessions as SessionUI[] | undefined)
       ?.flatMap((session) => session.speakers || [])
       .filter(
-        (speaker, index, arr) =>
-          arr.findIndex((s) => (s as SpeakerUI).speakerId === (speaker as SpeakerUI).speakerId) ===
-          index
-      )
-      .map((speaker) => speaker as SpeakerUI) || [];
+        (speaker, index, arr) => arr.findIndex((s) => s.username === speaker.username) === index
+      ) || [];
 
   // SEO metadata
   const pageUrl = `${window.location.origin}/archive/${eventCode}`;
@@ -126,11 +129,11 @@ export default function ArchiveEventDetailPage() {
           allSpeakers.length > 0
             ? allSpeakers.map((speaker) => ({
                 '@type': 'Person',
-                name: speaker.fullName,
-                ...(speaker.companyName && {
+                name: speakerFullName(speaker),
+                ...((speaker.companyDisplayName ?? speaker.company) && {
                   affiliation: {
                     '@type': 'Organization',
-                    name: speaker.companyName,
+                    name: speaker.companyDisplayName ?? speaker.company,
                   },
                 }),
               }))
@@ -249,13 +252,13 @@ export default function ArchiveEventDetailPage() {
                       {session.speakers && session.speakers.length > 0 && (
                         <div className="mb-3">
                           <div className="text-sm text-muted-foreground">
-                            {(session.speakers as SpeakerUI[]).map((speaker, idx) => (
-                              <span key={speaker.speakerId}>
-                                <span className="font-medium">{speaker.fullName}</span>
-                                {speaker.companyName && (
+                            {(session.speakers ?? []).map((speaker, idx) => (
+                              <span key={speaker.username}>
+                                <span className="font-medium">{speakerFullName(speaker)}</span>
+                                {(speaker.companyDisplayName ?? speaker.company) && (
                                   <span className="text-muted-foreground">
                                     {' '}
-                                    ({speaker.companyName})
+                                    ({speaker.companyDisplayName ?? speaker.company})
                                   </span>
                                 )}
                                 {idx < session.speakers!.length - 1 && ', '}
@@ -296,25 +299,25 @@ export default function ArchiveEventDetailPage() {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {allSpeakers.map((speaker) => (
-                    <div key={speaker.speakerId} className="text-center">
-                      {speaker.photoUrl ? (
+                    <div key={speaker.username} className="text-center">
+                      {speaker.profilePictureUrl ? (
                         <img
-                          src={speaker.photoUrl}
-                          alt={speaker.fullName}
+                          src={speaker.profilePictureUrl}
+                          alt={speakerFullName(speaker)}
                           className="w-24 h-24 rounded-full mx-auto mb-3 object-cover"
                         />
                       ) : (
                         <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
                           <span className="text-2xl font-medium text-muted-foreground">
-                            {getInitials(speaker.fullName || '')}
+                            {getInitials(speakerFullName(speaker))}
                           </span>
                         </div>
                       )}
-                      <div className="font-medium text-foreground">
-                        {speaker.fullName || 'Unknown'}
-                      </div>
-                      {speaker.companyName && (
-                        <div className="text-sm text-muted-foreground">{speaker.companyName}</div>
+                      <div className="font-medium text-foreground">{speakerFullName(speaker)}</div>
+                      {(speaker.companyDisplayName ?? speaker.company) && (
+                        <div className="text-sm text-muted-foreground">
+                          {speaker.companyDisplayName ?? speaker.company}
+                        </div>
                       )}
                     </div>
                   ))}

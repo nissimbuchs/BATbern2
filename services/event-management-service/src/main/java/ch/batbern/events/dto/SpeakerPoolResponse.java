@@ -17,7 +17,8 @@ public class SpeakerPoolResponse {
     private UUID id;
     private UUID eventId;
     private String speakerName;
-    private String company;
+    private String company; // company identifier/slug (User.companyId) — stable key, not for display
+    private String companyDisplayName; // human-readable name (displayName ?? name ?? slug); prefer for display
     private String expertise;
     private String assignedOrganizerId;
     private String status;
@@ -233,6 +234,14 @@ public class SpeakerPoolResponse {
 
     public void setCompany(String company) {
         this.company = company;
+    }
+
+    public String getCompanyDisplayName() {
+        return companyDisplayName;
+    }
+
+    public void setCompanyDisplayName(String companyDisplayName) {
+        this.companyDisplayName = companyDisplayName;
     }
 
     public String getExpertise() {

@@ -13,6 +13,7 @@ import ch.batbern.events.exception.UserServiceException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Client interface for communicating with the User Management Service API.
@@ -125,6 +126,19 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     List<CompanyBasicDto> getAllCompanies();
+
+    /**
+     * Resolve a map of company slug → human-readable display name.
+     *
+     * <p>The value is {@code displayName} when set, falling back to the company {@code name},
+     * then the slug itself — mirroring the {@code COALESCE(display_name, name, company_id)}
+     * resolution used by the cross-service portrait projection. Cached (15&nbsp;min) so callers
+     * enriching many speakers incur at most one upstream call per TTL.
+     *
+     * @return immutable map keyed by company slug ({@code User.companyId}); never null
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    Map<String, String> getCompanyDisplayNames();
 
     // Story 11.C.2 (AR13/AR14): canonical speaker-provisioning + profile-patch operations.
 
