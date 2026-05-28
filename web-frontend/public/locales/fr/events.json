@@ -831,5 +831,11 @@
       "afterTopicReveal": "Diapositive de révélation du sujet",
       "afterUpcomingEvents": "Diapositive des prochains événements"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Exporter les badges nominatifs",
+      "exportError": "Échec de l'exportation"
+    }
   }
 }

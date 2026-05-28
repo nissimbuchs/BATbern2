@@ -831,5 +831,11 @@
       "afterTopicReveal": "Onthullingsdia onderwerp",
       "afterUpcomingEvents": "Komende evenementen-dia"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Naambadges exporteren",
+      "exportError": "Export mislukt"
+    }
   }
 }

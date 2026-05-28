@@ -855,5 +855,11 @@
       "afterTopicReveal": "Themenbekanntgabe-Folie",
       "afterUpcomingEvents": "Kommende Events-Folie"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Namensschilder exportieren",
+      "exportError": "Export fehlgeschlagen"
+    }
   }
 }

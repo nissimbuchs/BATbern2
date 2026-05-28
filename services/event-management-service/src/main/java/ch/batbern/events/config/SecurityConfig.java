@@ -134,6 +134,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
                 // Admin settings read for support@ contact resolution
                 .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
+                // Spec auto-participant-email-aliases-excel-export (F2): per-event
+                // distribution-list resolver for batbern{N}-speaker@ + batbern{N}-moderator@
+                // aliases. Same VPC-only forwarder pattern as /events/*/registrations.
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/events/*/distribution-list/*").permitAll()
 
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()

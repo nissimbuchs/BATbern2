@@ -833,5 +833,11 @@
       "afterTopicReveal": "Themenbekanntgab-Folie",
       "afterUpcomingEvents": "Chömmendi Events-Folie"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Namesschildli exportiere",
+      "exportError": "Export het nid funktioniert"
+    }
   }
 }

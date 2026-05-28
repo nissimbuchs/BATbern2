@@ -279,6 +279,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
+                        // Spec auto-participant-email-aliases-excel-export (F2): per-event
+                        // distribution-list resolver for batbern{N}-speaker@ +
+                        // batbern{N}-moderator@. Same VPC-only forwarder pattern.
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/events/*/distribution-list/*").permitAll()
 
                         // All other requests require authentication (including Watch organizer endpoints,
                         // which are validated by the composite JwtDecoder below)

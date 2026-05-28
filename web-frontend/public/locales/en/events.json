@@ -855,5 +855,11 @@
       "afterTopicReveal": "Topic Reveal slide",
       "afterUpcomingEvents": "Upcoming Events slide"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Export name badges",
+      "exportError": "Export failed"
+    }
   }
 }
