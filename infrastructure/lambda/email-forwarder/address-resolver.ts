@@ -53,6 +53,12 @@ interface AdminSettingResponse {
   value: string | null;
 }
 
+interface DistributionListResponse {
+  eventCode?: string;
+  kind?: string;
+  emails: string[];
+}
+
 /**
  * Resolve recipients for a given forwarding address.
  * Returns a list of email addresses to forward to.
@@ -77,6 +83,19 @@ export async function resolveRecipients(toAddress: string): Promise<string[]> {
   // support@ → configured support contacts, fallback to organizers
   if (localPart === 'support') {
     return fetchSupportContacts();
+  }
+
+  // batbern{N}-speaker@ → event PRIMARY_SPEAKERs (must precede the bare batbern{N}@ branch
+  // so the longer alias doesn't fall through to registrant resolution).
+  const speakerMatch = localPart.match(/^batbern(\d+)-speaker$/);
+  if (speakerMatch) {
+    return fetchEventDistributionList(`BATbern${speakerMatch[1]}`, 'speakers');
+  }
+
+  // batbern{N}-moderator@ → event organizer
+  const moderatorMatch = localPart.match(/^batbern(\d+)-moderator$/);
+  if (moderatorMatch) {
+    return fetchEventDistributionList(`BATbern${moderatorMatch[1]}`, 'moderator');
   }
 
   // batbern{N}@ → event registrants
@@ -165,6 +184,34 @@ async function fetchSupportContacts(): Promise<string[]> {
 
   // Fallback: forward to organizers
   return fetchUsersByRole('ORGANIZER');
+}
+
+/**
+ * Fetch the per-event distribution list (`speakers` = scheduled PRIMARY_SPEAKERs,
+ * `moderator` = event organizer) via the event-management-service endpoint.
+ * Used by the `batbern{N}-speaker@` and `batbern{N}-moderator@` aliases.
+ * On 404 logs a WARN and returns []; on any other non-OK status logs ERROR and returns [].
+ */
+async function fetchEventDistributionList(
+  eventCode: string,
+  kind: 'speakers' | 'moderator',
+): Promise<string[]> {
+  const url = `${API_GATEWAY_URL}/api/v1/events/${eventCode}/distribution-list/${kind}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      console.warn(`Event not found: ${eventCode}`);
+    } else {
+      console.error(
+        `Failed to fetch ${kind} distribution list for ${eventCode}: ${response.status}`,
+      );
+    }
+    return [];
+  }
+
+  const data = (await response.json()) as DistributionListResponse;
+  return data.emails ?? [];
 }
 
 /** Fetch all registered attendees for an event. */

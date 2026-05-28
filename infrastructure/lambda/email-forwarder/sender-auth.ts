@@ -22,8 +22,8 @@ const PUBLIC_ADDRESSES = new Set(['info', 'events', 'support']);
  * Check if the sender is authorized to use the given forwarding address.
  *
  * Authorization rules:
- *   ok@, partner@, batbern{N}@ → organizers only
- *   info@, events@, support@   → anyone
+ *   ok@, partner@, batbern{N}@, batbern{N}-speaker@ → organizers only
+ *   info@, events@, support@, batbern{N}-moderator@ → anyone
  */
 export async function isAuthorizedSender(
   toAddress: string,
@@ -39,6 +39,16 @@ export async function isAuthorizedSender(
   if (PUBLIC_ADDRESSES.has(localPart)) {
     return true;
   }
+
+  // batbern{N}-moderator@ → contact-the-moderator inbox, open to anyone
+  // (mirrors info@/events@/support@ semantics). Must precede the bare
+  // batbern{N}@ organizer-only check below.
+  if (/^batbern\d+-moderator$/.test(localPart)) {
+    return true;
+  }
+
+  // batbern{N}-speaker@ → mass-mail to event speakers, organizers only
+  // (falls through to the shared organizer check below).
 
   // Restricted addresses: organizers only
   const organizerEmails = await getOrganizerEmails();

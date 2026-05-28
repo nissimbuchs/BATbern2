@@ -373,6 +373,151 @@ describe('T7 — Address resolution', () => {
     const result = await resolveRecipients('ok@batbern.ch');
     expect(result).toEqual(['org@test.ch']);
   });
+
+  // ----- F2: per-event distribution-list aliases (-speaker, -moderator) -----
+
+  test('should_callSpeakersDistributionList_when_batbernNSpeakerAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'speakers',
+          emails: ['alice@example.com', 'bob@example.com'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-speaker@batbern.ch');
+
+    expect(result).toEqual(['alice@example.com', 'bob@example.com']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/speakers$/);
+  });
+
+  test('should_callModeratorDistributionList_when_batbernNModeratorAddress', async () => {
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          eventCode: 'BATbern99',
+          kind: 'moderator',
+          emails: ['organizer@batbern.ch'],
+        }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-moderator@batbern.ch');
+
+    expect(result).toEqual(['organizer@batbern.ch']);
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern99\/distribution-list\/moderator$/);
+  });
+
+  test('should_returnEmpty_when_distributionListEventUnknown_logsWarn', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async () => ({
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      })) as jest.Mock;
+
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern999-speaker@batbern.ch');
+
+      expect(result).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('BATbern999'));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('should_returnEmpty_when_distributionListServerError_logsError', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      })) as jest.Mock;
+
+      const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+      const result = await resolveRecipients('batbern99-moderator@batbern.ch');
+
+      expect(result).toEqual([]);
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('should_notMatchSpeakerAlias_when_localPartHasExtraSuffix', async () => {
+    // Anchored-regex negative case: batbern99-speaker-foo@ MUST NOT match
+    // either the -speaker or the bare batbern{N}@ branch — it should fall
+    // through to "Unknown forwarding address" and return [].
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    })) as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-speaker-foo@batbern.ch');
+
+    expect(result).toEqual([]);
+    // It should NOT have hit the distribution-list endpoint nor the registrants endpoint.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_notMatchModeratorAlias_when_localPartHasExtraSuffix', async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    })) as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    const result = await resolveRecipients('batbern99-foo@batbern.ch');
+
+    expect(result).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_notFallThroughToRegistrants_when_localPartIsSpeakerAlias', async () => {
+    // Guard against branch-ordering regression: the -speaker alias MUST be
+    // evaluated before the bare batbern{N}@ registrant branch.
+    const calledUrls: string[] = [];
+    global.fetch = jest.fn(async (url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      calledUrls.push(urlStr);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ emails: ['speaker@example.com'] }),
+      } as Response;
+    }) as jest.Mock;
+
+    const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
+    await resolveRecipients('batbern57-speaker@batbern.ch');
+
+    // Exactly one URL hit, and it's the distribution-list endpoint (NOT /registrations).
+    expect(calledUrls).toHaveLength(1);
+    expect(calledUrls[0]).toContain('/distribution-list/speakers');
+    expect(calledUrls[0]).not.toContain('/registrations');
+  });
 });
 
 // ========================
@@ -525,6 +670,54 @@ describe('T8 — Sender authorization', () => {
     resetCache();
     expect(await isAuthorizedSender('ok@batbern.ch', 'org@test.ch')).toBe(true);
     expect(await isAuthorizedSender('ok@batbern.ch', 'random@test.ch')).toBe(false);
+  });
+
+  // ----- F2: per-event alias auth (-speaker organizer-only, -moderator public) -----
+
+  test('should_allowAnyone_when_sendingToBatbernNModerator', async () => {
+    // -moderator follows the public-contact-address pattern (info@/events@/support@).
+    // No organizer fetch should be needed.
+    const fetchMock = jest.fn() as jest.Mock;
+    global.fetch = fetchMock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-moderator@batbern.ch', 'random@example.com');
+
+    expect(result).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('should_allowOrganizer_when_sendingToBatbernNSpeaker', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'org@test.ch');
+    expect(result).toBe(true);
+  });
+
+  test('should_rejectNonOrganizer_when_sendingToBatbernNSpeaker', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{ email: 'org@test.ch' }],
+        pagination: { totalPages: 1, page: 0 },
+      }),
+    })) as jest.Mock;
+
+    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    resetCache();
+    const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'random@test.ch');
+    expect(result).toBe(false);
   });
 });
 
