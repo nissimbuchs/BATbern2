@@ -36,6 +36,9 @@ public class SessionUserService {
     private final SessionUserRepository sessionUserRepository;
     private final SessionRepository sessionRepository;
     private final UserApiClient userApiClient;
+    // Spec: auto-participant-email-aliases-excel-export F1 — auto-register session speakers
+    // (CO_SPEAKER added via the Sessions tab) as event participants of the host event.
+    private final SpeakerAutoRegistrationService speakerAutoRegistrationService;
 
     /**
      * Assign a speaker to a session.
@@ -93,6 +96,21 @@ public class SessionUserService {
         sessionUserRepository.save(sessionUser);
 
         log.info("Successfully assigned speaker {} to session {}", username, sessionId);
+
+        // Spec F1: auto-register any session-level speaker as an event participant. The
+        // PRIMARY_SPEAKER path is normally handled by SpeakerWorkflowService at READY (which
+        // uses TRIGGER_SESSION_PRIMARY_SPEAKER), but a direct
+        // assignSpeakerToSession(PRIMARY_SPEAKER) call would otherwise bypass auto-reg —
+        // so we also handle PRIMARY_SPEAKER here. The call is idempotent, so the duplicate
+        // attempt during the workflow path is a safe no-op.
+        if (speakerRole == SpeakerRole.PRIMARY_SPEAKER || speakerRole == SpeakerRole.CO_SPEAKER) {
+            speakerAutoRegistrationService.autoRegisterIfAbsent(
+                    session.getEventId(),
+                    username,
+                    speakerRole == SpeakerRole.PRIMARY_SPEAKER
+                            ? SpeakerAutoRegistrationService.TRIGGER_SESSION_PRIMARY_SPEAKER
+                            : SpeakerAutoRegistrationService.TRIGGER_SESSION_CO_SPEAKER);
+        }
 
         return enrichWithUserData(sessionUser, user);
     }

@@ -48,6 +48,9 @@ class SessionUserServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
+    @Mock
+    private SpeakerAutoRegistrationService speakerAutoRegistrationService;
+
     @InjectMocks
     private SessionUserService sessionUserService;
 
