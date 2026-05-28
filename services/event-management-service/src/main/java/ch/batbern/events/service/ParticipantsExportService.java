@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +135,6 @@ public class ParticipantsExportService {
             log.warn("Could not fetch organizer list for badge export: {}", e.getMessage());
             return;
         }
-        Map<String, String> companyNames = safeCompanyDisplayNames();
         for (String username : usernames) {
             try {
                 UserResponse user = userApiClient.getUserByUsername(username);
@@ -147,7 +145,7 @@ public class ParticipantsExportService {
                 rows.put(username, new ParticipantRow(
                         user.getFirstName(),
                         user.getLastName(),
-                        resolveCompany(user.getCompanyId(), companyNames),
+                        resolveCompany(user.getCompanyId()),
                         ROLE_ORGANIZER));
             } catch (UserNotFoundException ignore) {
                 log.warn("Organizer username {} not resolvable — skipping in XLSX", username);
@@ -158,7 +156,6 @@ public class ParticipantsExportService {
     private void collectEventSpeakers(Event event, Map<String, ParticipantRow> rows) {
         List<SessionUser> speakers =
                 sessionUserRepository.findEventSpeakersByEventId(event.getId());
-        Map<String, String> companyNames = safeCompanyDisplayNames();
         for (SessionUser su : speakers) {
             String username = su.getUsername();
             if (username == null || username.isBlank()) {
@@ -174,7 +171,7 @@ public class ParticipantsExportService {
                 rows.put(username, new ParticipantRow(
                         user.getFirstName(),
                         user.getLastName(),
-                        resolveCompany(user.getCompanyId(), companyNames),
+                        resolveCompany(user.getCompanyId()),
                         ROLE_SPEAKER));
             } catch (UserNotFoundException ignore) {
                 // Fall back to cached fields on session_users
@@ -193,7 +190,6 @@ public class ParticipantsExportService {
                         .filter(r -> r.getStatus() != null
                                 && BADGE_STATUSES.contains(r.getStatus().toLowerCase()))
                         .toList();
-        Map<String, String> companyNames = safeCompanyDisplayNames();
         for (Registration r : registrations) {
             String username = r.getAttendeeUsername();
             if (username == null || username.isBlank()) {
@@ -208,26 +204,31 @@ public class ParticipantsExportService {
             rows.put(username, new ParticipantRow(
                     r.getAttendeeFirstName(),
                     r.getAttendeeLastName(),
-                    resolveCompany(r.getAttendeeCompanyId(), companyNames),
+                    resolveCompany(r.getAttendeeCompanyId()),
                     ROLE_ATTENDEE));
         }
     }
 
-    private Map<String, String> safeCompanyDisplayNames() {
-        try {
-            return userApiClient.getCompanyDisplayNames();
-        } catch (Exception e) {
-            log.warn("Could not resolve company display names — falling back to slugs: {}",
-                    e.getMessage());
-            return new HashMap<>();
-        }
-    }
-
-    private String resolveCompany(String companySlug, Map<String, String> companyDisplayNames) {
+    /**
+     * Resolve a company slug to its display name for badge rendering.
+     *
+     * <p>Per-slug cached (15 min) in {@code userApiCache} — repeated companies across the
+     * organizer / speaker / attendee passes hit the cache after the first lookup, so an
+     * export with N participants and K distinct companies makes at most K upstream calls.
+     * Returns the slug as a graceful fallback when CUMS doesn't know the company.
+     */
+    private String resolveCompany(String companySlug) {
         if (companySlug == null || companySlug.isBlank()) {
             return "";
         }
-        return companyDisplayNames.getOrDefault(companySlug, companySlug);
+        try {
+            String displayName = userApiClient.getCompanyDisplayName(companySlug);
+            return displayName != null ? displayName : companySlug;
+        } catch (Exception e) {
+            log.warn("Could not resolve display name for company {} — falling back to slug: {}",
+                    companySlug, e.getMessage());
+            return companySlug;
+        }
     }
 
     private static String nullToEmpty(String s) {

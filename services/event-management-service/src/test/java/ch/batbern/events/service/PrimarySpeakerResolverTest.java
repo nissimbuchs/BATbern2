@@ -271,8 +271,7 @@ class PrimarySpeakerResolverTest {
                     sessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER))
                     .thenReturn(Optional.of(primary));
             when(userApiClient.getUserByUsername("nissim.buchs.3")).thenReturn(user);
-            when(userApiClient.getCompanyDisplayNames())
-                    .thenReturn(java.util.Map.of("ELCA", "ELCA Informatique SA"));
+            when(userApiClient.getCompanyDisplayName("ELCA")).thenReturn("ELCA Informatique SA");
 
             ch.batbern.events.dto.SpeakerPoolResponse response =
                     new ch.batbern.events.dto.SpeakerPoolResponse();
@@ -306,7 +305,7 @@ class PrimarySpeakerResolverTest {
                     sessionId, SessionUser.SpeakerRole.PRIMARY_SPEAKER))
                     .thenReturn(Optional.of(primary));
             when(userApiClient.getUserByUsername("jane.doe")).thenReturn(user);
-            when(userApiClient.getCompanyDisplayNames()).thenReturn(java.util.Map.of());
+            when(userApiClient.getCompanyDisplayName("UnknownCo")).thenReturn(null);
 
             ch.batbern.events.dto.SpeakerPoolResponse response =
                     new ch.batbern.events.dto.SpeakerPoolResponse();

@@ -286,14 +286,17 @@ public class SessionUserService {
     }
 
     /**
-     * Resolve a company slug to its human-readable display name (displayName ?? name ?? slug)
-     * via the cached company map. Returns {@code null} when the speaker has no company.
+     * Resolve a company slug to its human-readable display name via a per-slug cached
+     * lookup against {@code GET /companies/{slug}}. Falls back to the slug itself when
+     * the company is unknown / CUMS is degraded. Returns {@code null} when the speaker
+     * has no company at all.
      */
     private String resolveCompanyDisplayName(String companySlug) {
         if (companySlug == null || companySlug.isBlank()) {
             return null;
         }
-        return userApiClient.getCompanyDisplayNames().getOrDefault(companySlug, companySlug);
+        String displayName = userApiClient.getCompanyDisplayName(companySlug);
+        return displayName != null ? displayName : companySlug;
     }
 
 }
