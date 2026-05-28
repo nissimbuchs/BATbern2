@@ -23,6 +23,11 @@ This document consolidates security implementation, performance standards, acces
 - **Token Storage**: Secure JWT storage with automatic refresh
 - **Session Management**: Cognito-based session management
 - **Password Policy**: Strong password requirements
+- **Unconfirmed sign-up recovery**: a daily `CognitoConfirmationResendJob` re-sends a fresh Cognito
+  confirmation code to accounts unconfirmed past a grace window (Cognito's sign-up code is fixed at
+  24h and not configurable). The CUMS task role is granted `cognito-idp:ListUsers` +
+  `cognito-idp:ResendConfirmationCode`, scoped to the user-pool ARN (the SPA client has no secret,
+  so no `SecretHash` is needed).
 
 ## Cost Optimizations (2026-03)
 

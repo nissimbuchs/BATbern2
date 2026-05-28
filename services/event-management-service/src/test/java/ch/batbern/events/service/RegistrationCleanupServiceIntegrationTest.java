@@ -95,10 +95,10 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
-    @DisplayName("Should delete unconfirmed registrations older than 48 hours")
+    @DisplayName("Should delete unconfirmed registrations older than the cleanup window (default 5 days)")
     void shouldDeleteOldUnconfirmedRegistrations() {
-        // Arrange - Create registration 49 hours ago (should be deleted)
-        Instant expiredTime = Instant.now().minus(49, ChronoUnit.HOURS);
+        // Arrange - Create registration 6 days ago (older than the 5-day cleanup window → deleted)
+        Instant expiredTime = Instant.now().minus(6, ChronoUnit.DAYS);
         Registration oldUnconfirmed = createAndSaveRegistration(
                 "REG-OLD-001",
                 "registered",
@@ -117,7 +117,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     @Test
     @DisplayName("Should NOT delete recent unconfirmed registrations")
     void shouldNotDeleteRecentUnconfirmedRegistrations() {
-        // Arrange - Create registration 47 hours ago (should NOT be deleted)
+        // Arrange - Create registration 47 hours ago (well within the 5-day cleanup window → kept)
         Instant recentTime = Instant.now().minus(47, ChronoUnit.HOURS);
         Registration recentUnconfirmed = createAndSaveRegistration(
                 "REG-RECENT-001",
@@ -160,7 +160,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     @Disabled("TODO: Fix test isolation issue - cleanup service not deleting in multi-entity scenarios due to JPA/transaction management complexity")
     void shouldHandleMixedScenario() {
         // Arrange
-        Instant oldTime = Instant.now().minus(49, ChronoUnit.HOURS);
+        Instant oldTime = Instant.now().minus(6, ChronoUnit.DAYS);
         Instant recentTime = Instant.now().minus(47, ChronoUnit.HOURS);
 
         // Create various registrations
@@ -198,7 +198,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     @Disabled("TODO: Fix test isolation issue - cleanup service not deleting in multi-entity scenarios due to JPA/transaction management complexity")
     void shouldReturnAccurateStatistics() {
         // Arrange
-        Instant oldTime = Instant.now().minus(49, ChronoUnit.HOURS);
+        Instant oldTime = Instant.now().minus(6, ChronoUnit.DAYS);
         Instant recentTime = Instant.now().minus(47, ChronoUnit.HOURS);
 
         createAndSaveRegistration("REG-OLD-001", "registered", oldTime);
@@ -236,7 +236,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
     @DisplayName("Manual trigger should work same as scheduled job")
     void shouldWorkViaManualTrigger() {
         // Arrange
-        Instant oldTime = Instant.now().minus(49, ChronoUnit.HOURS);
+        Instant oldTime = Instant.now().minus(6, ChronoUnit.DAYS);
         createAndSaveRegistration("REG-MANUAL-001", "registered", oldTime);
 
         // Act

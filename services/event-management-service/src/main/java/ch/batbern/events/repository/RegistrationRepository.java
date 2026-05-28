@@ -93,6 +93,33 @@ public interface RegistrationRepository
     List<Registration> findByStatusAndCreatedAtBefore(String status, Instant threshold);
 
     /**
+     * Find registrations eligible for an automated confirmation-email resend
+     * (used by {@code RegistrationResendService}).
+     *
+     * Eligible = still pending ("registered"), unconfirmed longer than the grace window
+     * ({@code createdAt <= eligibleBefore}), still within the active window
+     * ({@code createdAt > notExpiredAfter} — not already past the cleanup horizon), under the resend
+     * cap ({@code confirmationResendCount < maxAttempts}), and either never resent or last resent on
+     * or before {@code resentBefore} (enforces a minimum gap between resends).
+     *
+     * @param eligibleBefore registrations created at/after this instant are too new to nudge
+     * @param notExpiredAfter registrations created on/before this instant are effectively expired
+     * @param resentBefore   last-resend must be on/before this instant (or null)
+     * @param maxAttempts    resend cap
+     * @return matching registrations
+     */
+    @Query("SELECT r FROM Registration r WHERE r.status = 'registered' "
+            + "AND r.createdAt <= :eligibleBefore "
+            + "AND r.createdAt > :notExpiredAfter "
+            + "AND r.confirmationResendCount < :maxAttempts "
+            + "AND (r.confirmationResentAt IS NULL OR r.confirmationResentAt <= :resentBefore)")
+    List<Registration> findResendEligible(
+            @Param("eligibleBefore") Instant eligibleBefore,
+            @Param("notExpiredAfter") Instant notExpiredAfter,
+            @Param("resentBefore") Instant resentBefore,
+            @Param("maxAttempts") int maxAttempts);
+
+    /**
      * Count registrations by status
      * Used for cleanup statistics and monitoring
      *

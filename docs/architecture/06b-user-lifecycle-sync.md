@@ -628,6 +628,29 @@ follow-up if reuse appears).
 
 **Metrics**: Progress and results (`orphanedUsers`, `missingUsers`, duration, errors) are published via `UserSyncMetricsService`.
 
+### ✅ Unconfirmed Sign-up Resend Job — `CognitoConfirmationResendJob`
+
+`CognitoConfirmationResendJob` (company-user-management-service) runs daily and re-sends the Cognito
+sign-up confirmation code to accounts still in `UNCONFIRMED` status. It exists because Cognito's
+sign-up confirmation code is fixed at **24 hours** and is **not configurable** (only our own
+registration-confirmation token — in event-management-service — has a configurable window). An
+attendee whose first code expired before they clicked hits a recovery dead-end: re-registering
+reports "email already exists" and password-reset reports "user not registered". The nightly job
+hands them a fresh, valid code automatically (re-triggering the `CustomEmailSender_SignUp` Lambda)
+instead of requiring manual admin remediation.
+
+**Eligibility**: `UserStatus == UNCONFIRMED` **and** signup age within `[after-hours, after-hours +
+window-hours)` (defaults 48h / 48h). The bounded window is a **stateless** anti-spam guard —
+UNCONFIRMED users have no `user_profiles` row to record a resend count (PostConfirmation only creates
+one on confirmation), so the age window limits each account to a few nudges across daily runs, then
+leaves it alone.
+
+**Resend call**: `ResendConfirmationCode` keyed by the email alias (the SPA app client has no secret,
+so no `SecretHash` is required). Requires the `cognito-idp:ResendConfirmationCode` +
+`cognito-idp:ListUsers` IAM actions on the user-pool ARN (granted to the CUMS task role). Configurable
+via `cognito.resend.*` (`enabled`, `cron`, `after-hours`, `window-hours`). Confirmed accounts and
+accounts outside the window are skipped.
+
 ### ❌ No Compensation Logs
 **Reason**: No bidirectional sync means no partial failure scenarios requiring compensation.
 

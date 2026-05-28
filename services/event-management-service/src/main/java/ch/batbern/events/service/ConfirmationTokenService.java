@@ -14,22 +14,38 @@ import java.util.UUID;
 /**
  * Service for generating and validating email confirmation and cancellation tokens.
  *
- * Generates short-lived JWT tokens (48h validity) for email-based registration confirmation and cancellation.
+ * Generates signed JWT tokens for email-based registration confirmation and cancellation.
  * Tokens contain registration details and cannot be forged without the secret key.
+ *
+ * Validity is configurable via {@code app.registration.confirmation-token-validity-hours}
+ * (default 4 days / 96 hours). It MUST stay below the registration cleanup window
+ * ({@code app.registration.cleanup-after-hours}) so a still-valid link always has a
+ * registration row to confirm — see {@link RegistrationCleanupService}.
  *
  * Security Features:
  * - JWT signature validation (HMAC-SHA256)
- * - Time-based expiry (48 hours)
+ * - Time-based expiry (configurable, default 4 days)
  * - Type validation (only "email-confirmation" or "registration-cancellation" tokens accepted)
  * - One-time use tracking (via confirmation timestamp or deletion in database)
  */
 @Service
 public class ConfirmationTokenService {
 
-    private final SecretKey signingKey;
-    private final long validityMs = 48 * 60 * 60 * 1000; // 48 hours
+    /**
+     * Default token validity: 4 days (96 hours). Widened from the original 48h so attendees
+     * have a longer window to click the confirmation link. MUST stay below the registration
+     * cleanup window so a still-valid link always has a row to confirm.
+     */
+    public static final long DEFAULT_VALIDITY_HOURS = 96;
 
-    public ConfirmationTokenService(@Value("${jwt.secret}") String secret) {
+    private final SecretKey signingKey;
+    private final long validityMs;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ConfirmationTokenService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${app.registration.confirmation-token-validity-hours:96}") long validityHours) {
+        this.validityMs = validityHours * 60L * 60L * 1000L;
         // Use provided secret or generate a secure random key for dev/test
         if (secret == null || secret.isEmpty() || "changeme".equals(secret)) {
             this.signingKey = Jwts.SIG.HS256.key().build();
@@ -41,11 +57,19 @@ public class ConfirmationTokenService {
     }
 
     /**
+     * Convenience constructor using the default 4-day validity. Intended for unit tests;
+     * production uses the {@code @Autowired} constructor with the configurable validity.
+     */
+    public ConfirmationTokenService(String secret) {
+        this(secret, DEFAULT_VALIDITY_HOURS);
+    }
+
+    /**
      * Generate confirmation token for registration.
      *
      * @param registrationId  UUID of the registration
      * @param eventCode       Event code (e.g., "BATbern57")
-     * @return JWT token string (valid for 48 hours)
+     * @return JWT token string (valid for the configured window, default 4 days)
      */
     public String generateConfirmationToken(UUID registrationId, String eventCode) {
         Date now = new Date();
@@ -110,7 +134,7 @@ public class ConfirmationTokenService {
      *
      * @param registrationId  UUID of the registration
      * @param eventCode       Event code (e.g., "BATbern57")
-     * @return JWT token string (valid for 48 hours)
+     * @return JWT token string (valid for the configured window, default 4 days)
      */
     public String generateCancellationToken(UUID registrationId, String eventCode) {
         Date now = new Date();

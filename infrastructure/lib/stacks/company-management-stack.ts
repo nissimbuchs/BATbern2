@@ -163,6 +163,11 @@ export class CompanyManagementStack extends cdk.Stack {
     // AdminAddUserToGroup is intentionally NOT granted (Resolved Q#1, PM 2026-05-17): roles live in
     // PostgreSQL user_roles per ADR-001; no Cognito groups exist; granting the permission would be a useless
     // least-privilege violation. ADR-009 §Decision 3, PRD AR30, and PRD NFR5 are updated in the same commit.
+    // ListUsers + ResendConfirmationCode added for the daily unconfirmed-signup nudge
+    // (CognitoConfirmationResendJob) and the nightly reconciliation's missing-user scan
+    // (UserReconciliationService), which both page through the pool. ResendConfirmationCode is a
+    // non-admin API but is still IAM-scoped to this pool; the SPA client has no secret so no
+    // SecretHash is required.
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
@@ -170,6 +175,8 @@ export class CompanyManagementStack extends cdk.Stack {
         'cognito-idp:AdminSetUserPassword',
         'cognito-idp:AdminInitiateAuth',
         'cognito-idp:AdminGetUser',
+        'cognito-idp:ListUsers',
+        'cognito-idp:ResendConfirmationCode',
       ],
       resources: [props.userPool.userPoolArn],
     }));
