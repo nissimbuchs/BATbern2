@@ -137,6 +137,10 @@ export class EventManagementStack extends cdk.Stack {
         additionalSecrets: {
           ...(openAiSecret && { OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret) }),
           ...(props.watchJwtSecret && { WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
+          // JWT_SECRET provides a stable HMAC key for ConfirmationTokenService (registration email links).
+          // Without it the service generates a random key on each start, invalidating all in-flight tokens
+          // whenever ECS replaces a Fargate Spot task or a new deployment lands.
+          ...(props.watchJwtSecret && { JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
         },
       },
       cluster: props.cluster,
