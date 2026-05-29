@@ -10,7 +10,8 @@
     "exportImport": "Export / Import",
     "aiPrompts": "KI-Prompts",
     "settings": "Einstellungen",
-    "globalImages": "Globale Bilder"
+    "globalImages": "Globale Bilder",
+    "venueCoordination": "Veranstaltungsort & Catering"
   },
   "globalImages": {
     "title": "Globale Teaser-Bilder",
@@ -31,6 +32,18 @@
     },
     "save": "Speichern",
     "saved": "Einstellungen gespeichert.",
-    "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "venueCoordination": {
+      "title": "Kontakte Veranstaltungsort & Catering",
+      "subtitle": "Diese Kontakte erhalten die Offerten- und Zeitplan-Mails aus dem Tab «Veranstaltungsort» auf der Event-Detailseite. Sie sind für jedes Event gleich — einmal hier hinterlegen.",
+      "venueSection": "Kontakt Veranstaltungsort",
+      "cateringSection": "Kontakt Catering",
+      "coordinatorSection": "Veranstaltungsort-Koordinator",
+      "coordinatorHelp": "Der Benutzername der Organisator:in (z. B. nissim.buchs), deren E-Mail-Adresse als Antwortadresse (Reply-To) auf jeder Veranstaltungsort-/Catering-Nachricht erscheint. Antworten gehen direkt an diese Person.",
+      "coordinatorUsername": "Benutzername Koordinator:in",
+      "salutation": "Anrede",
+      "name": "Name",
+      "email": "E-Mail"
+    }
   }
 }

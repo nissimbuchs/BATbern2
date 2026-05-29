@@ -10,7 +10,8 @@
     "exportImport": "Exporteren / Importeren",
     "aiPrompts": "AI-prompts",
     "settings": "Instellingen",
-    "globalImages": "Globale afbeeldingen"
+    "globalImages": "Globale afbeeldingen",
+    "venueCoordination": "Locatie & Catering"
   },
   "globalImages": {
     "title": "Globale teaserafbeeldingen",
@@ -31,6 +32,18 @@
     },
     "save": "Opslaan",
     "saved": "Instellingen opgeslagen.",
-    "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
+    "saveFailed": "Opslaan mislukt. Probeer het opnieuw.",
+    "venueCoordination": {
+      "title": "Locatie- en cateringcontacten",
+      "subtitle": "Deze contacten ontvangen de offerte- en programma-e-mails die vanaf het tabblad Locatie op de evenementdetailpagina worden verzonden. Ze zijn hetzelfde voor elk evenement — eenmalig hier definiëren.",
+      "venueSection": "Locatiecontact",
+      "cateringSection": "Cateringcontact",
+      "coordinatorSection": "Locatiecoördinator",
+      "coordinatorHelp": "De gebruikersnaam van de organisator (bv. nissim.buchs) wiens e-mailadres als Reply-To verschijnt op elk locatie-/cateringbericht. Antwoorden komen direct bij deze persoon terecht.",
+      "coordinatorUsername": "Gebruikersnaam coördinator",
+      "salutation": "Aanhef",
+      "name": "Naam",
+      "email": "E-mail"
+    }
   }
 }

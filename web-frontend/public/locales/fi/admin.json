@@ -10,7 +10,8 @@
     "exportImport": "Vienti / Tuonti",
     "aiPrompts": "Tekoalykehotteet",
     "settings": "Asetukset",
-    "globalImages": "Yleiset kuvat"
+    "globalImages": "Yleiset kuvat",
+    "venueCoordination": "Tila & Catering"
   },
   "globalImages": {
     "title": "Yleiset teaser-kuvat",
@@ -31,6 +32,18 @@
     },
     "save": "Tallenna",
     "saved": "Asetukset tallennettu.",
-    "saveFailed": "Tallennus epaonnistui. Yrita uudelleen."
+    "saveFailed": "Tallennus epaonnistui. Yrita uudelleen.",
+    "venueCoordination": {
+      "title": "Tilan ja cateringin yhteyshenkilöt",
+      "subtitle": "Nämä yhteyshenkilöt saavat tarjous- ja aikataulusähköpostit, jotka lähetetään tapahtuman tietosivun Tila-välilehdeltä. Ne ovat samat jokaisessa tapahtumassa — määritä kerran tähän.",
+      "venueSection": "Tilan yhteyshenkilö",
+      "cateringSection": "Cateringin yhteyshenkilö",
+      "coordinatorSection": "Tilan koordinaattori",
+      "coordinatorHelp": "Järjestäjän käyttäjänimi (esim. nissim.buchs), jonka sähköpostiosoite näkyy Reply-To-kenttänä jokaisessa tila-/cateringviestissä. Vastaukset menevät suoraan tälle henkilölle.",
+      "coordinatorUsername": "Koordinaattorin käyttäjänimi",
+      "salutation": "Tervehdys",
+      "name": "Nimi",
+      "email": "Sähköposti"
+    }
   }
 }

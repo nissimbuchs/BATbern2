@@ -10,7 +10,8 @@
     "exportImport": "Export / Import",
     "aiPrompts": "KI-Prompts",
     "settings": "Iistellige",
-    "globalImages": "Globali Biuder"
+    "globalImages": "Globali Biuder",
+    "venueCoordination": "Lokau & Catering"
   },
   "globalImages": {
     "title": "Globali Teaser-Biuder",
@@ -31,6 +32,18 @@
     },
     "save": "Spychere",
     "saved": "Iistellige gspycheret.",
-    "saveFailed": "S Spychere het nid klappt. Bitte probiers noumou."
+    "saveFailed": "S Spychere het nid klappt. Bitte probiers noumou.",
+    "venueCoordination": {
+      "title": "Kontäkt Lokau & Catering",
+      "subtitle": "Die Kontäkt überchöme d Offerte- u Zytplan-Mails wo us em Tab «Lokau» uf der Event-Detailsyte gschickt wärde. Si si für jede Event glych — eimaau hie iiträge.",
+      "venueSection": "Kontäkt Lokau",
+      "cateringSection": "Kontäkt Catering",
+      "coordinatorSection": "Lokau-Koordinator",
+      "coordinatorHelp": "Dr Benutzername vo dr Organisatorin (z. B. nissim.buchs), deri E-Mail-Adräss as Reply-To uf jeder Lokau-/Catering-Nachricht erschynt. Antworte gönge direkt a die Person.",
+      "coordinatorUsername": "Benutzername Koordinator",
+      "salutation": "Aaräd",
+      "name": "Name",
+      "email": "E-Mail"
+    }
   }
 }

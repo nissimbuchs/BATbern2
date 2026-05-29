@@ -10,7 +10,8 @@
     "exportImport": "Export / Import",
     "aiPrompts": "AI Prompts",
     "settings": "Settings",
-    "globalImages": "Global Images"
+    "globalImages": "Global Images",
+    "venueCoordination": "Venue & Catering"
   },
   "globalImages": {
     "title": "Global Teaser Images",
@@ -31,6 +32,18 @@
     },
     "save": "Save",
     "saved": "Settings saved.",
-    "saveFailed": "Save failed. Please try again."
+    "saveFailed": "Save failed. Please try again.",
+    "venueCoordination": {
+      "title": "Venue & Catering Contacts",
+      "subtitle": "These contacts receive the offerte and timetable emails sent from the Event Detail Venue tab. They are the same across every event — define them once here.",
+      "venueSection": "Venue contact",
+      "cateringSection": "Catering contact",
+      "coordinatorSection": "Venue coordinator",
+      "coordinatorHelp": "The organizer username (e.g. nissim.buchs) whose email address will appear as Reply-To on every venue/catering message. Replies from the recipient go straight to them.",
+      "coordinatorUsername": "Coordinator username",
+      "salutation": "Salutation",
+      "name": "Name",
+      "email": "Email"
+    }
   }
 }

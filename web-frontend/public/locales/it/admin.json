@@ -10,7 +10,8 @@
     "exportImport": "Esporta / Importa",
     "aiPrompts": "Prompt IA",
     "settings": "Impostazioni",
-    "globalImages": "Immagini globali"
+    "globalImages": "Immagini globali",
+    "venueCoordination": "Sede & Catering"
   },
   "globalImages": {
     "title": "Immagini teaser globali",
@@ -31,6 +32,18 @@
     },
     "save": "Salva",
     "saved": "Impostazioni salvate.",
-    "saveFailed": "Salvataggio fallito. Riprova."
+    "saveFailed": "Salvataggio fallito. Riprova.",
+    "venueCoordination": {
+      "title": "Contatti sede & catering",
+      "subtitle": "Questi contatti ricevono le e-mail di preventivo e programma inviate dal tab Sede della pagina di dettaglio dell'evento. Sono uguali per ogni evento — definirli una sola volta qui.",
+      "venueSection": "Contatto sede",
+      "cateringSection": "Contatto catering",
+      "coordinatorSection": "Coordinatore della sede",
+      "coordinatorHelp": "Il nome utente dell'organizzatore (es. nissim.buchs) il cui indirizzo e-mail apparirà come Reply-To su ogni messaggio sede/catering. Le risposte arrivano direttamente a questa persona.",
+      "coordinatorUsername": "Nome utente del coordinatore",
+      "salutation": "Saluto",
+      "name": "Nome",
+      "email": "E-mail"
+    }
   }
 }

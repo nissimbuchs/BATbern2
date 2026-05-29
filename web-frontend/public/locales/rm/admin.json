@@ -10,7 +10,8 @@
     "exportImport": "Export / Import",
     "aiPrompts": "Prompts IA",
     "settings": "Configuraziun",
-    "globalImages": "Maletgs globals"
+    "globalImages": "Maletgs globals",
+    "venueCoordination": "Lieu & Catering"
   },
   "globalImages": {
     "title": "Maletgs teaser globals",
@@ -31,6 +32,18 @@
     },
     "save": "Memorisar",
     "saved": "Configuraziun memorisada.",
-    "saveFailed": "Il memorisar n'è betg reussì. Empruvai anc ina giada."
+    "saveFailed": "Il memorisar n'è betg reussì. Empruvai anc ina giada.",
+    "venueCoordination": {
+      "title": "Contacts lieu & catering",
+      "subtitle": "Quests contacts retschaivan ils e-mails d'offerta e da plan dal temp tramess dal tab Lieu da la pagina da detagls da l'occurrenza. Els èn ils medems per mintga occurrenza — definir mo ina giada qua.",
+      "venueSection": "Contact lieu",
+      "cateringSection": "Contact catering",
+      "coordinatorSection": "Coordinatur dal lieu",
+      "coordinatorHelp": "Il num d'utilisader da l'organisatura (p. ex. nissim.buchs) la cui adressa dad e-mail cumpara sco Reply-To sin mintga messadi lieu/catering. Las respostas van directamain a questa persuna.",
+      "coordinatorUsername": "Num d'utilisader dal coordinatur",
+      "salutation": "Salidaziun",
+      "name": "Num",
+      "email": "E-mail"
+    }
   }
 }

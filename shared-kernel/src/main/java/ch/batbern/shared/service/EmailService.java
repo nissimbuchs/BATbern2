@@ -132,25 +132,44 @@ public class EmailService {
      */
     public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody,
             String configurationSetName) {
+        sendHtmlEmailSync(to, cc, subject, htmlBody, configurationSetName, null);
+    }
+
+    /**
+     * Send an HTML email synchronously with an explicit Reply-To address.
+     *
+     * <p>Used when the Reply-To must differ from the globally-configured
+     * {@code app.email.reply-to} — e.g. venue-coordination mails carry the
+     * organizer-on-duty as Reply-To so the venue/caterer's replies land in
+     * that person's inbox, not the shared mailbox.
+     *
+     * <p>{@code replyTo} may be {@code null} or blank, in which case the
+     * configured default is used.
+     */
+    public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody,
+            String configurationSetName, String replyTo) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
 
         List<String> ccClean = normaliseCc(cc, to);
+        String effectiveReplyTo = (replyTo != null && !replyTo.isBlank()) ? replyTo : replyToEmail;
 
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
                 localEmailCapture.capture(to, ccClean, subject, htmlBody, fromEmail, fromName, List.of());
             } else {
-                log.info("Would send email to: {}, ccCount: {}, subject: {}",
-                        LoggingUtils.maskEmail(to), ccClean.size(), subject);
+                log.info("Would send email to: {}, ccCount: {}, subject: {}, replyTo: {}",
+                        LoggingUtils.maskEmail(to), ccClean.size(), subject,
+                        LoggingUtils.maskEmail(effectiveReplyTo));
             }
             return;
         }
 
         try {
-            log.debug("Sending HTML email (sync) to: {}, ccCount: {}, subject: {}, configSet: {}",
-                    LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName);
+            log.debug("Sending HTML email (sync) to: {}, ccCount: {}, subject: {}, configSet: {}, replyTo: {}",
+                    LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName,
+                    LoggingUtils.maskEmail(effectiveReplyTo));
 
             Destination.Builder destBuilder = Destination.builder().toAddresses(to);
             if (!ccClean.isEmpty()) {
@@ -159,7 +178,7 @@ public class EmailService {
 
             SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
                     .source(String.format("%s <%s>", fromName, fromEmail))
-                    .replyToAddresses(replyToEmail)
+                    .replyToAddresses(effectiveReplyTo)
                     .destination(destBuilder.build())
                     .message(software.amazon.awssdk.services.ses.model.Message.builder()
                             .subject(Content.builder().data(subject).charset("UTF-8").build())
