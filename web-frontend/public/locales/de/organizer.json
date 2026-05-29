@@ -352,7 +352,8 @@
       "noEntries": "Noch kein Verlauf.",
       "loadError": "Verlauf konnte nicht geladen werden.",
       "statusEntry": "{{from}} → {{to}} von {{actor}}",
-      "outreachEntry": "Kontaktaufnahme von {{actor}}"
+      "outreachEntry": "Kontaktaufnahme von {{actor}}",
+      "contentRejectedEntry": "Überarbeitung des Abstracts angefordert von {{actor}}"
     },
     "responseDeadline": "Antwortfrist: {{date}}",
     "errors": {

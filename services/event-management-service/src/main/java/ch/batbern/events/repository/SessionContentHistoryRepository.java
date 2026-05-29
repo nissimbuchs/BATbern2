@@ -29,6 +29,21 @@ public interface SessionContentHistoryRepository extends JpaRepository<SessionCo
     List<SessionContentVersion> findBySessionIdOrderBySubmissionVersionDesc(UUID sessionId);
 
     /**
+     * Find content versions for a session that carry reviewer feedback (i.e. organizer rejections),
+     * newest review first. Used by the organizer drawer's unified History feed to surface
+     * content rejections — those events never land in {@code speaker_status_history} because
+     * rejecting content is intentionally not a state transition (ADR-009).
+     */
+    @Query("""
+        SELECT v FROM SessionContentVersion v
+        WHERE v.session.id = :sessionId
+          AND v.reviewerFeedback IS NOT NULL
+          AND v.reviewedAt IS NOT NULL
+        ORDER BY v.reviewedAt DESC
+        """)
+    List<SessionContentVersion> findRejectedBySessionIdOrderByReviewedAtDesc(@Param("sessionId") UUID sessionId);
+
+    /**
      * Find the latest content version for a session — the one that mirrors
      * {@code sessions.title} and carries any pending reviewer feedback.
      */

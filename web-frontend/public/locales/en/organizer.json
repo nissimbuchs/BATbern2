@@ -352,7 +352,8 @@
       "noEntries": "No history yet.",
       "loadError": "Failed to load history.",
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
-      "outreachEntry": "Outreach by {{actor}}"
+      "outreachEntry": "Outreach by {{actor}}",
+      "contentRejectedEntry": "Abstract revision requested by {{actor}}"
     },
     "responseDeadline": "Response due {{date}}",
     "errors": {

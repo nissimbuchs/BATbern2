@@ -27,6 +27,7 @@ import {
   Phone as PhoneIcon,
   Person as PersonIcon,
   HelpOutline as UnknownIcon,
+  EditNote as RevisionIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -132,6 +133,11 @@ export const UnifiedHistoryPanel: React.FC<UnifiedHistoryPanelProps> = ({ speake
           const key = `${entry.kind}-${idx}-${entry.timestamp}`;
           if (entry.kind === 'status') {
             const it = entry.payload as StatusHistoryItem;
+            // ADR-009: rejecting an abstract is not a state transition, so the backend
+            // surfaces it here as a synthetic entry with kind=CONTENT_REJECTED and no
+            // previous/newStatus. Render those with a revision icon + dedicated copy
+            // so the organizer sees the feedback and timestamp.
+            const isContentRejection = it.kind === 'CONTENT_REJECTED';
             const fromLabel = it.previousStatus
               ? t(`organizer:speakerStatus.${it.previousStatus}`)
               : '—';
@@ -140,7 +146,9 @@ export const UnifiedHistoryPanel: React.FC<UnifiedHistoryPanelProps> = ({ speake
               <ListItem
                 key={key}
                 disableGutters
-                data-testid="history-entry-status"
+                data-testid={
+                  isContentRejection ? 'history-entry-content-rejected' : 'history-entry-status'
+                }
                 sx={{
                   flexDirection: 'column',
                   alignItems: 'flex-start',
@@ -152,15 +160,30 @@ export const UnifiedHistoryPanel: React.FC<UnifiedHistoryPanelProps> = ({ speake
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ width: '100%' }}>
-                  <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
-                    <StatusIcon sx={{ fontSize: 16 }} />
+                  <Avatar
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      bgcolor: isContentRejection ? 'warning.main' : 'primary.main',
+                    }}
+                  >
+                    {isContentRejection ? (
+                      <RevisionIcon sx={{ fontSize: 16 }} />
+                    ) : (
+                      <StatusIcon sx={{ fontSize: 16 }} />
+                    )}
                   </Avatar>
                   <Typography variant="body2" sx={{ flex: 1 }}>
-                    {t('organizer:speakerDrawer.history.statusEntry', {
-                      from: fromLabel,
-                      to: toLabel,
-                      actor: it.changedByUsername ?? t('common:labels.unknown', 'unknown'),
-                    })}
+                    {isContentRejection
+                      ? t('organizer:speakerDrawer.history.contentRejectedEntry', {
+                          actor: it.changedByUsername ?? t('common:labels.unknown', 'unknown'),
+                          defaultValue: 'Abstract revision requested by {{actor}}',
+                        })
+                      : t('organizer:speakerDrawer.history.statusEntry', {
+                          from: fromLabel,
+                          to: toLabel,
+                          actor: it.changedByUsername ?? t('common:labels.unknown', 'unknown'),
+                        })}
                   </Typography>
                   <Tooltip title={fmt(entry.timestamp)}>
                     <Typography variant="caption" color="text.secondary">
