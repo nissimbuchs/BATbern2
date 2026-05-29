@@ -815,7 +815,8 @@
       "confirmed": "Bestätigt",
       "registered": "Angemeldet",
       "waitlist": "Warteliste",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "attended": "Teilgenommen"
     }
   },
   "capacity": {

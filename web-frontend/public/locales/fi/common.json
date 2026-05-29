@@ -560,6 +560,11 @@
     "detail": {
       "backToArchive": "← Takaisin arkistoon",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Uusimmat ensin",
+      "oldest": "Vanhimmat ensin",
+      "mostAttended": "Eniten osallistujia"
     }
   },
   "notifications": {

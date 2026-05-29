@@ -205,7 +205,7 @@ export const SessionCards = ({
         {filteredSessions.map((session) => (
           <Card
             key={session.sessionSlug}
-            className="group bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
+            className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors"
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-4">

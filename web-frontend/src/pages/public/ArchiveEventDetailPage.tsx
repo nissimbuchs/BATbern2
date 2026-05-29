@@ -231,7 +231,7 @@ export default function ArchiveEventDetailPage() {
                   {(event.sessions as SessionUI[]).map((session) => (
                     <div
                       key={session.sessionId}
-                      className="bg-card border border-border rounded-lg p-6"
+                      className="bg-zinc-700 border border-zinc-600 rounded-lg p-6"
                     >
                       {/* Session Title and Time */}
                       <div className="flex justify-between items-start mb-3">

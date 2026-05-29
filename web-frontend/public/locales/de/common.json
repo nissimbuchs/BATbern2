@@ -562,6 +562,11 @@
     "detail": {
       "backToArchive": "← Zurück zum Archiv",
       "photos": "Fotos"
+    },
+    "sort": {
+      "newest": "Neueste zuerst",
+      "oldest": "Älteste zuerst",
+      "mostAttended": "Meistbesucht"
     }
   },
   "notifications": {

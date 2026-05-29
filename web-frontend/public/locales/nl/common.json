@@ -560,6 +560,11 @@
     "detail": {
       "backToArchive": "← Terug naar archief",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Nieuwste eerst",
+      "oldest": "Oudste eerst",
+      "mostAttended": "Meest bezocht"
     }
   },
   "notifications": {
