@@ -856,24 +856,57 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Resolve company slug → display name, cached for 15 min in {@code userApiCache}.
-     * Mirrors {@code COALESCE(display_name, name, company_id)}: prefer displayName, then
-     * the company name, then (at the call site, via {@code getOrDefault}) the slug itself.
+     * Resolve a single company slug to its display name via {@code GET /companies/{slug}}.
+     * Cached per slug for 15 min in {@code userApiCache}.
+     *
+     * <p>Returns the company's {@code displayName} when set, falling back to {@code name}.
+     * Returns {@code null} when the slug is null/blank, the company is not found (404),
+     * or CUMS is degraded — the caller's responsibility to fall back to the slug for
+     * display.
+     *
+     * <p>Returns nullable {@link String} (not {@link java.util.Optional}) because Spring's
+     * {@code @Cacheable} unwraps Optional results before evaluating the {@code unless}
+     * SpEL — an empty Optional would cause {@code #result.isEmpty()} to NPE.
      */
     @Override
-    @Cacheable(value = "userApiCache", key = "'companyDisplayNames'")
-    public java.util.Map<String, String> getCompanyDisplayNames() {
-        java.util.Map<String, String> bySlug = new java.util.HashMap<>();
-        for (CompanyBasicDto company : getAllCompanies()) {
-            if (company.getName() == null) {
-                continue;
+    @Cacheable(value = "userApiCache",
+            key = "'company:' + #companySlug",
+            unless = "#result == null")
+    public String getCompanyDisplayName(String companySlug) {
+        if (companySlug == null || companySlug.isBlank()) {
+            return null;
+        }
+        String url = userServiceBaseUrl + "/api/v1/companies/" + companySlug;
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            ResponseEntity<CompanyBasicDto> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, CompanyBasicDto.class);
+            CompanyBasicDto company = response.getBody();
+            if (company == null || company.getName() == null) {
+                return null;
             }
-            String display = (company.getDisplayName() != null && !company.getDisplayName().isBlank())
+            return (company.getDisplayName() != null && !company.getDisplayName().isBlank())
                     ? company.getDisplayName()
                     : company.getName();
-            bySlug.put(company.getName(), display);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Company not found in CUMS: {}", companySlug);
+            return null;
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error fetching company {}: {} - {}",
+                    companySlug, e.getStatusCode(), e.getMessage());
+            return null;
+        } catch (HttpServerErrorException e) {
+            log.warn("Server error fetching company {}: {} - {}",
+                    companySlug, e.getStatusCode(), e.getMessage());
+            return null;
+        } catch (ResourceAccessException e) {
+            log.warn("Network error fetching company {}: {}", companySlug, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            log.warn("Unexpected error fetching company {}: {}", companySlug, e.getMessage());
+            return null;
         }
-        return bySlug;
     }
 
     /**

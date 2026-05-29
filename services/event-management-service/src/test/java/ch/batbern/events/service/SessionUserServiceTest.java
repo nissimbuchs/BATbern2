@@ -132,8 +132,7 @@ class SessionUserServiceTest {
         // Given: the company slug resolves to a human-readable display name
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
         when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
-        when(userApiClient.getCompanyDisplayNames())
-                .thenReturn(java.util.Map.of("GoogleZH", "Google Zürich"));
+        when(userApiClient.getCompanyDisplayName("GoogleZH")).thenReturn("Google Zürich");
         when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
         when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -150,7 +149,7 @@ class SessionUserServiceTest {
         // Given: the company slug is absent from the display-name map
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
         when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(java.util.Map.of());
+        when(userApiClient.getCompanyDisplayName("GoogleZH")).thenReturn(null);
         when(sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)).thenReturn(false);
         when(sessionUserRepository.save(any(SessionUser.class))).thenAnswer(inv -> inv.getArgument(0));
 

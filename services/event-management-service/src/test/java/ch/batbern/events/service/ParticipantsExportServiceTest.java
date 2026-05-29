@@ -73,7 +73,6 @@ class ParticipantsExportServiceTest {
     void should_produceValidXlsx_withExpectedHeader() throws IOException {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
         when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of());
 
@@ -94,7 +93,7 @@ class ParticipantsExportServiceTest {
     @DisplayName("Union of organizers / speakers / attendees renders one row per username with correct role")
     void should_outputOneRowPerParticipant_withCorrectRoles() throws IOException {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of("acme", "Acme Corp"));
+        when(userApiClient.getCompanyDisplayName("acme")).thenReturn("Acme Corp");
 
         when(userApiClient.getOrganizerUsernames())
                 .thenReturn(List.of("organizer.alice"));
@@ -134,7 +133,6 @@ class ParticipantsExportServiceTest {
     @DisplayName("Precedence: a user who is both organizer and speaker renders once as Organisator")
     void should_pickHighestPrecedenceRole_when_userInMultipleSets() throws IOException {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
 
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("dual.role"));
         when(userApiClient.getUserByUsername("dual.role"))
@@ -165,7 +163,6 @@ class ParticipantsExportServiceTest {
     @DisplayName("Precedence: a user who is both speaker and attendee renders once as Referent")
     void should_preferReferentOverTeilnehmer_when_userIsBoth() throws IOException {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
 
         SessionUser speakerSu = new SessionUser();
@@ -195,7 +192,6 @@ class ParticipantsExportServiceTest {
     @DisplayName("Registrations in non-badge statuses (waitlist, cancelled) are excluded")
     void should_excludeWaitlistAndCancelledFromBadgeList() throws IOException {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
 

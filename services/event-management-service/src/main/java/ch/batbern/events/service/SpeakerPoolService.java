@@ -204,9 +204,6 @@ public class SpeakerPoolService {
             }
         }
 
-        // Cached (15 min) slug → display-name map; one lookup serves every row in this page.
-        final Map<String, String> companyDisplayNames = userApiClient.getCompanyDisplayNames();
-
         return speakers.stream()
                 .map(speaker -> {
                     Session session = speaker.getSessionId() != null
@@ -228,10 +225,13 @@ public class SpeakerPoolService {
                             applySessionIdentityOverlay(response, primary, user);
                         }
                     }
-                    // Resolve the company slug to its human-readable display name for the UI.
+                    // Resolve the company slug to its display name. Per-slug cached
+                    // (15 min), so repeat companies across pool rows hit the cache.
                     if (response.getCompany() != null && !response.getCompany().isBlank()) {
-                        response.setCompanyDisplayName(companyDisplayNames
-                                .getOrDefault(response.getCompany(), response.getCompany()));
+                        String companyDisplayName =
+                                userApiClient.getCompanyDisplayName(response.getCompany());
+                        response.setCompanyDisplayName(companyDisplayName != null
+                                ? companyDisplayName : response.getCompany());
                     }
                     // Enrich with material info if session exists
                     if (speaker.getSessionId() != null) {

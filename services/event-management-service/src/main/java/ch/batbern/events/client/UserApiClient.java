@@ -13,7 +13,6 @@ import ch.batbern.events.exception.UserServiceException;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Client interface for communicating with the User Management Service API.
@@ -128,17 +127,23 @@ public interface UserApiClient {
     List<CompanyBasicDto> getAllCompanies();
 
     /**
-     * Resolve a map of company slug → human-readable display name.
+     * Resolve a single company slug to its human-readable display name.
      *
-     * <p>The value is {@code displayName} when set, falling back to the company {@code name},
-     * then the slug itself — mirroring the {@code COALESCE(display_name, name, company_id)}
-     * resolution used by the cross-service portrait projection. Cached (15&nbsp;min) so callers
-     * enriching many speakers incur at most one upstream call per TTL.
+     * <p>Hits {@code GET /api/v1/companies/{slug}} on company-user-management-service and
+     * returns {@code displayName} when set, falling back to the company {@code name}. The
+     * lookup is cached per slug (15&nbsp;min) in {@code userApiCache} so repeated speakers
+     * from the same company incur one upstream call.
      *
-     * @return immutable map keyed by company slug ({@code User.companyId}); never null
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     * <p>Returns {@code null} when the slug is null/blank, the company is not found (404),
+     * or CUMS is degraded — callers should treat null as "fall back to the slug" rather
+     * than an error. (Nullable {@link String} rather than {@link java.util.Optional}
+     * because Spring's {@code @Cacheable} unwraps Optional results before evaluating
+     * {@code unless}, which would NPE the unless expression on an empty Optional.)
+     *
+     * @param companySlug the company's meaningful identifier ({@code User.companyId})
+     * @return resolved display name, or {@code null} when unavailable
      */
-    Map<String, String> getCompanyDisplayNames();
+    String getCompanyDisplayName(String companySlug);
 
     // Story 11.C.2 (AR13/AR14): canonical speaker-provisioning + profile-patch operations.
 
