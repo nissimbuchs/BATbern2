@@ -556,7 +556,7 @@
       "date": "日付",
       "time": "時間",
       "location": "場所",
-      "capacity": "定員"
+      "capacity": "登録者数"
     },
     "errors": {
       "loadFailed": "イベントの読み込みに失敗しました",

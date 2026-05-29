@@ -556,7 +556,7 @@
       "date": "Fecha",
       "time": "Hora",
       "location": "Ubicación",
-      "capacity": "Capacidad"
+      "capacity": "Inscripciones"
     },
     "errors": {
       "loadFailed": "Error al cargar el evento",

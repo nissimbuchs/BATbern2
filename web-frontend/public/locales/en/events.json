@@ -578,7 +578,7 @@
       "date": "Date",
       "time": "Time",
       "location": "Location",
-      "capacity": "Capacity"
+      "capacity": "Registrations"
     },
     "errors": {
       "loadFailed": "Failed to load event",

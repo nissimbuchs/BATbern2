@@ -556,7 +556,7 @@
       "date": "Data",
       "time": "Temp",
       "location": "Lieu",
-      "capacity": "Capacitad"
+      "capacity": "Registraziuns"
     },
     "errors": {
       "loadFailed": "Chargiar eveniment fallì",

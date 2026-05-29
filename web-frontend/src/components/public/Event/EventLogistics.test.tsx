@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
         'common:labels.date': 'Date',
         'public.logistics.time': 'Time',
         'public.logistics.location': 'Location',
-        'public.logistics.capacity': 'Capacity',
+        'public.logistics.capacity': 'Registrations',
       };
       return translations[key] || key;
     },
@@ -71,7 +71,7 @@ describe('EventLogistics', () => {
 
   it('should render capacity with current count', () => {
     render(<EventLogistics event={mockEvent} />);
-    expect(screen.getByText('Capacity')).toBeInTheDocument();
+    expect(screen.getByText('Registrations')).toBeInTheDocument();
     expect(screen.getByText('87 / 120')).toBeInTheDocument();
   });
 

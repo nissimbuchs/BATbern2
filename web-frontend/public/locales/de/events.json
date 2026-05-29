@@ -578,7 +578,7 @@
       "date": "Datum",
       "time": "Zeit",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Anmeldungen"
     },
     "errors": {
       "loadFailed": "Veranstaltung konnte nicht geladen werden",

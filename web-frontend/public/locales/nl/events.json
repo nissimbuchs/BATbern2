@@ -556,7 +556,7 @@
       "date": "Datum",
       "time": "Tijd",
       "location": "Locatie",
-      "capacity": "Capaciteit"
+      "capacity": "Aanmeldingen"
     },
     "errors": {
       "loadFailed": "Laden van evenement mislukt",

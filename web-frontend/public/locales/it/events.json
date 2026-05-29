@@ -556,7 +556,7 @@
       "date": "Data",
       "time": "Ora",
       "location": "Luogo",
-      "capacity": "Capienza"
+      "capacity": "Iscrizioni"
     },
     "errors": {
       "loadFailed": "Caricamento evento fallito",

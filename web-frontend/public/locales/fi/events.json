@@ -556,7 +556,7 @@
       "date": "Päivämäärä",
       "time": "Aika",
       "location": "Sijainti",
-      "capacity": "Kapasiteetti"
+      "capacity": "Ilmoittautumiset"
     },
     "errors": {
       "loadFailed": "Tapahtuman lataaminen epäonnistui",

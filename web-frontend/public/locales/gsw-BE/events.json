@@ -555,7 +555,7 @@
       "date": "Datum",
       "time": "Zyt",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Amäldige"
     },
     "errors": {
       "loadFailed": "Veranstatig chöne nid gglade werde",
