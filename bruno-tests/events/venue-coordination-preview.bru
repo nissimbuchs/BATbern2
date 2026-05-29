@@ -1,0 +1,67 @@
+meta {
+  name: Venue coordination — preview rendering
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/venue-coordination/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+body:json {
+  {
+    "templateKey": "venue-timetable",
+    "recipientRole": "VENUE",
+    "locale": "de"
+  }
+}
+
+tests {
+  test("returns 200 when admin config is set and template exists, 412 otherwise", function() {
+    expect([200, 412]).to.include(res.getStatus());
+  });
+
+  test("envelope contains subject, htmlBody, toEmail, replyToEmail when 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.subject).to.be.a("string").and.not.equal("");
+      expect(body.htmlBody).to.be.a("string").and.not.equal("");
+      expect(body.toEmail).to.be.a("string");
+      expect(body.replyToEmail).to.be.a("string");
+    }
+  });
+
+  test("412 surfaces the admin-config precondition when unset", function() {
+    if (res.getStatus() === 412) {
+      const body = res.getBody();
+      // GlobalExceptionHandler wraps as ErrorResponse with { message, ... }
+      expect(JSON.stringify(body)).to.match(/coordination|admin|configure/i);
+    }
+  });
+}
+
+docs {
+  Contract smoke test for POST /events/{code}/venue-coordination/preview.
+
+  Preview is read-only: it renders an EmailTemplate (category VENUE_COORDINATION)
+  using the admin-managed singleton VenueCoordinationConfig (one venue contact,
+  one catering contact, one coordinator organizer). When the admin config has
+  not been set, the endpoint returns 412 PRECONDITION_FAILED with a hint to
+  configure it in Administration → Venue & Catering. We tolerate either 200 or
+  412 here so the test passes in environments where the config hasn't been seeded
+  yet.
+
+  No /send equivalent: that path issues real SES traffic with a coordinator
+  Reply-To, which violates the no-real-comms-in-tests rule per the standing
+  feedback memory. Coverage of the send path lives in
+  VenueCoordinationControllerIntegrationTest (mocks EmailService).
+
+  Bruno parser rule: comments belong in this docs { } block, not as free-
+  floating `#` lines (those silently skip the file — see CLAUDE.md).
+}

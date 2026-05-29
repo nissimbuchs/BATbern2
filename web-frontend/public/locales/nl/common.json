@@ -599,7 +599,8 @@
       "SPEAKER": "Sprekers",
       "REGISTRATION": "Registratie",
       "TASK_REMINDER": "Taakherinneringen",
-      "NEWSLETTER": "Nieuwsbrief"
+      "NEWSLETTER": "Nieuwsbrief",
+      "VENUE_COORDINATION": "Locatie & Catering"
     },
     "layoutKey": "Lay-out",
     "standalone": "Geen (zelfstandig)",

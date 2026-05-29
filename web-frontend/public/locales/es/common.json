@@ -599,7 +599,8 @@
       "SPEAKER": "Ponentes",
       "REGISTRATION": "Inscripción",
       "TASK_REMINDER": "Recordatorios de tareas",
-      "NEWSLETTER": "Boletín"
+      "NEWSLETTER": "Boletín",
+      "VENUE_COORDINATION": "Lugar y Catering"
     },
     "layoutKey": "Diseño",
     "standalone": "Ninguno (independiente)",

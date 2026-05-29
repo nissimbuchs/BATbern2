@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
 import { EventVenueTab } from '../EventVenueTab';
 import type { Event, EventDetailUI } from '@/types/event.types';
@@ -17,6 +18,13 @@ vi.mock('@/components/organizer/EventManagement', () => ({
   VenueLogistics: ({ event }: { event: Event }) => (
     <div data-testid="venue-logistics">{event.eventCode}</div>
   ),
+}));
+
+// Mock the venue-coordination composer — it has its own deep dependencies
+// (admin-settings API, react-query, react-router state, MUI dialog). The tests
+// in this file are about the static venue tab UI; the composer has its own.
+vi.mock('../VenueCoordinationComposer', () => ({
+  VenueCoordinationComposer: () => <div data-testid="venue-coordination-composer-stub" />,
 }));
 
 // Mock event data
@@ -57,10 +65,13 @@ const mockEventWithBooking: EventDetailUI = {
 
 // Test wrapper with providers
 const renderWithProviders = (ui: React.ReactElement) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <BrowserRouter>
-      <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={qc}>
+      <BrowserRouter>
+        <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
@@ -81,17 +92,8 @@ describe('EventVenueTab Component (Story 5.6)', () => {
       expect(screen.getByText(/Parking/i)).toBeInTheDocument();
       expect(screen.getByText(/Accessible/i)).toBeInTheDocument();
 
-      // Day Schedule
-      expect(screen.getByText(/Day Schedule/i)).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: /Edit/i }).length).toBeGreaterThan(0);
-      expect(screen.getByText('08:00')).toBeInTheDocument();
-      expect(screen.getByText('09:00')).toBeInTheDocument();
-      expect(screen.getByText('12:30')).toBeInTheDocument();
-      expect(screen.getByText('19:00')).toBeInTheDocument();
-      expect(screen.getByText(/Registration.*Coffee/i)).toBeInTheDocument();
-      expect(screen.getByText(/Lunch Break/i)).toBeInTheDocument();
-      expect(screen.getByText(/Networking/i)).toBeInTheDocument();
-      expect(screen.getByText(/Event Ends/i)).toBeInTheDocument();
+      // Venue/Catering email composer mounted in place of the legacy mock schedule.
+      expect(screen.getByTestId('venue-coordination-composer-stub')).toBeInTheDocument();
 
       // VenueLogistics integration
       expect(screen.getByTestId('venue-logistics')).toBeInTheDocument();

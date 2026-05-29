@@ -55,7 +55,7 @@ const EmailTemplatePreviewModal = React.lazy(() =>
   import('./EmailTemplatePreviewModal').then((m) => ({ default: m.EmailTemplatePreviewModal }))
 );
 
-type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER';
+type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER' | 'VENUE_COORDINATION';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -239,6 +239,9 @@ export const EmailTemplatesTab: React.FC = () => {
           </ToggleButton>
           <ToggleButton value="NEWSLETTER">
             {t('emailTemplates.categories.NEWSLETTER', 'Newsletter')}
+          </ToggleButton>
+          <ToggleButton value="VENUE_COORDINATION">
+            {t('emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering')}
           </ToggleButton>
         </ToggleButtonGroup>
 

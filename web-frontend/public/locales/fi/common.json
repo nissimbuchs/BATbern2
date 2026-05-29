@@ -599,7 +599,8 @@
       "SPEAKER": "Puhujat",
       "REGISTRATION": "Ilmoittautuminen",
       "TASK_REMINDER": "Tehtävämuistutukset",
-      "NEWSLETTER": "Uutiskirje"
+      "NEWSLETTER": "Uutiskirje",
+      "VENUE_COORDINATION": "Tila & Catering"
     },
     "layoutKey": "Asettelu",
     "standalone": "Ei mitään (itsenäinen)",
