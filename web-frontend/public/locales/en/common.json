@@ -597,6 +597,11 @@
     "detail": {
       "backToArchive": "← Back to Archive",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "mostAttended": "Most attended"
     }
   },
   "notifications": {

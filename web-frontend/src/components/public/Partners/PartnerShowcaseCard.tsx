@@ -32,7 +32,7 @@ export const PartnerShowcaseCard = ({
 
   return (
     <Card
-      className={`flex-shrink-0 w-80 h-48 p-4 bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors ${
+      className={`flex-shrink-0 w-80 h-48 p-4 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors ${
         website ? 'cursor-pointer' : 'cursor-default opacity-70'
       }`}
       onClick={handleClick}

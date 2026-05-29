@@ -560,6 +560,11 @@
     "detail": {
       "backToArchive": "← Enavos a l'archiv",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "I pli novs",
+      "oldest": "I pli vegls",
+      "mostAttended": "Il pli frequentà"
     }
   },
   "notifications": {

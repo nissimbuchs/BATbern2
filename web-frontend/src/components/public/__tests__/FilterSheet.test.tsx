@@ -146,11 +146,15 @@ describe('FilterSheet Component', () => {
   });
 
   describe('Filter Interactions', () => {
-    it('should_callOnFilterChangeAndClose_when_filtersApplied', async () => {
+    it('should_callOnFilterChangeAndStayOpen_when_filtersApplied', async () => {
+      // The sheet must NOT close on filter changes: FilterSidebar fires onFilterChange
+      // on mount (debounced search) and on every topic toggle. Closing on each call
+      // collapsed the popup the moment the user opened it (and would have closed it
+      // after the first topic in a multi-select session). The sheet only closes via
+      // the ✕ button or the backdrop.
       const onFilterChange = vi.fn();
       render(<FilterSheet {...defaultProps} onFilterChange={onFilterChange} />);
 
-      // Open modal
       const triggerButton = screen.getByText('Filters');
       fireEvent.click(triggerButton);
 
@@ -158,14 +162,14 @@ describe('FilterSheet Component', () => {
         expect(screen.getByTestId('filter-sidebar')).toBeInTheDocument();
       });
 
-      // Apply filters
       const applyButton = screen.getByTestId('apply-filters');
       fireEvent.click(applyButton);
 
       await waitFor(() => {
         expect(onFilterChange).toHaveBeenCalledWith({ topics: ['topic1'] });
-        expect(screen.queryByTestId('filter-sidebar')).not.toBeInTheDocument();
       });
+      // Sheet stays open after a filter change.
+      expect(screen.getByTestId('filter-sidebar')).toBeInTheDocument();
     });
 
     it('should_callOnClearFiltersAndClose_when_clearClicked', async () => {

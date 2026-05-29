@@ -67,7 +67,7 @@ export function EventCard({
         data-testid={`event-card-${event.eventCode}`}
         data-view-mode={viewMode}
       >
-        <Card className="group bg-zinc-800/60 border-zinc-700 hover:border-zinc-600 transition-colors h-full">
+        <Card className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors h-full">
           {/* Theme Image */}
           {event.themeImageUrl && (
             <div
