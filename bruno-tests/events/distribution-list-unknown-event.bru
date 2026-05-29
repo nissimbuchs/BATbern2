@@ -1,0 +1,28 @@
+meta {
+  name: Distribution list — unknown event returns 404
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern99999/distribution-list/speakers
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 404 for unknown event", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F2).
+
+  Ensures the resolver does not silently leak an empty 200 for events that do not
+  exist; the Lambda relies on 404 to decide that the alias has no fan-out target.
+}

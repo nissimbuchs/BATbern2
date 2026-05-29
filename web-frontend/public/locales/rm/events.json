@@ -831,5 +831,11 @@
       "afterTopicReveal": "Diaposiiva da revelazione tema",
       "afterUpcomingEvents": "Diaposiiva d'eveniments futuers"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Exportar las etiquettas da num",
+      "exportError": "Exportaziun fallida"
+    }
   }
 }

@@ -91,6 +91,8 @@ class SpeakerWorkflowServiceTest {
     private DomainEventPublisher domainEventPublisher;
     @Mock
     private PrimarySpeakerResolver primarySpeakerResolver;
+    @Mock
+    private SpeakerAutoRegistrationService speakerAutoRegistrationService;
 
     private SpeakerWorkflowService service;
 
@@ -114,7 +116,8 @@ class SpeakerWorkflowServiceTest {
                 organizerNotificationService,
                 applicationEventPublisher,
                 domainEventPublisher,
-                primarySpeakerResolver
+                primarySpeakerResolver,
+                speakerAutoRegistrationService
         );
         // Story 11.E.9: every transition that publishes SpeakerPromotedToReadyEvent or
         // calls requireUsername now goes through the resolver. Default stub matches

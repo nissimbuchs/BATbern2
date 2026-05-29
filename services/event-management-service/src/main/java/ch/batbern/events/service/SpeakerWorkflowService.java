@@ -111,6 +111,9 @@ public class SpeakerWorkflowService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final DomainEventPublisher domainEventPublisher;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    // Spec: auto-participant-email-aliases-excel-export F1 — auto-register accepted speakers
+    // as event participants at the two hook points exercised by this service.
+    private final SpeakerAutoRegistrationService speakerAutoRegistrationService;
 
     // Story 11.E.2: speaker-portal login URL embedded in the Cognito-flow invitation email.
     // The fallback default is the production URL — keep for backward compatibility but warn
@@ -450,6 +453,13 @@ public class SpeakerWorkflowService {
         speaker.setSessionId(session.getId());
         log.info("Provisioned session {} + PRIMARY_SPEAKER session_users row for speaker {} "
                 + "at READY transition", session.getId(), speaker.getId());
+
+        // Spec F1: auto-register the primary speaker as a participant of the event.
+        // Idempotent — safe even if a future story moves this into a SpeakerPromotedToReadyEvent
+        // listener.
+        speakerAutoRegistrationService.autoRegisterIfAbsent(
+                event.getId(), username,
+                SpeakerAutoRegistrationService.TRIGGER_SESSION_PRIMARY_SPEAKER);
     }
 
     private void ensurePrimarySpeakerRow(Session session, String username) {
@@ -551,6 +561,19 @@ public class SpeakerWorkflowService {
         // session_users row — log and skip rather than failing the transition. The
         // V96 backfill migration covers existing local-dev data; production has none yet.
         confirmSessionUserIfPresent(speaker);
+
+        // Spec F1: auto-register the accepted speaker as a participant of the event.
+        // Both INVITED→ACCEPTED (POOL_ACCEPTED) and READY→ACCEPTED (POOL_ACCEPTED_ON_BEHALF,
+        // organizer-driven) feed this hook; record the discriminator so the audit row
+        // distinguishes the two paths.
+        primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .filter(u -> u != null && !u.isBlank())
+                .ifPresent(username -> speakerAutoRegistrationService.autoRegisterIfAbsent(
+                        speaker.getEventId(), username,
+                        current == SpeakerWorkflowState.READY
+                                ? SpeakerAutoRegistrationService.TRIGGER_POOL_ACCEPTED_ON_BEHALF
+                                : SpeakerAutoRegistrationService.TRIGGER_POOL_ACCEPTED));
 
         if (current == SpeakerWorkflowState.READY) {
             // On-behalf path: skip email + organizer notify. See class-level comment above.

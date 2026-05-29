@@ -1,0 +1,62 @@
+meta {
+  name: Participants name-badge XLSX export (organizer)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/participants/export.xlsx
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+headers {
+  Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+}
+
+tests {
+  test("organizer can export XLSX (200) or event missing (404)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("200 response is an Office Open XML XLSX (PK\\u0003\\u0004 magic bytes)", function() {
+    if (res.getStatus() === 200) {
+      const headers = res.getHeaders();
+      const contentType = headers["content-type"] || headers["Content-Type"] || "";
+      expect(contentType).to.include("spreadsheetml");
+
+      // The body is a Buffer; Office Open XML files are ZIP archives starting with "PK".
+      // Review patch #5 — 2026-05-28: require inspectable bytes so a JSON-decoded body
+      // (Bruno auto-parse fallback) cannot make the magic-bytes test silently pass.
+      const body = res.getBody();
+      const firstBytes = body && body.slice ? body.slice(0, 2) : null;
+      expect(firstBytes, "expected binary body so we can verify ZIP magic bytes").to.not.equal(null);
+      const asString = Buffer.isBuffer(firstBytes)
+        ? firstBytes.toString("binary")
+        : String(firstBytes);
+      expect(asString.charCodeAt(0)).to.equal(0x50); // 'P'
+      expect(asString.charCodeAt(1)).to.equal(0x4B); // 'K'
+    }
+  });
+
+  test("Content-Disposition suggests <eventCode>-namensschilder.xlsx", function() {
+    if (res.getStatus() === 200) {
+      const headers = res.getHeaders();
+      const disposition = headers["content-disposition"] || headers["Content-Disposition"] || "";
+      expect(disposition).to.include("namensschilder.xlsx");
+    }
+  });
+}
+
+docs {
+  Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F3).
+
+  Verifies the organizer can pull the name-badge XLSX, that the MIME type is set, and
+  that the file body starts with the ZIP magic bytes that XLSX files use (Office Open
+  XML is a ZIP container). 404 is also acceptable so the smoke test passes on
+  environments without BATbern59 seeded.
+}

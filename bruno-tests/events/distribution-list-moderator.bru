@@ -1,0 +1,36 @@
+meta {
+  name: Distribution list resolver — moderator kind
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/distribution-list/moderator
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 or 404 for moderator kind", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("kind=moderator in envelope when 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.kind).to.equal("moderator");
+      expect(body.emails).to.be.an("array");
+    }
+  });
+}
+
+docs {
+  Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F2).
+
+  Moderator alias resolves to Event.organizerUsername (BATbern semantics; the
+  per-session SessionUser.MODERATOR role is NOT targeted here).
+}

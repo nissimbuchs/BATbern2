@@ -17,9 +17,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -188,6 +192,22 @@ public class Registration {
     @Builder.Default
     private Integer confirmationResendCount = 0;
 
+    /**
+     * JSONB audit metadata.
+     * <p>
+     * Auto-participant enrolment (spec
+     * {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md})
+     * stores the trigger source here as {@code {"autoRegisteredFrom": "<trigger>"}} where trigger
+     * is one of {@code POOL_ACCEPTED}, {@code POOL_ACCEPTED_ON_BEHALF},
+     * {@code SESSION_PRIMARY_SPEAKER}, or {@code SESSION_CO_SPEAKER}.
+     * <p>
+     * Defaults to an empty map (matches the DB-side {@code DEFAULT '{}'} in V107).
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, Object> metadata = new HashMap<>();
+
     @PrePersist
     protected void onCreate() {
         // Story 10.12: auto-generate deregistration token if not set (covers test builders and legacy paths)
@@ -196,6 +216,9 @@ public class Registration {
         }
         if (confirmationResendCount == null) {
             confirmationResendCount = 0;
+        }
+        if (metadata == null) {
+            metadata = new HashMap<>();
         }
         createdAt = Instant.now();
         updatedAt = Instant.now();

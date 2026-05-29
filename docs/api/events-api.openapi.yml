@@ -2581,6 +2581,103 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/distribution-list/{kind}:
+    get:
+      tags:
+        - Registrations
+      summary: Resolve the email distribution list for an event (internal Lambda route)
+      description: |
+        Returns the email addresses to fan out for the per-event mailing aliases
+        `batbern{N}-speaker@batbern.ch` and `batbern{N}-moderator@batbern.ch`.
+
+        - `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)
+          of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.
+        - `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their
+          verified `additionalEmails`.
+
+        **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
+          - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
+            VPC-only).
+          - Organizer JWT from interactive callers.
+
+        **Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
+      operationId: getEventDistributionList
+      security: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [speakers, moderator]
+      responses:
+        '200':
+          description: Distribution list resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistributionListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/participants/export.xlsx:
+    get:
+      tags:
+        - Registrations
+      summary: Export participant name-badge data as XLSX
+      description: |
+        Streams an Office Open XML XLSX with one row per participant of the event. Columns
+        (German — physical badges): `Vorname`, `Name`, `Firma`, `Rolle`. Roles are
+        `Organisator`, `Referent`, `Teilnehmer` with precedence
+        Organisator > Referent > Teilnehmer (a user appearing in multiple sets renders once
+        with the highest-precedence role).
+
+        Row sources (union, dedup-by-username):
+          - All organizer-role users (cross-service via UserApiClient).
+          - All `PRIMARY_SPEAKER` and `CO_SPEAKER` `session_users` of the event.
+          - All `registered`/`confirmed`/`attended` registrations of the event.
+
+        Filename suggestion: `{eventCode}-namensschilder.xlsx`.
+
+        **Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F3).
+      operationId: exportParticipantsXlsx
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+      responses:
+        '200':
+          description: XLSX file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="BATbern57-namensschilder.xlsx"'
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/my-registration:
     get:
       tags:
@@ -7351,6 +7448,26 @@ components:
             Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
             Backward-compatible addition — null for non-waitlist registrations.
           example: 3
+
+    DistributionListResponse:
+      type: object
+      description: |
+        Email distribution list resolved for an event/kind pair.
+        Spec: `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
+      required: [eventCode, kind, emails]
+      properties:
+        eventCode:
+          type: string
+          example: BATbern57
+        kind:
+          type: string
+          enum: [speakers, moderator]
+        emails:
+          type: array
+          description: Lowercase, deduplicated email addresses.
+          items:
+            type: string
+            example: alice@example.com
 
     Registration:
       type: object

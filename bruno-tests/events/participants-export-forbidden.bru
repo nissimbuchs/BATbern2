@@ -1,0 +1,32 @@
+meta {
+  name: Participants export — partner cannot download (403)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/participants/export.xlsx
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+tests {
+  test("partner without organizer role cannot export — 403", function() {
+    // 401 is also tolerated when no partner token is loaded in the env (CI fallback);
+    // 404 if the event is missing (which is checked separately).
+    expect([401, 403, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F3).
+
+  Ensures @PreAuthorize("hasRole('ORGANIZER')") on the export endpoint actually blocks
+  PARTNER-role callers. 401 is allowed because some CI environments don't load a
+  partner token; 404 is allowed because some environments don't seed BATbern59.
+  Either way, a non-organizer must never receive 200.
+}

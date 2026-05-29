@@ -601,6 +601,30 @@ class EventApiClient {
   }
 
   /**
+   * Export event participants as XLSX name-badge spreadsheet (organizer-only).
+   *
+   * Backend: `GET /api/v1/events/{eventCode}/participants/export.xlsx`
+   * Returns a binary XLSX blob containing one row per organizer ∪ event speaker ∪
+   * registered attendee, with columns: Vorname, Name, Firma, Rolle.
+   *
+   * @param eventCode Event code identifier (ADR-003)
+   * @returns Blob containing the XLSX bytes
+   */
+  async exportParticipantsXlsx(eventCode: string): Promise<Blob> {
+    try {
+      const response = await apiClient.get(
+        `${EVENT_API_PATH}/${eventCode}/participants/export.xlsx`,
+        { responseType: 'blob' }
+      );
+      return new Blob([response.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Get presigned download URL for session material
    * @param sessionSlug Session identifier
    * @param materialId Material UUID

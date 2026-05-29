@@ -995,6 +995,72 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/distribution-list/{kind}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resolve the email distribution list for an event (internal Lambda route)
+     * @description Returns the email addresses to fan out for the per-event mailing aliases
+     *     `batbern{N}-speaker@batbern.ch` and `batbern{N}-moderator@batbern.ch`.
+     *
+     *     - `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)
+     *       of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.
+     *     - `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their
+     *       verified `additionalEmails`.
+     *
+     *     **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
+     *       - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
+     *         VPC-only).
+     *       - Organizer JWT from interactive callers.
+     *
+     *     **Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
+     */
+    get: operations['getEventDistributionList'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/participants/export.xlsx': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export participant name-badge data as XLSX
+     * @description Streams an Office Open XML XLSX with one row per participant of the event. Columns
+     *     (German — physical badges): `Vorname`, `Name`, `Firma`, `Rolle`. Roles are
+     *     `Organisator`, `Referent`, `Teilnehmer` with precedence
+     *     Organisator > Referent > Teilnehmer (a user appearing in multiple sets renders once
+     *     with the highest-precedence role).
+     *
+     *     Row sources (union, dedup-by-username):
+     *       - All organizer-role users (cross-service via UserApiClient).
+     *       - All `PRIMARY_SPEAKER` and `CO_SPEAKER` `session_users` of the event.
+     *       - All `registered`/`confirmed`/`attended` registrations of the event.
+     *
+     *     Filename suggestion: `{eventCode}-namensschilder.xlsx`.
+     *
+     *     **Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F3).
+     */
+    get: operations['exportParticipantsXlsx'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/my-registration': {
     parameters: {
       query?: never;
@@ -3673,6 +3739,18 @@ export interface components {
        * @example 3
        */
       waitlistPosition?: number | null;
+    };
+    /**
+     * @description Email distribution list resolved for an event/kind pair.
+     *     Spec: `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
+     */
+    DistributionListResponse: {
+      /** @example BATbern57 */
+      eventCode: string;
+      /** @enum {string} */
+      kind: 'speakers' | 'moderator';
+      /** @description Lowercase, deduplicated email addresses. */
+      emails: string[];
     };
     /**
      * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
@@ -6849,6 +6927,57 @@ export interface operations {
         };
         content?: never;
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getEventDistributionList: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        kind: 'speakers' | 'moderator';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Distribution list resolved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DistributionListResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  exportParticipantsXlsx: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description XLSX file */
+      200: {
+        headers: {
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': string;
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };

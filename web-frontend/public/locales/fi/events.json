@@ -831,5 +831,11 @@
       "afterTopicReveal": "Aiheen paljastusdia",
       "afterUpcomingEvents": "Tulevat tapahtumat -dia"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "Vie nimikyltit",
+      "exportError": "Vienti epäonnistui"
+    }
   }
 }

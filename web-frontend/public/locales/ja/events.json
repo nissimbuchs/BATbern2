@@ -831,5 +831,11 @@
       "afterTopicReveal": "トピック公開スライドの後",
       "afterUpcomingEvents": "今後のイベントスライドの後"
     }
+  },
+  "event": {
+    "participants": {
+      "exportNameBadges": "ネームバッジをエクスポート",
+      "exportError": "エクスポートに失敗しました"
+    }
   }
 }
