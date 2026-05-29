@@ -599,7 +599,8 @@
       "SPEAKER": "Referents",
       "REGISTRATION": "Inscripziun",
       "TASK_REMINDER": "Memorials da incumbensas",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Lieu & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Nagin (independent)",

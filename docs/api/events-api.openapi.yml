@@ -4389,10 +4389,10 @@ paths:
         - name: category
           in: query
           required: false
-          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER)
+          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION)
           schema:
             type: string
-            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
+            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
         - name: isLayout
           in: query
           required: false
@@ -6422,7 +6422,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
         subject:
           type: string
           nullable: true
@@ -6472,7 +6472,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION]
         subject:
           type: string
           nullable: true

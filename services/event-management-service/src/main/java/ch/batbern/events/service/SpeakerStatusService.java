@@ -11,7 +11,9 @@ import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
@@ -53,6 +55,7 @@ public class SpeakerStatusService {
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
     private final SpeakerWorkflowService speakerWorkflowService;
+    private final SessionContentHistoryRepository sessionContentHistoryRepository;
 
     /**
      * Update speaker status by delegating to {@link SpeakerWorkflowService#transition} — the
@@ -140,8 +143,20 @@ public class SpeakerStatusService {
 
         List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
 
-        return history.stream()
-            .map(this::mapToHistoryItem)
+        // Interleave content-rejection events (ADR-009: rejecting content does NOT transition
+        // workflow state, so it never lands in speaker_status_history — but the organizer
+        // History tab needs to show the feedback and timestamp). Look up the speaker's
+        // session and surface every session_content_history row that carries reviewerFeedback.
+        List<SessionContentVersion> rejections = speakerPoolRepository.findById(speakerId)
+            .map(SpeakerPool::getSessionId)
+            .map(sessionContentHistoryRepository::findRejectedBySessionIdOrderByReviewedAtDesc)
+            .orElseGet(List::of);
+
+        return java.util.stream.Stream.concat(
+                history.stream().map(this::mapToHistoryItem),
+                rejections.stream().map(this::mapContentRejectionToHistoryItem))
+            .sorted(java.util.Comparator.comparing(StatusHistoryItem::getChangedAt,
+                    java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
             .collect(Collectors.toList());
     }
 
@@ -246,11 +261,28 @@ public class SpeakerStatusService {
     private StatusHistoryItem mapToHistoryItem(SpeakerStatusHistory history) {
         StatusHistoryItem item = new StatusHistoryItem();
         item.setId(history.getId());
+        item.setKind(StatusHistoryItem.Kind.STATUS_CHANGE);
         item.setPreviousStatus(history.getPreviousStatus());
         item.setNewStatus(history.getNewStatus());
         item.setChangedByUsername(history.getChangedByUsername());
         item.setChangeReason(history.getChangeReason());
         item.setChangedAt(history.getChangedAt());
+        return item;
+    }
+
+    /**
+     * Synthesise a history item for a content-rejection event sourced from
+     * session_content_history. Marked with kind=CONTENT_REJECTED so the frontend
+     * can render it distinctly — previousStatus/newStatus are intentionally left null
+     * because no workflow transition happened.
+     */
+    private StatusHistoryItem mapContentRejectionToHistoryItem(SessionContentVersion version) {
+        StatusHistoryItem item = new StatusHistoryItem();
+        item.setId(version.getId());
+        item.setKind(StatusHistoryItem.Kind.CONTENT_REJECTED);
+        item.setChangedByUsername(version.getReviewedBy());
+        item.setChangeReason(version.getReviewerFeedback());
+        item.setChangedAt(version.getReviewedAt());
         return item;
     }
 }

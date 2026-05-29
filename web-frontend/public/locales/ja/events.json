@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "会場 / ケータリングに送信",
+      "subtitle": "テンプレートを選び、必要に応じてメモを追加し、プレビューを確認してから、会場担当者、ケータリング担当者、またはその両方に送信します。",
+      "notConfigured": "会場またはケータリングの連絡先が設定されていません。",
+      "openAdmin": "管理 → 会場とケータリングを開く",
+      "templateLabel": "テンプレート",
+      "noTemplates": "利用可能なテンプレートがありません",
+      "recipients": "宛先",
+      "venueRole": "会場",
+      "cateringRole": "ケータリング",
+      "notesLabel": "メモ（任意）",
+      "notesPlaceholder": "例：12:30に別室で8名分のランチテーブルを予約してください。",
+      "previewButton": "プレビュー",
+      "previewFailed": "プレビューに失敗しました：",
+      "to": "宛先",
+      "cc": "Cc",
+      "replyTo": "返信先",
+      "subject": "件名",
+      "sendButton": "送信",
+      "confirmTitle": "メールを送信しますか？",
+      "confirmBody": "{{recipients}} に実際のメールが送信されます。返信先は設定された会場コーディネーターです。",
+      "confirmSend": "はい、送信",
+      "sentSuccess": "{{count}} 名の受信者に送信しました。",
+      "sentFailed": "送信に失敗しました：{{message}}"
     }
   },
   "dashboard": {
@@ -556,7 +581,7 @@
       "date": "日付",
       "time": "時間",
       "location": "場所",
-      "capacity": "定員"
+      "capacity": "登録者数"
     },
     "errors": {
       "loadFailed": "イベントの読み込みに失敗しました",

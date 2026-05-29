@@ -599,7 +599,8 @@
       "SPEAKER": "Intervenants",
       "REGISTRATION": "Inscription",
       "TASK_REMINDER": "Rappels de tâches",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Lieu & Restauration"
     },
     "layoutKey": "Mise en page",
     "standalone": "Aucune (autonome)",

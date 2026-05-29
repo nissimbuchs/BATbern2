@@ -10,7 +10,8 @@
     "exportImport": "Export / Import",
     "aiPrompts": "Prompts IA",
     "settings": "Parametres",
-    "globalImages": "Images globales"
+    "globalImages": "Images globales",
+    "venueCoordination": "Lieu & Restauration"
   },
   "globalImages": {
     "title": "Images teaser globales",
@@ -31,6 +32,18 @@
     },
     "save": "Enregistrer",
     "saved": "Parametres enregistres.",
-    "saveFailed": "Echec de l'enregistrement. Veuillez reessayer."
+    "saveFailed": "Echec de l'enregistrement. Veuillez reessayer.",
+    "venueCoordination": {
+      "title": "Contacts lieu & restauration",
+      "subtitle": "Ces contacts reçoivent les courriels d'offerte et de programme depuis l'onglet Lieu de la page Détails de l'événement. Ils sont identiques pour chaque événement — à définir une seule fois ici.",
+      "venueSection": "Contact lieu",
+      "cateringSection": "Contact restauration",
+      "coordinatorSection": "Coordinateur·trice du lieu",
+      "coordinatorHelp": "Le nom d'utilisateur de l'organisateur·trice (p. ex. nissim.buchs) dont l'adresse e-mail apparaîtra en Reply-To sur chaque message lieu/restauration. Les réponses arrivent directement chez cette personne.",
+      "coordinatorUsername": "Nom d'utilisateur du coordinateur·trice",
+      "salutation": "Civilité",
+      "name": "Nom",
+      "email": "E-mail"
+    }
   }
 }

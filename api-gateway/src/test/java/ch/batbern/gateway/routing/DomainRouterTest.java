@@ -305,6 +305,29 @@ class DomainRouterTest {
 
     // Story 5.4: Speaker Status Management Routing Tests
     // Epic 5: Organizer manages speakers on their behalf, routes to event-management-service
+    // Regression: gateway must route AiAssistController's /speakers/{id}/ai/* paths to EMS.
+    // Before the fix it threw RoutingException → frontend got 503 in production.
+    @Test
+    @DisplayName("should_routeToEventService_when_speakerAiAnalyzeAbstractEndpointCalled")
+    void should_routeToEventService_when_speakerAiAnalyzeAbstractEndpointCalled() {
+        String requestPath = "/api/v1/speakers/77960867-e5c6-4134-b142-db96c50d3ba6/ai/analyze-abstract";
+
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_speakerAiNestedSubpathCalled")
+    void should_routeToEventService_when_speakerAiNestedSubpathCalled() {
+        // Catches any future AI subpath we add under /speakers/{id}/ai/* (e.g. /ai/expand-bio).
+        String requestPath = "/api/v1/speakers/550e8400-e29b-41d4-a716-446655440000/ai/some-future-op/apply";
+
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_routeToEventService_when_speakerStatusUpdateEndpointCalled")
     void should_routeToEventService_when_speakerStatusUpdateEndpointCalled() {

@@ -10,7 +10,8 @@
     "exportImport": "エクスポート / インポート",
     "aiPrompts": "AIプロンプト",
     "settings": "設定",
-    "globalImages": "グローバル画像"
+    "globalImages": "グローバル画像",
+    "venueCoordination": "会場とケータリング"
   },
   "globalImages": {
     "title": "グローバルティーザー画像",
@@ -31,6 +32,18 @@
     },
     "save": "保存",
     "saved": "設定を保存しました。",
-    "saveFailed": "保存に失敗しました。もう一度お試しください。"
+    "saveFailed": "保存に失敗しました。もう一度お試しください。",
+    "venueCoordination": {
+      "title": "会場・ケータリング連絡先",
+      "subtitle": "これらの連絡先は、イベント詳細ページの「会場」タブから送信される見積もりおよびスケジュールのメールを受け取ります。すべてのイベントで同じです — ここで一度だけ設定してください。",
+      "venueSection": "会場担当者",
+      "cateringSection": "ケータリング担当者",
+      "coordinatorSection": "会場コーディネーター",
+      "coordinatorHelp": "会場/ケータリングの各メッセージに Reply-To として表示される、オーガナイザーのユーザー名（例：nissim.buchs）。受信者からの返信はこの人に直接届きます。",
+      "coordinatorUsername": "コーディネーターのユーザー名",
+      "salutation": "敬称",
+      "name": "氏名",
+      "email": "メール"
+    }
   }
 }

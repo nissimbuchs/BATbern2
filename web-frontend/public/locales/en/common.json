@@ -636,7 +636,8 @@
       "SPEAKER": "Speakers",
       "REGISTRATION": "Registration",
       "TASK_REMINDER": "Task Reminders",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Venue & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",

@@ -590,7 +590,8 @@
       "noEntries": "No history yet.",
       "loadError": "Failed to load history.",
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
-      "outreachEntry": "Outreach by {{actor}}"
+      "outreachEntry": "Outreach by {{actor}}",
+      "contentRejectedEntry": "Révision de l'abstract demandée par {{actor}}"
     }
   }
 }

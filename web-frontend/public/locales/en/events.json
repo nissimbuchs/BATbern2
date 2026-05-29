@@ -186,6 +186,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Send to Venue / Catering",
+      "subtitle": "Pick a template, optionally add notes, preview, then send to the venue contact, the catering contact, or both.",
+      "notConfigured": "Venue or catering contacts are not configured.",
+      "openAdmin": "Open Administration → Venue & Catering",
+      "templateLabel": "Template",
+      "noTemplates": "No templates available",
+      "recipients": "Recipients",
+      "venueRole": "Venue",
+      "cateringRole": "Catering",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "e.g. Reserve a lunch table for 8 at 12:30 in the back room.",
+      "previewButton": "Preview",
+      "previewFailed": "Preview failed:",
+      "to": "To",
+      "cc": "Cc",
+      "replyTo": "Reply-To",
+      "subject": "Subject",
+      "sendButton": "Send",
+      "confirmTitle": "Send email?",
+      "confirmBody": "This will send a real email to {{recipients}}. Reply-To is the configured venue coordinator.",
+      "confirmSend": "Yes, send",
+      "sentSuccess": "Sent to {{count}} recipient(s).",
+      "sentFailed": "Send failed: {{message}}"
     }
   },
   "dashboard": {
@@ -578,7 +603,7 @@
       "date": "Date",
       "time": "Time",
       "location": "Location",
-      "capacity": "Capacity"
+      "capacity": "Registrations"
     },
     "errors": {
       "loadFailed": "Failed to load event",

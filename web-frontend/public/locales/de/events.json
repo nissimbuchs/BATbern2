@@ -186,6 +186,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "An Veranstaltungsort / Catering senden",
+      "subtitle": "Eine Vorlage auswählen, optional Notizen ergänzen, Vorschau prüfen und anschliessend an Veranstaltungsort, Catering oder beide senden.",
+      "notConfigured": "Kontakte für Veranstaltungsort oder Catering sind nicht konfiguriert.",
+      "openAdmin": "Administration → Veranstaltungsort & Catering öffnen",
+      "templateLabel": "Vorlage",
+      "noTemplates": "Keine Vorlagen verfügbar",
+      "recipients": "Empfänger",
+      "venueRole": "Veranstaltungsort",
+      "cateringRole": "Catering",
+      "notesLabel": "Notizen (optional)",
+      "notesPlaceholder": "z. B. Bitte einen Mittagstisch für 8 Personen um 12:30 Uhr im Säli reservieren.",
+      "previewButton": "Vorschau",
+      "previewFailed": "Vorschau fehlgeschlagen:",
+      "to": "An",
+      "cc": "Cc",
+      "replyTo": "Antwort an",
+      "subject": "Betreff",
+      "sendButton": "Senden",
+      "confirmTitle": "E-Mail senden?",
+      "confirmBody": "Es wird eine echte E-Mail an {{recipients}} gesendet. Antwortadresse ist die hinterlegte Veranstaltungsort-Koordinator:in.",
+      "confirmSend": "Ja, senden",
+      "sentSuccess": "An {{count}} Empfänger gesendet.",
+      "sentFailed": "Versand fehlgeschlagen: {{message}}"
     }
   },
   "dashboard": {
@@ -578,7 +603,7 @@
       "date": "Datum",
       "time": "Zeit",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Anmeldungen"
     },
     "errors": {
       "loadFailed": "Veranstaltung konnte nicht geladen werden",

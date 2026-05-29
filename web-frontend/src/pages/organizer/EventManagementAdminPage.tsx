@@ -1,16 +1,16 @@
 /**
  * EventManagementAdminPage (Story 10.1 - Task 1)
  *
- * Tabbed administration page at /organizer/admin with 9 tabs:
+ * Tabbed administration page at /organizer/admin:
  *   0 - Event Types
  *   1 - Import Data
  *   2 - Task Templates
  *   3 - Email Templates
  *   4 - Presentation Settings
- *   5 - Export / Import (Story 10.20)
- *   6 - AI Prompts
- *   7 - Settings (Story 10.26)
- *   8 - Global Images
+ *   5 - AI Prompts
+ *   6 - Settings (Story 10.26)
+ *   7 - Global Images
+ *   8 - Venue & Catering Contacts
  *
  * Tab index is persisted in URL as ?tab=N.
  * ORGANIZER role guard enforced.
@@ -31,13 +31,14 @@ import { PresentationSettingsTab } from '@/components/organizer/Admin/Presentati
 import { AiPromptsTab } from '@/components/organizer/Admin/AiPromptsTab';
 import { AdminSettingsTab } from '@/components/organizer/Admin/AdminSettingsTab';
 import { GlobalImagesTab } from '@/components/organizer/Admin/GlobalImagesTab';
+import { VenueCateringContactsTab } from '@/components/organizer/Admin/VenueCateringContactsTab';
 
 const EventManagementAdminPage: React.FC = () => {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabIndex = Math.max(0, Math.min(7, Number(searchParams.get('tab') ?? 0)));
+  const tabIndex = Math.max(0, Math.min(8, Number(searchParams.get('tab') ?? 0)));
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [{ label: t('common:menu.administration', 'Administration') }],
@@ -71,6 +72,10 @@ const EventManagementAdminPage: React.FC = () => {
     { label: t('tabs.aiPrompts', 'AI Prompts'), component: <AiPromptsTab /> },
     { label: t('tabs.settings', 'Settings'), component: <AdminSettingsTab /> },
     { label: t('tabs.globalImages', 'Global Images'), component: <GlobalImagesTab /> },
+    {
+      label: t('tabs.venueCoordination', 'Venue & Catering'),
+      component: <VenueCateringContactsTab />,
+    },
   ];
 
   return (

@@ -178,6 +178,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "A Lokau / Catering schicke",
+      "subtitle": "E Vorlag wähle, optional Notize zueggä, Vorschau aaluege u dr Mail a Lokau-Kontakt, Catering-Kontakt oder beidi schicke.",
+      "notConfigured": "Kontäkt für Lokau oder Catering si nid konfiguriert.",
+      "openAdmin": "Administration → Lokau & Catering ufmache",
+      "templateLabel": "Vorlag",
+      "noTemplates": "Kei Vorlage verfügbar",
+      "recipients": "Empfänger",
+      "venueRole": "Lokau",
+      "cateringRole": "Catering",
+      "notesLabel": "Notize (optional)",
+      "notesPlaceholder": "z. B. Bitte e Mittagstisch für 8 Persone um 12:30 im Säli reserviere.",
+      "previewButton": "Vorschau",
+      "previewFailed": "Vorschau het nid klappt:",
+      "to": "An",
+      "cc": "Cc",
+      "replyTo": "Antwort a",
+      "subject": "Betreff",
+      "sendButton": "Schicke",
+      "confirmTitle": "Mail schicke?",
+      "confirmBody": "Es wird e richtigi Mail a {{recipients}} gschickt. D Antwortadrässe isch di igstellti Lokau-Koordinatorin.",
+      "confirmSend": "Jo, schicke",
+      "sentSuccess": "A {{count}} Empfänger gschickt.",
+      "sentFailed": "S Schicke het nid klappt: {{message}}"
     }
   },
   "dashboard": {
@@ -555,7 +580,7 @@
       "date": "Datum",
       "time": "Zyt",
       "location": "Ort",
-      "capacity": "Kapazität"
+      "capacity": "Amäldige"
     },
     "errors": {
       "loadFailed": "Veranstatig chöne nid gglade werde",

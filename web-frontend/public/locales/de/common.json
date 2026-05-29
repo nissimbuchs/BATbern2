@@ -601,7 +601,8 @@
       "SPEAKER": "Referenten-E-Mails",
       "REGISTRATION": "Registrierungs-E-Mails",
       "TASK_REMINDER": "Aufgaben-Erinnerungen",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Veranstaltungsort & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Kein Layout (eigenständig)",

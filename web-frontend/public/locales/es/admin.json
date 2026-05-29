@@ -10,7 +10,8 @@
     "exportImport": "Exportar / Importar",
     "aiPrompts": "Prompts de IA",
     "settings": "Configuracion",
-    "globalImages": "Imagenes globales"
+    "globalImages": "Imagenes globales",
+    "venueCoordination": "Lugar y Catering"
   },
   "globalImages": {
     "title": "Imagenes teaser globales",
@@ -31,6 +32,18 @@
     },
     "save": "Guardar",
     "saved": "Configuracion guardada.",
-    "saveFailed": "Error al guardar. Intentelo de nuevo."
+    "saveFailed": "Error al guardar. Intentelo de nuevo.",
+    "venueCoordination": {
+      "title": "Contactos de lugar y catering",
+      "subtitle": "Estos contactos reciben los correos de oferta y programa enviados desde la pestaña Lugar de la página de detalle del evento. Son los mismos para cada evento — defínalos una sola vez aquí.",
+      "venueSection": "Contacto del lugar",
+      "cateringSection": "Contacto del catering",
+      "coordinatorSection": "Coordinador/a del lugar",
+      "coordinatorHelp": "El nombre de usuario del organizador/a (p. ej. nissim.buchs) cuya dirección de correo aparecerá como Reply-To en cada mensaje de lugar/catering. Las respuestas llegan directamente a esa persona.",
+      "coordinatorUsername": "Nombre de usuario del coordinador/a",
+      "salutation": "Saludo",
+      "name": "Nombre",
+      "email": "Correo"
+    }
   }
 }

@@ -779,27 +779,38 @@ components:
 
     StatusHistoryItem:
       type: object
-      description: Single status change record (Story 5.4 AC3-4)
+      description: Single timeline entry — either a workflow state change (Story 5.4 AC3-4) or a content-review event interleaved by the same endpoint.
       properties:
         id:
           type: string
           format: uuid
           description: History record ID
+        kind:
+          type: string
+          enum: [STATUS_CHANGE, CONTENT_REJECTED]
+          default: STATUS_CHANGE
+          description: |
+            Discriminates the entry type. `STATUS_CHANGE` is a row from `speaker_status_history`
+            (previousStatus → newStatus). `CONTENT_REJECTED` is a synthesised row sourced from
+            `session_content_history` where reviewerFeedback is non-null — content rejection is
+            intentionally NOT a state transition (ADR-009), so it never lands in
+            speaker_status_history. Surfacing it here keeps the organizer's History tab honest
+            (used by UnifiedHistoryPanel).
         previousStatus:
           $ref: '#/components/schemas/SpeakerWorkflowState'
         newStatus:
           $ref: '#/components/schemas/SpeakerWorkflowState'
         changedByUsername:
           type: string
-          description: Organizer who made the change
+          description: Organizer who made the change (or `reviewedBy` for CONTENT_REJECTED).
           example: john.doe
         changeReason:
           type: string
-          description: Reason for the change
+          description: Reason for the change (or `reviewerFeedback` for CONTENT_REJECTED).
         changedAt:
           type: string
           format: date-time
-          description: When the change occurred
+          description: When the change occurred (or `reviewedAt` for CONTENT_REJECTED).
 
     StatusSummaryResponse:
       type: object

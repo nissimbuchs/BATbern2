@@ -599,7 +599,8 @@
       "SPEAKER": "Relatori",
       "REGISTRATION": "Iscrizione",
       "TASK_REMINDER": "Promemoria attività",
-      "NEWSLETTER": "Newsletter"
+      "NEWSLETTER": "Newsletter",
+      "VENUE_COORDINATION": "Sede & Catering"
     },
     "layoutKey": "Layout",
     "standalone": "Nessuno (autonomo)",

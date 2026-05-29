@@ -599,7 +599,8 @@
       "SPEAKER": "スピーカー",
       "REGISTRATION": "登録",
       "TASK_REMINDER": "タスクリマインダー",
-      "NEWSLETTER": "ニュースレター"
+      "NEWSLETTER": "ニュースレター",
+      "VENUE_COORDINATION": "会場とケータリング"
     },
     "layoutKey": "レイアウト",
     "standalone": "なし（スタンドアロン）",

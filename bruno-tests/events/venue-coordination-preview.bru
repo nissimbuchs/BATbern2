@@ -1,0 +1,92 @@
+meta {
+  name: Venue coordination — preview rendering
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/venue-coordination/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+script:pre-request {
+  // Seed the venue.coordination.config singleton so the test always asserts 200.
+  // Uses batbern.organizer (the staging test organizer) as coordinator.
+  // The coordinator email is resolved at runtime via UserApiClient — it must belong
+  // to an actual organizer-role user in the target environment.
+  const config = JSON.stringify({
+    venue: {
+      salutation: "Frau",
+      name: "Gabriela Senn",
+      email: "gabriela.senn.batbern.test@batbern.ch"
+    },
+    catering: {
+      salutation: "Herr",
+      name: "Stefan Oppliger",
+      email: "stefan.oppliger.batbern.test@batbern.ch"
+    },
+    coordinatorUsername: "batbern.organizer"
+  });
+
+  const res = await bru.runRequest({
+    method: "PUT",
+    url: bru.getEnvVar("baseUrl") + "/admin/settings/venue.coordination.config",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + bru.getEnvVar("organizerAuthToken")
+    },
+    body: JSON.stringify({ value: config })
+  });
+}
+
+body:json {
+  {
+    "templateKey": "venue-timetable",
+    "recipients": ["VENUE"],
+    "locale": "de"
+  }
+}
+
+tests {
+  test("returns 200 — config was seeded in pre-request", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("envelope contains subject, htmlBody, toEmail, replyToEmail", function() {
+    const body = res.getBody();
+    expect(body.subject).to.be.a("string").and.not.equal("");
+    expect(body.htmlBody).to.be.a("string").and.not.equal("");
+    expect(body.toEmail).to.be.a("string").and.not.equal("");
+    expect(body.ccEmails).to.be.an("array");
+    expect(body.replyToEmail).to.be.a("string").and.not.equal("");
+  });
+
+  test("subject contains the event date", function() {
+    // The venue-timetable template subject is:
+    // "BATbern vom {{eventDate}} zum Thema ..." — so any rendered subject must be non-empty.
+    // We can't assert the exact date without knowing the live event, but we can check it isn't the raw placeholder.
+    const body = res.getBody();
+    expect(body.subject).to.not.include("{{eventDate}}");
+  });
+}
+
+docs {
+  Contract test for POST /events/{code}/venue-coordination/preview.
+
+  A pre-request script seeds the admin-settings singleton (venue.coordination.config)
+  via PUT /admin/settings/... so this test always asserts HTTP 200 rather than tolerating
+  412 (as the old version did). That tolerant posture was a blind spot: the test would pass
+  silently in any misconfigured environment, defeating its purpose.
+
+  /send is NOT covered here — sending real SES traffic from Bruno would violate the
+  no-real-comms-in-tests rule (staging IS production). The send path is exercised by
+  VenueCoordinationControllerIntegrationTest with a mocked EmailService.
+
+  Bruno parser rule: comments belong in this docs { } block, not as free-floating `#`
+  lines (those silently skip the file — see CLAUDE.md).
+}

@@ -578,7 +578,8 @@
       "noEntries": "No history yet.",
       "loadError": "Failed to load history.",
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
-      "outreachEntry": "Outreach by {{actor}}"
+      "outreachEntry": "Outreach by {{actor}}",
+      "contentRejectedEntry": "Revisiun da l'abstract dumandada da {{actor}}"
     }
   }
 }

@@ -164,6 +164,12 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("newsletter-")) {
             return "NEWSLETTER";
         }
+        // Story (venue-coordination): outbound mails to the event venue + caterer.
+        // Both share one category so the Event Detail Venue tab dropdown can list them
+        // together; the key prefix still distinguishes which recipient the template targets.
+        if (templateKey.startsWith("venue-") || templateKey.startsWith("catering-")) {
+            return "VENUE_COORDINATION";
+        }
         return "LAYOUT";
     }
 

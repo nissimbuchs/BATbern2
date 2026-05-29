@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Trametter al lieu / catering",
+      "subtitle": "Tscherner ina muster, agiuntar eventualmain notas, controllar la preanvista e tramettre al contact dal lieu, al contact dal catering u a tuts dus.",
+      "notConfigured": "Ils contacts per lieu u catering n'èn betg configurads.",
+      "openAdmin": "Avrir Administraziun → Lieu & Catering",
+      "templateLabel": "Muster",
+      "noTemplates": "Naginas musters disponiblas",
+      "recipients": "Destinaturs",
+      "venueRole": "Lieu",
+      "cateringRole": "Catering",
+      "notesLabel": "Notas (facultativ)",
+      "notesPlaceholder": "p. ex. Reservar ina maisa per 8 persunas a las 12:30 en la sala anteriura.",
+      "previewButton": "Preanvista",
+      "previewFailed": "Preanvista n'è betg reussida:",
+      "to": "A",
+      "cc": "Cc",
+      "replyTo": "Respunder a",
+      "subject": "Object",
+      "sendButton": "Trametter",
+      "confirmTitle": "Trametter l'e-mail?",
+      "confirmBody": "In e-mail real vegn tramess a {{recipients}}. L'adressa da resposta è quella dal coordinatur dal lieu configurà.",
+      "confirmSend": "Gea, trametter",
+      "sentSuccess": "Tramess a {{count}} destinatur(s).",
+      "sentFailed": "Trametter n'è betg reussì: {{message}}"
     }
   },
   "dashboard": {
@@ -556,7 +581,7 @@
       "date": "Data",
       "time": "Temp",
       "location": "Lieu",
-      "capacity": "Capacitad"
+      "capacity": "Registraziuns"
     },
     "errors": {
       "loadFailed": "Chargiar eveniment fallì",
