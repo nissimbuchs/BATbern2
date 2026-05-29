@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,11 +33,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link ParticipantsExportService}. We parse the produced bytes back with
- * Apache POI to assert the column layout and the precedence rules.
- *
- * <p>Spec: {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}
+ * Unit tests for {@link ParticipantsExportService}. We construct a real
+ * {@link ParticipantsCollector} with mocked repositories so the test exercises the
+ * data → XLSX path end-to-end. Spec:
+ * {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}
  * (F3).
+ *
+ * <p>Sort assertions live in {@link ParticipantsCollectorTest}; this class focuses
+ * on the XLSX output shape — header row, dedupe / precedence visible in rows,
+ * status-filter behaviour.
  */
 @ExtendWith(MockitoExtension.class)
 class ParticipantsExportServiceTest {
@@ -52,7 +55,6 @@ class ParticipantsExportServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
-    @InjectMocks
     private ParticipantsExportService service;
 
     private static final UUID EVENT_ID = UUID.randomUUID();
@@ -62,6 +64,9 @@ class ParticipantsExportServiceTest {
 
     @BeforeEach
     void setUp() {
+        ParticipantsCollector collector = new ParticipantsCollector(
+                eventRepository, registrationRepository, sessionUserRepository, userApiClient);
+        service = new ParticipantsExportService(collector);
         event = Event.builder()
                 .id(EVENT_ID)
                 .eventCode(EVENT_CODE)
