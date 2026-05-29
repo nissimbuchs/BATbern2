@@ -23,7 +23,7 @@ export const TestimonialCard = ({ avatar, name, quote, company }: TestimonialCar
   };
 
   return (
-    <Card className="flex-shrink-0 w-80 p-6 bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
+    <Card className="flex-shrink-0 w-80 p-6 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors">
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <div className="flex-shrink-0">

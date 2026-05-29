@@ -35,7 +35,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -98,7 +97,7 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
         event = eventRepository.save(event);
 
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of(ORGANIZER_USERNAME));
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of("acme", "Acme AG"));
+        when(userApiClient.getCompanyDisplayName("acme")).thenReturn("Acme AG");
         when(userApiClient.getUserByUsername(anyString())).thenAnswer(inv -> {
             String u = inv.getArgument(0);
             return new UserResponse()

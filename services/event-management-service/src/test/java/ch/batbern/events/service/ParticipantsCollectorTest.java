@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,7 +72,6 @@ class ParticipantsCollectorTest {
         stubEventFound();
         // Set up: 1 organizer, 1 speaker, 1 attendee — input order is reversed
         // to confirm the sort actually does work.
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("o.one"));
         when(userApiClient.getUserByUsername("o.one"))
                 .thenReturn(user("o.one", "Olivia", "Org", null));
@@ -104,7 +102,6 @@ class ParticipantsCollectorTest {
     @DisplayName("Within a role, last names sort alphabetically via German collator (umlauts)")
     void should_sortByLastName_withGermanCollator() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
 
@@ -128,7 +125,6 @@ class ParticipantsCollectorTest {
     @DisplayName("Tie-break on equal last names falls through to first name")
     void should_tieBreakByFirstName_whenLastNamesEqual() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
 
@@ -148,7 +144,6 @@ class ParticipantsCollectorTest {
     @DisplayName("Dedupe across role-source-sets: organizer-also-attendee renders once as Organisator")
     void should_dedupe_organizerAndAttendeeSameUser() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("dual.user"));
         when(userApiClient.getUserByUsername("dual.user"))
                 .thenReturn(user("dual.user", "Dual", "User", null));
@@ -169,7 +164,7 @@ class ParticipantsCollectorTest {
     @DisplayName("Attendee enriches via CUMS when registrations.attendee_first/last_name is NULL")
     void should_enrichAttendeesFromCums_when_denormalizedNamesAreNull() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of("acme", "Acme AG"));
+        when(userApiClient.getCompanyDisplayName("acme")).thenReturn("Acme AG");
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
 
@@ -198,7 +193,6 @@ class ParticipantsCollectorTest {
     @DisplayName("Attendee not found in CUMS falls back to registrations denormalized cache fields")
     void should_fallBackToRegistrationCache_when_attendeeMissingInCums() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
         when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
 
@@ -224,7 +218,6 @@ class ParticipantsCollectorTest {
     @DisplayName("Speaker not found in CUMS falls back to session_users cached names")
     void should_fallBackToSessionUserCachedNames_when_userMissing() {
         stubEventFound();
-        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
 
         SessionUser speaker = new SessionUser();

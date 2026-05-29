@@ -815,7 +815,8 @@
       "confirmed": "Confirmed",
       "registered": "Registered",
       "waitlist": "Waitlist",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "attended": "Attended"
     }
   },
   "capacity": {

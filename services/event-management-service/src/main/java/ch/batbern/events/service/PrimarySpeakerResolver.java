@@ -166,8 +166,8 @@ public class PrimarySpeakerResolver {
         }
         if (p.companyName() != null && !p.companyName().isBlank()) {
             response.setCompany(p.companyName());
-            response.setCompanyDisplayName(
-                    userApiClient.getCompanyDisplayNames().getOrDefault(p.companyName(), p.companyName()));
+            String displayName = userApiClient.getCompanyDisplayName(p.companyName());
+            response.setCompanyDisplayName(displayName != null ? displayName : p.companyName());
         }
     }
 

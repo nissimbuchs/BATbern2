@@ -466,6 +466,11 @@
     "detail": {
       "backToArchive": "← Zrugg zum Archiv",
       "photos": "Fotos"
+    },
+    "sort": {
+      "newest": "Nöischti zerscht",
+      "oldest": "Ältischti zerscht",
+      "mostAttended": "Am meischte bsuecht"
     }
   },
   "notifications": {

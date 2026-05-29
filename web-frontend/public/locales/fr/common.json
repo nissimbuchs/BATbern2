@@ -560,6 +560,11 @@
     "detail": {
       "backToArchive": "← Retour aux archives",
       "photos": "Photos"
+    },
+    "sort": {
+      "newest": "Les plus récents",
+      "oldest": "Les plus anciens",
+      "mostAttended": "Les plus fréquentés"
     }
   },
   "notifications": {

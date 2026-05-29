@@ -791,7 +791,8 @@
       "confirmed": "[MISSING] Confirmed",
       "registered": "[MISSING] Registered",
       "waitlist": "[MISSING] Waitlist",
-      "cancelled": "[MISSING] Cancelled"
+      "cancelled": "[MISSING] Cancelled",
+      "attended": "Bijgewoond"
     }
   },
   "capacity": {

@@ -64,14 +64,17 @@ export function FilterSheet({
               </button>
             </div>
 
-            {/* Filter Content */}
+            {/* Filter Content.
+                onFilterChange must NOT auto-close the sheet: FilterSidebar fires it on
+                mount (300 ms-debounced search effect) and on every topic toggle, which
+                used to close the sheet the moment the user opened it. The sheet now
+                stays open until the user explicitly closes via the ✕ button or the
+                backdrop, so multiple topics can be selected in one go. Sort and Clear
+                remain one-shot actions that close the sheet after applying. */}
             <FilterSidebar
               filters={filters}
               topics={topics}
-              onFilterChange={(f) => {
-                onFilterChange(f);
-                setIsOpen(false);
-              }}
+              onFilterChange={onFilterChange}
               onClearFilters={() => {
                 onClearFilters();
                 setIsOpen(false);

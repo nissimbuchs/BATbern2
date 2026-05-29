@@ -73,7 +73,7 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
         {speakersWithSessions.map((speaker) => (
           <Card
             key={speaker.username}
-            className="group hover:border-blue-400 transition-colors bg-zinc-900/50 border-zinc-800"
+            className="group hover:border-blue-400 transition-colors bg-zinc-700 border-zinc-600"
           >
             <CardHeader className="pb-4">
               <SpeakerDisplay

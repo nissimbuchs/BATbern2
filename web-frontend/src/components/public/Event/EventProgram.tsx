@@ -212,7 +212,7 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                     ) : (
                       <div
                         key={session.sessionSlug}
-                        className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 hover:border-zinc-700 transition-colors"
+                        className="bg-zinc-700 border border-zinc-600 rounded-lg p-6 hover:border-zinc-500 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <h3 className="text-xl font-light text-zinc-100">{session.title}</h3>
@@ -222,23 +222,22 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
                         </div>
 
                         {session.description && (
-                          <p className="text-sm text-zinc-400 mb-4">{session.description}</p>
+                          <p className="text-sm text-zinc-300 mb-4">{session.description}</p>
                         )}
 
-                        <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4" />
-                            {formatSessionDuration(session.startTime, session.endTime)}
-                          </span>
-                          {session.room && (
+                        {/* In-card session start/end time intentionally omitted on the public
+                            timeline — the time circle at the left of the row already shows it,
+                            and individual slot times are not advertised to attendees. */}
+                        {session.room && (
+                          <div className="flex flex-wrap gap-4 text-sm text-zinc-300">
                             <span className="flex items-center gap-1.5">
                               <MapPin className="h-4 w-4" />
                               {session.room}
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
-                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                        <div className="mt-4 pt-4 border-t border-zinc-600">
                           {session.speakers && session.speakers.length > 0 ? (
                             <div>
                               <p className="text-xs text-zinc-500 mb-2">
@@ -264,7 +263,7 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
 
                         {/* Materials Section - Only for archived events (Story 5.9 - Task 8b) */}
                         {isArchived && session.materials && session.materials.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-zinc-800">
+                          <div className="mt-4 pt-4 border-t border-zinc-600">
                             <p className="text-xs text-zinc-500 mb-3">
                               {t('public.program.materials', 'Materials')}:
                             </p>

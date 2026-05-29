@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -100,17 +99,15 @@ public class ParticipantsCollector {
         // overrides it deterministically, but the map ordering keeps the
         // dedupe-with-precedence logic readable.
         Map<String, ParticipantRow> rows = new LinkedHashMap<>();
-        Map<String, String> companyNames = safeCompanyDisplayNames();
 
-        collectOrganizers(rows, companyNames);
-        collectEventSpeakers(event, rows, companyNames);
-        collectRegisteredAttendees(event, rows, companyNames);
+        collectOrganizers(rows);
+        collectEventSpeakers(event, rows);
+        collectRegisteredAttendees(event, rows);
 
         return sortCanonically(new ArrayList<>(rows.values()));
     }
 
-    private void collectOrganizers(Map<String, ParticipantRow> rows,
-                                   Map<String, String> companyNames) {
+    private void collectOrganizers(Map<String, ParticipantRow> rows) {
         List<String> usernames;
         try {
             usernames = userApiClient.getOrganizerUsernames();
@@ -127,7 +124,7 @@ public class ParticipantsCollector {
                 rows.put(username, new ParticipantRow(
                         user.getFirstName(),
                         user.getLastName(),
-                        resolveCompany(user.getCompanyId(), companyNames),
+                        resolveCompany(user.getCompanyId()),
                         ROLE_ORGANIZER));
             } catch (UserNotFoundException ignore) {
                 log.warn("Organizer username {} not resolvable — skipping", username);
@@ -135,9 +132,7 @@ public class ParticipantsCollector {
         }
     }
 
-    private void collectEventSpeakers(Event event,
-                                      Map<String, ParticipantRow> rows,
-                                      Map<String, String> companyNames) {
+    private void collectEventSpeakers(Event event, Map<String, ParticipantRow> rows) {
         List<SessionUser> speakers =
                 sessionUserRepository.findEventSpeakersByEventId(event.getId());
         for (SessionUser su : speakers) {
@@ -154,7 +149,7 @@ public class ParticipantsCollector {
                 rows.put(username, new ParticipantRow(
                         user.getFirstName(),
                         user.getLastName(),
-                        resolveCompany(user.getCompanyId(), companyNames),
+                        resolveCompany(user.getCompanyId()),
                         ROLE_SPEAKER));
             } catch (UserNotFoundException ignore) {
                 // Fall back to cached fields on session_users (no CUMS profile).
@@ -167,9 +162,7 @@ public class ParticipantsCollector {
         }
     }
 
-    private void collectRegisteredAttendees(Event event,
-                                            Map<String, ParticipantRow> rows,
-                                            Map<String, String> companyNames) {
+    private void collectRegisteredAttendees(Event event, Map<String, ParticipantRow> rows) {
         List<Registration> registrations =
                 registrationRepository.findByEventId(event.getId()).stream()
                         .filter(r -> r.getStatus() != null
@@ -202,7 +195,7 @@ public class ParticipantsCollector {
                 rows.put(username, new ParticipantRow(
                         nullToEmpty(user.getFirstName()),
                         nullToEmpty(user.getLastName()),
-                        resolveCompany(user.getCompanyId(), companyNames),
+                        resolveCompany(user.getCompanyId()),
                         ROLE_ATTENDEE));
             } else {
                 // CUMS doesn't know this user — fall back to whatever the
@@ -212,7 +205,7 @@ public class ParticipantsCollector {
                 rows.put(username, new ParticipantRow(
                         nullToEmpty(r.getAttendeeFirstName()),
                         nullToEmpty(r.getAttendeeLastName()),
-                        resolveCompany(r.getAttendeeCompanyId(), companyNames),
+                        resolveCompany(r.getAttendeeCompanyId()),
                         ROLE_ATTENDEE));
             }
         }
@@ -232,21 +225,28 @@ public class ParticipantsCollector {
         return rows;
     }
 
-    private Map<String, String> safeCompanyDisplayNames() {
-        try {
-            return userApiClient.getCompanyDisplayNames();
-        } catch (Exception e) {
-            log.warn("Could not resolve company display names — falling back to slugs: {}",
-                    e.getMessage());
-            return new HashMap<>();
-        }
-    }
-
-    private static String resolveCompany(String companySlug, Map<String, String> companyDisplayNames) {
+    /**
+     * Resolve a company slug to its display name for badge rendering.
+     *
+     * <p>Per-slug cached (15 min) in {@code userApiCache} via
+     * {@link UserApiClient#getCompanyDisplayName(String)} (introduced in PR #685):
+     * repeated companies across the organizer / speaker / attendee passes hit
+     * the cache after the first lookup, so an export with N participants and K
+     * distinct companies makes at most K upstream calls. Returns the slug as a
+     * graceful fallback when CUMS doesn't know the company.
+     */
+    private String resolveCompany(String companySlug) {
         if (companySlug == null || companySlug.isBlank()) {
             return "";
         }
-        return companyDisplayNames.getOrDefault(companySlug, companySlug);
+        try {
+            String displayName = userApiClient.getCompanyDisplayName(companySlug);
+            return displayName != null ? displayName : companySlug;
+        } catch (Exception e) {
+            log.warn("Could not resolve display name for company {} — falling back to slug: {}",
+                    companySlug, e.getMessage());
+            return companySlug;
+        }
     }
 
     private static String nullToEmpty(String s) {
