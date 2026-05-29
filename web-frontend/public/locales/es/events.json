@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Enviar a lugar / catering",
+      "subtitle": "Elija una plantilla, agregue notas si lo desea, revise la vista previa y envíe al contacto del lugar, al contacto del catering o a ambos.",
+      "notConfigured": "Los contactos de lugar o catering no están configurados.",
+      "openAdmin": "Abrir Administración → Lugar y Catering",
+      "templateLabel": "Plantilla",
+      "noTemplates": "No hay plantillas disponibles",
+      "recipients": "Destinatarios",
+      "venueRole": "Lugar",
+      "cateringRole": "Catering",
+      "notesLabel": "Notas (opcional)",
+      "notesPlaceholder": "p. ej. Reservar una mesa para 8 a las 12:30 en la sala privada.",
+      "previewButton": "Vista previa",
+      "previewFailed": "Vista previa fallida:",
+      "to": "Para",
+      "cc": "Cc",
+      "replyTo": "Responder a",
+      "subject": "Asunto",
+      "sendButton": "Enviar",
+      "confirmTitle": "¿Enviar correo?",
+      "confirmBody": "Se enviará un correo real a {{recipients}}. La dirección de respuesta es la del coordinador del lugar configurado.",
+      "confirmSend": "Sí, enviar",
+      "sentSuccess": "Enviado a {{count}} destinatario(s).",
+      "sentFailed": "Error de envío: {{message}}"
     }
   },
   "dashboard": {

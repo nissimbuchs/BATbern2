@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Naar locatie / catering sturen",
+      "subtitle": "Kies een sjabloon, voeg eventueel notities toe, controleer de voorbeeldweergave en verzend naar de locatiecontact, de cateringcontact of beide.",
+      "notConfigured": "Contacten voor locatie of catering zijn niet geconfigureerd.",
+      "openAdmin": "Administratie → Locatie & Catering openen",
+      "templateLabel": "Sjabloon",
+      "noTemplates": "Geen sjablonen beschikbaar",
+      "recipients": "Ontvangers",
+      "venueRole": "Locatie",
+      "cateringRole": "Catering",
+      "notesLabel": "Notities (optioneel)",
+      "notesPlaceholder": "bijv. Reserveer een lunchtafel voor 8 om 12:30 in de aparte zaal.",
+      "previewButton": "Voorbeeld",
+      "previewFailed": "Voorbeeld mislukt:",
+      "to": "Aan",
+      "cc": "Cc",
+      "replyTo": "Antwoord aan",
+      "subject": "Onderwerp",
+      "sendButton": "Verzenden",
+      "confirmTitle": "E-mail versturen?",
+      "confirmBody": "Er wordt een echte e-mail verstuurd naar {{recipients}}. Het antwoordadres is dat van de geconfigureerde locatiecoördinator.",
+      "confirmSend": "Ja, versturen",
+      "sentSuccess": "Verzonden naar {{count}} ontvanger(s).",
+      "sentFailed": "Verzenden mislukt: {{message}}"
     }
   },
   "dashboard": {

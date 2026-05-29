@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Lähetä tilan / cateringin yhteyshenkilölle",
+      "subtitle": "Valitse pohja, lisää tarvittaessa muistiinpanoja, tarkista esikatselu ja lähetä tilan yhteyshenkilölle, cateringin yhteyshenkilölle tai molemmille.",
+      "notConfigured": "Tilan tai cateringin yhteyshenkilöitä ei ole määritetty.",
+      "openAdmin": "Avaa Hallinta → Tila & Catering",
+      "templateLabel": "Pohja",
+      "noTemplates": "Pohjia ei ole saatavilla",
+      "recipients": "Vastaanottajat",
+      "venueRole": "Tila",
+      "cateringRole": "Catering",
+      "notesLabel": "Muistiinpanot (valinnainen)",
+      "notesPlaceholder": "esim. Varaa lounaspöytä 8 hengelle klo 12:30 takahuoneeseen.",
+      "previewButton": "Esikatselu",
+      "previewFailed": "Esikatselu epäonnistui:",
+      "to": "Vastaanottaja",
+      "cc": "Cc",
+      "replyTo": "Vastausosoite",
+      "subject": "Aihe",
+      "sendButton": "Lähetä",
+      "confirmTitle": "Lähetetäänkö sähköposti?",
+      "confirmBody": "Lähetetään oikea sähköposti osoitteeseen {{recipients}}. Vastausosoite on määritetyn tilan koordinaattorin osoite.",
+      "confirmSend": "Kyllä, lähetä",
+      "sentSuccess": "Lähetetty {{count}} vastaanottajalle.",
+      "sentFailed": "Lähetys epäonnistui: {{message}}"
     }
   },
   "dashboard": {

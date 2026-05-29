@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Envoyer au lieu / à la restauration",
+      "subtitle": "Choisissez un modèle, ajoutez éventuellement des notes, vérifiez l'aperçu, puis envoyez au contact du lieu, au contact de la restauration ou aux deux.",
+      "notConfigured": "Les contacts du lieu ou de la restauration ne sont pas configurés.",
+      "openAdmin": "Ouvrir Administration → Lieu & Restauration",
+      "templateLabel": "Modèle",
+      "noTemplates": "Aucun modèle disponible",
+      "recipients": "Destinataires",
+      "venueRole": "Lieu",
+      "cateringRole": "Restauration",
+      "notesLabel": "Notes (facultatif)",
+      "notesPlaceholder": "p. ex. Réserver une table pour 8 à 12 h 30 dans la salle attenante.",
+      "previewButton": "Aperçu",
+      "previewFailed": "Échec de l'aperçu :",
+      "to": "À",
+      "cc": "Cc",
+      "replyTo": "Répondre à",
+      "subject": "Objet",
+      "sendButton": "Envoyer",
+      "confirmTitle": "Envoyer l'e-mail ?",
+      "confirmBody": "Un e-mail réel sera envoyé à {{recipients}}. L'adresse de réponse est celle du coordinateur du lieu configuré.",
+      "confirmSend": "Oui, envoyer",
+      "sentSuccess": "Envoyé à {{count}} destinataire(s).",
+      "sentFailed": "Échec de l'envoi : {{message}}"
     }
   },
   "dashboard": {

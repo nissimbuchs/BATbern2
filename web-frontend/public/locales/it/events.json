@@ -172,6 +172,31 @@
       "vegetarianCount": "{{count}} Vegetarian",
       "veganCount": "{{count}} Vegan",
       "glutenFreeCount": "{{count}} Gluten-free"
+    },
+    "venueCoordination": {
+      "title": "Invia a sede / catering",
+      "subtitle": "Scegli un modello, aggiungi eventuali note, controlla l'anteprima, poi invia al contatto della sede, al contatto del catering o a entrambi.",
+      "notConfigured": "I contatti per sede o catering non sono configurati.",
+      "openAdmin": "Apri Amministrazione → Sede & Catering",
+      "templateLabel": "Modello",
+      "noTemplates": "Nessun modello disponibile",
+      "recipients": "Destinatari",
+      "venueRole": "Sede",
+      "cateringRole": "Catering",
+      "notesLabel": "Note (facoltative)",
+      "notesPlaceholder": "es. Riservare un tavolo per 8 alle 12:30 nella saletta privata.",
+      "previewButton": "Anteprima",
+      "previewFailed": "Anteprima fallita:",
+      "to": "A",
+      "cc": "Cc",
+      "replyTo": "Rispondi a",
+      "subject": "Oggetto",
+      "sendButton": "Invia",
+      "confirmTitle": "Inviare l'e-mail?",
+      "confirmBody": "Verrà inviata un'e-mail reale a {{recipients}}. L'indirizzo di risposta è quello del coordinatore della sede configurato.",
+      "confirmSend": "Sì, invia",
+      "sentSuccess": "Inviato a {{count}} destinatario/i.",
+      "sentFailed": "Invio fallito: {{message}}"
     }
   },
   "dashboard": {
