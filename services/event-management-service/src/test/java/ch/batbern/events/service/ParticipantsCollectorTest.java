@@ -166,6 +166,61 @@ class ParticipantsCollectorTest {
     }
 
     @Test
+    @DisplayName("Attendee enriches via CUMS when registrations.attendee_first/last_name is NULL")
+    void should_enrichAttendeesFromCums_when_denormalizedNamesAreNull() {
+        stubEventFound();
+        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of("acme", "Acme AG"));
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
+
+        // Historical registration with NULL denormalized names (the BAT bug pattern).
+        Registration legacy = Registration.builder()
+                .attendeeUsername("legacy.attendee")
+                .attendeeFirstName(null)
+                .attendeeLastName(null)
+                .status("attended")
+                .build();
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(legacy));
+        when(userApiClient.getUserByUsername("legacy.attendee"))
+                .thenReturn(user("legacy.attendee", "Legacy", "Attendee", "acme"));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).hasSize(1);
+        ParticipantRow p = rows.get(0);
+        assertThat(p.firstName()).isEqualTo("Legacy");
+        assertThat(p.lastName()).isEqualTo("Attendee");
+        assertThat(p.companyDisplayName()).isEqualTo("Acme AG");
+        assertThat(p.role()).isEqualTo(ParticipantsCollector.ROLE_ATTENDEE);
+    }
+
+    @Test
+    @DisplayName("Attendee not found in CUMS falls back to registrations denormalized cache fields")
+    void should_fallBackToRegistrationCache_when_attendeeMissingInCums() {
+        stubEventFound();
+        when(userApiClient.getCompanyDisplayNames()).thenReturn(Map.of());
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
+
+        // CUMS doesn't know this user, but the registration row has cached names.
+        Registration cached = Registration.builder()
+                .attendeeUsername("orphan.user")
+                .attendeeFirstName("Orphan")
+                .attendeeLastName("User")
+                .status("confirmed")
+                .build();
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(cached));
+        when(userApiClient.getUserByUsername("orphan.user"))
+                .thenThrow(new UserNotFoundException("orphan.user"));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).firstName()).isEqualTo("Orphan");
+        assertThat(rows.get(0).lastName()).isEqualTo("User");
+    }
+
+    @Test
     @DisplayName("Speaker not found in CUMS falls back to session_users cached names")
     void should_fallBackToSessionUserCachedNames_when_userMissing() {
         stubEventFound();

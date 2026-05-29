@@ -164,6 +164,33 @@ class ParticipantsDocxExportServiceTest {
         }
     }
 
+    @Test
+    @DisplayName("Participants with empty firstName AND lastName are filtered out (no wasted badge)")
+    void should_dropParticipantsWithNoName() throws IOException {
+        when(participantsCollector.collect(EVENT_CODE)).thenReturn(List.of(
+                new ParticipantRow("Alice", "Real", "elca", ParticipantsCollector.ROLE_ATTENDEE),
+                // These three have no usable name — must be dropped from the badge list.
+                new ParticipantRow("", "", "swisscom", ParticipantsCollector.ROLE_ATTENDEE),
+                new ParticipantRow(null, null, null, ParticipantsCollector.ROLE_ATTENDEE),
+                new ParticipantRow("   ", "  ", "bkw", ParticipantsCollector.ROLE_ATTENDEE),
+                new ParticipantRow("Bob", "AlsoReal", "bls", ParticipantsCollector.ROLE_ATTENDEE)));
+
+        byte[] docx = service.generateNameBadgeDocx(EVENT_CODE);
+
+        try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(docx))) {
+            List<BadgeText> badges = readBadges(doc.getTables().get(0));
+            // Only the two named participants land in actual slots; remaining slots blank.
+            assertThat(badges.get(0).name).isEqualTo("Alice Real");
+            assertThat(badges.get(1).name).isEqualTo("Bob AlsoReal");
+            // Remaining 25 slots stay blank — companies of the dropped rows must NOT
+            // appear (they'd be visually orphaned next to the BAT logo).
+            for (int i = 2; i < badges.size(); i++) {
+                assertThat(badges.get(i).name).as("slot %d name", i).isEmpty();
+                assertThat(badges.get(i).firma).as("slot %d firma", i).isEmpty();
+            }
+        }
+    }
+
     // ---- helpers ----
 
     /** Plain-text content of one badge cell, concatenated across runs in each paragraph. */

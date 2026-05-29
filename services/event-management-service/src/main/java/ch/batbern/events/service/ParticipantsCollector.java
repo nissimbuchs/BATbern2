@@ -187,11 +187,34 @@ public class ParticipantsCollector {
                         || ROLE_SPEAKER.equals(existing.role()))) {
                 continue;
             }
-            rows.put(username, new ParticipantRow(
-                    nullToEmpty(r.getAttendeeFirstName()),
-                    nullToEmpty(r.getAttendeeLastName()),
-                    resolveCompany(r.getAttendeeCompanyId(), companyNames),
-                    ROLE_ATTENDEE));
+            // Prefer the live CUMS profile — historical registrations imported
+            // before the denormalised attendee_first_name / attendee_last_name
+            // columns existed have NULL there, so badges came out empty. Same
+            // enrichment pattern collectEventSpeakers uses. UserApiClient is
+            // @Cacheable so repeat exports of the same event are cheap.
+            UserResponse user = null;
+            try {
+                user = userApiClient.getUserByUsername(username);
+            } catch (UserNotFoundException ignore) {
+                // Fall through to the denormalised-cache path below.
+            }
+            if (user != null) {
+                rows.put(username, new ParticipantRow(
+                        nullToEmpty(user.getFirstName()),
+                        nullToEmpty(user.getLastName()),
+                        resolveCompany(user.getCompanyId(), companyNames),
+                        ROLE_ATTENDEE));
+            } else {
+                // CUMS doesn't know this user — fall back to whatever the
+                // registration row's denormalised cache fields hold (legacy
+                // rows may have them populated even if CUMS doesn't know the
+                // user any more).
+                rows.put(username, new ParticipantRow(
+                        nullToEmpty(r.getAttendeeFirstName()),
+                        nullToEmpty(r.getAttendeeLastName()),
+                        resolveCompany(r.getAttendeeCompanyId(), companyNames),
+                        ROLE_ATTENDEE));
+            }
         }
     }
 

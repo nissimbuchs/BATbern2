@@ -73,7 +73,14 @@ public class ParticipantsDocxExportService {
      */
     @Transactional(readOnly = true)
     public byte[] generateNameBadgeDocx(String eventCode) {
-        List<ParticipantRow> participants = participantsCollector.collect(eventCode);
+        // Filter participants that can't usefully be printed as a badge — an
+        // attendee row with neither firstName nor lastName produces an empty,
+        // logo-only "Teilnehmer" badge that wastes paper and ink. The XLSX
+        // keeps such rows (it's a data view, useful for spotting incomplete
+        // registrations); the DOCX is a physical artifact and drops them.
+        List<ParticipantRow> participants = participantsCollector.collect(eventCode).stream()
+                .filter(ParticipantsDocxExportService::hasPrintableName)
+                .toList();
 
         try (InputStream templateStream = openTemplate();
              XWPFDocument doc = new XWPFDocument(templateStream);
@@ -216,6 +223,17 @@ public class ParticipantsDocxExportService {
             throw new IllegalArgumentException("denominator must be positive");
         }
         return (numerator + denominator - 1) / denominator;
+    }
+
+    /**
+     * True iff this participant has at least one of firstName / lastName populated.
+     * An attendee with both empty (common in legacy / partially-imported
+     * registrations) wouldn't produce a useful printed badge.
+     */
+    private static boolean hasPrintableName(ParticipantRow p) {
+        String fn = p.firstName();
+        String ln = p.lastName();
+        return (fn != null && !fn.isBlank()) || (ln != null && !ln.isBlank());
     }
 
     private static String joinName(String firstName, String lastName) {
