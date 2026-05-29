@@ -25,6 +25,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getAdminSetting, updateAdminSetting } from '@/services/adminSettingsService';
+import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 
 export const VENUE_COORDINATION_CONFIG_KEY = 'venue.coordination.config';
 
@@ -187,16 +188,15 @@ export const VenueCateringContactsTab: React.FC = () => {
           'The organizer username (e.g. nissim.buchs) whose email address will appear as Reply-To on every venue/catering message. Replies from the recipient go straight to them.'
         )}
       </Alert>
-      <TextField
-        label={t('settings.venueCoordination.coordinatorUsername', 'Coordinator username')}
-        placeholder="nissim.buchs"
+      <OrganizerSelect
         value={config.coordinatorUsername}
-        onChange={(e) =>
-          setConfig((prev) => ({ ...prev, coordinatorUsername: e.target.value.trim() }))
-        }
+        onChange={(username) => setConfig((prev) => ({ ...prev, coordinatorUsername: username }))}
+        label={t('settings.venueCoordination.coordinatorUsername', 'Coordinator')}
+        includeUnassigned={false}
+        size="medium"
         fullWidth
         sx={{ mb: 3 }}
-        inputProps={{ 'aria-label': 'coordinator username' }}
+        data-testid="venue-coord-coordinator-select"
       />
 
       <Box>
