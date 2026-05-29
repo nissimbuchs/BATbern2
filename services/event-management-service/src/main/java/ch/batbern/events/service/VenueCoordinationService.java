@@ -173,6 +173,9 @@ public class VenueCoordinationService {
         vars.put("agenda", renderAgenda(event));
         vars.put("notes", notes == null ? "" : notes.trim());
         vars.put("organizerSignature", coordinator.displayName());
+        // Required by the shared batbern-default layout footer ("© {{currentYear}} BATbern").
+        // Same pattern as NewsletterEmailService / SpeakerInvitationEmailService.
+        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
         return vars;
     }
 
