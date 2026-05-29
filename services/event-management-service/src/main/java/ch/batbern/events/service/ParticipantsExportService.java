@@ -1,15 +1,5 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Registration;
-import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.exception.UserNotFoundException;
-import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.RegistrationRepository;
-import ch.batbern.events.repository.SessionUserRepository;
-import ch.batbern.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -24,74 +14,36 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Generates the name-badge XLSX for an event's participants.
  *
- * <p>Spec: {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}
- * (F3). Columns (German — physical badges): {@code Vorname, Name, Firma, Rolle}. Role values:
- * {@code Organisator, Referent, Teilnehmer} with precedence
- * {@code Organisator > Referent > Teilnehmer} — a user appearing in multiple source sets
- * renders once with the highest-precedence role.
+ * <p>Columns (German — physical badges): {@code Vorname, Name, Firma, Rolle}.
+ * Rows come from {@link ParticipantsCollector#collect(String)} — see that class
+ * for the source-set union, dedupe and canonical sort (role precedence then
+ * German-collator last name).
  *
- * <p>Source-set union, dedup-by-username (case-sensitive):
- * <ol>
- *   <li>All ORGANIZER-role users from CUMS (via {@link UserApiClient#getOrganizerUsernames()})</li>
- *   <li>All PRIMARY_SPEAKER + CO_SPEAKER session_users of the event</li>
- *   <li>All registrations with status in {@code [registered, confirmed, attended]}</li>
- * </ol>
- *
- * <p>Pattern adopted verbatim from
- * {@code PartnerAttendanceExportService} — {@code SXSSFWorkbook(100)}, bold-header with grey
- * background, {@code try-with-resources} + {@code workbook.dispose()},
- * {@code ByteArrayOutputStream} → {@code byte[]}.
+ * <p>Pattern adopted verbatim from {@code PartnerAttendanceExportService}:
+ * {@code SXSSFWorkbook(100)}, bold-header with grey background, try-with-resources +
+ * {@code workbook.dispose()}, {@code ByteArrayOutputStream} → {@code byte[]}.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ParticipantsExportService {
 
-    private static final String ROLE_ORGANIZER = "Organisator";
-    private static final String ROLE_SPEAKER = "Referent";
-    private static final String ROLE_ATTENDEE = "Teilnehmer";
-
-    /**
-     * Statuses that count as participants for badge printing. Mirrors
-     * {@link Registration#CONFIRMED_STATUSES} but is reproduced literally here so a future
-     * change to {@code CONFIRMED_STATUSES} (e.g. adding {@code "waitlist"}) does NOT
-     * silently widen the badge list.
-     */
-    private static final List<String> BADGE_STATUSES =
-            List.of("registered", "confirmed", "attended");
-
-    private final EventRepository eventRepository;
-    private final RegistrationRepository registrationRepository;
-    private final SessionUserRepository sessionUserRepository;
-    private final UserApiClient userApiClient;
+    private final ParticipantsCollector participantsCollector;
 
     /**
      * Generate the XLSX byte array for the event's name badges.
      *
      * @param eventCode meaningful event identifier (ADR-003)
      * @return raw XLSX bytes
-     * @throws NotFoundException if the event does not exist
      */
     @Transactional(readOnly = true)
     public byte[] generateNameBadgeXlsx(String eventCode) {
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
-
-        // Build the (username -> ParticipantRow) map applying role precedence.
-        // LinkedHashMap to keep insertion order (organizers first, then speakers, then
-        // attendees) — slightly more useful for the printer's eye.
-        Map<String, ParticipantRow> rows = new LinkedHashMap<>();
-
-        collectOrganizers(rows);
-        collectEventSpeakers(event, rows);
-        collectRegisteredAttendees(event, rows);
+        List<ParticipantRow> rows = participantsCollector.collect(eventCode);
 
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100)) {
             Sheet sheet = workbook.createSheet("Namensschilder");
@@ -109,7 +61,7 @@ public class ParticipantsExportService {
             writeCell(header, 3, "Rolle", headerStyle);
 
             int rowIdx = 1;
-            for (ParticipantRow p : rows.values()) {
+            for (ParticipantRow p : rows) {
                 Row dataRow = sheet.createRow(rowIdx++);
                 writeCell(dataRow, 0, nullToEmpty(p.firstName()), null);
                 writeCell(dataRow, 1, nullToEmpty(p.lastName()), null);
@@ -124,110 +76,6 @@ public class ParticipantsExportService {
         } catch (IOException e) {
             log.error("Failed to generate name-badge XLSX for event {}", eventCode, e);
             throw new RuntimeException("Excel export failed for event " + eventCode, e);
-        }
-    }
-
-    private void collectOrganizers(Map<String, ParticipantRow> rows) {
-        List<String> usernames;
-        try {
-            usernames = userApiClient.getOrganizerUsernames();
-        } catch (Exception e) {
-            log.warn("Could not fetch organizer list for badge export: {}", e.getMessage());
-            return;
-        }
-        for (String username : usernames) {
-            try {
-                UserResponse user = userApiClient.getUserByUsername(username);
-                // Key by username, matching collectEventSpeakers / collectRegisteredAttendees so
-                // role-precedence dedupe works when the same physical user appears in multiple sets.
-                // Using user.getId() here would split organizer-who-is-also-speaker into two rows
-                // whenever id != username (review finding 2026-05-28 — patch #1).
-                rows.put(username, new ParticipantRow(
-                        user.getFirstName(),
-                        user.getLastName(),
-                        resolveCompany(user.getCompanyId()),
-                        ROLE_ORGANIZER));
-            } catch (UserNotFoundException ignore) {
-                log.warn("Organizer username {} not resolvable — skipping in XLSX", username);
-            }
-        }
-    }
-
-    private void collectEventSpeakers(Event event, Map<String, ParticipantRow> rows) {
-        List<SessionUser> speakers =
-                sessionUserRepository.findEventSpeakersByEventId(event.getId());
-        for (SessionUser su : speakers) {
-            String username = su.getUsername();
-            if (username == null || username.isBlank()) {
-                continue;
-            }
-            // Precedence: Organisator > Referent > Teilnehmer.
-            ParticipantRow existing = rows.get(username);
-            if (existing != null && ROLE_ORGANIZER.equals(existing.role())) {
-                continue; // higher-precedence row already present
-            }
-            try {
-                UserResponse user = userApiClient.getUserByUsername(username);
-                rows.put(username, new ParticipantRow(
-                        user.getFirstName(),
-                        user.getLastName(),
-                        resolveCompany(user.getCompanyId()),
-                        ROLE_SPEAKER));
-            } catch (UserNotFoundException ignore) {
-                // Fall back to cached fields on session_users
-                rows.put(username, new ParticipantRow(
-                        su.getSpeakerFirstName(),
-                        su.getSpeakerLastName(),
-                        null,
-                        ROLE_SPEAKER));
-            }
-        }
-    }
-
-    private void collectRegisteredAttendees(Event event, Map<String, ParticipantRow> rows) {
-        List<Registration> registrations =
-                registrationRepository.findByEventId(event.getId()).stream()
-                        .filter(r -> r.getStatus() != null
-                                && BADGE_STATUSES.contains(r.getStatus().toLowerCase()))
-                        .toList();
-        for (Registration r : registrations) {
-            String username = r.getAttendeeUsername();
-            if (username == null || username.isBlank()) {
-                continue;
-            }
-            ParticipantRow existing = rows.get(username);
-            // Both ORGANIZER and SPEAKER outrank ATTENDEE.
-            if (existing != null
-                    && (ROLE_ORGANIZER.equals(existing.role()) || ROLE_SPEAKER.equals(existing.role()))) {
-                continue;
-            }
-            rows.put(username, new ParticipantRow(
-                    r.getAttendeeFirstName(),
-                    r.getAttendeeLastName(),
-                    resolveCompany(r.getAttendeeCompanyId()),
-                    ROLE_ATTENDEE));
-        }
-    }
-
-    /**
-     * Resolve a company slug to its display name for badge rendering.
-     *
-     * <p>Per-slug cached (15 min) in {@code userApiCache} — repeated companies across the
-     * organizer / speaker / attendee passes hit the cache after the first lookup, so an
-     * export with N participants and K distinct companies makes at most K upstream calls.
-     * Returns the slug as a graceful fallback when CUMS doesn't know the company.
-     */
-    private String resolveCompany(String companySlug) {
-        if (companySlug == null || companySlug.isBlank()) {
-            return "";
-        }
-        try {
-            String displayName = userApiClient.getCompanyDisplayName(companySlug);
-            return displayName != null ? displayName : companySlug;
-        } catch (Exception e) {
-            log.warn("Could not resolve display name for company {} — falling back to slug: {}",
-                    companySlug, e.getMessage());
-            return companySlug;
         }
     }
 
@@ -251,13 +99,5 @@ public class ParticipantsExportService {
         if (style != null) {
             cell.setCellStyle(style);
         }
-    }
-
-    /**
-     * Row materialised for one participant in the XLSX. Public-package so unit tests can
-     * cross-check via {@link #collectEventSpeakers(Event, Map)} indirectly.
-     */
-    private record ParticipantRow(String firstName, String lastName, String companyDisplayName,
-                                  String role) {
     }
 }

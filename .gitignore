@@ -198,6 +198,12 @@ config/credentials.*
 *.bfg-report/
 apps/BATspa-old/src/api/anmeldungen.csv
 
+# Sample mail-merged participant lists may carry real attendee PII — never commit.
+# The canonical *empty* template (Avery-Zweckform_L4784_BATLogo.docx) IS committed
+# because it contains only placeholder fields, no personal data.
+docs/Ausgefüllte Teilnehmerliste.docx
+docs/Ausgefüllte_Teilnehmerliste*.docx
+
 # Auto Claude data directory
 .auto-claude/
 

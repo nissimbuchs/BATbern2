@@ -1061,6 +1061,42 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/participants/export.docx': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export participant name badges as DOCX (Avery L4784 + BAT logo)
+     * @description Streams a printable Microsoft Word document laid out for Avery
+     *     Zweckform L4784 name-badge sheets with the BAT logo embedded in every
+     *     badge. Each badge renders three lines:
+     *
+     *       - Name (Vorname + Nachname, bold, 12pt)
+     *       - Firma (next to the BAT logo, 12pt)
+     *       - Rolle (`Organisator | Referent | Teilnehmer`, italic, 10pt)
+     *
+     *     Row sources, dedupe, role precedence and sort order are identical to
+     *     the XLSX export (`exportParticipantsXlsx`) — both endpoints draw from
+     *     the same `ParticipantsCollector`. The DOCX paginates as 27 badges
+     *     per A4 page (9 badge rows × 3 badge columns); trailing slots on the
+     *     last page are visually blank but preserve the layout for clean printing.
+     *
+     *     Filename suggestion: `{eventCode}-namensschilder.docx`.
+     *
+     *     **Spec extension:** name-badge DOCX export (sibling of `exportParticipantsXlsx`).
+     */
+    get: operations['exportParticipantsDocx'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/my-registration': {
     parameters: {
       query?: never;
@@ -6974,6 +7010,32 @@ export interface operations {
         };
         content: {
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': string;
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  exportParticipantsDocx: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description DOCX file (Office Open XML wordprocessingml) */
+      200: {
+        headers: {
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': string;
         };
       };
       403: components['responses']['Forbidden'];

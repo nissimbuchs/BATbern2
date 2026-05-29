@@ -836,6 +836,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Naambadges exporteren",
+      "exportNameBadgesDocx": "Naambadges als Word",
       "exportError": "Export mislukt"
     }
   }

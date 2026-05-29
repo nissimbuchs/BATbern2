@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.service.DistributionListService;
+import ch.batbern.events.service.ParticipantsDocxExportService;
 import ch.batbern.events.service.ParticipantsExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +40,12 @@ public class ParticipantsController {
 
     private static final String XLSX_MIME =
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private static final String DOCX_MIME =
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     private final DistributionListService distributionListService;
     private final ParticipantsExportService participantsExportService;
+    private final ParticipantsDocxExportService participantsDocxExportService;
 
     /**
      * Resolve the distribution list for an event/kind pair. Anonymous from the in-VPC
@@ -84,5 +88,24 @@ public class ParticipantsController {
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
         headers.setContentLength(xlsx.length);
         return ResponseEntity.ok().headers(headers).body(xlsx);
+    }
+
+    /**
+     * Stream the name-badge DOCX (Avery L4784 + BAT logo) for the event's participants.
+     * Same participant set / order as the XLSX export; printable as physical badges.
+     */
+    @GetMapping(value = "/{eventCode}/participants/export.docx", produces = DOCX_MIME)
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<byte[]> exportParticipantsDocx(@PathVariable String eventCode) {
+        log.debug("GET /events/{}/participants/export.docx", eventCode);
+
+        byte[] docx = participantsDocxExportService.generateNameBadgeDocx(eventCode);
+
+        String filename = eventCode + "-namensschilder.docx";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(DOCX_MIME));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        headers.setContentLength(docx.length);
+        return ResponseEntity.ok().headers(headers).body(docx);
     }
 }

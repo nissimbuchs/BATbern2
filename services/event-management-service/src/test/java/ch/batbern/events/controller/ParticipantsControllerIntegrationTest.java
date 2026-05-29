@@ -152,6 +152,57 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ---- F3 (extension): DOCX export ----
+
+    @Test
+    @DisplayName("Organizer GET /participants/export.docx → 200 + valid OOXML DOCX with attachment header")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_returnDocx_when_organizerExportsParticipantsDocx() throws Exception {
+        seedSessionPrimarySpeaker("speaker.bob");
+        seedRegistration("attendee.carol", "confirmed");
+
+        MvcResult result = mockMvc.perform(
+                        get("/api/v1/events/{eventCode}/participants/export.docx", EVENT_CODE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .andExpect(header().string("Content-Disposition",
+                        org.hamcrest.Matchers.containsString(EVENT_CODE + "-namensschilder.docx")))
+                .andReturn();
+
+        byte[] body = result.getResponse().getContentAsByteArray();
+        assertThat(body).isNotEmpty();
+        // DOCX is a ZIP — verify the OOXML magic bytes (PK\x03\x04).
+        assertThat(body[0]).isEqualTo((byte) 0x50);
+        assertThat(body[1]).isEqualTo((byte) 0x4B);
+        assertThat(body[2]).isEqualTo((byte) 0x03);
+        assertThat(body[3]).isEqualTo((byte) 0x04);
+
+        // Re-parse with POI to confirm three rendered badges in page 1.
+        try (org.apache.poi.xwpf.usermodel.XWPFDocument doc =
+                     new org.apache.poi.xwpf.usermodel.XWPFDocument(new ByteArrayInputStream(body))) {
+            assertThat(doc.getTables()).hasSize(1);
+            // Header sanity: the first table should hold the canonical 9 rows × 5 cells.
+            assertThat(doc.getTables().get(0).getRows()).hasSize(9);
+        }
+    }
+
+    @Test
+    @DisplayName("Non-organizer GET /participants/export.docx → 403")
+    @WithMockUser(username = "joe.user", roles = {"ATTENDEE"})
+    void should_return403_when_nonOrganizerExportsDocx() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/participants/export.docx", EVENT_CODE))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Unknown event DOCX → 404")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return404_when_unknownEventDocx() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/participants/export.docx", "BATbern99999"))
+                .andExpect(status().isNotFound());
+    }
+
     // ---- F2: distribution list ----
 
     @Test

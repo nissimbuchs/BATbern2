@@ -625,6 +625,34 @@ class EventApiClient {
   }
 
   /**
+   * Export event participants as a printable DOCX name-badge sheet
+   * (Avery L4784 + BAT logo) — organizer-only.
+   *
+   * Backend: `GET /api/v1/events/{eventCode}/participants/export.docx`.
+   * Returns a Microsoft Word document with one badge per participant — same
+   * source set, dedupe rules, and sort order as
+   * {@link exportParticipantsXlsx} (the two endpoints share
+   * `ParticipantsCollector` on the backend). Each badge renders three lines:
+   * Name (bold), Firma (next to the logo), Rolle (italic).
+   *
+   * @param eventCode Event code identifier (ADR-003)
+   * @returns Blob containing the DOCX bytes
+   */
+  async exportParticipantsDocx(eventCode: string): Promise<Blob> {
+    try {
+      const response = await apiClient.get(
+        `${EVENT_API_PATH}/${eventCode}/participants/export.docx`,
+        { responseType: 'blob' }
+      );
+      return new Blob([response.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Get presigned download URL for session material
    * @param sessionSlug Session identifier
    * @param materialId Material UUID

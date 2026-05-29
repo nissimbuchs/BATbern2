@@ -860,6 +860,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Export name badges",
+      "exportNameBadgesDocx": "Name badges as Word",
       "exportError": "Export failed"
     }
   }

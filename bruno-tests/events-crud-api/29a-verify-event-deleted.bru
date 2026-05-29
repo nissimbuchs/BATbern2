@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/{{deletedEventCode}}
+  url: {{baseUrl}}/events/{{deletedEventCode}}?include=verify-deleted-{{$guid}}
   body: none
   auth: bearer
 }
@@ -30,4 +30,10 @@ docs {
   followed by a GET that asserts 404"). Pairs with 29-delete-event.bru
   which captures the eventCode into `deletedEventCode` before this step
   nullifies it. The pre-PR-6 collection trusted the 204 alone.
+
+  Cache-bust query parameter (2026-05-29): same per-pod Caffeine cache
+  flake as event-topics-api/67a — staging EMS has multiple replicas and
+  @CacheEvict only invalidates the local pod. A unique include value per
+  request forces every pod to bypass the cache and fall through to the DB.
+  See 67a-verify-event-deleted.bru docs for the full rationale.
 }

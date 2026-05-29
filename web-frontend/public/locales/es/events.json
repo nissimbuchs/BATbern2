@@ -836,6 +836,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Exportar las tarjetas de identificación",
+      "exportNameBadgesDocx": "Tarjetas de identificación en Word",
       "exportError": "Exportación fallida"
     }
   }

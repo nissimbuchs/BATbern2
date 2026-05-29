@@ -838,6 +838,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Namesschildli exportiere",
+      "exportNameBadgesDocx": "Namesschildli als Word",
       "exportError": "Export het nid funktioniert"
     }
   }

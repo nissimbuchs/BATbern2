@@ -836,6 +836,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Exportar las etiquettas da num",
+      "exportNameBadgesDocx": "Etichettas da num sco Word",
       "exportError": "Exportaziun fallida"
     }
   }

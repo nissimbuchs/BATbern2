@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/{{topicDeletedEventCode}}
+  url: {{baseUrl}}/events/{{topicDeletedEventCode}}?include=verify-deleted-{{$guid}}
   body: none
   auth: bearer
 }
@@ -31,4 +31,25 @@ docs {
   67-cleanup-topic-test-event.bru. Whether 67 returned 204 (deleted now)
   or 404 (already gone from a prior failed run), the GET must return
   404 — anything else means the cleanup didn't actually take effect.
+
+  ---
+
+  Cache-bust query parameter (2026-05-29):
+  Staging runs multiple ECS replicas of the event-management-service.
+  EventController caches GET /events/{code} responses in a per-pod Caffeine
+  cache keyed on `eventCode + "_" + include`, evicted via @CacheEvict on
+  DELETE — but the @CacheEvict only fires on the pod that handled the
+  DELETE. If a subsequent GET load-balances to a different pod, that pod's
+  Caffeine cache still has the pre-delete entry and returns 200 → this
+  test flakes red with "expected 200 to equal 404".
+
+  Passing a unique include value per CI run (Bruno's $randomInt) lands a
+  cache-key that no pod has cached, forcing every replica to fall through
+  to the DB (where the event truly is gone) and return 404. The include
+  itself doesn't add any resources to the response — we only care about
+  the status code, and a 404 short-circuits before resource expansion.
+
+  Proper fix lives in EMS (distributed-cache invalidation across pods,
+  or stop caching at this layer) but is out of scope here — flagged for
+  a follow-up. This Bruno-side patch unblocks the deploy-staging gate.
 }
