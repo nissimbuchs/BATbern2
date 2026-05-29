@@ -26,10 +26,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock the event API client so we can intercept the export call.
+// Mock the event API client so we can intercept the export calls.
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
     exportParticipantsXlsx: vi.fn(),
+    exportParticipantsDocx: vi.fn(),
   },
 }));
 
@@ -267,6 +268,128 @@ describe('EventParticipantsTab Component', () => {
 
         // The error message renders an Alert in the UI; no unhandled exception.
         expect(await screen.findByText('Server Error')).toBeInTheDocument();
+        expect(mockAnchor.click).not.toHaveBeenCalled();
+      } finally {
+        restore();
+        consoleErrorSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('DOCX export button (Avery L4784 name-badge printable sheet)', () => {
+    const SENTINEL_URL = 'blob:http://localhost/sentinel-docx';
+
+    function installAnchorSpies(): {
+      mockAnchor: { href: string; download: string; click: ReturnType<typeof vi.fn> };
+      restore: () => void;
+    } {
+      const mockAnchor = { href: '', download: '', click: vi.fn() };
+      const realCreateElement = document.createElement.bind(document);
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          if (tagName === 'a') {
+            return mockAnchor as unknown as HTMLAnchorElement;
+          }
+          return realCreateElement(tagName);
+        });
+      const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue(SENTINEL_URL);
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+      const appendChildSpy = vi
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation((node) => node as Node);
+      const removeChildSpy = vi
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation((node) => node as Node);
+      return {
+        mockAnchor,
+        restore: () => {
+          createElementSpy.mockRestore();
+          createObjectURLSpy.mockRestore();
+          revokeObjectURLSpy.mockRestore();
+          appendChildSpy.mockRestore();
+          removeChildSpy.mockRestore();
+        },
+      };
+    }
+
+    beforeEach(() => {
+      vi.mocked(eventApiClient.exportParticipantsDocx).mockReset();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should_renderDocxExportButton_when_componentMounts', () => {
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      const button = screen.getByTestId('participants-export-docx');
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveTextContent('event.participants.exportNameBadgesDocx');
+      expect(button).not.toBeDisabled();
+    });
+
+    it('should_invokeDocxExportService_when_buttonClicked', async () => {
+      const user = userEvent.setup();
+      vi.mocked(eventApiClient.exportParticipantsDocx).mockResolvedValue(
+        new Blob(['docx-bytes'], {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        })
+      );
+
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      const { restore } = installAnchorSpies();
+
+      try {
+        await user.click(screen.getByTestId('participants-export-docx'));
+        await waitFor(() => {
+          expect(eventApiClient.exportParticipantsDocx).toHaveBeenCalledWith('BAT-2024-01');
+        });
+      } finally {
+        restore();
+      }
+    });
+
+    it('should_triggerDocxDownloadWithExpectedFilename_when_exportSucceeds', async () => {
+      const user = userEvent.setup();
+      vi.mocked(eventApiClient.exportParticipantsDocx).mockResolvedValue(
+        new Blob(['docx-bytes'], {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        })
+      );
+
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      const { mockAnchor, restore } = installAnchorSpies();
+
+      try {
+        await user.click(screen.getByTestId('participants-export-docx'));
+        await waitFor(() => {
+          expect(mockAnchor.click).toHaveBeenCalled();
+        });
+        expect(URL.createObjectURL).toHaveBeenCalled();
+        expect(mockAnchor.href).toBe(SENTINEL_URL);
+        expect(mockAnchor.download).toBe('BAT-2024-01-namensschilder.docx');
+      } finally {
+        restore();
+      }
+    });
+
+    it('should_reEnableDocxButton_when_exportFails', async () => {
+      const user = userEvent.setup();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(eventApiClient.exportParticipantsDocx).mockRejectedValue(new Error('Word boom'));
+
+      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      const { mockAnchor, restore } = installAnchorSpies();
+
+      try {
+        const button = screen.getByTestId('participants-export-docx');
+        await user.click(button);
+
+        await waitFor(() => {
+          expect(button).not.toBeDisabled();
+        });
+        expect(await screen.findByText('Word boom')).toBeInTheDocument();
         expect(mockAnchor.click).not.toHaveBeenCalled();
       } finally {
         restore();

@@ -835,6 +835,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Vie nimikyltit",
+      "exportNameBadgesDocx": "Nimikyltit Word-muodossa",
       "exportError": "Vienti epäonnistui"
     }
   }

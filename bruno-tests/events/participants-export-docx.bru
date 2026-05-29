@@ -1,0 +1,60 @@
+meta {
+  name: Participants name-badge DOCX export (organizer)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/participants/export.docx
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+headers {
+  Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+}
+
+tests {
+  test("organizer can export DOCX (200) or event missing (404)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("200 response is an Office Open XML DOCX (PK\\u0003\\u0004 magic bytes)", function() {
+    if (res.getStatus() === 200) {
+      const headers = res.getHeaders();
+      const contentType = headers["content-type"] || headers["Content-Type"] || "";
+      expect(contentType).to.include("wordprocessingml");
+
+      // DOCX is a ZIP archive like XLSX — both start with "PK". Same patch #5
+      // guard pattern: insist the body is inspectable bytes so a JSON-decoded
+      // body cannot make this test silently pass.
+      const body = res.getBody();
+      const firstBytes = body && body.slice ? body.slice(0, 2) : null;
+      expect(firstBytes, "expected binary body so we can verify ZIP magic bytes").to.not.equal(null);
+      const asString = Buffer.isBuffer(firstBytes)
+        ? firstBytes.toString("binary")
+        : String(firstBytes);
+      expect(asString.charCodeAt(0)).to.equal(0x50); // 'P'
+      expect(asString.charCodeAt(1)).to.equal(0x4B); // 'K'
+    }
+  });
+
+  test("Content-Disposition suggests <eventCode>-namensschilder.docx", function() {
+    if (res.getStatus() === 200) {
+      const headers = res.getHeaders();
+      const disposition = headers["content-disposition"] || headers["Content-Disposition"] || "";
+      expect(disposition).to.include("namensschilder.docx");
+    }
+  });
+}
+
+docs {
+  Spec extension: printable name-badge DOCX (Avery L4784 + BAT logo). Sibling of
+  participants-export.bru — same dataset, same organizer-only auth, different
+  output format. Verifies MIME, ZIP magic bytes (PK), and the suggested filename.
+  404 accepted so the smoke test still passes on environments without BATbern59 seeded.
+}

@@ -8,11 +8,16 @@
  * - Displays participant count badge
  * - Renders participant list for specific event
  * - Name-badge XLSX export (auto-participant-email-aliases-excel-export)
+ * - Name-badge DOCX export (Avery L4784 + BAT logo, printable physical badges)
  */
 
 import React, { useState } from 'react';
 import { Box, Typography, Chip, Stack, LinearProgress, Button, Alert } from '@mui/material';
-import { People as PeopleIcon, Download as DownloadIcon } from '@mui/icons-material';
+import {
+  People as PeopleIcon,
+  Download as DownloadIcon,
+  Article as ArticleIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { Event } from '@/types/event.types';
 import EventParticipantList from '@/components/organizer/EventPage/EventParticipantList';
@@ -26,6 +31,7 @@ interface EventParticipantsTabProps {
 const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   const capacity = (event as { registrationCapacity?: number | null }).registrationCapacity ?? null;
@@ -64,6 +70,31 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
     }
   };
 
+  const handleExportDocx = async (): Promise<void> => {
+    setExportError(null);
+    setIsExportingDocx(true);
+    let objectUrl: string | null = null;
+    try {
+      const blob = await eventApiClient.exportParticipantsDocx(event.eventCode);
+      objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `${event.eventCode}-namensschilder.docx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('event.participants.exportError');
+      console.error('[EventParticipantsTab] DOCX export failed:', error);
+      setExportError(message);
+    } finally {
+      if (objectUrl) {
+        setTimeout(() => URL.revokeObjectURL(objectUrl as string), 100);
+      }
+      setIsExportingDocx(false);
+    }
+  };
+
   return (
     <Box sx={{ py: 3 }}>
       {/* Header with participant count + export button */}
@@ -75,15 +106,26 @@ const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) =>
           </Typography>
           <Chip label={activeTotal} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
         </Stack>
-        <Button
-          variant="outlined"
-          startIcon={<DownloadIcon />}
-          onClick={handleExport}
-          disabled={isExporting}
-          data-testid="participants-export-xlsx"
-        >
-          {t('event.participants.exportNameBadges')}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExport}
+            disabled={isExporting || isExportingDocx}
+            data-testid="participants-export-xlsx"
+          >
+            {t('event.participants.exportNameBadges')}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ArticleIcon />}
+            onClick={handleExportDocx}
+            disabled={isExporting || isExportingDocx}
+            data-testid="participants-export-docx"
+          >
+            {t('event.participants.exportNameBadgesDocx')}
+          </Button>
+        </Stack>
       </Stack>
 
       {exportError && (

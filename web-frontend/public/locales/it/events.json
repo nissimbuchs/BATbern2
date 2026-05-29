@@ -835,6 +835,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Esporta i badge nominativi",
+      "exportNameBadgesDocx": "Badge nominativi in Word",
       "exportError": "Esportazione non riuscita"
     }
   }

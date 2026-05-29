@@ -859,6 +859,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "Namensschilder exportieren",
+      "exportNameBadgesDocx": "Namensschilder als Word",
       "exportError": "Export fehlgeschlagen"
     }
   }

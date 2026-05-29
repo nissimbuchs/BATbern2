@@ -835,6 +835,7 @@
   "event": {
     "participants": {
       "exportNameBadges": "ネームバッジをエクスポート",
+      "exportNameBadgesDocx": "ネームバッジをWordで",
       "exportError": "エクスポートに失敗しました"
     }
   }
