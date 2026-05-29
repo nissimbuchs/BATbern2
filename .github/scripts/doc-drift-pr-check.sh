@@ -10,9 +10,17 @@ MAPPINGS_FILE="${MAPPINGS_FILE:-.github/doc-drift-mappings.yml}"
 BASE_REF="${BASE_REF:-main}"
 PR_TITLE="${PR_TITLE:-}"
 
-# ── 1. [no-doc] escape hatch ────────────────────────────────────────────────
+# ── 1. [no-doc] escape hatch (PR title OR any commit message on the branch) ──
+# CLAUDE.md documents the convention as "add [no-doc] to the commit message",
+# so honour either location. A single [no-doc] anywhere in the PR's commit
+# messages is enough — same permissive semantics as the PR title.
 if echo "$PR_TITLE" | grep -q "\[no-doc\]"; then
   echo "✅ [no-doc] flag present in PR title — doc drift check skipped."
+  exit 0
+fi
+
+if git log "origin/$BASE_REF..HEAD" --pretty=%B 2>/dev/null | grep -q "\[no-doc\]"; then
+  echo "✅ [no-doc] flag present in a commit message on this branch — doc drift check skipped."
   exit 0
 fi
 
