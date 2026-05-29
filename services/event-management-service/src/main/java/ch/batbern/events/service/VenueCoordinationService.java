@@ -232,12 +232,17 @@ public class VenueCoordinationService {
      * Turns the textarea content into HTML-safe inline content with line breaks preserved.
      * Empty/blank input returns an empty string so the {{#notes}}...{{/notes}} conditional
      * collapses the wrapping paragraph in the template.
+     *
+     * <p>Security: {@link #escapeHtml} runs FIRST (converts {@code <}, {@code >}, {@code &},
+     * {@code "} to their HTML entities), so any HTML the organizer typed is neutralised before
+     * the newline-to-{@code <br>} replacement runs. The resulting string is inert HTML and safe
+     * to embed verbatim in the email body.
      */
     private static String renderNotesHtml(String notes) {
         if (notes == null) return "";
         String trimmed = notes.strip();
         if (trimmed.isEmpty()) return "";
-        return escapeHtml(trimmed)
+        return escapeHtml(trimmed)          // ← HTML-escape first; <br> insertion is safe after
                 .replace("\r\n", "\n")
                 .replace("\r", "\n")
                 .replace("\n", "<br>\n");

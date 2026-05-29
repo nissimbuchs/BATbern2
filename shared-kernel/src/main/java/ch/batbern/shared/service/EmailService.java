@@ -152,6 +152,10 @@ public class EmailService {
         assertSendable(to);
 
         List<String> ccClean = normaliseCc(cc, to);
+        // Null/blank guard: callers may pass null (no explicit Reply-To needed) or an empty string
+        // from config. Both fall back to the global app.email.reply-to value so the behaviour is
+        // identical to the 5-arg overload. An empty-string caller will not accidentally send an
+        // empty Reply-To header to SES.
         String effectiveReplyTo = (replyTo != null && !replyTo.isBlank()) ? replyTo : replyToEmail;
 
         if (sesClient == null) {

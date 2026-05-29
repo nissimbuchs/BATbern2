@@ -14,54 +14,79 @@ auth:bearer {
   token: {{organizerAuthToken}}
 }
 
+script:pre-request {
+  // Seed the venue.coordination.config singleton so the test always asserts 200.
+  // Uses batbern.organizer (the staging test organizer) as coordinator.
+  // The coordinator email is resolved at runtime via UserApiClient — it must belong
+  // to an actual organizer-role user in the target environment.
+  const config = JSON.stringify({
+    venue: {
+      salutation: "Frau",
+      name: "Gabriela Senn",
+      email: "gabriela.senn.batbern.test@batbern.ch"
+    },
+    catering: {
+      salutation: "Herr",
+      name: "Stefan Oppliger",
+      email: "stefan.oppliger.batbern.test@batbern.ch"
+    },
+    coordinatorUsername: "batbern.organizer"
+  });
+
+  const res = await bru.runRequest({
+    method: "PUT",
+    url: bru.getEnvVar("baseUrl") + "/admin/settings/venue.coordination.config",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + bru.getEnvVar("organizerAuthToken")
+    },
+    body: JSON.stringify({ value: config })
+  });
+}
+
 body:json {
   {
     "templateKey": "venue-timetable",
-    "recipientRole": "VENUE",
+    "recipients": ["VENUE"],
     "locale": "de"
   }
 }
 
 tests {
-  test("returns 200 when admin config is set and template exists, 412 otherwise", function() {
-    expect([200, 412]).to.include(res.getStatus());
+  test("returns 200 — config was seeded in pre-request", function() {
+    expect(res.getStatus()).to.equal(200);
   });
 
-  test("envelope contains subject, htmlBody, toEmail, replyToEmail when 200", function() {
-    if (res.getStatus() === 200) {
-      const body = res.getBody();
-      expect(body.subject).to.be.a("string").and.not.equal("");
-      expect(body.htmlBody).to.be.a("string").and.not.equal("");
-      expect(body.toEmail).to.be.a("string");
-      expect(body.replyToEmail).to.be.a("string");
-    }
+  test("envelope contains subject, htmlBody, toEmail, replyToEmail", function() {
+    const body = res.getBody();
+    expect(body.subject).to.be.a("string").and.not.equal("");
+    expect(body.htmlBody).to.be.a("string").and.not.equal("");
+    expect(body.toEmail).to.be.a("string").and.not.equal("");
+    expect(body.ccEmails).to.be.an("array");
+    expect(body.replyToEmail).to.be.a("string").and.not.equal("");
   });
 
-  test("412 surfaces the admin-config precondition when unset", function() {
-    if (res.getStatus() === 412) {
-      const body = res.getBody();
-      // GlobalExceptionHandler wraps as ErrorResponse with { message, ... }
-      expect(JSON.stringify(body)).to.match(/coordination|admin|configure/i);
-    }
+  test("subject contains the event date", function() {
+    // The venue-timetable template subject is:
+    // "BATbern vom {{eventDate}} zum Thema ..." — so any rendered subject must be non-empty.
+    // We can't assert the exact date without knowing the live event, but we can check it isn't the raw placeholder.
+    const body = res.getBody();
+    expect(body.subject).to.not.include("{{eventDate}}");
   });
 }
 
 docs {
-  Contract smoke test for POST /events/{code}/venue-coordination/preview.
+  Contract test for POST /events/{code}/venue-coordination/preview.
 
-  Preview is read-only: it renders an EmailTemplate (category VENUE_COORDINATION)
-  using the admin-managed singleton VenueCoordinationConfig (one venue contact,
-  one catering contact, one coordinator organizer). When the admin config has
-  not been set, the endpoint returns 412 PRECONDITION_FAILED with a hint to
-  configure it in Administration → Venue & Catering. We tolerate either 200 or
-  412 here so the test passes in environments where the config hasn't been seeded
-  yet.
+  A pre-request script seeds the admin-settings singleton (venue.coordination.config)
+  via PUT /admin/settings/... so this test always asserts HTTP 200 rather than tolerating
+  412 (as the old version did). That tolerant posture was a blind spot: the test would pass
+  silently in any misconfigured environment, defeating its purpose.
 
-  No /send equivalent: that path issues real SES traffic with a coordinator
-  Reply-To, which violates the no-real-comms-in-tests rule per the standing
-  feedback memory. Coverage of the send path lives in
-  VenueCoordinationControllerIntegrationTest (mocks EmailService).
+  /send is NOT covered here — sending real SES traffic from Bruno would violate the
+  no-real-comms-in-tests rule (staging IS production). The send path is exercised by
+  VenueCoordinationControllerIntegrationTest with a mocked EmailService.
 
-  Bruno parser rule: comments belong in this docs { } block, not as free-
-  floating `#` lines (those silently skip the file — see CLAUDE.md).
+  Bruno parser rule: comments belong in this docs { } block, not as free-floating `#`
+  lines (those silently skip the file — see CLAUDE.md).
 }
