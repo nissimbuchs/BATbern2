@@ -102,38 +102,34 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
   const [notes, setNotes] = useState('');
   const [sendToVenue, setSendToVenue] = useState(true);
   const [sendToCatering, setSendToCatering] = useState(true);
-  const [previewRole, setPreviewRole] = useState<VenueRecipientRole>('VENUE');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ message: string; error: boolean } | null>(null);
 
-  // Auto-flip preview role if the configured one is no longer selected.
-  useEffect(() => {
-    if (previewRole === 'VENUE' && !sendToVenue && sendToCatering) setPreviewRole('CATERING');
-    if (previewRole === 'CATERING' && !sendToCatering && sendToVenue) setPreviewRole('VENUE');
-  }, [previewRole, sendToVenue, sendToCatering]);
+  const selectedRecipients = useMemo<VenueRecipientRole[]>(() => {
+    const list: VenueRecipientRole[] = [];
+    if (sendToVenue) list.push('VENUE');
+    if (sendToCatering) list.push('CATERING');
+    return list;
+  }, [sendToVenue, sendToCatering]);
 
   const previewMutation = useMutation({
     mutationFn: () =>
       venueCoordinationService.preview(eventCode, {
         templateKey,
-        recipientRole: previewRole,
+        recipients: selectedRecipients,
         locale,
         notes: notes.trim() || undefined,
       }),
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => {
-      const recipients: VenueRecipientRole[] = [];
-      if (sendToVenue) recipients.push('VENUE');
-      if (sendToCatering) recipients.push('CATERING');
-      return venueCoordinationService.send(eventCode, {
+    mutationFn: () =>
+      venueCoordinationService.send(eventCode, {
         templateKey,
         locale,
         notes: notes.trim() || undefined,
-        recipients,
-      });
-    },
+        recipients: selectedRecipients,
+      }),
     onSuccess: (data) => {
       setSnackbar({
         message: t('eventPage.venueCoordination.sentSuccess', {
@@ -288,8 +284,8 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
           fullWidth
         />
 
-        {/* Preview controls */}
-        <Stack direction="row" spacing={2} alignItems="center">
+        {/* Preview button */}
+        <Box>
           <Button
             variant="outlined"
             startIcon={<PreviewIcon />}
@@ -302,27 +298,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
               t('eventPage.venueCoordination.previewButton', 'Preview')
             )}
           </Button>
-          {previewMutation.isSuccess && (
-            <ToggleButtonGroup
-              value={previewRole}
-              exclusive
-              onChange={(_, v) => {
-                if (v) {
-                  setPreviewRole(v);
-                  setTimeout(() => previewMutation.mutate(), 0);
-                }
-              }}
-              size="small"
-            >
-              <ToggleButton value="VENUE" disabled={!venueConfigured}>
-                {t('eventPage.venueCoordination.previewAsVenue', 'as Venue')}
-              </ToggleButton>
-              <ToggleButton value="CATERING" disabled={!cateringConfigured}>
-                {t('eventPage.venueCoordination.previewAsCatering', 'as Catering')}
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-        </Stack>
+        </Box>
 
         {/* Preview pane */}
         {previewMutation.isError && (
@@ -337,9 +313,14 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Stack spacing={1}>
               <Typography variant="caption" color="text.secondary">
-                {t('eventPage.venueCoordination.to', 'To')}: {previewMutation.data.toName} &lt;
-                {previewMutation.data.toEmail}&gt;
+                {t('eventPage.venueCoordination.to', 'To')}: {previewMutation.data.toEmail}
               </Typography>
+              {previewMutation.data.ccEmails.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  {t('eventPage.venueCoordination.cc', 'Cc')}:{' '}
+                  {previewMutation.data.ccEmails.join(', ')}
+                </Typography>
+              )}
               <Typography variant="caption" color="text.secondary">
                 {t('eventPage.venueCoordination.replyTo', 'Reply-To')}:{' '}
                 {previewMutation.data.replyToEmail}

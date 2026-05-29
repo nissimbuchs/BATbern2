@@ -150,14 +150,14 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
-    @DisplayName("preview_whenVenueRoleAndDeLocale_returnsRenderedSubjectAndBody")
+    @DisplayName("preview_whenSingleRecipient_rendersSubjectAndBody")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void preview_whenVenueRoleAndDeLocale_returnsRenderedSubjectAndBody() throws Exception {
+    void preview_whenSingleRecipient_rendersSubjectAndBody() throws Exception {
         Map<String, Object> body = Map.of(
                 "templateKey", "venue-timetable",
-                "recipientRole", "VENUE",
+                "recipients", java.util.List.of("VENUE"),
                 "locale", "de",
-                "notes", "Drei Headsets reichen wieder."
+                "notes", "Drei Headsets reichen wieder.\nNeue Zeile zwei."
         );
 
         mockMvc.perform(post("/api/v1/events/{code}/venue-coordination/preview", EVENT_CODE)
@@ -165,22 +165,40 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.toEmail", is("venue@test.invalid")))
-                .andExpect(jsonPath("$.toName", is("Gabriela Senn")))
+                .andExpect(jsonPath("$.ccEmails").isArray())
+                .andExpect(jsonPath("$.ccEmails", org.hamcrest.Matchers.empty()))
                 .andExpect(jsonPath("$.replyToEmail", is("nissim.buchs@elca.ch")))
-                // Subject built from the template + filled variables
                 .andExpect(jsonPath("$.subject", containsString("15.08.2026")))
-                // Salutation rendered as "Frau Senn"
                 .andExpect(content().string(containsString("Frau Senn")))
-                // Notes block survives the conditional
-                .andExpect(content().string(containsString("Drei Headsets reichen wieder.")))
-                // Signature came from coordinator lookup
+                // Notes preserve their newlines as <br>
+                .andExpect(content().string(containsString("Drei Headsets reichen wieder.<br>")))
                 .andExpect(content().string(containsString("Nissim Buchs")));
     }
 
     @Test
-    @DisplayName("send_whenBothRecipients_invokesEmailServiceTwiceWithCoordinatorReplyTo")
+    @DisplayName("preview_whenBothRecipients_combinesSalutationAndSetsCc")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void send_whenBothRecipients_invokesEmailServiceTwiceWithCoordinatorReplyTo() throws Exception {
+    void preview_whenBothRecipients_combinesSalutationAndSetsCc() throws Exception {
+        Map<String, Object> body = Map.of(
+                "templateKey", "venue-timetable",
+                "recipients", java.util.List.of("VENUE", "CATERING"),
+                "locale", "de"
+        );
+
+        mockMvc.perform(post("/api/v1/events/{code}/venue-coordination/preview", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.toEmail", is("venue@test.invalid")))
+                .andExpect(jsonPath("$.ccEmails[0]", is("catering@test.invalid")))
+                // German "und" connector when two recipients are selected
+                .andExpect(content().string(containsString("Frau Senn und Herr Oppliger")));
+    }
+
+    @Test
+    @DisplayName("send_whenBothRecipients_invokesEmailServiceOnceWithToAndCc")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void send_whenBothRecipients_invokesEmailServiceOnceWithToAndCc() throws Exception {
         Map<String, Object> body = Map.of(
                 "templateKey", "catering-offerte-request",
                 "locale", "de",
@@ -196,19 +214,20 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.sentTo[1]").exists());
 
         ArgumentCaptor<String> toCaptor = ArgumentCaptor.forClass(String.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.List<String>> ccCaptor = ArgumentCaptor.forClass(java.util.List.class);
         ArgumentCaptor<String> replyToCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(2)).sendHtmlEmailSync(
+        verify(emailService, times(1)).sendHtmlEmailSync(
                 toCaptor.capture(),
-                anyList(),
+                ccCaptor.capture(),
                 anyString(),
                 anyString(),
                 any(),
                 replyToCaptor.capture()
         );
-        org.assertj.core.api.Assertions.assertThat(toCaptor.getAllValues())
-                .containsExactlyInAnyOrder("venue@test.invalid", "catering@test.invalid");
-        org.assertj.core.api.Assertions.assertThat(replyToCaptor.getAllValues())
-                .allMatch(s -> "nissim.buchs@elca.ch".equals(s));
+        org.assertj.core.api.Assertions.assertThat(toCaptor.getValue()).isEqualTo("venue@test.invalid");
+        org.assertj.core.api.Assertions.assertThat(ccCaptor.getValue()).containsExactly("catering@test.invalid");
+        org.assertj.core.api.Assertions.assertThat(replyToCaptor.getValue()).isEqualTo("nissim.buchs@elca.ch");
     }
 
     @Test
@@ -219,7 +238,7 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
 
         Map<String, Object> body = Map.of(
                 "templateKey", "venue-timetable",
-                "recipientRole", "VENUE",
+                "recipients", java.util.List.of("VENUE"),
                 "locale", "de"
         );
 
@@ -227,7 +246,5 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isPreconditionFailed());
-
-        // restore so other transactional rollback runs cleanly
     }
 }

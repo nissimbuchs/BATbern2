@@ -84,30 +84,27 @@ public class VenueCoordinationService {
 
     @Transactional(readOnly = true)
     public VenueCoordinationPreviewResponse preview(String eventCode, String templateKey,
-                                                     Role recipientRole, String locale,
+                                                     List<Role> recipients, String locale,
                                                      String notes) {
-        VenueCoordinationConfig config = loadConfigOrThrow();
-        Contact contact = config.contactFor(recipientRole);
-        requireConfiguredContact(contact, recipientRole);
-
+        List<Contact> contacts = resolveContactsOrThrow(recipients);
         Event event = loadEventOrThrow(eventCode);
         String effectiveLocale = normaliseLocale(locale);
         EmailTemplate template = loadTemplateOrThrow(templateKey, effectiveLocale);
+        CoordinatorIdentity coordinator = resolveCoordinator(loadConfigOrThrow().getCoordinatorUsername());
 
-        CoordinatorIdentity coordinator = resolveCoordinator(config.getCoordinatorUsername());
-        Map<String, String> vars = buildVariables(event, contact, effectiveLocale, notes, coordinator);
+        Map<String, String> vars = buildVariables(event, contacts, effectiveLocale, notes, coordinator);
+        Rendered rendered = render(template, vars, effectiveLocale);
 
-        String contentHtml = emailService.replaceVariables(template.getHtmlBody(), vars);
-        String mergedHtml = emailService.replaceVariables(
-                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, effectiveLocale), vars);
-        String subject = emailService.replaceVariables(
-                Optional.ofNullable(template.getSubject()).orElse(""), vars);
+        String to = contacts.get(0).getEmail();
+        List<String> cc = contacts.size() > 1
+                ? contacts.subList(1, contacts.size()).stream().map(Contact::getEmail).toList()
+                : List.of();
 
         return VenueCoordinationPreviewResponse.builder()
-                .subject(subject)
-                .htmlBody(mergedHtml)
-                .toName(contact.getName())
-                .toEmail(contact.getEmail())
+                .subject(rendered.subject())
+                .htmlBody(rendered.body())
+                .toEmail(to)
+                .ccEmails(cc)
                 .replyToEmail(coordinator.email())
                 .build();
     }
@@ -118,65 +115,105 @@ public class VenueCoordinationService {
     public VenueCoordinationSendResponse send(String eventCode, String templateKey,
                                                List<Role> recipients, String locale,
                                                String notes, String sentByUsername) {
-        if (recipients == null || recipients.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "At least one recipient role is required");
-        }
-
-        VenueCoordinationConfig config = loadConfigOrThrow();
+        List<Contact> contacts = resolveContactsOrThrow(recipients);
         Event event = loadEventOrThrow(eventCode);
         String effectiveLocale = normaliseLocale(locale);
         EmailTemplate template = loadTemplateOrThrow(templateKey, effectiveLocale);
-        CoordinatorIdentity coordinator = resolveCoordinator(config.getCoordinatorUsername());
+        CoordinatorIdentity coordinator = resolveCoordinator(loadConfigOrThrow().getCoordinatorUsername());
 
-        // Dedupe + preserve order while iterating recipients.
         List<Role> uniqueRoles = recipients.stream().distinct().toList();
 
-        for (Role role : uniqueRoles) {
-            Contact contact = config.contactFor(role);
-            requireConfiguredContact(contact, role);
+        Map<String, String> vars = buildVariables(event, contacts, effectiveLocale, notes, coordinator);
+        Rendered rendered = render(template, vars, effectiveLocale);
 
-            Map<String, String> vars = buildVariables(event, contact, effectiveLocale, notes, coordinator);
-            String contentHtml = emailService.replaceVariables(template.getHtmlBody(), vars);
-            String mergedHtml = emailService.replaceVariables(
-                    emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, effectiveLocale), vars);
-            String subject = emailService.replaceVariables(
-                    Optional.ofNullable(template.getSubject()).orElse(""), vars);
+        // Single SES send: first recipient → To, rest → Cc. Matches the user's expectation
+        // that the email arrives as one thread with everyone addressed together.
+        String to = contacts.get(0).getEmail();
+        List<String> cc = contacts.size() > 1
+                ? contacts.subList(1, contacts.size()).stream().map(Contact::getEmail).toList()
+                : List.of();
 
-            log.info("Venue-coordination send: event={}, template={}, role={}, recipient={}, replyTo={}, by={}",
-                    eventCode, templateKey, role, mask(contact.getEmail()),
-                    mask(coordinator.email()), sentByUsername);
+        log.info("Venue-coordination send: event={}, template={}, roles={}, to={}, ccCount={}, replyTo={}, by={}",
+                eventCode, templateKey, uniqueRoles, mask(to), cc.size(),
+                mask(coordinator.email()), sentByUsername);
 
-            emailService.sendHtmlEmailSync(
-                    contact.getEmail(),
-                    List.of(),
-                    subject,
-                    mergedHtml,
-                    configurationSetName,
-                    coordinator.email()
-            );
-        }
+        emailService.sendHtmlEmailSync(
+                to,
+                cc,
+                rendered.subject(),
+                rendered.body(),
+                configurationSetName,
+                coordinator.email()
+        );
 
         return VenueCoordinationSendResponse.builder().sentTo(uniqueRoles).build();
     }
 
+    private Rendered render(EmailTemplate template, Map<String, String> vars, String locale) {
+        String contentHtml = emailService.replaceVariables(template.getHtmlBody(), vars);
+        String mergedHtml = emailService.replaceVariables(
+                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
+        String subject = emailService.replaceVariables(
+                Optional.ofNullable(template.getSubject()).orElse(""), vars);
+        return new Rendered(subject, mergedHtml);
+    }
+
+    private record Rendered(String subject, String body) {}
+
+    private List<Contact> resolveContactsOrThrow(List<Role> recipients) {
+        if (recipients == null || recipients.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "At least one recipient role is required");
+        }
+        VenueCoordinationConfig config = loadConfigOrThrow();
+        List<Contact> contacts = new java.util.ArrayList<>();
+        for (Role role : recipients.stream().distinct().toList()) {
+            Contact contact = config.contactFor(role);
+            requireConfiguredContact(contact, role);
+            contacts.add(contact);
+        }
+        return contacts;
+    }
+
     // ── Variable rendering ────────────────────────────────────────────────────
 
-    private Map<String, String> buildVariables(Event event, Contact contact, String locale,
+    private Map<String, String> buildVariables(Event event, List<Contact> contacts, String locale,
                                                 String notes, CoordinatorIdentity coordinator) {
         Map<String, String> vars = new LinkedHashMap<>();
         vars.put("eventDate", formatEventDate(event, locale));
         vars.put("eventTitle", safe(event.getTitle()));
         vars.put("topicTitle", resolveTopicTitle(event));
         vars.put("venueName", safe(event.getVenueName()));
-        vars.put("salutation", safe(formatSalutation(contact)));
+        vars.put("salutation", formatCombinedSalutation(contacts, locale));
         vars.put("agenda", renderAgenda(event));
-        vars.put("notes", notes == null ? "" : notes.trim());
+        // Notes is a plain-text textarea on the frontend; preserve user line breaks by
+        // turning them into <br>. HTML-escape special chars first so notes can't inject
+        // markup (the field is organizer-authored but defence-in-depth is cheap here).
+        vars.put("notes", renderNotesHtml(notes));
         vars.put("organizerSignature", coordinator.displayName());
         // Required by the shared batbern-default layout footer ("© {{currentYear}} BATbern").
         // Same pattern as NewsletterEmailService / SpeakerInvitationEmailService.
         vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
         return vars;
+    }
+
+    /**
+     * Combines per-contact salutations into one greeting. Examples:
+     *   single:    "Frau Senn"
+     *   two (de):  "Frau Senn und Herr Oppliger"
+     *   two (en):  "Mrs. Senn and Mr. Oppliger"
+     *   three (de): "Frau A, Herr B und Frau C"
+     */
+    private String formatCombinedSalutation(List<Contact> contacts, String locale) {
+        List<String> parts = contacts.stream()
+                .map(this::formatSalutation)
+                .filter(s -> !s.isBlank())
+                .toList();
+        if (parts.isEmpty()) return "";
+        if (parts.size() == 1) return parts.get(0);
+        String connector = "en".equals(locale) ? " and " : " und ";
+        return String.join(", ", parts.subList(0, parts.size() - 1))
+                + connector + parts.get(parts.size() - 1);
     }
 
     private String formatSalutation(Contact contact) {
@@ -189,6 +226,21 @@ public class VenueCoordinationService {
         }
         String lastName = lastNameOf(name);
         return (salutation.trim() + " " + lastName).trim();
+    }
+
+    /**
+     * Turns the textarea content into HTML-safe inline content with line breaks preserved.
+     * Empty/blank input returns an empty string so the {{#notes}}...{{/notes}} conditional
+     * collapses the wrapping paragraph in the template.
+     */
+    private static String renderNotesHtml(String notes) {
+        if (notes == null) return "";
+        String trimmed = notes.strip();
+        if (trimmed.isEmpty()) return "";
+        return escapeHtml(trimmed)
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+                .replace("\n", "<br>\n");
     }
 
     private String lastNameOf(String fullName) {

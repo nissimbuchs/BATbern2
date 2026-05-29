@@ -37,7 +37,7 @@ public class VenueCoordinationController {
         return ResponseEntity.ok(service.preview(
                 eventCode,
                 request.getTemplateKey(),
-                request.getRecipientRole(),
+                request.getRecipients(),
                 request.getLocale(),
                 request.getNotes()
         ));

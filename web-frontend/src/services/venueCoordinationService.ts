@@ -4,7 +4,7 @@ export type VenueRecipientRole = 'VENUE' | 'CATERING';
 
 export interface VenueCoordinationPreviewRequest {
   templateKey: string;
-  recipientRole: VenueRecipientRole;
+  recipients: VenueRecipientRole[];
   locale: 'de' | 'en';
   notes?: string;
 }
@@ -12,8 +12,8 @@ export interface VenueCoordinationPreviewRequest {
 export interface VenueCoordinationPreviewResponse {
   subject: string;
   htmlBody: string;
-  toName: string;
   toEmail: string;
+  ccEmails: string[];
   replyToEmail: string;
 }
 
