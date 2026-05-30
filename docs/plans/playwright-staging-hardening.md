@@ -55,10 +55,11 @@ production deploy.
 > + `eventNumber` collision salt (`aef98a5a`); `COGNITO_CLIENT_ID` dedup to workflow env +
 > `@smoke` status in `$GITHUB_STEP_SUMMARY` (`139a09db`). These ride the next PR.
 >
-> **NEXT:** PR 2 = slice 1 **uploads** built on `e2e-uploads`, green ×2 vs dev, awaiting
-> review/merge (see "PR 2 notes"). After merge: PR 3 = slice 2 **companies**, then PRs 4–7
-> (users → topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist".
-> Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice <name>`, §F).
+> **NEXT:** slices 1 (**uploads**) + 2 (**companies**) both built on `e2e-uploads` (stacked,
+> not separate branches), each green ×2 vs dev, awaiting review/merge (see "PR 2 notes" +
+> "PR 3 notes"). After merge: slice 3 **users**, then slices 4–6 (topics → tasks → sessions).
+> Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs dev first
+> (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -75,7 +76,7 @@ slice audit land as separate fix-commits in the same PR.
 |------|--------|---------------|---------------|-------------------------|----------|----------|--------|----------|
 | 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | ✅ merged (#691, `8a9949a1`, 2026-05-30; combined w/ PR 8) | see "PR 1 deviations" below |
 | 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | 🔵 | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
-| 3 | `e2e-companies` | Slice 2: companies | `company-management/*`, `api-integration/companies-api-integration` | — | — | — | ⬜ | fixes `"E2E Test Company"` prod residue |
+| 3 | `e2e-uploads` (stacked) | Slice 2: companies | `company-management/{company-creation,company-search}`, `api-integration/companies-api-integration` | — | ✅ dev | `@gate` (×10) + **`@smoke`** (UI create+cleanup) | 🔵 | **fixes 3 prod-residue sources** (`E2E Test Company` no-cleanup POST; `Acme/Beta/Gamma` + cleanup-by-missing-`id`; `TestCompany-…`). Rewrite-to-reality: deleted/consolidated 26 dead·skip·duplicate tests (37→11 active), moved API contract into the api-integration spec, removed stray `.bak`. All data → canonical `BRUNOTESTCO%` + `cleanupById`. See "PR 3 notes". |
 | 4 | `e2e-users` | Slice 3: users | `user-management/*`, `user-sync/*`, `user-account/{profile,settings,additional-emails}` | — | — | — | ⬜ | — |
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
@@ -229,6 +230,47 @@ not AWS — so the full S3 round-trip is exercisable locally once Bug #2 is fixe
 dev (2/2 both runs). Staging can't validate the `@smoke` until this PR's frontend deploys
 (the new `profile-photo-input` testid isn't in the deployed build yet) — the same deploy-then-
 green pattern the status note describes. The control test will go green on staging post-deploy.
+
+### PR 3 notes — companies slice (rewrite-to-reality, 3 residue sources killed)
+
+Slice 2 had 37 tests across 3 specs, mostly **API-contract tests written in Playwright**
+that duplicate Bruno's companies collection, plus speculative UI tests against an idealized
+DOM. Three of them were live **prod-residue sources** (the reason the plan flagged this slice):
+
+1. `companies-api-integration.spec.ts` "POST with all headers" created `E2E Test Company
+   ${Date.now()}` — a non-canonical name (not swept by `BRUNOTESTCO%`) — and **never deleted
+   it**. One leaked company per run.
+2. `company-search.spec.ts` — four describe groups (search/caching/perf/advanced) each
+   created `Acme Corporation`/`Beta Technologies`/`Gamma Innovations <ts>` in `beforeAll` and
+   "cleaned up" via `deleteCompanyViaAPI(token, company.id)` — but Story 1.16.2 keys companies
+   by **name** and the create response has no `id`, so the delete hit `/companies/undefined`
+   and every run leaked three companies.
+3. `company-creation.spec.ts` — inline `TestCompany-${Date.now()}` / `Test Company Display`.
+
+**Outcome (37 → 11 active tests):**
+- `company-creation.spec.ts` → **UI-only**: `should_displayCompanyCreationForm` (`@gate`) +
+  `should_createCompany` (**`@smoke`** — the slice's mutating happy path). **Key reality
+  find:** the old `should_createCompany` was skipped "dialog not closing" because the name
+  field enforces `^[A-Za-z0-9]+$` and `TestCompany-<ts>` has a hyphen → validation blocked
+  submit. `factory.companyName()` (`BRUNOTESTCO<ts>`, pure alphanumeric) passes AND is swept.
+  Success signal = the dialog closing (CompanyForm calls `onClose()` only after the create
+  mutation resolves; a failure renders an apiError Alert and keeps it open). Teardown =
+  `cleanupById(token,'companies',name)` in afterEach + the `BRUNOTESTCO%` sweep backstop.
+  Deleted the 4 `/companies/create`-route skips (route never existed — it's a modal), the
+  duplicate "API Endpoints" group (now in the api-integration spec), and the EventBridge /
+  latency skips (non-E2E concerns).
+- `company-search.spec.ts` → reduced to the one real read-only assertion (search control +
+  list render, `@gate`). Deleted the 5 speculative UI skips (placeholder/autocomplete-results
+  testids the real CompanyFilters/CompanyList don't render) and all 4 residue-creating API
+  groups (contract covered by the api-integration spec + Bruno).
+- `companies-api-integration.spec.ts` → kept the public/auth contract + CORS checks (read-only
+  `@gate`); the POST now uses `factory.companyName()` + explicit afterEach `cleanupById`.
+- Removed a stray (untracked) `company-search.spec.ts.bak` from the working tree.
+
+`@smoke` is the UI create (one canonical mutating+cleanup path); everything else is `@gate`.
+Green ×2 on dev; final sweep shows `companies:0` (residue-free). Note: the `company-search-input`
+testid sits on the MUI FormControl wrapper, not the `<input>` — a future search-interaction
+test must target `.locator('input')` (noted so the next author doesn't trip on it).
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

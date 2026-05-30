@@ -1,17 +1,41 @@
-import { test, expect } from '@playwright/test';
-
 /**
- * Companies API Integration Tests
+ * Companies API Integration — slice 2 / companies (plan §C)
+ * docs/plans/playwright-staging-hardening.md
  *
- * End-to-end tests validating the full request flow:
- * Frontend → AWS API Gateway → Spring Boot Gateway → Company Service
+ * End-to-end validation of the full request flow:
+ *   Frontend → AWS API Gateway → Spring Boot Gateway → Company Service
+ * (CORS, authentication, public-vs-authenticated access, API contract shape).
  *
- * Ensures CORS, authentication, and API contracts work correctly.
+ * Hardened 2026-05-30 to the quality bar. THE prod-residue fix this slice exists for: the
+ * old "should handle POST request with all headers" created `E2E Test Company ${Date.now()}`
+ * — a NON-canonical name (not swept by `BRUNOTESTCO%`) — and NEVER deleted it, leaking one
+ * company per run onto staging (= prod). The exact residue the Bruno audit found. Now the
+ * POST uses `factory.companyName()` (`BRUNOTESTCO<ts>`) and the created row is explicit-
+ * deleted in afterEach (`cleanupById`), with the canonical global-teardown sweep as backstop.
+ *
+ * These are read-only contract checks except the single POST (mutating, cleaned up). Tagged
+ * `@gate`; the slice's mutating `@smoke` is the UI create flow in company-creation.spec.ts.
  */
 
-test.describe('Companies API Integration', () => {
+import { test, expect } from '@playwright/test';
+import * as factory from '../helpers/test-data-factory';
+import { cleanupById } from '../helpers/test-fixtures-cleanup';
+
+test.describe('Companies API Integration', { tag: '@gate' }, () => {
   const apiBaseUrl = process.env.E2E_API_URL || 'https://api.batbern.ch';
   const authToken = process.env.AUTH_TOKEN;
+
+  // Companies created by the POST test this run — explicit-deleted in afterEach.
+  const createdNames: string[] = [];
+
+  test.afterEach(async () => {
+    while (createdNames.length > 0) {
+      const name = createdNames.pop();
+      if (name) {
+        await cleanupById(authToken || '', 'companies', name);
+      }
+    }
+  });
 
   test.describe('Unauthenticated Requests', () => {
     test('should allow unauthenticated list companies request (public endpoint)', async ({
@@ -24,7 +48,6 @@ test.describe('Companies API Integration', () => {
         },
       });
 
-      // List companies is now a public endpoint (like search)
       expect(response.status()).toBe(200);
 
       const data = await response.json();
@@ -40,7 +63,6 @@ test.describe('Companies API Integration', () => {
         },
       });
 
-      // Company search is now a public endpoint
       expect(response.status()).toBe(200);
 
       const data = await response.json();
@@ -66,12 +88,10 @@ test.describe('Companies API Integration', () => {
 
       const body = await response.json();
 
-      // Validate response structure matches OpenAPI spec
       expect(body).toHaveProperty('data');
       expect(body).toHaveProperty('pagination');
       expect(Array.isArray(body.data)).toBeTruthy();
 
-      // Validate pagination metadata
       expect(body.pagination).toHaveProperty('page');
       expect(body.pagination).toHaveProperty('limit');
       expect(body.pagination).toHaveProperty('totalItems');
@@ -95,18 +115,17 @@ test.describe('Companies API Integration', () => {
       expect(response.ok()).toBeTruthy();
 
       const body = await response.json();
-
-      // Search returns array of results
       expect(Array.isArray(body)).toBeTruthy();
     });
 
-    test('should handle POST request with all headers', async ({ page }) => {
+    test('should create a company with all headers (and clean it up)', async ({ page }) => {
+      const name = factory.companyName(); // BRUNOTESTCO<ts> — swept by BRUNOTESTCO%
       const testCompany = {
-        name: `E2E Test Company ${Date.now()}`,
-        displayName: 'E2E Test',
+        name,
+        displayName: 'BAT PW E2E',
         industry: 'Technology',
         website: 'https://e2e-test.example.com',
-        description: 'Test company created by E2E tests',
+        description: 'Playwright slice-2 company fixture — auto-deleted in afterEach.',
       };
 
       const response = await page.request.post(`${apiBaseUrl}/api/v1/companies`, {
@@ -119,20 +138,19 @@ test.describe('Companies API Integration', () => {
         data: testCompany,
       });
 
-      // 201 Created or 409 Conflict (if name exists) or 403 Forbidden (insufficient permissions)
+      // 201 Created, or 409 Conflict (name already exists), or 403 (insufficient permissions).
       expect([201, 403, 409]).toContain(response.status());
 
       if (response.status() === 201) {
+        createdNames.push(name); // ensure teardown deletes the real row we just created
         const body = await response.json();
 
-        // Validate response matches actual API implementation
         expect(body).toHaveProperty('name');
         expect(body).toHaveProperty('isVerified');
         expect(body).toHaveProperty('createdAt');
         expect(body).toHaveProperty('updatedAt');
         expect(body).toHaveProperty('createdBy');
 
-        // Verify created company data
         expect(body.name).toBe(testCompany.name);
         expect(body.displayName).toBe(testCompany.displayName);
         expect(body.industry).toBe(testCompany.industry);
@@ -140,7 +158,6 @@ test.describe('Companies API Integration', () => {
     });
 
     test('should respect Accept-Language header', async ({ page }) => {
-      // Make request with German language preference
       const responseDe = await page.request.get(
         `${apiBaseUrl}/api/v1/companies/search?query=invalid`,
         {
@@ -151,7 +168,6 @@ test.describe('Companies API Integration', () => {
         }
       );
 
-      // Make request with English language preference
       const responseEn = await page.request.get(
         `${apiBaseUrl}/api/v1/companies/search?query=invalid`,
         {
@@ -162,10 +178,7 @@ test.describe('Companies API Integration', () => {
         }
       );
 
-      // Both should succeed (or fail with same status code)
       expect(responseDe.status()).toBe(responseEn.status());
-
-      // The important thing is the header was accepted without CORS error
       expect([200, 400, 401]).toContain(responseDe.status());
     });
   });
@@ -188,7 +201,7 @@ test.describe('Companies API Integration', () => {
 
     test('should return 400 for invalid request', async ({ page }) => {
       const invalidCompany = {
-        name: '', // Empty name - invalid
+        name: '', // Empty name - invalid (no row created)
       };
 
       const response = await page.request.post(`${apiBaseUrl}/api/v1/companies`, {
