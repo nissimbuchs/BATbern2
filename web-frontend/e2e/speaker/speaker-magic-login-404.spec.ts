@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
  * The unauthenticated case is the realistic field path — a stranger clicks an old email
  * magic-link from a public machine.
  */
-test.describe('Speaker portal — magic-login route disconnected', () => {
+test.describe('Speaker portal — magic-login route disconnected', { tag: '@gate' }, () => {
   test.describe('authenticated speaker', () => {
     test.skip(
       !process.env.SPEAKER_AUTH_TOKEN,

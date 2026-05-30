@@ -58,9 +58,11 @@ production deploy.
 > **NEXT:** slices 1 (**uploads**) + 2 (**companies**) MERGED — squash `c46c6463` (PR #692).
 > Slice 3 (**users**) MERGED — squash `815b4078` (PR #693). Slices 4 (**topics + event-types**)
 > + 5 (**tasks**) MERGED — squash `9ff51818` (PR #694). Slice 6 (**sessions/slot-assignment**)
-> + the slices stacked after it are on `e2e-sessions` (rebased onto develop post-#694; green ×2
-> vs dev — see "PR 7 notes"+). Per-slice loop = §C "Repeatable per-slice checklist". Run locally
-> green ×2 vs dev first
+> MERGED — squash `41669b5b` (PR #695; its deploy-to-staging `@smoke` gate job ran green). Slices
+> 8 (**speaker pool**) + 9 (**speaker portal**) are on `e2e-speaker` (rebased onto develop
+> post-#695; green ×2 vs dev). NOTE: this repo **auto-merges PRs once CI is green** — so each
+> stacked PR auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable
+> per-slice checklist". Run locally green ×2 vs dev first
 > (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
@@ -82,10 +84,10 @@ slice audit land as separate fix-commits in the same PR.
 | 4 | `e2e-users` | Slice 3: users | `user-management/{user-creation,user-deletion,role-management,user-list-search}`, `user-sync/reconciliation-drift-fix`, `user-account/{profile-management,settings-management}`, `organizer/user-settings-additional-emails` | `user-add-button`, `user-search-input`, `user-clear-filters`, `user-sort-{name,email,company}`, `user-actions-button-<id>`, keyed `user-table-row-<id>`, `user-create-{dialog,close}`, `role-manager-dialog`, `delete-user-{dialog,email,gdpr-warning,cascade-warning}` | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI create+cleanup) | ✅ | **bug found+fixed: stale `window.confirm` handler** in additional-emails spec (component switched to a MUI confirm dialog → row never deleted). **Rewrite-to-reality + prod-safety:** role-management/user-deletion/list-search now operate on a dedicated API-created `bruno.test` fixture user (`e2e/helpers/user-fixture.ts`) instead of the table's FIRST row — the old role spec **saved role changes to a random real prod user**. Deleted 2 user-sync specs (`role-change-sync` dup Bruno `06` + random-user-mutating; `user-registration-sync` all-skipped dup of disabled `09-get-or-create`) + 3 `.backup` files. Dropped authenticated reconcile-POST (mutates prod + not dev-greenable); kept sync-status + auth-negatives. All data → factory; cleanup by captured username. See "PR 4 notes". ✅ merged (#693, `815b4078`, 2026-05-30). |
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `EventTypesTab` (`event-types-tab`, `event-type-card-<T>`, `edit-event-type-<T>`, `edit-event-type-modal`), `SlotTemplatePreview` (`slot-template-preview`), `EventTypeConfigurationForm` (`event-type-config-{save,cancel}`), `BlobTopicSelectorPage` (`blob-unsaved-dialog`, `blob-back-{confirm,cancel}`) — **topics needed ZERO** (already richly testid'd) | ✅ dev (18×2) | `@gate` + **`@smoke`** (UI topic create+cleanup) | ✅ merged (#694, `9ff51818`, 2026-05-31) | **rewrite-to-reality + prod-safety.** Topics already fully testid'd → the "zero testids/heavy" estimate was wrong; the testid work was all event-types. **Deleted dead code:** standalone `EventTypeConfigurationAdmin.tsx` + its unit test (the `/organizer/event-types` route now `<Navigate>`-redirects to `/organizer/admin?tab=0`/`EventTypesTab`; the page was unrouted). **Dropped all event-type mutations** (PUT `/events/types` = global prod-config change, no restore; the old PUT-200/400 used unset `E2E_TEST_TOKEN` and the "403 without role" is untestable since playwright.config injects a global `Authorization` header → would mutate, not 403). Topic API-contract describe deleted (dup of Bruno `event-topics-api`). Heat-map + topic→event-selection UI tests deleted (fresh topic has no usage→no heat map; selection's `success-message` never existed + Bruno-covered). Topic cleanup verified: `topic_code` slugifies from title, so `factory.topicCode()` title → swept by `bruno-test-topic-%` + deletable by captured code. See "PR 5 notes". |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/test-task-creation-from-templates` (consolidated; `test-task-assignment` **deleted**) | `EventTasksTab` (`event-tasks-tab-content`, `task-template-<id>`, `task-assignee-<id>`) — assignee `organizer-option-<username>` already existed | ✅ dev (2×2) | `@gate` + **`@smoke`** (assign+save+verify, cascade cleanup) | ✅ merged (#694, `9ff51818`, 2026-05-31) | **rewrite-to-reality + prod-residue fix.** Both old specs created a real `BATbern${9000+random}` event via the UI and **never cleaned up** (leaked event+tasks/run) + used role/text locators + HARDCODED organizer names. Consolidated to one spec: read-only `@gate` (Tasks tab lists templates) + **`@smoke`** (assign first default template to the current organizer → save → GET `/events/{code}/tasks` asserts the assignee persisted). Uses the API event-fixture (captured `BATbern{N}`); cleanup = `cleanupByCode` → `event_tasks` FK `ON DELETE CASCADE` (tasks have no prefix-sweep). Deterministic assignee via `organizer-option-<token-username>` (no hardcoded names). `TaskTemplatesTab` (admin template catalog) is a SEPARATE surface, not exercised by these specs. See "PR 6 notes". |
-| 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — (SlotAssignment already strong) | ✅ dev (2×2) | `@gate` + **`@smoke`** (auto-assign) | 🔵 | **rewrite-to-reality.** Replaced an all-skipped 5-test RED-phase `describe.skip` asserting an idealized DOM that was never built (`assignment-progress`/`speaker-card`/`slot-dropzone`/`conflict-detection-modal`+room-change resolution/`speaker-preference-panel`/3-step `bulk-auto-assignment-modal` wizard/`assignment-complete-banner`/`/publishing` walk — NONE of those testids exist). **Zero new testids** — SlotAssignment is already richly testid'd. **Deterministic `@smoke` = auto-assign** (button→`auto-assign-modal`→`auto-assign-confirm`, `POST /sessions/auto-assign`), NOT native HTML5 drag-drop (too flaky to gate). Unassigned-session fixture: REST `POST /sessions` requires timing (`CreateSessionRequest @NotNull`), so `addUnassignedSessions` (event-fixture.ts) creates timed sessions then `DELETE /sessions/timing` to reach the placeholder state. Cleanup = event-delete cascade (`sessions`/`session_timing_history` `ON DELETE CASCADE`) — server-gen `sessionSlug` isn't prefix-sweepable. Verify via `GET /sessions/unassigned == 0`. See "PR 7 notes". |
+| 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — (SlotAssignment already strong) | ✅ dev (2×2) | `@gate` + **`@smoke`** (auto-assign) | ✅ merged (#695, `41669b5b`, 2026-05-31; staging `@smoke` gate green) | **rewrite-to-reality.** Replaced an all-skipped 5-test RED-phase `describe.skip` asserting an idealized DOM that was never built (`assignment-progress`/`speaker-card`/`slot-dropzone`/`conflict-detection-modal`+room-change resolution/`speaker-preference-panel`/3-step `bulk-auto-assignment-modal` wizard/`assignment-complete-banner`/`/publishing` walk — NONE of those testids exist). **Zero new testids** — SlotAssignment is already richly testid'd. **Deterministic `@smoke` = auto-assign** (button→`auto-assign-modal`→`auto-assign-confirm`, `POST /sessions/auto-assign`), NOT native HTML5 drag-drop (too flaky to gate). Unassigned-session fixture: REST `POST /sessions` requires timing (`CreateSessionRequest @NotNull`), so `addUnassignedSessions` (event-fixture.ts) creates timed sessions then `DELETE /sessions/timing` to reach the placeholder state. Cleanup = event-delete cascade (`sessions`/`session_timing_history` `ON DELETE CASCADE`) — server-gen `sessionSlug` isn't prefix-sweepable. Verify via `GET /sessions/unassigned == 0`. See "PR 7 notes". |
 | 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | ✅ merged (#691, `8a9949a1`, 2026-05-30) | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes". Review follow-ups (#1/#2/#4/#8) carried on `e2e-uploads`, not in this merge. |
-| 9 | `e2e-speaker-pool` | Slice 8: speaker pool (organizer) | `organizer/speaker-*` | — | — | — | ⬜ | strong testids already |
-| 10 | `e2e-speaker-portal` | Slice 9: speaker portal | `speaker/*` | — | — | — | ⬜ | **net-new** for 3 fixme stubs; needs `SPEAKER_AUTH_TOKEN` |
+| 9 | `e2e-speaker` (stacked on `e2e-sessions`) | Slice 8: speaker pool (organizer) | `organizer/speaker-{column-triage,card-primary-action}` (migrated), `speaker-pool-smoke` (new), DELETED `speaker-{brainstorming,outreach,invitation,kanban-guided-drag}`, untagged `speaker-onbehalf-vs-self-byte-identity` | `MarkContactedModal` (`contact-method-option-{email,phone,in-person}`) — kanban/drawer testids already existed | ✅ dev (5×2) | `@gate` + **`@smoke`** (log-outreach IDENTIFIED→CONTACTED) | 🔵 | **rewrite-to-reality + reliability.** The recon's "strong testids / light" was optimistic: 3 specs were FICTIONAL (`speaker-brainstorming` asserted a non-existent `/brainstorm` route; `speaker-outreach` a non-existent `/outreach` dashboard; `speaker-invitation` mixed) and **all** specs seeded via the unset `process.env.E2E_TEST_TOKEN` (`Bearer undefined`→401) + created events through the UI with `Date.now()` titles and **no cleanup** (event-leak/run). New shared `e2e/helpers/speaker-pool-fixture.ts` (seed/status/promote/get via `readOrganizerToken()`). Kept+migrated `column-triage` (2 tests) + `card-primary-action` (2 tests: IDENTIFIED→MarkContactedModal, CONTACTED→drawer promote sub-view — fixed: the old `promote-email-field` assertion targeted the now-dead legacy `PromoteSpeakerDialog`; post-Epic-11 CONTACTED opens the drawer's `promote-submit-button`). **`@smoke` = log-outreach (IDENTIFIED→CONTACTED via MarkContactedModal)** — deliberately NOT promote-to-READY: promote provisions a Cognito/CUMS user out-of-band, an **intermittently-flaky** external write (observed 500s on dev) that would make a blocking gate spurious; also not native DnD. DELETED `kanban-guided-drag` (manual-mouse DnD, flaky). Cleanup = event-delete cascade (`speaker_pool.event_id` ON DELETE CASCADE). **Follow-up (untagged):** `speaker-onbehalf-vs-self-byte-identity` — its inline event-create 400s (NotNull gap) + walks promote; migrate to `createRegistrationEvent` + a promote-free path to gate it. See "PR 9 notes". |
+| 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | 🔵 | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e`, workflow walk | — | — | — | ⬜ | **heavy** — see Section C-bis |
 | 12 | `e2e-partners` | Slice 11: partners + meetings | `partner-management/*`, `organizer/partner-meetings`, `partner/*` | — | — | — | ⬜ | **no cleanup today** (residue source); needs `PARTNER_AUTH_TOKEN` |
 | 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-settings` | 8 admin tabs, `OrganizerAnalyticsPage`, `NotificationsPage` | — | — | ⬜ | **heaviest** — zero testids |
@@ -603,6 +605,70 @@ the dormant Playwright step) was removed; each test job re-fetches its own fresh
 `playwright-tests` job writes `~/.batbern/staging-{role}.json` itself (id+access+refresh) so
 `global-setup.ts` can build browser storage state — CI never had those files before because
 the dormant step never ran.
+
+## Handoff — recon + landmines for the remaining slices (2026-05-31)
+
+A parallel read-only recon mapped slices 10–13 against reality. Key findings + the traps that
+the optimistic plan estimates miss (so the next session doesn't rediscover them). Cross-cutting
+lesson from slices 8/9: **promote-to-READY provisions a Cognito/CUMS user out-of-band and is
+intermittently flaky on dev (observed 500s) — keep it out of any blocking `@smoke`.**
+
+- **Slice 11 — partners + meetings** (medium; needs ORGANIZER + PARTNER tokens). Specs:
+  `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`,
+  `partner/{analytics-dashboard,topic-voting}`. Landmines: (a) `partner/analytics-dashboard`
+  asserts a **fictional `attendance-table` testid** — the component renders Recharts charts, not
+  a table → it would time out; rewrite to assert `attendance-dashboard`/`kpi-attendance-rate`/
+  `kpi-cost-per-attendee` + `export-button` (all real). (b) `partner-create-edit` uses inline
+  `tc-{ts}` company names (NOT swept) + manual `deletePartnerViaAPI` (residue source) and expects
+  route `/partners/.+` but reality is `/organizer/partners/:companyName`; switch to
+  `factory.partnerName()` (`brtest`+6 = 12 chars, swept) + `sweepAllPrefixes`/`cleanupById`.
+  (c) `partner-directory` uses `getByLabel(/grid view/i)` (localized) + fictional
+  `tier-option-*`/`status-option-*` MenuItem testids. Testid adds: `tier-option-{tier}`,
+  `status-option-{status}` on PartnerFilters MenuItems; `partnership-start-date`/`-end-date` on
+  the date inputs; `partner-edit-company-name`; `topic-form-title-input`. `partner-meetings` is
+  fully mocked + already testid-clean (keep `@gate`). **@smoke**: organizer partner create →
+  detail → cleanup (factory name + sweep) — deterministic, no promote.
+
+- **Slice 13 — cross-cutting a11y/auth/cors** (light-ish, but two traps). `accessibility/
+  {navigation,screen-reader,layout}` use `getByRole`/axe scans — **a11y locators are exempt** from
+  the testid-only rule (they assert user-facing semantics); tag `@gate` AFTER confirming the axe
+  scans actually pass on dev (real WCAG violations would fail them — budget for either a fix or
+  `@quarantine`, don't assume green). Add `data-testid="notifications-button"` to `AppHeader` and
+  convert the one notifications `getByRole` locator. Delete the 2 truly-fictional screen-reader
+  skips (on-submit form-error announcement; forced-colors high-contrast) + the nav
+  notification-dropdown skip (notifications are inline, no dropdown). `api-integration/
+  {cors-validation,companies-api-integration}` are exemplary → tag `@gate`. **Correction to the
+  recon:** the forgot/reset-password components (`src/components/auth/{ForgotPasswordForm,
+  ResetPasswordForm}`) DO exist and DO carry testids — the `auth/*` specs aren't fictional, they
+  need testid reconciliation; treat as a separate focused task, out of slice 13's core. No `@smoke`
+  (all read-only).
+
+- **Slice 10 — event workflow** (medium post-rewrite; ORGANIZER). `workflows/event-lifecycle-e2e`
+  is currently RED. The transition endpoint EXISTS: `PUT /events/{code}/workflow/transition`
+  `{ targetState, overrideValidation, overrideReason }` (EventWorkflowController) + `GET
+  /events/{code}/workflow/status`. Rewrite per OQ-3 to **hybrid: API force-advances states
+  (overrideValidation:true), UI asserts each screen** — DELETE the manual-mouse drag-drop phases
+  (B3–B4) and the speaker/content phases (slice-8 territory). Testid corrections: lane names are
+  **lowercase** (`status-lane-ready`, not `-READY`); assert `workflow-status-badge` after each
+  transition. All needed testids exist (`event-*-field`, `event-tab-*`, `status-option-{STATE}`,
+  `override-workflow-validation-checkbox`, `publish-{phase}-button`). **@smoke**: create →
+  GET status=CREATED → transition TOPIC_SELECTION → AGENDA_PUBLISHED → ARCHIVED (each UI-asserted)
+  → DELETE. Cleanup = `cleanupByCode` (BATbern{N}; 409 until ARCHIVED). ~15 min, no cron, no DnD.
+
+- **Slice 12 — admin tabs** (HEAVIEST — testid-adding; ORGANIZER). `organizer/admin-settings`
+  currently covers only AdminSettingsTab with `getByRole`/`Date.now()`. Reality: 9 tabs +
+  OrganizerAnalyticsPage + NotificationsPage. **Prod-safety is the crux** — most admin mutations
+  are GLOBAL singletons with NO restore path (event-types, presentation-settings, ai-prompts,
+  admin-settings/email-forwarding, email-templates): these MUST stay **read-only `@gate`** (same
+  reason slice 4 dropped event-type PUTs). Only TWO safe mutations exist for `@smoke`:
+  TaskTemplatesTab (create+delete a custom template by captured id) and GlobalImagesTab
+  (upload+delete by captured imageId). Plan: ~11 read-only `@gate` tab-render tests + ≤2 safe
+  `@smoke`. Testid gaps to add (~25): PresentationSettingsTab, AiPromptsTab, AdminSettingsTab,
+  OrganizerAnalyticsPage, NotificationsPage have essentially none (EventTypes/Import/TaskTemplates/
+  EmailTemplates/GlobalImages/VenueCatering already have some). Budget a full session.
+
+Suggested remaining PR grouping: **PR C = 11 + 13**, **PR D = 10 + 12**, then **PR 15 = gate flip**
+(+ deliberate-fail rollback drill). Rebase each onto develop as the prior stacked PR merges.
 
 ## Quality bar (binding for every slice that gets touched)
 

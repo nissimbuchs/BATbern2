@@ -189,13 +189,13 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
               label={t('speakerOutreach.contactMethod')}
               data-testid="contact-method-select"
             >
-              <MenuItem value="email">
+              <MenuItem value="email" data-testid="contact-method-option-email">
                 {t('speakerOutreach.markContactedModal.method.email')}
               </MenuItem>
-              <MenuItem value="phone">
+              <MenuItem value="phone" data-testid="contact-method-option-phone">
                 {t('speakerOutreach.markContactedModal.method.phone')}
               </MenuItem>
-              <MenuItem value="in_person">
+              <MenuItem value="in_person" data-testid="contact-method-option-in-person">
                 {t('speakerOutreach.markContactedModal.method.inPerson')}
               </MenuItem>
             </Select>
