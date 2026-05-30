@@ -31,7 +31,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { eventTitle } from './test-data-factory';
+import { eventTitle, EVENT_TITLE_TOKEN } from './test-data-factory';
 
 const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
@@ -161,4 +161,115 @@ export function companySlug(displayName: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 12);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────────
+ * Slot-assignment fixtures (plan §C slice 6 — sessions/slot-assignment)
+ *
+ * The slot-assignment page consumes "unassigned" (placeholder) sessions: non-structural
+ * sessions with `startTime IS NULL`. In the real product these are born timing-less via the
+ * speaker workflow. But the REST `POST /events/{code}/sessions` endpoint REQUIRES startTime/
+ * endTime (`CreateSessionRequest` `@NotNull`), so a session cannot be created timing-less
+ * directly. We reproduce the unassigned state deterministically WITHOUT a cron-driven workflow
+ * walk: create each session WITH throwaway timing, then `DELETE /sessions/timing` to clear ALL
+ * timings — leaving them unassigned (they then appear in `GET /sessions/unassigned` and the
+ * slot-assignment speaker-pool sidebar). `sessionType` is a non-structural value so the
+ * unassigned filter (which excludes moderation/break/lunch) keeps them.
+ *
+ * Cleanup rides the event-delete cascade (`cleanupByCode`): `sessions.event_id` is
+ * `ON DELETE CASCADE` (V2), and `session_timing_history.session_id` cascades too (V28). The
+ * server-generated `sessionSlug` (slugified from title) is NOT reachable by the
+ * `bruno-test-session-` prefix sweep, so the parent-event delete is the only teardown — same
+ * server-generated-code caveat the plan §A5 calls out.
+ * ──────────────────────────────────────────────────────────────────────────────────── */
+
+/** A speaker session created on the fixture event (its parent event's delete cascades it away). */
+export interface SlotSession {
+  sessionSlug: string;
+  title: string;
+}
+
+/** Shape of the session-creation response we read the server-generated slug from. */
+interface SessionCreateResponse {
+  sessionSlug?: string;
+  title?: string;
+}
+
+/**
+ * Create `count` placeholder (unassigned) speaker sessions on `eventCode` and return their
+ * handles. Each session is created with throwaway timing (required by the API) and then ALL
+ * timings are cleared in one call, so every returned session is unassigned. Throws loudly on
+ * any failure (per the plan's "no empty tests" / fail-loud bar). Requires an organizer token.
+ */
+export async function addUnassignedSessions(
+  token: string,
+  eventCode: string,
+  count: number
+): Promise<SlotSession[]> {
+  // Throwaway timing — valid ISO instants; cleared immediately below, never asserted on.
+  const start = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + 45 * 60 * 1000);
+
+  const sessions: SlotSession[] = [];
+  for (let i = 0; i < count; i++) {
+    // Unique title → unique server-derived slug (the backend also de-dupes with a -N suffix).
+    const title = `${EVENT_TITLE_TOKEN} Slot Session ${i + 1} ${Date.now()}-${i}`;
+    const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        title,
+        description: 'Playwright slice-6 slot-assignment fixture session — cascade-deleted.',
+        sessionType: 'presentation', // non-structural → stays in the unassigned list
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(
+        `[event-fixture] create session failed: ${res.status} ${res.statusText} ${body}`
+      );
+    }
+    const data = (await res.json()) as SessionCreateResponse;
+    if (!data.sessionSlug) {
+      throw new Error(
+        `[event-fixture] create session response had no sessionSlug: ${JSON.stringify(data)}`
+      );
+    }
+    sessions.push({ sessionSlug: data.sessionSlug, title });
+  }
+
+  // Clear ALL timings → every session above becomes unassigned (startTime IS NULL).
+  const clearRes = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/sessions/timing`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!clearRes.ok) {
+    const body = await clearRes.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] clear timings failed: ${clearRes.status} ${clearRes.statusText} ${body}`
+    );
+  }
+  console.log(`[event-fixture] ✓ ${count} unassigned session(s) on ${eventCode}`);
+  return sessions;
+}
+
+/**
+ * Count the event's unassigned (placeholder) sessions via the same endpoint the page reads —
+ * the authoritative signal the slot-assignment `@smoke` asserts on (0 after a successful
+ * auto-assign). Requires an organizer token.
+ */
+export async function getUnassignedSessionCount(token: string, eventCode: string): Promise<number> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/sessions/unassigned`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] get unassigned failed: ${res.status} ${res.statusText} ${body}`
+    );
+  }
+  const data = (await res.json()) as unknown[];
+  return Array.isArray(data) ? data.length : 0;
 }
