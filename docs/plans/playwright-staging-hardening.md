@@ -30,33 +30,34 @@ production deploy.
 
 ## Current status
 
-> **Where we are (2026-05-30):** PR 1 (infra, §A) built on `e2e-staging-hardening-infra`,
-> pending review/merge. The `playwright-tests` job is live but NON-BLOCKING (onboarding
-> §A2); Bruno remains the sole authoritative gate. Helpers (factory + cleanup + teardown),
-> the runner (`--scope`/`--slice`/`--cleanup-only` + edge-readiness poll), the seed `@smoke`
-> spec, and the nightly workflow all landed. Seed `@smoke` verified green ×2 against deployed
-> staging; the teardown sweep verified against all 7 canonical prefixes on real staging.
+> **Where we are (2026-05-30):** **PR 1 + full slice 7 MERGED to develop** — squash commit
+> `8a9949a1` (GitHub PR #691). The `playwright-tests` job is live in `deploy-staging.yml` but
+> **NON-BLOCKING** (onboarding §A2); **Bruno remains the sole authoritative gate**. The
+> nightly `@gate` workflow (A9) is live. Once this PR's frontend deploys, the merged
+> `@smoke`/`@gate` specs go green (their new testids are now in the build).
 >
-> **PR 1 + PR 8 going out as ONE combined PR** (branch `e2e-registrations` → `develop`),
-> since PR 8 is stacked on PR 1 and can't gate without its infra. PR 8 = **all of slice 7**:
-> the four `archive-*` specs PLUS `registration-flow` + `presentation`, rewritten to real
-> behavior (testid-only, dead/stale tests removed), components instrumented, green ×2 locally;
-> also **deleted** the dead `ArchiveEventDetailPage.tsx` + its unit test (unrouted in prod).
-> Done out of leaf-first order at the user's request.
-> - **archive sub-slice:** 9 components instrumented, `@gate` (read-only, 20/20 ×2).
-> - **registration-flow:** rewritten to the REAL double-opt-in flow (submit → inline "email
->   sent" view, NOT the old QR/confirmation-page assertions; the wizard is 2-step, not 3).
->   Gets slice 7's **first `@smoke`** — a mutating happy-path that creates a throwaway
->   `CREATED` event via the API (`e2e/helpers/event-fixture.ts`), registers against it through
->   the UI, then tears down (event delete → cascade reg; explicit company-slug delete; user via
->   the `bruno.test%` sweep). Forced-anonymous context. 4 tests `@gate`, green ×2 vs dev.
-> - **presentation:** `text=BATbern` → `presentation-welcome-slide` testid; FLIP nav anchors
->   on the centered agenda-preview slide then steps into the session slide; `@gate` (read-only,
->   4 tests, green ×2 vs dev).
+> **Merged in #691:** PR 1 infra (factory + cleanup + teardown, runner, tagging scheme,
+> nightly workflow) + all of slice 7 — the four `archive-*` specs, `registration-flow`
+> (slice 7's first **`@smoke`**: a mutating happy-path that creates a throwaway `CREATED`
+> event via the API in `e2e/helpers/event-fixture.ts`, registers through the UI, then tears
+> down residue-free — event delete → cascade reg, explicit company-slug delete, `bruno.test%`
+> user sweep), and `presentation` (read-only `@gate`). Also deleted the dead
+> `ArchiveEventDetailPage.tsx` + its unit test.
 >
-> Archive + new `@gate`/`@smoke` specs are red against the CURRENT staging build (the new
-> testids aren't deployed yet) — they go green once this PR deploys. **NEXT:** backfill PRs 2–7
-> (uploads → companies → users → topics → tasks → sessions).
+> **Post-merge gate topology (load-bearing):** `playwright-tests` `needs: [deploy-to-staging,
+> bruno-tests]` — serialised AFTER Bruno (commit `1f67498e`). This is REQUIRED, not cosmetic:
+> Playwright's `global-teardown` shares Bruno's canonical prefixes by design (§A3/§A4), so
+> running them concurrently let the Playwright `bruno.test%` sweep delete Bruno's live fixture
+> user mid-run → false auto-rollback (the first #691 push failed this way). Keep this ordering
+> through the PR 15 gate-flip.
+>
+> **#691 review follow-ups (carried on `e2e-uploads`, NOT yet merged):** prod-URL `www` fix
+> + `eventNumber` collision salt (`aef98a5a`); `COGNITO_CLIENT_ID` dedup to workflow env +
+> `@smoke` status in `$GITHUB_STEP_SUMMARY` (`139a09db`). These ride the next PR.
+>
+> **NEXT:** PR 2 = slice 1 **uploads** (`user-account/photo-upload`), then PRs 3–7 (companies
+> → users → topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist".
+> Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -71,14 +72,14 @@ slice audit land as separate fix-commits in the same PR.
 
 | PR # | Branch | Slice / scope | Specs touched | data-testid gaps filled | Green ×2 | Gate tag | Status | Findings |
 |------|--------|---------------|---------------|-------------------------|----------|----------|--------|----------|
-| 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | 🔵 | see "PR 1 deviations" below |
-| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | — | — | — | ⬜ | — |
+| 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | ✅ merged (#691, `8a9949a1`, 2026-05-30; combined w/ PR 8) | see "PR 1 deviations" below |
+| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | — | — | — | 🟡 | branch cut off `8a9949a1`; also carries the #691 review follow-ups (`aef98a5a`, `139a09db`) |
 | 3 | `e2e-companies` | Slice 2: companies | `company-management/*`, `api-integration/companies-api-integration` | — | — | — | ⬜ | fixes `"E2E Test Company"` prod residue |
 | 4 | `e2e-users` | Slice 3: users | `user-management/*`, `user-sync/*`, `user-account/{profile,settings,additional-emails}` | — | — | — | ⬜ | — |
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
-| 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | 🔵 | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes" |
+| 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | ✅ merged (#691, `8a9949a1`, 2026-05-30) | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes". Review follow-ups (#1/#2/#4/#8) carried on `e2e-uploads`, not in this merge. |
 | 9 | `e2e-speaker-pool` | Slice 8: speaker pool (organizer) | `organizer/speaker-*` | — | — | — | ⬜ | strong testids already |
 | 10 | `e2e-speaker-portal` | Slice 9: speaker portal | `speaker/*` | — | — | — | ⬜ | **net-new** for 3 fixme stubs; needs `SPEAKER_AUTH_TOKEN` |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e`, workflow walk | — | — | — | ⬜ | **heavy** — see Section C-bis |
