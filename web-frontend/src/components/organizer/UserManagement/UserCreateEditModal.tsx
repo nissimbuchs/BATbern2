@@ -311,6 +311,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
       fullWidth
       fullScreen={isMobile}
       aria-labelledby="user-dialog-title"
+      data-testid="user-create-dialog"
     >
       <DialogTitle id="user-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -322,6 +323,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
             color="inherit"
             onClick={onClose}
             aria-label={t('common:actions.close')}
+            data-testid="user-create-close"
           >
             <CloseIcon />
           </IconButton>
