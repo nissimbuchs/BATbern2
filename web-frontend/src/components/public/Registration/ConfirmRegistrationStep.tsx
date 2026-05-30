@@ -139,6 +139,7 @@ export const ConfirmRegistrationStep = ({
         <div className="flex items-start gap-3">
           <Checkbox
             id="terms"
+            data-testid="terms-checkbox"
             checked={formData.termsAccepted || false}
             onCheckedChange={(checked) =>
               setFormData((prev) => ({ ...prev, termsAccepted: !!checked }))

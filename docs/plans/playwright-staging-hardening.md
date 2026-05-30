@@ -38,14 +38,25 @@ production deploy.
 > staging; the teardown sweep verified against all 7 canonical prefixes on real staging.
 >
 > **PR 1 + PR 8 going out as ONE combined PR** (branch `e2e-registrations` → `develop`),
-> since PR 8 is stacked on PR 1 and can't gate without its infra. PR 8 = the four `archive-*`
-> specs rewritten to real behavior (testid-only, dead tests removed), 9 components
-> instrumented, `@gate`-tagged, green ×2 locally (20/20); also **deleted** the dead
-> `ArchiveEventDetailPage.tsx` + its unit test (unrouted in prod). Done out of leaf-first order
-> at the user's request. Archive `@gate` specs are red against the CURRENT staging build (the
-> new testids aren't deployed yet) — they go green once this PR deploys. **NEXT:** finish
-> slice 7 (`registration-flow` + `presentation`) or backfill PRs 2–7 (uploads → companies →
-> users → topics → tasks → sessions).
+> since PR 8 is stacked on PR 1 and can't gate without its infra. PR 8 = **all of slice 7**:
+> the four `archive-*` specs PLUS `registration-flow` + `presentation`, rewritten to real
+> behavior (testid-only, dead/stale tests removed), components instrumented, green ×2 locally;
+> also **deleted** the dead `ArchiveEventDetailPage.tsx` + its unit test (unrouted in prod).
+> Done out of leaf-first order at the user's request.
+> - **archive sub-slice:** 9 components instrumented, `@gate` (read-only, 20/20 ×2).
+> - **registration-flow:** rewritten to the REAL double-opt-in flow (submit → inline "email
+>   sent" view, NOT the old QR/confirmation-page assertions; the wizard is 2-step, not 3).
+>   Gets slice 7's **first `@smoke`** — a mutating happy-path that creates a throwaway
+>   `CREATED` event via the API (`e2e/helpers/event-fixture.ts`), registers against it through
+>   the UI, then tears down (event delete → cascade reg; explicit company-slug delete; user via
+>   the `bruno.test%` sweep). Forced-anonymous context. 4 tests `@gate`, green ×2 vs dev.
+> - **presentation:** `text=BATbern` → `presentation-welcome-slide` testid; FLIP nav anchors
+>   on the centered agenda-preview slide then steps into the session slide; `@gate` (read-only,
+>   4 tests, green ×2 vs dev).
+>
+> Archive + new `@gate`/`@smoke` specs are red against the CURRENT staging build (the new
+> testids aren't deployed yet) — they go green once this PR deploys. **NEXT:** backfill PRs 2–7
+> (uploads → companies → users → topics → tasks → sessions).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -67,7 +78,7 @@ slice audit land as separate fix-commits in the same PR.
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
-| 8 | `e2e-registrations` | Slice 7: **archive sub-slice** (registration-flow + presentation deferred) | `archive-browsing`, `archive-filtering`, `archive-event-detail`, `archive-infinite-scroll` | ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay | ✅ local | `@gate` (read-only — no `@smoke`; archive shell smoke already per-deploy) | 🔵 | full rewrite-to-reality; see "PR 8 notes" |
+| 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | 🔵 | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes" |
 | 9 | `e2e-speaker-pool` | Slice 8: speaker pool (organizer) | `organizer/speaker-*` | — | — | — | ⬜ | strong testids already |
 | 10 | `e2e-speaker-portal` | Slice 9: speaker portal | `speaker/*` | — | — | — | ⬜ | **net-new** for 3 fixme stubs; needs `SPEAKER_AUTH_TOKEN` |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e`, workflow walk | — | — | — | ⬜ | **heavy** — see Section C-bis |
@@ -114,6 +125,58 @@ references.
 `archive-view-mode` (not `archiveViewMode`); sort is a native `<select>`; clear button testid
 is `clear-filters`. The `archive-empty-state` / `session-materials` / `material-download`
 testids were added for future seeded/mocked tests even though no live test exercises them yet.
+
+### PR 8 notes — `registration-flow` (rewrite-to-reality + slice 7's first `@smoke`)
+
+The prior spec asserted a STALE flow. Reality (verified in `RegistrationWizard.tsx`):
+- The wizard is **2-step** (Personal Details → Confirm) — there is no "session selection"
+  step. The old spec's 3rd step + extra Next click were fictional.
+- Submit is **double-opt-in**: it shows an INLINE "✉️ email sent — click the link to confirm
+  (valid 48h)" success view and stays on `/register/:eventCode`. The QR code only exists
+  AFTER the emailed confirmation link is clicked, which an E2E run cannot do.
+
+**Tests deleted (asserted an unreachable / never-built flow):**
+- "full journey" QR assertions: `toHaveURL(/registration-confirmation|confirm/)`, the success
+  text regex, and the QR-code locator — submit never navigates there; the QR is
+  post-email-confirmation. Replaced by an assertion on the real inline success view.
+- "loading state during submission" — flaky-by-design (races the submit spinner) and would
+  leave an un-cleanable registration; not gate-worthy.
+- "Calendar Export" describe — `.ics` export lives on the post-confirmation page, unreachable
+  without clicking the email link. *(Backlog: cover via a seeded confirmed-registration
+  fixture if calendar export ever needs gating.)*
+
+**Mutating `@smoke` + cleanup (the prod-safety crux).** A public registration creates a real
+`registrations` row PLUS, out-of-band, a CUMS `user_profiles` + `companies` row (getOrCreate,
+cognitoSync=false) — and registrations have **no prefix-sweep path** (EMS cleanup enum is
+`EVENTS|SESSIONS|TOPICS` only). So we never register against the live "current" event
+(un-deletable). Each run creates a throwaway `CREATED` event via the API
+(`e2e/helpers/event-fixture.ts`; the `Event` entity enforces more NotNull fields than
+`CreateEventRequest`'s DTO — registrationDeadline, venue*, organizerUsername — all supplied),
+registers against IT, asserts the inline success view, then tears down in `afterAll`:
+1. DELETE the event → FK cascade removes the registration row.
+2. Explicit-DELETE the CUMS company by slug — its lowercased slug (`getOrCreateCompany`
+   slugifies) is NOT reachable by the uppercase, case-sensitive `BRUNOTESTCO%` sweep (the same
+   gap that leaks Bruno's `testco`/`test.attendee`), so it must be deleted directly.
+3. The `bruno.test*` user (first/last `bruno`/`test`) IS reached by the global-teardown
+   `bruno.test%` sweep — no explicit delete needed.
+Verified residue-free on dev: post-run sweep shows `companies:0 events:0`, user swept.
+`test.describe.configure({ mode: 'serial' })` so the shared fixture event is created/torn-down
+once (no parallel-worker race on the shared company-slug delete). Forced-anonymous
+storageState (the chromium project is authenticated; logged-in users get a one-click panel,
+not the public 2-step funnel). Slice 7 is otherwise read-only, so this is its only `@smoke`.
+
+### PR 8 notes — `presentation` (testid hardening, read-only `@gate`)
+
+Replaced the brittle `text=BATbern` "loaded" match with a `presentation-welcome-slide` testid
+on `WelcomeSlide`. The deck has TWO `agenda-flip-container` elements — `data-layout="center"`
+(agenda-preview / recap) and `data-layout="sidebar"` (session slides) — conditionally mounted,
+and during the FLIP both briefly unmount. A naive "press N times then assert" races that
+transient and overshoots past the session slides. The hardened nav anchors on the stable
+centered agenda-preview slide, steps once into the first session slide, and asserts via a
+layout-scoped locator (`[data-testid=agenda-flip-container][data-layout=…]`) that auto-retries
+through the FLIP. Read-only/public → `@gate` only (no `@smoke`). Forced-anonymous so AC #1
+("loads without authentication") is genuinely exercised. Uses BATbern57 (real archived event,
+mirrored locally with 8 sessions).
 
 ### PR 1 deviations from the §A prose (recorded so §A reads as built)
 

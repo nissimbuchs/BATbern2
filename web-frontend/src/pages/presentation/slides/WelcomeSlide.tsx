@@ -25,6 +25,7 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
 
   return (
     <div
+      data-testid="presentation-welcome-slide"
       style={{
         position: 'relative',
         zIndex: 1,
