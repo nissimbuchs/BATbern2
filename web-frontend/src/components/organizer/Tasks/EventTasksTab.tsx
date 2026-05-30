@@ -106,7 +106,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   }
 
   return (
-    <Box>
+    <Box data-testid="event-tasks-tab-content">
       <Typography variant="body2" color="text.secondary" gutterBottom>
         {t('tasks.eventTasksDescription')}
       </Typography>
@@ -130,6 +130,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
               return (
                 <ListItem
                   key={template.id}
+                  data-testid={`task-template-${template.id}`}
                   sx={{
                     border: 1,
                     borderColor: 'divider',
@@ -204,6 +205,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                       disabled={!isSelected || hasTaskInstance}
                       includeUnassigned={true}
                       includeAllOption={false}
+                      data-testid={`task-assignee-${template.id}`}
                     />
                   </Stack>
                 </ListItem>
@@ -233,6 +235,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                   return (
                     <ListItem
                       key={template.id}
+                      data-testid={`task-template-${template.id}`}
                       sx={{
                         border: 1,
                         borderColor: 'divider',
@@ -308,6 +311,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                           disabled={!isSelected || hasTaskInstance}
                           includeUnassigned={true}
                           includeAllOption={false}
+                          data-testid={`task-assignee-${template.id}`}
                         />
                       </Stack>
                     </ListItem>

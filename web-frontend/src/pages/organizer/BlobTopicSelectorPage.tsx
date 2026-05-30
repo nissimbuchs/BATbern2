@@ -141,7 +141,12 @@ const BlobTopicSelectorPage: React.FC = () => {
       {showOnboarding && sessionData && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
 
       {/* Unsaved changes warning dialog (AC: 4) */}
-      <Dialog open={showBackDialog} onClose={handleBackCancel} maxWidth="xs">
+      <Dialog
+        open={showBackDialog}
+        onClose={handleBackCancel}
+        maxWidth="xs"
+        data-testid="blob-unsaved-dialog"
+      >
         <DialogTitle>
           {t('blobSelector.unsavedWarning', {
             defaultValue: 'Unsaved session — all changes will be lost. Go back?',
@@ -149,10 +154,15 @@ const BlobTopicSelectorPage: React.FC = () => {
         </DialogTitle>
         <DialogContent />
         <DialogActions>
-          <Button onClick={handleBackCancel}>
+          <Button onClick={handleBackCancel} data-testid="blob-back-cancel">
             {t('common.cancel', { defaultValue: 'Cancel', ns: 'events' })}
           </Button>
-          <Button onClick={handleBackConfirm} variant="contained" color="primary">
+          <Button
+            onClick={handleBackConfirm}
+            variant="contained"
+            color="primary"
+            data-testid="blob-back-confirm"
+          >
             {t('common.confirm', { defaultValue: 'Go back', ns: 'events' })}
           </Button>
         </DialogActions>
