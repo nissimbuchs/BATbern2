@@ -1247,6 +1247,29 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
         - BearerAuth: []
+    delete:
+      tags:
+        - Profile Picture
+      summary: Remove own profile picture
+      description: |
+        Remove the authenticated user's own profile picture.
+
+        **Acceptance Criteria**: AC13
+
+        Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
+        caller from the bearer token; idempotent in effect (clears the picture references).
+      operationId: removeOwnProfilePicture
+      responses:
+        '204':
+          description: Profile picture removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
 
   /users/me/picture/presigned-url:
     post:
