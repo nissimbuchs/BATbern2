@@ -95,6 +95,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
       maxWidth="sm"
       fullWidth
       aria-labelledby="role-manager-dialog-title"
+      data-testid="role-manager-dialog"
     >
       <DialogTitle id="role-manager-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">

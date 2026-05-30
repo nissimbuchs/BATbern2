@@ -131,6 +131,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 active={sortField === 'name'}
                 direction={sortField === 'name' ? sortDirection : 'asc'}
                 onClick={() => handleSort('name')}
+                data-testid="user-sort-name"
               >
                 {t('common:labels.name')}
               </TableSortLabel>
@@ -140,6 +141,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 active={sortField === 'email'}
                 direction={sortField === 'email' ? sortDirection : 'asc'}
                 onClick={() => handleSort('email')}
+                data-testid="user-sort-email"
               >
                 {t('common:labels.email')}
               </TableSortLabel>
@@ -149,6 +151,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 active={sortField === 'company'}
                 direction={sortField === 'company' ? sortDirection : 'asc'}
                 onClick={() => handleSort('company')}
+                data-testid="user-sort-company"
               >
                 {t('common:labels.company')}
               </TableSortLabel>
@@ -165,7 +168,7 @@ const UserTable: React.FC<UserTableProps> = ({
               hover
               onClick={() => onRowClick(user)}
               sx={{ cursor: 'pointer' }}
-              data-testid="user-table-row"
+              data-testid={`user-table-row-${user.id}`}
             >
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -224,6 +227,7 @@ const UserTable: React.FC<UserTableProps> = ({
                     size="small"
                     onClick={(e) => handleMenuOpen(e, user)}
                     aria-label={t('actions.openMenu')}
+                    data-testid={`user-actions-button-${user.id}`}
                   >
                     <MoreVertIcon />
                   </IconButton>

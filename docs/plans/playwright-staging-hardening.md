@@ -55,11 +55,11 @@ production deploy.
 > + `eventNumber` collision salt (`aef98a5a`); `COGNITO_CLIENT_ID` dedup to workflow env +
 > `@smoke` status in `$GITHUB_STEP_SUMMARY` (`139a09db`). These ride the next PR.
 >
-> **NEXT:** slices 1 (**uploads**) + 2 (**companies**) both built on `e2e-uploads` (stacked,
-> not separate branches), each green ×2 vs dev, awaiting review/merge (see "PR 2 notes" +
-> "PR 3 notes"). After merge: slice 3 **users**, then slices 4–6 (topics → tasks → sessions).
-> Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs dev first
-> (`run-playwright-tests.sh development --slice <name>`, §F).
+> **NEXT:** slices 1 (**uploads**) + 2 (**companies**) MERGED to develop — squash commit
+> `c46c6463` (GitHub PR #692). Slice 3 (**users**) is on `e2e-users` (rebased onto develop
+> post-#692, green ×2 vs dev), awaiting review/merge (see "PR 4 notes"). After merge: slices
+> 4–6 (topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist". Run
+> locally green ×2 vs dev first (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -75,9 +75,9 @@ slice audit land as separate fix-commits in the same PR.
 | PR # | Branch | Slice / scope | Specs touched | data-testid gaps filled | Green ×2 | Gate tag | Status | Findings |
 |------|--------|---------------|---------------|-------------------------|----------|----------|--------|----------|
 | 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | ✅ merged (#691, `8a9949a1`, 2026-05-30; combined w/ PR 8) | see "PR 1 deviations" below |
-| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | 🔵 | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
-| 3 | `e2e-uploads` (stacked) | Slice 2: companies | `company-management/{company-creation,company-search}`, `api-integration/companies-api-integration` | — | ✅ dev | `@gate` (×10) + **`@smoke`** (UI create+cleanup) | 🔵 | **fixes 3 prod-residue sources** (`E2E Test Company` no-cleanup POST; `Acme/Beta/Gamma` + cleanup-by-missing-`id`; `TestCompany-…`). Rewrite-to-reality: deleted/consolidated 26 dead·skip·duplicate tests (37→11 active), moved API contract into the api-integration spec, removed stray `.bak`. All data → canonical `BRUNOTESTCO%` + `cleanupById`. See "PR 3 notes". |
-| 4 | `e2e-users` | Slice 3: users | `user-management/*`, `user-sync/*`, `user-account/{profile,settings,additional-emails}` | — | — | — | ⬜ | — |
+| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
+| 3 | `e2e-uploads` (stacked) | Slice 2: companies | `company-management/{company-creation,company-search}`, `api-integration/companies-api-integration` | — | ✅ dev | `@gate` (×10) + **`@smoke`** (UI create+cleanup) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **fixes 3 prod-residue sources** (`E2E Test Company` no-cleanup POST; `Acme/Beta/Gamma` + cleanup-by-missing-`id`; `TestCompany-…`). Rewrite-to-reality: deleted/consolidated 26 dead·skip·duplicate tests (37→11 active), moved API contract into the api-integration spec, removed stray `.bak`. All data → canonical `BRUNOTESTCO%` + `cleanupById`. See "PR 3 notes". |
+| 4 | `e2e-users` | Slice 3: users | `user-management/{user-creation,user-deletion,role-management,user-list-search}`, `user-sync/reconciliation-drift-fix`, `user-account/{profile-management,settings-management}`, `organizer/user-settings-additional-emails` | `user-add-button`, `user-search-input`, `user-clear-filters`, `user-sort-{name,email,company}`, `user-actions-button-<id>`, keyed `user-table-row-<id>`, `user-create-{dialog,close}`, `role-manager-dialog`, `delete-user-{dialog,email,gdpr-warning,cascade-warning}` | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI create+cleanup) | 🔵 | **bug found+fixed: stale `window.confirm` handler** in additional-emails spec (component switched to a MUI confirm dialog → row never deleted). **Rewrite-to-reality + prod-safety:** role-management/user-deletion/list-search now operate on a dedicated API-created `bruno.test` fixture user (`e2e/helpers/user-fixture.ts`) instead of the table's FIRST row — the old role spec **saved role changes to a random real prod user**. Deleted 2 user-sync specs (`role-change-sync` dup Bruno `06` + random-user-mutating; `user-registration-sync` all-skipped dup of disabled `09-get-or-create`) + 3 `.backup` files. Dropped authenticated reconcile-POST (mutates prod + not dev-greenable); kept sync-status + auth-negatives. All data → factory; cleanup by captured username. See "PR 4 notes". |
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
@@ -271,6 +271,84 @@ DOM. Three of them were live **prod-residue sources** (the reason the plan flagg
 Green ×2 on dev; final sweep shows `companies:0` (residue-free). Note: the `company-search-input`
 testid sits on the MUI FormControl wrapper, not the `<input>` — a future search-interaction
 test must target `.locator('input')` (noted so the next author doesn't trip on it).
+
+### PR 4 notes — users slice (rewrite-to-reality, a prod-mutation footgun killed)
+
+Slice 3 had 10 specs. The headline risk (why the plan rated it "medium"): the old
+`role-management.spec.ts` opened the role modal on the table's **FIRST row** and **SAVED role
+changes to it** — i.e. on staging (= prod) it mutated the roles of whatever real user sorted
+first, possibly the organizer themselves. `user-deletion`/`user-list-search` similarly leaned
+on `tbody tr first` + `text=` locators against unknown real rows.
+
+**New helper — `e2e/helpers/user-fixture.ts`.** `createTestUser(token, roles)` API-creates a
+`bruno.test`(.N) user (firstName/lastName = factory `Bruno`/`Test` → server-derived username
+the `cums/users` sweep reaches; unique `factory.email()`), returning `{username, email}`.
+`findUsernameByEmail(token, email)` resolves the username the create-FORM @smoke can't know
+up-front. Every mutating user spec now operates **only** on its own fixture user and tears
+down by the **captured exact username** (`cleanupById(token,'users',username)`) — race-free
+even under local `fullyParallel` (a broad `bruno.test%` afterAll sweep would delete a sibling
+spec's in-flight user; CI is `workers:1` but local isn't). Bruno's `04-create-user.bru` proves
+this exact pattern + that the `cums/users` cleanup endpoint removes the **Cognito** user too,
+so no Cognito residue leaks.
+
+**`@smoke` = UI user creation** (`user-creation.spec.ts` `should_createUser`): the one
+mutating+cleanup happy path. Dialog-close = success signal (a failed create keeps the modal
+open with a server-error Alert), mirroring the company-creation @smoke. afterEach resolves the
+username via search → `cleanupById`. Everything else is `@gate`.
+
+**Tests rewritten / deleted:**
+- `role-management` → operates on the fixture user (search-by-email → its keyed row/actions),
+  toggles SPEAKER, saves (dialog-close signal). The old assert-against-first-row + the
+  `should_showError_when_deselectingAll` `test.skip` are gone.
+- `user-deletion` → API-creates the fixture user per test, drives the real UI delete (GDPR +
+  cascade warning testids, confirm → keyed row unmounts). Self-cleaning + `cleanupById`
+  backstop. Old form-fill `beforeEach` (create-form path is `user-creation`'s job) removed.
+- `user-list-search` → seeds a fixture user as a deterministic search target; deleted the two
+  assertion-free tests (`should_sortTable`/`should_displayPagination` logged but asserted
+  nothing) and the flaky role-filter Autocomplete test (role filtering is Bruno-covered at the
+  API, `15/20-list-users-filter-by-role`).
+- **`user-sync/role-change-sync.spec.ts` DELETED** — API role GET/PUT duplicated Bruno
+  `06-update-user-roles.bru` AND mutated a random real user; the UI `role-management` gate +
+  Bruno cover this.
+- **`user-sync/user-registration-sync.spec.ts` DELETED** — all `describe.skip` (get-or-create
+  is blocked through the gateway locally), a dup of the **disabled** Bruno `09-get-or-create`;
+  the real get-or-create path is exercised by the slice-7 registration `@smoke`.
+- `user-sync/reconciliation-drift-fix.spec.ts` **SURVIVES** (unique — `reconcile`/`sync-status`
+  are NOT in Bruno). Hardened to `readOrganizerToken` + contract assertions (dropped the
+  non-E2E perf/latency timing). **Dropped the authenticated reconcile-POST**: it MUTATES prod
+  (the scheduled job already runs it) and is not dev-greenable — against local dev (CUMS DB = a
+  partial mirror of staging Cognito) reconcile 500s on a Cognito-only user
+  (`User with ID 'bruno.test.N' not found`). Kept the read-only sync-status contract + both
+  endpoints' auth-protection negatives.
+- `user-account/profile-management` → getByTestId; deleted 5 `test.skip` (verified-badge,
+  role-tabs, activity ×2, bio-length); robustified role-badge to "≥1" (was "exactly 2 =
+  Organizer+Speaker"). The one mutating test (save bio) captures the org's own bio via the API
+  in `beforeAll` and RESTORES it in `afterAll` (own-account capture/restore, like photo-upload).
+  Reality: the bio counter is `/5000` (not `/2000`).
+- `user-account/settings-management` → getByTestId; deleted 4 persist `test.skip`. Reality:
+  `change-password-button` has NO in-app handler (Cognito-managed) → assert presence, not the
+  old flaky `dialog-or-urlChanged` click-through; `privacy-policy-link` is an
+  `<a target=_blank href=/privacy-policy>` → assert the href/target attributes (the old
+  `waitForEvent('popup')` raced a real new-tab load).
+- `organizer/user-settings-additional-emails` → factory `email()` (swept by
+  `additional_emails`); **bug fixed**: the component now uses a **MUI** confirm dialog (not
+  `window.confirm`), so the spec's `page.once('dialog', …)` accept never fired and the row was
+  never deleted → now clicks `additional-email-delete-confirm`. Also dropped the dead
+  `.playwright-auth-chromium.json` storageState override (ENOENT — the chromium project's
+  `.playwright-auth-state.json` is inherited).
+
+**Component testids added** (same commit as the specs): `user-add-button` (UserList),
+`user-search-input` (on the native input via `inputProps`) + `user-clear-filters` (UserFilters),
+`user-sort-{name,email,company}` + per-row `user-actions-button-<id>` + keyed
+`user-table-row-<id>` (UserTable, replacing the generic `user-table-row`), `user-create-dialog`
++ `user-create-close` (UserCreateEditModal), `role-manager-dialog` (RoleManagerModal),
+`delete-user-{dialog,email,gdpr-warning,cascade-warning}` (DeleteUserDialog). Factory gained
+`USER_FIRST_NAME`/`USER_LAST_NAME` (`Bruno`/`Test`).
+
+Green ×2 on dev (32/32 both runs); final sweep `user_profiles:0 user_additional_emails:0
+companies:0` (residue-free). 108 UserManagement unit tests still green after the testid
+changes; type-check + lint clean. Staging can't validate the new testids until this PR's
+frontend deploys (same deploy-then-green pattern as PRs 2/8).
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

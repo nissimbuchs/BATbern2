@@ -73,6 +73,17 @@ export function username(): string {
   return `${CANONICAL_PREFIXES.username}.${ts()}`;
 }
 
+/**
+ * First/last name for a UI- or API-created user (slice 3 / users). The CUMS create endpoint
+ * DERIVES the username from `firstname.lastname` (lowercased, alphanumeric, `.N` suffix on
+ * collision — see Bruno `04-create-user.bru`), so naming a fixture user `Bruno`/`Test` yields
+ * a username `bruno.test`(.N) that the `cums/users` sweep (`LIKE bruno.test%`) reaches. The
+ * email is unique per run (`factory.email()`); only the names are fixed so the swept-prefix
+ * contract holds. There is no `username` field on the create form — the names ARE the lever.
+ */
+export const USER_FIRST_NAME = 'Bruno';
+export const USER_LAST_NAME = 'Test';
+
 /** Email: `bruno-test-<ts>@e2e.batbern.invalid` — additional-emails swept by cums/additional_emails. */
 export function email(): string {
   return `${CANONICAL_PREFIXES.additionalEmail}${ts()}@e2e.batbern.invalid`;

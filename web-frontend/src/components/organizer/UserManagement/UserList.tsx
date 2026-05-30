@@ -159,6 +159,7 @@ const UserList: React.FC = () => {
               color="primary"
               startIcon={<AddIcon />}
               onClick={handleOpenCreateModal}
+              data-testid="user-add-button"
             >
               <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
                 {t('addUser')}

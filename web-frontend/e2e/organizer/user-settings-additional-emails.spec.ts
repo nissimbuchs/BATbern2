@@ -11,15 +11,19 @@
  */
 
 import { test, expect } from '@playwright/test';
+import * as factory from '../helpers/test-data-factory';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
-// Use a clearly-test-scoped address so a partial failure mid-run can be cleaned
-// up manually without polluting any real organizer profile.
-const TEST_EMAIL = `e2e-additional-${Date.now()}@example.com`;
+// Canonical factory email (`bruno-test-<ts>@e2e.batbern.invalid`) — swept by the
+// `cums/additional_emails` prefix (`bruno-test-`) so the global-teardown sweep is the
+// belt-and-suspenders backstop behind this spec's own afterEach delete (plan §A4/§A5).
+const TEST_EMAIL = factory.email();
 
-test.describe('User Settings — Additional Emails (Story 10.32)', () => {
-  test.use({ storageState: '.playwright-auth-chromium.json' });
+test.describe('User Settings — Additional Emails (Story 10.32)', { tag: '@gate' }, () => {
+  // Inherit the chromium project's organizer storageState (`.playwright-auth-state.json` from
+  // global-setup). The old hardcoded `.playwright-auth-chromium.json` override never existed in
+  // the current global-setup output → ENOENT. No per-test override needed.
 
   test.afterEach(async ({ page }) => {
     // Best-effort cleanup so re-runs in shared staging don't trip the 5-email cap.
@@ -60,9 +64,11 @@ test.describe('User Settings — Additional Emails (Story 10.32)', () => {
     await page.getByTestId('settings-tab').click();
     await expect(page.getByTestId(rowTestId)).toBeVisible({ timeout: 10_000 });
 
-    // Delete via icon; auto-accept the confirm dialog.
-    page.once('dialog', (dialog) => dialog.accept());
+    // Delete via icon → confirm in the MUI dialog (the component uses a MUI confirm dialog,
+    // NOT a native window.confirm, so a `page.on('dialog')` handler would never fire).
     await page.getByTestId(`additional-email-delete-${TEST_EMAIL}`).click();
+    await expect(page.getByTestId('additional-email-delete-confirm-dialog')).toBeVisible();
+    await page.getByTestId('additional-email-delete-confirm').click();
 
     // Row gone.
     await expect(page.getByTestId(rowTestId)).toHaveCount(0, { timeout: 5_000 });

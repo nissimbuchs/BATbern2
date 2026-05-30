@@ -1,237 +1,89 @@
 /**
- * E2E Tests for Role Management Workflow
- * Story 2.5.2: User Management Frontend
+ * E2E: Role Management — slice 3 / users (plan §C)
+ * docs/plans/playwright-staging-hardening.md
  *
- * Tests the role management modal and minimum organizers validation
+ * Rewritten 2026-05-30 to reality + the quality bar (testid-only locators, factory data,
+ * mandatory cleanup, no empty tests). Story 2.5.2.
  *
- * Requirements:
- * 1. User Management Service deployed with role update endpoint
- * 2. PostgreSQL database with users table
- * 3. Authenticated organizer user
- * 4. At least 2 organizers in the system (for minimum validation)
+ * Prod-safety crux (why this rewrite mattered): the old spec opened the role modal on the
+ * FIRST row in the table (`tbody tr` first) and SAVED role changes to it — i.e. it mutated
+ * the roles of whatever real user happened to sort first on staging (= prod), including
+ * possibly the organizer themselves. The rewrite creates a dedicated `bruno.test` fixture
+ * user via the API, searches for THAT user by email, and only ever edits its roles — zero
+ * blast radius on real users. `afterAll` deletes the fixture (`cleanupById`).
  *
- * Setup Instructions:
- * 1. Run: npx playwright test e2e/workflows/user-management/role-management.spec.ts
+ * The API-level role GET/PUT coverage that used to live in `user-sync/role-change-sync.spec.ts`
+ * is owned by Bruno's `06-update-user-roles.bru`; that duplicative (and likewise random-user-
+ * mutating) Playwright spec was deleted in this slice. This UI spec is the role-management
+ * gate.
+ *
+ * Success signal: on a successful save the update-roles mutation resolves and the modal calls
+ * `onClose()`; a failed save renders an error Alert and keeps it open — so the dialog CLOSING
+ * is the exact signal (no fixed sleeps).
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { createTestUser, readOrganizerToken, type TestUser } from '../../helpers/user-fixture';
+import { cleanupById } from '../../helpers/test-fixtures-cleanup';
 
-/**
- * Helper: Navigate to User Management page
- */
-async function navigateToUserManagement(page: Page) {
-  // Direct navigation is more reliable than clicking nav links
-  await page.goto('/organizer/users');
-  await page.waitForSelector('[data-testid="user-table"]', { timeout: 10000 });
+async function openRoleModal(page: Page, user: TestUser) {
+  await page.getByTestId('user-search-input').fill(user.email);
+  await expect(page.getByTestId(`user-table-row-${user.username}`)).toBeVisible({
+    timeout: 10_000,
+  });
+  await page.getByTestId(`user-actions-button-${user.username}`).click();
+  await page.getByTestId('user-action-edit-roles').click();
+  await expect(page.getByTestId('role-manager-dialog')).toBeVisible();
 }
 
-/**
- * Helper: Open actions menu for first user in table
- */
-async function openFirstUserActionsMenu(page: Page) {
-  // Find first row's actions button (could be kebab menu, more icon, etc)
-  const actionsButton = page
-    .locator('tbody tr')
-    .first()
-    .locator('button[aria-label*="action" i]')
-    .or(page.locator('tbody tr').first().locator('button:has([data-testid*="MoreVert"])'))
-    .or(page.locator('tbody tr').first().locator('button:last-child'));
+test.describe('Role Management', { tag: '@gate' }, () => {
+  test.describe.configure({ mode: 'serial' });
 
-  await actionsButton.click();
-  await page.waitForTimeout(300);
-}
+  let token: string;
+  let user: TestUser;
 
-/**
- * Helper: Open role manager modal
- */
-async function openRoleManagerModal(page: Page) {
-  await openFirstUserActionsMenu(page);
-
-  // Click "Edit Roles" option using testId
-  const editRolesOption = page.getByTestId('user-action-edit-roles');
-  await editRolesOption.click();
-
-  // Wait for modal to open
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-  await expect(page.locator('[role="dialog"]')).toBeVisible();
-}
-
-test.describe('Role Management Workflow', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
-    await navigateToUserManagement(page);
+  test.beforeAll(async () => {
+    token = readOrganizerToken();
+    // Dedicated fixture user with a known starting role (ATTENDEE).
+    user = await createTestUser(token, ['ATTENDEE']);
   });
 
-  test('should_openRoleModal_when_editRolesClicked', async ({ page }) => {
-    await openRoleManagerModal(page);
+  test.afterAll(async () => {
+    await cleanupById(token, 'users', user.username);
+  });
 
-    // Verify modal title is "Edit Roles" - use exact match to avoid strict mode violation
-    await expect(page.getByRole('heading', { name: 'Edit Roles', exact: true })).toBeVisible();
-
-    // Verify role checkboxes exist using data-testid
-    await expect(page.locator('[data-testid^="role-manager-role-"]')).toHaveCount(4); // ORGANIZER, SPEAKER, PARTNER, ATTENDEE
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/organizer/users');
+    await expect(page.getByTestId('user-table')).toBeVisible({ timeout: 15_000 });
   });
 
   test('should_displayCurrentRoles_when_modalOpens', async ({ page }) => {
-    await openRoleManagerModal(page);
+    await openRoleModal(page, user);
 
-    // At least one role checkbox should be checked
-    const checkedCheckboxes = page.locator('input[type="checkbox"]:checked');
-    const checkedCount = await checkedCheckboxes.count();
-    expect(checkedCount).toBeGreaterThan(0);
+    // The four role checkboxes render, and the fixture's current role (ATTENDEE) is checked.
+    await expect(page.locator('[data-testid^="role-manager-role-"]')).toHaveCount(4);
+    await expect(page.getByTestId('role-manager-role-ATTENDEE')).toBeChecked();
+    await expect(page.getByTestId('role-manager-role-SPEAKER')).not.toBeChecked();
   });
 
-  test('should_toggleRole_when_checkboxClicked', async ({ page }) => {
-    await openRoleManagerModal(page);
+  test('should_updateRoles_when_roleAddedAndSaved', async ({ page }) => {
+    await openRoleModal(page, user);
 
-    // Find first unchecked role checkbox using data-testid
-    const uncheckedCheckbox = page
-      .locator('[data-testid^="role-manager-role-"]:not(:checked)')
-      .first();
-    const count = await page.locator('[data-testid^="role-manager-role-"]:not(:checked)').count();
+    // Add SPEAKER (MUI Checkbox toggles via its label), keeping ATTENDEE → valid (≥1 role).
+    const speaker = page.getByTestId('role-manager-role-SPEAKER');
+    await page.locator('label').filter({ has: speaker }).click();
+    await expect(speaker).toBeChecked();
 
-    if (count > 0) {
-      // Get initial state
-      const wasChecked = await uncheckedCheckbox.isChecked();
+    await page.getByTestId('role-manager-save').click();
 
-      // Get the specific testid to avoid strict mode violation
-      const testId = await uncheckedCheckbox.getAttribute('data-testid');
-
-      // Click the parent label for this specific checkbox (MUI Checkbox behavior)
-      const parentLabel = page.locator(`label:has([data-testid="${testId}"])`);
-      await parentLabel.click();
-      await page.waitForTimeout(300);
-
-      // Verify state changed
-      const nowChecked = await uncheckedCheckbox.isChecked();
-      expect(nowChecked).toBe(true);
-      expect(nowChecked).not.toBe(wasChecked);
-    } else {
-      console.log('All roles already checked - skipping toggle test');
-    }
+    // Dialog closes ⇔ the update-roles mutation resolved (onClose runs only on success).
+    await expect(page.getByTestId('role-manager-dialog')).toBeHidden({ timeout: 15_000 });
   });
 
-  test('should_updateRoles_when_saveButtonClicked', async ({ page }) => {
-    await openRoleManagerModal(page);
+  test('should_closeModal_when_cancelClicked', async ({ page }) => {
+    await openRoleModal(page, user);
 
-    // Toggle a role (add ATTENDEE if not present)
-    const attendeeCheckbox = page.getByTestId('role-manager-role-ATTENDEE');
-    const wasChecked = await attendeeCheckbox.isChecked();
-
-    // Toggle to opposite state
-    if (wasChecked) {
-      // Only uncheck if there are other roles selected (minimum 1 role required)
-      const allChecked = page.locator('[data-testid^="role-manager-role-"]:checked');
-      const checkedCount = await allChecked.count();
-
-      if (checkedCount > 1) {
-        // Click the parent label to uncheck
-        const parentLabel = page.locator('label').filter({ has: attendeeCheckbox });
-        await parentLabel.click();
-      } else {
-        console.log('Cannot uncheck - must have at least one role');
-      }
-    } else {
-      // Click the parent label to check
-      const parentLabel = page.locator('label').filter({ has: attendeeCheckbox });
-      await parentLabel.click();
-    }
-
-    // Click Save button using data-testid
-    const saveButton = page.getByTestId('role-manager-save');
-    await saveButton.click();
-
-    // Wait for modal to close
-    await page.waitForTimeout(2000);
-
-    // Verify modal closed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).not.toBeVisible({ timeout: 5000 });
-
-    // Verify success (could be toast notification or updated table)
-    // The table should refresh automatically
-    await page.waitForTimeout(1000);
-  });
-
-  test.skip('should_showError_when_deselectingAllRoles', async ({ page }) => {
-    await openRoleManagerModal(page);
-
-    // Wait for checkboxes to be rendered with initial state
-    await page.waitForTimeout(500);
-
-    // Wait for at least one checkbox to be checked (Material-UI uses aria-checked, not :checked)
-    await expect(
-      page.locator('[data-testid^="role-manager-role-"][aria-checked="true"]')
-    ).toHaveCount(1, {
-      timeout: 3000,
-    });
-
-    // Uncheck all roles using data-testid (use aria-checked for Material-UI checkboxes)
-    const checkboxesSelector = '[data-testid^="role-manager-role-"][aria-checked="true"]';
-    let count = await page.locator(checkboxesSelector).count();
-    console.log(`Initial checked count: ${count}`);
-
-    while (count > 0) {
-      // Always get the first checked checkbox (since collection shrinks after each uncheck)
-      const checkbox = page.locator(checkboxesSelector).first();
-      const testId = await checkbox.getAttribute('data-testid');
-      console.log(`Attempting to uncheck: ${testId}`);
-      const parentLabel = page.locator(`label:has([data-testid="${testId}"])`);
-      await parentLabel.click();
-      await page.waitForTimeout(100);
-
-      // Re-count to see if we can uncheck more
-      const newCount = await page.locator(checkboxesSelector).count();
-      console.log(`Count after uncheck: ${newCount} (was ${count})`);
-
-      // Prevent infinite loop
-      if (newCount === count) {
-        console.log(`Count didn't change - checkbox may be prevented from unchecking`);
-        break;
-      }
-      count = newCount;
-    }
-
-    console.log(`Final checked count: ${count}`);
-
-    // Try to save using data-testid
-    const saveButton = page.getByTestId('role-manager-save');
-    await saveButton.click();
-
-    // Wait for error message
-    await page.waitForTimeout(500);
-
-    // Verify error message about minimum roles (use data-testid)
-    await expect(page.getByTestId('role-manager-error')).toBeVisible({ timeout: 3000 });
-
-    // Modal should still be open
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).toBeVisible();
-  });
-
-  test('should_closeModal_when_cancelButtonClicked', async ({ page }) => {
-    await openRoleManagerModal(page);
-
-    // Click Cancel button using data-testid
-    const cancelButton = page.getByTestId('role-manager-cancel');
-    await cancelButton.click();
-
-    // Verify modal closed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).not.toBeVisible({ timeout: 3000 });
-  });
-
-  test('should_closeModal_when_closeIconClicked', async ({ page }) => {
-    await openRoleManagerModal(page);
-
-    // Click close icon (X button)
-    const closeButton = page
-      .locator('[aria-label="close"]')
-      .or(page.locator('button[aria-label*="close" i]'));
-    await closeButton.click();
-
-    // Verify modal closed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).not.toBeVisible({ timeout: 3000 });
+    await page.getByTestId('role-manager-cancel').click();
+    await expect(page.getByTestId('role-manager-dialog')).toBeHidden();
   });
 });

@@ -87,6 +87,8 @@ const UserFilters: React.FC = () => {
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           placeholder={t('search.placeholder')}
+          // testid on the native input (not the wrapper) so e2e .fill()/.toHaveValue() target it
+          inputProps={{ 'data-testid': 'user-search-input' }}
         />
 
         {/* Role Filter */}
@@ -122,7 +124,12 @@ const UserFilters: React.FC = () => {
         </FormControl>
 
         {/* Clear Filters Button */}
-        <Button variant="outlined" onClick={handleClearFilters} sx={{ alignSelf: 'flex-start' }}>
+        <Button
+          variant="outlined"
+          onClick={handleClearFilters}
+          sx={{ alignSelf: 'flex-start' }}
+          data-testid="user-clear-filters"
+        >
           {t('filters.clearAll')}
         </Button>
       </Box>

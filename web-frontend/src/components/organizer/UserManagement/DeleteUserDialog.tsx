@@ -48,6 +48,7 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
       maxWidth="sm"
       fullWidth
       aria-labelledby="delete-user-dialog-title"
+      data-testid="delete-user-dialog"
     >
       <DialogTitle id="delete-user-dialog-title">
         <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -77,20 +78,20 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({ user, open, onClose
               {user.firstName} {user.lastName}
             </strong>
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" data-testid="delete-user-email">
             {user.email}
           </Typography>
         </Box>
 
         {/* GDPR Warning */}
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }} data-testid="delete-user-gdpr-warning">
           <Typography variant="body2" fontWeight="bold">
             {t('modal.deleteConfirm.gdprWarning')}
           </Typography>
         </Alert>
 
         {/* Cascade Warning */}
-        <Alert severity="warning">
+        <Alert severity="warning" data-testid="delete-user-cascade-warning">
           <Typography variant="body2">{t('modal.deleteConfirm.cascadeWarning')}</Typography>
         </Alert>
 
