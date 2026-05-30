@@ -104,6 +104,7 @@ export const SpeakerDisplay = ({
               width={80}
               height={80}
               loading="lazy"
+              data-testid="speaker-photo"
             />
           ) : (
             <span className={`${sizes.initials} font-light text-zinc-300`}>
@@ -116,11 +117,14 @@ export const SpeakerDisplay = ({
 
       {/* Speaker Info (flex-grow to take available space) */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className={`${sizes.name} font-light text-zinc-100`}>
+        <div className={`${sizes.name} font-light text-zinc-100`} data-testid="speaker-name">
           {speaker.firstName} {speaker.lastName}
         </div>
         {speaker.company && (
-          <div className={`${sizes.company} text-zinc-400 flex items-center gap-1.5`}>
+          <div
+            className={`${sizes.company} text-zinc-400 flex items-center gap-1.5`}
+            data-testid="speaker-company"
+          >
             <Building2 className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{companyLabel}</span>
           </div>

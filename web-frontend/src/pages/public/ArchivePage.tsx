@@ -209,7 +209,9 @@ export default function ArchivePage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">{t('archive.title')}</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="archive-page-title">
+            {t('archive.title')}
+          </h1>
           <p className="text-muted-foreground">{t('archive.description')}</p>
         </div>
 
@@ -293,11 +295,16 @@ export default function ArchivePage() {
             {!isLoading && !isError && (
               <>
                 {events.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                  <div
+                    className="text-center py-12 text-muted-foreground"
+                    data-testid="archive-empty-state"
+                  >
                     {t('archive.noResults')}
                   </div>
                 ) : (
                   <div
+                    data-testid="event-cards-container"
+                    data-view-mode={effectiveViewMode}
                     className={
                       effectiveViewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
@@ -321,9 +328,15 @@ export default function ArchivePage() {
 
                 {/* Infinite Scroll Trigger */}
                 {hasNextPage && (
-                  <div ref={ref} className="text-center py-32 min-h-[200px]">
+                  <div
+                    ref={ref}
+                    data-testid="infinite-scroll-sentinel"
+                    className="text-center py-32 min-h-[200px]"
+                  >
                     {isFetchingNextPage ? (
-                      <div className="text-muted-foreground">{t('archive.loadingMore')}</div>
+                      <div className="text-muted-foreground" data-testid="infinite-scroll-loading">
+                        {t('archive.loadingMore')}
+                      </div>
                     ) : (
                       <div className="text-muted-foreground text-sm">
                         {t('archive.scrollForMore')}

@@ -36,7 +36,12 @@ production deploy.
 > the runner (`--scope`/`--slice`/`--cleanup-only` + edge-readiness poll), the seed `@smoke`
 > spec, and the nightly workflow all landed. Seed `@smoke` verified green ×2 against deployed
 > staging; the teardown sweep verified against all 7 canonical prefixes on real staging.
-> **NEXT:** PR 2 (Slice 1 — uploads / `user-account/photo-upload`).
+>
+> **PR 8 archive sub-slice (branch `e2e-registrations`) built, pending review** — the four
+> `archive-*` specs rewritten to real behavior (testid-only, dead tests removed), 9 components
+> instrumented, `@gate`-tagged, green ×2 locally (20/20). Done out of leaf-first order at the
+> user's request. **NEXT:** finish slice 7 (`registration-flow` + `presentation`) or backfill
+> PRs 2–7 (uploads → companies → users → topics → tasks → sessions).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -58,7 +63,7 @@ slice audit land as separate fix-commits in the same PR.
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
-| 8 | `e2e-registrations` | Slice 7: registrations + archive | `registration-flow`, `presentation`, `archive-*` | — | — | — | ⬜ | mostly read/public |
+| 8 | `e2e-registrations` | Slice 7: **archive sub-slice** (registration-flow + presentation deferred) | `archive-browsing`, `archive-filtering`, `archive-event-detail`, `archive-infinite-scroll` | ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay | ✅ local | `@gate` (read-only — no `@smoke`; archive shell smoke already per-deploy) | 🔵 | full rewrite-to-reality; see "PR 8 notes" |
 | 9 | `e2e-speaker-pool` | Slice 8: speaker pool (organizer) | `organizer/speaker-*` | — | — | — | ⬜ | strong testids already |
 | 10 | `e2e-speaker-portal` | Slice 9: speaker portal | `speaker/*` | — | — | — | ⬜ | **net-new** for 3 fixme stubs; needs `SPEAKER_AUTH_TOKEN` |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e`, workflow walk | — | — | — | ⬜ | **heavy** — see Section C-bis |
@@ -68,6 +73,42 @@ slice audit land as separate fix-commits in the same PR.
 | 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
 
 **Status legend:** ⬜ todo · 🟡 in progress · 🔵 in review · 🟢 @gate (proven ×2) · 🟠 @quarantine · ✅ merged · 🔴 blocked
+
+### PR 8 notes — archive sub-slice (rewrite-to-reality, dead tests removed)
+
+The archive specs were speculative (Story BAT-109): they asserted an idealized DOM and
+features that were never built. PO decisions (2026-05-30): rewrite all four against the real
+implementation; **delete + log** dead tests. data-testid added to 9 components; all four
+specs are testid-only. Tagged `@gate` (read-only — no mutation, so no `@smoke`; the
+per-deploy archive gate is already `e2e/smoke.spec.ts`). Green ×2 locally (20/20).
+
+**Key finding — dead production code:** `/archive/:eventCode` routes to `<HomePage />` in
+ARCHIVE mode. The standalone `ArchiveEventDetailPage.tsx` is **not routed in production**
+(only its own unit test mounts it). `archive-event-detail.spec.ts` was rewritten against
+HomePage's real archive rendering. *(Backlog candidate: delete the dead `ArchiveEventDetailPage`
+or decide whether it was the intended detail page — out of scope here.)*
+
+**Tests deleted (feature/page never existed):**
+- Time-period filter ("Last 5 Years", "2020-2024"): `ArchiveFilters` is `{ topics, search }`
+  only — no time-period control or URL param. (Backlog: was a time-period filter ever scoped?)
+- "Most Sessions" sort option: `sort-select` offers newest / oldest / most-attended only.
+- `active-filter-chip`, `aria-pressed` toggles: never rendered (toggle state is class-based;
+  view mode now asserted via `data-view-mode` on the container).
+- "empty archive state": unreachable on a populated prod archive via the public UI.
+- Detail: `event-header`/`event-topic`/`venue-info`/`registration-deadline`/`sessions-pagination`
+  (matched the dead ArchiveEventDetailPage), and **"back preserves filters"** — the event-card
+  link is `/archive/<code>` with no query string, so filters are dropped on drill-in and
+  cannot be restored on back. *(Backlog: should card links carry the archive filter query?)*
+- Infinite scroll: "scroll-position on browser back", "<1000ms perf target", "rapid scroll
+  dedup" — all non-deterministic timing; not gate-worthy.
+
+**Quarantined (real assertions, racy):** infinite-scroll "loading indicator" (`@quarantine`)
+— the brief fetch state is hard to catch deterministically; promote once a stable wait exists.
+
+**Corrections baked in:** search param is `q` (not `search`); view-mode localStorage key is
+`archive-view-mode` (not `archiveViewMode`); sort is a native `<select>`; clear button testid
+is `clear-filters`. The `archive-empty-state` / `session-materials` / `material-download`
+testids were added for future seeded/mocked tests even though no live test exercises them yet.
 
 ### PR 1 deviations from the §A prose (recorded so §A reads as built)
 

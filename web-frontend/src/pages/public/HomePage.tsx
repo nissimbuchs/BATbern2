@@ -117,7 +117,7 @@ const HomePage = () => {
   if (error || !event) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-24 text-center">
+        <div className="container mx-auto px-4 py-24 text-center" data-testid="event-load-error">
           <h2 className="text-2xl font-light text-zinc-300">
             {error ? t('public.errors.loadFailed') : t('public.errors.noEvent')}
           </h2>
@@ -245,6 +245,7 @@ const HomePage = () => {
           <Link
             to={backToArchiveUrl}
             className="inline-block mt-8 mb-4 text-blue-400 hover:text-blue-300 transition-colors"
+            data-testid="back-to-archive"
           >
             {tCommon('archive.detail.backToArchive')}
           </Link>
