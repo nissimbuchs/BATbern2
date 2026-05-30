@@ -37,11 +37,15 @@ production deploy.
 > spec, and the nightly workflow all landed. Seed `@smoke` verified green ×2 against deployed
 > staging; the teardown sweep verified against all 7 canonical prefixes on real staging.
 >
-> **PR 8 archive sub-slice (branch `e2e-registrations`) built, pending review** — the four
-> `archive-*` specs rewritten to real behavior (testid-only, dead tests removed), 9 components
-> instrumented, `@gate`-tagged, green ×2 locally (20/20). Done out of leaf-first order at the
-> user's request. **NEXT:** finish slice 7 (`registration-flow` + `presentation`) or backfill
-> PRs 2–7 (uploads → companies → users → topics → tasks → sessions).
+> **PR 1 + PR 8 going out as ONE combined PR** (branch `e2e-registrations` → `develop`),
+> since PR 8 is stacked on PR 1 and can't gate without its infra. PR 8 = the four `archive-*`
+> specs rewritten to real behavior (testid-only, dead tests removed), 9 components
+> instrumented, `@gate`-tagged, green ×2 locally (20/20); also **deleted** the dead
+> `ArchiveEventDetailPage.tsx` + its unit test (unrouted in prod). Done out of leaf-first order
+> at the user's request. Archive `@gate` specs are red against the CURRENT staging build (the
+> new testids aren't deployed yet) — they go green once this PR deploys. **NEXT:** finish
+> slice 7 (`registration-flow` + `presentation`) or backfill PRs 2–7 (uploads → companies →
+> users → topics → tasks → sessions).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -82,11 +86,12 @@ implementation; **delete + log** dead tests. data-testid added to 9 components; 
 specs are testid-only. Tagged `@gate` (read-only — no mutation, so no `@smoke`; the
 per-deploy archive gate is already `e2e/smoke.spec.ts`). Green ×2 locally (20/20).
 
-**Key finding — dead production code:** `/archive/:eventCode` routes to `<HomePage />` in
-ARCHIVE mode. The standalone `ArchiveEventDetailPage.tsx` is **not routed in production**
-(only its own unit test mounts it). `archive-event-detail.spec.ts` was rewritten against
-HomePage's real archive rendering. *(Backlog candidate: delete the dead `ArchiveEventDetailPage`
-or decide whether it was the intended detail page — out of scope here.)*
+**Key finding — dead production code (RESOLVED):** `/archive/:eventCode` routes to
+`<HomePage />` in ARCHIVE mode. The standalone `ArchiveEventDetailPage.tsx` was **not routed
+in production** (only its own unit test mounted it). `archive-event-detail.spec.ts` was
+rewritten against HomePage's real archive rendering, and the dead `ArchiveEventDetailPage.tsx`
++ its unit test were **deleted** (2026-05-30, this PR) after confirming zero production
+references.
 
 **Tests deleted (feature/page never existed):**
 - Time-period filter ("Last 5 Years", "2020-2024"): `ArchiveFilters` is `{ topics, search }`
