@@ -55,8 +55,9 @@ production deploy.
 > + `eventNumber` collision salt (`aef98a5a`); `COGNITO_CLIENT_ID` dedup to workflow env +
 > `@smoke` status in `$GITHUB_STEP_SUMMARY` (`139a09db`). These ride the next PR.
 >
-> **NEXT:** PR 2 = slice 1 **uploads** (`user-account/photo-upload`), then PRs 3–7 (companies
-> → users → topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist".
+> **NEXT:** PR 2 = slice 1 **uploads** built on `e2e-uploads`, green ×2 vs dev, awaiting
+> review/merge (see "PR 2 notes"). After merge: PR 3 = slice 2 **companies**, then PRs 4–7
+> (users → topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist".
 > Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
@@ -73,7 +74,7 @@ slice audit land as separate fix-commits in the same PR.
 | PR # | Branch | Slice / scope | Specs touched | data-testid gaps filled | Green ×2 | Gate tag | Status | Findings |
 |------|--------|---------------|---------------|-------------------------|----------|----------|--------|----------|
 | 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | ✅ merged (#691, `8a9949a1`, 2026-05-30; combined w/ PR 8) | see "PR 1 deviations" below |
-| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | — | — | — | 🟡 | branch cut off `8a9949a1`; also carries the #691 review follow-ups (`aef98a5a`, `139a09db`) |
+| 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | 🔵 | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
 | 3 | `e2e-companies` | Slice 2: companies | `company-management/*`, `api-integration/companies-api-integration` | — | — | — | ⬜ | fixes `"E2E Test Company"` prod residue |
 | 4 | `e2e-users` | Slice 3: users | `user-management/*`, `user-sync/*`, `user-account/{profile,settings,additional-emails}` | — | — | — | ⬜ | — |
 | 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
@@ -178,6 +179,56 @@ layout-scoped locator (`[data-testid=agenda-flip-container][data-layout=…]`) t
 through the FLIP. Read-only/public → `@gate` only (no `@smoke`). Forced-anonymous so AC #1
 ("loads without authentication") is genuinely exercised. Uses BATbern57 (real archived event,
 mirrored locally with 8 sessions).
+
+### PR 2 notes — uploads slice (rewrite-to-reality + a real prod bug)
+
+Slice 1 (`user-account/photo-upload.spec.ts`) had 1 thin active test + 6 `test.skip` stubs
+asserting a crop dialog / per-phase progress UI / standalone size-validation screen that were
+**never built** (the control is a plain hidden `<input type=file accept=image/jpeg,image/png>`;
+upload is the ADR-002 3-phase presigned-S3 flow with no progress UI; failure surfaces only via
+`console.error`, no inline error UI). Per the quality bar (#3 no empty tests) all 7 were
+**deleted**, replaced by two real tests:
+- `should_exposeUploadControl_when_accountLoaded` (`@gate`, read-only) — upload button visible
+  + the file input's `accept` attribute is the file-TYPE-validation gate. New testid
+  `profile-photo-input` on the input (the spec's only non-testid locator, ProfileHeader.tsx).
+- `should_uploadAndRemovePhoto_when_validImageSelected` (**`@smoke`** + `@gate`) — the slice's
+  mutating happy path: select a real PNG (`factory.uploadPngFile()`, a valid 1×1 PNG buffer)
+  → the 3-phase upload runs → `remove-photo-button` appears (renders only when
+  `profilePictureUrl` is truthy = a precise signal, no fixed sleeps) → remove it (AC13). It
+  mutates the authenticated organizer test account's OWN photo (lowest blast radius);
+  teardown is an explicit `DELETE /users/me/picture` (`cleanupOwnProfilePicture`, no
+  prefix-sweep path for uploads) in `afterAll`, leaving the account photo-less. Serial mode
+  (single shared account). Auth is via storageState (upload NEEDS the JWT) — no anonymous
+  override (unlike registration).
+
+**Bug #1 — self-service photo removal was broken in production (RESOLVED).** The "Remove Photo"
+button calls `DELETE /users/me/picture`, but the controller had **no `/me/picture` DELETE
+handler** — only the admin `@DeleteMapping("/{username}/picture")`. Spring routed the request
+with literal `username="me"` → `UserNotFoundException` → **404 for every user removing their
+own photo**, silently swallowed by the UI's `console.error`. Latent because no test covered it
+and the button only appears when a photo exists. Fix: added `@DeleteMapping("/me/picture")`
+(resolves `me` from the security context like `/me/picture/{presigned-url,confirm}`; the literal
+mapping takes precedence over the template) + an integration test
+(`should_removeOwnProfilePicture_when_deleteMePicture`) + the missing `delete` operation in
+`users-api.openapi.yml` (regenerated types). The OpenAPI spec already had the `POST`
+`/users/me/picture` but no `delete` — the contract was missing it too.
+
+**Bug #2 — global Authorization header breaks every presigned-S3 upload (RESOLVED, reusable).**
+`playwright.config.ts` injects `Authorization: Bearer <JWT>` via `extraHTTPHeaders` when
+`AUTH_TOKEN` is set. Harmless on same-origin API calls (axios sets its own) but FATAL on a
+presigned object-store PUT: the store sees BOTH the query SigV4 auth and the header → rejects.
+Verified: dev MinIO → 400 `<Code>InvalidRequest</Code> "request has multiple authentication
+types"`; curl with no header → 200. AWS S3 rejects the same way, so this would break the
+`@smoke` on staging too. Fix: `e2e/helpers/strip-presigned-auth.ts` — a scoped `page.route`
+matching the `X-Amz-Signature` query marker that drops `Authorization` from the storage
+request only (zero blast radius on the other ~410 specs; the global config is untouched).
+**Reuse this in every future upload slice** (company logo, speaker materials, import).
+
+**Local-env caveat (why dev, not staging, for green ×2):** dev uses MinIO (`localhost:8450`),
+not AWS — so the full S3 round-trip is exercisable locally once Bug #2 is fixed. Green ×2 on
+dev (2/2 both runs). Staging can't validate the `@smoke` until this PR's frontend deploys
+(the new `profile-photo-input` testid isn't in the deployed build yet) — the same deploy-then-
+green pattern the status note describes. The control test will go green on staging post-deploy.
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

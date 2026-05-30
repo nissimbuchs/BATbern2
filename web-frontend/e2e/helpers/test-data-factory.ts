@@ -110,3 +110,21 @@ export function eventTitle(): string {
 export function uploadFileName(ext = 'png'): string {
   return `${CANONICAL_PREFIXES.additionalEmail}${ts()}.${ext}`;
 }
+
+/** A minimal but VALID 1×1 PNG (real IHDR/IDAT/IEND chunks) — sharp/image pipelines accept it. */
+const ONE_BY_ONE_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC';
+
+/**
+ * In-memory PNG upload payload for Playwright `setInputFiles`. Returns the canonical
+ * `bruno-test-<ts>.png` filename + a real PNG buffer so the photo-upload `@smoke` exercises
+ * the genuine ADR-002 3-phase S3 flow without needing a fixture file on disk. Uploads have
+ * no prefix-sweep path, so the spec tears down by explicit `DELETE /users/me/picture`.
+ */
+export function uploadPngFile(): { name: string; mimeType: string; buffer: Buffer } {
+  return {
+    name: uploadFileName('png'),
+    mimeType: 'image/png',
+    buffer: Buffer.from(ONE_BY_ONE_PNG_BASE64, 'base64'),
+  };
+}
