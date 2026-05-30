@@ -1170,96 +1170,18 @@ jobs:
             echo "::warning::Header propagation tests script not found"
           fi
 
-      - name: Authenticate test users with Cognito (all roles)
-        id: get-test-tokens
-        run: |
-          # Authenticate all test role users with Cognito.
-          # Organizer: uses STAGING_ORGANIZER_EMAIL/PASSWORD (falls back to legacy STAGING_TEST_USER_*)
-          # Speaker:   uses STAGING_SPEAKER_EMAIL/PASSWORD (optional)
-          # Partner:   uses STAGING_PARTNER_EMAIL/PASSWORD (optional — required for Epic 8 partner tests)
-          #
-          # To add new role secrets: Repository → Settings → Secrets and variables → Actions
-
-          REGION="eu-central-1"
-          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
-
-          get_cognito_token() {
-            local email="$1"
-            local password="$2"
-            local label="$3"
-
-            if [ -z "$email" ] || [ -z "$password" ]; then
-              echo "::warning::No credentials configured for $label — skipping" >&2
-              echo ""
-              return 0
-            fi
-
-            local auth_response
-            auth_response=$(aws cognito-idp initiate-auth \
-              --region "$REGION" \
-              --auth-flow USER_PASSWORD_AUTH \
-              --client-id "$CLIENT_ID" \
-              --auth-parameters USERNAME="$email",PASSWORD="$password" \
-              --output json 2>&1)
-
-            if [ $? -ne 0 ]; then
-              echo "::warning::Cognito auth failed for $label" >&2
-              echo ""
-              return 0
-            fi
-
-            local token
-            token=$(echo "$auth_response" | jq -r '.AuthenticationResult.IdToken // empty')
-            if [ -z "$token" ]; then
-              echo "::warning::Failed to extract ID token for $label" >&2
-              echo ""
-              return 0
-            fi
-
-            echo "✅ Token obtained for $label" >&2
-            echo "$token"
-          }
-
-          # Organizer: prefer new dedicated secrets, fall back to legacy STAGING_TEST_USER_*
-          ORG_TOKEN=$(get_cognito_token \
-            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
-            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
-            "organizer")
-
-          SPK_TOKEN=$(get_cognito_token \
-            "${{ secrets.STAGING_SPEAKER_EMAIL }}" \
-            "${{ secrets.STAGING_SPEAKER_PASSWORD }}" \
-            "speaker")
-
-          PTR_TOKEN=$(get_cognito_token \
-            "${{ secrets.STAGING_PARTNER_EMAIL }}" \
-            "${{ secrets.STAGING_PARTNER_PASSWORD }}" \
-            "partner")
-
-          # Mask tokens in logs before writing to output
-          [ -n "$ORG_TOKEN" ] && echo "::add-mask::$ORG_TOKEN"
-          [ -n "$SPK_TOKEN" ] && echo "::add-mask::$SPK_TOKEN"
-          [ -n "$PTR_TOKEN" ] && echo "::add-mask::$PTR_TOKEN"
-
-          # Write outputs (AUTH_TOKEN kept for backward compat)
-          echo "AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
-          echo "ORGANIZER_AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
-          echo "SPEAKER_AUTH_TOKEN=$SPK_TOKEN" >> $GITHUB_OUTPUT
-          echo "PARTNER_AUTH_TOKEN=$PTR_TOKEN" >> $GITHUB_OUTPUT
-
-          echo ""
-          echo "Token summary:"
-          echo "  organizer: $([ -n "$ORG_TOKEN" ] && echo 'yes' || echo 'no')"
-          echo "  speaker:   $([ -n "$SPK_TOKEN" ] && echo 'yes' || echo 'no')"
-          echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
-
-      # Bruno API contract tests moved to a dedicated `bruno-tests` job below
-      # (docs/plans/bruno-staging-hardening.md §A5b). The split is what lets
-      # `tag-stable-on-success` and `rollback-on-bruno-failure` react to a clean
-      # job-level outcome instead of swallowing failure with `continue-on-error: true`
-      # mid-job. The Cognito-token step above is kept in this job because the
-      # currently-disabled Playwright step further down still references it; the
-      # new bruno-tests job re-fetches its own tokens.
+      # Test-user Cognito authentication is no longer done in this job. Both downstream
+      # test jobs (`bruno-tests`, `playwright-tests`) re-fetch their own tokens fresh —
+      # Cognito ID tokens have a 60-min TTL and this deploy job can take 20-30 min, so a
+      # token minted here would be stale by the time tests run. The previously-orphaned
+      # token step here (its only consumer was the dormant Playwright step, now removed in
+      # plan §A8) was deleted to drop a redundant Cognito call per deploy.
+      #
+      # Bruno API contract tests run in the dedicated `bruno-tests` job below
+      # (docs/plans/bruno-staging-hardening.md §A5b); Playwright UI E2E in the
+      # `playwright-tests` job (docs/plans/playwright-staging-hardening.md §A1). The split
+      # lets `tag-stable-on-success` / `rollback-on-bruno-failure` react to a clean
+      # job-level result instead of a `continue-on-error` swallow.
 
       # E2E infrastructure tests temporarily disabled - require additional setup:
       # - Missing AWS SDK dependencies (@aws-sdk/client-ecs, @aws-sdk/client-cloudformation, @aws-sdk/client-apigatewayv2)
@@ -1288,47 +1210,13 @@ jobs:
           echo "   Reason: Missing AWS SDK dependencies and IAM permissions"
           echo "   Alternative: Runtime validation via smoke tests, CORS tests, and header propagation tests"
 
-      - name: Run frontend E2E tests (Playwright)
-        if: false  # Temporarily disabled - tests running too long with errors
-        continue-on-error: true
-        working-directory: ./web-frontend
-        env:
-          TEST_ENV: staging
-          E2E_BASE_URL: https://www.batbern.ch
-          E2E_API_URL: https://api.batbern.ch
-          E2E_AWS_REGION: ${{ env.AWS_REGION }}
-          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
-          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
-          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
-          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
-        run: |
-          echo "Running Playwright E2E tests against deployed staging environment..."
-          if [ -f "playwright.config.ts" ] || [ -f "playwright.config.js" ]; then
-            npm install -D @playwright/test
-            npx playwright install --with-deps chromium
-            # Build project list: always run chromium (organizer), add role projects when tokens available
-            PROJECTS="--project=chromium"
-            [ -n "$SPEAKER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=speaker"
-            [ -n "$PARTNER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=partner"
-            echo "Running projects: $PROJECTS"
-            # shellcheck disable=SC2086
-            if npx playwright test $PROJECTS; then
-              echo "✅ Frontend E2E tests passed"
-            else
-              echo "::warning::Playwright E2E tests failed - see details above"
-              echo "::warning::This is a non-blocking test failure"
-            fi
-          else
-            echo "::warning::Playwright config not found"
-          fi
-
-      - name: Upload Playwright test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-staging
-          path: web-frontend/playwright-report/
-          retention-days: 7
+      # Playwright UI E2E tests moved to a dedicated `playwright-tests` job below
+      # (docs/plans/playwright-staging-hardening.md §A1/§A8). The old dormant step here
+      # (`if: false` + `continue-on-error: true`) never ran; the new job re-fetches its own
+      # Cognito tokens (fresh against the 60-min TTL), runs an edge-readiness poll, then the
+      # curated `@smoke` subset. During onboarding (plan §A2) it is NON-BLOCKING and does
+      # NOT feed tag-stable / rollback — Bruno remains the sole authoritative gate until the
+      # PR 15 gate-flip.
 
       - name: Mark deployment as successful
         if: success()  # Only run if ALL previous steps succeeded
@@ -1573,3 +1461,138 @@ jobs:
         run: |
           echo "🚨 Auto-rollback triggered after Bruno failure"
           echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Playwright UI E2E tests (docs/plans/playwright-staging-hardening.md §A1).
+  #
+  # ONBOARDING STAGE (plan §A2): this job is NON-BLOCKING and does NOT feed
+  # tag-stable-on-success / rollback-on-bruno-failure. Bruno remains the sole
+  # authoritative gate until the PR 15 gate-flip, when this job is added to both
+  # downstream jobs' `needs` + `if`. For now it runs the curated `@smoke` subset
+  # and reports — a red here neither blocks the deploy nor triggers rollback
+  # (`continue-on-error` on the run step keeps the job green regardless).
+  #
+  # Unlike Bruno (backend only), Playwright needs the frontend live at the edge,
+  # so the runner starts with a CloudFront edge-readiness poll (§A1) before
+  # launching browsers. `needs: deploy-to-staging` covers ECS-stable + the S3/
+  # CloudFront frontend deploy.
+  # ─────────────────────────────────────────────────────────────────────────────
+  playwright-tests:
+    name: Playwright UI E2E (@smoke)
+    needs: deploy-to-staging
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate test users + write ~/.batbern token files
+        run: |
+          # Re-fetch tokens fresh here (60-min Cognito TTL vs a 20-30 min deploy).
+          # Unlike the Bruno job (which only needs an ID token in an env var),
+          # Playwright's global-setup.ts builds browser storage state from
+          # ~/.batbern/${env}-${role}.json files, so we capture id+access+refresh
+          # and write those files in get-token.sh's exact shape. Missing role
+          # creds are warn-and-skip (that role's project simply won't activate).
+
+          REGION="eu-central-1"
+          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          mkdir -p ~/.batbern
+
+          # Writes ~/.batbern/staging-<role>.json (+ legacy staging.json for organizer).
+          write_role_token() {
+            local email="$1"; local password="$2"; local role="$3"
+
+            if [ -z "$email" ] || [ -z "$password" ]; then
+              echo "::warning::No credentials for $role — skipping (its project won't activate)"
+              return 0
+            fi
+
+            local resp
+            resp=$(aws cognito-idp initiate-auth \
+              --region "$REGION" \
+              --auth-flow USER_PASSWORD_AUTH \
+              --client-id "$CLIENT_ID" \
+              --auth-parameters USERNAME="$email",PASSWORD="$password" \
+              --output json 2>&1) || { echo "::warning::Cognito auth failed for $role"; return 0; }
+
+            local id_token access_token refresh_token expires_in
+            id_token=$(echo "$resp" | jq -r '.AuthenticationResult.IdToken // empty')
+            access_token=$(echo "$resp" | jq -r '.AuthenticationResult.AccessToken // empty')
+            refresh_token=$(echo "$resp" | jq -r '.AuthenticationResult.RefreshToken // empty')
+            expires_in=$(echo "$resp" | jq -r '.AuthenticationResult.ExpiresIn // 3600')
+
+            if [ -z "$id_token" ] || [ -z "$access_token" ] || [ -z "$refresh_token" ]; then
+              echo "::warning::Incomplete token set for $role — skipping"
+              return 0
+            fi
+
+            echo "::add-mask::$id_token"; echo "::add-mask::$access_token"; echo "::add-mask::$refresh_token"
+
+            write_file() {
+              local path="$1"
+              jq -n \
+                --arg env "staging" --arg role "$role" --arg email "$email" \
+                --arg id "$id_token" --arg access "$access_token" \
+                --arg refresh "$refresh_token" --argjson expires "$expires_in" \
+                --arg at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{environment:$env, role:$role, email:$email, idToken:$id,
+                  accessToken:$access, refreshToken:$refresh, expiresIn:$expires, retrievedAt:$at}' \
+                > "$path"
+              chmod 600 "$path"
+            }
+
+            write_file ~/.batbern/staging-${role}.json
+            [ "$role" = "organizer" ] && write_file ~/.batbern/staging.json
+            echo "✅ Token files written for $role"
+          }
+
+          write_role_token \
+            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
+            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
+            "organizer"
+          write_role_token "${{ secrets.STAGING_SPEAKER_EMAIL }}" "${{ secrets.STAGING_SPEAKER_PASSWORD }}" "speaker"
+          write_role_token "${{ secrets.STAGING_PARTNER_EMAIL }}" "${{ secrets.STAGING_PARTNER_PASSWORD }}" "partner"
+
+      - name: Run Playwright @smoke suite (non-blocking during onboarding)
+        id: run-playwright
+        # ONBOARDING (plan §A2): continue-on-error keeps this job green regardless —
+        # a red @smoke here neither blocks the deploy nor triggers rollback. Removed at
+        # the PR 15 gate-flip, when this job becomes authoritative alongside Bruno.
+        continue-on-error: true
+        env:
+          CI: 'true'
+        run: |
+          chmod +x scripts/ci/run-playwright-tests.sh
+          ./scripts/ci/run-playwright-tests.sh staging --scope smoke
+
+      - name: Report Playwright outcome
+        if: always()
+        run: |
+          echo "Playwright @smoke outcome: ${{ steps.run-playwright.outcome }}"
+          if [ "${{ steps.run-playwright.outcome }}" = "failure" ]; then
+            echo "::warning::Playwright @smoke failed — NON-BLOCKING during onboarding (plan §A2). Investigate before the PR 15 gate-flip."
+          fi
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-staging
+          path: |
+            web-frontend/playwright-report/
+            web-frontend/test-results/
+          retention-days: 7

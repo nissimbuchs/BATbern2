@@ -30,12 +30,13 @@ production deploy.
 
 ## Current status
 
-> **Where we are (2026-05-30):** Plan drafted, not yet started. Bruno gate is live and
-> authoritative. Playwright is disabled (`deploy-staging.yml:1292` `if: false`). The
-> gate/rollback machinery (`rollback-deployment.sh`, `promote-ecr-tag.sh`, `staging-stable`
-> ECR tag, `tag-stable-on-success` / `rollback-on-bruno-failure` jobs) and the cleanup
-> endpoints (`/api/v1/admin/test-fixtures/{cums,ems,pcs}/cleanup` + canonical prefixes) all
-> exist and are reused unchanged. **NEXT:** PR 1 (infra) per Section A.
+> **Where we are (2026-05-30):** PR 1 (infra, §A) built on `e2e-staging-hardening-infra`,
+> pending review/merge. The `playwright-tests` job is live but NON-BLOCKING (onboarding
+> §A2); Bruno remains the sole authoritative gate. Helpers (factory + cleanup + teardown),
+> the runner (`--scope`/`--slice`/`--cleanup-only` + edge-readiness poll), the seed `@smoke`
+> spec, and the nightly workflow all landed. Seed `@smoke` verified green ×2 against deployed
+> staging; the teardown sweep verified against all 7 canonical prefixes on real staging.
+> **NEXT:** PR 2 (Slice 1 — uploads / `user-account/photo-upload`).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -50,7 +51,7 @@ slice audit land as separate fix-commits in the same PR.
 
 | PR # | Branch | Slice / scope | Specs touched | data-testid gaps filled | Green ×2 | Gate tag | Status | Findings |
 |------|--------|---------------|---------------|-------------------------|----------|----------|--------|----------|
-| 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | — | — | — | — | ⬜ | — |
+| 1 | `e2e-staging-hardening-infra` | A+B infra: `playwright-tests` job (+ edge-readiness poll), `global-teardown`, cleanup helper, test-data factory, runner script (`--scope`), `@smoke`/`@gate`/`@quarantine` scheme, nightly workflow (A9), enable dormant step (non-blocking) | `smoke.spec.ts` (new), `speaker-onbehalf-vs-self-byte-identity` (collection-blocker fix), `api-helpers` (delegate) | — | ✅ staging | `@smoke`+`@gate` (seed) | 🔵 | see "PR 1 deviations" below |
 | 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | — | — | — | ⬜ | — |
 | 3 | `e2e-companies` | Slice 2: companies | `company-management/*`, `api-integration/companies-api-integration` | — | — | — | ⬜ | fixes `"E2E Test Company"` prod residue |
 | 4 | `e2e-users` | Slice 3: users | `user-management/*`, `user-sync/*`, `user-account/{profile,settings,additional-emails}` | — | — | — | ⬜ | — |
@@ -67,6 +68,37 @@ slice audit land as separate fix-commits in the same PR.
 | 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
 
 **Status legend:** ⬜ todo · 🟡 in progress · 🔵 in review · 🟢 @gate (proven ×2) · 🟠 @quarantine · ✅ merged · 🔴 blocked
+
+### PR 1 deviations from the §A prose (recorded so §A reads as built)
+
+1. **Edge-readiness poll (§A1) is asset-coherence, NOT SHA/`/version` match.** The frontend
+   is "build once, deploy everywhere" (runtime config via `GET /api/v1/config`), carries no
+   embedded git SHA / `/version` marker, and is built *selectively* (only when the frontend
+   changed). A SHA-match poll is therefore architecturally impossible (a backend-only deploy
+   never changes the asset hash). The runner instead polls `index.html` (200) → extracts the
+   hashed entry asset → fetches it (200), backoff ~5 min. Verified: `/assets/index-*.css → 200`
+   on the staging run. This is the strongest build-agnostic edge signal available.
+2. **EMS cleanup allowlist is narrower than the §A4 prose.** The deployed
+   `TestFixtureCleanupService` enums accept only: CUMS `companies|users|additional_emails`,
+   EMS `events|sessions|topics`, PCS `partners|meetings`. The §A4 narrative's
+   "tasks/registrations/uploads" have NO prefix-sweep path — those slices clean up by
+   explicit delete or via the event-delete cascade. `test-fixtures-cleanup.ts` mirrors the
+   REAL allowlist (`SWEEP_TARGETS`).
+3. **`scripts/ci/run-playwright-tests.sh` already existed** (it was marked NEW). Enhanced in
+   place: kept its working token/refresh logic, added `--scope`/`--slice`/`--cleanup-only`,
+   the edge poll, and tag-grep routing. Added a `--scope quarantine` value (not in §A6) for
+   the nightly flake-promotion re-test.
+4. **Opportunistic bugfix:** `organizer/speaker-onbehalf-vs-self-byte-identity.spec.ts:76`
+   used `async (_, testInfo)` — Playwright requires the first test arg to be object-
+   destructured, so it threw at *collection* time and poisoned discovery for the ENTIRE
+   chromium project (no test could run, incl. `@smoke`). Fixed to `async ({}, testInfo)`.
+   Pre-existing (slice-8 spec); fixed here because it blocked the PR-1 gate outright.
+
+Also: the now-orphaned `get-test-tokens` step in `deploy-to-staging` (its only consumer was
+the dormant Playwright step) was removed; each test job re-fetches its own fresh tokens. The
+`playwright-tests` job writes `~/.batbern/staging-{role}.json` itself (id+access+refresh) so
+`global-setup.ts` can build browser storage state — CI never had those files before because
+the dormant step never ran.
 
 ## Quality bar (binding for every slice that gets touched)
 

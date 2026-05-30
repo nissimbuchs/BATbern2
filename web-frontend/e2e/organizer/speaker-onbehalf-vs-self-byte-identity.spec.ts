@@ -73,7 +73,12 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       'the spec exists but skips cleanly until the staging Cognito test-speaker seed ticket lands.'
   );
 
-  test('content payload is byte-identical for fields controlled by both flows', async (_, testInfo) => {
+  // Playwright requires the first test arg to use object-destructuring even when no
+  // fixtures are needed — `async (_, testInfo)` throws at collection time and poisons the
+  // whole project's test discovery. The empty destructure takes only testInfo (avoiding the
+  // `page` fixture, which would needlessly launch a browser for this API-only test).
+  // eslint-disable-next-line no-empty-pattern
+  test('content payload is byte-identical for fields controlled by both flows', async ({}, testInfo) => {
     // Two independent APIRequestContext instances — one per auth identity. This is
     // the cleanest way to do cross-auth in a single test (per the story spec).
     const organizerCtx = await playwrightRequest.newContext({

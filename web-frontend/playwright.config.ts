@@ -59,6 +59,9 @@ export default defineConfig({
   /* Global setup to handle authentication */
   globalSetup: './e2e/global-setup.ts',
 
+  /* Global teardown: belt-and-suspenders canonical-prefix sweep (plan §A3) */
+  globalTeardown: './e2e/global-teardown.ts',
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

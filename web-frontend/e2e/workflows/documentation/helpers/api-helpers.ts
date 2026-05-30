@@ -16,6 +16,8 @@
  * - Advancing workflow states via API (use frontend UI)
  */
 
+import { cleanupByCode, sweepAllPrefixes } from '../../../helpers/test-fixtures-cleanup';
+
 const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 export interface SeedData {
@@ -205,62 +207,33 @@ export async function getEventState(
 }
 
 /**
- * Cleans up test event data after test completion
- * DELETE operation (cleanup only)
+ * Cleans up a test event by code.
  *
- * @param authToken - JWT authentication token
+ * SUPERSEDED (plan §A4): delegates to the canonical `cleanupByCode` helper so this suite
+ * and Bruno share one explicit-delete contract (accepts 204/404/409). The previous bespoke
+ * DELETE here is gone.
+ *
+ * @param authToken - JWT authentication token (must carry ROLE_ORGANIZER)
  * @param eventCode - Event code to delete
  */
 export async function cleanupTestEvent(authToken: string, eventCode: string): Promise<void> {
-  console.log(`🧹 Cleaning up test event: ${eventCode}...`);
-
-  const response = await apiRequest(`/api/v1/events/${eventCode}`, authToken, {
-    method: 'DELETE',
-  });
-
-  if (response.ok) {
-    console.log(`✅ Test event deleted: ${eventCode}`);
-  } else {
-    console.warn(`⚠️  Failed to delete test event: ${response.status} ${response.statusText}`);
-  }
+  await cleanupByCode(authToken, eventCode);
 }
 
 /**
- * Cleans up all orphaned E2E test events
- * Useful for cleaning up after failed test runs
+ * Cleans up orphaned test data after failed runs.
  *
- * @param authToken - JWT authentication token
+ * SUPERSEDED (plan §A4): the old implementation matched events with `"E2E"` in the TITLE
+ * and deleted them — the exact pattern that produced the `"E2E Test Company"` prod residue
+ * the Bruno audit found (2026-05-24). It now delegates to `sweepAllPrefixes`, which removes
+ * ONLY rows carrying the canonical Bruno test prefixes across cums/ems/pcs. UI-created
+ * events with server-generated `BATbern{N}` codes are not reachable by the sweep and must
+ * be torn down per-spec via `cleanupTestEvent(code)`.
+ *
+ * @param authToken - JWT authentication token (must carry ROLE_ORGANIZER)
  */
 export async function cleanupOrphanedTestEvents(authToken: string): Promise<void> {
-  console.log('🧹 Cleaning up orphaned E2E test events...');
-
-  // Find all events with "E2E" in the title
-  const response = await apiRequest(
-    '/api/v1/events?filter={"title":{"$contains":"E2E"}}',
-    authToken
-  );
-
-  if (!response.ok) {
-    console.warn(`⚠️  Failed to fetch orphaned events: ${response.status}`);
-    return;
-  }
-
-  const eventsData = await response.json();
-  const orphanedEvents = eventsData.data || [];
-
-  if (orphanedEvents.length === 0) {
-    console.log('✅ No orphaned E2E test events found');
-    return;
-  }
-
-  console.log(`🧹 Found ${orphanedEvents.length} orphaned E2E test events, deleting...`);
-
-  for (const event of orphanedEvents) {
-    const eventCode = event.eventCode || event.code || event.id;
-    await cleanupTestEvent(authToken, eventCode);
-  }
-
-  console.log(`✅ Cleaned up ${orphanedEvents.length} orphaned events`);
+  await sweepAllPrefixes(authToken);
 }
 
 /**
