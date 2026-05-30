@@ -17,7 +17,7 @@ import { test, expect } from '@playwright/test';
  * specs' staging Cognito test-speaker seed (those assert positive Cognito flows; this
  * one asserts absence of magic-link artefacts).
  */
-test.describe('Story 11.F.1 — magic-link teardown smoke', () => {
+test.describe('Story 11.F.1 — magic-link teardown smoke', { tag: '@gate' }, () => {
   test.skip(
     !process.env.SPEAKER_AUTH_TOKEN,
     'SPEAKER_AUTH_TOKEN not set — run setup-test-users first'

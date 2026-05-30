@@ -337,7 +337,7 @@ const SpeakerDashboardPage = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-background py-8 px-4">
+      <div className="min-h-screen bg-background py-8 px-4" data-testid="speaker-dashboard">
         <div className="max-w-3xl mx-auto">
           {/* Loading state (AC8) */}
           {pageState === 'loading' && (
