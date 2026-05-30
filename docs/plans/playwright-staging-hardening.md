@@ -57,9 +57,11 @@ production deploy.
 >
 > **NEXT:** slices 1 (**uploads**) + 2 (**companies**) MERGED to develop — squash commit
 > `c46c6463` (GitHub PR #692). Slice 3 (**users**) is on `e2e-users` (rebased onto develop
-> post-#692, green ×2 vs dev), awaiting review/merge (see "PR 4 notes"). After merge: slices
-> 4–6 (topics → tasks → sessions). Per-slice loop = §C "Repeatable per-slice checklist". Run
-> locally green ×2 vs dev first (`run-playwright-tests.sh development --slice <name>`, §F).
+> post-#692, green ×2 vs dev), awaiting review/merge (see "PR 4 notes"). Slice 4
+> (**topics + event-types**) is on `e2e-topics` (stacked on `e2e-users`, green ×2 vs dev),
+> awaiting review/merge (see "PR 5 notes"). After merge: slices 5–6 (tasks → sessions).
+> Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs dev first
+> (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -78,7 +80,7 @@ slice audit land as separate fix-commits in the same PR.
 | 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
 | 3 | `e2e-uploads` (stacked) | Slice 2: companies | `company-management/{company-creation,company-search}`, `api-integration/companies-api-integration` | — | ✅ dev | `@gate` (×10) + **`@smoke`** (UI create+cleanup) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **fixes 3 prod-residue sources** (`E2E Test Company` no-cleanup POST; `Acme/Beta/Gamma` + cleanup-by-missing-`id`; `TestCompany-…`). Rewrite-to-reality: deleted/consolidated 26 dead·skip·duplicate tests (37→11 active), moved API contract into the api-integration spec, removed stray `.bak`. All data → canonical `BRUNOTESTCO%` + `cleanupById`. See "PR 3 notes". |
 | 4 | `e2e-users` | Slice 3: users | `user-management/{user-creation,user-deletion,role-management,user-list-search}`, `user-sync/reconciliation-drift-fix`, `user-account/{profile-management,settings-management}`, `organizer/user-settings-additional-emails` | `user-add-button`, `user-search-input`, `user-clear-filters`, `user-sort-{name,email,company}`, `user-actions-button-<id>`, keyed `user-table-row-<id>`, `user-create-{dialog,close}`, `role-manager-dialog`, `delete-user-{dialog,email,gdpr-warning,cascade-warning}` | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI create+cleanup) | 🔵 | **bug found+fixed: stale `window.confirm` handler** in additional-emails spec (component switched to a MUI confirm dialog → row never deleted). **Rewrite-to-reality + prod-safety:** role-management/user-deletion/list-search now operate on a dedicated API-created `bruno.test` fixture user (`e2e/helpers/user-fixture.ts`) instead of the table's FIRST row — the old role spec **saved role changes to a random real prod user**. Deleted 2 user-sync specs (`role-change-sync` dup Bruno `06` + random-user-mutating; `user-registration-sync` all-skipped dup of disabled `09-get-or-create`) + 3 `.backup` files. Dropped authenticated reconcile-POST (mutates prod + not dev-greenable); kept sync-status + auth-negatives. All data → factory; cleanup by captured username. See "PR 4 notes". |
-| 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `TopicManagementPage`, `EventTypesTab` | — | — | ⬜ | heavy (zero testids) |
+| 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `EventTypesTab` (`event-types-tab`, `event-type-card-<T>`, `edit-event-type-<T>`, `edit-event-type-modal`), `SlotTemplatePreview` (`slot-template-preview`), `EventTypeConfigurationForm` (`event-type-config-{save,cancel}`), `BlobTopicSelectorPage` (`blob-unsaved-dialog`, `blob-back-{confirm,cancel}`) — **topics needed ZERO** (already richly testid'd) | ✅ dev (18×2) | `@gate` + **`@smoke`** (UI topic create+cleanup) | 🔵 | **rewrite-to-reality + prod-safety.** Topics already fully testid'd → the "zero testids/heavy" estimate was wrong; the testid work was all event-types. **Deleted dead code:** standalone `EventTypeConfigurationAdmin.tsx` + its unit test (the `/organizer/event-types` route now `<Navigate>`-redirects to `/organizer/admin?tab=0`/`EventTypesTab`; the page was unrouted). **Dropped all event-type mutations** (PUT `/events/types` = global prod-config change, no restore; the old PUT-200/400 used unset `E2E_TEST_TOKEN` and the "403 without role" is untestable since playwright.config injects a global `Authorization` header → would mutate, not 403). Topic API-contract describe deleted (dup of Bruno `event-topics-api`). Heat-map + topic→event-selection UI tests deleted (fresh topic has no usage→no heat map; selection's `success-message` never existed + Bruno-covered). Topic cleanup verified: `topic_code` slugifies from title, so `factory.topicCode()` title → swept by `bruno-test-topic-%` + deletable by captured code. See "PR 5 notes". |
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/*` | `TaskTemplatesTab` | — | — | ⬜ | — |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
 | 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | ✅ merged (#691, `8a9949a1`, 2026-05-30) | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes". Review follow-ups (#1/#2/#4/#8) carried on `e2e-uploads`, not in this merge. |
@@ -349,6 +351,89 @@ Green ×2 on dev (32/32 both runs); final sweep `user_profiles:0 user_additional
 companies:0` (residue-free). 108 UserManagement unit tests still green after the testid
 changes; type-check + lint clean. Staging can't validate the new testids until this PR's
 frontend deploys (same deploy-then-green pattern as PRs 2/8).
+
+### PR 5 notes — topics + event-types slice (rewrite-to-reality, dead code removed, mutations dropped)
+
+Slice 4 was rated "heavy (zero testids)". **That estimate was wrong for topics** — the topic
+backlog UI already carries rich testids (`topic-backlog-manager`, `new-topic-button`,
+`create-topic-modal` + all form fields, `topic-list`, `topic-card-<code>`,
+`staleness-score-<code>`, `view-mode-{list,heatmap}`, `filter-category`), so topics needed
+**zero** new testids. All the testid work was event-types.
+
+**Topic cleanup correctness (the crux, verified in EMS).** `topic_code` is **slugified from
+the title** (`Topic.generateTopicCode`: lowercase, strip to `[a-z0-9 -]`, spaces→`-`). So a
+title of `factory.topicCode()` (`bruno-test-topic-<ts>`, already a valid slug) produces
+`topic_code === that string` — reachable by the `ems/topics` prefix sweep
+(`topic_code LIKE 'bruno-test-topic-%'`, which also bypasses the usage-history delete guard)
+AND known up-front, so the `@smoke` deletes by the exact captured code (`cleanupById` → 204 on
+an unassigned topic). Confirmed residue-free on dev (final sweep `topics:0`).
+
+**`topic-selection.spec.ts` → 3 tests** (was a large UI + API-contract file): backlog renders
+(`@gate`), create-modal opens+cancels (`@gate`), **create topic (`@smoke`+`@gate`)** — the
+slice's one mutating+cleanup happy path. Modal-close = success signal (a failed create keeps
+the modal open with a `topic-form-error` Alert), exactly like the company/user `@smoke`; no
+card-in-list assertion (a new topic's position on a populated, paginated, sort-ordered prod
+list is flaky for no extra signal). **Deleted:**
+- The entire **"Topics API Contract Tests"** describe — a Playwright re-implementation of
+  Bruno's `event-topics-api` collection (`30-list`/`31-create`/`32-get`/`33-select`/
+  `34-verify-workflow`/`99a-posttest-cleanup`, same `bruno-test-topic-` prefix). Two of them
+  sent `Bearer ${E2E_TEST_TOKEN}` (an env var nothing sets → `Bearer undefined`) → never
+  passed. Bruno owns the topic API contract.
+- **Heat-map tests** (usage heat map / quarterly frequency / hover tooltip): the detail
+  `TopicHeatMap` renders only when `usageHistory.length > 0`; a freshly-created topic has none,
+  so they asserted DOM that can't exist without a full event-assignment workflow. Cells also
+  have no testids. *(Backlog: cover via a seeded used-topic fixture if heat-map needs gating.)*
+- **Topic→event selection / workflow-transition tests**: the asserted `success-message` does
+  NOT exist (selection swaps the panel to speaker brainstorming), the flow mutates a real
+  event's workflow state, and Bruno `33`/`34` already cover it at the API.
+- The category-filter interaction test (filter MenuItems carry no testids; API category
+  filtering is Bruno-covered).
+
+**`event-type-selection.spec.ts` → read-only `@gate` only** (no `@smoke` — see below). UI:
+selector visible in the New-Event modal; selector shows 3 options; loading-state via route
+delay; admin cards render via `event-types-button` → `/organizer/admin?tab=0`; edit modal
+opens **and is CANCELLED** (never saved). API: GET `/events/types` (3 types, structural
+invariants) + GET invalid → 404. **Reality corrections + deletions:**
+- New-Event button is `new-event-button` (NOT `quick-action-new-event`); the modal is
+  `create-event-modal`.
+- **No `SlotTemplatePreview` in the event form** — the selector shows slot metadata inline per
+  option; SlotTemplatePreview lives only in the EventTypesTab admin cards. The old "slot
+  preview on select" test asserted non-existent modal DOM → deleted.
+- **Dead code deleted:** the standalone `EventTypeConfigurationAdmin.tsx` page + its unit test.
+  `/organizer/event-types` now `<Navigate>`-redirects to `/organizer/admin?tab=0` (EventTypesTab
+  is canonical); the standalone page was unrouted (only its own test mounted it) — same
+  dead-page pattern as PR 8's `ArchiveEventDetailPage`. The old spec's H1 "Event Type
+  Configuration" / "ADMIN ONLY" / "Back to Dashboard" assertions matched that dead page → gone
+  (EventTypesTab has no H1, no admin-only text, breadcrumbs not a back button).
+- **All event-type mutations dropped (prod-safety, plan risk #1):** event-type config is a
+  GLOBAL singleton governing every future event of its type. The UI edit flow is opened and
+  cancelled. The old `PUT /events/types/{type}` "update" + "400 invalid" tests used the unset
+  `E2E_TEST_TOKEN` (never passed) and would mutate global config. The "403 without role" PUT is
+  **untestable here**: `playwright.config` injects a global `Authorization` header when
+  `AUTH_TOKEN` is set, so a header-less `request.put` still runs AS ORGANIZER → it would 200
+  and MUTATE prod config, not 403. All three deleted (same reasoning PR 4 used to drop the
+  authenticated reconcile-POST). Slice 4's single `@smoke` is therefore the topic create.
+
+**`blob-topic-selector.spec.ts` → hardened to testid-only.** The unsaved-changes dialog's
+confirm/cancel buttons had no testids (the spec used
+`getByRole('dialog').getByRole('button',{name:/go back|confirm/i})`) → added
+`blob-unsaved-dialog` + `blob-back-{confirm,cancel}`. The old `fit-all`/`snap` test was
+**conditional** (`if (isLoaded) …` → asserted nothing when the canvas hadn't loaded) → rewritten
+to wait for `blob-canvas` then assert both controls. **Dev-timing find:** `blob-canvas` lives
+inside the heavy lazy D3 `BlobTopicSelector` chunk that the Vite **dev** server compiles
+on-demand on first navigation (>5s cold; the page shell + back button render first). The
+`topic-session-data` fetch itself is ~0.5s. Bumped the canvas-visible timeout to 30s to absorb
+the dev first-compile; on staging the bundle is prebuilt so it resolves immediately. Uses
+BATbern57 (real archived event mirrored locally, same fixture as the presentation `@gate`).
+
+**Component testids added** (same commit as the specs): `event-types-tab`,
+`event-type-card-{TYPE}`, `edit-event-type-{TYPE}` (EventTypesTab) + `edit-event-type-modal` on
+its Dialog; `slot-template-preview` (SlotTemplatePreview root); `event-type-config-{save,cancel}`
+(EventTypeConfigurationForm); `blob-unsaved-dialog` + `blob-back-{confirm,cancel}`
+(BlobTopicSelectorPage). 23 touched-component unit tests still green; type-check + lint clean.
+Green ×2 on dev (18/18 both runs); residue-free. `@smoke`→1 (topic create), `@gate`→18 via tag
+routing. Staging can't validate the new event-types testids until this PR's frontend deploys
+(same deploy-then-green pattern as PRs 2/4/8).
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

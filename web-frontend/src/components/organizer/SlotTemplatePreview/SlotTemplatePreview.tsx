@@ -48,7 +48,7 @@ export const SlotTemplatePreview: React.FC<SlotTemplatePreviewProps> = ({
     slotConfiguration;
 
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" data-testid="slot-template-preview">
       <CardContent>
         <Typography variant="h6" gutterBottom>
           {formatEventTypeName(eventType, t)} {t('slotPreview.title', { type: '' }).trim()}

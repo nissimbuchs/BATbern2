@@ -303,10 +303,15 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
         <SchedulePreview config={formData} />
 
         <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button onClick={onCancel} disabled={isSubmitting}>
+          <Button onClick={onCancel} disabled={isSubmitting} data-testid="event-type-config-cancel">
             {t('common:actions.cancel')}
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+            data-testid="event-type-config-save"
+          >
             {t('common:actions.save')}
           </Button>
         </Stack>

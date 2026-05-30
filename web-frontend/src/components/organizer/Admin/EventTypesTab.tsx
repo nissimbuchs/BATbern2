@@ -81,10 +81,10 @@ export const EventTypesTab: React.FC = () => {
 
   return (
     <>
-      <Grid container spacing={3}>
+      <Grid container spacing={3} data-testid="event-types-tab">
         {eventTypes?.map((config) => (
           <Grid size={{ xs: 12, md: 4 }} key={config.type}>
-            <Card>
+            <Card data-testid={`event-type-card-${config.type}`}>
               <CardContent>
                 <SlotTemplatePreview eventType={config.type} slotConfiguration={config} />
               </CardContent>
@@ -94,6 +94,7 @@ export const EventTypesTab: React.FC = () => {
                   startIcon={<EditIcon />}
                   onClick={() => handleEditClick(config.type)}
                   aria-label={`Edit ${config.type}`}
+                  data-testid={`edit-event-type-${config.type}`}
                 >
                   {t('common:actions.edit')}
                 </Button>
@@ -103,7 +104,13 @@ export const EventTypesTab: React.FC = () => {
         ))}
       </Grid>
 
-      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
+      <Dialog
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        maxWidth="md"
+        fullWidth
+        data-testid="edit-event-type-modal"
+      >
         <DialogTitle>
           {t('common:actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>
