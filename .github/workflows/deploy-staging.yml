@@ -1474,12 +1474,23 @@ jobs:
   #
   # Unlike Bruno (backend only), Playwright needs the frontend live at the edge,
   # so the runner starts with a CloudFront edge-readiness poll (§A1) before
-  # launching browsers. `needs: deploy-to-staging` covers ECS-stable + the S3/
-  # CloudFront frontend deploy.
+  # launching browsers. The `deploy-to-staging` dependency covers ECS-stable + the
+  # S3/CloudFront frontend deploy.
+  #
+  # SEQUENCED AFTER bruno-tests (fix 2026-05-30): both jobs run against the SAME
+  # shared staging (= prod) DB, and Playwright's global-teardown runs the canonical
+  # prefix sweep (`bruno.test*`, `BRUNOTESTCO*`, …) it deliberately shares with Bruno
+  # (plan §A3/§A4 — one cleanup contract). When the two jobs ran concurrently the
+  # sweep deleted Bruno's just-created `bruno.test` fixture mid-run, failing users-api
+  # → false rollback (run 26689737809). Depending on bruno-tests serialises them so
+  # the sweep can never fire while Bruno is live. Playwright runs only on Bruno-green
+  # (a failed `needs` skips it) — fine during onboarding (Bruno-red ⇒ rollback anyway),
+  # and the correct topology at the PR-15 gate-flip (deploy → bruno → playwright →
+  # promote/rollback). Still NON-BLOCKING here: it does not feed tag-stable/rollback.
   # ─────────────────────────────────────────────────────────────────────────────
   playwright-tests:
     name: Playwright UI E2E (@smoke)
-    needs: deploy-to-staging
+    needs: [deploy-to-staging, bruno-tests]
     runs-on: ubuntu-latest
     permissions:
       id-token: write

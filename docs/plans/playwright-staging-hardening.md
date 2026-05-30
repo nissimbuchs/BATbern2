@@ -178,6 +178,23 @@ through the FLIP. Read-only/public → `@gate` only (no `@smoke`). Forced-anonym
 ("loads without authentication") is genuinely exercised. Uses BATbern57 (real archived event,
 mirrored locally with 8 sessions).
 
+### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
+
+First PR-691 CI run: `bruno-tests` failed `users-api` → auto-rollback fired. Root cause was
+**self-inflicted**, not a Bruno regression. `playwright-tests` and `bruno-tests` both
+`needs: deploy-to-staging`, so they ran **concurrently** against the shared staging (= prod)
+DB. Playwright's `global-teardown` runs the canonical prefix sweep (`bruno.test*`,
+`BRUNOTESTCO*`, …) it **deliberately shares** with Bruno (§A3/§A4 — one cleanup contract).
+Timeline: Bruno created `bruno.test` (17:24:11) → Playwright sweep deleted it
+`{"user_profiles":1}` (17:24:25) → Bruno's next GET failed `expected 404 to equal 200`
+(17:24:27). Verified Bruno `users-api` is green 46/46 when run alone.
+
+**Fix:** `playwright-tests` now `needs: [deploy-to-staging, bruno-tests]` — the two suites are
+serialised so the sweep can never fire while Bruno is live. Playwright runs only on
+Bruno-green (a failed `needs` skips it), which is also the correct gate-flip topology
+(deploy → bruno → playwright → promote/rollback). The shared-prefix design (§A4) is sound;
+it just must never run concurrently with another suite that sweeps the same prefixes.
+
 ### PR 1 deviations from the §A prose (recorded so §A reads as built)
 
 1. **Edge-readiness poll (§A1) is asset-coherence, NOT SHA/`/version` match.** The frontend
