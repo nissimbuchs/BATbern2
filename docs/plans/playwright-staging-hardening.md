@@ -57,10 +57,11 @@ production deploy.
 >
 > **NEXT:** slices 1 (**uploads**) + 2 (**companies**) MERGED — squash `c46c6463` (PR #692).
 > Slice 3 (**users**) MERGED — squash `815b4078` (PR #693). Slices 4 (**topics + event-types**)
-> + 5 (**tasks**) are on `e2e-tasks` (rebased onto develop post-#693, green ×2 vs dev),
-> awaiting review/merge in ONE PR (see "PR 5 notes" + "PR 6 notes"). After merge: slice 6
-> (sessions). Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs
-> dev first (`run-playwright-tests.sh development --slice <name>`, §F).
+> + 5 (**tasks**) MERGED — squash `9ff51818` (PR #694). Slice 6 (**sessions/slot-assignment**)
+> + the slices stacked after it are on `e2e-sessions` (rebased onto develop post-#694; green ×2
+> vs dev — see "PR 7 notes"+). Per-slice loop = §C "Repeatable per-slice checklist". Run locally
+> green ×2 vs dev first
+> (`run-playwright-tests.sh development --slice <name>`, §F).
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -79,9 +80,9 @@ slice audit land as separate fix-commits in the same PR.
 | 2 | `e2e-uploads` | Slice 1: file-upload/uploads | `user-account/photo-upload` | `profile-photo-input` | ✅ dev | `@gate` (control) + **`@smoke`** (upload+remove mutating) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **bug found+fixed: self-service photo removal was broken** (`DELETE /users/me/picture` had no handler → fell through to admin `/{username}` with literal `me` → 404). Added `@DeleteMapping("/me/picture")` + integration test + OpenAPI `delete`. Also: presigned-PUT auth-header strip helper (global `extraHTTPHeaders` Authorization broke S3/MinIO uploads). Carries #691 follow-ups (`aef98a5a`, `139a09db`). See "PR 2 notes". |
 | 3 | `e2e-uploads` (stacked) | Slice 2: companies | `company-management/{company-creation,company-search}`, `api-integration/companies-api-integration` | — | ✅ dev | `@gate` (×10) + **`@smoke`** (UI create+cleanup) | ✅ merged (#692, `c46c6463`, 2026-05-30) | **fixes 3 prod-residue sources** (`E2E Test Company` no-cleanup POST; `Acme/Beta/Gamma` + cleanup-by-missing-`id`; `TestCompany-…`). Rewrite-to-reality: deleted/consolidated 26 dead·skip·duplicate tests (37→11 active), moved API contract into the api-integration spec, removed stray `.bak`. All data → canonical `BRUNOTESTCO%` + `cleanupById`. See "PR 3 notes". |
 | 4 | `e2e-users` | Slice 3: users | `user-management/{user-creation,user-deletion,role-management,user-list-search}`, `user-sync/reconciliation-drift-fix`, `user-account/{profile-management,settings-management}`, `organizer/user-settings-additional-emails` | `user-add-button`, `user-search-input`, `user-clear-filters`, `user-sort-{name,email,company}`, `user-actions-button-<id>`, keyed `user-table-row-<id>`, `user-create-{dialog,close}`, `role-manager-dialog`, `delete-user-{dialog,email,gdpr-warning,cascade-warning}` | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI create+cleanup) | ✅ | **bug found+fixed: stale `window.confirm` handler** in additional-emails spec (component switched to a MUI confirm dialog → row never deleted). **Rewrite-to-reality + prod-safety:** role-management/user-deletion/list-search now operate on a dedicated API-created `bruno.test` fixture user (`e2e/helpers/user-fixture.ts`) instead of the table's FIRST row — the old role spec **saved role changes to a random real prod user**. Deleted 2 user-sync specs (`role-change-sync` dup Bruno `06` + random-user-mutating; `user-registration-sync` all-skipped dup of disabled `09-get-or-create`) + 3 `.backup` files. Dropped authenticated reconcile-POST (mutates prod + not dev-greenable); kept sync-status + auth-negatives. All data → factory; cleanup by captured username. See "PR 4 notes". ✅ merged (#693, `815b4078`, 2026-05-30). |
-| 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `EventTypesTab` (`event-types-tab`, `event-type-card-<T>`, `edit-event-type-<T>`, `edit-event-type-modal`), `SlotTemplatePreview` (`slot-template-preview`), `EventTypeConfigurationForm` (`event-type-config-{save,cancel}`), `BlobTopicSelectorPage` (`blob-unsaved-dialog`, `blob-back-{confirm,cancel}`) — **topics needed ZERO** (already richly testid'd) | ✅ dev (18×2) | `@gate` + **`@smoke`** (UI topic create+cleanup) | 🔵 | **rewrite-to-reality + prod-safety.** Topics already fully testid'd → the "zero testids/heavy" estimate was wrong; the testid work was all event-types. **Deleted dead code:** standalone `EventTypeConfigurationAdmin.tsx` + its unit test (the `/organizer/event-types` route now `<Navigate>`-redirects to `/organizer/admin?tab=0`/`EventTypesTab`; the page was unrouted). **Dropped all event-type mutations** (PUT `/events/types` = global prod-config change, no restore; the old PUT-200/400 used unset `E2E_TEST_TOKEN` and the "403 without role" is untestable since playwright.config injects a global `Authorization` header → would mutate, not 403). Topic API-contract describe deleted (dup of Bruno `event-topics-api`). Heat-map + topic→event-selection UI tests deleted (fresh topic has no usage→no heat map; selection's `success-message` never existed + Bruno-covered). Topic cleanup verified: `topic_code` slugifies from title, so `factory.topicCode()` title → swept by `bruno-test-topic-%` + deletable by captured code. See "PR 5 notes". |
-| 6 | `e2e-tasks` | Slice 5: tasks | `tasks/test-task-creation-from-templates` (consolidated; `test-task-assignment` **deleted**) | `EventTasksTab` (`event-tasks-tab-content`, `task-template-<id>`, `task-assignee-<id>`) — assignee `organizer-option-<username>` already existed | ✅ dev (2×2) | `@gate` + **`@smoke`** (assign+save+verify, cascade cleanup) | 🔵 | **rewrite-to-reality + prod-residue fix.** Both old specs created a real `BATbern${9000+random}` event via the UI and **never cleaned up** (leaked event+tasks/run) + used role/text locators + HARDCODED organizer names. Consolidated to one spec: read-only `@gate` (Tasks tab lists templates) + **`@smoke`** (assign first default template to the current organizer → save → GET `/events/{code}/tasks` asserts the assignee persisted). Uses the API event-fixture (captured `BATbern{N}`); cleanup = `cleanupByCode` → `event_tasks` FK `ON DELETE CASCADE` (tasks have no prefix-sweep). Deterministic assignee via `organizer-option-<token-username>` (no hardcoded names). `TaskTemplatesTab` (admin template catalog) is a SEPARATE surface, not exercised by these specs. See "PR 6 notes". |
-| 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — | — | — | ⬜ | server-gen sessionSlug → explicit-delete |
+| 5 | `e2e-topics` | Slice 4: topics + event-types | `organizer/{topic-selection,blob-topic-selector,event-type-selection}` | `EventTypesTab` (`event-types-tab`, `event-type-card-<T>`, `edit-event-type-<T>`, `edit-event-type-modal`), `SlotTemplatePreview` (`slot-template-preview`), `EventTypeConfigurationForm` (`event-type-config-{save,cancel}`), `BlobTopicSelectorPage` (`blob-unsaved-dialog`, `blob-back-{confirm,cancel}`) — **topics needed ZERO** (already richly testid'd) | ✅ dev (18×2) | `@gate` + **`@smoke`** (UI topic create+cleanup) | ✅ merged (#694, `9ff51818`, 2026-05-31) | **rewrite-to-reality + prod-safety.** Topics already fully testid'd → the "zero testids/heavy" estimate was wrong; the testid work was all event-types. **Deleted dead code:** standalone `EventTypeConfigurationAdmin.tsx` + its unit test (the `/organizer/event-types` route now `<Navigate>`-redirects to `/organizer/admin?tab=0`/`EventTypesTab`; the page was unrouted). **Dropped all event-type mutations** (PUT `/events/types` = global prod-config change, no restore; the old PUT-200/400 used unset `E2E_TEST_TOKEN` and the "403 without role" is untestable since playwright.config injects a global `Authorization` header → would mutate, not 403). Topic API-contract describe deleted (dup of Bruno `event-topics-api`). Heat-map + topic→event-selection UI tests deleted (fresh topic has no usage→no heat map; selection's `success-message` never existed + Bruno-covered). Topic cleanup verified: `topic_code` slugifies from title, so `factory.topicCode()` title → swept by `bruno-test-topic-%` + deletable by captured code. See "PR 5 notes". |
+| 6 | `e2e-tasks` | Slice 5: tasks | `tasks/test-task-creation-from-templates` (consolidated; `test-task-assignment` **deleted**) | `EventTasksTab` (`event-tasks-tab-content`, `task-template-<id>`, `task-assignee-<id>`) — assignee `organizer-option-<username>` already existed | ✅ dev (2×2) | `@gate` + **`@smoke`** (assign+save+verify, cascade cleanup) | ✅ merged (#694, `9ff51818`, 2026-05-31) | **rewrite-to-reality + prod-residue fix.** Both old specs created a real `BATbern${9000+random}` event via the UI and **never cleaned up** (leaked event+tasks/run) + used role/text locators + HARDCODED organizer names. Consolidated to one spec: read-only `@gate` (Tasks tab lists templates) + **`@smoke`** (assign first default template to the current organizer → save → GET `/events/{code}/tasks` asserts the assignee persisted). Uses the API event-fixture (captured `BATbern{N}`); cleanup = `cleanupByCode` → `event_tasks` FK `ON DELETE CASCADE` (tasks have no prefix-sweep). Deterministic assignee via `organizer-option-<token-username>` (no hardcoded names). `TaskTemplatesTab` (admin template catalog) is a SEPARATE surface, not exercised by these specs. See "PR 6 notes". |
+| 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — (SlotAssignment already strong) | ✅ dev (2×2) | `@gate` + **`@smoke`** (auto-assign) | 🔵 | **rewrite-to-reality.** Replaced an all-skipped 5-test RED-phase `describe.skip` asserting an idealized DOM that was never built (`assignment-progress`/`speaker-card`/`slot-dropzone`/`conflict-detection-modal`+room-change resolution/`speaker-preference-panel`/3-step `bulk-auto-assignment-modal` wizard/`assignment-complete-banner`/`/publishing` walk — NONE of those testids exist). **Zero new testids** — SlotAssignment is already richly testid'd. **Deterministic `@smoke` = auto-assign** (button→`auto-assign-modal`→`auto-assign-confirm`, `POST /sessions/auto-assign`), NOT native HTML5 drag-drop (too flaky to gate). Unassigned-session fixture: REST `POST /sessions` requires timing (`CreateSessionRequest @NotNull`), so `addUnassignedSessions` (event-fixture.ts) creates timed sessions then `DELETE /sessions/timing` to reach the placeholder state. Cleanup = event-delete cascade (`sessions`/`session_timing_history` `ON DELETE CASCADE`) — server-gen `sessionSlug` isn't prefix-sweepable. Verify via `GET /sessions/unassigned == 0`. See "PR 7 notes". |
 | 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | ✅ merged (#691, `8a9949a1`, 2026-05-30) | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes". Review follow-ups (#1/#2/#4/#8) carried on `e2e-uploads`, not in this merge. |
 | 9 | `e2e-speaker-pool` | Slice 8: speaker pool (organizer) | `organizer/speaker-*` | — | — | — | ⬜ | strong testids already |
 | 10 | `e2e-speaker-portal` | Slice 9: speaker portal | `speaker/*` | — | — | — | ⬜ | **net-new** for 3 fixme stubs; needs `SPEAKER_AUTH_TOKEN` |
@@ -477,6 +478,83 @@ dev (2/2 both runs); type-check + lint clean; `@smoke`→1 / `@gate`→2 via tag
 admin `TaskTemplatesTab` (managing the template catalog itself) is a separate surface, untouched
 by this slice. Staging can't validate the new testids until this PR's frontend deploys (same
 deploy-then-green pattern as PRs 2/4/5/8).
+
+### PR 7 notes — sessions/slot-assignment slice (rewrite-to-reality, deterministic non-DnD @smoke)
+
+Slice 6's lone spec (`slot-assignment/slot-assignment-workflow.spec.ts`) was an all-skipped
+5-test `test.describe.skip(...)` RED-PHASE TDD block (Story 5.7 / BAT-11) asserting an
+**idealized DOM that was never built**. The feature itself IS fully built and routed
+(`/organizer/events/:eventCode/slot-assignment` → `SlotAssignmentPage` → `DragDropSlotAssignment`),
+so this is a pure rewrite-to-reality of the test, not the feature.
+
+**Tests deleted (asserted testids/flows that do not exist):**
+- `should assign via drag-and-drop`: `speaker-card`, `slot-dropzone[data-time]`,
+  `assignment-success-toast`, `assignment-progress` ("0 of 3 assigned"). The real cards live in
+  `speaker-pool-sidebar` (per-card `drag-handle`), the real drop cells are
+  `slot-<HH:MM>-Main-Hall`, there is no success toast, and the count is plain (untestid'd) text.
+- `should detect and resolve timing conflicts`: `conflict-detection-modal` + `conflict-type` +
+  "Find Alternative Slot"/"Change Room"/"Reassign" resolution buttons + `room-selector`. The real
+  conflict surface is `ConflictDetectionAlert` (`conflict-type-badge`/`conflict-severity`), shown
+  only on a genuine 409 overlap, with no room-change resolver. Provoking a real overlap
+  deterministically needs two slot-aligned assignments — not gate-worthy for the value.
+- `should show speaker time preferences during drag`: `speaker-preference-panel`,
+  `time-preferences-section`, `preference-match-high/low` class assertions mid-drag. The panel is
+  `SpeakerPreferencePanel` (different testids) and is populated from MOCK data
+  (`getSpeakerData` is hardcoded in the component) — asserting it tests a stub, not a feature.
+- `should use bulk auto-assignment` + `should navigate to publishing tab`: a 3-step
+  `bulk-auto-assignment-modal` wizard (`algorithm-balanced`/`assignment-preview-list`/
+  `match-score`/"Apply Assignments"), `assignment-complete-banner`, and a `/publishing` tab with
+  `publishing-timeline`/`validation-session-timings`. NONE exist — auto-assign is a single
+  confirm modal (`auto-assign-modal`→`auto-assign-confirm`); the success banner is an untestid'd
+  MUI Alert with an inert `href="#"` link, and there is no `/publishing` route walk here.
+
+**`@smoke` = auto-assign, deliberately NOT drag-drop (reliability, plan risk #3).** Assignment's
+primary UI is **native HTML5** drag-and-drop (no dnd-kit), which Playwright's `dragTo` drives
+unreliably — wrong for a blocking gate. The deterministic equivalent is the **auto-assign**
+button → `auto-assign-modal` → `auto-assign-confirm`, which calls `POST /sessions/auto-assign`
+(places every unassigned session into a free slot from the backend timetable) and awaits the
+POST + refetch before closing the modal — so modal-hidden is a clean completion signal. That is
+this slice's one mutating+cleanup happy path.
+
+**Unassigned-session fixture (the create-then-clear trick).** "Unassigned" = a non-structural
+session with `startTime IS NULL`. The REST `POST /events/{code}/sessions` endpoint REQUIRES
+`startTime`/`endTime` (`CreateSessionRequest @NotNull`), so a session cannot be born timing-less
+through the API. In production these placeholders come from the speaker workflow; reproducing
+that via the UI would drag in cron/state transitions. New helper `addUnassignedSessions`
+(event-fixture.ts) instead creates each session WITH throwaway timing, then issues one
+`DELETE /events/{code}/sessions/timing` to clear ALL timings — leaving them unassigned. The
+read-only `@gate` needs no sessions at all: the slot GRID is computed from the EVENING event-type
+config (4 speaker slots + a break, seeded Flyway V10), so `slot-<HH:MM>-Main-Hall` cells render
+for any EVENING event. Slot-cell times are rendered in the browser timezone (`toTimeStr` over the
+backend slot start) → matched by testid SHAPE (`/^slot-\d{1,2}:\d{2}-Main-Hall$/`), never a
+hardcoded time.
+
+**Two tests, zero new testids** (SlotAssignment was already richly testid'd):
+- `should_renderSlotAssignmentLayout_when_pageOpened` (`@gate`, read-only): the three-column
+  layout (`speaker-pool-sidebar`/`session-timeline-grid`+`timeline-grid`/`quick-actions-panel`),
+  both quick-action buttons, and ≥1 droppable `slot-*` cell (proves the grid is wired to the
+  event-type slot template, not an empty shell).
+- `should_assignAllSessions_when_autoAssignConfirmed` (**`@smoke`**+`@gate`): seed 2 unassigned
+  sessions via the API → assert 2 `drag-handle` cards in the sidebar → auto-assign → assert the
+  modal closes and the sidebar shows `empty-state` → **authoritative verify**
+  `GET /sessions/unassigned == 0` (the assignment actually persisted, stronger than the UI alone).
+
+**Cleanup contract.** One throwaway EVENING event per file (serial, shared) created via the API
+fixture (`createRegistrationEvent`, captured `BATbern{N}`) and deleted in `afterAll`
+(`cleanupByCode`). `sessions.event_id` (V2) and `session_timing_history.session_id` (V28) are
+`ON DELETE CASCADE`, so the event delete removes every session + timing row; the server-generated
+`sessionSlug` isn't reachable by the `bruno-test-session-` prefix sweep, so the parent-event
+delete is the only teardown (plan §A5 server-generated-code caveat). Serial mode + one shared
+event means the read-only `@gate` renders the bare event first, then the `@smoke` adds + assigns
+its own sessions — no cross-test race. Green ×2 on dev (2/2 both runs); final global-teardown
+sweep `events:0 sessions:0` (residue-free); tsc + eslint clean. Zero `src/` component changes, so
+no unit tests affected. Unlike testid-adding slices, the new specs go green on staging
+immediately post-deploy (no new build artifact needed — only e2e files changed).
+
+**Local-run footgun (noted for the next author):** `--slice "Slot Assignment"` (a positive
+case-sensitive `--grep`) also matches the heavy `event-lifecycle-e2e` "Phase D — Slot Assignment
+& Publish Agenda" test, which is slow and currently red on dev (slice-10/PR-11 territory, not
+touched here). Run this slice with `--slice "Story 5.7"` to scope to these two specs only.
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 
