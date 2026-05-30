@@ -604,6 +604,70 @@ the dormant Playwright step) was removed; each test job re-fetches its own fresh
 `global-setup.ts` can build browser storage state — CI never had those files before because
 the dormant step never ran.
 
+## Handoff — recon + landmines for the remaining slices (2026-05-31)
+
+A parallel read-only recon mapped slices 10–13 against reality. Key findings + the traps that
+the optimistic plan estimates miss (so the next session doesn't rediscover them). Cross-cutting
+lesson from slices 8/9: **promote-to-READY provisions a Cognito/CUMS user out-of-band and is
+intermittently flaky on dev (observed 500s) — keep it out of any blocking `@smoke`.**
+
+- **Slice 11 — partners + meetings** (medium; needs ORGANIZER + PARTNER tokens). Specs:
+  `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`,
+  `partner/{analytics-dashboard,topic-voting}`. Landmines: (a) `partner/analytics-dashboard`
+  asserts a **fictional `attendance-table` testid** — the component renders Recharts charts, not
+  a table → it would time out; rewrite to assert `attendance-dashboard`/`kpi-attendance-rate`/
+  `kpi-cost-per-attendee` + `export-button` (all real). (b) `partner-create-edit` uses inline
+  `tc-{ts}` company names (NOT swept) + manual `deletePartnerViaAPI` (residue source) and expects
+  route `/partners/.+` but reality is `/organizer/partners/:companyName`; switch to
+  `factory.partnerName()` (`brtest`+6 = 12 chars, swept) + `sweepAllPrefixes`/`cleanupById`.
+  (c) `partner-directory` uses `getByLabel(/grid view/i)` (localized) + fictional
+  `tier-option-*`/`status-option-*` MenuItem testids. Testid adds: `tier-option-{tier}`,
+  `status-option-{status}` on PartnerFilters MenuItems; `partnership-start-date`/`-end-date` on
+  the date inputs; `partner-edit-company-name`; `topic-form-title-input`. `partner-meetings` is
+  fully mocked + already testid-clean (keep `@gate`). **@smoke**: organizer partner create →
+  detail → cleanup (factory name + sweep) — deterministic, no promote.
+
+- **Slice 13 — cross-cutting a11y/auth/cors** (light-ish, but two traps). `accessibility/
+  {navigation,screen-reader,layout}` use `getByRole`/axe scans — **a11y locators are exempt** from
+  the testid-only rule (they assert user-facing semantics); tag `@gate` AFTER confirming the axe
+  scans actually pass on dev (real WCAG violations would fail them — budget for either a fix or
+  `@quarantine`, don't assume green). Add `data-testid="notifications-button"` to `AppHeader` and
+  convert the one notifications `getByRole` locator. Delete the 2 truly-fictional screen-reader
+  skips (on-submit form-error announcement; forced-colors high-contrast) + the nav
+  notification-dropdown skip (notifications are inline, no dropdown). `api-integration/
+  {cors-validation,companies-api-integration}` are exemplary → tag `@gate`. **Correction to the
+  recon:** the forgot/reset-password components (`src/components/auth/{ForgotPasswordForm,
+  ResetPasswordForm}`) DO exist and DO carry testids — the `auth/*` specs aren't fictional, they
+  need testid reconciliation; treat as a separate focused task, out of slice 13's core. No `@smoke`
+  (all read-only).
+
+- **Slice 10 — event workflow** (medium post-rewrite; ORGANIZER). `workflows/event-lifecycle-e2e`
+  is currently RED. The transition endpoint EXISTS: `PUT /events/{code}/workflow/transition`
+  `{ targetState, overrideValidation, overrideReason }` (EventWorkflowController) + `GET
+  /events/{code}/workflow/status`. Rewrite per OQ-3 to **hybrid: API force-advances states
+  (overrideValidation:true), UI asserts each screen** — DELETE the manual-mouse drag-drop phases
+  (B3–B4) and the speaker/content phases (slice-8 territory). Testid corrections: lane names are
+  **lowercase** (`status-lane-ready`, not `-READY`); assert `workflow-status-badge` after each
+  transition. All needed testids exist (`event-*-field`, `event-tab-*`, `status-option-{STATE}`,
+  `override-workflow-validation-checkbox`, `publish-{phase}-button`). **@smoke**: create →
+  GET status=CREATED → transition TOPIC_SELECTION → AGENDA_PUBLISHED → ARCHIVED (each UI-asserted)
+  → DELETE. Cleanup = `cleanupByCode` (BATbern{N}; 409 until ARCHIVED). ~15 min, no cron, no DnD.
+
+- **Slice 12 — admin tabs** (HEAVIEST — testid-adding; ORGANIZER). `organizer/admin-settings`
+  currently covers only AdminSettingsTab with `getByRole`/`Date.now()`. Reality: 9 tabs +
+  OrganizerAnalyticsPage + NotificationsPage. **Prod-safety is the crux** — most admin mutations
+  are GLOBAL singletons with NO restore path (event-types, presentation-settings, ai-prompts,
+  admin-settings/email-forwarding, email-templates): these MUST stay **read-only `@gate`** (same
+  reason slice 4 dropped event-type PUTs). Only TWO safe mutations exist for `@smoke`:
+  TaskTemplatesTab (create+delete a custom template by captured id) and GlobalImagesTab
+  (upload+delete by captured imageId). Plan: ~11 read-only `@gate` tab-render tests + ≤2 safe
+  `@smoke`. Testid gaps to add (~25): PresentationSettingsTab, AiPromptsTab, AdminSettingsTab,
+  OrganizerAnalyticsPage, NotificationsPage have essentially none (EventTypes/Import/TaskTemplates/
+  EmailTemplates/GlobalImages/VenueCatering already have some). Budget a full session.
+
+Suggested remaining PR grouping: **PR C = 11 + 13**, **PR D = 10 + 12**, then **PR 15 = gate flip**
+(+ deliberate-fail rollback drill). Rebase each onto develop as the prior stacked PR merges.
+
 ## Quality bar (binding for every slice that gets touched)
 
 Per PO directive 2026-05-30 — when a slice is audited, it leaves in this state or it doesn't merge:
