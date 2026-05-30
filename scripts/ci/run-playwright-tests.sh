@@ -131,7 +131,9 @@ if [ "$ENVIRONMENT" = "staging" ]; then
     export E2E_AWS_REGION="eu-central-1"
 elif [ "$ENVIRONMENT" = "production" ]; then
     export TEST_ENV="production"
-    export E2E_BASE_URL="https://batbern.ch"
+    # Canonical host is www.* (matches the edge-readiness poll + playwright.config). The
+    # apex batbern.ch redirects, which would break the asset-hash poll if this branch ran.
+    export E2E_BASE_URL="https://www.batbern.ch"
     export E2E_API_URL="https://api.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 else

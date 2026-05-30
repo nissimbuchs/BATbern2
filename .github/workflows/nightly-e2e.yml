@@ -26,6 +26,9 @@ on:
 
 env:
   AWS_REGION: eu-central-1
+  # Staging Cognito app-client id (not a secret). Declared once instead of hardcoded in the
+  # token-fetch step — kept in lock-step with deploy-staging.yml (review #1, PR #691).
+  COGNITO_CLIENT_ID: 1b53lci6qpqsmdn0u3e8s4knvv
 
 jobs:
   nightly-e2e:
@@ -54,7 +57,7 @@ jobs:
           # Same token-file plumbing as the deploy-staging.yml `playwright-tests` job:
           # global-setup.ts builds browser storage state from ~/.batbern/${env}-${role}.json.
           REGION="eu-central-1"
-          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
           mkdir -p ~/.batbern
 
           write_role_token() {

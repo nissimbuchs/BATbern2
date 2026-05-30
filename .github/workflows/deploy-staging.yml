@@ -27,6 +27,9 @@ on:
 env:
   AWS_REGION: eu-central-1
   ENVIRONMENT: staging
+  # Staging Cognito app-client id (not a secret). Declared once so the Bruno and Playwright
+  # token-fetch steps don't each hardcode it (review #1, PR #691).
+  COGNITO_CLIENT_ID: 1b53lci6qpqsmdn0u3e8s4knvv
 
 jobs:
   deploy-to-staging:
@@ -1288,7 +1291,7 @@ jobs:
           # JWTs as job outputs (GitHub Actions masking is per-job).
 
           REGION="eu-central-1"
-          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
 
           get_cognito_token() {
             local email="$1"
@@ -1520,7 +1523,7 @@ jobs:
           # creds are warn-and-skip (that role's project simply won't activate).
 
           REGION="eu-central-1"
-          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          CLIENT_ID="${COGNITO_CLIENT_ID}"
           mkdir -p ~/.batbern
 
           # Writes ~/.batbern/staging-<role>.json (+ legacy staging.json for organizer).
@@ -1593,9 +1596,22 @@ jobs:
       - name: Report Playwright outcome
         if: always()
         run: |
-          echo "Playwright @smoke outcome: ${{ steps.run-playwright.outcome }}"
-          if [ "${{ steps.run-playwright.outcome }}" = "failure" ]; then
+          # continue-on-error keeps this job green during onboarding, so surface the real
+          # outcome prominently in the job summary — otherwise a red @smoke is invisible
+          # unless a reviewer opens this step's log (review #2, PR #691).
+          OUTCOME="${{ steps.run-playwright.outcome }}"
+          echo "Playwright @smoke outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
             echo "::warning::Playwright @smoke failed — NON-BLOCKING during onboarding (plan §A2). Investigate before the PR 15 gate-flip."
+            {
+              echo "### ❌ Playwright @smoke FAILED (non-blocking — onboarding, plan §A2)"
+              echo ""
+              echo "A regression was caught by the per-deploy \`@smoke\` gate but did **not** block this deploy or trigger rollback (onboarding stage). **Investigate before the PR 15 gate-flip** — at that point this turns red the deploy."
+              echo ""
+              echo "See the \`playwright-report-staging\` artifact for details."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ✅ Playwright @smoke passed" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload Playwright test results

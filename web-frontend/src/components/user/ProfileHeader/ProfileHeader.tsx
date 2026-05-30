@@ -66,6 +66,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
                   id="profile-photo-upload"
                   type="file"
                   onChange={handleFileSelect}
+                  data-testid="profile-photo-input"
                 />
                 <label htmlFor="profile-photo-upload">
                   <Tooltip title={t('profileHeader.uploadTooltip')}>

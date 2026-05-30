@@ -1,81 +1,99 @@
 /**
- * E2E Test: Profile Photo Upload Flow
- * Story 2.6: User Account Management Frontend
- * Tests AC10-13: Profile photo upload with ADR-002 3-phase pattern
+ * E2E: Profile Photo Upload — slice 1 / uploads (plan §C)
+ * docs/plans/playwright-staging-hardening.md
+ *
+ * Rewritten 2026-05-30 to reality + the quality bar (testid-only locators, factory data,
+ * mandatory cleanup, no empty tests). Story 2.6 AC10-13 / AC39.
+ *
+ * Reality check (verified in ProfileHeader.tsx + userAccountApi.ts):
+ *   • The control is a hidden `<input type="file" accept="image/jpeg,image/png">` behind a
+ *     camera IconButton — there is NO crop dialog and NO client-side progress UI. The four
+ *     prior `test.skip`s asserted a crop interface / a phase-by-phase progress UI / a
+ *     standalone size-validation screen that were NEVER built → DELETED (logged below).
+ *   • Upload is the ADR-002 3-phase flow: POST /users/me/picture/presigned-url → PUT to S3 →
+ *     POST /users/me/picture/confirm (confirm associates the picture). The happy-path
+ *     `@smoke` exercises all three phases end-to-end; a per-phase UI test is therefore
+ *     redundant and was deleted.
+ *   • Upload failure surfaces only via `console.error` — there is NO inline error UI, so the
+ *     prior zero-assertion `should_showInlineError_*` test asserted a non-existent feature
+ *     → DELETED.
+ *   • File-TYPE validation is the input's `accept` attribute (asserted in the control test);
+ *     file-SIZE validation is server-side during S3/confirm with no client UI → no UI test.
+ *
+ * Prod-safety (plan risk #1): the `@smoke` mutates the authenticated organizer test
+ * account's OWN profile photo — the lowest-blast-radius mutation available. Uploads have no
+ * prefix-sweep path, so teardown is an explicit `DELETE /users/me/picture` (cleanupOwn-
+ * ProfilePicture) in afterAll, leaving the account residue-free (photo-less) even if the
+ * test crashes mid-flow. The chromium project is authenticated (the upload NEEDS the JWT),
+ * so — unlike the registration @smoke — we do NOT force an anonymous storageState.
  */
 
 import { test, expect } from '@playwright/test';
+import * as factory from '../helpers/test-data-factory';
+import { readOrganizerToken } from '../helpers/event-fixture';
+import { cleanupOwnProfilePicture } from '../helpers/test-fixtures-cleanup';
+import { stripPresignedAuthHeader } from '../helpers/strip-presigned-auth';
 
-test.describe('Photo Upload Flow', () => {
+test.describe('Profile Photo Upload', { tag: '@gate' }, () => {
+  // Serial: the @smoke mutates the shared organizer account photo; serialising avoids a
+  // parallel-worker race on that single shared resource and its afterAll teardown.
+  test.describe.configure({ mode: 'serial' });
+
+  let token: string;
+
+  test.beforeAll(() => {
+    // Organizer idToken — required for the afterAll API teardown (DELETE /users/me/picture).
+    token = readOrganizerToken();
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Global setup handles authentication, just navigate to account page
     await page.goto('/account');
     await expect(page).toHaveURL('/account');
   });
 
-  test('should_openFilePickerDialog_when_uploadPhotoClicked', async ({ page }) => {
-    // AC10: Upload New Photo button triggers file input
-    // Implementation: Simple file input without dialog (matches actual UI)
+  test.afterAll(async () => {
+    // Belt-and-suspenders: restore the test account to photo-less regardless of test outcome.
+    await cleanupOwnProfilePicture(token);
+  });
 
-    // Verify upload button exists
-    await expect(page.locator('[data-testid="upload-photo-button"]')).toBeVisible();
+  test('should_exposeUploadControl_when_accountLoaded', async ({ page }) => {
+    // AC10 + AC39: the upload button is visible and the hidden file input restricts to
+    // JPEG/PNG (this IS the file-type-validation coverage — the accept attribute is the gate).
+    await expect(page.getByTestId('upload-photo-button')).toBeVisible();
 
-    // Verify file input exists (hidden but functional)
-    const fileInput = page.locator('input[type="file"]#profile-photo-upload');
+    const fileInput = page.getByTestId('profile-photo-input');
     await expect(fileInput).toBeAttached();
 
-    // Verify file input accepts correct types
-    const acceptAttr = await fileInput.getAttribute('accept');
-    expect(acceptAttr).toContain('image/jpeg');
-    expect(acceptAttr).toContain('image/png');
+    const accept = await fileInput.getAttribute('accept');
+    expect(accept).toContain('image/jpeg');
+    expect(accept).toContain('image/png');
   });
 
-  test.skip('should_showCropInterface_when_imageSelected', async ({ page }) => {
-    // AC11: Profile photo upload shows preview and cropping interface
-    // SKIPPED: Implementation uses simple file input without crop dialog
-    // Photo upload goes directly to S3 via presigned URL without client-side cropping
-    await page.click('[data-testid="upload-photo-button"]');
-  });
+  test(
+    'should_uploadAndRemovePhoto_when_validImageSelected',
+    { tag: ['@smoke', '@gate'] },
+    async ({ page }) => {
+      // AC11-13: select a valid PNG → the 3-phase upload runs → the photo is associated →
+      // the remove control appears (it renders ONLY when profilePictureUrl is truthy, so its
+      // visibility is a precise success signal — no fixed sleeps). Then remove it (AC13),
+      // which also serves as the in-test cleanup; afterAll is the safety net.
+      const png = factory.uploadPngFile();
 
-  test.skip('should_uploadFileInThreePhases_when_cropConfirmed', async () => {
-    // AC12: Profile photo upload uses ADR-002 3-phase pattern
-    // SKIPPED: Implementation uses simple file input without visible progress UI
-    // Photo upload handled by useUploadProfilePicture hook with S3 presigned URLs
-  });
+      // The global Authorization header (extraHTTPHeaders) would make the object store reject
+      // the presigned PUT for carrying two auth mechanisms — strip it on the storage request.
+      await stripPresignedAuthHeader(page);
 
-  test.skip('should_trackUploadProgress_when_uploadingToS3', async () => {
-    // AC12: Upload progress tracking during S3 upload
-    // SKIPPED: Implementation doesn't show progress UI to user
-    // Upload handled automatically by browser after file selection
-  });
+      await page.getByTestId('profile-photo-input').setInputFiles(png);
 
-  test.skip('should_removePhoto_when_removeButtonClicked', async () => {
-    // AC13: Remove Photo button deletes profile picture
-    // SKIPPED: Remove button only appears when user has a profile photo
-    // Test user may not have a profile photo, and we cannot reliably upload one
-    // Implementation uses browser confirm() dialog, not a custom dialog
-  });
+      // S3 round-trip + confirm + react-query refetch — generous wait, but signal-based.
+      await expect(page.getByTestId('remove-photo-button')).toBeVisible({ timeout: 30_000 });
 
-  test.skip('should_validateFileSize_when_photoSelected', async () => {
-    // AC39: File size validation (<5MB, JPEG/PNG only)
-    // SKIPPED: Requires test fixture files that don't exist
-    // File size validation happens server-side during S3 upload
-  });
+      // AC13: removal goes through a native window.confirm — auto-accept it.
+      page.on('dialog', (dialog) => dialog.accept());
+      await page.getByTestId('remove-photo-button').click();
 
-  test.skip('should_validateFileType_when_photoSelected', async () => {
-    // AC39: File type validation (JPEG/PNG only)
-    // SKIPPED: Requires test fixture files that don't exist
-    // File type validation handled by input accept attribute: accept="image/jpeg,image/png"
-  });
-
-  test('should_showInlineError_when_photoUploadFails', async ({ page }) => {
-    // Error Handling: Show inline error when photo upload fails
-    // This test would require mocking the API to return an error
-    // For now, we'll just verify error handling structure exists
-
-    await page.click('[data-testid="upload-photo-button"]');
-
-    // When an error occurs during upload, error message should appear
-    // (This would require intercepting network requests in actual implementation)
-  });
+      // The remove control unmounts once profilePictureUrl is cleared.
+      await expect(page.getByTestId('remove-photo-button')).toHaveCount(0);
+    }
+  );
 });

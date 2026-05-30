@@ -643,6 +643,36 @@ public class UserController {
     }
 
     /**
+     * AC13: Remove the current user's own profile picture.
+     * DELETE /api/v1/users/me/picture
+     *
+     * <p>Self-service counterpart to {@code DELETE /{username}/picture} (admin). The literal
+     * {@code /me/picture} mapping takes precedence over the {@code /{username}/picture}
+     * template, so a self-removal no longer falls through to the admin handler with a literal
+     * {@code username="me"} (which 404s). Resolves {@code me} from the security context exactly
+     * like {@code /me/picture/presigned-url} and {@code /me/picture/confirm}.
+     *
+     * @return No content on success
+     */
+    @DeleteMapping("/me/picture")
+    @Timed(value = "users.profilePicture.remove",
+            description = "Time to remove own profile picture",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> removeOwnProfilePicture() {
+        String currentUsername = securityContextHelper.getCurrentUsername();
+        log.info("Removing own profile picture for user: {}", currentUsername);
+
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
+
+        user.setProfilePictureUrl(null);
+        user.setProfilePictureS3Key(null);
+        userRepository.save(user);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Admin endpoint: Request presigned URL for profile picture upload for a specific user
      * POST /api/v1/users/{username}/picture/presigned-url
      *

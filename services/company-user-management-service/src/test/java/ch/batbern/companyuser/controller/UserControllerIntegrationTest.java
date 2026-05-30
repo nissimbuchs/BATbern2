@@ -1058,9 +1058,29 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assert updatedUser.getProfilePictureS3Key() == null;
     }
 
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("should_removeOwnProfilePicture_when_deleteMePicture")
+    void should_removeOwnProfilePicture_when_deleteMePicture() throws Exception {
+        // Regression: DELETE /users/me/picture must hit the self-service handler, NOT fall
+        // through to /{username}/picture with literal username="me" (which 404s and left the
+        // self-service "Remove Photo" button broken for every user). Found in slice 1 of the
+        // Playwright staging-hardening audit (docs/plans/playwright-staging-hardening.md).
+        testUser.setProfilePictureUrl("https://cdn.batbern.ch/profile-pictures/john.doe/test-file.png");
+        testUser.setProfilePictureS3Key("profile-pictures/john.doe/test-file.png");
+        userRepository.save(testUser);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
+                        "/api/v1/users/me/picture")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        User updatedUser = userRepository.findByUsername("john.doe").orElseThrow();
+        assert updatedUser.getProfilePictureUrl() == null;
+        assert updatedUser.getProfilePictureS3Key() == null;
+    }
+
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
-
     @Test
     @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_return404_when_removeProfilePictureForNonExistentUser")
