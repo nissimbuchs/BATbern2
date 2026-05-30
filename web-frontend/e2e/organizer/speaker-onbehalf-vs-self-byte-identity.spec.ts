@@ -61,6 +61,11 @@ function stringifyControlled(fields: ReturnType<typeof projectControlled>): stri
   return JSON.stringify(fields, keys);
 }
 
+// NOT @gate-tagged (slice 8): this API-only byte-identity test creates its event inline with an
+// insufficient payload (currently 400s on dev — same NotNull gap event-fixture solves) and walks
+// through promote-to-READY (a flaky out-of-band Cognito/CUMS write). Hardening it to the gate
+// bar (migrate event-create to createRegistrationEvent + a promote-free path) is a tracked
+// follow-up; until then it stays out of the @smoke/@gate scopes. See plan PR 8 notes.
 test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self (Story 11.D.4 AC10 case 51)', () => {
   test.skip(
     !ORGANIZER_BEARER,
