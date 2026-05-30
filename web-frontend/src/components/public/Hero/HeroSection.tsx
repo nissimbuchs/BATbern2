@@ -203,7 +203,10 @@ export const HeroSection = ({
             <div className="max-w-4xl">
               <BATbernLoader size={288} speed="slow" className="mb-6" />
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6">
+              <h1
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6"
+                data-testid="event-hero-title"
+              >
                 {title}
               </h1>
 

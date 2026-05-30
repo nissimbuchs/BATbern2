@@ -121,11 +121,15 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                     <FormControl>
                       <Input
                         {...field}
+                        data-testid="registration-first-name-input"
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
                         placeholder={t('personalDetails.placeholders.firstName')}
                       />
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage
+                      data-testid="registration-first-name-error"
+                      className="text-red-400"
+                    />
                   </FormItem>
                 )}
               />
@@ -141,11 +145,15 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                     <FormControl>
                       <Input
                         {...field}
+                        data-testid="registration-last-name-input"
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
                         placeholder={t('personalDetails.placeholders.lastName')}
                       />
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage
+                      data-testid="registration-last-name-error"
+                      className="text-red-400"
+                    />
                   </FormItem>
                 )}
               />
@@ -164,12 +172,13 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                     <Input
                       {...field}
                       type="email"
+                      data-testid="registration-email-input"
                       className="bg-zinc-900 border-zinc-800 text-zinc-100"
                       placeholder={t('personalDetails.placeholders.email')}
                     />
                   </FormControl>
                   <p className="text-xs text-zinc-500">{t('personalDetails.fields.emailHelper')}</p>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage data-testid="registration-email-error" className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -194,7 +203,10 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                         placeholder={t('personalDetails.placeholders.company')}
                       />
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage
+                      data-testid="registration-company-error"
+                      className="text-red-400"
+                    />
                   </FormItem>
                 )}
               />
@@ -210,11 +222,12 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
                     <FormControl>
                       <Input
                         {...field}
+                        data-testid="registration-role-input"
                         className="bg-zinc-900 border-zinc-800 text-zinc-100"
                         placeholder={t('personalDetails.placeholders.role')}
                       />
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage data-testid="registration-role-error" className="text-red-400" />
                   </FormItem>
                 )}
               />

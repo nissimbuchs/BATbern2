@@ -127,6 +127,7 @@ export function FilterSidebar({
                     checked={isChecked}
                     onChange={() => handleTopicToggle(topic.topicCode)}
                     aria-label={`${topic.title} (${topic.usageCount})`}
+                    data-testid={`topic-checkbox-${topic.topicCode}`}
                     className="h-4 w-4 text-primary focus:ring-ring border-border rounded"
                   />
                   <span className="ml-2 text-sm text-foreground">

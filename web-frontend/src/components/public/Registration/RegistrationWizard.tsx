@@ -361,7 +361,10 @@ export const RegistrationWizard = ({
   // Success view
   if (registrationSuccess) {
     return (
-      <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
+      <div
+        data-testid="registration-success"
+        className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}
+      >
         <div className="text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
           {isWaitlistRegistration ? (
@@ -385,7 +388,12 @@ export const RegistrationWizard = ({
               {registeredEmail && (
                 <p className="text-zinc-300 mb-3">
                   {t('success.emailSentTo')}{' '}
-                  <span className="font-mono text-blue-400">{registeredEmail}</span>
+                  <span
+                    data-testid="registration-success-email"
+                    className="font-mono text-blue-400"
+                  >
+                    {registeredEmail}
+                  </span>
                 </p>
               )}
               <p className="text-sm text-zinc-400 mb-4">

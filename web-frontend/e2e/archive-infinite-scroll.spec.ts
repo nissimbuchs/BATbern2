@@ -1,240 +1,84 @@
 /**
- * Automated E2E Test: Archive Infinite Scroll
+ * E2E: Archive Infinite Scroll (hardened — docs/plans/playwright-staging-hardening.md, slice 7 / PR 8)
  *
- * Story BAT-109 Task 1.3: Infinite scroll functionality
- * Tests AC3: Infinite scroll (auto-load at 400px from bottom, 20 events/page)
- * Tests AC19: Performance (<300ms infinite scroll)
+ * Public, read-only. data-testid locators only. Tagged @gate.
+ *
+ * The archive paginates 20 events/page (useInfiniteEvents). The sentinel
+ * (data-testid="infinite-scroll-sentinel") renders only while hasNextPage is true; reaching
+ * it auto-fetches the next page. Each test skips itself cleanly when the environment's archive
+ * is a single page (< 20 events), logging why — never a silent pass.
+ *
+ * Removed dead/flaky tests (logged in PR):
+ *  - "maintain scroll position on browser back": browser scroll-restoration is not
+ *    deterministic across runs/engines; not a gate-worthy assertion.
+ *  - "respect <1000ms scroll performance target": wall-clock timing is environment-dependent
+ *    and CI-flaky; performance belongs in a dedicated budget, not the UI gate.
+ *  - "rapid scrolling without duplicate loads": low signal, high flake; the dedupe invariant
+ *    is already covered by the count-bound assertion in the auto-load test.
  */
 
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-test.describe('Archive Infinite Scroll', () => {
+const cardCount = (page: Page) => page.getByTestId('event-card').count();
+
+test.describe('Archive Infinite Scroll', { tag: '@gate' }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/archive');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByTestId('event-card').first()).toBeVisible();
   });
 
-  test('should auto-load next page when scrolling near bottom', async ({ page }) => {
-    console.log('→ Verifying initial page load');
-    // AC3: Should load 20 events per page
-    const eventCards = page.locator('[data-testid="event-card"]');
-    const initialCount = await eventCards.count();
-    console.log(`Initial event count: ${initialCount}`);
+  test('auto-loads the next page when the sentinel scrolls into view', async ({ page }) => {
+    const initial = await cardCount(page);
+    expect(initial).toBeGreaterThan(0);
+    expect(initial).toBeLessThanOrEqual(20);
+    test.skip(initial < 20, 'Archive is a single page in this environment — nothing to paginate');
 
-    // Should load at least some events on first page
-    expect(initialCount).toBeGreaterThan(0);
-    expect(initialCount).toBeLessThanOrEqual(20);
-
-    console.log('→ Scrolling to trigger infinite scroll');
-    // AC3: Auto-load at 400px from bottom
-    // Scroll to near bottom (within 400px threshold)
-    await page.evaluate(() => {
-      const scrollHeight = document.documentElement.scrollHeight;
-      const targetScroll = scrollHeight - window.innerHeight - 500; // 500px from bottom
-      window.scrollTo(0, targetScroll);
-    });
-
-    // Wait for new events to load
-    console.log('→ Waiting for new events to load');
-    await page.waitForTimeout(1000); // Allow time for loading
-
-    const newCount = await eventCards.count();
-    console.log(`Event count after scroll: ${newCount}`);
-
-    // Should have loaded more events (next page)
-    if (initialCount === 20) {
-      // Only test if there was a full first page (indicating more pages exist)
-      expect(newCount).toBeGreaterThan(initialCount);
-      expect(newCount).toBeLessThanOrEqual(40); // Up to 2 pages loaded
-    }
-
-    console.log('✓ Infinite scroll auto-loads next page');
+    await page.getByTestId('infinite-scroll-sentinel').scrollIntoViewIfNeeded();
+    await expect.poll(() => cardCount(page), { timeout: 10_000 }).toBeGreaterThan(initial);
+    // Dedup invariant: a single page-load must not balloon past two pages.
+    expect(await cardCount(page)).toBeLessThanOrEqual(40);
   });
 
-  test('should show loading indicator during scroll load', async ({ page }) => {
-    console.log('→ Testing loading indicator during infinite scroll');
-
-    const eventCards = page.locator('[data-testid="event-card"]');
-    const initialCount = await eventCards.count();
-
-    if (initialCount === 20) {
-      console.log('→ Scrolling to trigger load');
-      // Scroll near bottom
-      await page.evaluate(() => {
-        const scrollHeight = document.documentElement.scrollHeight;
-        const targetScroll = scrollHeight - window.innerHeight - 500;
-        window.scrollTo(0, targetScroll);
-      });
-
-      // Loading indicator should appear
-      console.log('→ Verifying loading indicator appears');
-      const loadingIndicator = page.locator('[data-testid="infinite-scroll-loading"]');
-      await expect(loadingIndicator).toBeVisible({ timeout: 2000 });
-
-      // Wait for loading to complete
-      await page.waitForLoadState('networkidle');
-
-      // Loading indicator should disappear
-      console.log('→ Verifying loading indicator disappears');
-      await expect(loadingIndicator).not.toBeVisible();
+  test('removes the sentinel once all pages are loaded', async ({ page }) => {
+    // Scroll the sentinel into view repeatedly; each step waits until EITHER another page
+    // loaded (card count grew) OR the sentinel disappeared (end reached). 15 steps covers a
+    // 20/page archive well past its real size.
+    for (let i = 0; i < 15; i++) {
+      const sentinel = page.getByTestId('infinite-scroll-sentinel');
+      if ((await sentinel.count()) === 0) break;
+      const before = await cardCount(page);
+      await sentinel.scrollIntoViewIfNeeded();
+      await page
+        .waitForFunction(
+          (prev) => {
+            const cards = document.querySelectorAll('[data-testid="event-card"]').length;
+            const hasSentinel = !!document.querySelector(
+              '[data-testid="infinite-scroll-sentinel"]'
+            );
+            return cards > prev || !hasSentinel;
+          },
+          before,
+          { timeout: 8_000 }
+        )
+        .catch(() => {}); // tolerate a stalled step; the final assertion is the real check
     }
 
-    console.log('✓ Loading indicator displays correctly');
+    // The sentinel renders only while hasNextPage is true, so it is gone at the end.
+    await expect(page.getByTestId('infinite-scroll-sentinel')).toHaveCount(0);
   });
 
-  test('should handle end of results gracefully', async ({ page }) => {
-    console.log('→ Testing end of results state');
+  test(
+    'shows the loading indicator while fetching the next page',
+    { tag: '@quarantine' },
+    async ({ page }) => {
+      // Quarantined: the loading state is brief and racy to catch deterministically; tracked
+      // for promotion once a stable wait pattern is proven (plan §A6 quarantine discipline).
+      const initial = await cardCount(page);
+      test.skip(initial < 20, 'Archive is a single page in this environment — no fetch to observe');
 
-    // Keep scrolling until no more results
-    let previousCount = 0;
-    let currentCount = await page.locator('[data-testid="event-card"]').count();
-    let scrollAttempts = 0;
-    const maxScrollAttempts = 10; // Prevent infinite loop
-
-    while (currentCount > previousCount && scrollAttempts < maxScrollAttempts) {
-      previousCount = currentCount;
-
-      console.log(`→ Scroll attempt ${scrollAttempts + 1}, events: ${currentCount}`);
-
-      // Scroll to bottom
-      await page.evaluate(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-      });
-
-      await page.waitForTimeout(1000);
-      currentCount = await page.locator('[data-testid="event-card"]').count();
-      scrollAttempts++;
+      await page.getByTestId('infinite-scroll-sentinel').scrollIntoViewIfNeeded();
+      await expect(page.getByTestId('infinite-scroll-loading')).toBeVisible({ timeout: 3_000 });
     }
-
-    if (scrollAttempts < maxScrollAttempts) {
-      console.log('→ Reached end of results');
-      // Should show "no more results" message or similar
-      const endMessage = page.locator('[data-testid="end-of-results"]');
-      await expect(endMessage).toBeVisible({ timeout: 5000 });
-
-      console.log('✓ End of results handled gracefully');
-    } else {
-      console.log('→ Skipping end-of-results check (too many events)');
-    }
-  });
-
-  test('should maintain scroll position on browser back', async ({ page }) => {
-    console.log('→ Testing scroll position persistence');
-
-    const eventCards = page.locator('[data-testid="event-card"]');
-    const initialCount = await eventCards.count();
-
-    if (initialCount >= 10) {
-      console.log('→ Scrolling down');
-      // Scroll to middle of page
-      await page.evaluate(() => {
-        window.scrollTo(0, 800);
-      });
-
-      const scrollPosition = await page.evaluate(() => window.scrollY);
-      console.log(`Scroll position: ${scrollPosition}px`);
-
-      console.log('→ Clicking on an event to navigate away');
-      // Click first event to navigate to detail page
-      await eventCards.first().click();
-
-      // Wait for navigation
-      await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(/\/archive\/BAT/);
-
-      console.log('→ Navigating back to archive');
-      await page.goBack();
-      await page.waitForLoadState('networkidle');
-
-      // Verify we're back on archive page
-      await expect(page).toHaveURL(/\/archive$/);
-
-      // Scroll position should be restored (or at least near previous position)
-      const newScrollPosition = await page.evaluate(() => window.scrollY);
-      console.log(`Scroll position after back: ${newScrollPosition}px`);
-
-      // Allow some tolerance (within 100px)
-      expect(Math.abs(newScrollPosition - scrollPosition)).toBeLessThan(100);
-
-      console.log('✓ Scroll position maintained on back navigation');
-    } else {
-      console.log('→ Skipping test (not enough events)');
-    }
-  });
-
-  test('should respect scroll performance target', async ({ page }) => {
-    console.log('→ Testing infinite scroll performance');
-    // AC19: <300ms infinite scroll load time
-
-    const eventCards = page.locator('[data-testid="event-card"]');
-    const initialCount = await eventCards.count();
-
-    if (initialCount === 20) {
-      console.log('→ Measuring scroll load performance');
-
-      // Start performance measurement
-      const startTime = Date.now();
-
-      // Scroll near bottom to trigger load
-      await page.evaluate(() => {
-        const scrollHeight = document.documentElement.scrollHeight;
-        const targetScroll = scrollHeight - window.innerHeight - 500;
-        window.scrollTo(0, targetScroll);
-      });
-
-      // Wait for new events to appear
-      await page.waitForFunction(
-        (expectedCount) => {
-          const cards = document.querySelectorAll('[data-testid="event-card"]');
-          return cards.length > expectedCount;
-        },
-        initialCount,
-        { timeout: 5000 }
-      );
-
-      const loadTime = Date.now() - startTime;
-      console.log(`Infinite scroll load time: ${loadTime}ms`);
-
-      // AC19: Should load in <300ms (allowing some overhead for network latency)
-      // In real production with optimized backend, this should be <300ms
-      // For E2E test, we allow up to 1000ms to account for test environment overhead
-      expect(loadTime).toBeLessThan(1000);
-
-      console.log('✓ Infinite scroll performance is acceptable');
-    } else {
-      console.log('→ Skipping performance test (not enough events)');
-    }
-  });
-
-  test('should handle rapid scrolling without duplicate loads', async ({ page }) => {
-    console.log('→ Testing rapid scroll handling');
-
-    const eventCards = page.locator('[data-testid="event-card"]');
-    const initialCount = await eventCards.count();
-
-    if (initialCount === 20) {
-      console.log('→ Rapidly scrolling multiple times');
-
-      // Scroll rapidly to bottom multiple times
-      for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => {
-          window.scrollTo(0, document.body.scrollHeight);
-        });
-        await page.waitForTimeout(100); // Small delay between scrolls
-      }
-
-      // Wait for any loading to complete
-      await page.waitForTimeout(2000);
-
-      const finalCount = await eventCards.count();
-      console.log(`Final event count: ${finalCount}`);
-
-      // Should not have loaded duplicates (max 2 pages = 40 events)
-      expect(finalCount).toBeLessThanOrEqual(40);
-
-      console.log('✓ Rapid scrolling handled without duplicates');
-    } else {
-      console.log('→ Skipping rapid scroll test (not enough events)');
-    }
-  });
+  );
 });

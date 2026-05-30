@@ -156,7 +156,7 @@ export const SessionCards = ({
   }
 
   return (
-    <div className="py-12">
+    <div className="py-12" data-testid="sessions-section">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-light text-zinc-100">{t('common:labels.sessions')}</h2>
         <div className="flex gap-2">
@@ -205,11 +205,17 @@ export const SessionCards = ({
         {filteredSessions.map((session) => (
           <Card
             key={session.sessionSlug}
+            data-testid="session-card"
             className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors"
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
-                <CardTitle className="font-light text-xl text-zinc-100">{session.title}</CardTitle>
+                <CardTitle
+                  className="font-light text-xl text-zinc-100"
+                  data-testid="session-card-title"
+                >
+                  {session.title}
+                </CardTitle>
                 <Badge
                   variant="outline"
                   className="bg-blue-400/10 text-blue-400 border-blue-400/20"
@@ -220,7 +226,9 @@ export const SessionCards = ({
             </CardHeader>
             <CardContent className="space-y-4">
               {session.description && (
-                <p className="text-sm text-zinc-400">{session.description}</p>
+                <p className="text-sm text-zinc-400" data-testid="session-card-description">
+                  {session.description}
+                </p>
               )}
 
               <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
@@ -266,7 +274,7 @@ export const SessionCards = ({
 
               {/* Materials — shown in POST_EVENT / ARCHIVE phases */}
               {showMaterials && session.materials && session.materials.length > 0 && (
-                <div className="pt-2 border-t border-zinc-800">
+                <div className="pt-2 border-t border-zinc-800" data-testid="session-materials">
                   <p className="text-xs text-zinc-500 mb-3">
                     {t('public.program.materials', 'Materials')}:
                   </p>
@@ -290,6 +298,7 @@ export const SessionCards = ({
                                   aria-label={t('materials.downloadAriaLabel', {
                                     fileName: material.fileName,
                                   })}
+                                  data-testid="material-download"
                                   className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {getMaterialTypeIcon(material.materialType)}

@@ -1,10 +1,58 @@
 #!/bin/bash
-# Run Playwright E2E tests with automatic token loading
-# Usage: ./scripts/ci/run-playwright-tests.sh [environment]
+# Run Playwright UI E2E tests against a deployed environment, with automatic token loading.
+# docs/plans/playwright-staging-hardening.md §A7
+#
+# Usage:
+#   run-playwright-tests.sh <environment> [options]
+#
+# Options:
+#   --project NAME       chromium | speaker | partner. Default: every project whose role
+#                        token is available (chromium always; speaker/partner when present).
+#   --scope SCOPE        smoke | gate | quarantine | all. Routes the tag grep (plan §A6):
+#                          smoke      → --grep @smoke  --grep-invert @quarantine (per-deploy gate)
+#                          gate       → --grep @gate   --grep-invert @quarantine (nightly full run)
+#                          quarantine → --grep @quarantine (nightly re-test to promote settled flakes)
+#                          all        → everything (local default)
+#   --slice GREP         Run one entity slice: positive --grep GREP (still inverts
+#                        @quarantine). Takes precedence over --scope's positive selector.
+#   --cleanup-only       Run no tests; fire only globalSetup + globalTeardown so the
+#                        canonical-prefix sweep executes (belt-and-suspenders after a crash).
+#
+# Examples:
+#   run-playwright-tests.sh staging --scope smoke
+#   run-playwright-tests.sh staging --scope gate
+#   run-playwright-tests.sh development --slice companies
+#   run-playwright-tests.sh staging --cleanup-only
 
 set -e
 
+for arg in "$@"; do
+    if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
+        sed -n '/^# Usage:/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+    fi
+done
+
 ENVIRONMENT=${1:-"staging"}
+shift || true
+
+PROJECT=""          # empty → auto-build from available role tokens (backward compatible)
+SCOPE="all"
+SLICE=""
+CLEANUP_ONLY=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --project) PROJECT="$2"; shift 2 ;;
+        --project=*) PROJECT="${1#--project=}"; shift ;;
+        --scope) SCOPE="$2"; shift 2 ;;
+        --scope=*) SCOPE="${1#--scope=}"; shift ;;
+        --slice) SLICE="$2"; shift 2 ;;
+        --slice=*) SLICE="${1#--slice=}"; shift ;;
+        --cleanup-only) CLEANUP_ONLY=1; shift ;;
+        *) echo "Unknown option: $1" >&2; echo "Run with --help for usage" >&2; exit 2 ;;
+    esac
+done
 
 # Color output
 RED='\033[0;31m'
@@ -14,10 +62,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}================================${NC}"
-echo -e "${BLUE}Playwright E2E Tests${NC}"
+echo -e "${BLUE}Playwright UI E2E Tests${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 echo "Environment: $ENVIRONMENT"
+echo "Scope:       $SCOPE"
+[ -n "$PROJECT" ] && echo "Project:     $PROJECT"
+[ -n "$SLICE" ] && echo "Slice:       $SLICE"
+[ "$CLEANUP_ONLY" = "1" ] && echo "Mode:        cleanup-only"
 echo ""
 
 # Auto-refresh token if expired
@@ -25,31 +77,23 @@ if [ -f "./scripts/auth/refresh-token.sh" ]; then
     ./scripts/auth/refresh-token.sh "$ENVIRONMENT" || true
 fi
 
-# Load authentication token
+# Load legacy organizer token (also exported as AUTH_TOKEN for API-integration specs)
 local_config=~/.batbern/${ENVIRONMENT}.json
 if [ -f "$local_config" ]; then
     echo -e "${BLUE}Loading auth token from: $local_config${NC}"
     AUTH_TOKEN=$(jq -r '.idToken' "$local_config" 2>/dev/null)
-
     if [ "$AUTH_TOKEN" = "null" ] || [ -z "$AUTH_TOKEN" ]; then
         echo -e "${YELLOW}WARNING: Failed to load token${NC}"
-        echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password"
-        echo "Tests requiring authentication will be skipped"
+        AUTH_TOKEN=""
     else
-        retrieved_at=$(jq -r '.retrievedAt' "$local_config" 2>/dev/null)
-        expires_in=$(jq -r '.expiresIn' "$local_config" 2>/dev/null)
         echo -e "${GREEN}✓ Token loaded successfully${NC}"
-        echo "Retrieved at: $retrieved_at"
-        echo "Expires in: ~$(($expires_in / 60)) minutes from retrieval"
         export AUTH_TOKEN="$AUTH_TOKEN"
     fi
 else
-    echo -e "${YELLOW}WARNING: No auth token found${NC}"
-    echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password"
-    echo "Tests requiring authentication will be skipped"
+    echo -e "${YELLOW}WARNING: No legacy auth token at $local_config${NC}"
 fi
 
-# Load per-role tokens (for Epic 8+ multi-role testing)
+# Load per-role tokens (Epic 8+ multi-role testing)
 load_role_token() {
     local role="$1"
     local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
@@ -87,7 +131,7 @@ if [ "$ENVIRONMENT" = "staging" ]; then
     export E2E_AWS_REGION="eu-central-1"
 elif [ "$ENVIRONMENT" = "production" ]; then
     export TEST_ENV="production"
-    export E2E_BASE_URL="https://www.batbern.ch"
+    export E2E_BASE_URL="https://batbern.ch"
     export E2E_API_URL="https://api.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 else
@@ -101,62 +145,134 @@ echo -e "${BLUE}Test Configuration:${NC}"
 echo "  Environment: $TEST_ENV"
 echo "  Base URL:    $E2E_BASE_URL"
 echo "  API URL:     $E2E_API_URL"
-echo "  Region:      $E2E_AWS_REGION"
 echo ""
 
-# Check if we're in the correct directory
+# Check we're in the project root
 if [ ! -d "web-frontend" ]; then
     echo -e "${RED}ERROR: Must be run from project root${NC}"
     echo "Current directory: $(pwd)"
     exit 1
 fi
 
+# ── Edge-readiness poll (plan §A1, OQ-2) ──────────────────────────────────────────────
+# The frontend is "build once, deploy everywhere" (runtime config via GET /api/v1/config)
+# with NO embedded git SHA and NO /version marker, and it is built SELECTIVELY (only when
+# the frontend changed), so a SHA-match poll is architecturally impossible. We instead
+# prove CloudFront serves a COHERENT bundle: index.html (200) references a hashed entry
+# asset that is itself fetchable (200). This catches the stale-index / un-propagated-asset
+# race right after a deploy. Skipped for local dev (the webServer block handles readiness).
+wait_for_edge_ready() {
+    local base="$1"
+    local max_attempts=20
+    local attempt=1
+    local delay=5
+    echo -e "${BLUE}Edge-readiness poll: $base${NC}"
+    while [ "$attempt" -le "$max_attempts" ]; do
+        local html
+        html=$(curl -fsSL --max-time 15 "$base/" 2>/dev/null || true)
+        if [ -n "$html" ]; then
+            local asset
+            asset=$(echo "$html" | grep -oE '/assets/[A-Za-z0-9._-]+\.(js|css)' | head -1)
+            if [ -z "$asset" ]; then
+                echo -e "${GREEN}✓ index served (no hashed asset ref found) — proceeding${NC}"
+                return 0
+            fi
+            local code
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$base$asset" || echo "000")
+            if [ "$code" = "200" ]; then
+                echo -e "${GREEN}✓ edge ready: $asset → 200 (attempt $attempt)${NC}"
+                return 0
+            fi
+            echo -e "${YELLOW}  attempt $attempt: $asset → $code (retry in ${delay}s)${NC}"
+        else
+            echo -e "${YELLOW}  attempt $attempt: index.html not served yet (retry in ${delay}s)${NC}"
+        fi
+        sleep "$delay"
+        attempt=$((attempt + 1))
+        [ "$delay" -lt 30 ] && delay=$((delay * 2))
+    done
+    echo -e "${RED}✗ edge not ready after $max_attempts attempts (~5 min)${NC}" >&2
+    return 1
+}
+
+if [ "$TEST_ENV" != "development" ]; then
+    wait_for_edge_ready "$E2E_BASE_URL"
+fi
+
 cd web-frontend
 
-# Check if Playwright is configured
 if [ ! -f "playwright.config.ts" ] && [ ! -f "playwright.config.js" ]; then
     echo -e "${RED}ERROR: Playwright not configured${NC}"
-    echo "Expected: web-frontend/playwright.config.ts or playwright.config.js"
     exit 1
 fi
 
-# Install Playwright if needed
+# Ensure deps + browsers
 if ! npm list @playwright/test >/dev/null 2>&1; then
     echo -e "${YELLOW}Installing Playwright...${NC}"
     npm install -D @playwright/test
 fi
-
-# Install browsers if needed
 echo -e "${BLUE}Ensuring Playwright browsers are installed...${NC}"
-npx playwright install --with-deps chromium
+if [ "${CI:-}" = "true" ]; then
+    npx playwright install --with-deps chromium
+else
+    npx playwright install chromium >/dev/null 2>&1 || true
+fi
+
+# ── Build the project list ────────────────────────────────────────────────────────────
+PROJECT_ARGS=()
+if [ -n "$PROJECT" ]; then
+    PROJECT_ARGS+=("--project=$PROJECT")
+else
+    # Backward compatible: chromium always; role projects when their tokens are present.
+    PROJECT_ARGS+=("--project=chromium")
+    [ -n "$SPEAKER_AUTH_TOKEN" ] && PROJECT_ARGS+=("--project=speaker")
+    [ -n "$PARTNER_AUTH_TOKEN" ] && PROJECT_ARGS+=("--project=partner")
+fi
+
+# ── Build the grep routing (plan §A6) ─────────────────────────────────────────────────
+GREP_ARGS=()
+if [ "$CLEANUP_ONLY" = "1" ]; then
+    # Match no test → 0 tests run, but globalSetup + globalTeardown still fire, so the
+    # canonical-prefix sweep in global-teardown.ts executes. Bruno's --cleanup-only analogue.
+    GREP_ARGS+=(--grep "@__cleanup_only_no_match__")
+else
+    if [ -n "$SLICE" ]; then
+        GREP_ARGS+=(--grep "$SLICE" --grep-invert "@quarantine")
+    elif [ "$SCOPE" = "smoke" ]; then
+        GREP_ARGS+=(--grep "@smoke" --grep-invert "@quarantine")
+    elif [ "$SCOPE" = "gate" ]; then
+        GREP_ARGS+=(--grep "@gate" --grep-invert "@quarantine")
+    elif [ "$SCOPE" = "quarantine" ]; then
+        # Re-test only the quarantined specs (nightly) so settled flakes can be promoted.
+        GREP_ARGS+=(--grep "@quarantine")
+    elif [ "$SCOPE" = "all" ]; then
+        : # everything (local default) — quarantined specs included only here
+    else
+        echo -e "${RED}ERROR: --scope must be smoke|gate|quarantine|all (got '$SCOPE')${NC}" >&2
+        exit 2
+    fi
+fi
 
 echo ""
-echo -e "${BLUE}Running Playwright tests...${NC}"
+echo -e "${BLUE}Running:${NC} npx playwright test ${PROJECT_ARGS[*]} ${GREP_ARGS[*]}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
-# Build project list: always run chromium (organizer), add role projects when tokens available
-PLAYWRIGHT_PROJECTS="--project=chromium"
-[ -n "$SPEAKER_AUTH_TOKEN" ] && PLAYWRIGHT_PROJECTS="$PLAYWRIGHT_PROJECTS --project=speaker"
-[ -n "$PARTNER_AUTH_TOKEN" ] && PLAYWRIGHT_PROJECTS="$PLAYWRIGHT_PROJECTS --project=partner"
+set +e
+npx playwright test "${PROJECT_ARGS[@]}" "${GREP_ARGS[@]}"
+EXIT_CODE=$?
+set -e
 
-echo -e "${BLUE}Running projects: $PLAYWRIGHT_PROJECTS${NC}"
 echo ""
-
-# Run tests
-# shellcheck disable=SC2086
-if npx playwright test $PLAYWRIGHT_PROJECTS; then
-    echo ""
+if [ "$EXIT_CODE" -eq 0 ]; then
     echo -e "${GREEN}✅ Playwright tests PASSED${NC}"
     exit 0
 else
-    echo ""
-    echo -e "${RED}✗ Playwright tests FAILED${NC}"
+    echo -e "${RED}✗ Playwright tests FAILED (exit $EXIT_CODE)${NC}"
     echo ""
     echo -e "${YELLOW}Debugging tips:${NC}"
     echo "1. Check service health and deployment status"
     echo "2. Verify auth token is not expired"
-    echo "3. Review test output above for specific failures"
-    echo "4. View HTML report: npx playwright show-report"
-    exit 1
+    echo "3. Review test output above; view HTML report: npx playwright show-report"
+    exit "$EXIT_CODE"
 fi

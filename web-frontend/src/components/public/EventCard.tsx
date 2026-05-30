@@ -61,6 +61,7 @@ export function EventCard({
     <Link
       to={`${linkPrefix}${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
+      data-testid="event-card"
     >
       <div
         className={viewMode === 'grid' ? 'grid-card' : 'list-card'}
@@ -77,6 +78,7 @@ export function EventCard({
                 src={event.themeImageUrl}
                 alt={`${event.title} theme image`}
                 className="w-full h-full object-cover"
+                data-testid="event-card-image"
               />
             </div>
           )}
@@ -93,7 +95,9 @@ export function EventCard({
 
               {/* Topic Badge */}
               {event.topic && typeof event.topic === 'object' && (
-                <Badge className="bg-zinc-800 text-zinc-300">{event.topic.name}</Badge>
+                <Badge className="bg-zinc-800 text-zinc-300" data-testid="event-card-topic">
+                  {event.topic.name}
+                </Badge>
               )}
 
               {/* Registration Status Chip (Story 10.10, AC5) */}
@@ -109,11 +113,15 @@ export function EventCard({
             </div>
 
             {/* Event Title */}
-            <CardTitle className="font-light text-xl text-zinc-100">{event.title}</CardTitle>
+            <CardTitle className="font-light text-xl text-zinc-100" data-testid="event-card-title">
+              {event.title}
+            </CardTitle>
 
             {/* Date and Venue */}
             <div className="space-y-1 mt-2">
-              <p className="text-sm text-zinc-400">{formattedDate}</p>
+              <p className="text-sm text-zinc-400" data-testid="event-card-date">
+                {formattedDate}
+              </p>
               {event.venueName && <p className="text-sm text-zinc-400">{event.venueName}</p>}
             </div>
           </CardHeader>

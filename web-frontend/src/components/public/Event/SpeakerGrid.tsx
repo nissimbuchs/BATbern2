@@ -67,12 +67,13 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   }
 
   return (
-    <div className="py-12">
+    <div className="py-12" data-testid="speaker-grid">
       <h2 className="text-3xl font-light mb-8 text-zinc-100">{t('common:navigation.speakers')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {speakersWithSessions.map((speaker) => (
           <Card
             key={speaker.username}
+            data-testid="speaker-card"
             className="group hover:border-blue-400 transition-colors bg-zinc-700 border-zinc-600"
           >
             <CardHeader className="pb-4">
