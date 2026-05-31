@@ -187,6 +187,21 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasAction(template, 'cognito-idp:InitiateAuth')).toBe(true);
   });
 
+  // ── CloudFront / CloudFormation (frontend rollback) ───────────────────────
+  // Used by: deploy-staging.yml rollback-on-test-failure "Restore frontend from
+  // stable bucket" step (aws cloudfront create-invalidation; aws cloudformation
+  // list-exports to resolve the distribution id). The s3 sync/ls calls in the same
+  // step are covered by the CDK deployment policy's batbern-*-staging S3 grant
+  // (the pre-push validator excludes `aws s3`). See plan §"Frontend rollback".
+
+  test('should_grantCloudFrontCreateInvalidation_for_frontendRollbackRestore', () => {
+    expect(hasAction(template, 'cloudfront:CreateInvalidation')).toBe(true);
+  });
+
+  test('should_grantCloudFormationListExports_for_frontendRollbackDistributionLookup', () => {
+    expect(hasAction(template, 'cloudformation:ListExports')).toBe(true);
+  });
+
   // ── Policy separation ─────────────────────────────────────────────────────
   // Runtime actions must live in WorkflowRuntimePolicy, not bleed into the CDK policy.
 

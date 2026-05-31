@@ -85,6 +85,25 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     //    The `bruno.test*` user is removed by the global-teardown `bruno.test%` sweep.
   });
 
+  // Disable Cloudflare Turnstile for the headless run via a client-side override of the runtime
+  // config (GET /api/v1/config). On staging `features.turnstile=true` with a real production
+  // sitekey, which a headless browser cannot solve → `getTurnstileToken()` never resolves and the
+  // submit hangs on "Wird gesendet…" (this caused two spurious gate rollbacks on PR #703). With
+  // Turnstile disabled the wizard sends NO `X-Turnstile-Token`; the API gateway's
+  // TurnstileVerificationFilter fail-opens on a missing token (its designed behaviour for users
+  // whose widget is blocked by an ad-blocker/firewall — see TurnstileVerificationFilter AC2), so
+  // the registration POST succeeds. This exercises the real funnel + POST + cleanup; the Turnstile
+  // widget itself can't be driven headlessly and is out of E2E scope. Route is set in beforeEach so
+  // it intercepts the config fetch before any navigation. See GitHub issue #704.
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/v1/config', async (route) => {
+      const resp = await route.fetch();
+      const cfg = await resp.json();
+      if (cfg?.features) cfg.features.turnstile = false;
+      await route.fulfill({ response: resp, json: cfg });
+    });
+  });
+
   /** Fill step 1 (testid-only). Company typing opens an autocomplete popover — dismiss it. */
   async function fillStep1(page: Page, f: Step1Fields): Promise<void> {
     if (f.firstName !== undefined)
@@ -99,9 +118,14 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     }
   }
 
+  // @smoke: slice 7's mutating happy-path. Runs headlessly on staging because the beforeEach
+  // above disables Turnstile client-side, so the submit no longer hangs on `getTurnstileToken()`
+  // and the gateway fail-opens on the (now-absent) token. (History: briefly @gate then @quarantine
+  // on PR #703 while the staging "Wird gesendet…" hang was root-caused to Turnstile; the config
+  // override is the fix — see GitHub issue #704.)
   test(
     'submits a public registration and shows the email-confirmation success view',
-    { tag: ['@smoke', '@gate'] },
+    { tag: ['@smoke'] },
     async ({ page }) => {
       const email = factory.email();
 
@@ -118,8 +142,10 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
       await page.getByTestId('registration-wizard-submit-btn').click();
 
       // Real success state: the inline "email sent" view (NOT a QR confirmation page),
-      // echoing back the registered email.
-      await expect(page.getByTestId('registration-success')).toBeVisible();
+      // echoing back the registered email. 30s timeout for the heaviest mutating POST
+      // (getOrCreate company + user + registration + async confirmation email) against a
+      // possibly-cold post-deploy backend.
+      await expect(page.getByTestId('registration-success')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('registration-success-email')).toHaveText(email);
     }
   );

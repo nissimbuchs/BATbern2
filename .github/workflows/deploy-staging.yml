@@ -1183,7 +1183,7 @@ jobs:
       # Bruno API contract tests run in the dedicated `bruno-tests` job below
       # (docs/plans/bruno-staging-hardening.md §A5b); Playwright UI E2E in the
       # `playwright-tests` job (docs/plans/playwright-staging-hardening.md §A1). The split
-      # lets `tag-stable-on-success` / `rollback-on-bruno-failure` react to a clean
+      # lets `tag-stable-on-success` / `rollback-on-test-failure` react to a clean
       # job-level result instead of a `continue-on-error` swallow.
 
       # E2E infrastructure tests temporarily disabled - require additional setup:
@@ -1253,17 +1253,19 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Bruno API contract tests run as a separate job so that downstream jobs
-  # (tag-stable-on-success / rollback-on-bruno-failure) can react to a clean
+  # (tag-stable-on-success / rollback-on-test-failure) can react to a clean
   # job-level result.
   #
   # GATE FLIPPED in PR 14 (plan §E): the "Run Bruno" step no longer carries
   # `continue-on-error: true`, so a Bruno failure now fails THIS job and the
-  # deploy workflow. Downstream jobs gate on `needs.bruno-tests.result`:
-  #   • tag-stable-on-success promotes staging-stable only when result == 'success';
-  #   • rollback-on-bruno-failure (with `always()`) rolls back when result == 'failure'.
-  # The `always()` on the rollback job is required: once Bruno can fail the
-  # bruno-tests job, a dependent job without `always()` would be SKIPPED rather
-  # than run on that failure.
+  # deploy workflow. Downstream jobs gate on the test-job `result`s (PR 15 added
+  # playwright-tests as a co-equal gate, plan §D):
+  #   • tag-stable-on-success promotes staging-stable only when BOTH bruno-tests
+  #     AND playwright-tests result == 'success';
+  #   • rollback-on-test-failure (with `always()`) rolls back when EITHER
+  #     result == 'failure'.
+  # The `always()` on the rollback job is required: once a test job can fail, a
+  # dependent job without `always()` would be SKIPPED rather than run on that failure.
   # ─────────────────────────────────────────────────────────────────────────────
   bruno-tests:
     name: Bruno API contract tests
@@ -1363,7 +1365,7 @@ jobs:
       - name: Run Bruno API contract tests
         id: run-bruno
         # GATE FLIPPED (PR 14): no `continue-on-error` — a Bruno failure now fails
-        # this job, fails the deploy workflow, and triggers rollback-on-bruno-failure.
+        # this job, fails the deploy workflow, and triggers rollback-on-test-failure.
         env:
           AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
           ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
@@ -1386,7 +1388,7 @@ jobs:
         run: |
           echo "Bruno step outcome: ${{ steps.run-bruno.outcome }}"
           if [ "${{ steps.run-bruno.outcome }}" = "failure" ]; then
-            echo "::error::Bruno tests failed — this job fails the deploy and rollback-on-bruno-failure will auto-roll-back to staging-stable"
+            echo "::error::Bruno tests failed — this job fails the deploy and rollback-on-test-failure will auto-roll-back to staging-stable"
           fi
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -1396,12 +1398,15 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   tag-stable-on-success:
     name: Promote staging-current → staging-stable
-    needs: [deploy-to-staging, bruno-tests]
-    # Gate flipped (PR 14): `continue-on-error` is gone from the Bruno step, so the
-    # bruno-tests job `result` now authoritatively reflects Bruno. Promote only on
-    # success; a Bruno failure fails bruno-tests and (with no `always()` here) skips
-    # this promotion, leaving staging-stable pointed at the last known-good deploy.
-    if: needs.bruno-tests.result == 'success'
+    needs: [deploy-to-staging, bruno-tests, playwright-tests]
+    # Gate flipped (PR 15, plan §D/§A2): promotion now requires BOTH test jobs green.
+    # `continue-on-error` is gone from both the Bruno and Playwright run steps, so each
+    # job `result` authoritatively reflects its suite. Promote only when Bruno AND
+    # Playwright pass; any failure (or a Bruno failure that skips playwright-tests, whose
+    # result is then 'skipped' ≠ 'success') leaves staging-stable pinned to the last
+    # known-good deploy. No `always()` here → a failed `needs` skips this job, which is
+    # the intended no-promote behaviour.
+    if: needs.bruno-tests.result == 'success' && needs.playwright-tests.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1421,22 +1426,42 @@ jobs:
           chmod +x scripts/ci/promote-ecr-tag.sh
           ./scripts/ci/promote-ecr-tag.sh staging staging-current staging-stable
 
+      - name: Snapshot frontend → stable bucket
+        # Frontend analogue of the ECR staging-stable promotion (plan §"Frontend
+        # rollback"). The backend's known-good is the staging-stable ECR tag; the
+        # frontend's known-good is this S3 snapshot. We sync the just-validated
+        # live frontend into the stable bucket so rollback-on-test-failure can
+        # restore it (the live bucket is unversioned + pruned on each deploy, so
+        # without this copy there is nothing to roll back to). Idempotent: a no-op
+        # when the frontend did not change this deploy. Resilient (warn-not-fail):
+        # a snapshot hiccup must never fail an already-green, already-promoted deploy.
+        run: |
+          LIVE="s3://batbern-frontend-staging"
+          STABLE="s3://batbern-frontend-stable-staging"
+          echo "📸 Snapshotting known-good frontend: $LIVE → $STABLE"
+          aws s3 sync "$LIVE/" "$STABLE/" --delete --only-show-errors \
+            && echo "✅ Frontend snapshot updated" \
+            || echo "::warning::Frontend snapshot to stable bucket failed (non-fatal; deploy already promoted to staging-stable)"
+
   # ─────────────────────────────────────────────────────────────────────────────
-  # Bruno red ⇒ auto-rollback to staging-stable.
+  # Bruno OR Playwright red ⇒ auto-rollback to staging-stable.
   #
-  # GATE FLIPPED (PR 14): rollback now fires on EVERY Bruno failure — the
-  # `inputs.enable_bruno_rollback` gate that protected the audit-pass weeks
-  # (PRs 2-13) is removed. `always()` is required so this job still evaluates
-  # when its `bruno-tests` dependency fails (a failed `needs` would otherwise
-  # skip the job before the `if:` is checked).
+  # GATE FLIPPED (PR 15, plan §D/§A2): rollback now fires on EITHER test suite's
+  # failure (renamed from rollback-on-bruno-failure). Bruno failure OR Playwright
+  # @smoke failure rolls ECS back to staging-stable. `always()` is required so this
+  # job still evaluates when a `needs` dependency fails — a failed `needs` would
+  # otherwise skip the job before the `if:` is checked. Note the ordering: when
+  # bruno-tests fails, playwright-tests is SKIPPED (result 'skipped', not 'failure'),
+  # so the Bruno-failure disjunct is what fires the rollback in that case — correct.
   #
   # The `enable_bruno_rollback` workflow input is retained only for the F1
-  # deliberate-fail exercise's `workflow_dispatch` runs on throwaway branches.
+  # deliberate-fail exercise's `workflow_dispatch` runs on throwaway branches
+  # (plan §E.2).
   # ─────────────────────────────────────────────────────────────────────────────
-  rollback-on-bruno-failure:
-    name: Auto-rollback after Bruno failure
-    needs: [deploy-to-staging, bruno-tests]
-    if: ${{ always() && needs.bruno-tests.result == 'failure' }}
+  rollback-on-test-failure:
+    name: Auto-rollback after Bruno or Playwright failure
+    needs: [deploy-to-staging, bruno-tests, playwright-tests]
+    if: ${{ always() && (needs.bruno-tests.result == 'failure' || needs.playwright-tests.result == 'failure') }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1456,24 +1481,62 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           chmod +x scripts/ci/rollback-deployment.sh
-          echo "🚨 Bruno failed — rolling back to staging-stable"
+          if [ "${{ needs.bruno-tests.result }}" = "failure" ]; then
+            echo "🚨 Bruno failed — rolling back to staging-stable"
+          else
+            echo "🚨 Playwright @smoke failed — rolling back to staging-stable"
+          fi
           ./scripts/ci/rollback-deployment.sh staging --yes
+
+      - name: Restore frontend from stable bucket
+        # The ECS rollback above reverts the BACKEND. The frontend is S3/CloudFront
+        # (not ECS), so a frontend-caused @smoke failure would otherwise leave the
+        # broken new frontend live. Restore the last known-good snapshot + invalidate
+        # CloudFront (plan §"Frontend rollback"). `if: always()` so this still runs
+        # even if the backend rollback step erred. GUARDED: if the stable bucket is
+        # empty (no green deploy has seeded it yet), skip — never publish an empty
+        # site; the backend was still rolled back and the live frontend is untouched.
+        if: always()
+        run: |
+          LIVE="s3://batbern-frontend-staging"
+          STABLE="s3://batbern-frontend-stable-staging"
+          OBJ_COUNT=$(aws s3 ls "$STABLE/" --recursive --summarize 2>/dev/null | awk '/Total Objects:/ {print $3}')
+          OBJ_COUNT=${OBJ_COUNT:-0}
+          if [ "$OBJ_COUNT" -eq 0 ]; then
+            echo "::warning::Stable frontend bucket empty (not seeded by a green deploy yet) — skipping frontend restore. Backend rolled back; live frontend unchanged."
+            exit 0
+          fi
+          echo "🔁 Restoring known-good frontend: $STABLE → $LIVE ($OBJ_COUNT objects)"
+          aws s3 sync "$STABLE/" "$LIVE/" --delete --only-show-errors
+          DIST_ID=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='staging-FrontendDistributionId'].Value" --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            echo "♻️  Invalidating CloudFront $DIST_ID (/*)"
+            aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths '/*' >/dev/null
+            echo "✅ Frontend restored to last known-good + CloudFront invalidated"
+          else
+            echo "::warning::Could not resolve CloudFront distribution id (export staging-FrontendDistributionId) — frontend restored but cache not invalidated"
+          fi
 
       - name: Notify rollback
         if: always()
         run: |
-          echo "🚨 Auto-rollback triggered after Bruno failure"
+          echo "🚨 Auto-rollback triggered after test failure (Bruno: ${{ needs.bruno-tests.result }}, Playwright: ${{ needs.playwright-tests.result }})"
+          echo "   Backend → staging-stable ECR images; frontend → stable S3 snapshot (+ CloudFront invalidation)."
           echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Playwright UI E2E tests (docs/plans/playwright-staging-hardening.md §A1).
   #
-  # ONBOARDING STAGE (plan §A2): this job is NON-BLOCKING and does NOT feed
-  # tag-stable-on-success / rollback-on-bruno-failure. Bruno remains the sole
-  # authoritative gate until the PR 15 gate-flip, when this job is added to both
-  # downstream jobs' `needs` + `if`. For now it runs the curated `@smoke` subset
-  # and reports — a red here neither blocks the deploy nor triggers rollback
-  # (`continue-on-error` on the run step keeps the job green regardless).
+  # GATE FLIPPED (PR 15, plan §D): this job is now BLOCKING and authoritative
+  # alongside Bruno. `continue-on-error` is gone from the run step, so a red
+  # `@smoke` fails THIS job → tag-stable-on-success is skipped (staging-stable
+  # stays pinned to the last known-good deploy) and rollback-on-test-failure fires
+  # (rolls ECS back to staging-stable). It runs the curated `@smoke` subset
+  # (`--scope smoke` = `--grep @smoke --grep-invert @quarantine`); the full proven
+  # `@gate` suite runs in the non-blocking nightly workflow (.github/workflows/
+  # nightly-e2e.yml). `@quarantine` specs never run here, so tracked WCAG/flake
+  # debt cannot fail the gate (plan §E.3).
   #
   # Unlike Bruno (backend only), Playwright needs the frontend live at the edge,
   # so the runner starts with a CloudFront edge-readiness poll (§A1) before
@@ -1487,9 +1550,8 @@ jobs:
   # sweep deleted Bruno's just-created `bruno.test` fixture mid-run, failing users-api
   # → false rollback (run 26689737809). Depending on bruno-tests serialises them so
   # the sweep can never fire while Bruno is live. Playwright runs only on Bruno-green
-  # (a failed `needs` skips it) — fine during onboarding (Bruno-red ⇒ rollback anyway),
-  # and the correct topology at the PR-15 gate-flip (deploy → bruno → playwright →
-  # promote/rollback). Still NON-BLOCKING here: it does not feed tag-stable/rollback.
+  # (a failed `needs` skips it; Bruno-red ⇒ rollback fires on the Bruno failure anyway).
+  # This is the correct gate topology: deploy → bruno → playwright → promote/rollback.
   # ─────────────────────────────────────────────────────────────────────────────
   playwright-tests:
     name: Playwright UI E2E (@smoke)
@@ -1581,12 +1643,11 @@ jobs:
           write_role_token "${{ secrets.STAGING_SPEAKER_EMAIL }}" "${{ secrets.STAGING_SPEAKER_PASSWORD }}" "speaker"
           write_role_token "${{ secrets.STAGING_PARTNER_EMAIL }}" "${{ secrets.STAGING_PARTNER_PASSWORD }}" "partner"
 
-      - name: Run Playwright @smoke suite (non-blocking during onboarding)
+      - name: Run Playwright @smoke suite (blocking gate)
         id: run-playwright
-        # ONBOARDING (plan §A2): continue-on-error keeps this job green regardless —
-        # a red @smoke here neither blocks the deploy nor triggers rollback. Removed at
-        # the PR 15 gate-flip, when this job becomes authoritative alongside Bruno.
-        continue-on-error: true
+        # GATE FLIPPED (PR 15, plan §D): no `continue-on-error` — a red @smoke now fails
+        # this job, fails the deploy workflow, skips tag-stable-on-success, and triggers
+        # rollback-on-test-failure (ECS rolls back to staging-stable).
         env:
           CI: 'true'
         run: |
@@ -1596,17 +1657,17 @@ jobs:
       - name: Report Playwright outcome
         if: always()
         run: |
-          # continue-on-error keeps this job green during onboarding, so surface the real
-          # outcome prominently in the job summary — otherwise a red @smoke is invisible
-          # unless a reviewer opens this step's log (review #2, PR #691).
+          # Surface the outcome in the job summary regardless of pass/fail. With the gate
+          # flipped (no continue-on-error), a failure already fails the job; this step runs
+          # under `if: always()` purely to annotate the summary (review #2, PR #691).
           OUTCOME="${{ steps.run-playwright.outcome }}"
           echo "Playwright @smoke outcome: $OUTCOME"
           if [ "$OUTCOME" = "failure" ]; then
-            echo "::warning::Playwright @smoke failed — NON-BLOCKING during onboarding (plan §A2). Investigate before the PR 15 gate-flip."
+            echo "::error::Playwright @smoke failed — this job fails the deploy and rollback-on-test-failure will auto-roll-back to staging-stable"
             {
-              echo "### ❌ Playwright @smoke FAILED (non-blocking — onboarding, plan §A2)"
+              echo "### ❌ Playwright @smoke FAILED — deploy blocked, rolling back to staging-stable"
               echo ""
-              echo "A regression was caught by the per-deploy \`@smoke\` gate but did **not** block this deploy or trigger rollback (onboarding stage). **Investigate before the PR 15 gate-flip** — at that point this turns red the deploy."
+              echo "A UI regression was caught by the per-deploy \`@smoke\` gate. The deploy is **blocked**: \`tag-stable-on-success\` is skipped and \`rollback-on-test-failure\` rolls ECS back to \`staging-stable\`."
               echo ""
               echo "See the \`playwright-report-staging\` artifact for details."
             } >> "$GITHUB_STEP_SUMMARY"

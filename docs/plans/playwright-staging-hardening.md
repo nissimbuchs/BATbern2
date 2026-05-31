@@ -81,9 +81,23 @@ production deploy.
 > dashboard h1→h5 heading skip; 200%-zoom overflow — a product fix, tracked, not a test bug).
 > `auth/*` deferred as a separate focused task. See "PR 14 notes". NOTE: this repo **auto-merges
 > PRs once CI is green** — so each stacked PR auto-merges + deploys when targeted at develop.
-> **NEXT:** PR 15 gate-flip (flip `playwright-tests` to blocking + the deliberate-fail rollback
-> drill; §D/§E). **Remaining: PR 15 gate-flip — and two optional follow-ups: `auth/*` spec
-> reconciliation + the WCAG-AA contrast/heading/zoom product fix that would un-quarantine the 7.**
+> **PR 15 gate-flip is on branch `e2e-gate-flip`** (off develop post-#702; awaiting push/PR). It
+> (1) flips `playwright-tests` to **blocking** (removed `continue-on-error`), AND-gates
+> `tag-stable-on-success` on both test jobs, and renames+widens the rollback job to
+> `rollback-on-test-failure` (fires on Bruno OR Playwright `@smoke` red); and (2) adds a **frontend
+> rollback** (PO-surfaced gap during review): the backend rollback only reverts ECS, but Playwright
+> catches *frontend* regressions and the frontend (S3/CloudFront, unversioned + pruned) had no
+> revert path. New `stableBucket` `batbern-frontend-stable-staging` (FrontendStack); promotion
+> snapshots live→stable; rollback restores stable→live + invalidates CloudFront (empty-guarded);
+> no new effective IAM grant (restore-step actions added to WorkflowRuntimePolicy + tests); 5 new
+> FrontendStack CDK tests + 2 cicd-stack tests; infra tsc clean. `@smoke` = 14: registration initially
+> hung on staging (Cloudflare Turnstile — see PR 15 notes) but is **FIXED** (E2E disables Turnstile via
+> a `/api/v1/config` override → gateway fail-opens on the absent token) and verified green on staging;
+> **§E.1 dry-run rollback verified**; **§E.2 drill SKIPPED by decision**. See "PR 15 notes" +
+> §"Frontend rollback". **CAUTION — auto-merge: once this PR's CI goes green it merges + deploys,
+> and the gate is live from that deploy on; the first green deploy also seeds the frontend stable
+> snapshot.** **NEXT:** push + open PR (pending). **Optional follow-ups:** `auth/*` spec
+> reconciliation + the WCAG-AA contrast/heading/zoom product fix that would un-quarantine the 7.
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -109,11 +123,11 @@ slice audit land as separate fix-commits in the same PR.
 | 9 | `e2e-speaker` (stacked on `e2e-sessions`) | Slice 8: speaker pool (organizer) | `organizer/speaker-{column-triage,card-primary-action}` (migrated), `speaker-pool-smoke` (new), DELETED `speaker-{brainstorming,outreach,invitation,kanban-guided-drag}`, untagged `speaker-onbehalf-vs-self-byte-identity` | `MarkContactedModal` (`contact-method-option-{email,phone,in-person}`) — kanban/drawer testids already existed | ✅ dev (5×2) | `@gate` + **`@smoke`** (log-outreach IDENTIFIED→CONTACTED) | ✅ merged (#697, `ce88fbc5`, 2026-05-30; staging gate green) | **rewrite-to-reality + reliability.** The recon's "strong testids / light" was optimistic: 3 specs were FICTIONAL (`speaker-brainstorming` asserted a non-existent `/brainstorm` route; `speaker-outreach` a non-existent `/outreach` dashboard; `speaker-invitation` mixed) and **all** specs seeded via the unset `process.env.E2E_TEST_TOKEN` (`Bearer undefined`→401) + created events through the UI with `Date.now()` titles and **no cleanup** (event-leak/run). New shared `e2e/helpers/speaker-pool-fixture.ts` (seed/status/promote/get via `readOrganizerToken()`). Kept+migrated `column-triage` (2 tests) + `card-primary-action` (2 tests: IDENTIFIED→MarkContactedModal, CONTACTED→drawer promote sub-view — fixed: the old `promote-email-field` assertion targeted the now-dead legacy `PromoteSpeakerDialog`; post-Epic-11 CONTACTED opens the drawer's `promote-submit-button`). **`@smoke` = log-outreach (IDENTIFIED→CONTACTED via MarkContactedModal)** — deliberately NOT promote-to-READY: promote provisions a Cognito/CUMS user out-of-band, an **intermittently-flaky** external write (observed 500s on dev) that would make a blocking gate spurious; also not native DnD. DELETED `kanban-guided-drag` (manual-mouse DnD, flaky). Cleanup = event-delete cascade (`speaker_pool.event_id` ON DELETE CASCADE). **Follow-up (untagged):** `speaker-onbehalf-vs-self-byte-identity` — its inline event-create 400s (NotNull gap) + walks promote; migrate to `createRegistrationEvent` + a promote-free path to gate it. See "PR 9 notes". |
 | 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | ✅ merged (#697, `ce88fbc5`, 2026-05-30) | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e` (rewritten) | `workflow-status-badge` gains `data-workflow-state` (EventOverviewTab) | ✅ dev (2×2) | `@gate` + **`@smoke`** (hybrid lifecycle walk CREATED→…→ARCHIVED) | ✅ merged (#698, `3ac73833`, 2026-05-31) | **rewrite-to-reality + reliability (OQ-3 hybrid).** Replaced a 6-phase monolithic UI walk that created its event via the UI with a `Date.now()` number and **never cleaned up** (leaked event+tasks/speakers/sessions per run), drove the kanban with raw `page.mouse` native-DnD + HARDCODED organizer/speaker display names, and depended on slice-8 speaker/content flows + cron-only auto-transitions. New hybrid: force-advance state via the override transition API (`PUT /events/{code}/workflow/transition` `overrideValidation:true` — `transitionToState` skips ALL validation, so any target incl. cron-only EVENT_LIVE/EVENT_COMPLETED is reachable), UI asserts the overview `workflow-status-badge` after each step + an authoritative `GET /workflow/status` cross-check. **`@smoke` walks the FULL 7-state forward sequence** (not just the recon's 3-state subset — override makes all states equally deterministic, ~15.5s). New fixture helpers `transitionWorkflow`/`getWorkflowState` + `WORKFLOW_FORWARD_STATES` (event-fixture.ts). Cleanup = afterAll force-archive (events DELETE-able only when ARCHIVED → 409 otherwise) then `cleanupByCode`; robust even if the walk fails mid-sequence. No cron, no DnD, no content. See "PR 11 notes". |
-| 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | 🔵 (#699) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. ✅ merged (#699, `4cdc3261`, 2026-05-31). |
+| 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | ✅ merged (#699, `4cdc3261`, 2026-05-31) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. ✅ merged (#699, `4cdc3261`, 2026-05-31). |
 | 12 | `e2e-partners` | Slice 11: partners + meetings | `partner/{analytics-dashboard,topic-voting}`, `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`, **NEW** `organizer/partner-topic-status` | `clear-search` (PartnerSearch), `view-mode-{grid,list}` (PartnerDirectoryScreen ToggleButtons), `tier-select-option-<TIER>` (PartnershipTierSelect MenuItems), `partnershipStartDate`/`partnershipEndDate` (PartnershipDatePicker inputs), `company-option-<name>` (CompanyAutocomplete), `chart-{attendance-per-event,yoy-headcount}` (PartnerAttendanceDashboard), `topic-planned-event-<id>` (TopicListPage), `invite-success-alert-<id>` (MeetingDetailPanel) | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI partner create→detail→cleanup) | ✅ merged (#700, `97e6e3e0`, 2026-05-31) | **rewrite-to-reality + reliability + prod-residue fix.** `@smoke` = organizer partner create (company autocomplete→tier→save→detail) + cleanup — deterministic, NO promote. **Killed the residue source:** old `partner-create-edit` named the fixture company `tc-${random}` (NOT swept) + ad-hoc `deletePartnerViaAPI` → now `factory.partnerName()` (`brtest<6>`, swept by `pcs/partners`) + canonical `cleanupById('partners')`/`cleanupById('companies')`. Verified residue-free (companies brtest→0 explicit-delete; partners→0 canonical sweep; PCS-partner vs CUMS-company are separate services w/ no cross-FK, so the company needs explicit delete + the partner relies on the swept `brtest` name). See "PR 12 notes". |
 | 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-tabs` (render, **NEW** replaces `admin-settings`) + `organizer/admin-{task-templates,email-templates,global-images}-crud` (**NEW**, full UI CRUD) | root testids on 7 tabs + `organizer-analytics-page` + `notifications-page` + `admin-tabs`/`admin-tab-<i>` nav; CustomTaskModal + TaskTemplateEditModal (`template-edit-save`/`task-template-edit-modal`) + EmailTemplateEditModal (`email-template-{modal,key-input,subject-input,save}`) + GlobalImagesTab (`global-image-{input,item-<id>,position-<id>,position-option-<v>,delete-<id>}`) | ✅ dev (14×2) | `@gate` (render) + **`@smoke`** (3 full-CRUD: task-templates, email-templates, global-images) | ✅ merged (#701, `0c2f9789`, 2026-05-31; deploy `@smoke` gate green after a re-run past a transient CFN UPDATE_IN_PROGRESS collision) | **rewrite-to-reality + prod-safety + real per-tab CRUD (PO 2026-05-31).** Render coverage for all 9 tabs + 2 pages; **real UI Create/Read/Update/Delete for the 3 freely-reversible tabs** (captured-id cleanup, no sweep path). Singleton tabs stay render-only (no safe restore). Dropped the global-singleton email-forwarding save + fixed the `?tab=7`-for-Settings bug + the ENOENT `.playwright-auth-chromium.json` override. See "PR 13 notes". |
-| 14 | `e2e-cross-cutting` | Slice 13: a11y + cors sweep (auth deferred) | `accessibility/{navigation,layout,screen-reader}`, `api-integration/cors-validation` | `notifications-button` + `mobile-menu-button` (AppHeader) | ✅ dev (23×2) | `@gate` (read-only) + **7 `@quarantine`** (real WCAG debt) | 🔵 (#702) | **rewrite-to-reality + reliability.** 23 structural a11y + cors checks now green & gated; deleted 3 fictional skips + 2 zero-assertion probes; fixed translated-`aria-label` nav selectors (→ `getByRole`/testids), fictional notification-popup ARIA, dead `/login` beforeEach, dev-vs-staging CORS preflight (200/204). **Found real WCAG-AA debt** (see "PR 14 notes"): theme secondary-text `#7f8c8d` 3.05–3.33:1 (~1200+ instances), dashboard h1→h5 heading skip, 200%-zoom overflow → those 7 axe/structural scans `@quarantine` (tracked; nightly auto-promotes once fixed). **`auth/*` deferred** (separate focused task — components carry testids but specs need reconciliation + Cognito/MailHog). |
-| 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
+| 14 | `e2e-cross-cutting` | Slice 13: a11y + cors sweep (auth deferred) | `accessibility/{navigation,layout,screen-reader}`, `api-integration/cors-validation` | `notifications-button` + `mobile-menu-button` (AppHeader) | ✅ dev (23×2) | `@gate` (read-only) + **7 `@quarantine`** (real WCAG debt) | ✅ merged (#702, `dd21c679`, 2026-05-31) | **rewrite-to-reality + reliability.** 23 structural a11y + cors checks now green & gated; deleted 3 fictional skips + 2 zero-assertion probes; fixed translated-`aria-label` nav selectors (→ `getByRole`/testids), fictional notification-popup ARIA, dead `/login` beforeEach, dev-vs-staging CORS preflight (200/204). **Found real WCAG-AA debt** (see "PR 14 notes"): theme secondary-text `#7f8c8d` 3.05–3.33:1 (~1200+ instances), dashboard h1→h5 heading skip, 200%-zoom overflow → those 7 axe/structural scans `@quarantine` (tracked; nightly auto-promotes once fixed). **`auth/*` deferred** (separate focused task — components carry testids but specs need reconciliation + Cognito/MailHog). |
+| 15 | `e2e-gate-flip` | §D/§E: flip `playwright-tests` to blocking + auto-rollback **+ frontend rollback** | `deploy-staging.yml` (CI wiring), `frontend-stack.ts` (stable bucket), `frontend-stack.test.ts` (new) | — | `@smoke` 14 (registration Turnstile hang FIXED via `/config` override, verified green on staging); 5 CDK tests; infra tsc clean | — | 🔵 | **gate-flip (plan §D) + frontend rollback + Turnstile E2E fix (#704).** Removed `continue-on-error` from `playwright-tests` → blocking. `tag-stable-on-success` now `needs:[…,playwright-tests]` + `if: bruno==success && playwright==success`. Renamed `rollback-on-bruno-failure` → `rollback-on-test-failure`, widened to `(bruno==failure \|\| playwright==failure)`. **Frontend rollback (added after PO review):** new `stableBucket` `batbern-frontend-stable-staging` (FrontendStack); `tag-stable-on-success` snapshots live→stable; `rollback-on-test-failure` restores stable→live + CloudFront invalidation (empty-guarded). No new effective IAM grant (restore-step actions added to `WorkflowRuntimePolicy` + tests per convention). **§E.1 dry-run rollback verified** (5 services, no changes). **§E.2 deliberate-fail drill = SKIPPED by decision** (trust §E.1 + Bruno's proven path). See "PR 15 notes" + §"Frontend rollback". |
 
 **Status legend:** ⬜ todo · 🟡 in progress · 🔵 in review · 🟢 @gate (proven ×2) · 🟠 @quarantine · ✅ merged · 🔴 blocked
 
@@ -925,6 +939,145 @@ most groups gate on `HAS_EMAIL_INTEGRATION` (Cognito + MailHog), unavailable on 
 
 Component testids added: `notifications-button`, `mobile-menu-button` (AppHeader). 14 AppHeader
 unit tests still green; tsc + eslint clean. Green ×2 on dev (23/23 both runs, quarantine excluded).
+
+### PR 15 notes — gate-flip (flip `playwright-tests` to blocking + auto-rollback)
+
+The final PR. **No spec changes** — pure CI wiring (`deploy-staging.yml`), the analogue of
+Bruno's PR-14 flip. The `@smoke` suite proven across slices 1–13 now becomes a blocking,
+auto-rollback staging gate co-equal with Bruno.
+
+**The flip (plan §D/§A2), three edits to `deploy-staging.yml`:**
+1. **`playwright-tests` job → blocking.** Removed `continue-on-error: true` from the "Run
+   Playwright @smoke suite" step. A red `@smoke` now fails the job (and the deploy workflow).
+   The "Report Playwright outcome" step keeps `if: always()` (summary annotation only) and now
+   emits `::error::` + a "deploy blocked, rolling back" summary instead of the onboarding
+   "non-blocking" wording. Job comment block rewritten from "ONBOARDING / NON-BLOCKING" to the
+   blocking topology.
+2. **`tag-stable-on-success` → AND-gate.** `needs: [deploy-to-staging, bruno-tests,
+   playwright-tests]`; `if: needs.bruno-tests.result == 'success' && needs.playwright-tests.result
+   == 'success'`. Promotes `staging-current → staging-stable` only when BOTH suites pass. No
+   `always()` → a failed `needs` skips it (the intended no-promote). When `bruno-tests` fails,
+   `playwright-tests` is skipped (result `'skipped'` ≠ `'success'`), so promotion is blocked
+   either way.
+3. **`rollback-on-bruno-failure` → `rollback-on-test-failure`.** `needs` widened to include
+   `playwright-tests`; `if: ${{ always() && (needs.bruno-tests.result == 'failure' ||
+   needs.playwright-tests.result == 'failure') }}`. `always()` is load-bearing (a failed `needs`
+   skips the job before `if:` evaluates). The rollback step's echo now distinguishes Bruno vs
+   Playwright as the trigger. **Topology note:** when Bruno fails, Playwright is `'skipped'` (not
+   `'failure'`), so the Bruno-failure disjunct fires the rollback in that case — correct, no
+   double-fire. Gate order stays deploy → bruno → playwright → promote/rollback (the serialise-
+   after-Bruno fix from the §"CI fix" note below is preserved and is now the canonical topology).
+
+**Stale-reference cleanup (job rename fan-out):** updated the now-inaccurate `rollback-on-bruno-failure`
+mentions in `deploy-staging.yml` comments (bruno-job header, split rationale, Bruno report
+`::error::`), `deploy-production.yml` (rollback-lives-here pointer), and `bruno-tests/README.md`
+(item 2). Intentional "renamed from `rollback-on-bruno-failure`" mentions are kept in the new
+rollback-job comment + the README for traceability. The `enable_bruno_rollback` `workflow_dispatch`
+input is retained (used by the §E.2 drill on throwaway branches).
+
+**Verification done:**
+- **§E.1 dry-run rollback** (`rollback-deployment.sh staging --yes --dry-run`): `staging-stable`
+  resolves to immutable tags for all 5 ECS services (e.g. `49f1a3f-staging.1186`,
+  CUMS `b6c2d52-staging.1189`), 5 successful / 0 failed / 0 skipped, **no changes applied**. The
+  rollback wiring resolves correctly with the new job name (the script is tag/task-def agnostic,
+  unchanged).
+- **§F local pre-flight** (`run-playwright-tests.sh development --scope smoke`): 14 `@smoke`
+  green, final teardown sweep residue-free (`companies:0 events:0 sessions:0 topics:0 partners:0`,
+  fixture users/partners swept). One transient red (`registration-flow` success-view 5s timeout)
+  occurred immediately after a mid-run local-stack restart (cold backend); it passed 4/4 on a warm
+  re-run — a cold-start flake, not a gate-flip regression.
+- **YAML validity** confirmed for both `deploy-staging.yml` and `deploy-production.yml`.
+
+**§E.2 deliberate-fail drill — owed (operational, not code).** On a throwaway branch: add a
+guaranteed-red `@smoke` spec, push, `workflow_dispatch` the staging deploy from that branch, and
+confirm the chain: deploy succeeds → `playwright-tests` fails → `tag-stable-on-success` skipped
+(`staging-stable` unmoved) → `rollback-on-test-failure` fires and rolls ECS back to
+`staging-stable`. Run in a low-traffic window (BATbern ~3 events/year). Analogue of Bruno F1.
+Left to the operator because it triggers a real staging (= prod) deploy + rollback.
+
+**Auto-merge caveat:** this repo auto-merges PRs once CI is green. Targeted at `develop`, this PR
+auto-merges and deploys, and the gate is **live and blocking from that deploy onward**. That is
+the intended end state of the plan.
+
+**First-run gate failures → registration moved to nightly (resolved in-PR).** The PR's own staging
+deploy exercised the now-blocking gate twice: deploy ✅ → Bruno ✅ → `@smoke` **13/14**, with
+`registration-flow` failing all 3 attempts on `getByTestId('registration-success')`. The gate
+behaved correctly both times (promote skipped, rollback fired), but the failures were **not
+regressions** — two spurious rollbacks (plan Risk #3 on runs 1–2). Investigation:
+- **Run 1** failed at the 5s default; first hypothesis was cold-backend latency (company-create
+  `@smoke` also passed at only 4.0s, near the edge), so we widened `expect` timeouts:
+  `playwright.config.ts` → `expect: { timeout: process.env.CI ? 15_000 : 5_000 }` (kept — genuine
+  cold-start hardening for the rest of the suite) + an explicit 30s on the registration assertion.
+- **Run 2** failed **again at the full 30s**, button still on **"Wird gesendet…"** — so the submit
+  doesn't just lag, it never completes. **Root cause (confirmed in code + `GET /api/v1/config`, not
+  a hypothesis):** `RegistrationWizard.tsx:192` does `await getTurnstileToken()` **before** the POST.
+  It's a **Cloudflare Turnstile** CAPTCHA (Story 10.31). Staging serves `features.turnstile=true`
+  with a real production sitekey (`0x4AAAAAAC0nh08TwcTOYssw`); a headless/automation browser cannot
+  solve the invisible challenge, so `getToken()` never resolves → the POST is never sent → the button
+  sits on "Wird gesendet…". Locally `features.turnstile=false`, so `getToken()` returns `null`
+  immediately and the test passes. (Bruno's `13-create-registration` posts the *same* `.invalid`
+  payload directly to the API and gets 201 on staging — it bypasses the widget — proving the backend
+  is fine.) **This is NOT a user-facing bug** (real browsers pass the managed challenge) and the
+  registration API is already gated by Bruno. **Resolution (2026-05-31) — FIXED, back to `@smoke`:**
+  the spec's `beforeEach` now intercepts `GET /api/v1/config` and sets `features.turnstile=false`
+  for the headless run, so `getTurnstileToken()` returns `null` immediately and the wizard sends
+  **no** `X-Turnstile-Token`; the gateway `TurnstileVerificationFilter` **fail-opens on a missing
+  token** (AC2 — its designed behaviour for ad-blocker/firewall users), so the POST succeeds. No
+  prod code change, no security weakening (fail-open is existing behaviour; a forged/invalid token
+  would still 403). **Verified green against real staging** (`run-playwright-tests.sh staging
+  --slice "Public Event Registration"` → 4/4, submit 20.9s, residue-free), so registration returns
+  to **`@smoke`** (per-deploy) + `@gate`. The Turnstile *widget↔UI* wiring itself still can't be
+  driven headlessly and stays out of E2E scope (documented in GitHub issue #704, which also lists a
+  server-side bypass-token option if that wiring ever needs staging coverage).
+
+Both spurious rollbacks were **low-impact**: backend ECS images were unchanged (this PR has no
+service-code change) and the frontend restore correctly **skipped** (the stable bucket wasn't seeded
+yet — the empty-guard worked as designed).
+
+#### Frontend rollback (added to PR 15 after review, 2026-05-31)
+
+**The gap.** Bruno tests the backend and `rollback-deployment.sh` reverts the 5 backend ECS
+services to their `staging-stable` ECR images — symmetric and proven. Playwright breaks that
+symmetry: it catches **frontend** regressions, but the frontend is NOT ECS — it is the CDK
+`BATbern-staging-Frontend` stack (S3 `BucketDeployment` + CloudFront). The ECS rollback never
+touches it. And it can't be trivially reverted: `frontend-stack.ts` had `versioned: false` +
+the deploy's `BucketDeployment` runs `prune: true`, so each deploy **deletes** the prior assets —
+there is no previous frontend left to roll back to. So a frontend-caused `@smoke` red would roll
+back the backend and leave the **broken new frontend live** (possibly mismatched with a reverted
+backend). This gap never existed for Bruno (backend-only). Surfaced by the PO during PR 15 review.
+
+**The fix — a frontend "staging-stable" S3 snapshot (mirrors the ECR tag).**
+- **CDK (`frontend-stack.ts`):** new `stableBucket` `batbern-frontend-stable-${envName}` —
+  private, encrypted, unversioned, RETAIN on prod; **not** a CloudFront origin and **not** a
+  `BucketDeployment` target, so the live bucket's `prune: true` can never wipe it. New CfnOutput
+  `${envName}-FrontendStableBucket`. 5 new `frontend-stack.test.ts` assertions (the stack had no
+  test before). The name matches the existing GitHub-Actions-role S3 grant `batbern-*-${envName}`
+  and `cloudfront:CreateInvalidation` is already on the role (cdk policies). **No new effective
+  grant**, but per the project convention (enforced by the pre-push validator) the two actions the
+  restore step calls directly — `cloudformation:ListExports` + `cloudfront:CreateInvalidation` —
+  were added to `WorkflowRuntimePolicy` in cicd-stack.ts (+ 2 cicd-stack.test.ts assertions). The
+  `aws s3 sync`/`ls` calls are covered by the existing `batbern-*-staging` S3 grant (validator
+  excludes `aws s3`).
+- **Snapshot (`tag-stable-on-success`, after the ECR promote):** `aws s3 sync
+  s3://batbern-frontend-staging → s3://batbern-frontend-stable-staging --delete`. Runs only on a
+  green deploy (both suites pass), in lock-step with the ECR `staging-stable` promotion. Idempotent
+  (no-op when the frontend didn't change); warn-not-fail (never fails an already-promoted deploy).
+- **Restore (`rollback-on-test-failure`, after the ECS rollback, `if: always()`):** if the stable
+  bucket is non-empty, `aws s3 sync stable → live --delete` + `aws cloudfront create-invalidation
+  --paths '/*'` (distribution id resolved from the `staging-FrontendDistributionId` export). The
+  htmlNoCache CloudFront function means browsers re-fetch `index.html` immediately; hashed assets
+  resolve to the restored bundle. **Guarded:** an empty stable bucket (no green deploy has seeded
+  it yet) → skip with a warning, never publish an empty site.
+
+**Deploy mechanics that make this safe (verified):** changing `frontend-stack.ts` sets
+`infrastructure=true → deploy_all=true`, which (a) triggers the full layer deploy that **creates
+the stable bucket** (layer5 deploys `BATbern-staging-Frontend`) and (b) makes the "Build frontend"
+step rebuild the **real** `dist/` (its condition is `frontend==true || deploy_all==true`), so the
+live frontend is redeployed with current content — **not** the synth placeholder. **Seeding:** the
+stable bucket starts empty; the first green deploy after this merges seeds it (snapshot step), and
+the empty-guard covers the one-deploy window before that. Full frontend-rollback protection applies
+from the first frontend-changing deploy onward. This PR's own deploy carries no `web-frontend/`
+change, so its `@smoke` is a backend/UI-contract check, not a frontend-regression risk.
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

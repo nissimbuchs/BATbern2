@@ -223,6 +223,26 @@ export class CICDStack extends cdk.Stack {
             ],
           }),
 
+          // CloudFront — frontend rollback restore step invalidates the CDN after
+          // restoring the stable S3 snapshot (rollback-on-test-failure in
+          // deploy-staging.yml). CreateInvalidation supports a distribution ARN;
+          // the id is resolved at runtime, so scope to all distributions in-account.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['cloudfront:CreateInvalidation'],
+            resources: [`arn:aws:cloudfront::${this.account}:distribution/*`],
+          }),
+
+          // CloudFormation ListExports — frontend rollback restore step resolves
+          // the CloudFront distribution id from the `staging-FrontendDistributionId`
+          // export. ListExports is account-scoped and does not support resource-level
+          // permissions, so it must use `*`.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['cloudformation:ListExports'],
+            resources: ['*'],
+          }),
+
         ],
       }),
     });

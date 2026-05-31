@@ -362,6 +362,6 @@ jobs:
   # The former `rollback-on-failure` job was removed 2026-05-25: it referenced the
   # decommissioned production account (422940799530) and the non-existent
   # `batbern-prod` ECS cluster, so it could never actually roll anything back. Production
-  # rollback now lives in deploy-staging.yml's `rollback-on-bruno-failure` job
-  # (Bruno-gated) and `scripts/ci/rollback-deployment.sh` (manual one-click).
+  # rollback now lives in deploy-staging.yml's `rollback-on-test-failure` job
+  # (Bruno- + Playwright-gated) and `scripts/ci/rollback-deployment.sh` (manual one-click).
   # See docs/plans/bruno-staging-hardening.md §A5c.
