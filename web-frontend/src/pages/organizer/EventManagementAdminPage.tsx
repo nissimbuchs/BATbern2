@@ -87,13 +87,19 @@ const EventManagementAdminPage: React.FC = () => {
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Administration tabs">
+        <Tabs
+          value={tabIndex}
+          onChange={handleTabChange}
+          aria-label="Administration tabs"
+          data-testid="admin-tabs"
+        >
           {tabs.map((tab, i) => (
             <Tab
               key={i}
               label={tab.label}
               id={`admin-tab-${i}`}
               aria-controls={`admin-tabpanel-${i}`}
+              data-testid={`admin-tab-${i}`}
             />
           ))}
         </Tabs>

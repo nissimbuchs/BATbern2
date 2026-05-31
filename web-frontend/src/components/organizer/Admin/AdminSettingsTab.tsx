@@ -64,7 +64,7 @@ export const AdminSettingsTab: React.FC = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 700 }}>
+    <Box sx={{ maxWidth: 700 }} data-testid="admin-settings-tab">
       <Typography variant="h6" gutterBottom>
         {t('settings.emailForwarding.title', 'Email Forwarding')}
       </Typography>

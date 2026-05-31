@@ -140,7 +140,7 @@ export const EmailTemplatesTab: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box data-testid="email-templates-tab">
       {/* ── Layout Templates ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Typography variant="h6">

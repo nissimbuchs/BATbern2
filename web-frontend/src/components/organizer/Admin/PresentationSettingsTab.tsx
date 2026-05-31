@@ -69,7 +69,7 @@ export const PresentationSettingsTab: React.FC = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 700 }}>
+    <Box sx={{ maxWidth: 700 }} data-testid="presentation-settings-tab">
       <Typography variant="h6" gutterBottom>
         {t('admin.presentationSettings.title', 'Presentation Settings')}
       </Typography>

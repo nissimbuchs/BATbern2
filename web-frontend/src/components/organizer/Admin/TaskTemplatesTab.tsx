@@ -86,7 +86,7 @@ export const TaskTemplatesTab: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box data-testid="task-templates-tab">
       {/* Default Templates */}
       <Typography variant="h6" gutterBottom>
         {t('admin.taskTemplates.defaultSection', 'Default Templates')}

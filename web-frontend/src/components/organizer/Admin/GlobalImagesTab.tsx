@@ -111,7 +111,7 @@ export const GlobalImagesTab: React.FC = () => {
   }
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: 3 }} data-testid="global-images-tab">
       <Stack direction="row" spacing={1} alignItems="center" mb={2}>
         <ImageIcon color="action" />
         <Typography variant="h6">{t('globalImages.title', 'Global Teaser Images')}</Typography>
@@ -160,7 +160,7 @@ export const GlobalImagesTab: React.FC = () => {
           {[...images]
             .sort((a, b) => a.displayOrder - b.displayOrder)
             .map((img) => (
-              <Stack key={img.id} spacing={0.75}>
+              <Stack key={img.id} spacing={0.75} data-testid={`global-image-item-${img.id}`}>
                 <Box
                   sx={{
                     position: 'relative',
@@ -184,6 +184,8 @@ export const GlobalImagesTab: React.FC = () => {
                     size="small"
                     onClick={() => void handleDelete(img.id)}
                     disabled={deleteMutation.isPending}
+                    aria-label="delete image"
+                    data-testid={`global-image-delete-${img.id}`}
                     sx={{
                       position: 'absolute',
                       top: 4,
@@ -202,17 +204,30 @@ export const GlobalImagesTab: React.FC = () => {
                     value={img.presentationPosition}
                     label={t('events:teaserImage.position.label', 'Show after')}
                     onChange={(e) => void handlePositionChange(img.id, e.target.value)}
+                    data-testid={`global-image-position-${img.id}`}
                   >
-                    <MenuItem value="AFTER_WELCOME">
+                    <MenuItem
+                      value="AFTER_WELCOME"
+                      data-testid="global-image-position-option-AFTER_WELCOME"
+                    >
                       {t('events:teaserImage.position.afterWelcome', 'Welcome slide')}
                     </MenuItem>
-                    <MenuItem value="AFTER_COMMITTEE">
+                    <MenuItem
+                      value="AFTER_COMMITTEE"
+                      data-testid="global-image-position-option-AFTER_COMMITTEE"
+                    >
                       {t('events:teaserImage.position.afterCommittee', 'Committee slide')}
                     </MenuItem>
-                    <MenuItem value="AFTER_TOPIC_REVEAL">
+                    <MenuItem
+                      value="AFTER_TOPIC_REVEAL"
+                      data-testid="global-image-position-option-AFTER_TOPIC_REVEAL"
+                    >
                       {t('events:teaserImage.position.afterTopicReveal', 'Topic Reveal slide')}
                     </MenuItem>
-                    <MenuItem value="AFTER_UPCOMING_EVENTS">
+                    <MenuItem
+                      value="AFTER_UPCOMING_EVENTS"
+                      data-testid="global-image-position-option-AFTER_UPCOMING_EVENTS"
+                    >
                       {t(
                         'events:teaserImage.position.afterUpcomingEvents',
                         'Upcoming Events slide'
@@ -232,6 +247,7 @@ export const GlobalImagesTab: React.FC = () => {
         accept="image/jpeg,image/png,image/webp,image/svg+xml"
         style={{ display: 'none' }}
         onChange={handleFileChange}
+        data-testid="global-image-input"
       />
       <Button
         variant="outlined"

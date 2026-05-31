@@ -117,6 +117,27 @@ export function eventTitle(): string {
   return `${EVENT_TITLE_TOKEN} ${ts()}`;
 }
 
+/**
+ * Custom task-template name: `BATPW-E2E-TPL-<ts>`. Task templates have NO prefix-sweep
+ * entityType (the EMS cleanup allowlist is events/sessions/topics only), so teardown is an
+ * explicit DELETE by the id captured from `GET /tasks/templates` (see
+ * `e2e/helpers/task-template-fixture.ts`). The `BATPW-E2E` token makes an orphan
+ * human-recognizable; it carries no automated-sweep meaning today.
+ */
+export function taskTemplateName(): string {
+  return `${EVENT_TITLE_TOKEN}-TPL-${ts()}`;
+}
+
+/**
+ * Email content-template key: `batpw-e2e-tpl-<ts>` — lowercase, hyphen-separated, NO spaces
+ * (the create form rejects whitespace in the key). Email templates have no prefix-sweep
+ * entityType, so teardown is an explicit `DELETE /email-templates/{key}/{locale}` of the
+ * captured key+locale (see `e2e/helpers/email-template-fixture.ts`).
+ */
+export function emailTemplateKey(): string {
+  return `batpw-e2e-tpl-${ts()}`;
+}
+
 /** Upload filename: `bruno-test-<ts>.png`. (No EMS cleanup entityType reaches uploads today.) */
 export function uploadFileName(ext = 'png'): string {
   return `${CANONICAL_PREFIXES.additionalEmail}${ts()}.${ext}`;

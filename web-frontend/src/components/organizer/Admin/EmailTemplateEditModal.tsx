@@ -200,7 +200,14 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
       : t('emailTemplates.createTitle', 'New Template');
 
   return (
-    <Dialog open onClose={onClose} maxWidth="lg" fullWidth fullScreen={isFullScreen}>
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      fullScreen={isFullScreen}
+      data-testid="email-template-modal"
+    >
       <DialogTitle>{title}</DialogTitle>
       <DialogContent dividers>
         {/* Metadata chips (edit mode) */}
@@ -229,6 +236,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
               fullWidth
               required
               helperText="e.g. my-custom-invitation"
+              inputProps={{ 'data-testid': 'email-template-key-input' }}
             />
             <FormControl sx={{ minWidth: 100 }}>
               <InputLabel>{t('emailTemplates.locale', 'Locale')}</InputLabel>
@@ -252,7 +260,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
             onChange={(e) => setSubject(e.target.value)}
             fullWidth
             required
-            inputProps={{ maxLength: 500 }}
+            inputProps={{ maxLength: 500, 'data-testid': 'email-template-subject-input' }}
             sx={{ mb: 2 }}
           />
         )}
@@ -363,6 +371,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           variant="contained"
           disabled={isSaving}
           startIcon={isSaving ? <CircularProgress size={16} /> : undefined}
+          data-testid="email-template-save"
         >
           {t('actions.save', 'Save')}
         </Button>

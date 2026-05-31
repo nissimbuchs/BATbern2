@@ -58,7 +58,7 @@ const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 4 }} data-testid="notifications-page">
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
