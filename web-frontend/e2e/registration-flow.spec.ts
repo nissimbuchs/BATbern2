@@ -99,9 +99,19 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     }
   }
 
+  // NIGHTLY-ONLY (@gate, not @smoke): moved out of the blocking per-deploy gate on
+  // 2026-05-31 (PR #703). On staging this submit hangs — the button sits on
+  // "Wird gesendet…" past 30s and the success view never renders. Root cause (to
+  // investigate, BAT follow-up): the double-opt-in confirmation email is sent to the
+  // factory's `@e2e.batbern.invalid` address; locally that's mocked/MailHog so the POST
+  // returns instantly, but against real SES on staging the `.invalid` recipient send
+  // appears to block the request. Until that's resolved (real/verified recipient, or
+  // async email send), this mutating path runs nightly only and must NOT gate deploys —
+  // it produced two spurious rollbacks as a @smoke. Slice 7's per-deploy gate is now
+  // read-only (archive + presentation), which is acceptable per the plan.
   test(
     'submits a public registration and shows the email-confirmation success view',
-    { tag: ['@smoke', '@gate'] },
+    { tag: ['@gate'] },
     async ({ page }) => {
       const email = factory.email();
 
@@ -118,14 +128,9 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
       await page.getByTestId('registration-wizard-submit-btn').click();
 
       // Real success state: the inline "email sent" view (NOT a QR confirmation page),
-      // echoing back the registered email.
-      //
-      // Explicit 30s timeout (above the global CI default): this submit is the heaviest
-      // @smoke POST — it getOrCreates a company + a user, writes the registration, and
-      // triggers the double-opt-in confirmation email. Against a freshly-deployed,
-      // not-yet-warm staging backend the button sits on "Wird gesendet…" for >5s, which
-      // produced a spurious gate failure → rollback on PR #703. 30s absorbs the cold
-      // round-trip; a genuinely stuck submit still fails the gate.
+      // echoing back the registered email. 30s timeout for the heaviest mutating POST
+      // (getOrCreate company + user + registration + confirmation email). See the
+      // nightly-only note on the test above re: the staging `.invalid`-recipient hang.
       await expect(page.getByTestId('registration-success')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('registration-success-email')).toHaveText(email);
     }
