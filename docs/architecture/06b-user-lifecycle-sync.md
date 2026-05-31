@@ -348,6 +348,16 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
 - `custom:companyId` — optional; present only when user is linked to a company.
 - `custom:role` — comma-separated role list (e.g., `"ORGANIZER,SPEAKER"`); whitespace around values is trimmed by Spring Security.
 
+> **⚠️ Drift correction (ADR-010, 2026-05-31):** the illustrative code and token example above
+> show a `custom:companyId` claim, but the **deployed `pre-token-generation.ts` injects only
+> `custom:username` and `custom:role`** — `companyId` in today's token comes from the *stored*
+> Cognito attribute flowing into the ID token, not from this Lambda. Per **ADR-010 / ADR-003 /
+> ADR-004**, `companyId` is being **removed from the token entirely** and resolved on demand via
+> the user-api keyed on `username`. The target token carries only `sub`, `email`, `custom:role`,
+> `custom:username`. (`custom:language` in the example is likewise illustrative — it is not a
+> defined pool attribute.) See §"Cognito Custom-Attribute Inventory & Deprecation Status" below
+> and `ADR-010-federated-identity-via-cognito.md` (D6).
+
 ## Pattern 3: Spring Security - Role Extraction from JWT
 
 **Purpose**: Extract roles from JWT `custom:role` claim and map to Spring Security authorities.
@@ -586,6 +596,73 @@ today; if other services start reading `custom:username` in code paths that touc
 speaker identity, they need the same twin (the shared-kernel home would be a clean
 follow-up if reuse appears).
 
+## Cognito Custom-Attribute Inventory & Deprecation Status
+
+This pool defines four custom attributes (`cognito-stack.ts:175-197`). Per ADR-001 the
+**database is the single source of truth** and Cognito is for **authentication only** — so the
+token should carry *identity* (`sub`, `email`) and *authorization* (`custom:role`,
+`custom:username`) and **nothing else**. The other attributes are legacy/bootstrap residue.
+
+### Key distinction: stored attribute ≠ JWT claim
+A custom *attribute* persisted on the Cognito user record is **not** the same as a *claim* in
+the issued token. The PreTokenGeneration Lambda computes `custom:role` / `custom:username`
+fresh from the DB on every token via `claimsToAddOrOverride` — it does **not** read the stored
+attributes, and a claim does **not** require a matching schema attribute. So the role/username
+in your JWT are DB projections, regardless of what is stored on the user.
+
+### Inventory
+
+| Attribute | Purpose | Source of truth | Written at signup | Read at runtime | Status / target |
+|---|---|---|:--:|:--:|---|
+| `custom:username` | cross-service identifier (ADR-003) | DB → **projected claim** | no | yes (injected claim) | ✅ Keep — earns its place in the token |
+| `custom:role` | authorization | DB → **projected claim** | no | yes (injected claim) | ✅ Claim kept; **stored attribute is a dead fossil** (pre-ADR-001) |
+| `custom:preferences` | firstName/lastName/language/theme/notifications | ⚠️ today: the token; **should be**: DB (`user_profiles.*`) | yes | yes (raw stored attr, `authService.ts:425`) | ⚠️ Demote to **signup seed only**; move runtime reads to `/users/me` |
+| `custom:companyId` | user→company relation | ⚠️ today: the token; **should be**: DB FK → company-api (ADR-003/004) | yes (`authService.ts:318`) | yes (raw stored attr, `authService.ts:448`) | ❌ **Remove from token entirely** (see below) |
+
+### Resolved decision — `custom:companyId` does not belong in the token
+Company membership is **pure business data**, not identity or authorization. The only
+company-scoped authorization path (`PartnerAnalyticsController` →
+`@partnerSecurityService.isCurrentUserCompany(#companyName)`) **already resolves the company
+server-side via the user-api** (`PartnerSecurityService` calls
+`userServiceClient.getUserByUsername(username)` and compares `companyName`) — it never reads the
+`custom:companyId` claim. The claim is therefore redundant token bloat, and is additionally
+mis-modeled (validated as a UUID in `preSignUp`, while the real reference everywhere else is the
+12-char meaningful `companyName` per ADR-003).
+
+**Target:** any service needing a user's company calls the user-api keyed on `username` (15-min
+Caffeine enrichment cache, ADR-004). `custom:companyId` is **not** emitted as a claim and **not**
+projected by PreTokenGeneration. The frontend reads company from `/users/me`, not the token.
+> Note: `custom:role` is a claim because Spring Security builds authorities from it; `companyId`
+> participates in no authorization-from-token decision, so it must **not** be projected as a claim.
+
+### Permanence constraint — cleanup means "stop using", not "delete"
+AWS Cognito provides **no API to delete a custom attribute** once added to a pool — the schema
+entries are permanent unless the entire pool is rebuilt (a full user migration). So the cleanup is:
+- **`custom:role`** — already unused; drop `'role'` from the client `readAttributes`
+  (`cognito-stack.ts:264`) so it stops appearing in tokens. Optionally backfill existing users'
+  stored value to a sentinel `"UNUSED"` (fits `maxLen:20`) as documentation-in-the-data for anyone
+  inspecting the Cognito console. Cost: a one-time paginated `AdminUpdateUserAttributes` script
+  **plus** writing the sentinel on every new user — worth it only if console confusion has bitten
+  the team; otherwise "stop reading + this doc" suffices.
+- **`custom:companyId`, `custom:preferences`** — can only be sentineled *after* their runtime
+  reads move to the DB/user-api (you cannot mark live attributes UNUSED). Until then they remain
+  as the signup seed.
+
+### Minimal target footprint
+Standard `email` (sign-in) + `sub` (immutable key → `user_profiles.cognito_user_id`) for identity;
+`custom:role` + `custom:username` as DB-projected claims for authorization/lookup. No other custom
+attribute in the token. Everything else is resolved from the DB via the user-api per ADR-004.
+
+> Drift fixed alongside this entry: the Pattern 2 example in this document previously showed
+> PreTokenGeneration injecting a `custom:companyId` claim from the DB. The deployed
+> `pre-token-generation.ts` does not (and per the decision above, should not) — companyId in the
+> current token comes from the stored attribute flowing into the ID token, which is exactly what
+> this cleanup removes.
+
+**Related:** [ADR-001](./ADR-001-invitation-based-user-registration.md) (Cognito-for-auth-only),
+[ADR-003](./ADR-003-meaningful-identifiers-public-apis.md) (meaningful IDs),
+[ADR-004](./ADR-004-factor-user-fields-from-domain-entities.md) (factor user fields, enrich via user-api).
+
 ## What We DON'T Do
 
 ### ❌ No Cognito Groups
@@ -656,10 +733,24 @@ accounts outside the window are skipped.
 
 **Alternative**: None needed.
 
-### ❌ No PreAuthentication Trigger
-**Reason**: No need to block inactive users at auth time. API Gateway handles authorization.
+### ⚠️ PreAuthentication Trigger — CORRECTED (was wrongly listed here as "not done")
+**This entry previously claimed "No PreAuthentication Trigger — application logic checks
+`is_active`." Both halves were false** (corrected 2026-05-31, traced for ADR-010):
+- A **PreAuthentication Lambda DOES exist and is wired**
+  (`infrastructure/lib/lambda/triggers/pre-authentication.ts`) — it is in fact the **only** place
+  `is_active` is enforced today (blocks login when `is_active = false`).
+- The claimed app-layer check **does not exist**: the API Gateway `SecurityConfig` does JWT/role
+  work only, and `JITUserProvisioningInterceptor` merely *sets* `isActive(true)` on create — no
+  request-time gate reads `is_active`.
 
-**Alternative**: Application logic checks `is_active` flag in database.
+**Two gaps this leaves:** (a) PreAuthentication **never fires for federated logins**, so once SSO
+ships a deactivated user could sign in via Google unchecked; (b) it only blocks at *login*, so a
+24h-valid token keeps working after deactivation.
+
+**Target (ADR-010):** replace PreAuthentication with a request-time **`is_active` gate at the API
+Gateway** (Caffeine-cached, `403 ACCOUNT_DEACTIVATED`, fail-open on CUMS error) — provider-agnostic,
+closes both gaps (deactivation effective within ~60s), then **retire the PreAuthentication trigger**.
+See `ADR-010-federated-identity-via-cognito.md` (D5) and `docs/plans/sso-oidc-federation.md` (PR 1).
 
 ## Database Schema
 
