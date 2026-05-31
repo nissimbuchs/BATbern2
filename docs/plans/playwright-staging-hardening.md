@@ -74,13 +74,16 @@ production deploy.
 > 3 freely-reversible tabs (`admin-{task-templates,email-templates,global-images}-crud.spec.ts` —
 > PO 2026-05-31: real C/R/U/D only where rows are creatable+deletable; singleton tabs stay
 > render-only). Dropped the global-singleton email-forwarding save + fixed its `tab=7`-not-`tab=6`
-> bug — see "PR 13 notes". **NEXT:** slice 13 (**cross-cutting**
-> a11y/auth/cors) on branch `e2e-cross-cutting` (off develop post-#701) — the lighter leaf; then
-> PR 15 gate-flip. NOTE: this repo **auto-merges PRs once CI is green** — so each stacked PR
-> auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable per-slice
-> checklist". Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice
-> <name>`, §F). See the §"Handoff" recon for slice 13 landmines. **Remaining: slice 13
-> (cross-cutting), then PR 15 gate-flip.**
+> bug — see "PR 13 notes". Slice 13 (**cross-cutting a11y + cors**) DONE on branch
+> `e2e-cross-cutting` (off develop post-#701; awaiting push/PR) — green ×2 vs dev = 23/23; 23
+> structural a11y + cors checks gated `@gate`, **7 axe/structural scans `@quarantine`** because
+> they surfaced **real WCAG-AA debt** (theme secondary-text contrast 3.05–3.33:1 app-wide;
+> dashboard h1→h5 heading skip; 200%-zoom overflow — a product fix, tracked, not a test bug).
+> `auth/*` deferred as a separate focused task. See "PR 14 notes". NOTE: this repo **auto-merges
+> PRs once CI is green** — so each stacked PR auto-merges + deploys when targeted at develop.
+> **NEXT:** PR 15 gate-flip (flip `playwright-tests` to blocking + the deliberate-fail rollback
+> drill; §D/§E). **Remaining: PR 15 gate-flip — and two optional follow-ups: `auth/*` spec
+> reconciliation + the WCAG-AA contrast/heading/zoom product fix that would un-quarantine the 7.**
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -109,7 +112,7 @@ slice audit land as separate fix-commits in the same PR.
 | 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | 🔵 (#699) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. ✅ merged (#699, `4cdc3261`, 2026-05-31). |
 | 12 | `e2e-partners` | Slice 11: partners + meetings | `partner/{analytics-dashboard,topic-voting}`, `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`, **NEW** `organizer/partner-topic-status` | `clear-search` (PartnerSearch), `view-mode-{grid,list}` (PartnerDirectoryScreen ToggleButtons), `tier-select-option-<TIER>` (PartnershipTierSelect MenuItems), `partnershipStartDate`/`partnershipEndDate` (PartnershipDatePicker inputs), `company-option-<name>` (CompanyAutocomplete), `chart-{attendance-per-event,yoy-headcount}` (PartnerAttendanceDashboard), `topic-planned-event-<id>` (TopicListPage), `invite-success-alert-<id>` (MeetingDetailPanel) | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI partner create→detail→cleanup) | ✅ merged (#700, `97e6e3e0`, 2026-05-31) | **rewrite-to-reality + reliability + prod-residue fix.** `@smoke` = organizer partner create (company autocomplete→tier→save→detail) + cleanup — deterministic, NO promote. **Killed the residue source:** old `partner-create-edit` named the fixture company `tc-${random}` (NOT swept) + ad-hoc `deletePartnerViaAPI` → now `factory.partnerName()` (`brtest<6>`, swept by `pcs/partners`) + canonical `cleanupById('partners')`/`cleanupById('companies')`. Verified residue-free (companies brtest→0 explicit-delete; partners→0 canonical sweep; PCS-partner vs CUMS-company are separate services w/ no cross-FK, so the company needs explicit delete + the partner relies on the swept `brtest` name). See "PR 12 notes". |
 | 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-tabs` (render, **NEW** replaces `admin-settings`) + `organizer/admin-{task-templates,email-templates,global-images}-crud` (**NEW**, full UI CRUD) | root testids on 7 tabs + `organizer-analytics-page` + `notifications-page` + `admin-tabs`/`admin-tab-<i>` nav; CustomTaskModal + TaskTemplateEditModal (`template-edit-save`/`task-template-edit-modal`) + EmailTemplateEditModal (`email-template-{modal,key-input,subject-input,save}`) + GlobalImagesTab (`global-image-{input,item-<id>,position-<id>,position-option-<v>,delete-<id>}`) | ✅ dev (14×2) | `@gate` (render) + **`@smoke`** (3 full-CRUD: task-templates, email-templates, global-images) | ✅ merged (#701, `0c2f9789`, 2026-05-31; deploy `@smoke` gate green after a re-run past a transient CFN UPDATE_IN_PROGRESS collision) | **rewrite-to-reality + prod-safety + real per-tab CRUD (PO 2026-05-31).** Render coverage for all 9 tabs + 2 pages; **real UI Create/Read/Update/Delete for the 3 freely-reversible tabs** (captured-id cleanup, no sweep path). Singleton tabs stay render-only (no safe restore). Dropped the global-singleton email-forwarding save + fixed the `?tab=7`-for-Settings bug + the ENOENT `.playwright-auth-chromium.json` override. See "PR 13 notes". |
-| 14 | `e2e-cross-cutting` | Slice 13: a11y/auth/cors sweep | `accessibility/*`, `auth/*`, `api-integration/cors-validation` | — | — | — | ⬜ | mostly non-mutating |
+| 14 | `e2e-cross-cutting` | Slice 13: a11y + cors sweep (auth deferred) | `accessibility/{navigation,layout,screen-reader}`, `api-integration/cors-validation` | `notifications-button` + `mobile-menu-button` (AppHeader) | ✅ dev (23×2) | `@gate` (read-only) + **7 `@quarantine`** (real WCAG debt) | 🔵 | **rewrite-to-reality + reliability.** 23 structural a11y + cors checks now green & gated; deleted 3 fictional skips + 2 zero-assertion probes; fixed translated-`aria-label` nav selectors (→ `getByRole`/testids), fictional notification-popup ARIA, dead `/login` beforeEach, dev-vs-staging CORS preflight (200/204). **Found real WCAG-AA debt** (see "PR 14 notes"): theme secondary-text `#7f8c8d` 3.05–3.33:1 (~1200+ instances), dashboard h1→h5 heading skip, 200%-zoom overflow → those 7 axe/structural scans `@quarantine` (tracked; nightly auto-promotes once fixed). **`auth/*` deferred** (separate focused task — components carry testids but specs need reconciliation + Cognito/MailHog). |
 | 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
 
 **Status legend:** ⬜ todo · 🟡 in progress · 🔵 in review · 🟢 @gate (proven ×2) · 🟠 @quarantine · ✅ merged · 🔴 blocked
@@ -860,6 +863,68 @@ per-image `global-image-{item,position,delete}-<id>` + `global-image-position-op
 73 touched-component unit tests still green (Admin + Tasks folders); tsc + eslint clean. Green ×2
 on dev (14/14 both runs). Staging validates the new testids after this PR's frontend deploys
 (deploy-then-green pattern, PRs 2/4/5/8).
+
+### PR 14 notes — cross-cutting a11y + cors slice (rewrite-to-reality + a real WCAG-AA finding)
+
+Slice 13's core per the handoff recon = `accessibility/{navigation,layout,screen-reader}` +
+`api-integration/cors-validation` (companies-api-integration was tagged in slice 2). `auth/*` is a
+**separate focused task** (deferred — see below). The a11y specs (Story 1.17) were generic,
+`/dashboard`-coupled, and full of reality drift. **23 structural checks now green ×2 and `@gate`;
+7 axe/structural scans `@quarantine`d on a real product finding.**
+
+**Rewrite-to-reality fixes (all 3 a11y specs):**
+- **Wait/redirect race.** `/dashboard` is a redirect shim → organizers land on `/organizer/events`.
+  The specs now `goto('/dashboard')` + `waitForLoadState('networkidle')` so the redirect AND the
+  authenticated shell (AppHeader nav, aria-live badge, skip link, h1) finish before asserting.
+  (Navigating direct to `/organizer/events` + waiting only for the h1 raced shell hydration and
+  left `:focus`/`[aria-live]`/nav-links empty — a tempting but wrong "fix".)
+- **Translated `aria-label` selectors.** `nav[aria-label="main navigation"]` never matched (the
+  label is `t('navigation.mainNav')`, locale-dependent). Switched the landmark/route-change/nav
+  assertions to `getByRole('navigation')` (a11y locators are EXEMPT from the testid-only rule).
+- **Fictional notification ARIA.** The notification button NAVIGATES to `/organizer/notifications`
+  (it is not a popup), so the old `aria-expanded`/`aria-haspopup` expectations were wrong — those
+  belong to the user-menu button. Split: notification button asserts name only; user-menu asserts
+  the popup ARIA. Added `data-testid="notifications-button"` + `data-testid="mobile-menu-button"`
+  to AppHeader (their accessible names are translated; the recon's explicit ask).
+- **Deleted 3 fictional skips** (focus-trap notification dropdown — notifications are inline, no
+  dropdown; on-submit form-error announcement — login validates on blur; forced-colors high
+  contrast — never built) **+ 2 zero-assertion probes** (`restore focus after modal close` clicked
+  `getByRole('button').first()` and asserted nothing when no modal opened; `announce loading
+  states` likewise) **+ the `else { expect(true).toBe(true) }` branch** (quality-bar #3).
+- **Dead `/login` beforeEach** with a "TODO add login flow" removed (the chromium project is
+  already authenticated via storageState).
+
+**cors-validation → `@gate` (read-only, exemplary).** One reality fix: the OPTIONS preflight
+returns **204 on the deployed staging gateway but 200 on the local dev gateway** (Spring's default
+CORS handler) — relaxed to accept `[200, 204]` (the meaningful assertion is the `Access-Control-*`
+headers, which are checked). `Date.now()` here is a correlation-ID header value, not persisted
+data — no factory/cleanup needed.
+
+**🔴 Real WCAG-AA debt found (the headline) — 7 scans `@quarantine`d, NOT deleted.** Once the shell
+fully renders (post-`networkidle`), the full-page axe scans catch genuine, pervasive violations —
+the recon's exact "real violations would fail them, budget a fix or @quarantine" scenario. These
+are product debt, not test bugs, so they're quarantined (excluded from gate + nightly; the nightly
+quarantine re-test auto-promotes them once the product is fixed) and logged here:
+- **color-contrast (~1200+ instances, `serious`):** the theme's secondary-text color `#7f8c8d`
+  renders **3.05–3.33:1** on the light surfaces (`#fafafa`/`#f0f0f0`); WCAG-AA needs 4.5:1. This is
+  one theme token used app-wide (every MUI `text.secondary` caption/label) → **a single theme-color
+  darkening would clear the bulk** (high-leverage follow-up; visual change, PO call).
+- **heading hierarchy:** the organizer dashboard jumps **h1 → h5** (skips 4 levels; MUI card titles
+  render `variant="h5"` directly under the page h1).
+- **200% zoom:** the data-dense dashboard overflows horizontally at 200% body zoom.
+Quarantined scans: layout `{base-layout, contrast-4.5, mobile, tablet, heading-hierarchy, zoom}` +
+navigation `no-violations`. The contrast-independent structural checks (focus indicators, page
+title, lang, keyboard nav, skip link, landmarks, ARIA-on-buttons, aria-live, labels, table a11y,
+icon sr-text, notification announcements, route changes, no-ARIA-violations) all pass → `@gate`.
+
+**`auth/*` deferred (separate focused task).** `auth/{forgot-password,reset-password}` — the
+components DO exist + carry testids, but the specs need reconciliation (e.g. `label[for="email"]`
+isn't the real label assoc; keyboard-submit expects a Cognito "check your email" confirmation) and
+most groups gate on `HAS_EMAIL_INTEGRATION` (Cognito + MailHog), unavailable on dev. Out of slice
+13's core per the handoff recon; tracked as a follow-up. No `@smoke` in slice 13 (all read-only).
+
+Component testids added: `notifications-button`, `mobile-menu-button` (AppHeader). 14 AppHeader
+unit tests still green; tsc + eslint clean. Green ×2 on dev (23/23 both runs, quarantine excluded).
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

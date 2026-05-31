@@ -143,6 +143,7 @@ const AppHeader = React.memo(function AppHeader({
               aria-label={t('navigation.openMenu')}
               onClick={handleMobileMenuToggle}
               sx={{ mr: 2 }}
+              data-testid="mobile-menu-button"
             >
               <Menu />
             </IconButton>
@@ -183,6 +184,7 @@ const AppHeader = React.memo(function AppHeader({
               aria-label={t('navigation.notifications')}
               aria-describedby={unreadCount > 0 ? 'notification-badge-description' : undefined}
               onClick={handleNotificationClick}
+              data-testid="notifications-button"
             >
               <Badge badgeContent={unreadCount} color="error" aria-live="polite" aria-atomic="true">
                 <Notifications />
