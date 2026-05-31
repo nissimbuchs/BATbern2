@@ -59,11 +59,13 @@ production deploy.
 > Slice 3 (**users**) MERGED — squash `815b4078` (PR #693). Slices 4 (**topics + event-types**)
 > + 5 (**tasks**) MERGED — squash `9ff51818` (PR #694). Slice 6 (**sessions/slot-assignment**)
 > MERGED — squash `41669b5b` (PR #695; its deploy-to-staging `@smoke` gate job ran green). Slices
-> 8 (**speaker pool**) + 9 (**speaker portal**) are on `e2e-speaker` (rebased onto develop
-> post-#695; green ×2 vs dev). NOTE: this repo **auto-merges PRs once CI is green** — so each
-> stacked PR auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable
-> per-slice checklist". Run locally green ×2 vs dev first
-> (`run-playwright-tests.sh development --slice <name>`, §F).
+> 8 (**speaker pool**) + 9 (**speaker portal**) MERGED — squash `ce88fbc5` (PR #697; its
+> deploy-to-staging `@smoke` gate job ran green). Slice 10 (**event workflow**) is on
+> `e2e-event-workflow` (off develop post-#697; green ×2 vs dev). NOTE: this repo
+> **auto-merges PRs once CI is green** — so each stacked PR auto-merges + deploys when targeted
+> at develop. Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs dev
+> first (`run-playwright-tests.sh development --slice <name>`, §F). **Remaining: slices 11
+> (partners) + 13 (cross-cutting) + 12 (admin tabs), then PR 15 gate-flip.**
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -86,9 +88,9 @@ slice audit land as separate fix-commits in the same PR.
 | 6 | `e2e-tasks` | Slice 5: tasks | `tasks/test-task-creation-from-templates` (consolidated; `test-task-assignment` **deleted**) | `EventTasksTab` (`event-tasks-tab-content`, `task-template-<id>`, `task-assignee-<id>`) — assignee `organizer-option-<username>` already existed | ✅ dev (2×2) | `@gate` + **`@smoke`** (assign+save+verify, cascade cleanup) | ✅ merged (#694, `9ff51818`, 2026-05-31) | **rewrite-to-reality + prod-residue fix.** Both old specs created a real `BATbern${9000+random}` event via the UI and **never cleaned up** (leaked event+tasks/run) + used role/text locators + HARDCODED organizer names. Consolidated to one spec: read-only `@gate` (Tasks tab lists templates) + **`@smoke`** (assign first default template to the current organizer → save → GET `/events/{code}/tasks` asserts the assignee persisted). Uses the API event-fixture (captured `BATbern{N}`); cleanup = `cleanupByCode` → `event_tasks` FK `ON DELETE CASCADE` (tasks have no prefix-sweep). Deterministic assignee via `organizer-option-<token-username>` (no hardcoded names). `TaskTemplatesTab` (admin template catalog) is a SEPARATE surface, not exercised by these specs. See "PR 6 notes". |
 | 7 | `e2e-sessions` | Slice 6: sessions/slot-assignment | `slot-assignment/slot-assignment-workflow` | — (SlotAssignment already strong) | ✅ dev (2×2) | `@gate` + **`@smoke`** (auto-assign) | ✅ merged (#695, `41669b5b`, 2026-05-31; staging `@smoke` gate green) | **rewrite-to-reality.** Replaced an all-skipped 5-test RED-phase `describe.skip` asserting an idealized DOM that was never built (`assignment-progress`/`speaker-card`/`slot-dropzone`/`conflict-detection-modal`+room-change resolution/`speaker-preference-panel`/3-step `bulk-auto-assignment-modal` wizard/`assignment-complete-banner`/`/publishing` walk — NONE of those testids exist). **Zero new testids** — SlotAssignment is already richly testid'd. **Deterministic `@smoke` = auto-assign** (button→`auto-assign-modal`→`auto-assign-confirm`, `POST /sessions/auto-assign`), NOT native HTML5 drag-drop (too flaky to gate). Unassigned-session fixture: REST `POST /sessions` requires timing (`CreateSessionRequest @NotNull`), so `addUnassignedSessions` (event-fixture.ts) creates timed sessions then `DELETE /sessions/timing` to reach the placeholder state. Cleanup = event-delete cascade (`sessions`/`session_timing_history` `ON DELETE CASCADE`) — server-gen `sessionSlug` isn't prefix-sweepable. Verify via `GET /sessions/unassigned == 0`. See "PR 7 notes". |
 | 8 | `e2e-registrations` | Slice 7 (**full**): archive sub-slice + `registration-flow` + `presentation` | `archive-{browsing,filtering,event-detail,infinite-scroll}`, `registration-flow`, `presentation` | archive: ArchivePage, EventCard, FilterSidebar, FilterSheet, HomePage(archive), HeroSection, SessionCards, SpeakerGrid, SpeakerDisplay; reg: PersonalDetailsStep (5 inputs+5 errors), CompanyAutocomplete, ConfirmRegistrationStep (terms), RegistrationWizard (success); pres: WelcomeSlide | ✅ local | `@gate` (archive+pres read-only) + **`@smoke`** (registration mutating happy-path) | ✅ merged (#691, `8a9949a1`, 2026-05-30) | full rewrite-to-reality; reg `@smoke` is slice 7's first mutating gate path; see "PR 8 notes". Review follow-ups (#1/#2/#4/#8) carried on `e2e-uploads`, not in this merge. |
-| 9 | `e2e-speaker` (stacked on `e2e-sessions`) | Slice 8: speaker pool (organizer) | `organizer/speaker-{column-triage,card-primary-action}` (migrated), `speaker-pool-smoke` (new), DELETED `speaker-{brainstorming,outreach,invitation,kanban-guided-drag}`, untagged `speaker-onbehalf-vs-self-byte-identity` | `MarkContactedModal` (`contact-method-option-{email,phone,in-person}`) — kanban/drawer testids already existed | ✅ dev (5×2) | `@gate` + **`@smoke`** (log-outreach IDENTIFIED→CONTACTED) | 🔵 | **rewrite-to-reality + reliability.** The recon's "strong testids / light" was optimistic: 3 specs were FICTIONAL (`speaker-brainstorming` asserted a non-existent `/brainstorm` route; `speaker-outreach` a non-existent `/outreach` dashboard; `speaker-invitation` mixed) and **all** specs seeded via the unset `process.env.E2E_TEST_TOKEN` (`Bearer undefined`→401) + created events through the UI with `Date.now()` titles and **no cleanup** (event-leak/run). New shared `e2e/helpers/speaker-pool-fixture.ts` (seed/status/promote/get via `readOrganizerToken()`). Kept+migrated `column-triage` (2 tests) + `card-primary-action` (2 tests: IDENTIFIED→MarkContactedModal, CONTACTED→drawer promote sub-view — fixed: the old `promote-email-field` assertion targeted the now-dead legacy `PromoteSpeakerDialog`; post-Epic-11 CONTACTED opens the drawer's `promote-submit-button`). **`@smoke` = log-outreach (IDENTIFIED→CONTACTED via MarkContactedModal)** — deliberately NOT promote-to-READY: promote provisions a Cognito/CUMS user out-of-band, an **intermittently-flaky** external write (observed 500s on dev) that would make a blocking gate spurious; also not native DnD. DELETED `kanban-guided-drag` (manual-mouse DnD, flaky). Cleanup = event-delete cascade (`speaker_pool.event_id` ON DELETE CASCADE). **Follow-up (untagged):** `speaker-onbehalf-vs-self-byte-identity` — its inline event-create 400s (NotNull gap) + walks promote; migrate to `createRegistrationEvent` + a promote-free path to gate it. See "PR 9 notes". |
-| 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | 🔵 | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
-| 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e`, workflow walk | — | — | — | ⬜ | **heavy** — see Section C-bis |
+| 9 | `e2e-speaker` (stacked on `e2e-sessions`) | Slice 8: speaker pool (organizer) | `organizer/speaker-{column-triage,card-primary-action}` (migrated), `speaker-pool-smoke` (new), DELETED `speaker-{brainstorming,outreach,invitation,kanban-guided-drag}`, untagged `speaker-onbehalf-vs-self-byte-identity` | `MarkContactedModal` (`contact-method-option-{email,phone,in-person}`) — kanban/drawer testids already existed | ✅ dev (5×2) | `@gate` + **`@smoke`** (log-outreach IDENTIFIED→CONTACTED) | ✅ merged (#697, `ce88fbc5`, 2026-05-30; staging gate green) | **rewrite-to-reality + reliability.** The recon's "strong testids / light" was optimistic: 3 specs were FICTIONAL (`speaker-brainstorming` asserted a non-existent `/brainstorm` route; `speaker-outreach` a non-existent `/outreach` dashboard; `speaker-invitation` mixed) and **all** specs seeded via the unset `process.env.E2E_TEST_TOKEN` (`Bearer undefined`→401) + created events through the UI with `Date.now()` titles and **no cleanup** (event-leak/run). New shared `e2e/helpers/speaker-pool-fixture.ts` (seed/status/promote/get via `readOrganizerToken()`). Kept+migrated `column-triage` (2 tests) + `card-primary-action` (2 tests: IDENTIFIED→MarkContactedModal, CONTACTED→drawer promote sub-view — fixed: the old `promote-email-field` assertion targeted the now-dead legacy `PromoteSpeakerDialog`; post-Epic-11 CONTACTED opens the drawer's `promote-submit-button`). **`@smoke` = log-outreach (IDENTIFIED→CONTACTED via MarkContactedModal)** — deliberately NOT promote-to-READY: promote provisions a Cognito/CUMS user out-of-band, an **intermittently-flaky** external write (observed 500s on dev) that would make a blocking gate spurious; also not native DnD. DELETED `kanban-guided-drag` (manual-mouse DnD, flaky). Cleanup = event-delete cascade (`speaker_pool.event_id` ON DELETE CASCADE). **Follow-up (untagged):** `speaker-onbehalf-vs-self-byte-identity` — its inline event-create 400s (NotNull gap) + walks promote; migrate to `createRegistrationEvent` + a promote-free path to gate it. See "PR 9 notes". |
+| 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | ✅ merged (#697, `ce88fbc5`, 2026-05-30) | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
+| 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e` (rewritten) | `workflow-status-badge` gains `data-workflow-state` (EventOverviewTab) | ✅ dev (2×2) | `@gate` + **`@smoke`** (hybrid lifecycle walk CREATED→…→ARCHIVED) | 🔵 | **rewrite-to-reality + reliability (OQ-3 hybrid).** Replaced a 6-phase monolithic UI walk that created its event via the UI with a `Date.now()` number and **never cleaned up** (leaked event+tasks/speakers/sessions per run), drove the kanban with raw `page.mouse` native-DnD + HARDCODED organizer/speaker display names, and depended on slice-8 speaker/content flows + cron-only auto-transitions. New hybrid: force-advance state via the override transition API (`PUT /events/{code}/workflow/transition` `overrideValidation:true` — `transitionToState` skips ALL validation, so any target incl. cron-only EVENT_LIVE/EVENT_COMPLETED is reachable), UI asserts the overview `workflow-status-badge` after each step + an authoritative `GET /workflow/status` cross-check. **`@smoke` walks the FULL 7-state forward sequence** (not just the recon's 3-state subset — override makes all states equally deterministic, ~15.5s). New fixture helpers `transitionWorkflow`/`getWorkflowState` + `WORKFLOW_FORWARD_STATES` (event-fixture.ts). Cleanup = afterAll force-archive (events DELETE-able only when ARCHIVED → 409 otherwise) then `cleanupByCode`; robust even if the walk fails mid-sequence. No cron, no DnD, no content. See "PR 11 notes". |
 | 12 | `e2e-partners` | Slice 11: partners + meetings | `partner-management/*`, `organizer/partner-meetings`, `partner/*` | — | — | — | ⬜ | **no cleanup today** (residue source); needs `PARTNER_AUTH_TOKEN` |
 | 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-settings` | 8 admin tabs, `OrganizerAnalyticsPage`, `NotificationsPage` | — | — | ⬜ | **heaviest** — zero testids |
 | 14 | `e2e-cross-cutting` | Slice 13: a11y/auth/cors sweep | `accessibility/*`, `auth/*`, `api-integration/cors-validation` | — | — | — | ⬜ | mostly non-mutating |
@@ -558,6 +560,60 @@ case-sensitive `--grep`) also matches the heavy `event-lifecycle-e2e` "Phase D �
 & Publish Agenda" test, which is slow and currently red on dev (slice-10/PR-11 territory, not
 touched here). Run this slice with `--slice "Story 5.7"` to scope to these two specs only.
 
+### PR 11 notes — event-workflow slice (rewrite-to-reality, OQ-3 hybrid walk)
+
+Slice 10's lone chromium spec (`workflows/event-lifecycle-e2e.spec.ts`) was a **6-phase
+monolithic UI walk** (Story 5.1a) that:
+- created its event **through the UI** with a `Date.now()`-salted number and **never cleaned
+  up** — a leaked event plus its tasks/speakers/sessions on every run (the exact residue class
+  this plan exists to kill);
+- drove the speaker kanban with raw `page.mouse` **native HTML5 drag-and-drop** (CONTACTED→
+  READY→ACCEPTED) — the precise flaky DnD the plan keeps out of any gate — and **HARDCODED
+  organizer/speaker display names** (`Nissim Buchs`, `Daniel Kühni`, `N Nissim ELCA AI`),
+  environment-specific + fragile, with pervasive `waitForTimeout`;
+- depended on the speaker/content flows that belong to **slice 8** (speaker pool) and on
+  AUTOMATIC/cron transitions (EVENT_LIVE 00:01, EVENT_COMPLETED 23:59 Bern) a UI walk can't
+  drive deterministically.
+
+**OQ-3 resolved: hybrid (architect's default).** The 8-state lifecycle (CREATED →
+TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE →
+EVENT_COMPLETED → ARCHIVED) is force-advanced via the **same override the organizer UI exposes**
+— `PUT /events/{code}/workflow/transition` `{ targetState, overrideValidation:true,
+overrideReason }`. Verified in `EventWorkflowStateMachine.transitionToState`: `if (!override)`
+guards ALL validation, so `override=true` reaches **any** target state, including non-adjacent
+jumps and the cron-only EVENT_LIVE/EVENT_COMPLETED. The walk is API-driven, **UI-asserted**:
+after each transition the spec reloads the overview tab and asserts the `workflow-status-badge`
+reflects the new state, plus an authoritative `GET /workflow/status` cross-check.
+
+**`@smoke` walks the FULL 7-state forward sequence**, not the recon's 3-state subset
+(CREATED→TOPIC_SELECTION→AGENDA_PUBLISHED→ARCHIVED). Rationale: once the transition is an
+override API call + page reload, every state is *equally* deterministic, so the full walk is
+strictly more coverage at marginal cost (~15.5s total). The read-only `@gate` first asserts the
+fresh event renders in CREATED; the `@smoke` then force-advances the same (serial, shared) event
+through all 7 forward states.
+
+**Locale-independent assertion (testid bar).** The badge's visible `label` is **translated**
+(`getWorkflowStateLabel(state, t)`), so it can't be asserted by text. Added a
+`data-workflow-state={event.workflowState}` attribute to the `workflow-status-badge` Chip
+(EventOverviewTab.tsx) carrying the raw state — the same data-attribute pattern slice 7 used for
+`data-view-mode`. The only component change; 170 EventPage unit tests still green.
+
+**New fixture helpers** (event-fixture.ts): `transitionWorkflow(token, code, state)` (override
+PUT, returns server-confirmed state, throws loudly on non-2xx), `getWorkflowState(token, code)`
+(GET status → currentState), and `WORKFLOW_FORWARD_STATES` (the 7 non-CREATED states in order).
+
+**Cleanup contract.** Events are DELETE-able **only when ARCHIVED** (`cleanupByCode` accepts
+204/404/**409**; 409 = not-yet-archived). afterAll therefore **force-archives** the event
+(override transition, tolerant `.catch`) **then** `cleanupByCode` — robust even if the walk
+failed mid-sequence (the happy path already ends in ARCHIVED, so the force-archive is a no-op
+there). The `BATPW-E2E` title token is the orphan backstop. Green ×2 on dev (2/2 both runs);
+final global-teardown sweep `events:0` (residue-free); tsc + eslint clean. Unlike testid-adding
+slices, the spec changes go green on staging immediately post-deploy, but the new
+`data-workflow-state` attribute needs this PR's frontend build first (deploy-then-green pattern,
+PRs 2/4/5/8). The opt-in `documentation`/`screencast` projects keep the pure-UI walk + their
+page objects (TopicSelectionPage/SpeakerManagementPage/EventWorkflowPage, test-data.config,
+cleanup-helpers) — untouched here.
+
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 
 First PR-691 CI run: `bruno-tests` failed `users-api` → auto-rollback fired. Root cause was
@@ -852,8 +908,11 @@ composites last.
 
 ## C-bis. Event-workflow slice — design question (OQ-3, deferred to PR 11)
 
-> **Deferred** (PO, 2026-05-30): resolve OQ-3 when slice 10 (PR 11) is picked up, not now.
-> The recommendation below is the architect's default; revisit with fresh eyes at PR 11.
+> **✅ RESOLVED 2026-05-31 (PR 11): hybrid.** Implemented exactly as the architect's default
+> below — force-advance via the `overrideValidation:true` transition API, UI-assert the
+> `workflow-status-badge` per state. The `@smoke` walks the full 7-state forward sequence
+> (override makes every state equally deterministic). The pure-UI walk stays in the opt-in
+> documentation project. See "PR 11 notes".
 
 
 Driving `CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
@@ -954,11 +1013,13 @@ so staging-issued JWTs resolve roles against the local DB.
   polls `www.batbern.ch` for the freshly-deployed asset hash / `/version` marker (matching
   `github.sha`) with backoff before launching browsers (A1).
 
-- **OQ-3 — event-workflow walk: hybrid vs pure-UI. ⏸ DEFERRED to PR 11** (PO, 2026-05-30).
-  Decide when slice 10 is picked up. Architect's default: hybrid (use the `overrideValidation`
-  transition endpoint to force-advance cron/auto states — fast, low-flake, API-driven +
-  UI-asserted), with the pure-UI walk kept in the opt-in documentation project. Revisit with
-  fresh eyes at PR 11.
+- **OQ-3 — event-workflow walk: hybrid vs pure-UI. ✅ RESOLVED 2026-05-31 (PR 11): hybrid.**
+  Implemented as the architect's default: force-advance via `PUT /workflow/transition`
+  `overrideValidation:true` (verified `transitionToState` skips ALL validation under override,
+  so any state incl. cron-only EVENT_LIVE/EVENT_COMPLETED is reachable), UI-assert the
+  `workflow-status-badge`'s new `data-workflow-state` after each step. The `@smoke` walks the
+  full 7-state forward sequence (~15.5s, deterministic); the pure-UI walk stays in the opt-in
+  documentation project. See "PR 11 notes".
 
 ## Verification (end-to-end, after PR 15)
 1. Push a trivial change to `develop` → `deploy-staging.yml` runs; confirm `playwright-tests`

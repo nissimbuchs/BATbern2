@@ -189,6 +189,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 color="primary"
                 size="small"
                 data-testid="workflow-status-badge"
+                // Locale-independent assertion hook: the visible `label` is translated, so the
+                // raw workflow state is exposed here for testid-only E2E assertions (slice 10).
+                data-workflow-state={event.workflowState || 'CREATED'}
               />
               <Typography variant="body2" color="text.secondary">
                 {t('eventPage.overview.step', 'Step')}{' '}
