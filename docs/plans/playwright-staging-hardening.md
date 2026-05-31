@@ -1007,17 +1007,24 @@ regressions** — two spurious rollbacks (plan Risk #3 on runs 1–2). Investiga
   `@smoke` also passed at only 4.0s, near the edge), so we widened `expect` timeouts:
   `playwright.config.ts` → `expect: { timeout: process.env.CI ? 15_000 : 5_000 }` (kept — genuine
   cold-start hardening for the rest of the suite) + an explicit 30s on the registration assertion.
-- **Run 2** failed **again at the full 30s**, button still on **"Wird gesendet…"** — so the
-  registration POST doesn't just lag, it **hangs/never resolves on staging**. Root cause (likely):
-  the double-opt-in confirmation email is sent to the factory's `@e2e.batbern.invalid` address;
-  locally that's mocked (MailHog) so the POST returns instantly, but against real SES on staging the
-  `.invalid` recipient send appears to block the request. **Resolution (PO decision 2026-05-31):**
-  move `registration-flow` out of `@smoke` → **`@gate` (nightly-only)**, so it no longer gates
-  deploys. Slice 7's per-deploy gate is now read-only (archive + presentation), acceptable per the
-  plan. **Follow-up (owed):** investigate the staging registration hang (real/verified test
-  recipient, or make the confirmation-email send async/non-blocking) — a hang on a bad recipient is
-  also a backend-resilience smell worth a ticket. Until then the test will be red in the
-  (non-blocking) nightly `@gate` run.
+- **Run 2** failed **again at the full 30s**, button still on **"Wird gesendet…"** — so the submit
+  doesn't just lag, it never completes. **Root cause (confirmed in code + `GET /api/v1/config`, not
+  a hypothesis):** `RegistrationWizard.tsx:192` does `await getTurnstileToken()` **before** the POST.
+  It's a **Cloudflare Turnstile** CAPTCHA (Story 10.31). Staging serves `features.turnstile=true`
+  with a real production sitekey (`0x4AAAAAAC0nh08TwcTOYssw`); a headless/automation browser cannot
+  solve the invisible challenge, so `getToken()` never resolves → the POST is never sent → the button
+  sits on "Wird gesendet…". Locally `features.turnstile=false`, so `getToken()` returns `null`
+  immediately and the test passes. (Bruno's `13-create-registration` posts the *same* `.invalid`
+  payload directly to the API and gets 201 on staging — it bypasses the widget — proving the backend
+  is fine.) **This is NOT a user-facing bug** (real browsers pass the managed challenge) and the
+  registration API is already gated by Bruno. **Resolution (2026-05-31):** the submit test is
+  **`@quarantine`**, not `@gate` — it can't run headlessly against staging at all (nightly `@gate`
+  would hang too), but it still runs in the local `all` scope (Turnstile off). The other three
+  `registration-flow` tests (step-1 validation, email-format, back-preserves-data) never submit, so
+  they stay `@gate` and run nightly fine. Slice 7's per-deploy gate is now read-only (archive +
+  presentation), acceptable per the plan. **Follow-up (owed, tracked in a GitHub issue):** to gate the
+  UI submit path on staging, add a Turnstile E2E bypass (test sitekey / server-side bypass token for
+  known E2E fixtures); otherwise the API path stays Bruno-gated and the UI submit stays local-only.
 
 Both spurious rollbacks were **low-impact**: backend ECS images were unchanged (this PR has no
 service-code change) and the frontend restore correctly **skipped** (the stable bucket wasn't seeded

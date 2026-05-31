@@ -99,19 +99,22 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
     }
   }
 
-  // NIGHTLY-ONLY (@gate, not @smoke): moved out of the blocking per-deploy gate on
-  // 2026-05-31 (PR #703). On staging this submit hangs — the button sits on
-  // "Wird gesendet…" past 30s and the success view never renders. Root cause (to
-  // investigate, BAT follow-up): the double-opt-in confirmation email is sent to the
-  // factory's `@e2e.batbern.invalid` address; locally that's mocked/MailHog so the POST
-  // returns instantly, but against real SES on staging the `.invalid` recipient send
-  // appears to block the request. Until that's resolved (real/verified recipient, or
-  // async email send), this mutating path runs nightly only and must NOT gate deploys —
-  // it produced two spurious rollbacks as a @smoke. Slice 7's per-deploy gate is now
-  // read-only (archive + presentation), which is acceptable per the plan.
+  // @quarantine (was @smoke → @gate → @quarantine on 2026-05-31, PR #703): this submit
+  // CANNOT run headlessly against staging. Root cause (confirmed in code + GET
+  // /api/v1/config): RegistrationWizard.tsx awaits a Cloudflare Turnstile token
+  // (`getTurnstileToken()`) BEFORE the POST. Staging has `features.turnstile=true` with a
+  // real production sitekey; a headless/automation browser can't solve the invisible
+  // challenge, so getToken() never resolves → the POST is never sent → the button sits on
+  // "Wird gesendet…" forever (two spurious rollbacks as a @smoke). Locally
+  // `features.turnstile=false`, so getToken() returns null immediately and the test passes
+  // — hence @quarantine (excluded from staging CI per-deploy AND nightly; still runs in the
+  // local `all` scope where Turnstile is off; tracked). NOT a user-facing bug: real browsers
+  // pass the managed challenge, and the registration API itself is gated by Bruno
+  // (event-full-workflow-api/13-create-registration). See the GitHub issue / plan §"Frontend
+  // rollback" follow-up for the Turnstile-E2E-bypass options.
   test(
     'submits a public registration and shows the email-confirmation success view',
-    { tag: ['@gate'] },
+    { tag: ['@quarantine'] },
     async ({ page }) => {
       const email = factory.email();
 
