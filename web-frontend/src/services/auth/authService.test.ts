@@ -164,7 +164,10 @@ describe('AuthService', () => {
       const result = await authService.signIn(credentials);
 
       expect(result.user?.userId).toBeDefined();
-      expect(result.user?.companyId).toBeDefined();
+      // Story 12.1: company is no longer sourced from the token (custom:companyId
+      // dropped from extraction). AuthContext.hydrateUserFromDb fills it from /users/me.
+      expect(result.user?.companyId).toBeUndefined();
+      // preferences defaults to an empty object at extraction; hydration fills it.
       expect(result.user?.preferences).toBeDefined();
       expect(result.accessToken).toBeDefined();
     });
@@ -354,6 +357,36 @@ describe('AuthService', () => {
       });
     });
 
+    it('should_notWriteCustomCompanyId_evenWhenCompanyIdProvided_perStory12_1', async () => {
+      // Story 12.1 AC4: the `...(signUpData.companyId && { 'custom:companyId': … })`
+      // spread (was authService.ts:318) is removed. Company is owned by
+      // user_profiles.company_id via the user-management path, never seeded from the
+      // token attribute. Even if a caller passes companyId, it must NOT reach Cognito.
+      const signUpData: SignUpData = {
+        email: 'withcompany@company.com',
+        password: 'ValidPassword123!',
+        confirmPassword: 'ValidPassword123!',
+        role: 'attendee',
+        companyId: 'some-company-id',
+        firstName: 'Jane',
+        lastName: 'Roe',
+        acceptTerms: true,
+      };
+
+      mockAuth.signUp.mockResolvedValue({
+        isSignUpComplete: false,
+        userId: 'withcompany-id',
+        nextStep: { signUpStep: 'CONFIRM_SIGN_UP' },
+      });
+
+      await authService.signUp(signUpData);
+
+      const call = mockAuth.signUp.mock.calls[0][0] as {
+        options: { userAttributes: Record<string, unknown> };
+      };
+      expect(call.options.userAttributes).not.toHaveProperty('custom:companyId');
+    });
+
     it('should_validatePasswordMatch_when_signingUp', async () => {
       // Test 9.6: should_validatePasswordMatch_when_signingUp
       const signUpData: SignUpData = {
@@ -467,6 +500,59 @@ describe('AuthService', () => {
       expect(user?.userId).toBeDefined();
       expect(user?.email).toBeDefined();
       expect(user?.role).toMatch(/^(organizer|speaker|partner|attendee)$/);
+    });
+
+    it('should_notSourceCompanyIdOrPreferencesFromToken_perStory12_1', async () => {
+      // Story 12.1 AC1: extractUserContextFromToken no longer reads custom:companyId
+      // (was authService.ts:448) nor custom:preferences (was authService.ts:425).
+      // Even when the token carries those claims, the UserContext must not pick them up
+      // — company + preferences come from GET /users/me via AuthContext hydration.
+      // Identity (sub/email) + authorization (custom:role/custom:username) stay intact.
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-999',
+              email: 'hygiene@batbern.ch',
+              email_verified: true,
+              'custom:role': 'SPEAKER',
+              'custom:username': 'jane.doe',
+              'custom:companyId': 'stale-company-from-token',
+              'custom:preferences': JSON.stringify({
+                language: 'fr',
+                theme: 'dark',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token',
+          },
+          accessToken: {
+            payload: { exp: Math.floor(Date.now() / 1000) + 3600 },
+            toString: () => 'mock-access-token',
+          },
+        },
+      };
+
+      mockAuth.getCurrentUser.mockResolvedValue({
+        username: 'hygiene@batbern.ch',
+        userId: 'user-999',
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
+
+      const user = await authService.getCurrentUser();
+
+      expect(user).toBeDefined();
+      // companyId NOT read from the token claim
+      expect(user?.companyId).toBeUndefined();
+      // preferences NOT read from the token claim — defaulted to empty (no language)
+      expect(user?.preferences?.language).toBeUndefined();
+      // identity + authorization preserved
+      expect(user?.username).toBe('jane.doe');
+      expect(user?.role).toBe('speaker');
+      expect(user?.email).toBe('hygiene@batbern.ch');
     });
 
     it('should_returnNull_when_userNotAuthenticated', async () => {

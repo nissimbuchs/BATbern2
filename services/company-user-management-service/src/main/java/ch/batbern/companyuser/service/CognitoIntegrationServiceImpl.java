@@ -70,9 +70,13 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
                 .userAttributes(
                         AttributeType.builder().name("email").value(email).build(),
                         AttributeType.builder().name("email_verified").value("true").build(),
-                        AttributeType.builder().name("preferred_username").value(appUsername).build()
-                        // No given_name/family_name/custom:role — those live in PostgreSQL
-                        // per ADR-004 (user_profiles) + ADR-001 (user_roles).
+                        AttributeType.builder().name("preferred_username").value(appUsername).build(),
+                        // Story 12.1 AC6: custom:role='UNUSED' sentinel — documentation-in-the-data
+                        // for console inspectors. The actual role lives in PostgreSQL per ADR-004
+                        // (user_profiles) + ADR-001 (role_assignments); this attribute is NOT read
+                        // for authorization (the PreTokenGeneration Lambda projects the claim from
+                        // the DB). given_name/family_name still live in PostgreSQL only.
+                        AttributeType.builder().name("custom:role").value("UNUSED").build()
                 )
                 .build();
 

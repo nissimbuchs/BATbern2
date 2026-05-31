@@ -615,9 +615,9 @@ in your JWT are DB projections, regardless of what is stored on the user.
 | Attribute | Purpose | Source of truth | Written at signup | Read at runtime | Status / target |
 |---|---|---|:--:|:--:|---|
 | `custom:username` | cross-service identifier (ADR-003) | DB → **projected claim** | no | yes (injected claim) | ✅ Keep — earns its place in the token |
-| `custom:role` | authorization | DB → **projected claim** | no | yes (injected claim) | ✅ Claim kept; **stored attribute is a dead fossil** (pre-ADR-001) |
-| `custom:preferences` | firstName/lastName/language/theme/notifications | ⚠️ today: the token; **should be**: DB (`user_profiles.*`) | yes | yes (raw stored attr, `authService.ts:425`) | ⚠️ Demote to **signup seed only**; move runtime reads to `/users/me` |
-| `custom:companyId` | user→company relation | ⚠️ today: the token; **should be**: DB FK → company-api (ADR-003/004) | yes (`authService.ts:318`) | yes (raw stored attr, `authService.ts:448`) | ❌ **Remove from token entirely** (see below) |
+| `custom:role` | authorization | DB → **projected claim** | no | yes (injected claim) | ✅ Claim kept; **stored attribute dropped from the client `readAttributes`** (Story 12.1, `cognito-stack.ts`) so it no longer flows into tokens; stored value sentineled to `"UNUSED"` |
+| `custom:preferences` | firstName/lastName/language/theme/notifications | DB (`user_profiles.*`) — **done** (Story 12.1) | yes (signup **seed only**) | no longer from the token — read from `/users/me` (FE `AuthContext.hydrateUserFromDb`) | ✅ Demoted to signup seed; runtime reads moved to `/users/me` |
+| `custom:companyId` | user→company relation | DB FK → company-api (ADR-003/004) | **no** — signup write removed (Story 12.1) | **no** — gateway/FE/CUMS extraction all removed (Story 12.1) | ✅ **Removed from token entirely** (no longer written or read anywhere) |
 
 ### Resolved decision — `custom:companyId` does not belong in the token
 Company membership is **pure business data**, not identity or authorization. The only
@@ -637,16 +637,23 @@ projected by PreTokenGeneration. The frontend reads company from `/users/me`, no
 
 ### Permanence constraint — cleanup means "stop using", not "delete"
 AWS Cognito provides **no API to delete a custom attribute** once added to a pool — the schema
-entries are permanent unless the entire pool is rebuilt (a full user migration). So the cleanup is:
-- **`custom:role`** — already unused; drop `'role'` from the client `readAttributes`
-  (`cognito-stack.ts:264`) so it stops appearing in tokens. Optionally backfill existing users'
-  stored value to a sentinel `"UNUSED"` (fits `maxLen:20`) as documentation-in-the-data for anyone
-  inspecting the Cognito console. Cost: a one-time paginated `AdminUpdateUserAttributes` script
-  **plus** writing the sentinel on every new user — worth it only if console confusion has bitten
-  the team; otherwise "stop reading + this doc" suffices.
-- **`custom:companyId`, `custom:preferences`** — can only be sentineled *after* their runtime
-  reads move to the DB/user-api (you cannot mark live attributes UNUSED). Until then they remain
-  as the signup seed.
+entries are permanent unless the entire pool is rebuilt (a full user migration). So the cleanup is
+"stop using", done as follows (all landed in Story 12.1):
+- **`custom:role`** — `'role'` **dropped** from the client `readAttributes` (`cognito-stack.ts`)
+  so the stored value no longer appears in tokens. The stored value is sentineled to `"UNUSED"`
+  (fits `maxLen:20`) as documentation-in-the-data for anyone inspecting the Cognito console: a
+  one-time paginated `AdminUpdateUserAttributes` backfill
+  (`scripts/staging/backfill-cognito-role-unused.ts`) **plus** writing `"UNUSED"` on every new
+  user — self-registered via `post-confirmation.ts` (best-effort, non-blocking) and
+  admin-provisioned via CUMS `adminCreateUserSilently`. The DB-projected `custom:role`
+  authorization claim (PreTokenGeneration) is unchanged.
+- **`custom:companyId`** — runtime reads removed everywhere (gateway `UserContextExtractor`,
+  CUMS `SecurityContextHelper.getCompanyId()`, FE `extractUserContextFromToken`) and the signup
+  write removed (`authService.ts`), so the attribute is fully out of the token path. It remains a
+  permanent (now-unused) schema entry.
+- **`custom:preferences`** — runtime reads moved to `/users/me` (FE hydration + gateway/Spring
+  no longer depend on the token claim); it remains as the signup seed (`post-confirmation.ts`
+  reads it to populate `user_profiles`).
 
 ### Minimal target footprint
 Standard `email` (sign-in) + `sub` (immutable key → `user_profiles.cognito_user_id`) for identity;

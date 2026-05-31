@@ -76,9 +76,10 @@ public class UserContextExtractor {
             }
         }
 
-        if (jwt.getClaim("custom:companyId") != null && !jwt.getClaim("custom:companyId").isNull()) {
-            builder.companyId(jwt.getClaim("custom:companyId").asString());
-        }
+        // Story 12.1 AC2 (ADR-001 "minimal target footprint"): custom:companyId is no
+        // longer extracted into UserContext. Company membership is business data resolved
+        // server-side via the user-api (see PartnerSecurityService), not propagated from
+        // the token. The companyId field remains on UserContext for now but is left unset.
 
         // Extract preferences as JSON
         Map<String, Object> preferences = extractPreferences(jwt);

@@ -512,6 +512,108 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ═══════════════════════════════════════════════════════════
+  # BUILD + TEST: Infrastructure (CDK + Lambda jest unit tests)
+  # ═══════════════════════════════════════════════════════════
+  # Gates the infrastructure jest suite (test/unit/**) — CDK Template assertions AND
+  # Lambda-handler tests. Previously NO CI job ran `cd infrastructure && npm test`, so
+  # test-only drift (stale mocks, stale IAM-action assertions) could reach prod
+  # undetected even though `npm run build`/`cdk synth` and the deploy stayed green.
+  # Mirrors the build-frontend change-detection + node-setup pattern.
+  # ═══════════════════════════════════════════════════════════
+  build-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to enable git diff between commits
+
+      - name: Check if infrastructure exists
+        id: check-infra
+        run: |
+          if [ -d "infrastructure" ] && [ -f "infrastructure/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::warning::Infrastructure directory does not exist"
+          fi
+
+      - name: Detect infrastructure changes
+        id: infra-changes
+        run: |
+          # For PR events, compare against base branch; for push, compare against previous commit
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          echo "Comparing $BASE_SHA...$HEAD_SHA"
+
+          # Ensure the base commit is available in the local checkout
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch more history..."
+            git fetch --deepen=100 origin develop 2>/dev/null || echo "::warning::Could not deepen history"
+            if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+              echo "::warning::Base commit $BASE_SHA still not found after deepening history"
+            fi
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # If we can't determine the diff (e.g., first push), run the suite to be safe
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "⚠️  Cannot determine changed files, will run infrastructure tests"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Run when any infra source, lambda, test, or dependency manifest changed
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib|bin|lambda|test)/|^infrastructure/package"; then
+            echo "✓ Infrastructure changes detected"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️  No infrastructure changes detected, skipping tests"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js 20
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install dependencies
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Run unit tests (CDK + Lambda handlers)
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm test -- --ci
+
+      - name: Type-check + compile
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm run build
+
+      - name: Upload test reports artifact
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true' && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-infrastructure
+          path: |
+            infrastructure/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ═══════════════════════════════════════════════════════════
   # CODE QUALITY ANALYSIS: SonarCloud Multi-Module Scan
   # ═══════════════════════════════════════════════════════════
   # Note: Integration tests are run as part of the build-services job above
@@ -738,7 +840,7 @@ jobs:
   # DEPLOYMENT: Trigger staging deployment after successful build
   # ═══════════════════════════════════════════════════════════
   deploy-to-staging:
-    needs: [build-shared-kernel, build-services, build-frontend]
+    needs: [build-shared-kernel, build-services, build-frontend, build-infrastructure]
     # Deploy to staging on: (1) push to develop OR (2) PR to develop
     # This allows testing PRs in staging environment before merge
     if: |

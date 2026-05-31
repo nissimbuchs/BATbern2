@@ -150,25 +150,9 @@ public class SecurityContextHelper {
         return roles.contains(role);
     }
 
-    /**
-     * Gets the company ID associated with the current user from JWT token
-     * @return Company ID (custom:companyId claim from JWT), or null if not present or in test mode
-     * @throws SecurityException if not authenticated
-     */
-    public String getCompanyId() {
-        Authentication authentication = getAuthentication();
-
-        if (authentication.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            return jwt.getClaim("custom:companyId");
-        } else if (authentication.getPrincipal() instanceof User) {
-            // In test environment with @WithMockUser, company ID is not available
-            return null;
-        } else {
-            log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
-            throw new SecurityException("Unsupported authentication principal type");
-        }
-    }
+    // Story 12.1 AC3: getCompanyId() removed — it read the custom:companyId claim, which
+    // is no longer emitted (ADR-001 "minimal target footprint"). Had zero production
+    // callers; company is business data owned by user_profiles, resolved via the user-api.
 
     /**
      * Gets the authenticated user from Spring Security context

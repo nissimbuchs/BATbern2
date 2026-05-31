@@ -22,9 +22,19 @@ vi.mock('@services/auth/authService', () => ({
   },
 }));
 
-// Import the mocked module
+// Story 12.1: AuthContext now hydrates company + preferences from GET /users/me on
+// every login/init (hydrateUserFromDb). Mock the userApi so tests don't hit the network.
+vi.mock('@/services/api/userApi', () => ({
+  getUserProfile: vi
+    .fn()
+    .mockResolvedValue({ roles: [], companyId: undefined, preferences: undefined }),
+}));
+
+// Import the mocked modules
 import { authService } from '@services/auth/authService';
+import { getUserProfile } from '@/services/api/userApi';
 const mockAuthService = vi.mocked(authService);
+const mockGetUserProfile = vi.mocked(getUserProfile);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
@@ -63,6 +73,12 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     vi.clearAllMocks();
     mockAuthService.getCurrentUser.mockResolvedValue(null);
     mockAuthService.isTokenExpired.mockReturnValue(false);
+    // Default: /users/me hydration is a no-op (JWT already carries roles in staging).
+    mockGetUserProfile.mockResolvedValue({
+      roles: [],
+      companyId: undefined,
+      preferences: undefined,
+    } as never);
   });
 
   describe('hasRole() — checks user.roles[] not user.role', () => {
@@ -148,6 +164,88 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
       expect(result.current.canAccess('/speaker-portal/login')).toBe(true);
+    });
+  });
+
+  describe('Story 12.1 — hydrate company + preferences from /users/me', () => {
+    function mockTokenUserWithoutCompanyOrPrefs(roles: readonly string[]) {
+      const primaryRole = roles[0] || 'attendee';
+      // Simulates the post-Story-12.1 extractUserContextFromToken output: identity +
+      // authorization only, companyId undefined and preferences empty (no language).
+      const mockUser = {
+        userId: 'test-user',
+        username: 'test.user',
+        email: 'test@batbern.ch',
+        emailVerified: true,
+        role: primaryRole,
+        roles: [...roles],
+        companyId: undefined,
+        preferences: {} as never,
+        issuedAt: Math.floor(Date.now() / 1000),
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        tokenId: 'test-token',
+      };
+      mockAuthService.getCurrentUser.mockResolvedValue(mockUser as never);
+      mockAuthService.refreshToken.mockResolvedValue({
+        success: true,
+        accessToken: 'test-access-token',
+      } as never);
+    }
+
+    test('should populate companyId + preferences.language from /users/me', async () => {
+      mockTokenUserWithoutCompanyOrPrefs(['organizer']);
+      mockGetUserProfile.mockResolvedValue({
+        roles: ['ORGANIZER'],
+        companyId: 'Swiss IT Solutions AG',
+        preferences: {
+          language: 'fr',
+          theme: 'dark',
+          emailNotifications: false,
+          pushNotifications: false,
+        },
+      } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      // company + preferences sourced from the DB, not the token
+      expect(result.current.user?.companyId).toBe('Swiss IT Solutions AG');
+      expect(result.current.user?.preferences?.language).toBe('fr');
+    });
+
+    test('regression guard: preferences.language is set on the user the moment isAuthenticated flips true (before LanguageSync runs)', async () => {
+      mockTokenUserWithoutCompanyOrPrefs(['speaker']);
+      mockGetUserProfile.mockResolvedValue({
+        roles: ['SPEAKER'],
+        companyId: 'Acme AG',
+        preferences: { language: 'de', theme: 'light' },
+      } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      // The very assertion that isAuthenticated is true happens only after hydration
+      // resolves (AuthContext awaits hydrateUserFromDb before setState). So if language
+      // is present here, it was populated before any auth-gated effect (LanguageSync) ran.
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      expect(result.current.user?.preferences?.language).toBe('de');
+    });
+
+    test('does NOT override JWT roles with DB roles when the token already carries roles', async () => {
+      mockTokenUserWithoutCompanyOrPrefs(['organizer', 'speaker']);
+      // DB returns a different (single) role set — must be ignored since JWT had roles.
+      mockGetUserProfile.mockResolvedValue({
+        roles: ['ATTENDEE'],
+        companyId: 'Acme AG',
+        preferences: { language: 'en' },
+      } as never);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      expect(result.current.hasRole('organizer')).toBe(true);
+      expect(result.current.hasRole('speaker')).toBe(true);
+      expect(result.current.hasRole('attendee')).toBe(false);
+      // but company still hydrated from DB
+      expect(result.current.user?.companyId).toBe('Acme AG');
     });
   });
 

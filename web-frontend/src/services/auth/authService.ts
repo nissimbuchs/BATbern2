@@ -315,7 +315,9 @@ class AuthService {
                 allowMessages: true,
               },
             }),
-            ...(signUpData.companyId && { 'custom:companyId': signUpData.companyId }),
+            // Story 12.1 AC4: `custom:companyId` is no longer written at signup.
+            // Company is owned by `user_profiles.company_id` via the user-management
+            // path (ADR-003/004); post-confirmation.ts never reads custom:companyId.
           },
         },
       });
@@ -422,7 +424,12 @@ class AuthService {
    * Story 1.2.6: Updated to read custom:role claim (ADR-001 migration)
    */
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
-    const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
+    // Story 12.1 (ADR-001 "minimal target footprint"): company + preferences are
+    // business data owned by `user_profiles`, NOT identity/authorization, so they are
+    // no longer sourced from the token. `AuthContext.hydrateUserFromDb` fills `companyId`
+    // + `preferences` from GET /users/me. The token carries only identity (sub, email) +
+    // authorization (custom:role, custom:username).
+    const preferences = {} as UserPreferences;
 
     // Extract roles from custom:role claim (singular)
     // Format: "ORGANIZER,SPEAKER" -> ['organizer', 'speaker']
@@ -445,9 +452,9 @@ class AuthService {
       emailVerified: tokenPayload.email_verified,
       role: primaryRole,
       roles: roles,
-      companyId: tokenPayload['custom:companyId'],
+      companyId: undefined, // Story 12.1: hydrated from GET /users/me (was custom:companyId)
       companyName: tokenPayload['custom:companyName'] || undefined, // Story 8.0: resolved from JWT if present
-      preferences,
+      preferences, // Story 12.1: hydrated from GET /users/me (was custom:preferences)
       issuedAt: tokenPayload.iat,
       expiresAt: tokenPayload.exp,
       tokenId: tokenPayload.sub,
