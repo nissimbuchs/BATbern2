@@ -381,6 +381,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setAddSpeakerDrawerOpen(true)}
+            data-testid="add-speakers-button"
           >
             {t('events:eventPage.speakers.addSpeakers', 'Add Speakers')}
           </Button>

@@ -16,10 +16,74 @@
  * the global-teardown `cums/users` sweep (`LIKE bruno.test%`).
  */
 
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
 const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 function authHeaders(token: string): Record<string, string> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+}
+
+/** The speaker test user's identity, decoded from its idToken. */
+export interface SpeakerIdentity {
+  token: string;
+  username: string;
+  email: string;
+}
+
+/**
+ * Resolve the SPEAKER test user (token + username + email) for the golden-path Path A
+ * (portal accept). Reads `~/.batbern/{TEST_ENV}-speaker.json` (the file run-playwright-tests.sh
+ * / get-token.sh writes). Returns `undefined` when absent so the spec can SKIP gracefully —
+ * the `speaker` Playwright project only activates with SPEAKER_AUTH_TOKEN, mirroring the other
+ * speaker specs. The username/email are decoded from the JWT (custom:username → cognito:username
+ * → email), exactly like event-fixture's organizerUsername.
+ */
+export function readSpeakerIdentity(): SpeakerIdentity | undefined {
+  const testEnv = process.env.TEST_ENV || 'development';
+  const tokenFile = path.join(os.homedir(), '.batbern', `${testEnv}-speaker.json`);
+  if (!fs.existsSync(tokenFile)) return undefined;
+  const token = (JSON.parse(fs.readFileSync(tokenFile, 'utf8')).idToken as string) || '';
+  if (!token) return undefined;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+    const username = payload['custom:username'] || payload['cognito:username'] || payload.email;
+    const email = payload.email || `${username}@e2e.batbern.invalid`;
+    if (!username) return undefined;
+    return { token, username, email };
+  } catch {
+    return undefined;
+  }
+}
+
+/** A pool entry as returned by GET /speakers/pool (the fields the golden path needs). */
+export interface PoolEntry {
+  id: string;
+  speakerName?: string;
+  status: string;
+  username?: string;
+}
+
+/**
+ * List the event's speaker pool (read-only). The golden path adds speakers through the UI and
+ * then maps the UI-typed name → server id via this call (reading state for assertions/mapping is
+ * allowed; the mutations stay in the UI). Statuses are UPPER_CASE-normalised. Requires a token.
+ */
+export async function listPool(token: string, eventCode: string): Promise<PoolEntry[]> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`[speaker-fixture] list pool failed: ${res.status} ${res.statusText} ${body}`);
+  }
+  const entries = (await res.json()) as PoolEntry[];
+  return (Array.isArray(entries) ? entries : []).map((e) => ({
+    ...e,
+    status: (e.status || '').toUpperCase(),
+  }));
 }
 
 /** Add a placeholder (IDENTIFIED) speaker to the event's pool. Returns the server speaker id. */

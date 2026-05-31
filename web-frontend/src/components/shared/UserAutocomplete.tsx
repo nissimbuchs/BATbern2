@@ -133,7 +133,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       renderOption={(props, option) => {
         const { key, ...otherProps } = props;
         return (
-          <Box component="li" key={key} {...otherProps}>
+          <Box component="li" key={key} {...otherProps} data-testid={`user-option-${option.id}`}>
             <UserAvatar
               firstName={option.firstName}
               lastName={option.lastName}
