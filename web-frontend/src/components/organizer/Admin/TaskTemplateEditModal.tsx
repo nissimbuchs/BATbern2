@@ -96,7 +96,14 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isFullScreen}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={isFullScreen}
+      data-testid="task-template-edit-modal"
+    >
       <DialogTitle>{t('admin.taskTemplates.editTitle', 'Edit Task Template')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
         <TextField
@@ -156,7 +163,12 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
         <Button onClick={onClose} disabled={saving}>
           {t('common:actions.cancel')}
         </Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving || !name.trim()}>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={saving || !name.trim()}
+          data-testid="template-edit-save"
+        >
           {t('common.save', 'Save')}
         </Button>
       </DialogActions>

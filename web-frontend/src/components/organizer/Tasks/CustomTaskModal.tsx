@@ -256,7 +256,14 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       : t('tasks.createTask');
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      data-testid="custom-task-modal"
+    >
       <DialogTitle>{isEditMode ? t('tasks.editTask') : t('tasks.addCustomTask')}</DialogTitle>
 
       <DialogContent>
@@ -285,6 +292,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
               required
               fullWidth
               placeholder={t('tasks.taskNamePlaceholder')}
+              inputProps={{ 'data-testid': 'custom-task-name-input' }}
             />
           )}
 
@@ -407,6 +415,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
                 <Checkbox
                   checked={saveAsTemplate}
                   onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                  data-testid="custom-task-save-as-template"
                 />
               }
               label={t('tasks.saveAsTemplate')}
@@ -419,7 +428,12 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
         <Button onClick={handleClose} disabled={isLoading}>
           {t('common:actions.cancel')}
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={isLoading}
+          data-testid="custom-task-submit"
+        >
           {isLoading ? <CircularProgress size={20} /> : submitLabel}
         </Button>
       </DialogActions>

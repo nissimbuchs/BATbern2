@@ -64,7 +64,7 @@ export const ImportDataTab: React.FC = () => {
   ];
 
   return (
-    <Box>
+    <Box data-testid="import-data-tab">
       <Grid container spacing={3}>
         {importCards.map((card) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={card.title}>

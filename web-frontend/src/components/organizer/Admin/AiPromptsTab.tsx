@@ -194,7 +194,7 @@ export const AiPromptsTab: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box data-testid="ai-prompts-tab">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {t('admin.aiPrompts.description')}
       </Typography>

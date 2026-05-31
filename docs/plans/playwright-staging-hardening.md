@@ -63,12 +63,22 @@ production deploy.
 > deploy-to-staging `@smoke` gate job ran green). Slice 10 (**event workflow**) MERGED — squash
 > `3ac73833` (PR #698). **Speaker-pool GOLDEN-PATH addendum** (PO-requested intensive UI-driven
 > kanban walk) MERGED — squash `4cdc3261` (PR #699; found + fixed a real prod bug — V108:
-> content-bearing events couldn't be deleted). Slice 11 (**partners + meetings**) is **PR #700**
-> (`e2e-partners`, off develop post-#699; green ×2 vs dev = 32/32, residue-free) — see "PR 12
-> notes". NOTE: this repo **auto-merges PRs once CI is green** — so each stacked
-> PR auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable per-slice
+> content-bearing events couldn't be deleted). Slice 11 (**partners + meetings**) MERGED — squash
+> `97e6e3e0` (PR #700; green ×2 vs dev = 32/32, residue-free; killed the `tc-${random}` partner
+> residue source + fixed 5 never-ran mocked specs — see "PR 12 notes"). Slice 12 (**admin tabs**,
+> the heaviest) — PR **#701** open on branch `e2e-admin-tabs` (off develop post-#700; auto-merges
+> on green CI) — green ×2 vs dev = 14/14, residue-free. Render `@gate` for all 9 tabs + 2 pages
+> (`admin-tabs.spec.ts`, replaces `admin-settings`) PLUS **real per-tab UI CRUD `@smoke`** for the
+> 3 freely-reversible tabs (`admin-{task-templates,email-templates,global-images}-crud.spec.ts` —
+> PO 2026-05-31: real C/R/U/D only where rows are creatable+deletable; singleton tabs stay
+> render-only). Dropped the global-singleton email-forwarding save + fixed its `tab=7`-not-`tab=6`
+> bug — see "PR 13 notes". **NEXT:** slice 13 (**cross-cutting**
+> a11y/auth/cors) on branch `e2e-cross-cutting` (off develop post-#700) — the lighter leaf; then
+> PR 15 gate-flip. NOTE: this repo **auto-merges PRs once CI is green** — so each stacked PR
+> auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable per-slice
 > checklist". Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice
-> <name>`, §F). **Remaining: slices 13 (cross-cutting) + 12 (admin tabs), then PR 15 gate-flip.**
+> <name>`, §F). See the §"Handoff" recon for slice 13 landmines. **Remaining: slice 13
+> (cross-cutting), then PR 15 gate-flip.**
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -95,8 +105,8 @@ slice audit land as separate fix-commits in the same PR.
 | 10 | `e2e-speaker` (stacked, with slice 8) | Slice 9: speaker portal | `speaker/{speaker-portal-dashboard,magic-link-teardown,speaker-magic-login-404}` (kept→`@gate`); DELETED 3 fixme stubs (`speaker-portal-{respond,content-submit,cross-portal-nav}`) | `SpeakerDashboardPage` (`speaker-dashboard` root) | ✅ dev (4×2, speaker project) | `@gate` only (no safe deterministic `@smoke`) | ✅ merged (#697, `ce88fbc5`, 2026-05-30) | **rewrite-to-reality + reliability.** Kept the 3 sound specs and tagged them `@gate`: dashboard renders (switched `getByRole('heading')` → new `speaker-dashboard` testid), `magic-link-teardown` (asserts no `speaker_jwt` cookie / no magic-login calls — Epic 11.F.1), `speaker-magic-login-404` (deprecated route → 404, not the old page). **DELETED all 3 fixme stubs** (no real assertions): `respond` would need an INVITED pool row provisioned via promote-to-READY (a flaky out-of-band Cognito write — same reason slice 8's `@smoke` is promote-free), `content-submit` needs an assigned-session fixture not available, `cross-portal-nav` needs a dual-role test user not provisioned. **No `@smoke`:** there is no safe + deterministic speaker-side mutation (every mutating speaker flow depends on an organizer-provisioned INVITED/assigned state via the flaky promote path); slice 9 gates read-only, like slice 7's archive. Runs under the `speaker` project (`SPEAKER_AUTH_TOKEN`; skips gracefully without it). See "PR 9 notes". |
 | 11 | `e2e-event-workflow` | Slice 10: full workflow create→archive | `event-lifecycle-e2e` (rewritten) | `workflow-status-badge` gains `data-workflow-state` (EventOverviewTab) | ✅ dev (2×2) | `@gate` + **`@smoke`** (hybrid lifecycle walk CREATED→…→ARCHIVED) | ✅ merged (#698, `3ac73833`, 2026-05-31) | **rewrite-to-reality + reliability (OQ-3 hybrid).** Replaced a 6-phase monolithic UI walk that created its event via the UI with a `Date.now()` number and **never cleaned up** (leaked event+tasks/speakers/sessions per run), drove the kanban with raw `page.mouse` native-DnD + HARDCODED organizer/speaker display names, and depended on slice-8 speaker/content flows + cron-only auto-transitions. New hybrid: force-advance state via the override transition API (`PUT /events/{code}/workflow/transition` `overrideValidation:true` — `transitionToState` skips ALL validation, so any target incl. cron-only EVENT_LIVE/EVENT_COMPLETED is reachable), UI asserts the overview `workflow-status-badge` after each step + an authoritative `GET /workflow/status` cross-check. **`@smoke` walks the FULL 7-state forward sequence** (not just the recon's 3-state subset — override makes all states equally deterministic, ~15.5s). New fixture helpers `transitionWorkflow`/`getWorkflowState` + `WORKFLOW_FORWARD_STATES` (event-fixture.ts). Cleanup = afterAll force-archive (events DELETE-able only when ARCHIVED → 409 otherwise) then `cleanupByCode`; robust even if the walk fails mid-sequence. No cron, no DnD, no content. See "PR 11 notes". |
 | 8b | `e2e-speaker-golden-path` | **Addendum:** intensive UI-driven speaker-pool kanban golden path (5 speakers, both READY paths + decline + content/quality + slot auto-assign + lifecycle→ARCHIVED) | `organizer/speaker-pool-golden-path` (new) | `add-speakers-button`, `user-option-<id>`, `invitation-response-success` | ✅ dev (11×2) | `@gate` | 🔵 (#699) | **PO-requested.** Net-new intensive kanban coverage through the FRONTEND. **Found + fixed a real prod bug — V108:** `session_content_history.session_id` FK was ON DELETE SET NULL vs a NOT NULL column (since V99) → deleting any content-bearing event 500'd; switched to ON DELETE CASCADE + Testcontainers regression test. `@gate` only (4 fresh Cognito promotes/run — flaky-on-dev; per-deploy `@smoke` stays IDENTIFIED→CONTACTED). See "Golden-path addendum" notes. ✅ merged (#699, `4cdc3261`, 2026-05-31). |
-| 12 | `e2e-partners` | Slice 11: partners + meetings | `partner/{analytics-dashboard,topic-voting}`, `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`, **NEW** `organizer/partner-topic-status` | `clear-search` (PartnerSearch), `view-mode-{grid,list}` (PartnerDirectoryScreen ToggleButtons), `tier-select-option-<TIER>` (PartnershipTierSelect MenuItems), `partnershipStartDate`/`partnershipEndDate` (PartnershipDatePicker inputs), `company-option-<name>` (CompanyAutocomplete), `chart-{attendance-per-event,yoy-headcount}` (PartnerAttendanceDashboard), `topic-planned-event-<id>` (TopicListPage), `invite-success-alert-<id>` (MeetingDetailPanel) | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI partner create→detail→cleanup) | 🔵 (#700) | **rewrite-to-reality + reliability + prod-residue fix.** `@smoke` = organizer partner create (company autocomplete→tier→save→detail) + cleanup — deterministic, NO promote. **Killed the residue source:** old `partner-create-edit` named the fixture company `tc-${random}` (NOT swept) + ad-hoc `deletePartnerViaAPI` → now `factory.partnerName()` (`brtest<6>`, swept by `pcs/partners`) + canonical `cleanupById('partners')`/`cleanupById('companies')`. Verified residue-free (companies brtest→0 explicit-delete; partners→0 canonical sweep; PCS-partner vs CUMS-company are separate services w/ no cross-FK, so the company needs explicit delete + the partner relies on the swept `brtest` name). See "PR 12 notes". |
-| 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-settings` | 8 admin tabs, `OrganizerAnalyticsPage`, `NotificationsPage` | — | — | ⬜ | **heaviest** — zero testids |
+| 12 | `e2e-partners` | Slice 11: partners + meetings | `partner/{analytics-dashboard,topic-voting}`, `partner-management/{partner-directory,partner-create-edit}`, `organizer/partner-meetings`, **NEW** `organizer/partner-topic-status` | `clear-search` (PartnerSearch), `view-mode-{grid,list}` (PartnerDirectoryScreen ToggleButtons), `tier-select-option-<TIER>` (PartnershipTierSelect MenuItems), `partnershipStartDate`/`partnershipEndDate` (PartnershipDatePicker inputs), `company-option-<name>` (CompanyAutocomplete), `chart-{attendance-per-event,yoy-headcount}` (PartnerAttendanceDashboard), `topic-planned-event-<id>` (TopicListPage), `invite-success-alert-<id>` (MeetingDetailPanel) | ✅ dev (32×2) | `@gate` + **`@smoke`** (UI partner create→detail→cleanup) | ✅ merged (#700, `97e6e3e0`, 2026-05-31) | **rewrite-to-reality + reliability + prod-residue fix.** `@smoke` = organizer partner create (company autocomplete→tier→save→detail) + cleanup — deterministic, NO promote. **Killed the residue source:** old `partner-create-edit` named the fixture company `tc-${random}` (NOT swept) + ad-hoc `deletePartnerViaAPI` → now `factory.partnerName()` (`brtest<6>`, swept by `pcs/partners`) + canonical `cleanupById('partners')`/`cleanupById('companies')`. Verified residue-free (companies brtest→0 explicit-delete; partners→0 canonical sweep; PCS-partner vs CUMS-company are separate services w/ no cross-FK, so the company needs explicit delete + the partner relies on the swept `brtest` name). See "PR 12 notes". |
+| 13 | `e2e-admin-tabs` | Slice 12: organizer admin tabs | `organizer/admin-tabs` (render, **NEW** replaces `admin-settings`) + `organizer/admin-{task-templates,email-templates,global-images}-crud` (**NEW**, full UI CRUD) | root testids on 7 tabs + `organizer-analytics-page` + `notifications-page` + `admin-tabs`/`admin-tab-<i>` nav; CustomTaskModal + TaskTemplateEditModal (`template-edit-save`/`task-template-edit-modal`) + EmailTemplateEditModal (`email-template-{modal,key-input,subject-input,save}`) + GlobalImagesTab (`global-image-{input,item-<id>,position-<id>,position-option-<v>,delete-<id>}`) | ✅ dev (14×2) | `@gate` (render) + **`@smoke`** (3 full-CRUD: task-templates, email-templates, global-images) | 🔵 (#701) | **rewrite-to-reality + prod-safety + real per-tab CRUD (PO 2026-05-31).** Render coverage for all 9 tabs + 2 pages; **real UI Create/Read/Update/Delete for the 3 freely-reversible tabs** (captured-id cleanup, no sweep path). Singleton tabs stay render-only (no safe restore). Dropped the global-singleton email-forwarding save + fixed the `?tab=7`-for-Settings bug + the ENOENT `.playwright-auth-chromium.json` override. See "PR 13 notes". |
 | 14 | `e2e-cross-cutting` | Slice 13: a11y/auth/cors sweep | `accessibility/*`, `auth/*`, `api-integration/cors-validation` | — | — | — | ⬜ | mostly non-mutating |
 | 15 | `e2e-gate-flip` | E+F: flip to blocking, deliberate-fail drill | — | — | — | — | ⬜ | owed: rollback drill |
 
@@ -767,6 +777,87 @@ formatting" (locale-coupled regex, low value; default-date presence is covered b
 frontend deploys (deploy-then-green pattern, PRs 2/4/5/8). **Partner/meetings tokens:** the
 `partner` project activates only when `PARTNER_AUTH_TOKEN` is present (confirm `STAGING_PARTNER_*`
 secrets exist — Risk #5); without it the 2 partner-project specs skip gracefully.
+
+### PR 13 notes — admin tabs slice (rewrite-to-reality + a global-singleton mutation killed)
+
+Slice 12 (the recon's "heaviest") was the lone `admin-settings.spec.ts` covering ONLY the
+Settings tab. It carried three reality/safety defects:
+- **Wrong tab index.** It navigated to `?tab=7` expecting Settings, but Settings is **tab 6**
+  (tab 7 is Global Images) — it was asserting the wrong tab's chrome. The 9-tab order is
+  `0 EventTypes · 1 Import · 2 TaskTemplates · 3 EmailTemplates · 4 Presentation · 5 AiPrompts ·
+  6 Settings · 7 GlobalImages · 8 Venue&Catering` (EventManagementAdminPage.tsx).
+- **A global-singleton prod mutation.** Two tests SAVED `email-forwarding.support-contacts`
+  (`Date.now()` values) — a GLOBAL app-setting with NO restore path — mutating prod config on
+  every run. Per plan risk #1 + the slice-4 precedent (event-type PUTs dropped), all
+  global-singleton admin mutations (event-types, presentation, ai-prompts, email-forwarding,
+  email-templates, venue/catering) stay **read-only `@gate`** here.
+- **A dead storageState override.** `test.use({ storageState: '.playwright-auth-chromium.json' })`
+  pointed at a file that doesn't exist (ENOENT) — the chromium project already inherits
+  `.playwright-auth-state.json` (same dead override slice 3 removed from the additional-emails spec).
+
+**Two layers (PO 2026-05-31): render coverage for every tab + real CRUD where it's reversible.**
+The PO asked for genuine frontend Create/Read/Update/Delete per tab, not render-only. Resolution:
+real UI C/R/U/D ONLY where rows are freely creatable+deletable; the global-singleton tabs
+(event-types, presentation, ai-prompts, settings/email-forwarding, venue/catering) stay
+render-only because their mutations are shared prod config with no safe restore path (the "Only
+CRUD reversible tabs" + "collections `@smoke` / singletons render-only" decision). **14 tests, all
+testid-only.**
+
+- **`admin-tabs.spec.ts` — 11 read-only `@gate` render tests** (the Read dimension for ALL 9 tabs
+  + Analytics + Notifications). Navigate by URL, assert the tab strip (`admin-tabs`) + the selected
+  tab/page content root. Parametrised over the 9 tabs; only the selected tab mounts, and each
+  content root appears only AFTER its react-query load (20 s timeout absorbs cold dev compiles).
+- **`admin-task-templates-crud.spec.ts` — full UI CRUD `@smoke`.** Create via `add-template-btn`
+  → CustomTaskModal in **template mode** ("Save as reusable template" is REQUIRED — with
+  `eventId=null` and no event selected the form otherwise demands an event) → submit (modal-hidden
+  = success). Read: the id-keyed row renders. Update: `edit-template-<id>` → TaskTemplateEditModal
+  rename → `template-edit-save`; verify via API the SAME id now carries the new name. Delete:
+  native `window.confirm` accepted → row unmounts; verify gone via API.
+- **`admin-email-templates-crud.spec.ts` — full UI CRUD `@smoke`, TinyMCE-free by design.** The
+  new-template body editor is **TinyMCE** (a contenteditable iframe — flaky to drive + wrong for a
+  blocking gate). Create therefore goes through the **Duplicate** action, which opens the same
+  create modal with subject + htmlBody **pre-filled** from a seeded SPEAKER/de template, so a real
+  create needs only a fresh `email-template-key-input` — the `tinymceContentRef` already holds the
+  cloned (valid) body, so Save passes validation without ANY editor interaction. Update edits the
+  plain MUI `email-template-subject-input` (also no TinyMCE). Delete = `delete-email-template-<key>`
+  (window.confirm). Every step verified against `GET /email-templates/{key}/{locale}`.
+- **`admin-global-images-crud.spec.ts` — full UI CRUD `@smoke`.** Create = the ADR-002 3-phase
+  presigned upload via the hidden `global-image-input` (`setInputFiles` + the slice-1
+  `stripPresignedAuthHeader` — the global Authorization header is fatal on a presigned PUT). The
+  new id is captured by diffing `GET /events/_global/teaser-images` before/after (no sweep path).
+  Read: `global-image-item-<id>` renders. Update: open `global-image-position-<id>` (MUI Select,
+  testid on the clickable root) → pick `global-image-position-option-<v>` → poll the API until the
+  new `presentationPosition` persists. Delete: `global-image-delete-<id>` (no confirm) → item
+  unmounts; verify gone. Guarded `< MAX_GLOBAL_IMAGES (10)` so a full prod gallery fails loudly
+  rather than silently skipping (cap caveat).
+
+**Cleanup contract — captured-id, no sweep (all 3 CRUD entities).** Task templates, email
+templates, and teaser images have NO prefix-sweep entityType (the EMS allowlist is
+events/sessions/topics only — PR-1 deviation #2), so each spec captures the server-assigned id/key
+and the **UI Delete step IS the teardown**, with an `afterAll` API-delete backstop if an earlier
+step failed (happy path sets the captured id to `null` → no-op). New fixtures:
+`task-template-fixture.ts` (find-by-name + delete-by-id), `email-template-fixture.ts`
+(get/delete by key+locale), `global-image-fixture.ts` (list/get/delete on
+`/events/_global/teaser-images`). Factory gained `taskTemplateName()` (`BATPW-E2E-TPL-<ts>`) +
+`emailTemplateKey()` (`batpw-e2e-tpl-<ts>`, no-spaces). Verified residue-free on dev: post-run
+`GET /tasks/templates` → 0 `BATPW-E2E-TPL`, `GET /email-templates` → 0 `batpw-e2e-tpl`, the one
+remaining global teaser image is a pre-existing dev seed (`createdAt:null`), not test residue.
+
+**Component testids added** (same commit as the spec): root testids on ImportDataTab
+(`import-data-tab`), TaskTemplatesTab (`task-templates-tab`), EmailTemplatesTab
+(`email-templates-tab`), PresentationSettingsTab (`presentation-settings-tab`), AiPromptsTab
+(`ai-prompts-tab`), AdminSettingsTab (`admin-settings-tab`), GlobalImagesTab (`global-images-tab`);
+EventTypesTab (`event-types-tab`, slice 4) + VenueCateringContactsTab (`venue-catering-contacts-tab`)
+already had theirs. Page roots `organizer-analytics-page` (OrganizerAnalyticsPage) +
+`notifications-page` (NotificationsPage). Nav `admin-tabs` + per-tab `admin-tab-<i>`
+(EventManagementAdminPage). CRUD-flow testids: CustomTaskModal
+`custom-task-{modal,name-input,save-as-template,submit}`; TaskTemplateEditModal
+`task-template-edit-modal` + `template-edit-save`; EmailTemplateEditModal
+`email-template-{modal,key-input,subject-input,save}`; GlobalImagesTab `global-image-input` +
+per-image `global-image-{item,position,delete}-<id>` + `global-image-position-option-<value>`.
+73 touched-component unit tests still green (Admin + Tasks folders); tsc + eslint clean. Green ×2
+on dev (14/14 both runs). Staging validates the new testids after this PR's frontend deploys
+(deploy-then-green pattern, PRs 2/4/5/8).
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

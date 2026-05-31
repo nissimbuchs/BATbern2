@@ -33,7 +33,7 @@ const OrganizerAnalyticsPage: React.FC = () => {
   const fromYear = fromYearFromRange(timeRange);
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3 }} data-testid="organizer-analytics-page">
       {/* Page header */}
       <Box
         display="flex"
