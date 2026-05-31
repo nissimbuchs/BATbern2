@@ -306,7 +306,11 @@ const TopicListPage: React.FC = () => {
                           data-testid={`topic-status-${topic.id}`}
                         />
                         {topic.status === 'SELECTED' && topic.plannedEvent && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            data-testid={`topic-planned-event-${topic.id}`}
+                          >
                             {t('portal.topics.plannedFor')}: {topic.plannedEvent}
                           </Typography>
                         )}

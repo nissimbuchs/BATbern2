@@ -92,7 +92,12 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       data-testid={`meeting-detail-${meeting.id}`}
     >
       {inviteSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setInviteSuccess(false)}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setInviteSuccess(false)}
+          data-testid={`invite-success-alert-${meeting.id}`}
+        >
           {t('meetings.inviteSuccess')}
         </Alert>
       )}

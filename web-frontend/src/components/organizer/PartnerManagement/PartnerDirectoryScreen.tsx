@@ -172,10 +172,18 @@ export const PartnerDirectoryScreen: React.FC = () => {
                     size="small"
                     data-testid="view-mode-toggle"
                   >
-                    <ToggleButton value="grid" aria-label={t('common:labels.gridView')}>
+                    <ToggleButton
+                      value="grid"
+                      aria-label={t('common:labels.gridView')}
+                      data-testid="view-mode-grid"
+                    >
                       <GridViewIcon />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label={t('common:labels.listView')}>
+                    <ToggleButton
+                      value="list"
+                      aria-label={t('common:labels.listView')}
+                      data-testid="view-mode-list"
+                    >
                       <ListViewIcon />
                     </ToggleButton>
                   </ToggleButtonGroup>

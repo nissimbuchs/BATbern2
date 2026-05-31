@@ -29,11 +29,15 @@ async function navigateToPartnerDirectory(page: Page) {
   // Wait for page to be fully loaded before navigation
   await page.waitForLoadState('networkidle');
 
-  // Wait for Partners navigation link to be visible and clickable (language-independent testId)
+  // Partners is a collapsible nav GROUP (nav-group-organizer-partners): clicking it opens a
+  // popover/collapse exposing the child link (nav-organizer-partners) which routes to the
+  // directory. Language-independent testIds throughout.
+  const partnersGroup = page.getByTestId('nav-group-organizer-partners');
+  await partnersGroup.waitFor({ state: 'visible', timeout: 10000 });
+  await partnersGroup.click();
+
   const partnersLink = page.getByTestId('nav-organizer-partners');
   await partnersLink.waitFor({ state: 'visible', timeout: 10000 });
-
-  // Click on Partners navigation link and wait for navigation
   await Promise.all([
     page.waitForURL(`${BASE_URL}/organizer/partners`, { timeout: 15000 }),
     partnersLink.click(),
@@ -46,7 +50,7 @@ async function navigateToPartnerDirectory(page: Page) {
   await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 15000 });
 }
 
-test.describe('Partner Directory - User Journey', () => {
+test.describe('Partner Directory @gate -User Journey', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     // This prevents LanguageSync from changing language to German based on backend user preference
@@ -109,7 +113,7 @@ test.describe('Partner Directory - User Journey', () => {
     await page.waitForSelector('[data-testid="partner-grid"]', { timeout: 10000 });
 
     // Verify grid view is active
-    const gridViewButton = page.getByLabel(/grid view/i);
+    const gridViewButton = page.getByTestId('view-mode-grid');
     await expect(gridViewButton).toHaveAttribute('aria-pressed', 'true');
 
     // Verify partner cards are displayed
@@ -119,7 +123,7 @@ test.describe('Partner Directory - User Journey', () => {
   });
 });
 
-test.describe('Partner Directory - Search Functionality', () => {
+test.describe('Partner Directory @gate -Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
@@ -186,14 +190,14 @@ test.describe('Partner Directory - Search Functionality', () => {
     await expect(searchInput).toHaveValue('Test Query');
 
     // Click clear button
-    await page.getByLabel(/clear search/i).click();
+    await page.getByTestId('clear-search').click();
 
     // Verify search is cleared
     await expect(searchInput).toHaveValue('');
   });
 });
 
-test.describe('Partner Directory - Filter Functionality', () => {
+test.describe('Partner Directory @gate -Filter Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
@@ -275,7 +279,7 @@ test.describe('Partner Directory - Filter Functionality', () => {
   });
 });
 
-test.describe('Partner Directory - View Mode Toggle', () => {
+test.describe('Partner Directory @gate -View Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
@@ -300,15 +304,15 @@ test.describe('Partner Directory - View Mode Toggle', () => {
     await page.waitForSelector('[data-testid="partner-grid"]', { timeout: 10000 });
 
     // Verify grid view is active
-    const gridViewButton = page.getByLabel(/grid view/i);
+    const gridViewButton = page.getByTestId('view-mode-grid');
     await expect(gridViewButton).toHaveAttribute('aria-pressed', 'true');
 
     // Switch to list view
-    await page.getByLabel(/list view/i).click();
+    await page.getByTestId('view-mode-list').click();
     await page.waitForTimeout(300);
 
     // Verify list view is active
-    const listViewButton = page.getByLabel(/list view/i);
+    const listViewButton = page.getByTestId('view-mode-list');
     await expect(listViewButton).toHaveAttribute('aria-pressed', 'true');
 
     // Switch back to grid view
@@ -320,7 +324,7 @@ test.describe('Partner Directory - View Mode Toggle', () => {
   });
 });
 
-test.describe('Partner Directory - Sorting', () => {
+test.describe('Partner Directory @gate -Sorting', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
@@ -368,7 +372,7 @@ test.describe('Partner Directory - Sorting', () => {
   });
 });
 
-test.describe('Partner Directory - Pagination', () => {
+test.describe('Partner Directory @gate -Pagination', () => {
   test.beforeEach(async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
@@ -421,7 +425,7 @@ test.describe('Partner Directory - Pagination', () => {
   });
 });
 
-test.describe('Partner Directory - Error Handling', () => {
+test.describe('Partner Directory @gate -Error Handling', () => {
   test('should handle network errors gracefully', async ({ page }) => {
     // Mock getUserProfile to return English language preference
     await page.route('**/api/v1/users/me*', async (route) => {
