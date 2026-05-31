@@ -161,8 +161,10 @@ Post-deploy Bruno tests are wired into `.github/workflows/deploy-staging.yml`:
 
 1. **Today (until PR 14):** failures are warnings (`continue-on-error: true`). Investigate via the workflow's annotation summary.
 2. **After PR 14:** failures block the deploy AND trigger
-   `rollback-on-bruno-failure` which pins ECS services back to the
-   `staging-stable` ECR tag (the last Bruno-green deploy).
+   `rollback-on-test-failure` (renamed from `rollback-on-bruno-failure` at the
+   PR 15 Playwright gate-flip) which pins ECS services back to the
+   `staging-stable` ECR tag (the last green deploy). As of PR 15 a Playwright
+   `@smoke` failure triggers the same rollback.
 
 If tests fail locally, run the failed collection's cleanup sweep first to make
 the next run idempotent:

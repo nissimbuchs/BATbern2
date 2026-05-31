@@ -28,6 +28,17 @@ export interface FrontendStackProps extends cdk.StackProps {
  */
 export class FrontendStack extends cdk.Stack {
   public readonly websiteBucket: s3.Bucket;
+  /**
+   * Known-good snapshot of the deployed frontend. The staging-deploy pipeline
+   * syncs `websiteBucket → stableBucket` on every green deploy (after Bruno AND
+   * Playwright @smoke pass) and restores `stableBucket → websiteBucket` (+ a
+   * CloudFront invalidation) when the gate trips. This is the frontend analogue
+   * of the ECR `staging-stable` tag the backend rollback uses: `websiteBucket`
+   * is unversioned and the deploy prunes it, so without a separate copy there is
+   * no previous frontend to roll back to. See
+   * docs/plans/playwright-staging-hardening.md §"Frontend rollback".
+   */
+  public readonly stableBucket: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
   public readonly websiteUrl: string;
 
@@ -40,6 +51,21 @@ export class FrontendStack extends cdk.Stack {
     // S3 bucket for frontend static files
     this.websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
       bucketName: `batbern-frontend-${envName}`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      versioned: false,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: !isProd,
+    });
+
+    // Stable snapshot bucket — holds the last known-good frontend so the deploy
+    // pipeline can roll the frontend back when the gate trips (see the field
+    // doc above). NOT a CloudFront origin and NOT a BucketDeployment target, so
+    // the live bucket's `prune: true` can never wipe it. Name matches the
+    // existing GitHub-Actions-role S3 grant pattern `batbern-*-${envName}`
+    // (cicd-stack.ts), so no IAM change is needed for the sync/restore CLI steps.
+    this.stableBucket = new s3.Bucket(this, 'StableBucket', {
+      bucketName: `batbern-frontend-stable-${envName}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: false,
@@ -377,6 +403,12 @@ function handler(event) {
       value: this.websiteBucket.bucketName,
       description: 'S3 bucket for frontend static files',
       exportName: `${envName}-FrontendBucket`,
+    });
+
+    new cdk.CfnOutput(this, 'StableBucketName', {
+      value: this.stableBucket.bucketName,
+      description: 'S3 bucket holding the last known-good frontend (rollback source)',
+      exportName: `${envName}-FrontendStableBucket`,
     });
 
     new cdk.CfnOutput(this, 'DistributionId', {
