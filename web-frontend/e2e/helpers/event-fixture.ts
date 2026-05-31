@@ -31,7 +31,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { eventTitle, EVENT_TITLE_TOKEN } from './test-data-factory';
+import { eventTitle, EVENT_TITLE_TOKEN, topicCode as factoryTopicCode } from './test-data-factory';
 
 const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
@@ -161,6 +161,46 @@ export function companySlug(displayName: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 12);
+}
+
+/**
+ * Create a topic (title = a sweepable `bruno-test-topic-<ts>` slug, so `topic_code` lands in
+ * the `ems/topics` prefix sweep) and select it for `eventCode` — the realistic setup step the
+ * speaker-pool golden path performs after creating the event. Selecting a topic also advances
+ * the event CREATED → (TOPIC_SELECTION) workflow. Returns the server `topicCode`. Requires an
+ * organizer token. Throws loudly on any non-2xx.
+ */
+export async function createAndSelectTopic(token: string, eventCode: string): Promise<string> {
+  const title = factoryTopicCode(); // already a valid slug → topic_code === title → swept
+  const createRes = await fetch(`${API_BASE_URL}/api/v1/topics`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      title,
+      description: 'Playwright golden-path topic fixture — deleted via topic prefix sweep.',
+      category: 'technical',
+    }),
+  });
+  if (createRes.status !== 201) {
+    const body = await createRes.text().catch(() => '');
+    throw new Error(`[event-fixture] create topic failed: ${createRes.status} ${body}`);
+  }
+  const { topicCode } = (await createRes.json()) as { topicCode?: string };
+  if (!topicCode) throw new Error('[event-fixture] create topic response had no topicCode');
+
+  const selectRes = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/topics`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ topicCode, justification: null }),
+  });
+  if (selectRes.status !== 200) {
+    const body = await selectRes.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] select topic ${topicCode} failed: ${selectRes.status} ${body}`
+    );
+  }
+  console.log(`[event-fixture] ✓ topic ${topicCode} created + selected for ${eventCode}`);
+  return topicCode;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────

@@ -60,12 +60,15 @@ production deploy.
 > + 5 (**tasks**) MERGED — squash `9ff51818` (PR #694). Slice 6 (**sessions/slot-assignment**)
 > MERGED — squash `41669b5b` (PR #695; its deploy-to-staging `@smoke` gate job ran green). Slices
 > 8 (**speaker pool**) + 9 (**speaker portal**) MERGED — squash `ce88fbc5` (PR #697; its
-> deploy-to-staging `@smoke` gate job ran green). Slice 10 (**event workflow**) is on
-> `e2e-event-workflow` (off develop post-#697; green ×2 vs dev). NOTE: this repo
-> **auto-merges PRs once CI is green** — so each stacked PR auto-merges + deploys when targeted
-> at develop. Per-slice loop = §C "Repeatable per-slice checklist". Run locally green ×2 vs dev
-> first (`run-playwright-tests.sh development --slice <name>`, §F). **Remaining: slices 11
-> (partners) + 13 (cross-cutting) + 12 (admin tabs), then PR 15 gate-flip.**
+> deploy-to-staging `@smoke` gate job ran green). Slice 10 (**event workflow**) MERGED — squash
+> `3ac73833` (PR #698). **Speaker-pool GOLDEN-PATH addendum** (PO-requested intensive UI-driven
+> kanban walk) is on `e2e-speaker-golden-path` (off develop post-#698; green ×2 vs dev) — see
+> "Golden-path addendum" notes; it found + fixed a real prod bug (V108: content-bearing events
+> couldn't be deleted). NOTE: this repo **auto-merges PRs once CI is green** — so each stacked
+> PR auto-merges + deploys when targeted at develop. Per-slice loop = §C "Repeatable per-slice
+> checklist". Run locally green ×2 vs dev first (`run-playwright-tests.sh development --slice
+> <name>`, §F). **Remaining: slices 11 (partners) + 13 (cross-cutting) + 12 (admin tabs), then
+> PR 15 gate-flip.**
 
 Update this one line on every PR merge so a fresh session can pick up without re-reading the whole plan.
 
@@ -613,6 +616,73 @@ slices, the spec changes go green on staging immediately post-deploy, but the ne
 PRs 2/4/5/8). The opt-in `documentation`/`screencast` projects keep the pure-UI walk + their
 page objects (TopicSelectionPage/SpeakerManagementPage/EventWorkflowPage, test-data.config,
 cleanup-helpers) — untouched here.
+
+### Golden-path addendum — intensive UI-driven speaker-pool kanban walk (2026-05-31)
+
+PO-requested (not in the original slice list): exercise the speaker-pool **kanban** — the
+deliberate, button-driven replacement for drag-drop — **intensively, through the frontend**, in
+one realistic end-to-end scenario that also drives the event lifecycle. New spec
+`e2e/organizer/speaker-pool-golden-path.spec.ts`, 11 serial phases, tagged **`@gate` only**
+(nightly + retries, NOT a blocking per-deploy `@smoke`): the CONTACTED→READY *promote* does an
+out-of-band Cognito provision (Pattern N), historically flaky on local-dev — wrong thing to
+roll a deploy back on. The per-deploy blocking `@smoke` stays the single IDENTIFIED→CONTACTED
+path (`speaker-pool-smoke`). 4 fresh Cognito provisions/run; promote works on dev today
+(probed ×3 green) but the @gate/retry tagging absorbs the intermittent flake.
+
+**The walk:** create EVENING event + topic (API setup) → add 5 speakers one-by-one via the
+brainstorming UI (IDENTIFIED) → push each IDENTIFIED→CONTACTED (card primary action +
+MarkContactedModal) → promote each CONTACTED→READY (card primary action → drawer promote
+sub-view; speaker 0 selects the EXISTING `batbern.speaker`, speakers 1-4 create-new). Then the
+**two READY exit paths**: **Path A** = speaker 0 sent an invitation (READY→INVITED, card action)
+then **accepts in the speaker portal** (INVITED→ACCEPTED); **Path B** = speakers 1-3 accepted
+on-behalf via the drawer's alternative action (reason required). Speaker 4 is **DECLINED** from
+READY via the drawer. The 4 accepted then go ACCEPTED→CONTENT_SUBMITTED (Enter content) →
+QUALITY_REVIEWED (Review→approve), slots are **auto-assigned via the slot-assignment UI**, and
+the event (auto-advanced to SLOT_ASSIGNMENT by the accepts — asserted genuinely) is driven
+AGENDA_PUBLISHED→EVENT_LIVE→EVENT_COMPLETED→ARCHIVED via the override API (cron-only tail).
+Ends: 4 QUALITY_REVIEWED + 1 DECLINED, EVENING slot cap (4) exactly filled, event ARCHIVED.
+
+**Reality finds baked in (so the next author doesn't re-derive):**
+- The kanban card **primary-action testid is `primary-action-button-<id>`**, `data-action` =
+  the per-status verb (`log-outreach`/`promote-to-speaker`/`send-invitation`/`enter-content`/
+  `review-content`). Lanes are **lowercase** (`status-lane-contacted`).
+- **`searchUsers` matches NAME tokens, not username/email** (Epic-11 fix comment in
+  `userManagementApi.ts`): promote-search must type the firstName (the username's first dotted
+  segment, e.g. `batbern.speaker`→`batbern`), then click `user-option-<username>` (new testid
+  added to `UserAutocomplete`). `promote-speaker-search-field`/`speaker-name-field`/
+  `presentation-*-field` carry their testid **on the `<input>`** (via `inputProps`), unlike the
+  `user-create-*` fields (testid on the TextField root → `.locator('input')`).
+- **Speaker-context API auth (Path A portal):** `playwright.config`'s global `extraHTTPHeaders`
+  injects the ORGANIZER bearer, which wins over a `browser.newContext({storageState})` token →
+  every speaker-portal call hits the backend AS ORGANIZER → 403 "insufficient permissions". Fix:
+  give the speaker context its own `extraHTTPHeaders: { Authorization: Bearer <speakerToken> }`
+  (same global-header class of bug as slice 1's S3 PUT). `readSpeakerIdentity()` (speaker-pool-
+  fixture) decodes the token/username/email; the walk skips cleanly without `SPEAKER_AUTH_TOKEN`.
+- **max-4 EVENING cap** is enforced server-side at READY→INVITED/ACCEPTED (not add-time); the
+  scenario fills exactly 4 occupants (1 portal-accept + 3 on-behalf) and the 5th declines (no
+  slot). Auto-assign leaves the declined speaker's orphan placeholder session unassigned (so
+  phase 10 asserts the count *decreased*, not 0).
+
+**Real prod bug found + fixed (V108) — the headline.** Deleting an event that has submitted
+speaker content **500'd**: `session_content_history.session_id` FK was `ON DELETE SET NULL`
+while the column is `NOT NULL` (since V99 enforced NOT NULL + dropped the old `speaker_pool_id`
+cascade). The event→sessions cascade tried to NULL the FK → `null value in column "session_id"
+… violates not-null constraint` → the whole delete failed. **Since V99, no content-bearing
+event could be deleted.** `V108__fix_session_content_history_session_fk_cascade.sql` switches
+the FK to `ON DELETE CASCADE` (session-scoped audit data; robust DO-block finds the FK by column
+regardless of its pre-rename name). Regression guard:
+`ContentSubmissionServiceIntegrationTest.should_cascadeDeleteContentHistory_when_eventWithContentDeleted`
+(Testcontainers, real PG + V108) — submits content, deletes the event, asserts 204-equivalent +
+history cascade-gone. Without this fix the golden-path event leaked on every run (the residue
+class this whole plan exists to kill).
+
+**Cleanup:** afterAll force-archives (events delete only when ARCHIVED) then `cleanupByCode`
+(cascade removes speaker_pool/sessions/content/timing); the 4 fresh `bruno.test` users (CUMS,
+cross-service) + the topic are swept by global-teardown. `batbern.speaker` is the persistent
+test user — never deleted; its pool row cascades with the event. Green ×2 on dev (11/11 both
+runs); residue-free (`events:0`, users swept). New component testids: `add-speakers-button`
+(EventSpeakersTab), `user-option-<id>` (UserAutocomplete), `invitation-response-success`
+(InvitationResponsePage) — staging validates them after this PR's frontend deploys.
 
 ### CI fix (2026-05-30) — Playwright teardown sweep raced the concurrent Bruno job
 

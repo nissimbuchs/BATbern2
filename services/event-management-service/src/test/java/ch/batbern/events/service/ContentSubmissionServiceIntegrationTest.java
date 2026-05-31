@@ -218,6 +218,43 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ============================================================
+    // V108 regression — deleting a content-bearing event must cascade, not 500
+    // ============================================================
+    @Test
+    @DisplayName("should_cascadeDeleteContentHistory_when_eventWithContentDeleted (V108)")
+    void should_cascadeDeleteContentHistory_when_eventWithContentDeleted() {
+        // Reproduces the bug the speaker-pool golden-path E2E surfaced (2026-05-31): the
+        // session_content_history.session_id FK was ON DELETE SET NULL while the column is NOT
+        // NULL (since V99), so deleting an event that has submitted content tried to NULL the FK
+        // and 500'd with "null value in column session_id ... violates not-null constraint".
+        // V108 switches the FK to ON DELETE CASCADE; this asserts the delete now cascades cleanly.
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
+        contentSubmissionService.submit(
+                speaker.getId(),
+                EVENT_CODE,
+                new ContentSubmissionPayload("Cascade Title", "Cascade abstract.", null, null, null),
+                ORGANIZER);
+        UUID sessionId = speakerPoolRepository.findById(speaker.getId()).orElseThrow().getSessionId();
+        assertThat(
+                        sessionContentHistoryRepository
+                                .findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
+                .as("content history row exists before delete")
+                .isPresent();
+
+        // The event → sessions → session_content_history cascade must execute without violating
+        // the NOT NULL constraint. flush() forces the DELETE now so any violation surfaces here.
+        eventRepository.deleteById(testEvent.getId());
+        eventRepository.flush();
+
+        assertThat(eventRepository.findById(testEvent.getId())).isEmpty();
+        assertThat(
+                        sessionContentHistoryRepository
+                                .findFirstBySessionIdOrderBySubmissionVersionDesc(sessionId))
+                .as("content history cascade-deleted with its session")
+                .isEmpty();
+    }
+
+    // ============================================================
     // AC9 #2 — Speaker-self happy path (audit row carries speaker username)
     // ============================================================
     @Test

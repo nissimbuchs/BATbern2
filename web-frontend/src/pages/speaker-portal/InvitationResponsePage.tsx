@@ -562,7 +562,7 @@ const InvitationResponsePage = () => {
         {/* Success State */}
         {pageState === 'success' && responseResult && (
           <>
-            <div className="text-center mb-8">
+            <div className="text-center mb-8" data-testid="invitation-response-success">
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
               <h1 className="text-3xl font-light text-zinc-100 mb-2">
                 {t('speakerPortal.invitationResponse.submitted')}
