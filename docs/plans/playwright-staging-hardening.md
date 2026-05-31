@@ -997,6 +997,22 @@ Left to the operator because it triggers a real staging (= prod) deploy + rollba
 auto-merges and deploys, and the gate is **live and blocking from that deploy onward**. That is
 the intended end state of the plan.
 
+**First-run cold-backend flake → spurious rollback (fixed in-PR).** The PR's own staging deploy
+exercised the now-blocking gate: deploy ✅ → Bruno ✅ → `@smoke` **13/14**, with `registration-flow`
+failing all 3 attempts on `getByTestId('registration-success')` at the **5s** default. The failure
+snapshot showed the submit button still on **"Wird gesendet…"** (in-flight, no error) — i.e. the
+heaviest `@smoke` POST (getOrCreate company + user + registration + confirmation email) exceeded 5s
+against a freshly-deployed, **not-yet-JVM-warm** backend. The gate behaved correctly (promote
+skipped, rollback fired) but the failure was **latency, not a regression** — a spurious rollback
+(plan Risk #3 materialising on run 1). Note company-create `@smoke` passed at **4.0s**, i.e. also
+near the 5s edge — so this was systemic, not registration-specific. **Fix (same PR):**
+`playwright.config.ts` now sets `expect: { timeout: process.env.CI ? 15_000 : 5_000 }` (cold-start
+tolerance for the whole gate on CI; local keeps 5s), and the registration success-view assertion
+gets an explicit **30s** (its SES-bound submit is the slowest path). Real regressions still fail
+within ≤15s (≤30s for registration). The rollback itself was low-impact: backend ECS images were
+unchanged (this PR has no service-code change) and the frontend restore correctly **skipped** (the
+stable bucket wasn't seeded yet — empty-guard worked as designed).
+
 #### Frontend rollback (added to PR 15 after review, 2026-05-31)
 
 **The gap.** Bruno tests the backend and `rollback-deployment.sh` reverts the 5 backend ECS

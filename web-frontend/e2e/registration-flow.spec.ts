@@ -119,7 +119,14 @@ test.describe('Public Event Registration Flow', { tag: '@gate' }, () => {
 
       // Real success state: the inline "email sent" view (NOT a QR confirmation page),
       // echoing back the registered email.
-      await expect(page.getByTestId('registration-success')).toBeVisible();
+      //
+      // Explicit 30s timeout (above the global CI default): this submit is the heaviest
+      // @smoke POST — it getOrCreates a company + a user, writes the registration, and
+      // triggers the double-opt-in confirmation email. Against a freshly-deployed,
+      // not-yet-warm staging backend the button sits on "Wird gesendet…" for >5s, which
+      // produced a spurious gate failure → rollback on PR #703. 30s absorbs the cold
+      // round-trip; a genuinely stuck submit still fails the gate.
+      await expect(page.getByTestId('registration-success')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('registration-success-email')).toHaveText(email);
     }
   );
