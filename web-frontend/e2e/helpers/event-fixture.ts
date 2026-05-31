@@ -164,6 +164,97 @@ export function companySlug(displayName: string): string {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────
+ * Workflow-walk fixtures (plan §C slice 10 — event lifecycle / §C-bis OQ-3)
+ *
+ * The 8-state lifecycle (CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
+ * → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED, see EventWorkflowState.java)
+ * is mostly driven by AUTOMATIC transitions in production — event listeners (topic selected,
+ * speaker accepted, sessions timed) and cron jobs (EVENT_LIVE at 00:01, EVENT_COMPLETED at
+ * 23:59 Bern time). A pure-UI walk would stall on cron and depend on flaky DnD/content flows.
+ *
+ * Per OQ-3 (resolved: hybrid), the gate force-advances state via the same test-override the
+ * organizer UI exposes — `PUT /events/{code}/workflow/transition` with
+ * `overrideValidation:true` — which `EventWorkflowStateMachine.transitionToState` honours by
+ * SKIPPING ALL validation (so any target state is reachable, incl. non-adjacent jumps and the
+ * cron-only EVENT_LIVE/EVENT_COMPLETED). The walk is API-driven, UI-asserted: after each
+ * transition the spec reloads the event overview and asserts the `workflow-status-badge`'s
+ * `data-workflow-state` attribute reflects the new state. No cron, no DnD, fully deterministic.
+ * ──────────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The forward workflow states in linear order, excluding the initial CREATED (which a freshly
+ * created fixture event already occupies — it's a starting state, never a transition target).
+ * The spec walks these in order, force-advancing + UI-asserting each.
+ */
+export const WORKFLOW_FORWARD_STATES = [
+  'TOPIC_SELECTION',
+  'SPEAKER_IDENTIFICATION',
+  'SLOT_ASSIGNMENT',
+  'AGENDA_PUBLISHED',
+  'EVENT_LIVE',
+  'EVENT_COMPLETED',
+  'ARCHIVED',
+] as const;
+
+/** Every workflow state including the initial CREATED. */
+export type WorkflowState = 'CREATED' | (typeof WORKFLOW_FORWARD_STATES)[number];
+
+/**
+ * Force-advance `eventCode` to `targetState`, bypassing all business-rule validation
+ * (`overrideValidation:true`). Returns the server-confirmed new state. Throws loudly on any
+ * non-2xx (per the plan's fail-loud / no-empty-tests bar). Requires an organizer token.
+ */
+export async function transitionWorkflow(
+  token: string,
+  eventCode: string,
+  targetState: WorkflowState,
+  overrideReason = 'Playwright slice-10 lifecycle walk — force-advance (test override)'
+): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/workflow/transition`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ targetState, overrideValidation: true, overrideReason }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] transition ${eventCode} → ${targetState} failed: ${res.status} ${res.statusText} ${body}`
+    );
+  }
+  const data = (await res.json()) as { workflowState?: string };
+  if (data.workflowState !== targetState) {
+    throw new Error(
+      `[event-fixture] transition ${eventCode} → ${targetState} returned ${data.workflowState}`
+    );
+  }
+  return data.workflowState;
+}
+
+/**
+ * Read the authoritative current workflow state via `GET /events/{code}/workflow/status` — the
+ * server-side signal the @smoke verifies against (stronger than the UI badge alone). Requires an
+ * organizer token (the status endpoint requires authentication).
+ */
+export async function getWorkflowState(token: string, eventCode: string): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/workflow/status`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(
+      `[event-fixture] workflow status ${eventCode} failed: ${res.status} ${res.statusText} ${body}`
+    );
+  }
+  const data = (await res.json()) as { currentState?: string };
+  if (!data.currentState) {
+    throw new Error(
+      `[event-fixture] workflow status ${eventCode} had no currentState: ${JSON.stringify(data)}`
+    );
+  }
+  return data.currentState;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────────
  * Slot-assignment fixtures (plan §C slice 6 — sessions/slot-assignment)
  *
  * The slot-assignment page consumes "unassigned" (placeholder) sessions: non-structural
