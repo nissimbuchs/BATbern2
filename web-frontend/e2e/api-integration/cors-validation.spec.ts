@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
  * Critical for preventing CORS-related production incidents.
  */
 
-test.describe('CORS Validation', () => {
+test.describe('CORS Validation', { tag: '@gate' }, () => {
   const apiBaseUrl = process.env.E2E_API_URL || 'https://api.batbern.ch';
   const frontendOrigin = process.env.E2E_BASE_URL || 'https://www.batbern.ch';
 
@@ -78,8 +78,10 @@ test.describe('CORS Validation', () => {
       },
     });
 
-    // Preflight should succeed with 204 No Content (standard CORS response)
-    expect(response.status()).toBe(204);
+    // Preflight should succeed: the deployed staging gateway answers 204 No Content; the local
+    // dev gateway answers 200 (Spring's default CORS handler). Both are valid preflight
+    // successes — the meaningful assertion is the Access-Control-* headers below.
+    expect([200, 204]).toContain(response.status());
 
     // Verify CORS headers in preflight response
     const headers = response.headers();
@@ -172,7 +174,7 @@ test.describe('CORS Validation', () => {
   });
 });
 
-test.describe('Header Propagation Validation', () => {
+test.describe('Header Propagation Validation', { tag: '@gate' }, () => {
   const apiBaseUrl = process.env.E2E_API_URL || 'https://api.batbern.ch';
 
   test('should propagate correlation ID through request flow', async ({ page }) => {
